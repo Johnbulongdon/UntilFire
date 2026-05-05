@@ -10,6 +10,20 @@
 -- the user's single default scenario; multi-scenario UI is intentionally
 -- out of scope here.
 
+-- ─── Shared helpers ─────────────────────────────────────────────────────────
+-- update_updated_at_column() is also defined in supabase-setup.sql, but a
+-- database bootstrapped via migrations only (no setup script) won't have it.
+-- Keep this idempotent CREATE OR REPLACE here so the trigger creates below
+-- never fail against a fresh project. This block matches what was actually
+-- applied in production for UNTAAAA-23.
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = TIMEZONE('utc', NOW());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- ─── profiles ───────────────────────────────────────────────────────────────
 -- One row per authenticated user. Captures the slow-changing facts about the
 -- person rather than their planning assumptions.
