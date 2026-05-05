@@ -7,6 +7,12 @@ import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
 import { CITIES, City, STATE_TAX } from "@/lib/fire-data";
 import { calcFIRE, calcTakeHome } from "@/lib/fire";
+import {
+  trackLandingViewed,
+  trackCalculatorStepViewed,
+  trackCalculatorRevealed,
+} from "@/lib/analytics";
+import type { CalculatorStepId } from "@/lib/analytics-events";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -1054,6 +1060,23 @@ function RevealScreen({ city, income, savings, stateKey, fireGoal, currentAge, o
     }
   }, [counted, result.fireTarget, counting]);
 
+  // Fire the reveal funnel event exactly once per mount, when the projection
+  // is fully settled. Done inside an effect so the event is tied to the
+  // user-visible reveal, not the initial render.
+  const revealEmitted = useRef(false);
+  useEffect(() => {
+    if (revealed && !revealEmitted.current) {
+      revealEmitted.current = true;
+      trackCalculatorRevealed({
+        stateKey,
+        isCustomCity: city.isCustom,
+        fireTarget: result.fireTarget,
+        yearsToFire: result.years,
+        fireGoal,
+      });
+    }
+  }, [revealed, stateKey, city.isCustom, result.fireTarget, result.years, fireGoal]);
+
   // Delta calculations
   const highSaver = calcFIRE((takeHome / 12) * 0.5, city.col, currentAge);
   const costYears = Math.max(0, result.years - highSaver.years).toFixed(1);
@@ -1272,6 +1295,27 @@ export default function Home() {
     });
     return () => subscription.unsubscribe();
   }, [router]);
+
+  // Funnel instrumentation: emit a single event per screen entry. The hero is
+  // landing_viewed; the four wizard steps are calculator_step_viewed; reveal
+  // fires its own event from inside RevealScreen so we know the calculation
+  // actually completed.
+  useEffect(() => {
+    if (screen === "hero") {
+      trackLandingViewed();
+      return;
+    }
+    const stepMap: Partial<Record<Screen, CalculatorStepId>> = {
+      goals: "goals",
+      city: "city",
+      income: "income",
+      savings: "savings",
+    };
+    const stepId = stepMap[screen];
+    if (stepId) {
+      trackCalculatorStepViewed(stepId, fireGoal);
+    }
+  }, [screen, fireGoal]);
 
   function signIn() {
     router.push('/login');

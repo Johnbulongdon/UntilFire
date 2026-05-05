@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getStripe } from "@/lib/stripe";
 import Stripe from "stripe";
+import { trackCheckoutSucceededServer } from "@/lib/analytics-server";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,18 @@ export async function POST(req: NextRequest) {
         current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
+
+      // Funnel: server-confirmed checkout success. distinct_id = supabase
+      // user id so this stitches to the client funnel (identify is called on
+      // signup and dashboard first view).
+      const priceId = sub.items.data[0]?.price?.id;
+      await trackCheckoutSucceededServer({
+        distinctId: userId,
+        plan: "pro",
+        priceId,
+        stripeSessionId: session.id,
+        mode: session.mode ?? "subscription",
+      });
       break;
     }
 

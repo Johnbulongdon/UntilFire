@@ -5,6 +5,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { peekCalculatorPrefill, type CalculatorPrefill } from '@/lib/journey'
+import {
+  identifyUser,
+  trackSignupCompleted,
+  trackSignupStarted,
+} from '@/lib/analytics'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,13 +25,22 @@ export default function LoginPage() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) router.push('/dashboard')
+      if (event === 'SIGNED_IN' && session) {
+        identifyUser(session.user.id)
+        trackSignupCompleted()
+        router.push('/dashboard')
+      }
     })
 
     return () => subscription.unsubscribe()
   }, [router])
 
   async function signInWithGoogle() {
+    const prefillNow = peekCalculatorPrefill()
+    trackSignupStarted({
+      fromCalculator: !!prefillNow,
+      stateKey: prefillNow?.stateKey,
+    })
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

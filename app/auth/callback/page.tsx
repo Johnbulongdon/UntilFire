@@ -1,12 +1,17 @@
 'use client'
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { identifyUser, trackSignupCompleted } from '@/lib/analytics'
 
 export default function AuthCallback() {
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('code')
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(() => {
+      supabase.auth.exchangeCodeForSession(code).then(({ data }) => {
+        if (data.session?.user?.id) {
+          identifyUser(data.session.user.id)
+          trackSignupCompleted()
+        }
         window.location.href = '/dashboard'
       })
     }

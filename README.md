@@ -42,6 +42,14 @@ Additional server-side integrations may also require:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PRO_PRICE_ID`
 - `STRIPE_WEBHOOK_SECRET`
+- `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST`
+
+## Analytics
+
+The v1 conversion funnel is instrumented through PostHog. The canonical
+event contract lives in [`docs/analytics/EVENTS.md`](docs/analytics/EVENTS.md);
+the runtime source of truth is `lib/analytics-events.ts`. Update both
+together when changing the funnel.
 
 ## Workflow
 

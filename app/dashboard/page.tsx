@@ -10,6 +10,7 @@ import {
 import TransactionsTab from "./TransactionsTab";
 import { loadDefaultScenario, monteCarloFIRE, saveDefaultScenario } from "@/lib/fire";
 import { consumeCalculatorPrefill, type CalculatorPrefill } from "@/lib/journey";
+import { identifyUser, trackDashboardFirstView } from "@/lib/analytics";
 
 // 閳光偓閳光偓閳光偓 Types 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 type Expenses = Record<string, number>;
@@ -1312,7 +1313,20 @@ export default function Dashboard() {
         // Check for calculator prefill from the landing page
         const prefill = consumeCalculatorPrefill() || {};
         const seededIncome = prefill.monthlyIncome || prefill.income || 0;
-        setJourneyPrefill(Object.keys(prefill).length > 0 ? prefill : null);
+        const hadPrefill = Object.keys(prefill).length > 0;
+        setJourneyPrefill(hadPrefill ? prefill : null);
+
+        // Funnel: dashboard first view per session. Identify links the
+        // anonymous PostHog distinct id to the supabase user so the upstream
+        // calculator events stitch to the same person.
+        identifyUser(session.user.id);
+        const viaUpgrade =
+          new URLSearchParams(window.location.search).get("upgraded") === "true";
+        trackDashboardFirstView({
+          hadCalculatorPrefill: hadPrefill,
+          viaUpgrade,
+          scenarioId: scenario.scenarioId,
+        });
 
         setIncome(seededIncome || scenario.monthlyIncome || 0);
         setExpenses({
