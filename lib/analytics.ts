@@ -25,10 +25,18 @@ function isClient(): boolean {
   return typeof window !== 'undefined';
 }
 
-function capture(event: string, properties: object) {
+function capture(
+  event: string,
+  properties: object,
+  options?: { sendInstantly?: boolean },
+) {
   if (!isClient()) return;
   try {
-    posthog.capture(event, properties as Record<string, unknown>);
+    posthog.capture(
+      event,
+      properties as Record<string, unknown>,
+      options?.sendInstantly ? { send_instantly: true } : undefined,
+    );
   } catch {
     // Analytics must never break product code paths.
   }
@@ -93,7 +101,10 @@ export function trackSignupStarted(input: {
 }
 
 export function trackSignupCompleted() {
-  capture(FunnelEvents.SIGNUP_COMPLETED, withVersion({}));
+  // send_instantly: this fires right before a hard navigation in the OAuth
+  // callback path; queued events would otherwise be dropped when the page
+  // unloads.
+  capture(FunnelEvents.SIGNUP_COMPLETED, withVersion({}), { sendInstantly: true });
 }
 
 export function trackDashboardFirstView(input: {

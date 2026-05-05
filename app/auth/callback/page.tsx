@@ -8,11 +8,17 @@ export default function AuthCallback() {
     const code = new URLSearchParams(window.location.search).get('code')
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ data }) => {
-        if (data.session?.user?.id) {
-          identifyUser(data.session.user.id)
+        const userId = data.session?.user?.id
+        if (userId) {
+          identifyUser(userId)
           trackSignupCompleted()
         }
-        window.location.href = '/dashboard'
+        // Brief delay so the PostHog XHR for funnel_signup_completed can
+        // flush before the hard navigation. Without this, the in-flight
+        // request is cancelled by the page change and the event is dropped.
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 300)
       })
     }
   }, [])
