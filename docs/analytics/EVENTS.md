@@ -79,10 +79,14 @@ funnel_landing_viewed
 
 ### `funnel_signup_completed`
 
-- **Where**: fired in two places, both as the same event with the same
-  identify call so dedup at the user level is straightforward:
-  - `app/login/page.tsx` Supabase `SIGNED_IN` listener.
-  - `app/auth/callback/page.tsx` after `exchangeCodeForSession` resolves.
+- **Where**: `app/dashboard/page.tsx` mount, gated by a `uf_signup_pending`
+  sessionStorage flag set in `app/login/page.tsx` when the user clicks
+  Continue with Google. The dashboard mount is a stable JS context, which
+  is required because the OAuth callback's hard navigation cancels
+  in-flight PostHog requests (we tried `send_instantly` + a 300ms delay
+  and it was still unreliable in production). The login page's
+  `SIGNED_IN` listener and the auth-callback page also emit as
+  belt-and-suspenders, but the dashboard-mount path is the canonical one.
 - **Properties**: none beyond defaults.
 - **Side effect**: `posthog.identify(userId)` runs alongside the event.
 

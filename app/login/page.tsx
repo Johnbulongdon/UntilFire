@@ -41,6 +41,14 @@ export default function LoginPage() {
       fromCalculator: !!prefillNow,
       stateKey: prefillNow?.stateKey,
     })
+    // Mark this tab as having an in-flight signup so the dashboard can
+    // emit funnel_signup_completed reliably once auth settles. The OAuth
+    // callback's hard navigation kept dropping the in-flight PostHog
+    // request, even with send_instantly + a 300ms delay; the dashboard
+    // mount is a stable JS context where the event always survives.
+    try {
+      sessionStorage.setItem('uf_signup_pending', '1')
+    } catch {}
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
