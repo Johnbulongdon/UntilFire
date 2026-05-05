@@ -10,7 +10,11 @@ import {
 import TransactionsTab from "./TransactionsTab";
 import { loadDefaultScenario, monteCarloFIRE, saveDefaultScenario } from "@/lib/fire";
 import { consumeCalculatorPrefill, type CalculatorPrefill } from "@/lib/journey";
-import { identifyUser, trackDashboardFirstView } from "@/lib/analytics";
+import {
+  identifyUser,
+  trackDashboardFirstView,
+  trackSignupCompleted,
+} from "@/lib/analytics";
 
 // 閳光偓閳光偓閳光偓 Types 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 type Expenses = Record<string, number>;
@@ -1320,6 +1324,21 @@ export default function Dashboard() {
         // anonymous PostHog distinct id to the supabase user so the upstream
         // calculator events stitch to the same person.
         identifyUser(session.user.id);
+
+        // If this dashboard load is the landing point of a signup OAuth
+        // round-trip, fire signup_completed here. The flag is set in
+        // /login when the user clicks Continue with Google; emitting from
+        // dashboard mount sidesteps the OAuth-callback page-unload race
+        // that was dropping the event in production.
+        let signupPending = false;
+        try {
+          signupPending = sessionStorage.getItem("uf_signup_pending") === "1";
+          if (signupPending) sessionStorage.removeItem("uf_signup_pending");
+        } catch {}
+        if (signupPending) {
+          trackSignupCompleted();
+        }
+
         const viaUpgrade =
           new URLSearchParams(window.location.search).get("upgraded") === "true";
         trackDashboardFirstView({
