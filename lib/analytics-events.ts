@@ -11,6 +11,7 @@ export const FunnelEvents = {
   LANDING_VIEWED: 'funnel_landing_viewed',
   CALCULATOR_STEP_VIEWED: 'funnel_calculator_step_viewed',
   CALCULATOR_REVEALED: 'funnel_calculator_revealed',
+  ADVISER_INTENT: 'funnel_adviser_intent',
   SIGNUP_STARTED: 'funnel_signup_started',
   SIGNUP_COMPLETED: 'funnel_signup_completed',
   DASHBOARD_FIRST_VIEW: 'funnel_dashboard_first_view',
@@ -73,6 +74,11 @@ export interface CalculatorRevealedProperties extends BaseFunnelProperties {
 export interface SignupStartedProperties extends BaseFunnelProperties {
   from_calculator: boolean;
   state_key?: string;
+}
+
+export interface AdviserIntentProperties extends BaseFunnelProperties {
+  surface: string;
+  action: string;
 }
 
 export interface DashboardFirstViewProperties extends BaseFunnelProperties {

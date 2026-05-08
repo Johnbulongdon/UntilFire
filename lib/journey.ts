@@ -3,6 +3,7 @@ export const CALCULATOR_PREFILL_KEY = 'uf_calc_prefill'
 export type CalculatorPrefill = {
   monthlyIncome?: number
   monthlySavings?: number
+  existingSavings?: number
   monthlySpendEstimate?: number
   cityName?: string
   stateKey?: string

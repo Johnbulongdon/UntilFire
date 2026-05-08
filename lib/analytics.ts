@@ -16,6 +16,7 @@ import {
   type CalculatorStepProperties,
   type CalculatorRevealedProperties,
   type SignupStartedProperties,
+  type AdviserIntentProperties,
   type DashboardFirstViewProperties,
   type PaywallProperties,
   type CheckoutStartedProperties,
@@ -98,6 +99,14 @@ export function trackSignupStarted(input: {
     ...(input.stateKey ? { state_key: input.stateKey } : {}),
   });
   capture(FunnelEvents.SIGNUP_STARTED, props);
+}
+
+export function trackAdviserIntent(input: { surface: string; action: string }) {
+  const props: AdviserIntentProperties = withVersion({
+    surface: input.surface,
+    action: input.action,
+  });
+  capture(FunnelEvents.ADVISER_INTENT, props);
 }
 
 export function trackSignupCompleted() {
