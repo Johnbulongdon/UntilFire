@@ -16,7 +16,7 @@ import {
   trackSignupCompleted,
 } from "@/lib/analytics";
 
-// 閳光偓閳光偓閳光偓 Types 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Types
 type Expenses = Record<string, number>;
 type TabKey =
   | "portfolio-overview" | "portfolio-assets" | "portfolio-liabilities"
@@ -28,18 +28,18 @@ type DashboardNavItem =
   | { type: "tab"; key: TabKey; label: string; icon: string }
   | { type: "link"; href: string; label: string; icon: string };
 
-// 閳光偓閳光偓閳光偓 Constants 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Constants
 const EXPENSE_CATS = [
-  { key: "housing",       label: "Housing",       icon: "棣冨綌", color: "#818cf8" },
-  { key: "food",          label: "Food & Dining",  icon: "棣冨礉", color: "#f97316" },
-  { key: "transport",     label: "Transport",      icon: "棣冩", color: "#22d3a5" },
-  { key: "subscriptions", label: "Subscriptions",  icon: "棣冩懌", color: "#a78bfa" },
-  { key: "healthcare",    label: "Healthcare",     icon: "棣冨綖", color: "#ef4444" },
-  { key: "entertainment", label: "Entertainment",  icon: "棣冨箑", color: "#fbbf24" },
-  { key: "other",         label: "Other",          icon: "棣冩憹", color: "#6b6b85" },
+  { key: "housing",       label: "Housing",       icon: "🏠", color: "#818cf8" },
+  { key: "food",          label: "Food & Dining",  icon: "🍔", color: "#f97316" },
+  { key: "transport",     label: "Transport",      icon: "🚗", color: "#22d3a5" },
+  { key: "subscriptions", label: "Subscriptions",  icon: "📱", color: "#a78bfa" },
+  { key: "healthcare",    label: "Healthcare",     icon: "🏥", color: "#ef4444" },
+  { key: "entertainment", label: "Entertainment",  icon: "🎬", color: "#fbbf24" },
+  { key: "other",         label: "Other",          icon: "📦", color: "#6b6b85" },
 ];
 
-// 閳光偓閳光偓閳光偓 Formatters 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Formatters
 const fmt = (n: number, compact = false) => {
   if (compact && Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (compact && Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
@@ -48,7 +48,7 @@ const fmt = (n: number, compact = false) => {
 
 const fmtSigned = (n: number, compact = false) => (n < 0 ? `-${fmt(Math.abs(n), compact)}` : fmt(n, compact));
 
-// 閳光偓閳光偓閳光偓 FIRE Engine 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// FIRE Engine
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable,
   totalDebt, mortgageBalance, mortgageMonthly,
@@ -107,7 +107,7 @@ function calcProjection({
   return { data, fireYear, fireTarget, annualSavings };
 }
 
-// 閳光偓閳光偓閳光偓 Shared UI 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Shared UI
 function NumberInput({ value, onChange, placeholder = "0", prefix = "$" }: {
   value: number; onChange: (v: number) => void;
   placeholder?: string; prefix?: string;
@@ -177,7 +177,7 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
   );
 }
 
-// 閳光偓閳光偓閳光偓 Monte Carlo Probability Card 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Monte Carlo Probability Card
 function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; growthRate: number; withdrawalRate: number;
@@ -248,7 +248,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 11, color: "#94A3B8", margin: 0, lineHeight: 1.5 }}>1,000 simulations 璺?锜?12% annual returns</p>
+          <p style={{ fontSize: 11, color: "#94A3B8", margin: 0, lineHeight: 1.5 }}>1,000 simulations ±12% annual returns</p>
         </div>
 
         {/* Histogram */}
@@ -311,7 +311,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
   );
 }
 
-// 閳光偓閳光偓閳光偓 Dashboard Overview Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Dashboard Overview Tab
 function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals, prefill, onOpenBudget, onOpenExpenses }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;
@@ -353,7 +353,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-      {/* 閳光偓閳光偓 HERO: FIRE Score 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓 */}
+      {/* HERO: FIRE Score */}
       <div className="uf-card" style={{ padding: "28px 32px", background: "#003527", borderColor: "transparent", position: "relative", overflow: "hidden" }}>
         {/* Background glow */}
         <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(98,250,227,0.08) 0%, transparent 70%)", top: -100, right: -100, pointerEvents: "none" }} />
@@ -484,7 +484,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16 }}>
         {/* Wealth projection chart */}
         <div className="uf-card">
-          <SectionLabel icon="棣冩惐" text="Wealth Projection" color="#059669" />
+          <SectionLabel icon="📈" text="Wealth Projection" color="#059669" />
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <defs>
@@ -501,7 +501,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
               <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
               <YAxis tickFormatter={v => fmt(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={55} />
               <Tooltip content={<ChartTooltip />} />
-              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "棣冩暉", fill: "#064E3B", fontSize: 12 }} />}
+              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "🔥", fill: "#064E3B", fontSize: 12 }} />}
               <Area type="monotone" dataKey="FIRE Target" stroke="#064E3B" strokeWidth={1.5} strokeDasharray="5 3" fill="url(#gTgt)" dot={false} />
               <Area type="monotone" dataKey="Investable" stroke="#059669" strokeWidth={2.5} fill="url(#gInv)" dot={false} />
             </AreaChart>
@@ -510,7 +510,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
 
         {/* Spending breakdown */}
         <div className="uf-card">
-          <SectionLabel icon="棣冩崁" text="Spending Breakdown" color="#DC2626" />
+          <SectionLabel icon="💸" text="Spending Breakdown" color="#DC2626" />
           {activeCats.length === 0 ? (
             <div style={{ color: "#64748B", fontSize: 13, textAlign: "center", padding: "40px 0" }}>
               Add expenses in the<br />Budget Tracker tab
@@ -541,7 +541,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {/* Account snapshot */}
         <div className="uf-card">
-          <SectionLabel icon="棣冨綗" text="Account Snapshot" color="#064E3B" />
+          <SectionLabel icon="🏦" text="Account Snapshot" color="#064E3B" />
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
               {[
@@ -572,23 +572,23 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
 
         {/* Insights */}
         <div className="uf-card">
-          <SectionLabel icon="棣冩寱" text="Insights" color="#065F46" />
+          <SectionLabel icon="💡" text="Insights" color="#065F46" />
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[
               {
-                icon: "棣冩惓",
+                icon: "📊",
                 title: "Savings Rate",
                 body: savingsRate >= 50 ? `${savingsRate.toFixed(0)}% means you are on an aggressive FIRE track.` : savingsRate >= 25 ? `${savingsRate.toFixed(0)}% is solid. Pushing toward 50% can cut years off your date.` : `At ${savingsRate.toFixed(0)}%, reducing recurring expenses is your biggest lever.`,
                 color: savingsRate >= 50 ? "#059669" : savingsRate >= 25 ? "#20D4BF" : "#DC2626",
               },
               {
-                icon: "棣冨綌",
+                icon: "🏠",
                 title: "Housing Ratio",
                 body: income > 0 && expenses.housing > 0 ? `Housing is ${housingRatio.toFixed(0)}% of take-home. ${housingRatio > 30 ? "Above 30% and likely your biggest cost lever." : "Under 30% and in a healthy range."}` : "Add housing expenses to see your ratio.",
                 color: "#19181E",
               },
               {
-                icon: "棣冩暉",
+                icon: "🔥",
                 title: "Rule of 25",
                 body: `Target: ${fmt(fireTarget, true)}. Every $100 per month you cut lowers your FIRE number by about $30,000.`,
                 color: "#19181E",
@@ -609,21 +609,21 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
   );
 }
 
-// 閳光偓閳光偓閳光偓 Calculators Hub Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Calculators Hub Tab
 const CALCULATORS = [
   {
     href: "/calculators/4-percent-rule",
     title: "FIRE Number Calculator",
     description: "Calculate exactly how much you need to retire. Adjust the withdrawal rate and see how it changes your target.",
-    tag: "FIRE 璺?Retirement",
+    tag: "FIRE — Retirement",
     color: "#064E3B",
     label: "FI",
   },
   {
     href: "/calculators/savings-rate",
     title: "Savings Rate Calculator",
-    description: "Find your savings rate and see exactly how it shifts your FIRE date 閳?the single most powerful FIRE lever.",
-    tag: "FIRE 璺?Core",
+    description: "Find your savings rate and see exactly how it shifts your FIRE date — the single most powerful FIRE lever.",
+    tag: "FIRE — Core",
     color: "#059669",
     label: "SR",
   },
@@ -631,7 +631,7 @@ const CALCULATORS = [
     href: "/calculators/coast-fire",
     title: "Coast FIRE Calculator",
     description: "Find the magic number where you can stop saving and let compound growth carry you to retirement.",
-    tag: "FIRE 璺?Strategy",
+    tag: "FIRE — Strategy",
     color: "#20D4BF",
     label: "~",
   },
@@ -682,7 +682,7 @@ function CalculatorsTab() {
   );
 }
 
-// 閳光偓閳光偓閳光偓 Budget Tracker Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Budget Tracker Tab
 function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
@@ -736,7 +736,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
                 {spent > 0 && (
                   <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
                     <span style={{ fontSize: 11, fontFamily: "Inter, sans-serif", color: over ? "#DC2626" : "#64748B" }}>
-                      {over ? "閳?" : ""}Spent {fmt(spent)}{budget > 0 ? ` / ${fmt(budget)}` : ""}
+                      {over ? "Over " : ""}Spent {fmt(spent)}{budget > 0 ? ` / ${fmt(budget)}` : ""}
                     </span>
                     {budget > 0 && (
                       <div style={{ height: 3, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
@@ -773,7 +773,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
           {/* Rate bar */}
           <div style={{ marginTop: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748B", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>
-              <span>Savings rate</span><span>{rate.toFixed(1)}% {rate >= 50 ? "棣冩暉 FIRE pace" : rate >= 25 ? "璺?Good" : "璺?Needs work"}</span>
+              <span>Savings rate</span><span>{rate.toFixed(1)}% {rate >= 50 ? "🔥 FIRE pace" : rate >= 25 ? "✓ Good" : "Needs work"}</span>
             </div>
             <div style={{ height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${Math.min(100, rate)}%`, background: rate >= 50 ? "#064E3B" : rate >= 25 ? "#059669" : "#DC2626", borderRadius: 99, transition: "width 0.6s" }} />
@@ -788,7 +788,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
   );
 }
 
-// 閳光偓閳光偓閳光偓 User Nav 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// User Nav
 function UserNav() {
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
@@ -807,7 +807,7 @@ function UserNav() {
   );
 }
 
-// 閳光偓閳光偓閳光偓 Portfolio Overview Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Portfolio Overview Tab
 function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;
@@ -836,7 +836,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
           {fmt(netWorth)}
         </div>
         <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmt(investable, true)} investable assets 璺?{fmt(totalDebt + mortgageBalance, true)} total debt
+          {fmt(investable, true)} investable assets — {fmt(totalDebt + mortgageBalance, true)} total debt
         </div>
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
@@ -864,7 +864,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
 
       {/* Account breakdown table */}
       <div className="uf-card">
-        <SectionLabel icon="棣冨綗" text="Account Snapshot" color="#064E3B" />
+        <SectionLabel icon="🏦" text="Account Snapshot" color="#064E3B" />
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
             {[
@@ -894,7 +894,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
   );
 }
 
-// 閳光偓閳光偓閳光偓 Assets Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Assets Tab
 function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
@@ -907,7 +907,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, gr
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div className="uf-card">
-          <SectionLabel icon="棣冩惐" text="Investment Accounts" color="#059669" />
+          <SectionLabel icon="📈" text="Investment Accounts" color="#059669" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <FieldRow label="401(k) Balance">
               <NumberInput value={k401} onChange={setK401} placeholder="0" />
@@ -973,7 +973,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, gr
   );
 }
 
-// 閳光偓閳光偓閳光偓 Liabilities Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Liabilities Tab
 function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly }: {
   totalDebt: number; setTotalDebt: (v: number) => void;
   mortgageBalance: number; setMortgageBalance: (v: number) => void;
@@ -984,7 +984,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div className="uf-card">
-          <SectionLabel icon="棣冩尭" text="Consumer Debt" color="#DC2626" />
+          <SectionLabel icon="💳" text="Consumer Debt" color="#DC2626" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <FieldRow label="Non-Mortgage Debt" hint="Credit cards, auto loans, student loans">
               <NumberInput value={totalDebt} onChange={setTotalDebt} placeholder="0" />
@@ -993,7 +993,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
         </div>
 
         <div className="uf-card">
-          <SectionLabel icon="棣冨綌" text="Mortgage" color="#DC2626" />
+          <SectionLabel icon="🏠" text="Mortgage" color="#DC2626" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <FieldRow label="Mortgage Balance">
               <NumberInput value={mortgageBalance} onChange={setMortgageBalance} placeholder="0" />
@@ -1025,7 +1025,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
   );
 }
 
-// 閳光偓閳光偓閳光偓 Goals Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Goals Tab
 const FIRE_GOAL_OPTIONS = [
   { id: "early-retirement", label: "Early Retirement", icon: "ER", desc: "Stop working entirely and live off your portfolio" },
   { id: "coast-fire", label: "Coast FIRE", icon: "CF", desc: "Save enough now, let compound growth carry you" },
@@ -1038,7 +1038,7 @@ function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: nu
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div className="uf-card">
-        <SectionLabel icon="棣冨箚" text="FIRE Goal Type" color="#064E3B" />
+        <SectionLabel icon="🎯" text="FIRE Goal Type" color="#064E3B" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {FIRE_GOAL_OPTIONS.map(g => (
             <button
@@ -1061,10 +1061,10 @@ function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: nu
       </div>
 
       <div className="uf-card">
-        <SectionLabel icon="棣冨范" text="Current Age" color="#064E3B" />
+        <SectionLabel icon="🎂" text="Current Age" color="#064E3B" />
         <div style={{ maxWidth: 280 }}>
           <FieldRow label="Your current age" hint="Used to calculate your FIRE date">
-            <NumberInput value={fireAge} onChange={setFireAge} placeholder="30" prefix="棣冨范" />
+            <NumberInput value={fireAge} onChange={setFireAge} placeholder="30" prefix="🎂" />
           </FieldRow>
         </div>
       </div>
@@ -1072,7 +1072,7 @@ function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: nu
   );
 }
 
-// 閳光偓閳光偓閳光偓 Simulations Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Simulations Tab
 function SimulationsTab({ income, expenses, k401, rothIRA, taxable, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; growthRate: number; withdrawalRate: number;
@@ -1092,7 +1092,7 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, growthRate, 
   );
 }
 
-// 閳光偓閳光偓閳光偓 Trends Tab 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Trends Tab
 function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;
@@ -1155,7 +1155,7 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
               <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
               <YAxis tickFormatter={v => fmt(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
               <Tooltip content={<ChartTooltip />} />
-              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "棣冩暉 FIRE", fill: "#064E3B", fontSize: 10, fontFamily: "Inter" }} />}
+              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "🔥 FIRE", fill: "#064E3B", fontSize: 10, fontFamily: "Inter" }} />}
               <Area type="monotone" dataKey="FIRE Target" stroke="#064E3B" strokeWidth={1.5} strokeDasharray="5 3" fill="url(#gT3)" dot={false} />
               <Area type="monotone" dataKey="Investable" stroke="#059669" strokeWidth={2.5} fill="url(#gI3)" dot={false} />
             </AreaChart>
@@ -1194,7 +1194,7 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
               <YAxis tickFormatter={v => fmt(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
               <Tooltip content={<ChartTooltip />} />
               <ReferenceLine y={0} stroke="#DC2626" strokeDasharray="3 3" />
-              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "棣冩暉 FIRE", fill: "#064E3B", fontSize: 10, fontFamily: "Inter" }} />}
+              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "🔥 FIRE", fill: "#064E3B", fontSize: 10, fontFamily: "Inter" }} />}
               <Line type="monotone" dataKey="Net Worth" stroke="#059669" strokeWidth={2.5} dot={false} />
               <Line type="monotone" dataKey="Debt" stroke="#DC2626" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
             </LineChart>
@@ -1202,8 +1202,8 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
         )}
 
         <p style={{ textAlign: "center", fontSize: 11, color: "#94A3B8", marginTop: 10 }}>
-          {chartTab === "growth" && "Green = investable assets 璺?Dark dashed = FIRE target"}
-          {chartTab === "accounts" && "Stacked: 401(k) 璺?Roth IRA 璺?Taxable brokerage"}
+          {chartTab === "growth" && "Green = investable assets — Dark dashed = FIRE target"}
+          {chartTab === "accounts" && "Stacked: 401(k) — Roth IRA — Taxable brokerage"}
           {chartTab === "networth" && "Total net worth vs debt paydown over time"}
         </p>
       </div>
@@ -1211,7 +1211,7 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
   );
 }
 
-// 閳光偓閳光偓閳光偓 Sidebar groups definition 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
+// Sidebar groups definition
 const DASHBOARD_NAV: DashboardNavItem[] = [
   { type: "tab", key: "insights-overview", label: "Dashboard", icon: "D" },
   { type: "tab", key: "insights-spending", label: "Budget", icon: "B" },
@@ -1436,7 +1436,7 @@ export default function Dashboard() {
       `}</style>
 
       <div className="uf-shell">
-        {/* 閳光偓閳光偓 Sidebar 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓 */}
+        {/* Sidebar */}
         <aside className="uf-sidebar">
           <Link href="/" className="uf-sidebar-logo">Until<span>Fire</span></Link>
 
@@ -1468,7 +1468,7 @@ export default function Dashboard() {
           </div>
         </aside>
 
-        {/* 閳光偓閳光偓 Main content 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓 */}
+        {/* Main content */}
         <main className="uf-main">
           <div className="uf-content">
             {tab === "portfolio-overview" && (

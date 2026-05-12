@@ -51,6 +51,26 @@ event contract lives in [`docs/analytics/EVENTS.md`](docs/analytics/EVENTS.md);
 the runtime source of truth is `lib/analytics-events.ts`. Update both
 together when changing the funnel.
 
+## Product State
+
+### Past State
+
+- UntilFire started as a FIRE calculator with supporting documentation and calculator routes.
+- The dashboard was added as the logged-in planning workspace for income, expenses, assets, liabilities, projections, and scenario tracking.
+- Some dashboard source text was later found to contain mojibake/corrupted emoji strings such as `棣冩崁`, which rendered visibly in the UI.
+
+### Current State
+
+- The app is a Next.js FIRE planning product with a public calculator, logged-in dashboard, calculator library, learning hub, Supabase integration, and PostHog funnel tracking.
+- The dashboard uses real emoji/icon labels in source where icons are intended, and the known corrupted dashboard mojibake markers have been removed.
+- The canonical implementation baseline is the latest pushed GitHub `origin/main`.
+
+### Future State
+
+- Keep the dashboard as the operating center for a user's FIRE plan: budget targets, actual spending, assets, liabilities, projections, and next actions.
+- Add stronger regression coverage for text encoding/UI copy so corrupted characters cannot quietly return.
+- Continue improving activation: calculator handoff, first saved plan, first logged expense, and clear next best actions.
+
 ## Workflow
 
 - The default implementation baseline is the latest pushed GitHub `origin/main`.
