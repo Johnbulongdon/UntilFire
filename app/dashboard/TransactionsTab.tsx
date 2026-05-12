@@ -5,23 +5,23 @@ import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
 
 const EXPENSE_CATEGORIES = [
-  { key: "food",          label: "🍔 Food & Dining",  color: "#f97316" },
-  { key: "transport",     label: "🚗 Transport",       color: "#22d3a5" },
-  { key: "housing",       label: "🏠 Housing",         color: "#818cf8" },
-  { key: "subscriptions", label: "📱 Subscriptions",   color: "#a78bfa" },
-  { key: "healthcare",    label: "🏥 Healthcare",      color: "#ef4444" },
-  { key: "entertainment", label: "🎬 Entertainment",   color: "#fbbf24" },
-  { key: "shopping",      label: "🛍️ Shopping",        color: "#ec4899" },
-  { key: "work",          label: "💼 Work Expense",    color: "#6366f1" },
-  { key: "other",         label: "📦 Other",           color: "#6b6b85" },
+  { key: "food",          label: "Food & Dining", code: "FD", color: "#f97316" },
+  { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5" },
+  { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8" },
+  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa" },
+  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444" },
+  { key: "entertainment", label: "Entertainment", code: "EN", color: "#fbbf24" },
+  { key: "shopping",      label: "Shopping",      code: "SH", color: "#ec4899" },
+  { key: "work",          label: "Work Expense",  code: "WK", color: "#6366f1" },
+  { key: "other",         label: "Other",         code: "OT", color: "#6b6b85" },
 ];
 
 const INCOME_CATEGORIES = [
-  { key: "salary",       label: "💵 Salary",        color: "#22d3a5" },
-  { key: "freelance",    label: "💻 Freelance",      color: "#34d399" },
-  { key: "investment",   label: "📈 Investment",     color: "#818cf8" },
-  { key: "gift",         label: "🎁 Gift",           color: "#a78bfa" },
-  { key: "other_income", label: "📦 Other Income",   color: "#6b6b85" },
+  { key: "salary",       label: "Salary",       code: "SA", color: "#22d3a5" },
+  { key: "freelance",    label: "Freelance",    code: "FR", color: "#34d399" },
+  { key: "investment",   label: "Investment",   code: "IN", color: "#818cf8" },
+  { key: "gift",         label: "Gift",         code: "GF", color: "#a78bfa" },
+  { key: "other_income", label: "Other Income", code: "OI", color: "#6b6b85" },
 ];
 
 const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
@@ -163,7 +163,7 @@ function AddTransactionForm({ onAdd }: { onAdd: (t: Transaction) => void }) {
   return (
     <div className="uf-card" style={{ marginBottom: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div style={{ fontWeight: 700, fontSize: 16 }}>➕ Add Transaction</div>
+        <div style={{ fontWeight: 700, fontSize: 16 }}>Add Transaction</div>
         <div style={{ display: "flex", background: "#e8e8f0", borderRadius: 8, padding: 3, gap: 2 }}>
           {(["expense", "income"] as const).map((t) => (
             <button
@@ -189,7 +189,7 @@ function AddTransactionForm({ onAdd }: { onAdd: (t: Transaction) => void }) {
                 fontFamily: "inherit",
               }}
             >
-              {t === "expense" ? "💸 Expense" : "📥 Income"}
+              {t === "expense" ? "Expense" : "Income"}
             </button>
           ))}
         </div>
@@ -234,8 +234,8 @@ function AddTransactionForm({ onAdd }: { onAdd: (t: Transaction) => void }) {
       <div style={{ marginBottom: 12 }}>
         <div style={{ color: "#9090a8", fontSize: 12, marginBottom: 6 }}>
           Description
-          {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontSize: 11 }}>✨ AI categorizing...</span>}
-          {aiUsed && !categorizing && <span style={{ color: "#22d3a5", marginLeft: 8, fontSize: 11 }}>✨ AI categorized</span>}
+          {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontSize: 11 }}>AI categorizing...</span>}
+          {aiUsed && !categorizing && <span style={{ color: "#22d3a5", marginLeft: 8, fontSize: 11 }}>AI categorized</span>}
         </div>
         <input
           type="text"
@@ -283,7 +283,7 @@ function AddTransactionForm({ onAdd }: { onAdd: (t: Transaction) => void }) {
         {!isIncome ? (
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: isWorkRelated ? "#6366f1" : "#9090a8" }}>
             <input type="checkbox" checked={isWorkRelated} onChange={(e) => setIsWorkRelated(e.target.checked)} style={{ accentColor: "#6366f1" }} />
-            💼 Work expense
+            Work expense
           </label>
         ) : (
           <div />
@@ -316,7 +316,7 @@ function TransactionList({ transactions, onDelete }: { transactions: Transaction
   if (transactions.length === 0) {
     return (
       <div className="uf-card" style={{ textAlign: "center", padding: "48px 24px" }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>📋</div>
+        <div style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9090a8", marginBottom: 16 }}>Transactions</div>
         <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>No transactions yet</div>
         <div style={{ color: "#9090a8", fontSize: 14 }}>Add your first transaction above — AI will categorize it automatically</div>
       </div>
@@ -356,13 +356,13 @@ function TransactionList({ transactions, onDelete }: { transactions: Transaction
                   return (
                     <div key={txn.id} className="uf-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
                       <div style={{ width: 36, height: 36, borderRadius: 10, background: `${cat?.color || "#6b6b85"}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-                        {cat?.label.split(" ")[0] || (isIncome ? "📥" : "📦")}
+                        {cat?.code || (isIncome ? "IN" : "EX")}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 3 }}>{txn.description}</div>
                         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                           <span style={{ color: cat?.color || "#6b6b85", fontSize: 11, fontWeight: 600 }}>{cat?.label || txn.category}</span>
-                          {txn.is_work_related && <span style={{ background: "rgba(99,102,241,0.15)", color: "#6366f1", borderRadius: 4, padding: "1px 6px", fontSize: 11 }}>💼 work</span>}
+                          {txn.is_work_related && <span style={{ background: "rgba(99,102,241,0.15)", color: "#6366f1", borderRadius: 4, padding: "1px 6px", fontSize: 11 }}>work</span>}
                           {txn.tags?.map((t) => (
                             <span key={t} style={{ background: "rgba(249,115,22,0.1)", color: "#f97316", borderRadius: 4, padding: "1px 6px", fontSize: 11 }}>
                               #{t}
@@ -425,7 +425,7 @@ function MonthlySummary({
   return (
     <div className="uf-card" style={{ marginBottom: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div style={{ fontWeight: 700, fontSize: 16 }}>📊 {monthLabel}</div>
+        <div style={{ fontWeight: 700, fontSize: 16 }}>{monthLabel}</div>
         <div style={{ display: "flex", gap: 4 }}>
           <button
             onClick={onPrevMonth}
@@ -464,7 +464,7 @@ function MonthlySummary({
             </div>
             {workTotal > 0 && (
               <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12, padding: "14px 16px" }}>
-                <div style={{ color: "#6366f1", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>💼 Work</div>
+                <div style={{ color: "#6366f1", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Work</div>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 700, color: "#6366f1" }}>{fmt(workTotal)}</div>
               </div>
             )}
