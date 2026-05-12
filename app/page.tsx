@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -25,37 +25,164 @@ import CityScreen, { type CityState } from "@/app/components/landing/CityScreen"
 
 function fmtUSD(n: number) {
   return "$" + Math.round(n).toLocaleString();
-            </div>
+}
+
+type IncomeMode = "annual" | "monthly" | "biweekly" | "hourly" | "takehome";
+
+const INCOME_MODES: { key: IncomeMode; label: string; unit: string; hint: string }[] = [
+  { key: "annual", label: "Annual", unit: "/yr", hint: "Before-tax yearly salary or compensation." },
+  { key: "monthly", label: "Monthly", unit: "/mo", hint: "Gross monthly income before taxes." },
+  { key: "biweekly", label: "Bi-weekly", unit: "/check", hint: "Amount per paycheck if paid every 2 weeks." },
+  { key: "hourly", label: "Hourly", unit: "/hr", hint: "Hourly gross wage (assuming 40h/week)." },
+  { key: "takehome", label: "Take-home", unit: "/mo", hint: "Use the amount that lands in your bank each month." },
+];
+
+function toAnnualGross(value: number, mode: IncomeMode): number {
+  switch (mode) {
+    case "annual":
+      return value;
+    case "monthly":
+      return value * 12;
+    case "biweekly":
+      return value * 26;
+    case "hourly":
+      return value * 2080;
+    case "takehome":
+      return 0;
+    default:
+      return value;
+  }
+}
+
+function IncomeScreen({ stateKey, onNext, onBack }: {
+  stateKey: string;
+  onNext: (income: number) => void;
+  onBack: () => void;
+}) {
+  const isCustomJurisdiction = stateKey === "custom";
+  const [mode, setMode] = useState<IncomeMode>(isCustomJurisdiction ? "takehome" : "annual");
+  const [rawValue, setRawValue] = useState<string>("90000");
+  const [takeHomeRaw, setTakeHomeRaw] = useState<string>("");
+
+  const numVal = parseFloat(rawValue) || 0;
+  const annualGross = mode === "takehome" ? 0 : toAnnualGross(numVal, mode);
+  const monthlyTakeHome = mode === "takehome" ? parseFloat(takeHomeRaw) || 0 : 0;
+  const annualTakeHome = monthlyTakeHome * 12;
+  const tax = mode !== "takehome" ? calcTakeHome(annualGross, stateKey) : null;
+
+  const displayGross = mode === "takehome" ? null : annualGross;
+  const displayTakeHome = mode === "takehome" ? annualTakeHome : (tax?.takeHome ?? 0);
+  const displayMonthly = displayTakeHome / 12;
+  const displayHourly = displayTakeHome / 2080;
+  const displayEffRate = mode === "takehome" ? null : (tax?.effectiveRate ?? 0);
+
+  const incomeForFIRE = mode === "takehome" ? annualTakeHome : (tax?.takeHome ?? 0);
+  const canContinue = mode === "takehome" ? monthlyTakeHome > 0 : annualGross > 0;
+
+  return (
+    <div className="uf-screen">
+      <WizardProgress step={2} />
+      <p className="uf-step-label">Step 3 of 4</p>
+      <div className="uf-eyebrow">Income</div>
+      <h2 className="uf-h2">What do you <span className="uf-accent">earn?</span></h2>
+      <p className="uf-body" style={{ marginBottom: 24 }}>
+        Enter however your pay is structured. We&apos;ll handle the conversion.
+      </p>
+
+      <div className="uf-mode-pills">
+        {INCOME_MODES.map((m) => {
+          const disabled = isCustomJurisdiction && m.key !== "takehome";
+          return (
+            <button
+              key={m.key}
+              className={`uf-mode-pill ${mode === m.key ? "active" : ""}`}
+              disabled={disabled}
+              style={disabled ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+              onClick={() => {
+                if (disabled) return;
+                setMode(m.key);
+                setRawValue("");
+              }}
+            >
+              {m.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="uf-hint" style={{ marginBottom: 16 }}>
+        {isCustomJurisdiction
+          ? "Custom city: tax jurisdiction is unknown, so enter your monthly take-home directly."
+          : INCOME_MODES.find((m) => m.key === mode)?.hint}
+      </p>
+
+      {mode !== "takehome" ? (
+        <>
+          <label className="uf-label">Gross income</label>
+          <div className="uf-big-input-wrap">
+            <span className="uf-input-prefix uf-big-prefix">$</span>
+            <input
+              key={mode}
+              type="number"
+              className="uf-input uf-input-mono uf-input-big"
+              style={{ paddingLeft: 28 }}
+              value={rawValue}
+              min={0}
+              onChange={(e) => setRawValue(e.target.value)}
+              autoFocus
+            />
+            <span className="uf-unit">{INCOME_MODES.find((m) => m.key === mode)?.unit}</span>
           </div>
-          <div className="uf-card uf-card-accent" style={{ marginTop: 12 }}>
-            <div className="uf-card-sub">Your <strong>real hourly rate</strong> after all taxes</div>
-            <div className="uf-hourly">{displayHourly.toFixed(2)}/hr</div>
-            <div className="uf-card-hint">Based on 2,080 working hours/yr</div>
+        </>
+      ) : (
+        <>
+          <label className="uf-label">Monthly take-home income</label>
+          <div className="uf-big-input-wrap">
+            <span className="uf-input-prefix uf-big-prefix">$</span>
+            <input
+              type="number"
+              className="uf-input uf-input-mono uf-input-big"
+              style={{ paddingLeft: 28 }}
+              value={takeHomeRaw}
+              min={0}
+              onChange={(e) => setTakeHomeRaw(e.target.value)}
+              autoFocus
+            />
+            <span className="uf-unit">/month</span>
           </div>
         </>
       )}
 
-      {/* Take-home mode note */}
-      {mode === 'takehome' && canContinue && (
-        <div className="uf-card" style={{ marginTop: 14, background: 'var(--teal-dim)', borderColor: 'rgba(34,211,165,0.2)' }}>
-          <div className="uf-tax-row" style={{ fontWeight: 500 }}>
-            <span>Annual take-home (estimated)</span>
-            <span className="uf-mono" style={{ color: 'var(--teal)' }}>{fmtUSD(annualTakeHome)}</span>
+      <div className="uf-stats-grid" style={{ marginTop: 16 }}>
+        {displayGross !== null ? (
+          <div className="uf-card">
+            <div className="uf-card-sub">Annual gross</div>
+            <div className="uf-card-main">{fmtUSD(displayGross)}</div>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6 }}>
-            Tax breakdown skipped -using your real take-home directly. Most accurate option if our tax estimate felt off.
-          </div>
+        ) : null}
+        <div className="uf-card">
+          <div className="uf-card-sub">Annual take-home</div>
+          <div className="uf-card-main">{fmtUSD(displayTakeHome)}</div>
         </div>
-      )}
+        <div className="uf-card">
+          <div className="uf-card-sub">Monthly take-home</div>
+          <div className="uf-card-main">{fmtUSD(displayMonthly)}</div>
+        </div>
+        {displayEffRate !== null ? (
+          <div className="uf-card">
+            <div className="uf-card-sub">Effective tax rate</div>
+            <div className="uf-card-main">{displayEffRate.toFixed(1)}%</div>
+          </div>
+        ) : null}
+        <div className="uf-card uf-card-accent">
+          <div className="uf-card-sub">Hourly take-home</div>
+          <div className="uf-hourly">{displayHourly.toFixed(2)}/hr</div>
+          <div className="uf-card-hint">Based on 2,080 working hours/yr</div>
+        </div>
+      </div>
 
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button
-          className="uf-btn uf-btn-primary"
-          style={{ flex: 1 }}
-          disabled={!canContinue}
-          onClick={() => onNext(incomeForFIRE)}
-        >
+        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} disabled={!canContinue} onClick={() => onNext(incomeForFIRE)}>
           Continue {"->"}
         </button>
       </div>
@@ -68,8 +195,8 @@ function fmtUSD(n: number) {
 // -----------------------------------------------------------------------------
 
 // income is now always annual take-home (already post-tax) from IncomeScreen
-function SavingsScreen({ income, stateKey, onNext, onBack }: {
-  income: number; stateKey: string;
+function SavingsScreen({ income, onNext, onBack }: {
+  income: number;
   onNext: (savings: number, currentAge?: number) => void;
   onBack: () => void;
 }) {
@@ -167,7 +294,7 @@ function SavingsScreen({ income, stateKey, onNext, onBack }: {
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
         <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(savings, parsedAge)}>
-          Show my FIRE number [fire]
+          Show my FIRE number
         </button>
       </div>
     </div>
@@ -177,73 +304,6 @@ function SavingsScreen({ income, stateKey, onNext, onBack }: {
 // -----------------------------------------------------------------------------
 // WAITLIST INLINE -shown on reveal screen
 // -----------------------------------------------------------------------------
-
-function WaitlistInline({ fireTarget, retireYear }: { fireTarget: number; retireYear: number }) {
-  const [email, setEmail]   = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-
-  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  async function handleSubmit() {
-    if (!isValid || status === "loading") return;
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, fireTarget, retireYear }),
-      });
-      setStatus(res.ok ? "done" : "error");
-    } catch {
-      setStatus("error");
-    }
-  }
-
-  if (status === "done") {
-    return (
-      <div className="uf-wl-inline uf-wl-done">
-        <span style={{ fontSize: 18 }}>&#x2713;</span>
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 14, color: "var(--teal)" }}>You&apos;re on the list</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>We&apos;ll email you when the FIRE adviser launches.</div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="uf-wl-inline">
-      <div className="uf-wl-inline-head">
-        <div className="uf-wl-inline-title">Get early access to the FIRE adviser</div>
-        <div className="uf-wl-inline-sub">
-          Tells you exactly what to do each month to reach {fmtUSD(fireTarget)} by {retireYear}. Launching at $9/mo.
-        </div>
-      </div>
-      <div className="uf-wl-inline-form">
-        <input
-          type="email"
-          className="uf-input"
-          style={{ flex: 1, fontSize: 14, padding: "11px 14px" }}
-          placeholder="your@email.com"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleSubmit()}
-        />
-        <button
-          className="uf-btn uf-btn-primary"
-          style={{ whiteSpace: "nowrap", padding: "11px 20px", fontSize: 14, opacity: status === "loading" ? 0.6 : 1 }}
-          disabled={!isValid || status === "loading"}
-          onClick={handleSubmit}
-        >
-          {status === "loading" ? "Joining..." : "Join waitlist"}
-        </button>
-      </div>
-      {status === "error" && (
-        <p style={{ fontSize: 12, color: "var(--danger)", marginTop: 6 }}>Something went wrong. Try again.</p>
-      )}
-    </div>
-  );
-}
 
 // -----------------------------------------------------------------------------
 // SHARE MODAL
@@ -285,7 +345,7 @@ function ShareModal({
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="uf-share-modal">
-        <button className="uf-share-close" onClick={onClose} aria-label="Close">¡Á</button>
+        <button className="uf-share-close" onClick={onClose} aria-label="Close">Ã—</button>
 
         <div className="uf-share-heading">Share this discovery</div>
 
@@ -607,6 +667,7 @@ function RevealScreen({ city, income, savings, stateKey, fireGoal, currentAge, o
       stateKey,
       fireGoal,
       fireTarget: result.fireTarget,
+      annualCost: city.col,
       retireYear: result.retireYear,
       generatedAt: new Date().toISOString(),
     });
@@ -1175,7 +1236,6 @@ export default function Home() {
         {screen === "savings" && (
           <SavingsScreen
             income={income}
-            stateKey={cityState?.stateKey ?? "custom"}
             onNext={(sav, age) => { setSavings(sav); setCurrentAge(age); setScreen("reveal"); }}
             onBack={() => setScreen("income")}
           />
@@ -1198,5 +1258,3 @@ export default function Home() {
     </>
   );
 }
-
-

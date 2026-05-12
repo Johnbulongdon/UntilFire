@@ -4,6 +4,7 @@ export type CalculatorPrefill = {
   monthlyIncome?: number
   monthlySavings?: number
   monthlySpendEstimate?: number
+  annualCost?: number
   cityName?: string
   stateKey?: string
   fireGoal?: string
