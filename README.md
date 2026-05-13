@@ -110,6 +110,68 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 
 The `claude/setup-gstack-locally-E87N1` branch is the active development branch.
 
+## Recent Updates
+
+| PR | Date | Description |
+|---|---|---|
+| #27 | May 2026 | Custom expense categories + sub-categories (localStorage); removed "Work expense" checkbox |
+| #26 | May 2026 | Fixed crash on Cashflow tab (missing `existingTags` prop in mobile drawer); fixed FX fallback overwrite |
+| #25 | May 2026 | Project/Event tag input in QuickAdd form — groups transactions across time periods |
+| #24 | May 2026 | `FALLBACK_RATES` constant seeds FX rates so conversion never silently breaks on API failure |
+| #23 | May 2026 | Multi-currency conversion in dashboard actuals KPIs and transaction day-net headers |
+| #22 | May 2026 | Cashflow sub-tabs (Cashflow / Categories / Recurring / Budgets); new CategoriesTab analytics |
+| #21 | May 2026 | Two-pane cashflow layout; flat 7-item sidebar; Learning Hub tab |
+
+---
+
+## Current State
+
+**What works end-to-end:**
+- `/dashboard` — full FIRE dashboard, login-gated, redirects to `/login` if no session
+- **Cashflow tab → Cashflow sub-tab** — two-pane QuickAdd + transaction list; AI categorisation; multi-currency; Project/Event tags; custom categories/sub-categories; edit/delete with undo toast
+- **Cashflow tab → Categories sub-tab** — monthly spend by category (expandable, sub-cat breakdown, project breakdown); by-project/event section
+- **Cashflow tab → Budgets sub-tab** — budget bars (budget vs actual per category)
+- **Assets/Liabilities/FIRE Calculator tabs** — input forms + projection chart + Monte Carlo simulation
+- **Multi-currency** — transactions stored in any currency; auto-converted to USD using live Frankfurter API rates; fallback hardcoded rates if API fails
+- **Custom categories** — stored in `localStorage` key `uf_custom_cats`; custom sub-categories in `uf_custom_subcats`; both are device-local only
+
+**Placeholder / incomplete:**
+- **Cashflow → Recurring sub-tab** — "coming soon" placeholder, no logic
+- **Reports tab** — "coming soon" placeholder, no logic
+- **Stripe / Pro tier** — schema exists (`subscriptions` table, `isPro()` helper in `lib/supabase.ts`) but no paywall enforced in UI; Stripe webhook route exists at `app/api/stripe/webhook/route.ts`
+- **Learning Hub** — static links only, no content management
+
+**Known technical debt:**
+- AI categorisation in `TransactionsTab.tsx` calls Anthropic API client-side with a hardcoded API key placeholder — no key is set in env, so it silently falls back to `"other"` for all descriptions
+- Custom categories are device-local (localStorage), not synced across devices via Supabase
+- `is_work_related` field: checkbox removed from form but field still written as `false` on every save; old transactions with `true` show a "work" pill in the list
+
+---
+
+## Pending Work
+
+Priority order based on `docs/ROADMAP.md` Phase 2 goals:
+
+**High priority (Phase 2 distribution):**
+- [ ] Share my FIRE number — native share card + clipboard copy (social growth driver)
+- [ ] Add existing savings input to landing calculator (current portfolio balance)
+- [ ] Stripe $9/mo Pro tier — checkout flow, paywall on AI features, Stripe webhook already scaffolded
+- [ ] Email onboarding sequence (Resend: Day 1 / Day 3 / Day 7)
+- [ ] Reddit launch (r/financialindependence weekly promo thread — see `docs/LAUNCH_POSTS.md`)
+
+**Product improvements:**
+- [ ] Recurring transactions — auto-detect and display repeating expenses
+- [ ] Reports tab — monthly summaries, spending trends
+- [ ] Mobile UX audit — Cashflow QuickAdd form is hidden on mobile behind bottom drawer; verify UX
+- [ ] Migrate custom categories to Supabase for cross-device sync
+- [ ] Fix AI categorisation — wire `ANTHROPIC_API_KEY` env var or move to a server route
+
+**SEO / growth:**
+- [ ] First 5 city landing pages (`/fire-number/austin-tx`, `/fire-number/london`, etc.)
+- [ ] Product Hunt launch
+
+---
+
 ## Making UI changes safely
 
 1. Run `npm run dev` locally and verify the change in the browser before pushing.
