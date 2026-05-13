@@ -9,6 +9,7 @@ const EXPENSE_CATEGORIES = [
   { key: "food",          label: "Food",          code: "FD", color: "#f97316" },
   { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5" },
   { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8" },
+  { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9" },
   { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa" },
   { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444" },
   { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24" },
@@ -16,6 +17,18 @@ const EXPENSE_CATEGORIES = [
   { key: "work",          label: "Work",          code: "WK", color: "#6366f1" },
   { key: "other",         label: "Other",         code: "OT", color: "#6b7280" },
 ];
+
+const SUB_CATEGORIES: Record<string, string[]> = {
+  travel:        ["Hotels", "Flights", "Food & Drink", "Transport", "Activities", "Shopping", "Other"],
+  food:          ["Groceries", "Restaurants", "Coffee", "Takeout", "Alcohol", "Other"],
+  transport:     ["Gas", "Parking", "Public Transit", "Ride Share", "Car Maintenance", "Other"],
+  housing:       ["Rent/Mortgage", "Utilities", "Insurance", "Maintenance", "Furnishing", "Other"],
+  subscriptions: ["Streaming", "Software", "Gym", "News", "Health", "Other"],
+  healthcare:    ["Doctor", "Pharmacy", "Dental", "Vision", "Mental Health", "Other"],
+  entertainment: ["Movies", "Events", "Sports", "Games", "Hobbies", "Other"],
+  shopping:      ["Clothing", "Electronics", "Home Goods", "Gifts", "Beauty", "Other"],
+  work:          ["Equipment", "Software", "Travel", "Training", "Meals", "Other"],
+};
 
 const INCOME_CATEGORIES = [
   { key: "salary",       label: "Salary",     code: "SA", color: "#22d3a5" },
@@ -59,6 +72,7 @@ type Transaction = {
   tags: string[];
   is_work_related: boolean;
   transaction_type: "expense" | "income";
+  sub_category: string | null;
 };
 
 type DraftTransaction = {
@@ -69,6 +83,7 @@ type DraftTransaction = {
   description: string;
   date: string;
   category: string;
+  sub_category: string;
   tags: string[];
   is_work_related: boolean;
   aiSuggestion: string | null;
@@ -82,6 +97,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   description: "",
   date: new Date().toISOString().split("T")[0],
   category: "",
+  sub_category: "",
   tags: [],
   is_work_related: false,
   aiSuggestion: null,
@@ -95,7 +111,7 @@ async function aiCategorize(
   const categories =
     type === "income"
       ? "salary, freelance, investment, gift, other_income"
-      : "food, transport, housing, subscriptions, healthcare, entertainment, shopping, work, other";
+      : "food, transport, housing, travel, subscriptions, healthcare, entertainment, shopping, work, other";
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -226,7 +242,7 @@ function QuickAddForm({
           {(["expense", "income"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setDraft((d) => ({ ...d, transaction_type: t, category: t === "income" ? "salary" : "", aiSuggestion: null }))}
+              onClick={() => setDraft((d) => ({ ...d, transaction_type: t, category: t === "income" ? "salary" : "", sub_category: "", aiSuggestion: null }))}
               style={{
                 background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : "#fff") : "transparent",
                 color: draft.transaction_type === t ? (t === "income" ? "#047857" : "#19181E") : "#64748B",
@@ -284,7 +300,7 @@ function QuickAddForm({
             type="text"
             placeholder={isIncome ? "e.g. Monthly salary, Freelance…" : "e.g. Whole Foods, Uber…"}
             value={draft.description}
-            onChange={(e) => { setField("description", e.target.value); setField("aiSuggestion", null); setField("category", ""); }}
+            onChange={(e) => { setField("description", e.target.value); setField("aiSuggestion", null); setField("category", ""); setField("sub_category", ""); }}
             onBlur={handleDescriptionBlur}
             style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
           />
@@ -342,7 +358,7 @@ function QuickAddForm({
                   <button
                     key={c.key}
                     type="button"
-                    onClick={() => setField("category", c.key)}
+                    onClick={() => { setField("category", c.key); setField("sub_category", ""); }}
                     style={{
                       background: isSelected ? "#ECFDF5" : "transparent",
                       border: `1px solid ${isSelected ? "#047857" : "#E2E8F0"}`,
@@ -353,6 +369,34 @@ function QuickAddForm({
                   >
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>{c.code}</div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "#64748B", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Sub-category picker */}
+        {!isIncome && draft.category && SUB_CATEGORIES[draft.category] && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>
+              Sub-Category <span style={{ color: "#94A3B8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {SUB_CATEGORIES[draft.category].map((sc) => {
+                const isSelected = draft.sub_category === sc;
+                return (
+                  <button key={sc} type="button"
+                    onClick={() => setField("sub_category", isSelected ? "" : sc)}
+                    style={{
+                      background: isSelected ? "#ECFDF5" : "#F1F5F9",
+                      border: `1px solid ${isSelected ? "#047857" : "transparent"}`,
+                      borderRadius: 999, padding: "5px 12px",
+                      fontSize: 12, fontWeight: 600,
+                      color: isSelected ? "#047857" : "#64748B",
+                      cursor: "pointer", fontFamily: "inherit",
+                    }}>
+                    {sc}
                   </button>
                 );
               })}
@@ -587,6 +631,7 @@ function TransactionList({
                           <div style={{ fontSize: 14, fontWeight: 600, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
                             <span style={{ fontSize: 11.5, color: "#94A3B8" }}>{cat?.label || tx.category}</span>
+                            {tx.sub_category && <span style={{ fontSize: 11, color: "#64748B" }}>· {tx.sub_category}</span>}
                             {tx.is_work_related && <span style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1", borderRadius: 4, padding: "1px 6px", fontSize: 10.5, fontWeight: 600 }}>work</span>}
                             {(tx.tags || []).slice(0, 2).map((t) => (
                               <span key={t} style={{ background: "#F1F5F9", color: "#64748B", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
@@ -904,6 +949,7 @@ export default function TransactionsTab() {
       currency: draft.currency,
       description: draft.description,
       category: draft.category || (draft.transaction_type === "income" ? "other_income" : "other"),
+      sub_category: draft.sub_category || null,
       tags: draft.tags,
       is_work_related: draft.is_work_related,
       transaction_type: draft.transaction_type,
@@ -930,7 +976,7 @@ export default function TransactionsTab() {
         if (!keepOpen) {
           setDraft(EMPTY_DRAFT());
         } else {
-          setDraft((d) => ({ ...EMPTY_DRAFT(), date: d.date, transaction_type: d.transaction_type, currency: d.currency }));
+          setDraft((d) => ({ ...EMPTY_DRAFT(), date: d.date, transaction_type: d.transaction_type, currency: d.currency, sub_category: "" }));
         }
         if (drawerOpen && !keepOpen) setDrawerOpen(false);
       }
@@ -947,6 +993,7 @@ export default function TransactionsTab() {
       description: tx.description,
       date: tx.date,
       category: tx.category,
+      sub_category: tx.sub_category || "",
       tags: [...(tx.tags || [])],
       is_work_related: tx.is_work_related,
       aiSuggestion: null,

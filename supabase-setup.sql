@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   description      TEXT NOT NULL DEFAULT '',
   category         TEXT NOT NULL DEFAULT 'other',
   tags             TEXT[] NOT NULL DEFAULT '{}',
+  sub_category     TEXT DEFAULT NULL,
   is_work_related  BOOLEAN NOT NULL DEFAULT FALSE,
   transaction_type TEXT NOT NULL DEFAULT 'expense'
     CHECK (transaction_type IN ('expense', 'income')),
