@@ -8,6 +8,7 @@ import {
   ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
+import CategoriesTab from "./CategoriesTab";
 import { monteCarloFIRE } from "@/lib/fire";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1211,6 +1212,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
+  const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "budgets">("cashflow");
 
   // Read initial tab from URL query string (e.g. ?tab=cashflow)
   useEffect(() => {
@@ -1398,11 +1400,38 @@ export default function Dashboard() {
               />
             )}
             {tab === "cashflow" && (
-              <>
-                <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} />
-                <div style={{ borderTop: "1px solid #E2E8F0", margin: "32px 0" }} />
-                <TransactionsTab />
-              </>
+              <div>
+                {/* Cashflow sub-tab nav */}
+                <div style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
+                  {(["cashflow", "categories", "recurring", "budgets"] as const).map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setCashflowSubTab(t)}
+                      style={{
+                        background: "none", border: "none", padding: "0 0 14px",
+                        fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                        letterSpacing: "-0.3px", marginBottom: -1,
+                        color: cashflowSubTab === t ? "#047857" : "#64748B",
+                        borderBottom: `2px solid ${cashflowSubTab === t ? "#047857" : "transparent"}`,
+                      }}
+                    >
+                      {t === "cashflow" ? "Cashflow" : t === "categories" ? "Categories" : t === "recurring" ? "Recurring" : "Budgets"}
+                    </button>
+                  ))}
+                </div>
+                {cashflowSubTab === "cashflow" && <TransactionsTab />}
+                {cashflowSubTab === "categories" && <CategoriesTab />}
+                {cashflowSubTab === "recurring" && (
+                  <div style={{ textAlign: "center", padding: "80px 24px", color: "#64748B" }}>
+                    <div style={{ fontSize: 40, marginBottom: 16 }}>🔄</div>
+                    <div style={{ fontWeight: 700, fontSize: 20, color: "#19181E", marginBottom: 8 }}>Recurring transactions coming soon</div>
+                    <div style={{ fontSize: 14 }}>Auto-detect and track bills, subscriptions, and regular income here.</div>
+                  </div>
+                )}
+                {cashflowSubTab === "budgets" && (
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} />
+                )}
+              </div>
             )}
             {tab === "assets" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
