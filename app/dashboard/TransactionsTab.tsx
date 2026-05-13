@@ -31,6 +31,12 @@ const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CNY", "AUD", "CAD", "SGD", "HKD
 const fmt = (n: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
 
+const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
+  if (!currency || currency === "USD") return amount;
+  const rate = rates[currency];
+  return rate ? amount / rate : amount;
+};
+
 type Transaction = {
   id: string;
   date: string;
@@ -396,12 +402,14 @@ function MonthlySummary({
   onPrevMonth,
   onNextMonth,
   budgetExpenses,
+  rates,
 }: {
   transactions: Transaction[];
   viewMonth: string;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   budgetExpenses: Record<string, number> | null;
+  rates: Record<string, number>;
 }) {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -410,14 +418,17 @@ function MonthlySummary({
   const monthLabel = new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   const monthTxns = transactions.filter((t) => t.date.startsWith(viewMonth));
-  const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + t.amount, 0);
-  const expenseTotal = monthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + t.amount, 0);
+  const currencies = [...new Set(monthTxns.map((t) => t.currency).filter(Boolean))];
+  const isMixed = currencies.length > 1;
+
+  const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const expenseTotal = monthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const net = incomeTotal - expenseTotal;
-  const workTotal = monthTxns.filter((t) => t.is_work_related).reduce((s, t) => s + t.amount, 0);
+  const workTotal = monthTxns.filter((t) => t.is_work_related).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
 
   const byCat = EXPENSE_CATEGORIES.map((cat) => ({
     ...cat,
-    total: monthTxns.filter((t) => t.transaction_type !== "income" && t.category === cat.key).reduce((s, t) => s + t.amount, 0),
+    total: monthTxns.filter((t) => t.transaction_type !== "income" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
   }))
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
@@ -447,6 +458,11 @@ function MonthlySummary({
         <div style={{ textAlign: "center", padding: "32px 0", color: "#94A3B8", fontSize: 14 }}>No transactions for this month</div>
       ) : (
         <>
+          {isMixed && (
+            <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 10 }}>
+              Totals converted to USD · live rates
+            </div>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: workTotal > 0 ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
             <div style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px" }}>
               <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Income</div>
@@ -528,8 +544,14 @@ export default function TransactionsTab() {
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
   const [budgetExpenses, setBudgetExpenses] = useState<Record<string, number> | null>(null);
+  const [rates, setRates] = useState<Record<string, number>>({});
 
   useEffect(() => {
+    fetch("https://api.frankfurter.app/latest?from=USD")
+      .then(r => r.json())
+      .then(d => setRates(d.rates ?? {}))
+      .catch(() => {});
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
       supabase
@@ -588,6 +610,7 @@ export default function TransactionsTab() {
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         budgetExpenses={budgetExpenses}
+        rates={rates}
       />
       <AddTransactionForm onAdd={handleAdd} />
       <TransactionList transactions={transactions} onDelete={handleDelete} />
