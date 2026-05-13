@@ -58,7 +58,7 @@ export default function SavingsRateCalculator() {
   const [expenses, setExpenses] = useState('50000')
   const [currentSavings, setCurrentSavings] = useState('20000')
 
-  const { sr, monthlySaved, annualSaved, years, table } = useMemo(() => {
+  const { sr, monthlySaved, years, table } = useMemo(() => {
     const inc = parseFloat(income) || 0
     const exp = parseFloat(expenses) || 0
     const saved = parseFloat(currentSavings) || 0

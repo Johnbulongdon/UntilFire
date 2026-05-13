@@ -55,7 +55,7 @@ function calcFIREProjection({
   mortgageBalance,
   mortgageMonthlyPayment,
   growthRate = 0.07,
-  inflationRate = 0.03,
+  inflationRate: _inflationRate = 0.03,
   withdrawalRate = 0.04,
   years = 50,
 }) {

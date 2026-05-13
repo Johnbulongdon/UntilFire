@@ -188,7 +188,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
   const base = useMemo(() => {
     if (fireTarget <= 0 || income <= 0) return null;
     return monteCarloFIRE({ initialInvestable: investable, annualSavings, fireTarget, meanReturn: growthRate });
-  }, [investable, annualSavings, fireTarget, growthRate]);
+  }, [investable, annualSavings, fireTarget, growthRate, income]);
 
   const delta = useMemo(() => {
     if (!base || extraSavings === 0) return null;
@@ -1021,7 +1021,8 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, growthRate, 
   );
 }
 
-// ─── Trends Tab ───────────────────────────────────────────────────────────────
+// ─── Trends Tab (kept for reference, not wired to sidebar) ───────────────────
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;

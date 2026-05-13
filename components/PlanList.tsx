@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabase'
 import { useEffect, useState } from 'react'
-import { Calendar, TrendingUp, Target, Edit, Trash2, ExternalLink, Check, X, Download, BarChart3, Trash, CheckSquare, Square } from 'lucide-react'
+import { Calendar, Target, Edit, Trash2, ExternalLink, Check, X, Download, BarChart3, Trash, CheckSquare } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import toast from 'react-hot-toast'
 
@@ -166,6 +166,7 @@ export default function PlanList({ onEdit }: PlanListProps) {
   useEffect(() => {
     setIsClient(true)
     fetchPlans()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   // Auto-exit selection mode when no items selected

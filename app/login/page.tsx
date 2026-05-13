@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -111,9 +112,9 @@ export default function LoginPage() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 24 }}>
-          <a href="/" style={{ fontSize: 13, color: '#64748B', textDecoration: 'none' }}>
+          <Link href="/" style={{ fontSize: 13, color: '#64748B', textDecoration: 'none' }}>
             ← Back to calculator
-          </a>
+          </Link>
         </div>
       </div>
     </div>
