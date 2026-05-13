@@ -30,6 +30,13 @@ const SUB_CATEGORIES: Record<string, string[]> = {
   work:          ["Equipment", "Software", "Travel", "Training", "Meals", "Other"],
 };
 
+const COLOR_PALETTE = [
+  "#f43f5e", "#f97316", "#eab308", "#84cc16", "#14b8a6",
+  "#0ea5e9", "#8b5cf6", "#ec4899", "#a855f7", "#6b7280",
+];
+
+type CustomCategory = { key: string; label: string; code: string; color: string };
+
 const INCOME_CATEGORIES = [
   { key: "salary",       label: "Salary",     code: "SA", color: "#22d3a5" },
   { key: "freelance",    label: "Freelance",  code: "FR", color: "#34d399" },
@@ -228,6 +235,11 @@ function QuickAddForm({
   editing,
   onCancelEdit,
   existingTags,
+  allExpenseCats,
+  allSubCats,
+  colorPalette,
+  onAddCategory,
+  onAddSubCategory,
 }: {
   draft: DraftTransaction;
   setDraft: React.Dispatch<React.SetStateAction<DraftTransaction>>;
@@ -235,13 +247,23 @@ function QuickAddForm({
   editing: boolean;
   onCancelEdit: () => void;
   existingTags: string[];
+  allExpenseCats: typeof EXPENSE_CATEGORIES;
+  allSubCats: Record<string, string[]>;
+  colorPalette: string[];
+  onAddCategory: (cat: CustomCategory) => void;
+  onAddSubCategory: (catKey: string, sub: string) => void;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const [categorizing, setCategorizing] = useState(false);
   const [saveAndAddAnother, setSaveAndAddAnother] = useState(true);
   const [saving, setSavingLocal] = useState(false);
+  const [showCatForm, setShowCatForm] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState("");
+  const [newCatColor, setNewCatColor] = useState(colorPalette[0]);
+  const [showSubForm, setShowSubForm] = useState(false);
+  const [newSubLabel, setNewSubLabel] = useState("");
 
-  const categories = draft.transaction_type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const categories = draft.transaction_type === "income" ? INCOME_CATEGORIES : allExpenseCats;
   const catInfo = ALL_CATEGORIES.find((c) => c.key === draft.category);
 
   const setField = useCallback(<K extends keyof DraftTransaction>(k: K, v: DraftTransaction[K]) => {
@@ -408,27 +430,16 @@ function QuickAddForm({
           </button>
         )}
 
-        {/* Date + Work expense */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Date</label>
-            <input
-              type="date"
-              value={draft.date}
-              max={new Date().toISOString().split("T")[0]}
-              onChange={(e) => setField("date", e.target.value)}
-              style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
-            />
-          </div>
-          {!isIncome && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Work expense</label>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", paddingTop: 10 }}>
-                <input type="checkbox" checked={draft.is_work_related} onChange={(e) => setField("is_work_related", e.target.checked)} style={{ accentColor: "#059669", width: 16, height: 16 }} />
-                <span style={{ fontSize: 13, color: draft.is_work_related ? "#059669" : "#64748B" }}>Yes</span>
-              </label>
-            </div>
-          )}
+        {/* Date */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Date</label>
+          <input
+            type="date"
+            value={draft.date}
+            max={new Date().toISOString().split("T")[0]}
+            onChange={(e) => setField("date", e.target.value)}
+            style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
+          />
         </div>
 
         {/* Category grid */}
@@ -442,7 +453,7 @@ function QuickAddForm({
                   <button
                     key={c.key}
                     type="button"
-                    onClick={() => { setField("category", c.key); setField("sub_category", ""); }}
+                    onClick={() => { setField("category", c.key); setField("sub_category", ""); setShowSubForm(false); }}
                     style={{
                       background: isSelected ? "#ECFDF5" : "transparent",
                       border: `1px solid ${isSelected ? "#047857" : "#E2E8F0"}`,
@@ -457,17 +468,83 @@ function QuickAddForm({
                 );
               })}
             </div>
+            {/* Add custom category */}
+            {!showCatForm ? (
+              <button
+                type="button"
+                onClick={() => setShowCatForm(true)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#94A3B8", padding: "2px 0", fontFamily: "inherit", textAlign: "left", alignSelf: "flex-start" }}
+              >
+                + Add category
+              </button>
+            ) : (
+              <div style={{ border: "1px solid #E2E8F0", borderRadius: 10, padding: "12px", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: 10 }}>
+                <input
+                  autoFocus
+                  placeholder="Category name"
+                  value={newCatLabel}
+                  onChange={(e) => setNewCatLabel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const label = newCatLabel.trim();
+                      if (!label) return;
+                      const key = label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+                      const code = label.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "CU";
+                      onAddCategory({ key, label, code, color: newCatColor });
+                      setField("category", key); setField("sub_category", "");
+                      setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]);
+                    }
+                    if (e.key === "Escape") { setShowCatForm(false); setNewCatLabel(""); }
+                  }}
+                  style={{ border: "1px solid #E2E8F0", borderRadius: 6, padding: "7px 10px", fontSize: 13, outline: "none", fontFamily: "inherit", background: "#fff" }}
+                />
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {colorPalette.map((c) => (
+                    <button
+                      key={c} type="button"
+                      onClick={() => setNewCatColor(c)}
+                      style={{ width: 22, height: 22, borderRadius: "50%", background: c, border: "none", cursor: "pointer", outline: newCatColor === c ? "2.5px solid #047857" : "2px solid transparent", outlineOffset: 2 }}
+                    />
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const label = newCatLabel.trim();
+                      if (!label) return;
+                      const key = label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+                      const code = label.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "CU";
+                      onAddCategory({ key, label, code, color: newCatColor });
+                      setField("category", key); setField("sub_category", "");
+                      setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]);
+                    }}
+                    style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowCatForm(false); setNewCatLabel(""); }}
+                    style={{ flex: 1, background: "#F1F5F9", color: "#64748B", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Sub-category picker */}
-        {!isIncome && draft.category && SUB_CATEGORIES[draft.category] && (
+        {!isIncome && draft.category && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>
               Sub-Category <span style={{ color: "#94A3B8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {SUB_CATEGORIES[draft.category].map((sc) => {
+              {(allSubCats[draft.category] || []).map((sc) => {
                 const isSelected = draft.sub_category === sc;
                 return (
                   <button key={sc} type="button"
@@ -484,6 +561,33 @@ function QuickAddForm({
                   </button>
                 );
               })}
+              {/* Add custom sub-category */}
+              {showSubForm ? (
+                <input
+                  autoFocus
+                  placeholder="New sub-category"
+                  value={newSubLabel}
+                  onChange={(e) => setNewSubLabel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const v = newSubLabel.trim();
+                      if (v) { onAddSubCategory(draft.category, v); setField("sub_category", v); }
+                      setNewSubLabel(""); setShowSubForm(false);
+                    }
+                    if (e.key === "Escape") { setShowSubForm(false); setNewSubLabel(""); }
+                  }}
+                  onBlur={() => { setShowSubForm(false); setNewSubLabel(""); }}
+                  style={{ border: "1px solid #E2E8F0", borderRadius: 999, padding: "5px 12px", fontSize: 12, outline: "none", fontFamily: "inherit", width: 150, background: "#fff" }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowSubForm(true)}
+                  style={{ background: "none", border: "1px dashed #CBD5E1", borderRadius: 999, padding: "5px 12px", fontSize: 12, color: "#94A3B8", cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  + Add
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1000,6 +1104,32 @@ export default function TransactionsTab() {
   const [budgetExpenses, setBudgetExpenses] = useState<Record<string, number> | null>(null);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
 
+  // Custom categories / sub-categories (persisted in localStorage)
+  const [customCats, setCustomCats] = useState<CustomCategory[]>(() => {
+    try { return JSON.parse(localStorage.getItem("uf_custom_cats") || "[]"); } catch { return []; }
+  });
+  const [customSubCats, setCustomSubCats] = useState<Record<string, string[]>>(() => {
+    try { return JSON.parse(localStorage.getItem("uf_custom_subcats") || "{}"); } catch { return {}; }
+  });
+  useEffect(() => { localStorage.setItem("uf_custom_cats", JSON.stringify(customCats)); }, [customCats]);
+  useEffect(() => { localStorage.setItem("uf_custom_subcats", JSON.stringify(customSubCats)); }, [customSubCats]);
+
+  const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
+  const allSubCats = useMemo(() => {
+    const merged: Record<string, string[]> = { ...SUB_CATEGORIES };
+    Object.entries(customSubCats).forEach(([k, extras]) => {
+      merged[k] = [...(merged[k] || []), ...extras];
+    });
+    return merged;
+  }, [customSubCats]);
+
+  const handleAddCategory = useCallback((cat: CustomCategory) => {
+    setCustomCats((prev) => [...prev, cat]);
+  }, []);
+  const handleAddSubCategory = useCallback((catKey: string, sub: string) => {
+    setCustomSubCats((prev) => ({ ...prev, [catKey]: [...(prev[catKey] || []), sub] }));
+  }, []);
+
   // Form state (lifted so edit can populate it)
   const [draft, setDraft] = useState<DraftTransaction>(EMPTY_DRAFT);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -1205,6 +1335,11 @@ export default function TransactionsTab() {
             editing={!!editingId}
             onCancelEdit={handleCancelEdit}
             existingTags={existingTags}
+            allExpenseCats={allExpenseCats}
+            allSubCats={allSubCats}
+            colorPalette={COLOR_PALETTE}
+            onAddCategory={handleAddCategory}
+            onAddSubCategory={handleAddSubCategory}
           />
         </div>
       </div>
@@ -1218,6 +1353,11 @@ export default function TransactionsTab() {
           editing={!!editingId}
           onCancelEdit={handleCancelEdit}
           existingTags={existingTags}
+          allExpenseCats={allExpenseCats}
+          allSubCats={allSubCats}
+          colorPalette={COLOR_PALETTE}
+          onAddCategory={handleAddCategory}
+          onAddSubCategory={handleAddSubCategory}
         />
       </MobileDrawer>
 

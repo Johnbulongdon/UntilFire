@@ -260,6 +260,12 @@ export default function CategoriesTab() {
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
 
+  // Merge built-in categories with any user-defined ones from localStorage
+  const [customCats] = useState<{ key: string; label: string; code: string; color: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem("uf_custom_cats") || "[]"); } catch { return []; }
+  });
+  const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
+
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then((r) => r.json())
@@ -296,7 +302,7 @@ export default function CategoriesTab() {
 
   // Primary category groups with sub-category + tag breakdowns
   const primaryGroups = useMemo(() => {
-    return EXPENSE_CATEGORIES
+    return allExpenseCats
       .map((cat) => {
         const catTxns = expTxns.filter((t) => t.category === cat.key);
         if (catTxns.length === 0) return null;
@@ -317,8 +323,8 @@ export default function CategoriesTab() {
 
         return { ...cat, total, subBreakdown, tagBreakdown };
       })
-      .filter(Boolean) as (typeof EXPENSE_CATEGORIES[0] & { total: number; subBreakdown: SubBreakdown[]; tagBreakdown: { tag: string; total: number }[] })[];
-  }, [expTxns, rates]);
+      .filter(Boolean) as ({ key: string; label: string; code: string; color: string } & { total: number; subBreakdown: SubBreakdown[]; tagBreakdown: { tag: string; total: number }[] })[];
+  }, [expTxns, rates, allExpenseCats]);
 
   // Project groups (by tag)
   const projectGroups = useMemo(() => {
