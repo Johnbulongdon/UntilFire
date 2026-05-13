@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import CategoriesTab from "./CategoriesTab";
+import RecurringTab from "./RecurringTab";
 import { monteCarloFIRE } from "@/lib/fire";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1519,13 +1520,7 @@ export default function Dashboard() {
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} />}
-                {cashflowSubTab === "recurring" && (
-                  <div style={{ textAlign: "center", padding: "80px 24px", color: "#64748B" }}>
-                    <div style={{ fontSize: 40, marginBottom: 16 }}>🔄</div>
-                    <div style={{ fontWeight: 700, fontSize: 20, color: "#19181E", marginBottom: 8 }}>Recurring transactions coming soon</div>
-                    <div style={{ fontSize: 14 }}>Auto-detect and track bills, subscriptions, and regular income here.</div>
-                  </div>
-                )}
+                {cashflowSubTab === "recurring" && <RecurringTab />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} />
                 )}
