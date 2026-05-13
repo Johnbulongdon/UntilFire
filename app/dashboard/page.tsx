@@ -40,6 +40,12 @@ const fmt = (n: number, compact = false) => {
   return "$" + Math.round(n).toLocaleString();
 };
 
+const toUSD = (amount: number, currency: string, rates: Record<string, number>) => {
+  if (!currency || currency === "USD") return amount;
+  const rate = rates[currency];
+  return rate ? amount / rate : amount;
+};
+
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable,
@@ -1240,25 +1246,34 @@ export default function Dashboard() {
   const [growthRate,      setGrowthRate]      = useState(0.07);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [actuals, setActuals] = useState<Record<string, number>>({});
+  const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string }[]>([]);
+  const [rates, setRates] = useState<Record<string, number>>({});
+  const actuals = useMemo(() => {
+    const agg: Record<string, number> = {};
+    rawActuals.forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(e.amount, e.currency, rates); });
+    return agg;
+  }, [rawActuals, rates]);
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoaded   = useRef(false);
 
   // Load from Supabase on mount
   useEffect(() => {
+    fetch("https://api.frankfurter.app/latest?from=USD")
+      .then(r => r.json())
+      .then(d => setRates(d.rates ?? {}))
+      .catch(() => {});
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { window.location.href = "/login"; return; }
       // Fetch current-month actuals from expenses table
       const nowD = new Date();
       const thisMonth = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}`;
-      supabase.from("expenses").select("category, amount")
+      supabase.from("expenses").select("category, amount, currency")
         .eq("user_id", session.user.id)
         .like("date", `${thisMonth}-%`)
         .then(({ data: expData }) => {
           if (expData) {
-            const agg: Record<string, number> = {};
-            expData.forEach(e => { agg[e.category] = (agg[e.category] || 0) + e.amount; });
-            setActuals(agg);
+            setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD" })));
           }
         });
       supabase.from("user_budget").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
