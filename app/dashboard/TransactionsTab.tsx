@@ -1268,12 +1268,14 @@ export default function TransactionsTab() {
   const handleUndo = useCallback(() => {
     if (!toast) return;
     if (toast._removed) {
-      // Re-insert
-      supabase.from("expenses").insert({ ...toast._removed }).then(({ data }) => {
-        if (data) setTransactions((prev) => [toast._removed!, ...prev]);
-        else setTransactions((prev) => [toast._removed!, ...prev]);
-      });
-      setTransactions((prev) => [toast._removed!, ...prev]);
+      // Re-insert: only update UI state after DB confirms success
+      supabase.from("expenses")
+        .insert({ ...toast._removed })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) setTransactions((prev) => [data as Transaction, ...prev]);
+        });
     } else if (toast.undoId && !toast.undoId.startsWith("undo:")) {
       // Undo add: delete the just-added transaction
       supabase.from("expenses").delete().eq("id", toast.undoId);

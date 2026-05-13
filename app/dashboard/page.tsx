@@ -183,9 +183,9 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
 }
 
 // ─── Monte Carlo Probability Card ─────────────────────────────────────────────
-function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, withdrawalRate }: {
+function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; growthRate: number; withdrawalRate: number;
+  taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number;
 }) {
   const [extraSavings, setExtraSavings] = useState(0);
 
@@ -196,7 +196,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
   const annualExpenses = monthlyExpenses * 12;
   const fireTarget     = annualExpenses / withdrawalRate;
   const annualSavings  = income * 12 - annualExpenses;
-  const investable     = k401 + rothIRA + taxable;
+  const investable     = k401 + rothIRA + taxable + cashSavings;
 
   const base = useMemo(() => {
     if (fireTarget <= 0 || income <= 0) return null;
@@ -455,7 +455,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       {/* Monte Carlo probability card */}
       <MonteCarloCard
         income={income} expenses={expenses}
-        k401={k401} rothIRA={rothIRA} taxable={taxable}
+        k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
         growthRate={growthRate} withdrawalRate={withdrawalRate}
       />
 
@@ -788,9 +788,9 @@ function UserNav() {
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
+function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; totalDebt: number; mortgageBalance: number;
+  taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
 }) {
   const monthlyExpenses = Object.entries(expenses)
@@ -799,11 +799,11 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
 
   const { fireYear, fireTarget } = useMemo(() => calcProjection({
     annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly,
+    k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
+  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
 
-  const investable = k401 + rothIRA + taxable;
+  const investable = k401 + rothIRA + taxable + cashSavings;
   const netWorth   = investable - totalDebt - mortgageBalance;
   const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
 
@@ -1071,9 +1071,9 @@ function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: nu
 }
 
 // ─── Simulations Tab ──────────────────────────────────────────────────────────
-function SimulationsTab({ income, expenses, k401, rothIRA, taxable, growthRate, withdrawalRate }: {
+function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; growthRate: number; withdrawalRate: number;
+  taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1083,7 +1083,7 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, growthRate, 
       </div>
       <MonteCarloCard
         income={income} expenses={expenses}
-        k401={k401} rothIRA={rothIRA} taxable={taxable}
+        k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
         growthRate={growthRate} withdrawalRate={withdrawalRate}
       />
     </div>
@@ -1282,6 +1282,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
 export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "budgets">("cashflow");
+  const [categoriesKey, setCategoriesKey] = useState(0);
 
   // Read initial tab from URL query string (e.g. ?tab=cashflow)
   useEffect(() => {
@@ -1503,7 +1504,7 @@ export default function Dashboard() {
                   {(["cashflow", "categories", "recurring", "budgets"] as const).map(t => (
                     <button
                       key={t}
-                      onClick={() => setCashflowSubTab(t)}
+                      onClick={() => { setCashflowSubTab(t); if (t === "categories") setCategoriesKey(k => k + 1); }}
                       style={{
                         background: "none", border: "none", padding: "0 0 14px",
                         fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
@@ -1517,7 +1518,7 @@ export default function Dashboard() {
                   ))}
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab />}
-                {cashflowSubTab === "categories" && <CategoriesTab />}
+                {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} />}
                 {cashflowSubTab === "recurring" && (
                   <div style={{ textAlign: "center", padding: "80px 24px", color: "#64748B" }}>
                     <div style={{ fontSize: 40, marginBottom: 16 }}>🔄</div>
@@ -1534,7 +1535,7 @@ export default function Dashboard() {
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 <PortfolioOverviewTab
                   income={income} expenses={expenses}
-                  k401={k401} rothIRA={rothIRA} taxable={taxable}
+                  k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                   mortgageMonthly={mortgageMonthly} growthRate={growthRate}
                   withdrawalRate={withdrawalRate}
@@ -1564,7 +1565,7 @@ export default function Dashboard() {
                 <div style={{ borderTop: "1px solid #E2E8F0" }} />
                 <SimulationsTab
                   income={income} expenses={expenses}
-                  k401={k401} rothIRA={rothIRA} taxable={taxable}
+                  k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                   growthRate={growthRate} withdrawalRate={withdrawalRate}
                 />
               </div>
