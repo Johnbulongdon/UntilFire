@@ -263,7 +263,7 @@ export default function CategoriesTab() {
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then((r) => r.json())
-      .then((d) => setRates(d.rates ?? {}))
+      .then((d) => { if (d.rates) setRates(d.rates); })
       .catch(() => {});
 
     supabase.auth.getSession().then(({ data: { session } }) => {
