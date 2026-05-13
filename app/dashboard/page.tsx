@@ -315,10 +315,11 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals = {}, actualIncome = 0, actualExpenses = 0 }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
+  actuals?: Record<string, number>; actualIncome?: number; actualExpenses?: number;
 }) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -335,7 +336,9 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
   const chartData   = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
-  const activeCats  = EXPENSE_CATS.filter(c => (expenses[c.key] || 0) > 0);
+  const hasActuals  = Object.values(actuals).some(v => v > 0);
+  const activeCats  = EXPENSE_CATS.filter(c => hasActuals ? (actuals[c.key] || 0) > 0 : (expenses[c.key] || 0) > 0);
+  const totalSpendForChart = hasActuals ? Object.values(actuals).reduce((s, v) => s + v, 0) : monthlyExpenses;
 
   const retireYear = fireYear ? new Date().getFullYear() + fireYear : null;
 
@@ -414,6 +417,39 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
         </div>
       </div>
 
+      {/* ── This Month (Actual) ──────────────────────────────────────────── */}
+      {(actualIncome > 0 || actualExpenses > 0) && (
+        <div className="uf-card" style={{ padding: "20px 24px" }}>
+          <SectionLabel icon="📅" text="This Month (Actual)" color="#059669" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 12 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 4, fontWeight: 700 }}>Income</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#059669", fontFamily: "Inter, sans-serif" }}>{fmt(actualIncome)}</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 4, fontWeight: 700 }}>Expenses</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#DC2626", fontFamily: "Inter, sans-serif" }}>{fmt(actualExpenses)}</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 4, fontWeight: 700 }}>Net</div>
+              <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", color: actualIncome - actualExpenses >= 0 ? "#059669" : "#DC2626" }}>
+                {actualIncome - actualExpenses >= 0 ? "+" : "−"}{fmt(Math.abs(actualIncome - actualExpenses))}
+              </div>
+            </div>
+          </div>
+          {actualIncome > 0 && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "#64748B" }}>Actual savings rate this month</span>
+              <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif",
+                color: ((actualIncome - actualExpenses) / actualIncome) >= 0.5 ? "#059669" :
+                       ((actualIncome - actualExpenses) / actualIncome) >= 0.25 ? "#20D4BF" : "#DC2626" }}>
+                {(((actualIncome - actualExpenses) / actualIncome) * 100).toFixed(0)}%
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Monte Carlo probability card */}
       <MonteCarloCard
         income={income} expenses={expenses}
@@ -451,7 +487,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
 
         {/* Spending breakdown */}
         <div className="uf-card">
-          <SectionLabel icon="💸" text="Spending Breakdown" color="#DC2626" />
+          <SectionLabel icon="💸" text={hasActuals ? "Spending Breakdown (Actual)" : "Spending Breakdown (Budget)"} color="#DC2626" />
           {activeCats.length === 0 ? (
             <div style={{ color: "#64748B", fontSize: 13, textAlign: "center", padding: "40px 0" }}>
               Add expenses in the<br />Budget Tracker tab
@@ -459,8 +495,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {activeCats.map(cat => {
-                const val = expenses[cat.key] || 0;
-                const pct = monthlyExpenses > 0 ? (val / monthlyExpenses) * 100 : 0;
+                const val = hasActuals ? (actuals[cat.key] || 0) : (expenses[cat.key] || 0);
+                const pct = totalSpendForChart > 0 ? (val / totalSpendForChart) * 100 : 0;
                 return (
                   <div key={cat.key}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
@@ -1251,13 +1287,27 @@ export default function Dashboard() {
   const [growthRate,      setGrowthRate]      = useState(0.07);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string }[]>([]);
+  const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
-    rawActuals.forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(e.amount, e.currency, rates); });
+    rawActuals
+      .filter(e => !e.transaction_type || e.transaction_type === "expense")
+      .forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(e.amount, e.currency, rates); });
     return agg;
   }, [rawActuals, rates]);
+  const actualIncome = useMemo(
+    () => rawActuals
+      .filter(e => e.transaction_type === "income")
+      .reduce((s, e) => s + toUSD(e.amount, e.currency, rates), 0),
+    [rawActuals, rates]
+  );
+  const actualExpenses = useMemo(
+    () => rawActuals
+      .filter(e => e.transaction_type === "expense")
+      .reduce((s, e) => s + toUSD(e.amount, e.currency, rates), 0),
+    [rawActuals, rates]
+  );
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoaded   = useRef(false);
 
@@ -1273,12 +1323,12 @@ export default function Dashboard() {
       // Fetch current-month actuals from expenses table
       const nowD = new Date();
       const thisMonth = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}`;
-      supabase.from("expenses").select("category, amount, currency")
+      supabase.from("expenses").select("category, amount, currency, transaction_type")
         .eq("user_id", session.user.id)
         .like("date", `${thisMonth}-%`)
         .then(({ data: expData }) => {
           if (expData) {
-            setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD" })));
+            setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
           }
         });
       supabase.from("user_budget").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
@@ -1417,6 +1467,9 @@ export default function Dashboard() {
                 totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                 mortgageMonthly={mortgageMonthly} growthRate={growthRate}
                 withdrawalRate={withdrawalRate}
+                actuals={actuals}
+                actualIncome={actualIncome}
+                actualExpenses={actualExpenses}
               />
             )}
             {tab === "cashflow" && (
