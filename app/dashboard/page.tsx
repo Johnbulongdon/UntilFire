@@ -53,12 +53,12 @@ const FALLBACK_RATES: Record<string, number> = {
 
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
-  annualIncome, monthlyExpenses, k401, rothIRA, taxable,
+  annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
   totalDebt, mortgageBalance, mortgageMonthly,
   growthRate = 0.07, withdrawalRate = 0.04, years = 50,
 }: {
   annualIncome: number; monthlyExpenses: number; k401: number;
-  rothIRA: number; taxable: number; totalDebt: number;
+  rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
   mortgageBalance: number; mortgageMonthly: number;
   growthRate?: number; withdrawalRate?: number; years?: number;
 }) {
@@ -75,12 +75,13 @@ function calcProjection({
   let cur401k    = k401;
   let curRoth    = rothIRA;
   let curTaxable = taxable;
+  let curCash    = cashSavings;
   let curDebt    = totalDebt;
   let curMort    = mortgageBalance;
   let fireYear: number | null = null;
 
   for (let y = 0; y <= years; y++) {
-    const investable = cur401k + curRoth + curTaxable;
+    const investable = cur401k + curRoth + curTaxable + curCash;
     const netWorth   = investable - curDebt - curMort;
     if (fireYear === null && investable >= fireTarget && y > 0) fireYear = y;
     data.push({
@@ -96,6 +97,7 @@ function calcProjection({
     cur401k    = cur401k    * (1 + growthRate) + k401Contrib;
     curRoth    = curRoth    * (1 + growthRate) + rothContrib;
     curTaxable = curTaxable * (1 + growthRate) + taxableContrib;
+    curCash    = curCash    * (1 + growthRate);
     if (curDebt > 0) {
       const interest = curDebt * 0.05;
       const payment  = Math.min(curDebt + interest, Math.max(annualSavings * 0.3, 0));
@@ -315,9 +317,9 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals = {}, actualIncome = 0, actualExpenses = 0 }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals = {}, actualIncome = 0, actualExpenses = 0 }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; totalDebt: number; mortgageBalance: number;
+  taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
   actuals?: Record<string, number>; actualIncome?: number; actualExpenses?: number;
 }) {
@@ -327,11 +329,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
 
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => calcProjection({
     annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly,
+    k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
+  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
 
-  const investable  = k401 + rothIRA + taxable;
+  const investable  = k401 + rothIRA + taxable + cashSavings;
   const netWorth    = investable - totalDebt - mortgageBalance;
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
@@ -522,6 +524,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
               {[
+                { label: "Cash & Savings",    val: cashSavings,              color: "#0ea5e9" },
                 { label: "401(k)",            val: k401,                     color: "#059669" },
                 { label: "Roth IRA",          val: rothIRA,                  color: "#20D4BF" },
                 { label: "Taxable Brokerage", val: taxable,                  color: "#047857" },
@@ -872,20 +875,38 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate, actualNetCashflow = 0 }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
+  cashSavings: number; setCashSavings: (v: number) => void;
   growthRate: number; setGrowthRate: (v: number) => void;
   withdrawalRate: number; setWithdrawalRate: (v: number) => void;
+  actualNetCashflow?: number;
 }) {
-  const total = k401 + rothIRA + taxable;
+  const total = k401 + rothIRA + taxable + cashSavings;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div className="uf-card">
           <SectionLabel icon="📈" text="Investment Accounts" color="#059669" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <FieldRow label="Cash & Savings">
+                <NumberInput value={cashSavings} onChange={setCashSavings} placeholder="0" />
+              </FieldRow>
+              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
+                Checking, HYSA, emergency fund
+                {actualNetCashflow !== 0 && (
+                  <span style={{ marginLeft: 8 }}>
+                    · Cashflow net this month:{" "}
+                    <span style={{ color: actualNetCashflow >= 0 ? "#059669" : "#DC2626", fontWeight: 600 }}>
+                      {actualNetCashflow >= 0 ? "+" : "−"}${Math.abs(Math.round(actualNetCashflow)).toLocaleString()}
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
             <FieldRow label="401(k) Balance">
               <NumberInput value={k401} onChange={setK401} placeholder="0" />
             </FieldRow>
@@ -931,8 +952,9 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, gr
 
       {total > 0 && (
         <div className="uf-card" style={{ background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.2)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
             {[
+              { label: "Cash", val: fmt(cashSavings), pct: total > 0 ? (cashSavings / total * 100).toFixed(0) : "0", color: "#0ea5e9" },
               { label: "401(k)", val: fmt(k401), pct: total > 0 ? (k401 / total * 100).toFixed(0) : "0", color: "#059669" },
               { label: "Roth IRA", val: fmt(rothIRA), pct: total > 0 ? (rothIRA / total * 100).toFixed(0) : "0", color: "#20D4BF" },
               { label: "Taxable", val: fmt(taxable), pct: total > 0 ? (taxable / total * 100).toFixed(0) : "0", color: "#047857" },
@@ -1281,6 +1303,7 @@ export default function Dashboard() {
   const [k401,            setK401]            = useState(0);
   const [rothIRA,         setRothIRA]         = useState(0);
   const [taxable,         setTaxable]         = useState(0);
+  const [cashSavings,     setCashSavings]     = useState(0);
   const [totalDebt,       setTotalDebt]       = useState(0);
   const [mortgageBalance, setMortgageBalance] = useState(0);
   const [mortgageMonthly, setMortgageMonthly] = useState(0);
@@ -1349,6 +1372,7 @@ export default function Dashboard() {
           setK401(fp.k401 || data.fire_assets || 0);
           setRothIRA(fp.rothIRA || 0);
           setTaxable(fp.taxable || 0);
+          setCashSavings(fp.cashSavings || 0);
           setTotalDebt(fp.totalDebt || 0);
           setMortgageBalance(fp.mortgageBalance || 0);
           setMortgageMonthly(fp.mortgageMonthly || 0);
@@ -1371,7 +1395,7 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const fireProfile = { k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate };
+      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate };
       await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
@@ -1383,7 +1407,7 @@ export default function Dashboard() {
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     }, 1000);
-  }, [income, expenses, fireAge, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
+  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
 
   return (
     <>
@@ -1463,7 +1487,7 @@ export default function Dashboard() {
             {tab === "overview" && (
               <DashTab
                 income={income} expenses={expenses}
-                k401={k401} rothIRA={rothIRA} taxable={taxable}
+                k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                 totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                 mortgageMonthly={mortgageMonthly} growthRate={growthRate}
                 withdrawalRate={withdrawalRate}
@@ -1520,8 +1544,10 @@ export default function Dashboard() {
                   k401={k401} setK401={setK401}
                   rothIRA={rothIRA} setRothIRA={setRothIRA}
                   taxable={taxable} setTaxable={setTaxable}
+                  cashSavings={cashSavings} setCashSavings={setCashSavings}
                   growthRate={growthRate} setGrowthRate={setGrowthRate}
                   withdrawalRate={withdrawalRate} setWithdrawalRate={setWithdrawalRate}
+                  actualNetCashflow={actualIncome - actualExpenses}
                 />
               </div>
             )}
