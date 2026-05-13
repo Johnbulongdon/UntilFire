@@ -13,14 +13,13 @@ import { monteCarloFIRE } from "@/lib/fire";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
 type TabKey =
-  | "home-overview"
-  | "money-networth" | "money-cashflow"
-  | "plan-goals"     | "plan-scenarios"
-  | "tools-calculators";
-
-type SidebarItem =
-  | { key: TabKey; label: string; icon: string; href?: never }
-  | { href: string; label: string; icon: string; key?: never };
+  | "overview"
+  | "cashflow"
+  | "assets"
+  | "liabilities"
+  | "fire-calculator"
+  | "reports"
+  | "learning-hub";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EXPENSE_CATS = [
@@ -1141,56 +1140,85 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
   );
 }
 
-// ─── Sidebar groups definition ────────────────────────────────────────────────
-const SIDEBAR_GROUPS: { label: string; items: SidebarItem[] }[] = [
+// ─── Learning Hub Tab ────────────────────────────────────────────────────────
+function LearningHubTab() {
+  const resources = [
+    { href: "/calculators", label: "Calculators", desc: "Savings rate, compound interest, SWR, and more", icon: "🧮" },
+    { href: "/learn/articles", label: "Articles", desc: "In-depth guides on FIRE, investing, and frugality", icon: "📄" },
+    { href: "/learn/topics", label: "Topics", desc: "Browse concepts: 4% rule, tax optimisation, coast FIRE", icon: "📚" },
+  ];
+  return (
+    <div>
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ fontSize: 12, color: "#059669", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 10 }}>Learning Hub</div>
+        <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 8px" }}>Build your knowledge</h2>
+        <p style={{ fontSize: 15, color: "#64748B", margin: 0 }}>Calculators, articles, and topics to help you understand and reach financial independence.</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+        {resources.map(r => (
+          <Link key={r.href} href={r.href} style={{ textDecoration: "none" }}>
+            <div className="uf-card" style={{ padding: "24px", cursor: "pointer", transition: "box-shadow 0.15s" }}>
+              <div style={{ fontSize: 32, marginBottom: 14 }}>{r.icon}</div>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>{r.label}</div>
+              <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{r.desc}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Sidebar items (flat) ─────────────────────────────────────────────────────
+const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
   {
-    label: "Home",
-    items: [
-      { key: "home-overview",    label: "Overview",    icon: "🏠" },
-    ],
+    key: "overview",
+    label: "Overview",
+    svg: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
   },
   {
-    label: "Money",
-    items: [
-      { key: "money-networth",   label: "Net Worth",   icon: "💰" },
-      { key: "money-cashflow",   label: "Cashflow",    icon: "↕" },
-    ],
+    key: "cashflow",
+    label: "Cashflow",
+    svg: '<path d="M5 17 9 13l3 3 7-7"/><path d="M14 6h5v5"/>',
   },
   {
-    label: "Plan",
-    items: [
-      { key: "plan-goals",       label: "Goals",       icon: "🎯" },
-      { key: "plan-scenarios",   label: "Scenarios",   icon: "📊" },
-    ],
+    key: "assets",
+    label: "Assets",
+    svg: '<path d="M4 20h16"/><rect x="5" y="10" width="3" height="8"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="13" width="3" height="5"/>',
   },
   {
-    label: "Learn",
-    items: [
-      { href: "/learn/articles", label: "Articles",    icon: "📄" },
-      { href: "/learn/topics",   label: "Topics",      icon: "📚" },
-    ],
+    key: "liabilities",
+    label: "Liabilities",
+    svg: '<circle cx="12" cy="12" r="8"/><path d="M14 9.5c-.5-.6-1.5-1-2.5-1-1.5 0-2.5.8-2.5 2s1 1.6 2.5 1.9c1.5.3 2.5.9 2.5 2 0 1.3-1.1 2.1-2.5 2.1-1 0-2-.4-2.5-1M12 7v1M12 16.5v1"/>',
   },
   {
-    label: "Tools",
-    items: [
-      { key: "tools-calculators", label: "Calculators", icon: "🧮" },
-    ],
+    key: "fire-calculator",
+    label: "FIRE Calculator",
+    svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3.5" rx="0.5"/><circle cx="9" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="9" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="16" r="0.6" fill="currentColor" stroke="none"/>',
+  },
+  {
+    key: "reports",
+    label: "Reports",
+    svg: '<path d="M7 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/><path d="M9 13l2 2 4-4"/>',
+  },
+  {
+    key: "learning-hub",
+    label: "Learning Hub",
+    svg: '<path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12"/><path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2"/><path d="M9 10h6M9 14h4"/>',
   },
 ];
 
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [tab, setTab] = useState<TabKey>("home-overview");
+  const [tab, setTab] = useState<TabKey>("overview");
 
-  // Read initial tab from URL query string (e.g. ?tab=money-cashflow)
+  // Read initial tab from URL query string (e.g. ?tab=cashflow)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
-      "home-overview",
-      "money-networth", "money-cashflow",
-      "plan-goals", "plan-scenarios",
-      "tools-calculators",
+      "overview", "cashflow", "assets", "liabilities",
+      "fire-calculator", "reports", "learning-hub",
     ];
     if (t && valid.includes(t)) setTab(t);
   }, []);
@@ -1306,15 +1334,13 @@ export default function Dashboard() {
         .uf-main { flex: 1; overflow-y: auto; min-width: 0; }
         .uf-content { max-width: 1060px; margin: 0 auto; padding: 32px 36px 60px; }
 
-        .uf-sidebar-logo { padding: 22px 20px 14px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: #064E3B; letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid #E2E8F0; }
+        .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: #064E3B; letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid #E2E8F0; }
         .uf-sidebar-logo span { color: #20D4BF; }
-        .uf-sidebar-group { padding: 18px 10px 4px; }
-        .uf-sidebar-group-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94A3B8; padding: 0 10px 6px; }
-        .uf-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; margin-bottom: 2px; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; }
-        .uf-sidebar-item:hover { background: rgba(209,250,229,0.3); color: #1E3A2F; }
-        .uf-sidebar-item.active { background: rgba(209,250,229,0.5); border-color: #047857; color: #065F46; font-weight: 600; }
-        .uf-sidebar-item.active .uf-sidebar-icon { color: #059669; }
-        .uf-sidebar-icon { font-size: 13px; width: 16px; text-align: center; color: #94A3B8; flex-shrink: 0; }
+        .uf-sidebar-nav { padding: 16px 10px 4px; display: flex; flex-direction: column; gap: 2px; }
+        .uf-sidebar-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; font-size: 14px; font-weight: 700; color: #64748B; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; }
+        .uf-sidebar-item:hover { background: rgba(226,232,240,0.5); color: #1E3A2F; }
+        .uf-sidebar-item.active { background: rgba(209,250,229,0.5); border-color: #047857; color: #065F46; }
+        .uf-sidebar-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: inherit; }
         .uf-sidebar-bottom { margin-top: auto; padding: 14px 16px; border-top: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 8px; }
 
         select option { background: #ffffff; }
@@ -1326,8 +1352,8 @@ export default function Dashboard() {
         @media(max-width: 640px) {
           .uf-shell { flex-direction: column; }
           .uf-sidebar { width: 100%; min-height: unset; height: auto; position: static; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid #E2E8F0; }
-          .uf-sidebar-group { display: flex; flex-direction: row; padding: 8px 8px 8px; gap: 4px; }
-          .uf-sidebar-group-label { display: none; }
+          .uf-sidebar-nav { flex-direction: row; padding: 8px 8px 8px; gap: 4px; }
+          .uf-sidebar-item { padding: 8px 10px; font-size: 12px; gap: 6px; }
           .uf-content { padding: 16px 14px 48px; }
         }
       `}</style>
@@ -1337,33 +1363,20 @@ export default function Dashboard() {
         <aside className="uf-sidebar">
           <Link href="/" className="uf-sidebar-logo">Until<span>Fire</span></Link>
 
-          {SIDEBAR_GROUPS.map(group => (
-            <div key={group.label} className="uf-sidebar-group">
-              <div className="uf-sidebar-group-label">{group.label}</div>
-              {group.items.map(item => (
-                item.href ? (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="uf-sidebar-item"
-                    style={{ textDecoration: "none" }}
-                  >
-                    <span className="uf-sidebar-icon">{item.icon}</span>
-                    {item.label}
-                  </Link>
-                ) : (
-                  <button
-                    key={item.key}
-                    className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
-                    onClick={() => setTab(item.key!)}
-                  >
-                    <span className="uf-sidebar-icon">{item.icon}</span>
-                    {item.label}
-                  </button>
-                )
-              ))}
-            </div>
-          ))}
+          <nav className="uf-sidebar-nav">
+            {SIDEBAR_ITEMS.map(item => (
+              <button
+                key={item.key}
+                className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
+                onClick={() => setTab(item.key)}
+              >
+                <span className="uf-sidebar-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
+                </span>
+                {item.label}
+              </button>
+            ))}
+          </nav>
 
           <div className="uf-sidebar-bottom">
             {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saving…</span>}
@@ -1375,7 +1388,7 @@ export default function Dashboard() {
         {/* ── Main content ─────────────────────────────────────────────────── */}
         <main className="uf-main">
           <div className="uf-content">
-            {tab === "home-overview" && (
+            {tab === "overview" && (
               <DashTab
                 income={income} expenses={expenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable}
@@ -1384,7 +1397,14 @@ export default function Dashboard() {
                 withdrawalRate={withdrawalRate}
               />
             )}
-            {tab === "money-networth" && (
+            {tab === "cashflow" && (
+              <>
+                <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} />
+                <div style={{ borderTop: "1px solid #E2E8F0", margin: "32px 0" }} />
+                <TransactionsTab />
+              </>
+            )}
+            {tab === "assets" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 <PortfolioOverviewTab
                   income={income} expenses={expenses}
@@ -1401,32 +1421,34 @@ export default function Dashboard() {
                   growthRate={growthRate} setGrowthRate={setGrowthRate}
                   withdrawalRate={withdrawalRate} setWithdrawalRate={setWithdrawalRate}
                 />
+              </div>
+            )}
+            {tab === "liabilities" && (
+              <LiabilitiesTab
+                totalDebt={totalDebt} setTotalDebt={setTotalDebt}
+                mortgageBalance={mortgageBalance} setMortgageBalance={setMortgageBalance}
+                mortgageMonthly={mortgageMonthly} setMortgageMonthly={setMortgageMonthly}
+              />
+            )}
+            {tab === "fire-calculator" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                <GoalsTab fireAge={fireAge} setFireAge={setFireAge} />
                 <div style={{ borderTop: "1px solid #E2E8F0" }} />
-                <LiabilitiesTab
-                  totalDebt={totalDebt} setTotalDebt={setTotalDebt}
-                  mortgageBalance={mortgageBalance} setMortgageBalance={setMortgageBalance}
-                  mortgageMonthly={mortgageMonthly} setMortgageMonthly={setMortgageMonthly}
+                <SimulationsTab
+                  income={income} expenses={expenses}
+                  k401={k401} rothIRA={rothIRA} taxable={taxable}
+                  growthRate={growthRate} withdrawalRate={withdrawalRate}
                 />
               </div>
             )}
-            {tab === "money-cashflow" && (
-              <>
-                <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} />
-                <div style={{ borderTop: "1px solid #E2E8F0", margin: "32px 0" }} />
-                <TransactionsTab />
-              </>
+            {tab === "reports" && (
+              <div style={{ textAlign: "center", padding: "80px 24px", color: "#64748B" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+                <div style={{ fontWeight: 700, fontSize: 20, color: "#19181E", marginBottom: 8 }}>Reports coming soon</div>
+                <div style={{ fontSize: 14 }}>Monthly summaries, tax reports, and spending trends will appear here.</div>
+              </div>
             )}
-            {tab === "plan-goals" && (
-              <GoalsTab fireAge={fireAge} setFireAge={setFireAge} />
-            )}
-            {tab === "plan-scenarios" && (
-              <SimulationsTab
-                income={income} expenses={expenses}
-                k401={k401} rothIRA={rothIRA} taxable={taxable}
-                growthRate={growthRate} withdrawalRate={withdrawalRate}
-              />
-            )}
-            {tab === "tools-calculators" && <CalculatorsTab />}
+            {tab === "learning-hub" && <LearningHubTab />}
           </div>
         </main>
       </div>

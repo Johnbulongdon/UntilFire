@@ -1,33 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
 
+// ─── Categories ───────────────────────────────────────────────────────────────
 const EXPENSE_CATEGORIES = [
-  { key: "food",          label: "Food & Dining", code: "FD", color: "#f97316" },
+  { key: "food",          label: "Food",          code: "FD", color: "#f97316" },
   { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5" },
   { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8" },
   { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa" },
   { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444" },
-  { key: "entertainment", label: "Entertainment", code: "EN", color: "#fbbf24" },
+  { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24" },
   { key: "shopping",      label: "Shopping",      code: "SH", color: "#ec4899" },
-  { key: "work",          label: "Work Expense",  code: "WK", color: "#6366f1" },
-  { key: "other",         label: "Other",         code: "OT", color: "#6b6b85" },
+  { key: "work",          label: "Work",          code: "WK", color: "#6366f1" },
+  { key: "other",         label: "Other",         code: "OT", color: "#6b7280" },
 ];
 
 const INCOME_CATEGORIES = [
-  { key: "salary",       label: "Salary",       code: "SA", color: "#22d3a5" },
-  { key: "freelance",    label: "Freelance",    code: "FR", color: "#34d399" },
-  { key: "investment",   label: "Investment",   code: "IN", color: "#818cf8" },
-  { key: "gift",         label: "Gift",         code: "GF", color: "#a78bfa" },
-  { key: "other_income", label: "Other Income", code: "OI", color: "#6b6b85" },
+  { key: "salary",       label: "Salary",     code: "SA", color: "#22d3a5" },
+  { key: "freelance",    label: "Freelance",  code: "FR", color: "#34d399" },
+  { key: "investment",   label: "Investment", code: "IV", color: "#818cf8" },
+  { key: "gift",         label: "Gift",       code: "GF", color: "#a78bfa" },
+  { key: "other_income", label: "Other",      code: "OI", color: "#6b7280" },
 ];
 
 const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
-
 const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CNY", "AUD", "CAD", "SGD", "HKD"];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
 
@@ -37,6 +38,17 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>):
   return rate ? amount / rate : amount;
 };
 
+function dayLabel(ymd: string, todayYmd: string): string {
+  if (ymd === todayYmd) return "Today";
+  const y = new Date(todayYmd);
+  y.setDate(y.getDate() - 1);
+  const yesterdayYmd = y.toISOString().split("T")[0];
+  if (ymd === yesterdayYmd) return "Yesterday";
+  const d = new Date(ymd + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Transaction = {
   id: string;
   date: string;
@@ -49,6 +61,33 @@ type Transaction = {
   transaction_type: "expense" | "income";
 };
 
+type DraftTransaction = {
+  id: string | null;
+  transaction_type: "expense" | "income";
+  amount: string;
+  currency: string;
+  description: string;
+  date: string;
+  category: string;
+  tags: string[];
+  is_work_related: boolean;
+  aiSuggestion: string | null;
+};
+
+const EMPTY_DRAFT = (): DraftTransaction => ({
+  id: null,
+  transaction_type: "expense",
+  amount: "",
+  currency: "USD",
+  description: "",
+  date: new Date().toISOString().split("T")[0],
+  category: "",
+  tags: [],
+  is_work_related: false,
+  aiSuggestion: null,
+});
+
+// ─── AI Categorization ────────────────────────────────────────────────────────
 async function aiCategorize(
   description: string,
   type: "expense" | "income"
@@ -83,319 +122,512 @@ Rules: tags: 1-3 short tags; is_work_related: true only for expense type work it
   }
 }
 
-function AddTransactionForm({ onAdd }: { onAdd: (t: Transaction) => void }) {
-  const [transactionType, setTransactionType] = useState<"expense" | "income">("expense");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("USD");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [isWorkRelated, setIsWorkRelated] = useState(false);
+// ─── QuickAddForm ─────────────────────────────────────────────────────────────
+function QuickAddForm({
+  draft,
+  setDraft,
+  onSave,
+  editing,
+  onCancelEdit,
+}: {
+  draft: DraftTransaction;
+  setDraft: React.Dispatch<React.SetStateAction<DraftTransaction>>;
+  onSave: (keepOpen: boolean) => void;
+  editing: boolean;
+  onCancelEdit: () => void;
+}) {
+  const amountRef = useRef<HTMLInputElement>(null);
   const [categorizing, setCategorizing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [aiUsed, setAiUsed] = useState(false);
+  const [saveAndAddAnother, setSaveAndAddAnother] = useState(true);
+  const [saving, setSavingLocal] = useState(false);
 
-  const categories = transactionType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  const catInfo = categories.find((c) => c.key === category);
+  const categories = draft.transaction_type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const catInfo = ALL_CATEGORIES.find((c) => c.key === draft.category);
 
-  const switchType = (t: "expense" | "income") => {
-    setTransactionType(t);
-    setCategory("");
-    setTags([]);
-    setIsWorkRelated(false);
-    setAiUsed(false);
-  };
+  const setField = useCallback(<K extends keyof DraftTransaction>(k: K, v: DraftTransaction[K]) => {
+    setDraft((d) => ({ ...d, [k]: v }));
+  }, [setDraft]);
 
   const handleDescriptionBlur = async () => {
-    if (!description || category) return;
+    if (!draft.description || draft.category) return;
     setCategorizing(true);
-    const result = await aiCategorize(description, transactionType);
-    setCategory(result.category);
-    setTags(result.tags);
-    setIsWorkRelated(result.is_work_related);
-    setAiUsed(true);
+    const result = await aiCategorize(draft.description, draft.transaction_type);
+    setDraft((d) => ({ ...d, category: result.category, tags: result.tags, is_work_related: result.is_work_related, aiSuggestion: result.category }));
     setCategorizing(false);
   };
 
-  const handleSubmit = async () => {
-    if (!date || !amount || !description) return;
-    setSaving(true);
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return;
-
-    let finalCategory = category;
-    let finalTags = tags;
-    let finalWorkRelated = isWorkRelated;
-    if (!finalCategory) {
-      const result = await aiCategorize(description, transactionType);
-      finalCategory = result.category;
-      finalTags = result.tags;
-      finalWorkRelated = result.is_work_related;
-    }
-
-    const { data, error } = await supabase
-      .from("expenses")
-      .insert({
-        user_id: session.user.id,
-        date,
-        amount: parseFloat(amount),
-        currency,
-        description,
-        category: finalCategory,
-        tags: finalTags,
-        is_work_related: finalWorkRelated,
-        transaction_type: transactionType,
-      })
-      .select()
-      .single();
-
-    if (!error && data) {
-      onAdd(data);
-      setAmount("");
-      setDescription("");
-      setCategory("");
-      setTags([]);
-      setIsWorkRelated(false);
-      setAiUsed(false);
-    }
-    setSaving(false);
+  const applyAiSuggestion = () => {
+    if (draft.aiSuggestion) setField("category", draft.aiSuggestion);
   };
 
-  const isIncome = transactionType === "income";
+  const canSave = parseFloat(draft.amount) > 0 && draft.category;
+
+  const handleSubmit = async (forceKeepOpen?: boolean) => {
+    if (!canSave || saving) return;
+    setSavingLocal(true);
+    const keepOpen = forceKeepOpen ?? saveAndAddAnother;
+    await onSave(keepOpen);
+    setSavingLocal(false);
+    if (keepOpen) {
+      setTimeout(() => amountRef.current?.focus(), 50);
+    }
+  };
+
+  // ⌘/Ctrl+Enter to save
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit(true);
+      }
+      if (e.key === "Escape" && editing) {
+        e.preventDefault();
+        onCancelEdit();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, editing]);
+
+  const isIncome = draft.transaction_type === "income";
+  const aiSuggestedCat = ALL_CATEGORIES.find((c) => c.key === draft.aiSuggestion);
+  const showAiPill = !!draft.aiSuggestion && draft.aiSuggestion !== draft.category && !isIncome;
 
   return (
-    <div className="uf-card" style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div style={{ fontWeight: 700, fontSize: 16 }}>Add Transaction</div>
-        <div style={{ display: "flex", background: "#e8e8f0", borderRadius: 8, padding: 3, gap: 2 }}>
+    <div style={{
+      background: "#fff",
+      border: "1px solid #E2E8F0",
+      borderRadius: 12,
+      overflow: "hidden",
+      position: "sticky",
+      top: 24,
+      alignSelf: "start",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+    }}>
+      {/* Header */}
+      <div style={{ padding: "14px 20px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #E2E8F0" }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.1px", textTransform: "uppercase", color: "#047857" }}>
+          {editing ? "Edit transaction" : "Quick add"}
+        </div>
+        {editing ? (
+          <button onClick={onCancelEdit} style={{ background: "transparent", border: "1px solid #E2E8F0", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            ✕ Cancel
+          </button>
+        ) : (
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Pinned</div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", maxHeight: "calc(100vh - 220px)" }}>
+        {/* Type toggle */}
+        <div style={{ display: "inline-flex", background: "#F1F5F9", borderRadius: 999, padding: 3, alignSelf: "flex-start" }}>
           {(["expense", "income"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => switchType(t)}
+              onClick={() => setDraft((d) => ({ ...d, transaction_type: t, category: t === "income" ? "salary" : "", aiSuggestion: null }))}
               style={{
-                background:
-                  transactionType === t
-                    ? t === "income"
-                      ? "rgba(34,211,165,0.15)"
-                      : "rgba(239,68,68,0.12)"
-                    : "transparent",
-                border:
-                  transactionType === t
-                    ? `1px solid ${t === "income" ? "rgba(34,211,165,0.3)" : "rgba(239,68,68,0.25)"}`
-                    : "1px solid transparent",
-                color: transactionType === t ? (t === "income" ? "#22d3a5" : "#ef4444") : "#9090a8",
-                borderRadius: 6,
-                padding: "5px 14px",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
+                background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : "#fff") : "transparent",
+                color: draft.transaction_type === t ? (t === "income" ? "#047857" : "#19181E") : "#64748B",
+                border: "none", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                boxShadow: draft.transaction_type === t && t === "expense" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
               }}
             >
               {t === "expense" ? "Expense" : "Income"}
             </button>
           ))}
         </div>
-      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-        <div>
-          <div style={{ color: "#9090a8", fontSize: 12, marginBottom: 6 }}>Date</div>
+        {/* Amount input */}
+        <div style={{
+          border: `1.5px solid #E2E8F0`,
+          borderRadius: 8,
+          padding: "12px 14px 14px",
+          background: "#fff",
+          display: "flex", alignItems: "baseline", gap: 6,
+          transition: "border-color 0.15s",
+        }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "#047857")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "#E2E8F0")}
+        >
+          <span style={{ fontSize: 26, fontWeight: 700, color: "#94A3B8", letterSpacing: "-0.6px" }}>$</span>
           <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            style={{ width: "100%", background: "#f9f9fb", border: "1px solid #e8e8f0", borderRadius: 8, padding: "8px 12px", color: "#1a1a2e", fontSize: 14, outline: "none", fontFamily: "inherit" }}
-          />
-        </div>
-        <div>
-          <div style={{ color: "#9090a8", fontSize: 12, marginBottom: 6 }}>Amount</div>
-          <input
-            type="number"
+            ref={amountRef}
+            type="text"
+            inputMode="decimal"
             placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            style={{ width: "100%", background: "#f9f9fb", border: "1px solid #e8e8f0", borderRadius: 8, padding: "8px 12px", color: "#1a1a2e", fontSize: 14, outline: "none", fontFamily: "'DM Mono', monospace" }}
+            value={draft.amount}
+            onChange={(e) => {
+              const v = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*?)\./g, "$1");
+              setField("amount", v);
+            }}
+            autoFocus
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 34, fontWeight: 800, color: isIncome ? "#059669" : "#064E3B", letterSpacing: "-1px", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", fontFamily: "inherit" }}
+          />
+          <select
+            value={draft.currency}
+            onChange={(e) => setField("currency", e.target.value)}
+            style={{ fontSize: 11, fontWeight: 700, color: "#64748B", padding: "4px 8px", background: "#F1F5F9", border: "none", borderRadius: 999, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+
+        {/* Description */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>
+            Description
+            {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
+          </label>
+          <input
+            type="text"
+            placeholder={isIncome ? "e.g. Monthly salary, Freelance…" : "e.g. Whole Foods, Uber…"}
+            value={draft.description}
+            onChange={(e) => { setField("description", e.target.value); setField("aiSuggestion", null); setField("category", ""); }}
+            onBlur={handleDescriptionBlur}
+            style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
           />
         </div>
-        <div>
-          <div style={{ color: "#9090a8", fontSize: 12, marginBottom: 6 }}>Currency</div>
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            style={{ width: "100%", background: "#f9f9fb", border: "1px solid #e8e8f0", borderRadius: 8, padding: "8px 12px", color: "#1a1a2e", fontSize: 14, outline: "none", fontFamily: "inherit" }}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ color: "#9090a8", fontSize: 12, marginBottom: 6 }}>
-          Description
-          {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontSize: 11 }}>AI categorizing...</span>}
-          {aiUsed && !categorizing && <span style={{ color: "#22d3a5", marginLeft: 8, fontSize: 11 }}>AI categorized</span>}
-        </div>
-        <input
-          type="text"
-          placeholder={isIncome ? "e.g. Monthly salary, Freelance project, Dividend..." : "e.g. Starbucks latte, Uber to office, Netflix..."}
-          value={description}
-          onChange={(e) => { setDescription(e.target.value); setAiUsed(false); setCategory(""); }}
-          onBlur={handleDescriptionBlur}
-          style={{ width: "100%", background: "#f9f9fb", border: "1px solid #e8e8f0", borderRadius: 8, padding: "10px 12px", color: "#1a1a2e", fontSize: 14, outline: "none", fontFamily: "inherit" }}
-        />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-        <div>
-          <div style={{ color: "#9090a8", fontSize: 12, marginBottom: 6 }}>Category</div>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            style={{ width: "100%", background: "#f9f9fb", border: `1px solid ${catInfo ? catInfo.color + "66" : "#e8e8f0"}`, borderRadius: 8, padding: "8px 12px", color: catInfo ? catInfo.color : "#1a1a2e", fontSize: 14, outline: "none", fontFamily: "inherit" }}
+        {/* AI suggestion pill */}
+        {showAiPill && (
+          <button
+            type="button"
+            onClick={applyAiSuggestion}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "linear-gradient(95deg, rgba(32,212,191,0.12), rgba(98,250,227,0.12))",
+              border: "1px solid #6EE7B7", color: "#047857",
+              borderRadius: 999, padding: "6px 12px 6px 10px",
+              fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start",
+            }}
           >
-            <option value="">Select category...</option>
-            {categories.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <div style={{ color: "#9090a8", fontSize: 12, marginBottom: 6 }}>Tags</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", minHeight: 38, alignItems: "center", background: "#f9f9fb", border: "1px solid #e8e8f0", borderRadius: 8, padding: "6px 12px" }}>
-            {tags.length === 0 ? (
-              <span style={{ color: "#9090a8", fontSize: 13 }}>AI will suggest tags</span>
-            ) : (
-              tags.map((t) => (
-                <span key={t} style={{ background: "rgba(249,115,22,0.15)", color: "#f97316", borderRadius: 4, padding: "2px 8px", fontSize: 12 }}>
-                  #{t}
-                </span>
-              ))
-            )}
+            <span style={{ color: "#20D4BF" }}>✦</span>
+            Looks like {aiSuggestedCat?.label} — use it?
+          </button>
+        )}
+
+        {/* Date + Tags */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Date</label>
+            <input
+              type="date"
+              value={draft.date}
+              max={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setField("date", e.target.value)}
+              style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
+            />
           </div>
+          {!isIncome && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Work expense</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", paddingTop: 10 }}>
+                <input type="checkbox" checked={draft.is_work_related} onChange={(e) => setField("is_work_related", e.target.checked)} style={{ accentColor: "#059669", width: 16, height: 16 }} />
+                <span style={{ fontSize: 13, color: draft.is_work_related ? "#059669" : "#64748B" }}>Yes</span>
+              </label>
+            </div>
+          )}
         </div>
+
+        {/* Category grid */}
+        {!isIncome && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Category</label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+              {categories.map((c) => {
+                const isSelected = draft.category === c.key;
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => setField("category", c.key)}
+                    style={{
+                      background: isSelected ? "#ECFDF5" : "transparent",
+                      border: `1px solid ${isSelected ? "#047857" : "#E2E8F0"}`,
+                      borderRadius: 8, padding: "8px 4px 6px",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                      cursor: "pointer", transition: "all 0.12s",
+                    }}
+                  >
+                    <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>{c.code}</div>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "#64748B", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Income category dropdown */}
+        {isIncome && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Category</label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+              {INCOME_CATEGORIES.map((c) => {
+                const isSelected = draft.category === c.key;
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => setField("category", c.key)}
+                    style={{
+                      background: isSelected ? "#ECFDF5" : "transparent",
+                      border: `1px solid ${isSelected ? "#047857" : "#E2E8F0"}`,
+                      borderRadius: 8, padding: "8px 4px 6px",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff" }}>{c.code}</div>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "#64748B", textAlign: "center" }}>{c.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        {!isIncome ? (
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: isWorkRelated ? "#6366f1" : "#9090a8" }}>
-            <input type="checkbox" checked={isWorkRelated} onChange={(e) => setIsWorkRelated(e.target.checked)} style={{ accentColor: "#6366f1" }} />
-            Work expense
+      {/* Footer */}
+      <div style={{ padding: "14px 20px 18px", borderTop: "1px solid #E2E8F0", background: "linear-gradient(180deg, transparent, #FAFBFC)", display: "flex", flexDirection: "column", gap: 10 }}>
+        {!editing && (
+          <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 12 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span
+                role="switch"
+                aria-checked={saveAndAddAnother}
+                onClick={() => setSaveAndAddAnother((v) => !v)}
+                style={{
+                  display: "inline-block", width: 32, height: 18,
+                  background: saveAndAddAnother ? "#059669" : "#CBD5E1",
+                  borderRadius: 999, position: "relative", cursor: "pointer", transition: "background 0.12s", flexShrink: 0,
+                }}
+              >
+                <span style={{
+                  position: "absolute", width: 14, height: 14, background: "#fff", borderRadius: "50%",
+                  top: 2, left: saveAndAddAnother ? 16 : 2, transition: "left 0.14s",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }} />
+              </span>
+              <strong style={{ color: "#19181E" }}>Save &amp; add another</strong>
+            </span>
+            <span style={{ color: "#94A3B8", fontSize: 11 }}>
+              <span style={{ border: "1px solid #E2E8F0", borderBottomWidth: 2, borderRadius: 4, padding: "0 4px", fontSize: 10, fontWeight: 600, color: "#64748B", background: "#FAFBFC" }}>⌘</span>
+              {" "}
+              <span style={{ border: "1px solid #E2E8F0", borderBottomWidth: 2, borderRadius: 4, padding: "0 4px", fontSize: 10, fontWeight: 600, color: "#64748B", background: "#FAFBFC" }}>↵</span>
+            </span>
           </label>
-        ) : (
-          <div />
         )}
         <button
-          onClick={handleSubmit}
-          disabled={saving || !amount || !description}
-          style={{ background: isIncome ? "#22d3a5" : "#f97316", color: isIncome ? "#0a2010" : "#fff", border: "none", borderRadius: 10, padding: "10px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Syne', sans-serif", opacity: saving || !amount || !description ? 0.5 : 1 }}
+          onClick={() => handleSubmit()}
+          disabled={!canSave || saving}
+          style={{
+            background: canSave ? "#047857" : "#CBD5E1",
+            color: "#fff", border: "none", borderRadius: 8,
+            padding: "12px 16px", fontSize: 14, fontWeight: 700,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            cursor: canSave ? "pointer" : "not-allowed",
+            width: "100%", fontFamily: "inherit",
+          }}
         >
-          {saving ? "Saving..." : "Add transaction →"}
+          {saving ? "Saving…" : editing ? "Save changes" : "Save transaction"}
         </button>
       </div>
+
+      {/* Mobile: shown via drawer */}
+      <style>{`
+        @media (max-width: 1024px) { .cf-form-pane { display: none; } }
+        .cf-form-pane { display: flex; flex-direction: column; }
+      `}</style>
     </div>
   );
 }
 
-function TransactionList({ transactions, onDelete }: { transactions: Transaction[]; onDelete: (id: string) => void }) {
-  const grouped = transactions.reduce(
-    (acc, t) => {
-      const month = t.date.slice(0, 7);
-      if (!acc[month]) acc[month] = [];
-      acc[month].push(t);
-      return acc;
-    },
-    {} as Record<string, Transaction[]>
-  );
+// ─── Transaction List ─────────────────────────────────────────────────────────
+function TransactionList({
+  transactions,
+  editingId,
+  justAddedId,
+  onEdit,
+  onDelete,
+}: {
+  transactions: Transaction[];
+  editingId: string | null;
+  justAddedId: string | null;
+  onEdit: (tx: Transaction) => void;
+  onDelete: (tx: Transaction) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "expense" | "income">("all");
+  const todayYmd = new Date().toISOString().split("T")[0];
 
-  const months = Object.keys(grouped).sort().reverse();
+  const filtered = useMemo(() => {
+    return transactions.filter((t) => {
+      if (filter !== "all" && t.transaction_type !== filter) return false;
+      if (search) {
+        const s = search.toLowerCase();
+        const cat = ALL_CATEGORIES.find((c) => c.key === t.category);
+        return (
+          t.description.toLowerCase().includes(s) ||
+          (cat?.label || "").toLowerCase().includes(s) ||
+          (t.tags || []).some((tag) => tag.toLowerCase().includes(s))
+        );
+      }
+      return true;
+    });
+  }, [transactions, search, filter]);
 
-  if (transactions.length === 0) {
-    return (
-      <div className="uf-card" style={{ textAlign: "center", padding: "48px 24px" }}>
-        <div style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9090a8", marginBottom: 16 }}>Transactions</div>
-        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>No transactions yet</div>
-        <div style={{ color: "#9090a8", fontSize: 14 }}>Add your first transaction above — AI will categorize it automatically</div>
-      </div>
-    );
-  }
+  const groups = useMemo(() => {
+    const byDate: Record<string, Transaction[]> = {};
+    filtered.forEach((t) => {
+      if (!byDate[t.date]) byDate[t.date] = [];
+      byDate[t.date].push(t);
+    });
+    return Object.entries(byDate).sort(([a], [b]) => b.localeCompare(a));
+  }, [filtered]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {months.map((month) => {
-        const monthTxns = grouped[month];
-        const income = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + t.amount, 0);
-        const spent = monthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + t.amount, 0);
-        const net = income - spent;
-        const date = new Date(month + "-01");
-        const monthLabel = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      {/* List header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #E2E8F0", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", letterSpacing: "-0.2px" }}>Transactions</span>
+          <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600, marginLeft: 8 }}>{filtered.length}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Search */}
+          <div style={{ position: "relative" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+              <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ background: "#F2F4F6", border: "1px solid transparent", borderRadius: 999, padding: "6px 12px 6px 30px", fontSize: 13, color: "#19181E", width: 180, outline: "none", fontFamily: "inherit" }}
+            />
+          </div>
+          {/* Filter pills */}
+          {(["all", "expense", "income"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              style={{
+                background: filter === f ? "#ECFDF5" : "#F2F4F6",
+                border: `1px solid ${filter === f ? "#6EE7B7" : "transparent"}`,
+                borderRadius: 999, padding: "6px 14px",
+                fontSize: 12, fontWeight: 600,
+                color: filter === f ? "#047857" : "#64748B",
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              {f === "all" ? "All" : f === "expense" ? "Out" : "In"}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        return (
-          <div key={month}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>{monthLabel}</div>
-              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                {income > 0 && <span style={{ fontFamily: "'DM Mono', monospace", color: "#22d3a5", fontSize: 13, fontWeight: 600 }}>+{fmt(income)}</span>}
-                {spent > 0 && <span style={{ fontFamily: "'DM Mono', monospace", color: "#ef4444", fontSize: 13, fontWeight: 600 }}>−{fmt(spent)}</span>}
-                {income > 0 && spent > 0 && (
-                  <span style={{ fontFamily: "'DM Mono', monospace", color: net >= 0 ? "#22d3a5" : "#ef4444", fontSize: 13, fontWeight: 700, borderLeft: "1px solid #e8e8f0", paddingLeft: 14 }}>
-                    Net {net >= 0 ? "+" : "−"}{fmt(Math.abs(net))}
-                  </span>
-                )}
-              </div>
+      {/* Scrollable list */}
+      <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 340px)", minHeight: 200 }}>
+        {groups.length === 0 ? (
+          <div style={{ padding: "60px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "#94A3B8", textAlign: "center" }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 17 9 13l3 3 7-7" /><path d="M14 6h5v5" />
+              </svg>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {monthTxns
-                .sort((a, b) => b.date.localeCompare(a.date))
-                .map((txn) => {
-                  const isIncome = txn.transaction_type === "income";
-                  const cat = ALL_CATEGORIES.find((c) => c.key === txn.category);
-                  return (
-                    <div key={txn.id} className="uf-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${cat?.color || "#6b6b85"}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-                        {cat?.code || (isIncome ? "IN" : "EX")}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 3 }}>{txn.description}</div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ color: cat?.color || "#6b6b85", fontSize: 11, fontWeight: 600 }}>{cat?.label || txn.category}</span>
-                          {txn.is_work_related && <span style={{ background: "rgba(99,102,241,0.15)", color: "#6366f1", borderRadius: 4, padding: "1px 6px", fontSize: 11 }}>work</span>}
-                          {txn.tags?.map((t) => (
-                            <span key={t} style={{ background: "rgba(249,115,22,0.1)", color: "#f97316", borderRadius: 4, padding: "1px 6px", fontSize: 11 }}>
-                              #{t}
-                            </span>
-                          ))}
-                          <span style={{ color: "#9090a8", fontSize: 11 }}>{new Date(txn.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 700, fontSize: 15, color: isIncome ? "#22d3a5" : "#1a1a2e" }}>
-                          {isIncome ? "+" : ""}{fmt(txn.amount, txn.currency)}
-                        </div>
-                        <button onClick={() => onDelete(txn.id)} style={{ background: "none", border: "none", color: "#9090a8", fontSize: 11, cursor: "pointer", marginTop: 4 }}>
-                          delete
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#064E3B" }}>No transactions yet</div>
+            <div style={{ fontSize: 13, maxWidth: 280 }}>
+              {search ? "Try a different search or clear filters." : "Add your first transaction with the form on the right."}
             </div>
           </div>
-        );
-      })}
+        ) : (
+          groups.map(([date, txns]) => {
+            const dayNet = txns.reduce((s, t) => s + (t.transaction_type === "income" ? t.amount : -t.amount), 0);
+            return (
+              <div key={date}>
+                <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "#94A3B8" }}>
+                  <span>{dayLabel(date, todayYmd)}</span>
+                  <span style={{ color: "#64748B", fontVariantNumeric: "tabular-nums" }}>
+                    {dayNet >= 0 ? "+" : "−"}{fmt(Math.abs(dayNet))}
+                  </span>
+                </div>
+                {txns
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((tx) => {
+                    const isIncome = tx.transaction_type === "income";
+                    const cat = ALL_CATEGORIES.find((c) => c.key === tx.category);
+                    const isEditing = editingId === tx.id;
+                    const wasJustAdded = justAddedId === tx.id;
+
+                    return (
+                      <div
+                        key={tx.id}
+                        onClick={() => onEdit(tx)}
+                        style={{
+                          display: "grid", gridTemplateColumns: "36px 1fr auto 28px",
+                          gap: 14, alignItems: "center", padding: "12px 20px",
+                          borderTop: "1px solid #F1F5F9", cursor: "pointer",
+                          background: isEditing ? "#ECFDF5" : wasJustAdded ? "#DCFCE7" : "transparent",
+                          transition: "background 0.12s",
+                        }}
+                        onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLDivElement).style.background = "#F8FAFC"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isEditing ? "#ECFDF5" : "transparent"; }}
+                      >
+                        {/* Category chip */}
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: cat?.color || "#6b7280", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", flexShrink: 0 }}>
+                          {cat?.code || (isIncome ? "IN" : "EX")}
+                        </div>
+
+                        {/* Description + meta */}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+                            <span style={{ fontSize: 11.5, color: "#94A3B8" }}>{cat?.label || tx.category}</span>
+                            {tx.is_work_related && <span style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1", borderRadius: 4, padding: "1px 6px", fontSize: 10.5, fontWeight: 600 }}>work</span>}
+                            {(tx.tags || []).slice(0, 2).map((t) => (
+                              <span key={t} style={{ background: "#F1F5F9", color: "#64748B", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Amount */}
+                        <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "#19181E", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                          {isIncome ? "+" : "−"}{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                        </div>
+
+                        {/* Delete */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onDelete(tx); }}
+                          style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", border: "none", color: "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: 0, transition: "opacity 0.12s, background 0.12s" }}
+                          className="tx-delete-btn"
+                          aria-label="delete"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <style>{`
+        div:hover > .tx-delete-btn, tr:hover .tx-delete-btn { opacity: 1 !important; }
+        [data-row]:hover .tx-delete-btn { opacity: 1; }
+      `}</style>
     </div>
   );
 }
 
+// ─── Monthly Summary ──────────────────────────────────────────────────────────
 function MonthlySummary({
   transactions,
   viewMonth,
@@ -433,110 +665,175 @@ function MonthlySummary({
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
+  const prevMonth = (() => {
+    const [py, pm] = viewMonth.split("-").map(Number);
+    const d = new Date(py, pm - 2, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  })();
+  const prevTxns = transactions.filter((t) => t.date.startsWith(prevMonth));
+  const prevIncome = prevTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const prevSpent = prevTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+
+  const kpiCard = (label: string, value: number, color: string, hint: string) => (
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, color, letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums", lineHeight: 1.05 }}>
+        {label === "Net" && value >= 0 ? "+" : ""}{fmt(value)}
+      </div>
+      <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 10, fontVariantNumeric: "tabular-nums" }}>{hint}</div>
+    </div>
+  );
+
   return (
-    <div className="uf-card" style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div style={{ fontWeight: 700, fontSize: 16 }}>{monthLabel}</div>
-        <div style={{ display: "flex", gap: 4 }}>
-          <button
-            onClick={onPrevMonth}
-            style={{ background: "#e8e8f0", border: "none", color: "#1a1a2e", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 16, lineHeight: 1 }}
-          >
-            ←
+    <div style={{ marginBottom: 20 }}>
+      {/* Header row: month label + nav */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 22, color: "#064E3B", letterSpacing: "-0.4px" }}>{monthLabel}</div>
+          {isMixed && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>Totals converted to USD · live rates</div>}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m14 6-6 6 6 6" /></svg>
           </button>
-          <button
-            onClick={onNextMonth}
-            disabled={isCurrentMonth}
-            style={{ background: "#e8e8f0", border: "none", color: isCurrentMonth ? "#b8b8cc" : "#1a1a2e", borderRadius: 6, padding: "4px 12px", cursor: isCurrentMonth ? "default" : "pointer", fontSize: 16, lineHeight: 1 }}
-          >
-            →
+          <div style={{ padding: "0 8px", fontSize: 14, fontWeight: 700, color: "#064E3B", minWidth: 130, textAlign: "center", letterSpacing: "-0.2px" }}>{monthLabel}</div>
+          <button onClick={onNextMonth} disabled={isCurrentMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: isCurrentMonth ? "#CBD5E1" : "#64748B", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6 6 6-6 6" /></svg>
           </button>
         </div>
       </div>
 
-      {monthTxns.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "32px 0", color: "#9090a8", fontSize: 14 }}>No transactions for this month</div>
-      ) : (
-        <>
-          {isMixed && (
-            <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 10 }}>
-              Totals converted to USD · live rates
-            </div>
-          )}
-          <div style={{ display: "grid", gridTemplateColumns: workTotal > 0 ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-            <div style={{ background: "#f9f9fb", borderRadius: 12, padding: "14px 16px" }}>
-              <div style={{ color: "#9090a8", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Income</div>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 700, color: "#22d3a5" }}>{fmt(incomeTotal)}</div>
-            </div>
-            <div style={{ background: "#f9f9fb", borderRadius: 12, padding: "14px 16px" }}>
-              <div style={{ color: "#9090a8", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Spent</div>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 700, color: "#ef4444" }}>{fmt(expenseTotal)}</div>
-            </div>
-            <div style={{ background: net >= 0 ? "rgba(34,211,165,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${net >= 0 ? "rgba(34,211,165,0.2)" : "rgba(239,68,68,0.2)"}`, borderRadius: 12, padding: "14px 16px" }}>
-              <div style={{ color: "#9090a8", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Net</div>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 700, color: net >= 0 ? "#22d3a5" : "#ef4444" }}>
-                {net >= 0 ? "+" : "−"}{fmt(Math.abs(net))}
-              </div>
-            </div>
-            {workTotal > 0 && (
-              <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12, padding: "14px 16px" }}>
-                <div style={{ color: "#6366f1", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Work</div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 700, color: "#6366f1" }}>{fmt(workTotal)}</div>
-              </div>
-            )}
-          </div>
+      {/* KPI grid */}
+      <div style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : workTotal > 0 ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+        {kpiCard("Income", incomeTotal, "#059669", prevIncome > 0 ? `vs ${fmt(prevIncome)} last month` : "No prior month data")}
+        {kpiCard("Spent", expenseTotal, "#19181E", prevSpent > 0 ? `vs ${fmt(prevSpent)} last month` : "No prior month data")}
+        {kpiCard("Net", net, net >= 0 ? "#047857" : "#DC2626", net >= 0 && incomeTotal > 0 ? `${((net / incomeTotal) * 100).toFixed(1)}% savings rate` : "Spending exceeds income")}
+        {workTotal > 0 && kpiCard("Work", workTotal, "#6366f1", "work-related expenses")}
 
-          {byCat.length > 0 && (
-            <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-              <div style={{ flexShrink: 0 }}>
-                <ResponsiveContainer width={176} height={176}>
-                  <PieChart>
-                    <Pie data={byCat} cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={2} dataKey="total">
-                      {byCat.map((cat) => (
-                        <Cell key={cat.key} fill={cat.color} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip
-                      formatter={(v) => [fmt(Number(v ?? 0)), ""]}
-                      contentStyle={{ background: "#ffffff", border: "1px solid #e8e8f0", borderRadius: 8, fontFamily: "DM Mono, monospace", fontSize: 12 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
-                {byCat.map((cat) => {
-                  const budget = budgetExpenses?.[cat.key] || 0;
-                  const over = budget > 0 && cat.total > budget;
-                  const barPct = budget > 0 ? Math.min(100, (cat.total / budget) * 100) : (cat.total / expenseTotal) * 100;
-                  return (
-                    <div key={cat.key}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                        <span style={{ color: "#6b6b85" }}>{cat.label}</span>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 600, color: over ? "#ef4444" : cat.color }}>
-                          {fmt(cat.total)}
-                          {budget > 0 ? (
-                            <span style={{ color: "#9090a8", fontWeight: 400 }}> / {fmt(budget)}</span>
-                          ) : (
-                            <span style={{ color: "#9090a8", fontWeight: 400 }}> ({((cat.total / expenseTotal) * 100).toFixed(0)}%)</span>
-                          )}
-                        </span>
-                      </div>
-                      <div style={{ height: 4, background: "#e8e8f0", borderRadius: 4, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${barPct}%`, background: over ? "#ef4444" : cat.color, borderRadius: 4, transition: "width 0.4s" }} />
-                      </div>
-                      {over && <div style={{ fontSize: 11, color: "#ef4444", marginTop: 2 }}>over by {fmt(cat.total - budget)}</div>}
-                    </div>
-                  );
-                })}
-              </div>
+        {/* Donut card */}
+        {byCat.length > 0 && (
+          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <div style={{ flexShrink: 0 }}>
+              <ResponsiveContainer width={88} height={88}>
+                <PieChart>
+                  <Pie data={byCat} cx="50%" cy="50%" innerRadius={26} outerRadius={40} paddingAngle={2} dataKey="total">
+                    {byCat.map((cat) => <Cell key={cat.key} fill={cat.color} />)}
+                  </Pie>
+                  <ChartTooltip
+                    formatter={(v) => [fmt(Number(v ?? 0)), ""]}
+                    contentStyle={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-          )}
-        </>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+              {byCat.slice(0, 4).map((cat) => (
+                <div key={cat.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: cat.color, flexShrink: 0 }} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, color: "#19181E" }}>{cat.label}</span>
+                  <span style={{ color: "#94A3B8", fontVariantNumeric: "tabular-nums" }}>{expenseTotal ? Math.round((cat.total / expenseTotal) * 100) : 0}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Budget bars */}
+      {byCat.length > 0 && budgetExpenses && (
+        <div className="uf-card" style={{ marginBottom: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {byCat.map((cat) => {
+              const budget = budgetExpenses[cat.key] || 0;
+              const over = budget > 0 && cat.total > budget;
+              const barPct = budget > 0 ? Math.min(100, (cat.total / budget) * 100) : (cat.total / expenseTotal) * 100;
+              return (
+                <div key={cat.key}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                    <span style={{ color: "#64748B" }}>{cat.label}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: over ? "#DC2626" : cat.color }}>
+                      {fmt(cat.total)}
+                      {budget > 0 ? <span style={{ color: "#94A3B8", fontWeight: 400 }}> / {fmt(budget)}</span> : <span style={{ color: "#94A3B8", fontWeight: 400 }}> ({((cat.total / expenseTotal) * 100).toFixed(0)}%)</span>}
+                    </span>
+                  </div>
+                  <div style={{ height: 4, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${barPct}%`, background: over ? "#DC2626" : cat.color, borderRadius: 4, transition: "width 0.4s" }} />
+                  </div>
+                  {over && <div style={{ fontSize: 11, color: "#DC2626", marginTop: 2 }}>over by {fmt(cat.total - budget)}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function Toast({
+  toast,
+  onUndo,
+}: {
+  toast: { msg: string; undoId?: string; _removed?: Transaction } | null;
+  onUndo: () => void;
+}) {
+  return (
+    <div style={{
+      position: "fixed", bottom: 28, left: "50%",
+      transform: `translateX(-50%) translateY(${toast ? 0 : 20}px)`,
+      opacity: toast ? 1 : 0, transition: "all 220ms",
+      background: "#064E3B", color: "#fff", borderRadius: 999,
+      padding: "10px 16px 10px 14px", fontSize: 13, fontWeight: 600,
+      display: "flex", alignItems: "center", gap: 12, zIndex: 50,
+      pointerEvents: toast ? "auto" : "none",
+      boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
+    }}>
+      <span style={{ width: 18, height: 18, background: "#10B981", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12 }}>✓</span>
+      <span>{toast?.msg}</span>
+      {toast?.undoId && (
+        <button onClick={onUndo} style={{ background: "transparent", border: "none", color: "#62FAE3", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", cursor: "pointer", padding: 0 }}>
+          Undo
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Mobile components ────────────────────────────────────────────────────────
+function MobileBar({ onOpen }: { onOpen: () => void }) {
+  return (
+    <div style={{ display: "none" }} className="cf-mobile-bar">
+      <button onClick={onOpen} style={{ flex: 1, color: "#94A3B8", fontSize: 14, border: "none", background: "transparent", textAlign: "left", padding: "6px 4px", cursor: "pointer", fontFamily: "inherit" }}>
+        + Add a transaction…
+      </button>
+      <button onClick={onOpen} style={{ width: 40, height: 40, background: "#047857", color: "#fff", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", flexShrink: 0 }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+      </button>
+    </div>
+  );
+}
+
+function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 40, opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity 200ms" }} />
+      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "#fff", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
+        <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", margin: "10px auto 6px", cursor: "pointer" }} />
+        <div style={{ flex: 1, overflowY: "auto" }}>{children}</div>
+      </div>
+    </>
+  );
+}
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
 export default function TransactionsTab() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -546,10 +843,18 @@ export default function TransactionsTab() {
   const [budgetExpenses, setBudgetExpenses] = useState<Record<string, number> | null>(null);
   const [rates, setRates] = useState<Record<string, number>>({});
 
+  // Form state (lifted so edit can populate it)
+  const [draft, setDraft] = useState<DraftTransaction>(EMPTY_DRAFT);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction } | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
-      .then(r => r.json())
-      .then(d => setRates(d.rates ?? {}))
+      .then((r) => r.json())
+      .then((d) => setRates(d.rates ?? {}))
       .catch(() => {});
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -577,33 +882,139 @@ export default function TransactionsTab() {
     });
   }, []);
 
-  const handleAdd = (txn: Transaction) => setTransactions((prev) => [txn, ...prev]);
+  const monthTxns = useMemo(
+    () => transactions.filter((t) => t.date.startsWith(viewMonth)),
+    [transactions, viewMonth]
+  );
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Delete this transaction?")) return;
-    await supabase.from("expenses").delete().eq("id", id);
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-  };
+  const showToast = useCallback((msg: string, undoId?: string, removed?: Transaction) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ msg, undoId, _removed: removed });
+    toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
+  }, []);
+
+  const handleSave = useCallback(async (keepOpen: boolean) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const payload = {
+      user_id: session.user.id,
+      date: draft.date,
+      amount: parseFloat(draft.amount),
+      currency: draft.currency,
+      description: draft.description,
+      category: draft.category || (draft.transaction_type === "income" ? "other_income" : "other"),
+      tags: draft.tags,
+      is_work_related: draft.is_work_related,
+      transaction_type: draft.transaction_type,
+    };
+
+    if (draft.id) {
+      // Edit existing
+      const { data, error } = await supabase.from("expenses").update(payload).eq("id", draft.id).select().single();
+      if (!error && data) {
+        setTransactions((prev) => prev.map((t) => (t.id === draft.id ? data : t)));
+        setEditingId(null);
+        setDraft(EMPTY_DRAFT());
+        showToast("Transaction updated");
+      }
+    } else {
+      // Insert new
+      const { data, error } = await supabase.from("expenses").insert(payload).select().single();
+      if (!error && data) {
+        setTransactions((prev) => [data, ...prev]);
+        setJustAddedId(data.id);
+        setTimeout(() => setJustAddedId(null), 1600);
+        if (viewMonth !== data.date.slice(0, 7)) setViewMonth(data.date.slice(0, 7));
+        showToast(`Added — ${data.description || `$${data.amount}`}`, data.id);
+        if (!keepOpen) {
+          setDraft(EMPTY_DRAFT());
+        } else {
+          setDraft((d) => ({ ...EMPTY_DRAFT(), date: d.date, transaction_type: d.transaction_type, currency: d.currency }));
+        }
+        if (drawerOpen && !keepOpen) setDrawerOpen(false);
+      }
+    }
+  }, [draft, drawerOpen, viewMonth, showToast]);
+
+  const handleEdit = useCallback((tx: Transaction) => {
+    setEditingId(tx.id);
+    setDraft({
+      id: tx.id,
+      transaction_type: tx.transaction_type,
+      amount: String(tx.amount),
+      currency: tx.currency,
+      description: tx.description,
+      date: tx.date,
+      category: tx.category,
+      tags: [...(tx.tags || [])],
+      is_work_related: tx.is_work_related,
+      aiSuggestion: null,
+    });
+    // On mobile, open drawer
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1024px)").matches) {
+      setDrawerOpen(true);
+    }
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingId(null);
+    setDraft(EMPTY_DRAFT());
+    if (drawerOpen) setDrawerOpen(false);
+  }, [drawerOpen]);
+
+  const handleDelete = useCallback(async (tx: Transaction) => {
+    if (!window.confirm(`Delete "${tx.description}"?`)) return;
+    await supabase.from("expenses").delete().eq("id", tx.id);
+    setTransactions((prev) => prev.filter((t) => t.id !== tx.id));
+    if (editingId === tx.id) { setEditingId(null); setDraft(EMPTY_DRAFT()); }
+    showToast(`Deleted "${tx.description}"`, "undo:" + tx.id, tx);
+  }, [editingId, showToast]);
+
+  const handleUndo = useCallback(() => {
+    if (!toast) return;
+    if (toast._removed) {
+      // Re-insert
+      supabase.from("expenses").insert({ ...toast._removed }).then(({ data }) => {
+        if (data) setTransactions((prev) => [toast._removed!, ...prev]);
+        else setTransactions((prev) => [toast._removed!, ...prev]);
+      });
+      setTransactions((prev) => [toast._removed!, ...prev]);
+    } else if (toast.undoId && !toast.undoId.startsWith("undo:")) {
+      // Undo add: delete the just-added transaction
+      supabase.from("expenses").delete().eq("id", toast.undoId);
+      setTransactions((prev) => prev.filter((t) => t.id !== toast.undoId));
+    }
+    setToast(null);
+  }, [toast]);
 
   const handlePrevMonth = () => {
-    const [y, m] = viewMonth.split("-").map(Number);
-    const d = new Date(y, m - 2, 1);
+    const [py, pm] = viewMonth.split("-").map(Number);
+    const d = new Date(py, pm - 2, 1);
     setViewMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
   };
 
   const handleNextMonth = () => {
-    const [y, m] = viewMonth.split("-").map(Number);
-    const d = new Date(y, m, 1);
+    const [py, pm] = viewMonth.split("-").map(Number);
+    const d = new Date(py, pm, 1);
     const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     if (next <= currentMonth) setViewMonth(next);
   };
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: "60px 0", color: "#9090a8" }}>Loading transactions...</div>;
+    return <div style={{ textAlign: "center", padding: "60px 0", color: "#94A3B8" }}>Loading transactions…</div>;
   }
 
   return (
     <>
+      <style>{`
+        @media (max-width: 1024px) {
+          .cf-split { grid-template-columns: 1fr !important; }
+          .cf-form-col { display: none; }
+          .cf-mobile-bar { display: flex !important; position: fixed; bottom: 16px; left: 16px; right: 16px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 10px 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); align-items: center; gap: 10px; z-index: 30; }
+        }
+      `}</style>
+
       <MonthlySummary
         transactions={transactions}
         viewMonth={viewMonth}
@@ -612,8 +1023,38 @@ export default function TransactionsTab() {
         budgetExpenses={budgetExpenses}
         rates={rates}
       />
-      <AddTransactionForm onAdd={handleAdd} />
-      <TransactionList transactions={transactions} onDelete={handleDelete} />
+
+      <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "start" }}>
+        <TransactionList
+          transactions={monthTxns}
+          editingId={editingId}
+          justAddedId={justAddedId}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+        <div className="cf-form-col">
+          <QuickAddForm
+            draft={draft}
+            setDraft={setDraft}
+            onSave={handleSave}
+            editing={!!editingId}
+            onCancelEdit={handleCancelEdit}
+          />
+        </div>
+      </div>
+
+      <MobileBar onOpen={() => { setEditingId(null); setDraft(EMPTY_DRAFT()); setDrawerOpen(true); }} />
+      <MobileDrawer open={drawerOpen} onClose={() => { setDrawerOpen(false); if (editingId) handleCancelEdit(); }}>
+        <QuickAddForm
+          draft={draft}
+          setDraft={setDraft}
+          onSave={handleSave}
+          editing={!!editingId}
+          onCancelEdit={handleCancelEdit}
+        />
+      </MobileDrawer>
+
+      <Toast toast={toast} onUndo={handleUndo} />
     </>
   );
 }
