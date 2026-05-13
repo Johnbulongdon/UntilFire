@@ -143,6 +143,83 @@ Rules: tags: 1-3 short tags; is_work_related: true only for expense type work it
   }
 }
 
+// ─── ProjectInput ─────────────────────────────────────────────────────────────
+function ProjectInput({
+  existingTags,
+  currentTags,
+  onAdd,
+}: {
+  existingTags: string[];
+  currentTags: string[];
+  onAdd: (tag: string) => void;
+}) {
+  const [value, setValue] = useState("");
+  const [focused, setFocused] = useState(false);
+
+  const suggestions = existingTags.filter(
+    (t) => t.toLowerCase().includes(value.toLowerCase().trim()) && !currentTags.includes(t)
+  );
+
+  const commit = () => {
+    const v = value.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    if (v) { onAdd(v); setValue(""); }
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input
+          type="text"
+          placeholder="e.g. japan-2025, nyc-conference"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 120)}
+          style={{ flex: 1, border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
+        />
+        {value.trim() && (
+          <button
+            type="button"
+            onClick={commit}
+            style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 700, color: "#047857", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
+          >
+            + Add
+          </button>
+        )}
+      </div>
+      {focused && value.trim() && suggestions.length > 0 && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+          {suggestions.slice(0, 6).map((t) => (
+            <button
+              key={t}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onAdd(t); setValue(""); }}
+              style={{ width: "100%", textAlign: "left", padding: "8px 14px", fontSize: 13, color: "#19181E", background: "none", border: "none", borderBottom: "1px solid #F1F5F9", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              <span style={{ color: "#94A3B8" }}>#</span>{t}
+            </button>
+          ))}
+        </div>
+      )}
+      {focused && !value.trim() && existingTags.filter(t => !currentTags.includes(t)).length > 0 && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+          {existingTags.filter(t => !currentTags.includes(t)).slice(0, 6).map((t) => (
+            <button
+              key={t}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onAdd(t); setValue(""); }}
+              style={{ width: "100%", textAlign: "left", padding: "8px 14px", fontSize: 13, color: "#19181E", background: "none", border: "none", borderBottom: "1px solid #F1F5F9", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              <span style={{ color: "#94A3B8" }}>#</span>{t}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── QuickAddForm ─────────────────────────────────────────────────────────────
 function QuickAddForm({
   draft,
@@ -150,12 +227,14 @@ function QuickAddForm({
   onSave,
   editing,
   onCancelEdit,
+  existingTags,
 }: {
   draft: DraftTransaction;
   setDraft: React.Dispatch<React.SetStateAction<DraftTransaction>>;
   onSave: (keepOpen: boolean) => void;
   editing: boolean;
   onCancelEdit: () => void;
+  existingTags: string[];
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const [categorizing, setCategorizing] = useState(false);
@@ -329,7 +408,7 @@ function QuickAddForm({
           </button>
         )}
 
-        {/* Date + Tags */}
+        {/* Date + Work expense */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Date</label>
@@ -408,6 +487,32 @@ function QuickAddForm({
             </div>
           </div>
         )}
+
+        {/* Project / Event */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>
+            Project / Event <span style={{ color: "#94A3B8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+          </label>
+          {draft.tags.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {draft.tags.map((tag) => (
+                <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#047857" }}>
+                  #{tag}
+                  <button
+                    type="button"
+                    onClick={() => setField("tags", draft.tags.filter((t) => t !== tag))}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#6EE7B7", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
+                  >×</button>
+                </span>
+              ))}
+            </div>
+          )}
+          <ProjectInput
+            existingTags={existingTags}
+            currentTags={draft.tags}
+            onAdd={(tag) => { if (!draft.tags.includes(tag)) setField("tags", [...draft.tags, tag]); }}
+          />
+        </div>
 
         {/* Income category dropdown */}
         {isIncome && (
@@ -939,6 +1044,11 @@ export default function TransactionsTab() {
     [transactions, viewMonth]
   );
 
+  const existingTags = useMemo(
+    () => [...new Set(transactions.flatMap((t) => t.tags || []))].sort(),
+    [transactions]
+  );
+
   const showToast = useCallback((msg: string, undoId?: string, removed?: Transaction) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, undoId, _removed: removed });
@@ -983,7 +1093,7 @@ export default function TransactionsTab() {
         if (!keepOpen) {
           setDraft(EMPTY_DRAFT());
         } else {
-          setDraft((d) => ({ ...EMPTY_DRAFT(), date: d.date, transaction_type: d.transaction_type, currency: d.currency, sub_category: "" }));
+          setDraft((d) => ({ ...EMPTY_DRAFT(), date: d.date, transaction_type: d.transaction_type, currency: d.currency, sub_category: "", tags: d.tags }));
         }
         if (drawerOpen && !keepOpen) setDrawerOpen(false);
       }
@@ -1094,6 +1204,7 @@ export default function TransactionsTab() {
             onSave={handleSave}
             editing={!!editingId}
             onCancelEdit={handleCancelEdit}
+            existingTags={existingTags}
           />
         </div>
       </div>
