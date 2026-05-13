@@ -41,6 +41,11 @@ const INCOME_CATEGORIES = [
 const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CNY", "AUD", "CAD", "SGD", "HKD"];
 
+const FALLBACK_RATES: Record<string, number> = {
+  EUR: 0.92, GBP: 0.79, JPY: 149.5, CNY: 7.27,
+  AUD: 1.56, CAD: 1.36, SGD: 1.30, HKD: 7.78,
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
@@ -888,7 +893,7 @@ export default function TransactionsTab() {
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
   const [budgetExpenses, setBudgetExpenses] = useState<Record<string, number> | null>(null);
-  const [rates, setRates] = useState<Record<string, number>>({});
+  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
 
   // Form state (lifted so edit can populate it)
   const [draft, setDraft] = useState<DraftTransaction>(EMPTY_DRAFT);

@@ -46,6 +46,11 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>) 
   return rate ? amount / rate : amount;
 };
 
+const FALLBACK_RATES: Record<string, number> = {
+  EUR: 0.92, GBP: 0.79, JPY: 149.5, CNY: 7.27,
+  AUD: 1.56, CAD: 1.36, SGD: 1.30, HKD: 7.78,
+};
+
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable,
@@ -1247,7 +1252,7 @@ export default function Dashboard() {
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string }[]>([]);
-  const [rates, setRates] = useState<Record<string, number>>({});
+  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
     rawActuals.forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(e.amount, e.currency, rates); });

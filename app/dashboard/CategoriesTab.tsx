@@ -20,6 +20,11 @@ const EXPENSE_CATEGORIES = [
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
+const FALLBACK_RATES: Record<string, number> = {
+  EUR: 0.92, GBP: 0.79, JPY: 149.5, CNY: 7.27,
+  AUD: 1.56, CAD: 1.36, SGD: 1.30, HKD: 7.78,
+};
+
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
   const rate = rates[currency];
@@ -248,7 +253,7 @@ function ProjectRow({
 export default function CategoriesTab() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rates, setRates] = useState<Record<string, number>>({});
+  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
