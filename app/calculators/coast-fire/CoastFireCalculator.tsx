@@ -4,19 +4,19 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 
 const C = {
-  bg: '#f6fbf7',
+  bg: '#F7F9FB',
   card: '#ffffff',
-  border: '#dbe7df',
-  text: '#163127',
-  muted: '#5f7a6f',
-  mutedLight: '#6b7f76',
-  accent: '#047857',
-  teal: '#059669',
-  purple: '#8b5cf6',
+  border: '#E2E8F0',
+  text: '#19181E',
+  muted: '#64748B',
+  mutedLight: '#94A3B8',
+  accent: '#059669',
+  teal: '#20D4BF',
+  purple: '#7C3AED',
 }
 
 const inputStyle: React.CSSProperties = {
-  background: '#dbe7df',
+  background: '#ffffff',
   border: `1px solid ${C.border}`,
   borderRadius: 8,
   color: C.text,
@@ -29,7 +29,7 @@ const inputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   fontSize: 13,
-  color: C.mutedLight,
+  color: C.muted,
   marginBottom: 6,
   display: 'block',
   fontWeight: 500,
@@ -63,16 +63,11 @@ export default function CoastFireCalculator() {
 
     const yearsUntilRetire = Math.max(0, retire - age)
     const fireTarget = exp / wr
-    // Coast FIRE number: how much you need NOW to reach fireTarget with no more contributions
     const coastNumber = fireTarget / Math.pow(1 + r, yearsUntilRetire)
     const progressPct = coastNumber > 0 ? Math.min((saved / coastNumber) * 100, 100) : 0
     const gap = Math.max(0, coastNumber - saved)
     const alreadyCoast = saved >= coastNumber
 
-    // How long until you hit coast number at current savings rate (assume 1k/mo for context)
-    // We just show the gap instead
-
-    // Timeline: show balance at each decade from now to retirement
     const milestones = []
     for (let y = 0; y <= yearsUntilRetire; y += Math.max(1, Math.floor(yearsUntilRetire / 6))) {
       const age_ = age + y
@@ -80,7 +75,6 @@ export default function CoastFireCalculator() {
       const projectedBalance = saved * Math.pow(1 + r, y)
       milestones.push({ year: y, age: age_, balance: projectedBalance })
     }
-    // Always include final year
     if (yearsUntilRetire > 0) {
       milestones.push({ year: yearsUntilRetire, age: retire, balance: saved * Math.pow(1 + r, yearsUntilRetire) })
     }
@@ -89,16 +83,15 @@ export default function CoastFireCalculator() {
   }, [annualExpenses, currentAge, retireAge, currentSavings, returnRate, withdrawalRate])
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: 'sans-serif' }}>
-      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span style={{ color: C.text, fontWeight: 800, fontSize: 18, letterSpacing: '-1px' }}>Until</span>
-          <span style={{ color: C.accent, fontWeight: 800, fontSize: 18, letterSpacing: '-1px' }}>Fire</span>
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
+      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Link href="/" style={{ textDecoration: 'none', fontWeight: 800, fontSize: 18, letterSpacing: '-0.04em', color: '#064E3B' }}>
+          Until<span style={{ color: '#20D4BF' }}>Fire</span>
         </Link>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <Link href="/calculators" style={{ color: C.mutedLight, textDecoration: 'none', fontSize: 14 }}>-All calculators</Link>
-          <Link href="/" style={{ color: C.accent, textDecoration: 'none', fontSize: 14, fontWeight: 600, border: `1px solid ${C.accent}`, padding: '6px 14px', borderRadius: 6 }}>
-            FIRE number -
+          <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>
+          <Link href="/" style={{ color: '#059669', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid #059669', padding: '6px 14px', borderRadius: 6 }}>
+            FIRE number →
           </Link>
         </div>
       </nav>
@@ -106,19 +99,19 @@ export default function CoastFireCalculator() {
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 36 }}>
           <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 12 }}>
-            FIRE -Strategy
+            FIRE · Strategy
           </div>
-          <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: 800, letterSpacing: '-2px', margin: '0 0 12px', lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 12px', lineHeight: 1.1 }}>
             Coast FIRE Calculator
           </h1>
-          <p style={{ fontSize: 16, color: C.mutedLight, margin: 0, lineHeight: 1.7 }}>
-            Coast FIRE is the point where you have enough invested that -even if you stop contributing today -
+          <p style={{ fontSize: 16, color: C.muted, margin: 0, lineHeight: 1.7 }}>
+            Coast FIRE is the point where you have enough invested that — even if you stop contributing today —
             compound growth will carry you to full retirement by your target age. Find your magic number.
           </p>
         </div>
 
         {/* Inputs */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '32px', marginBottom: 24 }}>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '32px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
             <div>
               <label style={labelStyle}>Annual expenses at retirement ($)</label>
@@ -148,17 +141,15 @@ export default function CoastFireCalculator() {
         </div>
 
         {/* Result */}
-        <div
-          style={{
-            background: result.alreadyCoast ? '#0a1a0a' : '#110d1a',
-            border: `1px solid ${result.alreadyCoast ? C.teal : C.purple}30`,
-            borderRadius: 16,
-            padding: '28px 32px',
-            marginBottom: 24,
-          }}
-        >
+        <div style={{
+          background: result.alreadyCoast ? '#ECFDF5' : '#F5F3FF',
+          border: `1px solid ${result.alreadyCoast ? '#A7F3D0' : '#DDD6FE'}`,
+          borderRadius: 16,
+          padding: '28px 32px',
+          marginBottom: 24,
+        }}>
           {result.alreadyCoast ? (
-            <div style={{ marginBottom: 24, padding: '14px 18px', background: `${C.teal}15`, border: `1px solid ${C.teal}40`, borderRadius: 10, color: C.teal, fontWeight: 700, fontSize: 15 }}>
+            <div style={{ marginBottom: 24, padding: '14px 18px', background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 10, color: '#065F46', fontWeight: 700, fontSize: 15 }}>
               You&apos;ve already hit your Coast FIRE number.
               If you stop contributing today, your investments will grow to {fmt(result.fireTarget)} by age {retireAge}.
             </div>
@@ -166,13 +157,13 @@ export default function CoastFireCalculator() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
             <div>
-              <div style={{ fontSize: 12, color: C.mutedLight, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Coast FIRE number</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: C.purple, letterSpacing: '-1.5px' }}>{fmt(result.coastNumber)}</div>
+              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Coast FIRE number</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: C.purple, letterSpacing: '-0.04em' }}>{fmt(result.coastNumber)}</div>
               <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{fmtFull(result.coastNumber)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: C.mutedLight, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Full FIRE target</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: C.text, letterSpacing: '-1.5px' }}>{fmt(result.fireTarget)}</div>
+              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Full FIRE target</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{fmt(result.fireTarget)}</div>
               <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>needed at age {retireAge}</div>
             </div>
           </div>
@@ -180,16 +171,16 @@ export default function CoastFireCalculator() {
           {/* Progress bar */}
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 13, color: C.mutedLight }}>Progress to Coast FIRE</span>
-              <span style={{ fontSize: 13, color: result.alreadyCoast ? C.teal : C.purple, fontWeight: 700 }}>
+              <span style={{ fontSize: 13, color: C.muted }}>Progress to Coast FIRE</span>
+              <span style={{ fontSize: 13, color: result.alreadyCoast ? C.accent : C.purple, fontWeight: 700 }}>
                 {result.progressPct.toFixed(0)}%
               </span>
             </div>
-            <div style={{ height: 10, background: C.border, borderRadius: 999, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${result.progressPct}%`, background: result.alreadyCoast ? C.teal : C.purple, borderRadius: 999, transition: 'width 0.3s' }} />
+            <div style={{ height: 10, background: '#E2E8F0', borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${result.progressPct}%`, background: result.alreadyCoast ? C.accent : C.purple, borderRadius: 999, transition: 'width 0.3s' }} />
             </div>
             {!result.alreadyCoast && (
-              <div style={{ fontSize: 13, color: C.mutedLight, marginTop: 8 }}>
+              <div style={{ fontSize: 13, color: C.muted, marginTop: 8 }}>
                 You need <span style={{ color: C.text, fontWeight: 600 }}>{fmt(result.gap)} more</span> to reach Coast FIRE
               </div>
             )}
@@ -198,15 +189,15 @@ export default function CoastFireCalculator() {
           {/* Growth milestones */}
           {result.milestones.length > 1 && (
             <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 20 }}>
-              <div style={{ fontSize: 13, color: C.mutedLight, marginBottom: 12, fontWeight: 600 }}>
+              <div style={{ fontSize: 13, color: C.muted, marginBottom: 12, fontWeight: 600 }}>
                 What your current savings grow to (no additional contributions)
               </div>
               <div style={{ display: 'grid', gap: 8 }}>
                 {result.milestones.map(({ age: a, balance }) => (
-                  <div key={a} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: '#ffffff', borderRadius: 8 }}>
-                    <span style={{ color: C.mutedLight, fontSize: 14 }}>Age {a}</span>
-                    <span style={{ color: balance >= result.fireTarget ? C.teal : C.text, fontWeight: 600, fontSize: 14 }}>
-                      {fmtFull(balance)}{balance >= result.fireTarget ? ' (target met)' : ''}
+                  <div key={a} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8 }}>
+                    <span style={{ color: C.muted, fontSize: 14 }}>Age {a}</span>
+                    <span style={{ color: balance >= result.fireTarget ? C.accent : C.text, fontWeight: 600, fontSize: 14 }}>
+                      {fmtFull(balance)}{balance >= result.fireTarget ? ' ✓' : ''}
                     </span>
                   </div>
                 ))}
@@ -216,20 +207,20 @@ export default function CoastFireCalculator() {
         </div>
 
         {/* SEO content */}
-        <div style={{ color: C.mutedLight, lineHeight: 1.8, fontSize: 15 }}>
-          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.5px' }}>
+        <div style={{ color: C.muted, lineHeight: 1.8, fontSize: 15 }}>
+          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.02em' }}>
             What is Coast FIRE?
           </h2>
           <p style={{ marginBottom: 16 }}>
             Coast FIRE is a milestone before full FIRE. Once you hit your Coast number, you have enough invested
-            that you can stop making retirement contributions entirely -your money will compound to your full FIRE target
+            that you can stop making retirement contributions entirely — your money will compound to your full FIRE target
             by your intended retirement age all on its own.
           </p>
           <p style={{ marginBottom: 16 }}>
-            <strong style={{ color: C.text }}>Formula:</strong> Coast FIRE = FIRE Target 濮?(1 + r)^years to retirement
+            <strong style={{ color: C.text }}>Formula:</strong> Coast FIRE = FIRE Target ÷ (1 + r)^years to retirement
           </p>
           <p>
-            After reaching Coast FIRE, many people shift to covering just their living expenses -taking lower-stress
+            After reaching Coast FIRE, many people shift to covering just their living expenses — taking lower-stress
             jobs, going part-time, or pursuing passion projects. Your investments do the heavy lifting. This is also
             called &quot;Barista FIRE&quot; or &quot;Slow FIRE.&quot;
           </p>

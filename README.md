@@ -1,79 +1,95 @@
 # UntilFire
 
-UntilFire is a Next.js FIRE planning app with a public calculator, a logged-in dashboard, a calculator library, and a small learning hub.
+Personal FIRE calculator and financial independence tracker. Free calculator (no login), paid AI adviser tier.
+
+Live at **untilfire.com**.
 
 ## Stack
 
-- Next.js 15 App Router
-- React 19
-- Supabase auth + data
-- Tailwind CSS v4 foundations plus route-level inline styling
-- Recharts for projections
-- Vercel for deployment
+| Layer | Tech |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Auth + DB | Supabase (Google OAuth, Postgres) |
+| Styling | Tailwind CSS v4 + inline styles (Manrope / Inter) |
+| Charts | Recharts |
+| Payments | Stripe |
+| Email | Resend |
+| Hosting | Vercel |
+| Analytics | Vercel Analytics, PostHog, Google Analytics |
 
-## Routes
+## Design system
 
-- `/` - landing page and main FIRE calculator
-- `/dashboard` - logged-in planning dashboard
-- `/learn` - public learning hub
-- `/calculators/*` - standalone calculator pages
-- `/login` - Google OAuth entry
+White/green. Background `#F7F9FB`, primary green `#064E3B` / `#059669`, teal `#20D4BF`, borders `#E2E8F0`. Fonts: Manrope (UI), Inter (data/numbers).
 
-## Scripts
+## Major routes
 
-```bash
-npm run dev
-npm run typecheck
-npm run lint
-npm run build
-npm run validate
+| Route | Description |
+|---|---|
+| `/` | Landing page + 5-screen FIRE calculator wizard |
+| `/dashboard` | Logged-in dashboard — FIRE tracking, budget, transactions |
+| `/login` | Google OAuth sign-in |
+| `/calculators` | Calculator hub (SEO landing page) |
+| `/calculators/coast-fire` | Coast FIRE calculator |
+| `/calculators/apy` | APY calculator |
+| `/calculators/compound-interest` | Compound interest calculator |
+| `/calculators/savings-rate` | Savings rate calculator |
+| `/calculators/4-percent-rule` | FIRE number / 4% rule calculator |
+| `/share` | Social share page for calculator results |
+| `/auth/callback` | OAuth callback handler |
+| `/api/waitlist` | Email capture endpoint (Supabase `waitlist` table) |
+| `/api/stripe/*` | Stripe checkout, portal, webhook |
+
+## Environment variables
+
+Copy `.env.example` to `.env.local` for local dev.
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+RESEND_API_KEY=
 ```
 
-## Environment
+## Dev
 
-Required public Supabase variables:
+```bash
+npm install
+npm run dev          # localhost:3000
+npm run build        # production build
+npm run typecheck    # tsc --noEmit
+npm run lint         # next lint
+```
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+## Key files
 
-Additional server-side integrations may also require:
+| File | Purpose |
+|---|---|
+| `app/page.tsx` | Landing + full calculator wizard |
+| `app/dashboard/page.tsx` | Main dashboard (income, expenses, FIRE projection) |
+| `app/dashboard/TransactionsTab.tsx` | Transaction log with AI categorisation |
+| `lib/supabase.ts` | Supabase client singleton |
+| `lib/fire-data.ts` | 263 cities, tax logic, `calcFIRE()` |
+| `lib/monte-carlo.ts` | Monte Carlo retirement simulation |
+| `lib/auth-context.tsx` | Auth context provider |
+| `app/globals.css` | Global design tokens |
 
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_PRO_PRICE_ID`
-- `STRIPE_WEBHOOK_SECRET`
-- `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST`
+## Supabase tables
 
-## Analytics
+- `user_budget` — income, expense categories, FIRE profile per user
+- `expenses` — individual transactions (with AI categorisation)
+- `waitlist` — pre-signup email captures
+- `subscriptions` — Stripe subscription status per user
 
-The v1 conversion funnel is instrumented through PostHog. The canonical
-event contract lives in [`docs/analytics/EVENTS.md`](docs/analytics/EVENTS.md);
-the runtime source of truth is `lib/analytics-events.ts`. Update both
-together when changing the funnel.
+## Deployment
 
-## Product State
+Push to `main` triggers a Vercel deploy. No manual steps required.
 
-### Past State
+The `claude/setup-gstack-locally-E87N1` branch is the active development branch.
 
-- UntilFire started as a FIRE calculator with supporting documentation and calculator routes.
-- The dashboard was added as the logged-in planning workspace for income, expenses, assets, liabilities, projections, and scenario tracking.
-- Some dashboard source text was later found to contain mojibake/corrupted emoji strings such as `棣冩崁`, which rendered visibly in the UI.
+## Making UI changes safely
 
-### Current State
-
-- The app is a Next.js FIRE planning product with a public calculator, logged-in dashboard, calculator library, learning hub, Supabase integration, and PostHog funnel tracking.
-- The dashboard uses real emoji/icon labels in source where icons are intended, and the known corrupted dashboard mojibake markers have been removed.
-- The canonical implementation baseline is the latest pushed GitHub `origin/main`.
-
-### Future State
-
-- Keep the dashboard as the operating center for a user's FIRE plan: budget targets, actual spending, assets, liabilities, projections, and next actions.
-- Add stronger regression coverage for text encoding/UI copy so corrupted characters cannot quietly return.
-- Continue improving activation: calculator handoff, first saved plan, first logged expense, and clear next best actions.
-
-## Workflow
-
-- The default implementation baseline is the latest pushed GitHub `origin/main`.
-- Local unpushed edits are not baseline unless explicitly requested.
-- For UI work, verify against the latest pushed GitHub/Vercel state before pushing.
-- Pushing `main` triggers production deployment on Vercel.
+1. Run `npm run dev` locally and verify the change in the browser before pushing.
+2. Check that `npm run build` passes — Vercel will run this on deploy.
+3. The design baseline is the white/green system defined in `app/globals.css`. Do not introduce dark/orange theming in new code.
+4. Push to the feature branch, not directly to `main`.

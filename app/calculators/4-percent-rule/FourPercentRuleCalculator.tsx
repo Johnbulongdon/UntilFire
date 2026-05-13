@@ -4,18 +4,18 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 
 const C = {
-  bg: '#f6fbf7',
+  bg: '#F7F9FB',
   card: '#ffffff',
-  border: '#dbe7df',
-  text: '#163127',
-  muted: '#5f7a6f',
-  mutedLight: '#6b7f76',
-  accent: '#047857',
-  teal: '#059669',
+  border: '#E2E8F0',
+  text: '#19181E',
+  muted: '#64748B',
+  mutedLight: '#94A3B8',
+  accent: '#059669',
+  teal: '#20D4BF',
 }
 
 const inputStyle: React.CSSProperties = {
-  background: '#dbe7df',
+  background: '#ffffff',
   border: `1px solid ${C.border}`,
   borderRadius: 8,
   color: C.text,
@@ -28,7 +28,7 @@ const inputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   fontSize: 13,
-  color: C.mutedLight,
+  color: C.muted,
   marginBottom: 6,
   display: 'block',
   fontWeight: 500,
@@ -45,11 +45,11 @@ function fmtFull(n: number) {
 }
 
 const RATES = [
-  { rate: 3.0, label: '3.0%', note: 'Very conservative -33xexpenses' },
-  { rate: 3.5, label: '3.5%', note: 'Conservative -28.6xexpenses' },
-  { rate: 4.0, label: '4.0%', note: 'Standard -25xexpenses -Trinity Study' },
-  { rate: 4.5, label: '4.5%', note: 'Moderate -22.2xexpenses' },
-  { rate: 5.0, label: '5.0%', note: 'Aggressive -20xexpenses' },
+  { rate: 3.0, label: '3.0%', note: 'Very conservative · 33× expenses' },
+  { rate: 3.5, label: '3.5%', note: 'Conservative · 28.6× expenses' },
+  { rate: 4.0, label: '4.0%', note: 'Standard · 25× expenses · Trinity Study' },
+  { rate: 4.5, label: '4.5%', note: 'Moderate · 22.2× expenses' },
+  { rate: 5.0, label: '5.0%', note: 'Aggressive · 20× expenses' },
 ]
 
 const MONTHLY_CATEGORIES = [
@@ -93,16 +93,15 @@ export default function FourPercentRuleCalculator() {
   const exp = mode === 'detailed' ? monthlyBudget * 12 : (parseFloat(annualExpenses) || 60000)
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: 'sans-serif' }}>
-      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span style={{ color: C.text, fontWeight: 800, fontSize: 18, letterSpacing: '-1px' }}>Until</span>
-          <span style={{ color: C.accent, fontWeight: 800, fontSize: 18, letterSpacing: '-1px' }}>Fire</span>
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
+      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Link href="/" style={{ textDecoration: 'none', fontWeight: 800, fontSize: 18, letterSpacing: '-0.04em', color: '#064E3B' }}>
+          Until<span style={{ color: '#20D4BF' }}>Fire</span>
         </Link>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <Link href="/calculators" style={{ color: C.mutedLight, textDecoration: 'none', fontSize: 14 }}>-All calculators</Link>
-          <Link href="/" style={{ color: C.accent, textDecoration: 'none', fontSize: 14, fontWeight: 600, border: `1px solid ${C.accent}`, padding: '6px 14px', borderRadius: 6 }}>
-            FIRE date -
+          <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>
+          <Link href="/" style={{ color: '#059669', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid #059669', padding: '6px 14px', borderRadius: 6 }}>
+            FIRE date →
           </Link>
         </div>
       </nav>
@@ -110,14 +109,14 @@ export default function FourPercentRuleCalculator() {
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 36 }}>
           <div style={{ fontSize: 12, color: C.accent, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 12 }}>
-            FIRE -Retirement
+            FIRE · Retirement
           </div>
-          <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: 800, letterSpacing: '-2px', margin: '0 0 12px', lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 12px', lineHeight: 1.1 }}>
             FIRE Number Calculator
           </h1>
-          <p style={{ fontSize: 16, color: C.mutedLight, margin: 0, lineHeight: 1.7 }}>
-            Your FIRE number is how much you need invested to retire -calculated using the safe withdrawal rate.
-            The standard is 4% (from the 1998 Trinity Study), meaning 25xyour annual expenses.
+          <p style={{ fontSize: 16, color: C.muted, margin: 0, lineHeight: 1.7 }}>
+            Your FIRE number is how much you need invested to retire — calculated using the safe withdrawal rate.
+            The standard is 4% (from the 1998 Trinity Study), meaning 25× your annual expenses.
             Adjust the rate below to see how it shifts your target.
           </p>
         </div>
@@ -125,27 +124,24 @@ export default function FourPercentRuleCalculator() {
         {/* Mode toggle */}
         <div style={{ display: 'flex', gap: 2, background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: 4, marginBottom: 24, width: 'fit-content' }}>
           {(['simple', 'detailed'] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              style={{
-                padding: '8px 20px',
-                borderRadius: 7,
-                border: 'none',
-                background: mode === m ? C.accent : 'transparent',
-                color: mode === m ? '#fff' : C.mutedLight,
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
-            >
+            <button key={m} onClick={() => setMode(m)} style={{
+              padding: '8px 20px',
+              borderRadius: 7,
+              border: 'none',
+              background: mode === m ? C.accent : 'transparent',
+              color: mode === m ? '#ffffff' : C.muted,
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: 'pointer',
+              fontFamily: "'Manrope', sans-serif",
+            }}>
               {m === 'simple' ? 'Simple' : 'Itemised budget'}
             </button>
           ))}
         </div>
 
         {/* Inputs */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '32px', marginBottom: 24 }}>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '32px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           {mode === 'simple' ? (
             <div style={{ display: 'grid', gap: 20 }}>
               <div>
@@ -159,12 +155,12 @@ export default function FourPercentRuleCalculator() {
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 16 }}>
-              <div style={{ fontSize: 14, color: C.mutedLight, marginBottom: 4 }}>Monthly expenses in retirement</div>
+              <div style={{ fontSize: 14, color: C.muted, marginBottom: 4 }}>Monthly expenses in retirement</div>
               {MONTHLY_CATEGORIES.map((cat) => (
                 <div key={cat.key} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <label style={{ ...labelStyle, margin: 0, flex: 1, minWidth: 180 }}>{cat.label}</label>
                   <div style={{ position: 'relative', width: 160 }}>
-                    <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.mutedLight, pointerEvents: 'none' }}>$</span>
+                    <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.muted, pointerEvents: 'none' }}>$</span>
                     <input
                       type="number"
                       value={categories[cat.key]}
@@ -177,7 +173,7 @@ export default function FourPercentRuleCalculator() {
                 </div>
               ))}
               <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: C.mutedLight, fontSize: 14, fontWeight: 600 }}>Monthly total</span>
+                <span style={{ color: C.muted, fontSize: 14, fontWeight: 600 }}>Monthly total</span>
                 <span style={{ color: C.text, fontWeight: 700, fontSize: 18 }}>{fmtFull(monthlyBudget)}</span>
               </div>
               <div style={{ marginTop: 8 }}>
@@ -189,20 +185,20 @@ export default function FourPercentRuleCalculator() {
         </div>
 
         {/* Primary result */}
-        <div style={{ background: '#0d0d1a', border: `1px solid ${C.accent}30`, borderRadius: 16, padding: '28px 32px', marginBottom: 24 }}>
+        <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 16, padding: '28px 32px', marginBottom: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
             <div>
-              <div style={{ fontSize: 12, color: C.mutedLight, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
                 Your FIRE number at {selectedRate}%
               </div>
-              <div style={{ fontSize: 44, fontWeight: 800, color: C.accent, letterSpacing: '-2px' }}>{fmt(fireNumber)}</div>
+              <div style={{ fontSize: 44, fontWeight: 800, color: C.accent, letterSpacing: '-0.04em' }}>{fmt(fireNumber)}</div>
               <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{fmtFull(fireNumber)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: C.mutedLight, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
                 Annual spending covered
               </div>
-              <div style={{ fontSize: 44, fontWeight: 800, color: C.text, letterSpacing: '-2px' }}>{fmtFull(exp)}</div>
+              <div style={{ fontSize: 44, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{fmtFull(exp)}</div>
             </div>
           </div>
 
@@ -210,14 +206,14 @@ export default function FourPercentRuleCalculator() {
           {parseFloat(currentSavings) > 0 && (
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 13, color: C.mutedLight }}>Progress to FIRE</span>
+                <span style={{ fontSize: 13, color: C.muted }}>Progress to FIRE</span>
                 <span style={{ fontSize: 13, color: C.accent, fontWeight: 700 }}>{progressPct.toFixed(1)}%</span>
               </div>
-              <div style={{ height: 10, background: C.border, borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ height: 10, background: '#D1FAE5', borderRadius: 999, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${progressPct}%`, background: C.accent, borderRadius: 999 }} />
               </div>
               {gap > 0 && (
-                <div style={{ fontSize: 13, color: C.mutedLight, marginTop: 8 }}>
+                <div style={{ fontSize: 13, color: C.muted, marginTop: 8 }}>
                   <span style={{ color: C.text, fontWeight: 600 }}>{fmt(gap)}</span> to go
                 </div>
               )}
@@ -225,28 +221,25 @@ export default function FourPercentRuleCalculator() {
           )}
 
           {/* Rate comparison table */}
-          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 20 }}>
-            <div style={{ fontSize: 13, color: C.mutedLight, marginBottom: 14, fontWeight: 600 }}>
-              Compare withdrawal rates -click to select
+          <div style={{ borderTop: '1px solid #A7F3D0', paddingTop: 20 }}>
+            <div style={{ fontSize: 13, color: C.muted, marginBottom: 14, fontWeight: 600 }}>
+              Compare withdrawal rates — click to select
             </div>
             <div style={{ display: 'grid', gap: 8 }}>
               {rateTable.map(({ rate, label, note, fireNumber: fn, isSelected }) => (
-                <button
-                  key={rate}
-                  onClick={() => setSelectedRate(rate)}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    background: isSelected ? `${C.accent}15` : '#ffffff',
-                    border: isSelected ? `1px solid ${C.accent}50` : '1px solid transparent',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                  }}
-                >
+                <button key={rate} onClick={() => setSelectedRate(rate)} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  background: isSelected ? '#D1FAE5' : '#ffffff',
+                  border: isSelected ? '1px solid #6EE7B7' : '1px solid #E2E8F0',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%',
+                  fontFamily: "'Manrope', sans-serif",
+                }}>
                   <div>
                     <span style={{ color: isSelected ? C.accent : C.text, fontWeight: isSelected ? 700 : 500, fontSize: 15 }}>
                       {label}
@@ -261,8 +254,8 @@ export default function FourPercentRuleCalculator() {
         </div>
 
         {/* SEO content */}
-        <div style={{ color: C.mutedLight, lineHeight: 1.8, fontSize: 15 }}>
-          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.5px' }}>
+        <div style={{ color: C.muted, lineHeight: 1.8, fontSize: 15 }}>
+          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.02em' }}>
             What is the 4% rule?
           </h2>
           <p style={{ marginBottom: 16 }}>
@@ -271,13 +264,13 @@ export default function FourPercentRuleCalculator() {
             in 96% of historical market scenarios, including the Great Depression and 1970s stagflation.
           </p>
           <p style={{ marginBottom: 16 }}>
-            <strong style={{ color: C.text }}>Your FIRE number = Annual expenses 姊?Withdrawal rate</strong>
+            <strong style={{ color: C.text }}>Your FIRE number = Annual expenses ÷ Withdrawal rate</strong>
             <br />
-            At 4%, that&apos;s 25xyour annual spending. At 3%, it&apos;s 33x At 5%, it&apos;s 20x
+            At 4%, that&apos;s 25× your annual spending. At 3%, it&apos;s 33×. At 5%, it&apos;s 20×.
           </p>
           <p>
-            Early retirees (before 65) typically use 3-.5% for extra safety -your portfolio needs to last
-            40-0 years, not 30. The 4% rule was designed for traditional 30-year retirements starting around age 65.
+            Early retirees (before 65) typically use 3–3.5% for extra safety — your portfolio needs to last
+            40–50 years, not 30. The 4% rule was designed for traditional 30-year retirements starting around age 65.
           </p>
         </div>
       </div>

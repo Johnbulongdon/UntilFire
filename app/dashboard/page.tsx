@@ -8,27 +8,21 @@ import {
   ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
-import { loadDefaultScenario, monteCarloFIRE, saveDefaultScenario } from "@/lib/fire";
-import { consumeCalculatorPrefill, type CalculatorPrefill } from "@/lib/journey";
-import {
-  identifyUser,
-  trackDashboardFirstView,
-  trackSignupCompleted,
-} from "@/lib/analytics";
+import { monteCarloFIRE } from "@/lib/fire";
 
-// Types
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
 type TabKey =
-  | "portfolio-overview" | "portfolio-assets" | "portfolio-liabilities"
-  | "plan-goals"         | "plan-simulations" | "plan-calculators"
-  | "insights-spending"  | "insights-overview" | "insights-trends"
-  | "expenses";
+  | "home-overview"
+  | "money-networth" | "money-cashflow"
+  | "plan-goals"     | "plan-scenarios"
+  | "tools-calculators";
 
-type DashboardNavItem =
-  | { type: "tab"; key: TabKey; label: string; icon: string }
-  | { type: "link"; href: string; label: string; icon: string };
+type SidebarItem =
+  | { key: TabKey; label: string; icon: string; href?: never }
+  | { href: string; label: string; icon: string; key?: never };
 
-// Constants
+// ─── Constants ────────────────────────────────────────────────────────────────
 const EXPENSE_CATS = [
   { key: "housing",       label: "Housing",       icon: "🏠", color: "#818cf8" },
   { key: "food",          label: "Food & Dining",  icon: "🍔", color: "#f97316" },
@@ -39,16 +33,14 @@ const EXPENSE_CATS = [
   { key: "other",         label: "Other",          icon: "📦", color: "#6b6b85" },
 ];
 
-// Formatters
+// ─── Formatters ───────────────────────────────────────────────────────────────
 const fmt = (n: number, compact = false) => {
   if (compact && Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (compact && Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
   return "$" + Math.round(n).toLocaleString();
 };
 
-const fmtSigned = (n: number, compact = false) => (n < 0 ? `-${fmt(Math.abs(n), compact)}` : fmt(n, compact));
-
-// FIRE Engine
+// ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable,
   totalDebt, mortgageBalance, mortgageMonthly,
@@ -107,7 +99,7 @@ function calcProjection({
   return { data, fireYear, fireTarget, annualSavings };
 }
 
-// Shared UI
+// ─── Shared UI ────────────────────────────────────────────────────────────────
 function NumberInput({ value, onChange, placeholder = "0", prefix = "$" }: {
   value: number; onChange: (v: number) => void;
   placeholder?: string; prefix?: string;
@@ -177,7 +169,7 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
   );
 }
 
-// Monte Carlo Probability Card
+// ─── Monte Carlo Probability Card ─────────────────────────────────────────────
 function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; growthRate: number; withdrawalRate: number;
@@ -248,7 +240,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 11, color: "#94A3B8", margin: 0, lineHeight: 1.5 }}>1,000 simulations ±12% annual returns</p>
+          <p style={{ fontSize: 11, color: "#94A3B8", margin: 0, lineHeight: 1.5 }}>1,000 simulations · σ=12% annual returns</p>
         </div>
 
         {/* Histogram */}
@@ -301,7 +293,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
         </span>
         {yearDelta > 0 ? (
           <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "#ECFDF5", borderRadius: 20, padding: "4px 12px", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>
-            +{yearDelta} yr
+            −{yearDelta} yr
           </span>
         ) : (
           <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>drag to simulate</span>
@@ -311,15 +303,11 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, growthRate, 
   );
 }
 
-// Dashboard Overview Tab
-function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals, prefill, onOpenBudget, onOpenExpenses }: {
+// ─── Dashboard Overview Tab ───────────────────────────────────────────────────
+function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
-  actuals: Record<string, number>;
-  prefill: CalculatorPrefill | null;
-  onOpenBudget: () => void;
-  onOpenExpenses: () => void;
 }) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -337,23 +325,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
   const chartData   = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
   const activeCats  = EXPENSE_CATS.filter(c => (expenses[c.key] || 0) > 0);
-  const hasActuals  = Object.values(actuals).some(v => v > 0);
-  const housingRatio = income > 0 ? ((expenses.housing || 0) / income) * 100 : 0;
-  const checklist = [
-    { label: "Confirm monthly income", complete: income > 0, detail: income > 0 ? fmt(income) : "Needed for your timeline" },
-    { label: "Set a target budget", complete: monthlyExpenses > 0, detail: monthlyExpenses > 0 ? fmt(monthlyExpenses) : "Open Budget to add spending targets" },
-    { label: "Add current assets", complete: investable > 0, detail: investable > 0 ? fmt(investable, true) : "401(k), Roth IRA, or taxable accounts" },
-    { label: "Review debt and mortgage", complete: totalDebt > 0 || mortgageBalance > 0 || mortgageMonthly > 0, detail: totalDebt > 0 || mortgageBalance > 0 ? fmtSigned(-(totalDebt + mortgageBalance), true) : "Add balances if they affect your runway" },
-    { label: "Log your first expense", complete: hasActuals, detail: hasActuals ? `${Object.keys(actuals).length} categories tracked this month` : "Use Expenses to start tracking real spending" },
-  ];
-  const completedChecklist = checklist.filter((item) => item.complete).length;
 
   const retireYear = fireYear ? new Date().getFullYear() + fireYear : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-      {/* HERO: FIRE Score */}
+      {/* ── HERO: FIRE Score ──────────────────────────────────────────────── */}
       <div className="uf-card" style={{ padding: "28px 32px", background: "#003527", borderColor: "transparent", position: "relative", overflow: "hidden" }}>
         {/* Background glow */}
         <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(98,250,227,0.08) 0%, transparent 70%)", top: -100, right: -100, pointerEvents: "none" }} />
@@ -375,7 +353,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
                   </span>
                 </div>
                 <div style={{ marginTop: 8, fontSize: 16, color: "rgba(255,255,255,0.55)" }}>
-                  <span style={{ color: "#FFFFFF", fontWeight: 600 }}>{fireYear} years</span> away, target{" "}
+                  <span style={{ color: "#FFFFFF", fontWeight: 600 }}>{fireYear} years</span> away · target{" "}
                   <span style={{ color: "#62FAE3", fontFamily: "Inter, sans-serif" }}>{fmt(fireTarget, true)}</span>
                 </div>
               </>
@@ -421,54 +399,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
           </div>
           <div style={{ height: 6, background: "rgba(255,255,255,0.15)", borderRadius: 99, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${progress}%`, background: "#62FAE3", borderRadius: 99, transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1)" }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20 }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#059669", marginBottom: 10 }}>
-            Next best actions
-          </div>
-          <h2 style={{ margin: "0 0 8px", fontSize: 24, letterSpacing: "-0.03em" }}>
-            {prefill ? "We brought your calculator plan with you." : "Turn this estimate into a working plan."}
-          </h2>
-          <p style={{ margin: 0, color: "#64748B", lineHeight: 1.7 }}>
-            {prefill
-              ? `Your ${prefill.cityName || "latest"} projection is saved. Finish the missing inputs below so the dashboard becomes a real operating plan.`
-              : "Confirm the missing inputs below so your dashboard becomes more than a rough estimate."}
-          </p>
-          {prefill && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
-              {prefill.fireTarget ? <span className="uf-tag" style={{ color: "#065F46", background: "rgba(209,250,229,0.7)" }}>Target {fmt(prefill.fireTarget, true)}</span> : null}
-              {prefill.monthlyIncome ? <span className="uf-tag" style={{ color: "#065F46", background: "rgba(209,250,229,0.7)" }}>Income {fmt(prefill.monthlyIncome)}</span> : null}
-              {prefill.monthlySavings ? <span className="uf-tag" style={{ color: "#065F46", background: "rgba(209,250,229,0.7)" }}>Savings {fmt(prefill.monthlySavings)}</span> : null}
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-            <button onClick={onOpenBudget} style={{ background: "#064E3B", color: "#fff", border: "none", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: "pointer" }}>Finish budget</button>
-            <button onClick={onOpenExpenses} style={{ background: "#ffffff", color: "#064E3B", border: "1px solid #A7F3D0", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: "pointer" }}>Log first expense</button>
-            <Link href="/learn/why-savings-rate-matters-more-than-income" style={{ background: "#ECFDF5", color: "#065F46", border: "1px solid #A7F3D0", borderRadius: 10, padding: "10px 14px", fontWeight: 700, textDecoration: "none" }}>Learn what moves your date</Link>
-          </div>
-        </div>
-
-        <div style={{ border: "1px solid #E2E8F0", borderRadius: 14, padding: 18, background: "#F8FAFC" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>Complete your plan</div>
-            <div style={{ fontSize: 12, color: "#64748B" }}>{completedChecklist}/{checklist.length} complete</div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {checklist.map((item) => (
-              <div key={item.label} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 0", borderTop: "1px solid #E2E8F0" }}>
-                <div style={{ width: 24, height: 24, borderRadius: 999, background: item.complete ? "#059669" : "#E2E8F0", color: item.complete ? "#fff" : "#64748B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
-                  {item.complete ? "Done" : "Next"}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#19181E" }}>{item.label}</div>
-                  <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{item.detail}</div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>
@@ -561,7 +491,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
                   <tr key={row.label}>
                     <td style={{ padding: "6px 0", fontSize: 13, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
                     <td style={{ padding: "6px 0", textAlign: "right", fontFamily: "Inter, sans-serif", fontSize: 13, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
-                      {fmtSigned(row.val)}
+                      {row.val >= 0 ? fmt(row.val) : `−${fmt(Math.abs(row.val))}`}
                     </td>
                   </tr>
                 );
@@ -578,19 +508,19 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
               {
                 icon: "📊",
                 title: "Savings Rate",
-                body: savingsRate >= 50 ? `${savingsRate.toFixed(0)}% means you are on an aggressive FIRE track.` : savingsRate >= 25 ? `${savingsRate.toFixed(0)}% is solid. Pushing toward 50% can cut years off your date.` : `At ${savingsRate.toFixed(0)}%, reducing recurring expenses is your biggest lever.`,
+                body: savingsRate >= 50 ? `${savingsRate.toFixed(0)}% — you're on an aggressive FIRE track.` : savingsRate >= 25 ? `${savingsRate.toFixed(0)}% is solid. Hitting 50% cuts years off your date.` : `At ${savingsRate.toFixed(0)}%, reducing expenses is your biggest lever.`,
                 color: savingsRate >= 50 ? "#059669" : savingsRate >= 25 ? "#20D4BF" : "#DC2626",
               },
               {
                 icon: "🏠",
                 title: "Housing Ratio",
-                body: income > 0 && expenses.housing > 0 ? `Housing is ${housingRatio.toFixed(0)}% of take-home. ${housingRatio > 30 ? "Above 30% and likely your biggest cost lever." : "Under 30% and in a healthy range."}` : "Add housing expenses to see your ratio.",
+                body: income > 0 && expenses.housing > 0 ? `Housing is ${(((expenses.housing || 0) / income) * 100).toFixed(0)}% of take-home. ${(expenses.housing || 0) / income > 0.3 ? "Above 30% — your biggest cost lever." : "Under 30% — healthy ratio."}` : "Add housing expenses to see your ratio.",
                 color: "#19181E",
               },
               {
                 icon: "🔥",
                 title: "Rule of 25",
-                body: `Target: ${fmt(fireTarget, true)}. Every $100 per month you cut lowers your FIRE number by about $30,000.`,
+                body: `Target: ${fmt(fireTarget, true)}. Every $100/mo you cut reduces your FIRE number by $30k.`,
                 color: "#19181E",
               },
             ].map(ins => (
@@ -609,13 +539,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgage
   );
 }
 
-// Calculators Hub Tab
+// ─── Calculators Hub Tab ─────────────────────────────────────────────────────
 const CALCULATORS = [
   {
     href: "/calculators/4-percent-rule",
     title: "FIRE Number Calculator",
     description: "Calculate exactly how much you need to retire. Adjust the withdrawal rate and see how it changes your target.",
-    tag: "FIRE — Retirement",
+    tag: "FIRE · Retirement",
     color: "#064E3B",
     label: "FI",
   },
@@ -623,7 +553,7 @@ const CALCULATORS = [
     href: "/calculators/savings-rate",
     title: "Savings Rate Calculator",
     description: "Find your savings rate and see exactly how it shifts your FIRE date — the single most powerful FIRE lever.",
-    tag: "FIRE — Core",
+    tag: "FIRE · Core",
     color: "#059669",
     label: "SR",
   },
@@ -631,7 +561,7 @@ const CALCULATORS = [
     href: "/calculators/coast-fire",
     title: "Coast FIRE Calculator",
     description: "Find the magic number where you can stop saving and let compound growth carry you to retirement.",
-    tag: "FIRE — Strategy",
+    tag: "FIRE · Strategy",
     color: "#20D4BF",
     label: "~",
   },
@@ -641,7 +571,7 @@ const CALCULATORS = [
     description: "Project how your investments grow with regular contributions over any time horizon.",
     tag: "Investing",
     color: "#047857",
-    label: "CI",
+    label: "↗",
   },
   {
     href: "/calculators/apy",
@@ -673,7 +603,7 @@ function CalculatorsTab() {
               <p style={{ fontSize: 11, fontWeight: 700, color: c.color, letterSpacing: "1.5px", textTransform: "uppercase", margin: 0 }}>{c.tag}</p>
               <p style={{ fontSize: 16, fontWeight: 700, color: "#19181E", margin: 0, letterSpacing: "-0.3px" }}>{c.title}</p>
               <p style={{ fontSize: 13, color: "#64748B", margin: 0, lineHeight: 1.6, flexGrow: 1 }}>{c.description}</p>
-              <p style={{ fontSize: 12, color: c.color, fontWeight: 600, margin: 0 }}>Open calculator</p>
+              <p style={{ fontSize: 12, color: c.color, fontWeight: 600, margin: 0 }}>Open calculator →</p>
             </div>
           </Link>
         ))}
@@ -682,7 +612,7 @@ function CalculatorsTab() {
   );
 }
 
-// Budget Tracker Tab
+// ─── Budget Tracker Tab ───────────────────────────────────────────────────────
 function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
@@ -736,7 +666,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
                 {spent > 0 && (
                   <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
                     <span style={{ fontSize: 11, fontFamily: "Inter, sans-serif", color: over ? "#DC2626" : "#64748B" }}>
-                      {over ? "Over " : ""}Spent {fmt(spent)}{budget > 0 ? ` / ${fmt(budget)}` : ""}
+                      {over ? "⚠ " : ""}Spent {fmt(spent)}{budget > 0 ? ` / ${fmt(budget)}` : ""}
                     </span>
                     {budget > 0 && (
                       <div style={{ height: 3, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
@@ -773,7 +703,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
           {/* Rate bar */}
           <div style={{ marginTop: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748B", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>
-              <span>Savings rate</span><span>{rate.toFixed(1)}% {rate >= 50 ? "🔥 FIRE pace" : rate >= 25 ? "✓ Good" : "Needs work"}</span>
+              <span>Savings rate</span><span>{rate.toFixed(1)}% {rate >= 50 ? "🔥 FIRE pace" : rate >= 25 ? "· Good" : "· Needs work"}</span>
             </div>
             <div style={{ height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${Math.min(100, rate)}%`, background: rate >= 50 ? "#064E3B" : rate >= 25 ? "#059669" : "#DC2626", borderRadius: 99, transition: "width 0.6s" }} />
@@ -788,7 +718,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
   );
 }
 
-// User Nav
+// ─── User Nav ─────────────────────────────────────────────────────────────────
 function UserNav() {
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
@@ -807,7 +737,7 @@ function UserNav() {
   );
 }
 
-// Portfolio Overview Tab
+// ─── Portfolio Overview Tab ───────────────────────────────────────────────────
 function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;
@@ -836,7 +766,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
           {fmt(netWorth)}
         </div>
         <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmt(investable, true)} investable assets — {fmt(totalDebt + mortgageBalance, true)} total debt
+          {fmt(investable, true)} investable assets · {fmt(totalDebt + mortgageBalance, true)} total debt
         </div>
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
@@ -854,9 +784,9 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
         {[
           { label: "Investable Assets",  val: fmt(investable, true),   color: "#059669",  sub: "All accounts" },
-          { label: "Net Worth",          val: fmt(netWorth, true),      color: netWorth >= 0 ? "#059669" : "#DC2626", sub: "Assets minus debt" },
+          { label: "Net Worth",          val: fmt(netWorth, true),      color: netWorth >= 0 ? "#059669" : "#DC2626", sub: "Assets − debt" },
           { label: "Total Debt",         val: fmt(totalDebt + mortgageBalance, true), color: "#DC2626", sub: "Consumer + mortgage" },
-          { label: "FIRE Progress",      val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "Set your inputs" },
+          { label: "FIRE Progress",      val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
         ].map(k => (
           <KpiCard key={k.label} label={k.label} value={k.val} sub={k.sub} color={k.color} />
         ))}
@@ -882,7 +812,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
                 <tr key={row.label}>
                   <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
                   <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Inter, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
-                    {fmtSigned(row.val)}
+                    {row.val >= 0 ? fmt(row.val) : `−${fmt(Math.abs(row.val))}`}
                   </td>
                 </tr>
               );
@@ -894,7 +824,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, totalD
   );
 }
 
-// Assets Tab
+// ─── Assets Tab ───────────────────────────────────────────────────────────────
 function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
@@ -922,7 +852,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, gr
         </div>
 
         <div className="uf-card">
-          <SectionLabel icon="A" text="Assumptions" color="#64748B" />
+          <SectionLabel icon="⚙️" text="Assumptions" color="#64748B" />
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
@@ -973,7 +903,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, gr
   );
 }
 
-// Liabilities Tab
+// ─── Liabilities Tab ──────────────────────────────────────────────────────────
 function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly }: {
   totalDebt: number; setTotalDebt: (v: number) => void;
   mortgageBalance: number; setMortgageBalance: (v: number) => void;
@@ -1025,12 +955,12 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
   );
 }
 
-// Goals Tab
+// ─── Goals Tab ────────────────────────────────────────────────────────────────
 const FIRE_GOAL_OPTIONS = [
-  { id: "early-retirement", label: "Early Retirement", icon: "ER", desc: "Stop working entirely and live off your portfolio" },
-  { id: "coast-fire", label: "Coast FIRE", icon: "CF", desc: "Save enough now, let compound growth carry you" },
-  { id: "barista-fire", label: "Barista FIRE", icon: "BF", desc: "Part-time income covers expenses while your portfolio grows" },
-  { id: "fat-fire", label: "Fat FIRE", icon: "FF", desc: "Full retirement with a luxury lifestyle buffer" },
+  { id: "early-retirement", label: "Early Retirement",    icon: "🏖️", desc: "Stop working entirely and live off your portfolio" },
+  { id: "coast-fire",       label: "Coast FIRE",          icon: "🚀", desc: "Save enough now, let compound growth carry you" },
+  { id: "barista-fire",     label: "Barista FIRE",        icon: "☕", desc: "Part-time income covers expenses, portfolio grows" },
+  { id: "fat-fire",         label: "Fat FIRE",            icon: "💎", desc: "Full retirement with a luxury lifestyle buffer" },
 ];
 
 function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: number) => void }) {
@@ -1056,7 +986,6 @@ function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: nu
               <div style={{ fontSize: 12, color: "#64748B", marginTop: 4, lineHeight: 1.5 }}>{g.desc}</div>
             </button>
           ))}
-
         </div>
       </div>
 
@@ -1072,7 +1001,7 @@ function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: nu
   );
 }
 
-// Simulations Tab
+// ─── Simulations Tab ──────────────────────────────────────────────────────────
 function SimulationsTab({ income, expenses, k401, rothIRA, taxable, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; growthRate: number; withdrawalRate: number;
@@ -1092,7 +1021,7 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, growthRate, 
   );
 }
 
-// Trends Tab
+// ─── Trends Tab ───────────────────────────────────────────────────────────────
 function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;
@@ -1202,8 +1131,8 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
         )}
 
         <p style={{ textAlign: "center", fontSize: 11, color: "#94A3B8", marginTop: 10 }}>
-          {chartTab === "growth" && "Green = investable assets — Dark dashed = FIRE target"}
-          {chartTab === "accounts" && "Stacked: 401(k) — Roth IRA — Taxable brokerage"}
+          {chartTab === "growth" && "Green = investable assets · Dark dashed = FIRE target"}
+          {chartTab === "accounts" && "Stacked: 401(k) · Roth IRA · Taxable brokerage"}
           {chartTab === "networth" && "Total net worth vs debt paydown over time"}
         </p>
       </div>
@@ -1211,76 +1140,65 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
   );
 }
 
-// Sidebar groups definition
-const DASHBOARD_NAV: DashboardNavItem[] = [
-  { type: "tab", key: "insights-overview", label: "Dashboard", icon: "D" },
-  { type: "tab", key: "insights-spending", label: "Budget", icon: "B" },
-  { type: "tab", key: "plan-calculators", label: "FIRE Calculator", icon: "F" },
-  { type: "tab", key: "expenses", label: "Expenses", icon: "E" },
-  { type: "link", href: "/learn", label: "Learning Hub", icon: "L" },
+// ─── Sidebar groups definition ────────────────────────────────────────────────
+const SIDEBAR_GROUPS: { label: string; items: SidebarItem[] }[] = [
+  {
+    label: "Home",
+    items: [
+      { key: "home-overview",    label: "Overview",    icon: "🏠" },
+    ],
+  },
+  {
+    label: "Money",
+    items: [
+      { key: "money-networth",   label: "Net Worth",   icon: "💰" },
+      { key: "money-cashflow",   label: "Cashflow",    icon: "↕" },
+    ],
+  },
+  {
+    label: "Plan",
+    items: [
+      { key: "plan-goals",       label: "Goals",       icon: "🎯" },
+      { key: "plan-scenarios",   label: "Scenarios",   icon: "📊" },
+    ],
+  },
+  {
+    label: "Learn",
+    items: [
+      { href: "/learn/articles", label: "Articles",    icon: "📄" },
+      { href: "/learn/topics",   label: "Topics",      icon: "📚" },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { key: "tools-calculators", label: "Calculators", icon: "🧮" },
+    ],
+  },
 ];
 
-function normalizeTab(raw: string | null): TabKey {
-  switch (raw) {
-    case "dashboard":
-    case "overview":
-    case "portfolio-overview":
-    case "insights-overview":
-      return "insights-overview";
-    case "budget":
-    case "spending":
-    case "insights-spending":
-      return "insights-spending";
-    case "fire":
-    case "calculator":
-    case "calculators":
-    case "plan-calculators":
-      return "plan-calculators";
-    case "expenses":
-    case "transactions":
-    case "insights-trends":
-      return "expenses";
-    case "portfolio-assets":
-    case "portfolio-liabilities":
-    case "plan-goals":
-    case "plan-simulations":
-      return raw;
-    default:
-      return "insights-overview";
-  }
-}
-
+// ─── Root ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [tab, setTab] = useState<TabKey>("insights-overview");
+  const [tab, setTab] = useState<TabKey>("home-overview");
 
-  // Read initial tab from URL query string and normalize old aliases.
+  // Read initial tab from URL query string (e.g. ?tab=money-cashflow)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setTab(normalizeTab(params.get("tab")));
+    const t = params.get("tab") as TabKey | null;
+    const valid: TabKey[] = [
+      "home-overview",
+      "money-networth", "money-cashflow",
+      "plan-goals", "plan-scenarios",
+      "tools-calculators",
+    ];
+    if (t && valid.includes(t)) setTab(t);
   }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const canonical =
-      tab === "insights-overview"
-        ? "dashboard"
-        : tab === "insights-spending"
-          ? "budget"
-          : tab === "plan-calculators"
-            ? "fire"
-            : tab === "expenses"
-              ? "expenses"
-              : tab;
-    params.set("tab", canonical);
-    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-  }, [tab]);
 
   // Budget state
   const [income,   setIncome]   = useState(0);
   const [expenses, setExpenses] = useState<Expenses>({ housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0 });
 
-  // FIRE profile state — persisted via the single default scenario
-  // (lib/fire/scenarios.ts). user_budget is dual-written for back-compat.
+  // FIRE profile state (stored in expenses._fire_profile to avoid schema changes)
   const [fireAge,         setFireAge]         = useState(30);
   const [k401,            setK401]            = useState(0);
   const [rothIRA,         setRothIRA]         = useState(0);
@@ -1292,7 +1210,6 @@ export default function Dashboard() {
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [actuals, setActuals] = useState<Record<string, number>>({});
-  const [journeyPrefill, setJourneyPrefill] = useState<CalculatorPrefill | null>(null);
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoaded   = useRef(false);
 
@@ -1313,55 +1230,33 @@ export default function Dashboard() {
             setActuals(agg);
           }
         });
-      loadDefaultScenario(supabase, session.user.id).then((scenario) => {
+      supabase.from("user_budget").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
         // Check for calculator prefill from the landing page
-        const prefill = consumeCalculatorPrefill() || {};
-        const seededIncome = prefill.monthlyIncome || prefill.income || 0;
-        const hadPrefill = Object.keys(prefill).length > 0;
-        setJourneyPrefill(hadPrefill ? prefill : null);
-
-        // Funnel: dashboard first view per session. Identify links the
-        // anonymous PostHog distinct id to the supabase user so the upstream
-        // calculator events stitch to the same person.
-        identifyUser(session.user.id);
-
-        // If this dashboard load is the landing point of a signup OAuth
-        // round-trip, fire signup_completed here. The flag is set in
-        // /login when the user clicks Continue with Google; emitting from
-        // dashboard mount sidesteps the OAuth-callback page-unload race
-        // that was dropping the event in production.
-        let signupPending = false;
+        let prefill: { income?: number; monthlySavings?: number } = {};
         try {
-          signupPending = sessionStorage.getItem("uf_signup_pending") === "1";
-          if (signupPending) sessionStorage.removeItem("uf_signup_pending");
+          const raw = localStorage.getItem("uf_calc_prefill");
+          if (raw) { prefill = JSON.parse(raw); localStorage.removeItem("uf_calc_prefill"); }
         } catch {}
-        if (signupPending) {
-          trackSignupCompleted();
+
+        if (data) {
+          setIncome(prefill.income || data.income || 0);
+          const raw = data.expenses || {};
+          const fp  = raw._fire_profile || {};
+          const { _fire_profile: _, ...budgetExpenses } = raw;
+          setExpenses({ housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0, ...budgetExpenses });
+          setFireAge(data.fire_age || 30);
+          setK401(fp.k401 || data.fire_assets || 0);
+          setRothIRA(fp.rothIRA || 0);
+          setTaxable(fp.taxable || 0);
+          setTotalDebt(fp.totalDebt || 0);
+          setMortgageBalance(fp.mortgageBalance || 0);
+          setMortgageMonthly(fp.mortgageMonthly || 0);
+          setGrowthRate(fp.growthRate || 0.07);
+          setWithdrawalRate(fp.withdrawalRate || 0.04);
+        } else if (prefill.income) {
+          // New user — no saved budget yet, seed from calculator
+          setIncome(prefill.income);
         }
-
-        const viaUpgrade =
-          new URLSearchParams(window.location.search).get("upgraded") === "true";
-        trackDashboardFirstView({
-          hadCalculatorPrefill: hadPrefill,
-          viaUpgrade,
-          scenarioId: scenario.scenarioId,
-        });
-
-        setIncome(seededIncome || scenario.monthlyIncome || 0);
-        setExpenses({
-          housing: 0, food: 0, transport: 0, subscriptions: 0,
-          healthcare: 0, entertainment: 0, other: 0,
-          ...(scenario.budgetCategories as Expenses),
-        });
-        setFireAge(scenario.fireAge);
-        setK401(scenario.k401);
-        setRothIRA(scenario.rothIRA);
-        setTaxable(scenario.taxable);
-        setTotalDebt(scenario.totalDebt);
-        setMortgageBalance(scenario.mortgageBalance);
-        setMortgageMonthly(scenario.mortgageMonthly);
-        setGrowthRate(scenario.growthRate);
-        setWithdrawalRate(scenario.withdrawalRate);
         isLoaded.current = true;
       });
     });
@@ -1375,14 +1270,15 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      await saveDefaultScenario(supabase, session.user.id, {
-        monthlyIncome: income,
-        fireAge,
-        k401, rothIRA, taxable, totalDebt,
-        mortgageBalance, mortgageMonthly,
-        growthRate, withdrawalRate,
-        budgetCategories: expenses as Record<string, number>,
-      });
+      const fireProfile = { k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate };
+      await supabase.from("user_budget").upsert({
+        user_id:     session.user.id,
+        income,
+        expenses:    { ...expenses, _fire_profile: fireProfile },
+        fire_age:    fireAge,
+        fire_assets: k401, // keep backwards-compatible
+        updated_at:  new Date().toISOString(),
+      }, { onConflict: "user_id" });
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     }, 1000);
@@ -1436,94 +1332,100 @@ export default function Dashboard() {
       `}</style>
 
       <div className="uf-shell">
-        {/* Sidebar */}
+        {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
           <Link href="/" className="uf-sidebar-logo">Until<span>Fire</span></Link>
 
-          <div className="uf-sidebar-group">
-            <div className="uf-sidebar-group-label">Workspace</div>
-            {DASHBOARD_NAV.map(item =>
-              item.type === "tab" ? (
-                <button
-                  key={item.key}
-                  className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
-                  onClick={() => setTab(item.key)}
-                >
-                  <span className="uf-sidebar-icon">{item.icon}</span>
-                  {item.label}
-                </button>
-              ) : (
-                <Link key={item.href} href={item.href} className="uf-sidebar-item" style={{ textDecoration: "none" }}>
-                  <span className="uf-sidebar-icon">{item.icon}</span>
-                  {item.label}
-                </Link>
-              )
-            )}
-          </div>
+          {SIDEBAR_GROUPS.map(group => (
+            <div key={group.label} className="uf-sidebar-group">
+              <div className="uf-sidebar-group-label">{group.label}</div>
+              {group.items.map(item => (
+                item.href ? (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="uf-sidebar-item"
+                    style={{ textDecoration: "none" }}
+                  >
+                    <span className="uf-sidebar-icon">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                ) : (
+                  <button
+                    key={item.key}
+                    className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
+                    onClick={() => setTab(item.key!)}
+                  >
+                    <span className="uf-sidebar-icon">{item.icon}</span>
+                    {item.label}
+                  </button>
+                )
+              ))}
+            </div>
+          ))}
 
           <div className="uf-sidebar-bottom">
-            {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saving...</span>}
-            {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saved</span>}
+            {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saving…</span>}
+            {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Inter, sans-serif" }}>✓ Saved</span>}
             <UserNav />
           </div>
         </aside>
 
-        {/* Main content */}
+        {/* ── Main content ─────────────────────────────────────────────────── */}
         <main className="uf-main">
           <div className="uf-content">
-            {tab === "portfolio-overview" && (
-              <PortfolioOverviewTab
-                income={income} expenses={expenses}
-                k401={k401} rothIRA={rothIRA} taxable={taxable}
-                totalDebt={totalDebt} mortgageBalance={mortgageBalance}
-                mortgageMonthly={mortgageMonthly} growthRate={growthRate}
-                withdrawalRate={withdrawalRate}
-              />
-            )}
-            {tab === "portfolio-assets" && (
-              <AssetsTab
-                k401={k401} setK401={setK401}
-                rothIRA={rothIRA} setRothIRA={setRothIRA}
-                taxable={taxable} setTaxable={setTaxable}
-                growthRate={growthRate} setGrowthRate={setGrowthRate}
-                withdrawalRate={withdrawalRate} setWithdrawalRate={setWithdrawalRate}
-              />
-            )}
-            {tab === "portfolio-liabilities" && (
-              <LiabilitiesTab
-                totalDebt={totalDebt} setTotalDebt={setTotalDebt}
-                mortgageBalance={mortgageBalance} setMortgageBalance={setMortgageBalance}
-                mortgageMonthly={mortgageMonthly} setMortgageMonthly={setMortgageMonthly}
-              />
-            )}
-            {tab === "plan-goals" && (
-              <GoalsTab fireAge={fireAge} setFireAge={setFireAge} />
-            )}
-            {tab === "plan-simulations" && (
-              <SimulationsTab
-                income={income} expenses={expenses}
-                k401={k401} rothIRA={rothIRA} taxable={taxable}
-                growthRate={growthRate} withdrawalRate={withdrawalRate}
-              />
-            )}
-            {tab === "plan-calculators" && <CalculatorsTab />}
-            {tab === "insights-spending" && (
-              <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} />
-            )}
-            {tab === "insights-overview" && (
+            {tab === "home-overview" && (
               <DashTab
                 income={income} expenses={expenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable}
                 totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                 mortgageMonthly={mortgageMonthly} growthRate={growthRate}
                 withdrawalRate={withdrawalRate}
-                actuals={actuals}
-                prefill={journeyPrefill}
-                onOpenBudget={() => setTab("insights-spending")}
-                onOpenExpenses={() => setTab("expenses")}
               />
             )}
-            {tab === "expenses" && <TransactionsTab />}
+            {tab === "money-networth" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                <PortfolioOverviewTab
+                  income={income} expenses={expenses}
+                  k401={k401} rothIRA={rothIRA} taxable={taxable}
+                  totalDebt={totalDebt} mortgageBalance={mortgageBalance}
+                  mortgageMonthly={mortgageMonthly} growthRate={growthRate}
+                  withdrawalRate={withdrawalRate}
+                />
+                <div style={{ borderTop: "1px solid #E2E8F0" }} />
+                <AssetsTab
+                  k401={k401} setK401={setK401}
+                  rothIRA={rothIRA} setRothIRA={setRothIRA}
+                  taxable={taxable} setTaxable={setTaxable}
+                  growthRate={growthRate} setGrowthRate={setGrowthRate}
+                  withdrawalRate={withdrawalRate} setWithdrawalRate={setWithdrawalRate}
+                />
+                <div style={{ borderTop: "1px solid #E2E8F0" }} />
+                <LiabilitiesTab
+                  totalDebt={totalDebt} setTotalDebt={setTotalDebt}
+                  mortgageBalance={mortgageBalance} setMortgageBalance={setMortgageBalance}
+                  mortgageMonthly={mortgageMonthly} setMortgageMonthly={setMortgageMonthly}
+                />
+              </div>
+            )}
+            {tab === "money-cashflow" && (
+              <>
+                <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} />
+                <div style={{ borderTop: "1px solid #E2E8F0", margin: "32px 0" }} />
+                <TransactionsTab />
+              </>
+            )}
+            {tab === "plan-goals" && (
+              <GoalsTab fireAge={fireAge} setFireAge={setFireAge} />
+            )}
+            {tab === "plan-scenarios" && (
+              <SimulationsTab
+                income={income} expenses={expenses}
+                k401={k401} rothIRA={rothIRA} taxable={taxable}
+                growthRate={growthRate} withdrawalRate={withdrawalRate}
+              />
+            )}
+            {tab === "tools-calculators" && <CalculatorsTab />}
           </div>
         </main>
       </div>
