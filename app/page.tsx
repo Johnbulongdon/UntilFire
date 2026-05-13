@@ -212,7 +212,7 @@ function SavingsScreen({ income, onNext, onBack }: {
 
   const rateColor = rate < 15 ? "var(--danger)" : rate < 30 ? "var(--accent)" : "var(--teal)";
   const rateLabel = rate < 10 ? "Very low" : rate < 20 ? "Below average" : rate < 30 ? "Average"
-    : rate < 40 ? "Good" : rate < 50 ? "Strong" : "FIRE pace! [fire]";
+    : rate < 40 ? "Good" : rate < 50 ? "Strong" : "FIRE pace! 🔥";
 
   return (
     <div className="uf-screen">
@@ -714,13 +714,13 @@ function WaitlistSection() {
 
   return (
     <div className="uf-waitlist">
-      <div className="uf-eyebrow" style={{ textAlign: "center", marginBottom: 16 }}>[fire] Coming Soon</div>
+      <div className="uf-eyebrow" style={{ textAlign: "center", marginBottom: 16 }}>🔥 Coming Soon</div>
       <h2 className="uf-h2" style={{ textAlign: "center", marginBottom: 12 }}>Get the AI roadmap</h2>
       <p className="uf-body" style={{ textAlign: "center", marginBottom: 32 }}>
         Join the waitlist for the AI-powered FIRE roadmap: a personalized monthly plan to retire faster. Launching at $9/mo.
       </p>
       {status === "done" ? (
-        <div className="uf-waitlist-success">[party] You&apos;re on the list! We&apos;ll email you when we launch.</div>
+        <div className="uf-waitlist-success">🎉 You&apos;re on the list! We&apos;ll email you when we launch.</div>
       ) : (
         <div className="uf-waitlist-form">
           <input
@@ -869,6 +869,31 @@ export default function Home() {
         .uf-mono { font-family: var(--font-mono); }
         .uf-hint { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
         .uf-step-label { font-size: 12px; color: var(--text-muted); margin-bottom: 32px; }
+
+        @media (max-height: 700px) and (min-width: 901px) {
+          .uf-screen { padding-top: 4px; z-index: 60; }
+          .uf-step-label { margin-bottom: 4px; }
+          .uf-h2 { font-size: 30px; }
+          .uf-screen .uf-body { margin-bottom: 14px !important; }
+          .uf-goals-grid { gap: 8px; margin-bottom: 8px; }
+          .uf-goal-card { padding: 10px 12px; }
+          .uf-goal-top { margin-bottom: 6px; }
+          .uf-nav-row {
+            position: fixed;
+            left: 50%;
+            bottom: 16px;
+            transform: translateX(-50%);
+            width: min(492px, calc(100vw - 48px));
+            margin-top: 0;
+            padding: 10px;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(12px);
+            z-index: 50;
+          }
+        }
 
         /* -- WIZARD PROGRESS -- */
         .uf-wizard-progress { display: flex; align-items: center; margin-bottom: 8px; }

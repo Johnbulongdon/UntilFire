@@ -143,7 +143,7 @@ export default function CityScreen({
               </button>
             ))}
             <button className="uf-dropdown-custom" onMouseDown={openCustom}>
-              <span className="uf-dropdown-flag">[pin]</span>
+              <span className="uf-dropdown-flag">📍</span>
               <div>
                 <div className="uf-dropdown-custom-title">
                   &ldquo;{query}&rdquo; - enter my monthly expenses
@@ -195,7 +195,7 @@ export default function CityScreen({
         <div className="uf-city-info">
           <div className="uf-city-info-label">
             {selected.isCustom
-              ? "[pin] Custom city - using your manual monthly expense figure"
+              ? "📍 Custom city - using your manual monthly expense figure"
               : `${CITIES.find((c) => c.name === selected.name)?.flag ?? ""} ${
                   STATE_TAX[selected.stateKey]?.label ?? "Local tax rates apply"
                 }`}
