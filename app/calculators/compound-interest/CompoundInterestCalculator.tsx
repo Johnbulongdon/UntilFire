@@ -50,7 +50,7 @@ export default function CompoundInterestCalculator() {
   const [rate, setRate] = useState('7')
   const [years, setYears] = useState('20')
 
-  const { finalBalance, totalContributions, totalPrincipal, gains, milestones } = useMemo(() => {
+  const { finalBalance, totalPrincipal, gains, milestones } = useMemo(() => {
     const p = parseFloat(principal) || 0
     const m = parseFloat(monthly) || 0
     const r = (parseFloat(rate) || 7) / 100 / 12
