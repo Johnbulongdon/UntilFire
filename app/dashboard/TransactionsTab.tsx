@@ -496,12 +496,14 @@ function TransactionList({
   justAddedId,
   onEdit,
   onDelete,
+  rates,
 }: {
   transactions: Transaction[];
   editingId: string | null;
   justAddedId: string | null;
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
+  rates: Record<string, number>;
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income">("all");
@@ -590,7 +592,7 @@ function TransactionList({
           </div>
         ) : (
           groups.map(([date, txns]) => {
-            const dayNet = txns.reduce((s, t) => s + (t.transaction_type === "income" ? t.amount : -t.amount), 0);
+            const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : -usd); }, 0);
             return (
               <div key={date}>
                 <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "#94A3B8" }}>
@@ -1078,6 +1080,7 @@ export default function TransactionsTab() {
           justAddedId={justAddedId}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          rates={rates}
         />
         <div className="cf-form-col">
           <QuickAddForm
