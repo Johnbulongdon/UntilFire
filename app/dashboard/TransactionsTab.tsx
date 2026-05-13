@@ -1011,7 +1011,7 @@ export default function TransactionsTab() {
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then((r) => r.json())
-      .then((d) => setRates(d.rates ?? {}))
+      .then((d) => { if (d.rates) setRates(d.rates); })
       .catch(() => {});
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1217,6 +1217,7 @@ export default function TransactionsTab() {
           onSave={handleSave}
           editing={!!editingId}
           onCancelEdit={handleCancelEdit}
+          existingTags={existingTags}
         />
       </MobileDrawer>
 
