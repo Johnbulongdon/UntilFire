@@ -647,6 +647,7 @@ function RevealScreen({ city, income, savings, stateKey, fireGoal, currentAge, o
                       fireGoal,
                       fireTarget: result.fireTarget,
                       annualCost: city.col,
+                      currentAge,
                     });
                     router.push("/login");
                   }}
@@ -670,6 +671,7 @@ function RevealScreen({ city, income, savings, stateKey, fireGoal, currentAge, o
       annualCost: city.col,
       retireYear: result.retireYear,
       generatedAt: new Date().toISOString(),
+      currentAge,
     });
   }}
 >
