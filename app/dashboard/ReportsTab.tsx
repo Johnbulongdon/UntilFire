@@ -101,13 +101,14 @@ export default function ReportsTab() {
   const [transactions, setTransactions] = useState<RawTx[]>([]);
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
+  const [ratesFallback, setRatesFallback] = useState(false);
   const [period, setPeriod] = useState<3 | 6 | 12>(6);
 
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then(r => r.json())
-      .then(d => { if (d.rates) setRates(d.rates); })
-      .catch(() => {});
+      .then(d => { if (d.rates) setRates(d.rates); else setRatesFallback(true); })
+      .catch(() => setRatesFallback(true));
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { setLoading(false); return; }
@@ -223,34 +224,49 @@ export default function ReportsTab() {
             Monthly income, expenses, and savings trends.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {([3, 6, 12] as const).map(p => (
-            <button key={p} onClick={() => setPeriod(p)} style={periodBtnStyle(p)}>
-              {p}m
-            </button>
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            {([3, 6, 12] as const).map(p => (
+              <button key={p} onClick={() => setPeriod(p)} style={periodBtnStyle(p)}>
+                {p}m
+              </button>
+            ))}
+          </div>
+          {ratesFallback && (
+            <div style={{ fontSize: 11, color: "#D97706", fontWeight: 600 }}>
+              ⚠ Estimated rates — live fetch failed
+            </div>
+          )}
         </div>
       </div>
 
       {/* ── KPI row ──────────────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-        {[
-          { label: "Avg Monthly Income",   value: fmt(avgIncome),             color: "#62FAE3" },
-          { label: "Avg Monthly Expenses", value: fmt(avgExpenses),           color: "#FCA5A5" },
-          { label: "Avg Savings Rate",     value: avgRate.toFixed(0) + "%",   color: rateColor(avgRate) },
-        ].map(kpi => (
-          <div key={kpi.label} style={{ background: "#003527", borderRadius: 16, padding: "20px 24px" }}>
-            <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
-              {kpi.label}
-            </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: kpi.color, fontFamily: "Inter, sans-serif", letterSpacing: "-1px" }}>
-              {kpi.value}
-            </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>
-              avg over {activeMths.length} month{activeMths.length !== 1 ? "s" : ""}
-            </div>
+        {activeMths.length === 0 ? (
+          <div style={{ gridColumn: "1 / -1", background: "#003527", borderRadius: 16, padding: "24px", textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
+            No transactions in this period — try a wider range or add some in Cashflow.
           </div>
-        ))}
+        ) : (
+          <>
+            {[
+              { label: "Avg Monthly Income",   value: fmt(avgIncome),           color: "#62FAE3" },
+              { label: "Avg Monthly Expenses", value: fmt(avgExpenses),         color: "#FCA5A5" },
+              { label: "Avg Savings Rate",     value: avgRate.toFixed(0) + "%", color: rateColor(avgRate) },
+            ].map(kpi => (
+              <div key={kpi.label} style={{ background: "#003527", borderRadius: 16, padding: "20px 24px" }}>
+                <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
+                  {kpi.label}
+                </div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: kpi.color, fontFamily: "Inter, sans-serif", letterSpacing: "-1px" }}>
+                  {kpi.value}
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>
+                  avg over {activeMths.length} month{activeMths.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
 
       {/* ── Income vs Expenses chart ──────────────────────────────────────── */}

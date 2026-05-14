@@ -218,7 +218,9 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
   if (!base) {
     return (
       <div className="uf-card" style={{ padding: "28px 32px", textAlign: "center" }}>
-        <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>Add income &amp; expenses to see your success probability</p>
+        <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>
+          Enter your income and expenses in the <strong>Goals</strong> section above to see your retirement success probability.
+        </p>
       </div>
     );
   }
@@ -236,7 +238,12 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 
         {/* Score */}
         <div style={{ padding: "28px 28px 24px", borderRight: "1px solid #E2E8F0" }}>
-          <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#64748B", marginBottom: 16, fontWeight: 700 }}>Success Probability</div>
+          <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#64748B", marginBottom: 4, fontWeight: 700 }}>
+            Success Probability
+          </div>
+          <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 14, lineHeight: 1.5 }}>
+            Chance of reaching your FIRE number before your target age, based on 10,000 randomised market simulations.
+          </div>
           <div style={{ fontSize: 60, fontWeight: 800, color: scoreColor, fontFamily: "Manrope, sans-serif", letterSpacing: "-3px", lineHeight: 1, marginBottom: 4 }}>
             {result.probability}%
           </div>
@@ -388,7 +395,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   Set your inputs
                 </div>
                 <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.45)" }}>
-                  Add income &amp; expenses in the Budget tab to see your FIRE date
+                  Add income &amp; expenses in the Cashflow tab to see your FIRE date
                 </div>
               </>
             )}
@@ -494,7 +501,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           <SectionLabel icon="💸" text={hasActuals ? "Spending Breakdown (Actual)" : "Spending Breakdown (Budget)"} color="#DC2626" />
           {activeCats.length === 0 ? (
             <div style={{ color: "#64748B", fontSize: 13, textAlign: "center", padding: "40px 0" }}>
-              Add expenses in the<br />Budget Tracker tab
+              Add expenses in the<br />Cashflow tab
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1382,6 +1389,17 @@ export default function Dashboard() {
     if (t && valid.includes(t)) setTab(t);
   }, []);
 
+  // Keep URL in sync so bookmarks / back-button work
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (tab === "overview") {
+      url.searchParams.delete("tab");
+    } else {
+      url.searchParams.set("tab", tab);
+    }
+    window.history.replaceState(null, "", url.toString());
+  }, [tab]);
+
   // Budget state
   const [income,   setIncome]   = useState(0);
   const [expenses, setExpenses] = useState<Expenses>({ housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0 });
@@ -1422,6 +1440,7 @@ export default function Dashboard() {
   );
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoaded   = useRef(false);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -1483,9 +1502,21 @@ export default function Dashboard() {
           if (prefill.cityName) setCityName(prefill.cityName);
         }
         isLoaded.current = true;
+        setProfileLoading(false);
       });
     });
   }, []);
+
+  // Warn if user closes the tab while a save is in flight
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (saveStatus === "saving") {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [saveStatus]);
 
   // Auto-save with 1s debounce
   useEffect(() => {
@@ -1540,6 +1571,8 @@ export default function Dashboard() {
         .uf-sidebar-bottom { margin-top: auto; padding: 14px 16px; border-top: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 8px; }
 
         select option { background: #ffffff; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
         @media(max-width: 900px) {
           .uf-sidebar { width: 196px; }
@@ -1625,7 +1658,14 @@ export default function Dashboard() {
                 )}
               </div>
             )}
-            {tab === "assets" && (
+            {tab === "assets" && profileLoading && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {[180, 120, 120].map((h, i) => (
+                  <div key={i} style={{ background: "#E2E8F0", borderRadius: 16, height: h, animation: "pulse 1.5s ease-in-out infinite" }} />
+                ))}
+              </div>
+            )}
+            {tab === "assets" && !profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 <PortfolioOverviewTab
                   income={income} expenses={expenses}
@@ -1646,7 +1686,14 @@ export default function Dashboard() {
                 />
               </div>
             )}
-            {tab === "liabilities" && (
+            {tab === "liabilities" && profileLoading && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {[100, 100].map((h, i) => (
+                  <div key={i} style={{ background: "#E2E8F0", borderRadius: 16, height: h, animation: "pulse 1.5s ease-in-out infinite" }} />
+                ))}
+              </div>
+            )}
+            {tab === "liabilities" && !profileLoading && (
               <LiabilitiesTab
                 totalDebt={totalDebt} setTotalDebt={setTotalDebt}
                 mortgageBalance={mortgageBalance} setMortgageBalance={setMortgageBalance}

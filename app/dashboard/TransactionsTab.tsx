@@ -406,7 +406,12 @@ function QuickAddForm({
             type="text"
             placeholder={isIncome ? "e.g. Monthly salary, Freelance…" : "e.g. Whole Foods, Uber…"}
             value={draft.description}
-            onChange={(e) => { setField("description", e.target.value); setField("aiSuggestion", null); setField("category", ""); setField("sub_category", ""); }}
+            onChange={(e) => {
+              const wasAiCategory = draft.aiSuggestion && draft.aiSuggestion === draft.category;
+              setField("description", e.target.value);
+              setField("aiSuggestion", null);
+              if (wasAiCategory) { setField("category", ""); setField("sub_category", ""); }
+            }}
             onBlur={handleDescriptionBlur}
             style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
           />
@@ -812,7 +817,7 @@ function TransactionList({
                 <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "#94A3B8" }}>
                   <span>{dayLabel(date, todayYmd)}</span>
                   <span style={{ color: "#64748B", fontVariantNumeric: "tabular-nums" }}>
-                    {dayNet >= 0 ? "+" : "−"}{fmt(Math.abs(dayNet))}
+                    {dayNet > 0 ? "+" : dayNet < 0 ? "−" : ""}{fmt(Math.abs(dayNet))}
                   </span>
                 </div>
                 {txns
@@ -863,7 +868,7 @@ function TransactionList({
                         {/* Delete */}
                         <button
                           onClick={(e) => { e.stopPropagation(); onDelete(tx); }}
-                          style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", border: "none", color: "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: 0, transition: "opacity 0.12s, background 0.12s" }}
+                          style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", border: "none", color: "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: 0.35, transition: "opacity 0.12s, background 0.12s" }}
                           className="tx-delete-btn"
                           aria-label="delete"
                         >
@@ -896,6 +901,7 @@ function MonthlySummary({
   onNextMonth,
   budgetExpenses,
   rates,
+  ratesFallback,
 }: {
   transactions: Transaction[];
   viewMonth: string;
@@ -903,6 +909,7 @@ function MonthlySummary({
   onNextMonth: () => void;
   budgetExpenses: Record<string, number> | null;
   rates: Record<string, number>;
+  ratesFallback: boolean;
 }) {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -951,7 +958,11 @@ function MonthlySummary({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div>
           <div style={{ fontWeight: 700, fontSize: 22, color: "#064E3B", letterSpacing: "-0.4px" }}>{monthLabel}</div>
-          {isMixed && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>Totals converted to USD · live rates</div>}
+          {isMixed && (
+            <div style={{ fontSize: 11, color: ratesFallback ? "#D97706" : "#94A3B8", marginTop: 2 }}>
+              Totals converted to USD · {ratesFallback ? "⚠ estimated rates (live fetch failed)" : "live rates"}
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center" }}>
@@ -1036,21 +1047,24 @@ function Toast({
   toast,
   onUndo,
 }: {
-  toast: { msg: string; undoId?: string; _removed?: Transaction } | null;
+  toast: { msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null;
   onUndo: () => void;
 }) {
+  const isErr = toast?.isError;
   return (
     <div style={{
       position: "fixed", bottom: 28, left: "50%",
       transform: `translateX(-50%) translateY(${toast ? 0 : 20}px)`,
       opacity: toast ? 1 : 0, transition: "all 220ms",
-      background: "#064E3B", color: "#fff", borderRadius: 999,
+      background: isErr ? "#7F1D1D" : "#064E3B", color: "#fff", borderRadius: 999,
       padding: "10px 16px 10px 14px", fontSize: 13, fontWeight: 600,
       display: "flex", alignItems: "center", gap: 12, zIndex: 50,
       pointerEvents: toast ? "auto" : "none",
       boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
     }}>
-      <span style={{ width: 18, height: 18, background: "#10B981", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12 }}>✓</span>
+      <span style={{ width: 18, height: 18, background: isErr ? "#EF4444" : "#10B981", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12 }}>
+        {isErr ? "✕" : "✓"}
+      </span>
       <span>{toast?.msg}</span>
       {toast?.undoId && (
         <button onClick={onUndo} style={{ background: "transparent", border: "none", color: "#62FAE3", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", cursor: "pointer", padding: 0 }}>
@@ -1103,6 +1117,7 @@ export default function TransactionsTab() {
   const [viewMonth, setViewMonth] = useState(currentMonth);
   const [budgetExpenses, setBudgetExpenses] = useState<Record<string, number> | null>(null);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
+  const [ratesFallback, setRatesFallback] = useState(false);
 
   // Custom categories / sub-categories (persisted in localStorage)
   const [customCats, setCustomCats] = useState<CustomCategory[]>(() => {
@@ -1134,15 +1149,15 @@ export default function TransactionsTab() {
   const [draft, setDraft] = useState<DraftTransaction>(EMPTY_DRAFT);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then((r) => r.json())
-      .then((d) => { if (d.rates) setRates(d.rates); })
-      .catch(() => {});
+      .then((d) => { if (d.rates) setRates(d.rates); else setRatesFallback(true); })
+      .catch(() => setRatesFallback(true));
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
@@ -1179,9 +1194,9 @@ export default function TransactionsTab() {
     [transactions]
   );
 
-  const showToast = useCallback((msg: string, undoId?: string, removed?: Transaction) => {
+  const showToast = useCallback((msg: string, undoId?: string, removed?: Transaction, isError?: boolean) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ msg, undoId, _removed: removed });
+    setToast({ msg, undoId, _removed: removed, isError });
     toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
   }, []);
 
@@ -1205,28 +1220,32 @@ export default function TransactionsTab() {
     if (draft.id) {
       // Edit existing
       const { data, error } = await supabase.from("expenses").update(payload).eq("id", draft.id).select().single();
-      if (!error && data) {
-        setTransactions((prev) => prev.map((t) => (t.id === draft.id ? data : t)));
-        setEditingId(null);
-        setDraft(EMPTY_DRAFT());
-        showToast("Transaction updated");
+      if (error || !data) {
+        showToast("Failed to save changes — please try again", undefined, undefined, true);
+        return;
       }
+      setTransactions((prev) => prev.map((t) => (t.id === draft.id ? data : t)));
+      setEditingId(null);
+      setDraft(EMPTY_DRAFT());
+      showToast("Transaction updated");
     } else {
       // Insert new
       const { data, error } = await supabase.from("expenses").insert(payload).select().single();
-      if (!error && data) {
-        setTransactions((prev) => [data, ...prev]);
-        setJustAddedId(data.id);
-        setTimeout(() => setJustAddedId(null), 1600);
-        if (viewMonth !== data.date.slice(0, 7)) setViewMonth(data.date.slice(0, 7));
-        showToast(`Added — ${data.description || `$${data.amount}`}`, data.id);
-        if (!keepOpen) {
-          setDraft(EMPTY_DRAFT());
-        } else {
-          setDraft((d) => ({ ...EMPTY_DRAFT(), date: d.date, transaction_type: d.transaction_type, currency: d.currency, sub_category: "", tags: d.tags }));
-        }
-        if (drawerOpen && !keepOpen) setDrawerOpen(false);
+      if (error || !data) {
+        showToast("Failed to add transaction — please try again", undefined, undefined, true);
+        return;
       }
+      setTransactions((prev) => [data, ...prev]);
+      setJustAddedId(data.id);
+      setTimeout(() => setJustAddedId(null), 1600);
+      if (viewMonth !== data.date.slice(0, 7)) setViewMonth(data.date.slice(0, 7));
+      showToast(`Added — ${data.description || `$${data.amount}`}`, data.id);
+      if (!keepOpen) {
+        setDraft(EMPTY_DRAFT());
+      } else {
+        setDraft((d) => ({ ...EMPTY_DRAFT(), date: d.date, transaction_type: d.transaction_type, currency: d.currency, sub_category: "", tags: d.tags }));
+      }
+      if (drawerOpen && !keepOpen) setDrawerOpen(false);
     }
   }, [draft, drawerOpen, viewMonth, showToast]);
 
@@ -1259,7 +1278,11 @@ export default function TransactionsTab() {
 
   const handleDelete = useCallback(async (tx: Transaction) => {
     if (!window.confirm(`Delete "${tx.description}"?`)) return;
-    await supabase.from("expenses").delete().eq("id", tx.id);
+    const { error } = await supabase.from("expenses").delete().eq("id", tx.id);
+    if (error) {
+      showToast("Failed to delete — please try again", undefined, undefined, true);
+      return;
+    }
     setTransactions((prev) => prev.filter((t) => t.id !== tx.id));
     if (editingId === tx.id) { setEditingId(null); setDraft(EMPTY_DRAFT()); }
     showToast(`Deleted "${tx.description}"`, "undo:" + tx.id, tx);
@@ -1274,7 +1297,11 @@ export default function TransactionsTab() {
         .select()
         .single()
         .then(({ data, error }) => {
-          if (!error && data) setTransactions((prev) => [data as Transaction, ...prev]);
+          if (!error && data) {
+            setTransactions((prev) => [data as Transaction, ...prev]);
+          } else {
+            showToast("Couldn't restore transaction — please re-add manually", undefined, undefined, true);
+          }
         });
     } else if (toast.undoId && !toast.undoId.startsWith("undo:")) {
       // Undo add: delete the just-added transaction
@@ -1318,6 +1345,7 @@ export default function TransactionsTab() {
         onNextMonth={handleNextMonth}
         budgetExpenses={budgetExpenses}
         rates={rates}
+        ratesFallback={ratesFallback}
       />
 
       <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "start" }}>

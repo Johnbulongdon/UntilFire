@@ -819,6 +819,11 @@ export default function RecurringTab() {
       )}
 
       {/* ── Auto-detected ─────────────────────────────────────────────────── */}
+      {!hasAutoVisible && hasManual && (
+        <div style={{ fontSize: 13, color: "#94A3B8", textAlign: "center", padding: "16px 0" }}>
+          Auto-detection needs 2+ months of Cashflow transactions to find patterns.
+        </div>
+      )}
       {hasAutoVisible && (
         <div>
           <SectionLabel label="Detected from your transactions" />
