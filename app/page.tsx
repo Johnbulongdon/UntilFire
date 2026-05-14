@@ -197,15 +197,10 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
 // income is now always annual take-home (already post-tax) from IncomeScreen
 function SavingsScreen({ income, onNext, onBack }: {
   income: number;
-  onNext: (savings: number, currentAge?: number) => void;
+  onNext: (savings: number) => void;
   onBack: () => void;
 }) {
   const [savings, setSavings] = useState(1500);
-  const [ageRaw, setAgeRaw] = useState<string>("");
-  const parsedAge = (() => {
-    const n = parseInt(ageRaw, 10);
-    return Number.isFinite(n) && n >= 16 && n <= 90 ? n : undefined;
-  })();
   // income is already take-home annual -divide by 12 for monthly
   const monthly = income / 12;
   const rate = monthly > 0 ? Math.round((savings / monthly) * 100) : 0;
@@ -216,8 +211,8 @@ function SavingsScreen({ income, onNext, onBack }: {
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={3} />
-      <p className="uf-step-label">Step 4 of 4</p>
+      <WizardProgress step={2} />
+      <p className="uf-step-label">Step 3 of 5</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">How much are you <span className="uf-accent">saving?</span></h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
@@ -273,9 +268,62 @@ function SavingsScreen({ income, onNext, onBack }: {
         </div>
       </div>
 
-      <div style={{ marginTop: 20 }}>
+      <div className="uf-nav-row">
+        <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
+        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(savings)}>
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// PORTFOLIO BALANCE + AGE SCREEN
+// -----------------------------------------------------------------------------
+
+function PortfolioScreen({ onNext, onBack }: {
+  onNext: (portfolio: number, age?: number) => void;
+  onBack: () => void;
+}) {
+  const [portfolioRaw, setPortfolioRaw] = useState<string>("");
+  const [ageRaw, setAgeRaw] = useState<string>("");
+
+  const portfolio = Math.max(0, parseInt(portfolioRaw.replace(/,/g, ""), 10) || 0);
+  const parsedAge = (() => {
+    const n = parseInt(ageRaw, 10);
+    return Number.isFinite(n) && n >= 16 && n <= 90 ? n : undefined;
+  })();
+
+  return (
+    <div className="uf-screen">
+      <WizardProgress step={3} />
+      <p className="uf-step-label">Step 4 of 5</p>
+      <div className="uf-eyebrow">Finances</div>
+      <h2 className="uf-h2">What&apos;s your <span className="uf-accent">current portfolio?</span></h2>
+      <p className="uf-body" style={{ marginBottom: 32 }}>
+        Include 401(k), IRA, brokerage, and other long-term savings. Estimate is fine. Zero is fine too.
+      </p>
+
+      <label className="uf-label">Total invested savings</label>
+      <div className="uf-big-input-wrap">
+        <span className="uf-input-prefix uf-big-prefix">$</span>
+        <input
+          type="number"
+          className="uf-input uf-input-mono uf-input-big"
+          style={{ paddingLeft: 28 }}
+          placeholder="0"
+          value={portfolioRaw}
+          min={0}
+          onChange={e => setPortfolioRaw(e.target.value)}
+          autoFocus
+        />
+      </div>
+      <p className="uf-hint">Leave at 0 if you&apos;re just starting out — it won&apos;t affect whether you can reach FIRE.</p>
+
+      <div style={{ marginTop: 24 }}>
         <label className="uf-label" htmlFor="uf-current-age">
-          Your current age <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional -used to project your retirement age)</span>
+          Your current age <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span>
         </label>
         <input
           id="uf-current-age"
@@ -288,12 +336,12 @@ function SavingsScreen({ income, onNext, onBack }: {
           onChange={e => setAgeRaw(e.target.value)}
           style={{ maxWidth: 160 }}
         />
-        <p className="uf-hint">Leave blank if you&apos;d rather not say -we&apos;ll just show your FIRE year, not your age at FIRE.</p>
+        <p className="uf-hint">Used to show your retirement age. Leave blank to see only the year.</p>
       </div>
 
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(savings, parsedAge)}>
+        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(portfolio, parsedAge)}>
           Show my FIRE number
         </button>
       </div>
@@ -426,12 +474,12 @@ function useCountUp(target: number, duration: number, running: boolean) {
   return val;
 }
 
-function RevealScreen({ city, income, savings, stateKey, fireGoal, currentAge, onAdjust }: {
-  city: CityState; income: number; savings: number; stateKey: string; fireGoal: string;
-  currentAge?: number;
+function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBalance = 0, onAdjust }: {
+  city: CityState; income: number; savings: number; stateKey: string;
+  currentAge?: number; portfolioBalance?: number;
   onAdjust: () => void;
 }) {
-  const result = calcFIRE(savings, city.col, currentAge);
+  const result = calcFIRE(savings, city.col, currentAge, portfolioBalance);
   const { takeHome } = calcTakeHome(income, stateKey);
   const router = useRouter();
   const revealActions = useMemo(
@@ -644,10 +692,10 @@ function RevealScreen({ city, income, savings, stateKey, fireGoal, currentAge, o
                       monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)),
                       cityName: city.name,
                       stateKey,
-                      fireGoal,
                       fireTarget: result.fireTarget,
                       annualCost: city.col,
                       currentAge,
+                      portfolioBalance,
                     });
                     router.push("/login");
                   }}
@@ -666,16 +714,16 @@ function RevealScreen({ city, income, savings, stateKey, fireGoal, currentAge, o
       monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)),
       cityName: city.name,
       stateKey,
-      fireGoal,
       fireTarget: result.fireTarget,
       annualCost: city.col,
       retireYear: result.retireYear,
       generatedAt: new Date().toISOString(),
       currentAge,
+      portfolioBalance,
     });
   }}
 >
-  Save this plan and open your dashboard
+  Track this in your dashboard
 </Link>
               <Link href="/learn/how-fire-assumptions-change-your-retirement-date" className="uf-btn uf-btn-ghost uf-btn-full" style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>See what changes your retirement date</Link>
 
@@ -751,18 +799,18 @@ function WaitlistSection() {
 // ROOT
 // -----------------------------------------------------------------------------
 
-type Screen = "hero" | "goals" | "city" | "income" | "savings" | "reveal";
+type Screen = "hero" | "city" | "income" | "savings" | "portfolio" | "reveal";
 
 export default function Home() {
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("hero");
 
   // Wizard state
-  const [fireGoal, setFireGoal]     = useState<string>("early");
-  const [cityState, setCityState]   = useState<CityState | null>(null);
-  const [income, setIncome]         = useState(90000);
-  const [savings, setSavings]       = useState(1500);
-  const [currentAge, setCurrentAge] = useState<number | undefined>(undefined);
+  const [cityState, setCityState]         = useState<CityState | null>(null);
+  const [income, setIncome]               = useState(90000);
+  const [savings, setSavings]             = useState(1500);
+  const [portfolioBalance, setPortfolioBalance] = useState(0);
+  const [currentAge, setCurrentAge]       = useState<number | undefined>(undefined);
 
   // Auth redirect -keep existing behaviour
   useEffect(() => {
@@ -800,7 +848,7 @@ export default function Home() {
     router.push('/login');
   }
 
-  const STEP_MAP: Record<Screen, number> = { hero: 0, goals: 1, city: 2, income: 3, savings: 4, reveal: 5 };
+  const STEP_MAP: Record<Screen, number> = { hero: 0, city: 1, income: 2, savings: 3, portfolio: 4, reveal: 5 };
   const totalDots = 6;
 
   return (
@@ -1239,18 +1287,12 @@ export default function Home() {
           <div className="uf-atm-orb uf-atm-orb-3" />
         </div>
         {screen === "hero" && (
-          <HeroScreen onStart={() => setScreen("goals")} onSignIn={signIn} />
-        )}
-        {screen === "goals" && (
-          <GoalsScreen
-            onNext={g => { setFireGoal(g); setScreen("city"); }}
-            onBack={() => setScreen("hero")}
-          />
+          <HeroScreen onStart={() => setScreen("city")} onSignIn={signIn} />
         )}
         {screen === "city" && (
           <CityScreen
             onNext={c => { setCityState(c); setScreen("income"); }}
-            onBack={() => setScreen("goals")}
+            onBack={() => setScreen("hero")}
           />
         )}
         {screen === "income" && (
@@ -1263,8 +1305,14 @@ export default function Home() {
         {screen === "savings" && (
           <SavingsScreen
             income={income}
-            onNext={(sav, age) => { setSavings(sav); setCurrentAge(age); setScreen("reveal"); }}
+            onNext={sav => { setSavings(sav); setScreen("portfolio"); }}
             onBack={() => setScreen("income")}
+          />
+        )}
+        {screen === "portfolio" && (
+          <PortfolioScreen
+            onNext={(p, age) => { setPortfolioBalance(p); setCurrentAge(age); setScreen("reveal"); }}
+            onBack={() => setScreen("savings")}
           />
         )}
         {screen === "reveal" && cityState && (
@@ -1273,9 +1321,9 @@ export default function Home() {
             income={income}
             savings={savings}
             stateKey={cityState.stateKey}
-            fireGoal={fireGoal}
             currentAge={currentAge}
-            onAdjust={() => setScreen("savings")}
+            portfolioBalance={portfolioBalance}
+            onAdjust={() => setScreen("portfolio")}
           />
         )}
 
