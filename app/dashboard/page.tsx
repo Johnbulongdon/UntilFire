@@ -453,13 +453,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </div>
       )}
 
-      {/* Monte Carlo probability card */}
-      <MonteCarloCard
-        income={income} expenses={expenses}
-        k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
-        growthRate={growthRate} withdrawalRate={withdrawalRate}
-      />
-
       {/* Charts row */}
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16 }}>
         {/* Wealth projection chart */}
@@ -1033,10 +1026,13 @@ const FIRE_GOAL_OPTIONS = [
   { id: "fat-fire",         label: "Fat FIRE",            icon: "💎", desc: "Full retirement with a luxury lifestyle buffer" },
 ];
 
-function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: number) => void }) {
+function GoalsTab({ fireAge, setFireAge, onBack }: { fireAge: number; setFireAge: (v: number) => void; onBack: () => void }) {
   const [goalId, setGoalId] = useState("early-retirement");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <button onClick={onBack} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#64748B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+        ← Back to Calculator
+      </button>
       <div className="uf-card">
         <SectionLabel icon="🎯" text="FIRE Goal Type" color="#064E3B" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -1072,12 +1068,15 @@ function GoalsTab({ fireAge, setFireAge }: { fireAge: number; setFireAge: (v: nu
 }
 
 // ─── Simulations Tab ──────────────────────────────────────────────────────────
-function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate }: {
+function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, onBack }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number;
+  taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number; onBack: () => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <button onClick={onBack} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#64748B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+        ← Back to Calculator
+      </button>
       <div>
         <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 20, fontWeight: 700, color: "#19181E", margin: "0 0 4px" }}>Monte Carlo Simulation</h2>
         <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>10,000 randomised market scenarios to estimate your probability of reaching FIRE.</p>
@@ -1087,6 +1086,84 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings 
         k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
         growthRate={growthRate} withdrawalRate={withdrawalRate}
       />
+    </div>
+  );
+}
+
+// ─── FIRE Calculator Menu Tab ────────────────────────────────────────────────
+function FireCalcMenuTab({
+  fireAge,
+  onOpenGoals,
+  onOpenSimulation,
+}: {
+  fireAge: number;
+  onOpenGoals: () => void;
+  onOpenSimulation: () => void;
+}) {
+  const tools = [
+    {
+      icon: "🎯",
+      title: "Set Your Goals",
+      desc: "Choose your FIRE style — Early Retirement, Coast, Barista, or Fat FIRE — and set your target retirement age.",
+      meta: `Target: retire at ${fireAge}`,
+      label: "Open Goals →",
+      onClick: onOpenGoals,
+    },
+    {
+      icon: "🎲",
+      title: "Monte Carlo Simulation",
+      desc: "Run 10,000 randomised market scenarios to see your probability of reaching FIRE by your target age.",
+      meta: "Stress-test your plan",
+      label: "Run Simulation →",
+      onClick: onOpenSimulation,
+    },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+      <div>
+        <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "#19181E", margin: "0 0 6px", letterSpacing: "-0.5px" }}>
+          FIRE Calculator
+        </h2>
+        <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>
+          Choose a tool below to model your path to financial independence.
+        </p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+        {tools.map(tool => (
+          <div
+            key={tool.title}
+            style={{
+              background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16,
+              padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16,
+            }}
+          >
+            <div style={{ fontSize: 48, lineHeight: 1 }}>{tool.icon}</div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#19181E", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
+                {tool.title}
+              </div>
+              <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7 }}>
+                {tool.desc}
+              </div>
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              {tool.meta}
+            </div>
+            <button
+              onClick={tool.onClick}
+              style={{
+                background: "linear-gradient(135deg, #059669, #064E3B)",
+                color: "#fff", border: "none", borderRadius: 10,
+                padding: "12px 0", fontWeight: 700, fontSize: 14,
+                cursor: "pointer", fontFamily: "inherit", marginTop: "auto",
+              }}
+            >
+              {tool.label}
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1284,6 +1361,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "budgets">("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
+  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation">("menu");
 
   // Read initial tab from URL query string (e.g. ?tab=cashflow)
   useEffect(() => {
@@ -1466,7 +1544,7 @@ export default function Dashboard() {
               <button
                 key={item.key}
                 className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
-                onClick={() => setTab(item.key)}
+                onClick={() => { setTab(item.key); if (item.key !== "fire-calculator") setFireCalcSubTab("menu"); }}
               >
                 <span className="uf-sidebar-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
@@ -1556,13 +1634,27 @@ export default function Dashboard() {
             )}
             {tab === "fire-calculator" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-                <GoalsTab fireAge={fireAge} setFireAge={setFireAge} />
-                <div style={{ borderTop: "1px solid #E2E8F0" }} />
-                <SimulationsTab
-                  income={income} expenses={expenses}
-                  k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
-                  growthRate={growthRate} withdrawalRate={withdrawalRate}
-                />
+                {fireCalcSubTab === "menu" && (
+                  <FireCalcMenuTab
+                    fireAge={fireAge}
+                    onOpenGoals={() => setFireCalcSubTab("goals")}
+                    onOpenSimulation={() => setFireCalcSubTab("simulation")}
+                  />
+                )}
+                {fireCalcSubTab === "goals" && (
+                  <GoalsTab
+                    fireAge={fireAge} setFireAge={setFireAge}
+                    onBack={() => setFireCalcSubTab("menu")}
+                  />
+                )}
+                {fireCalcSubTab === "simulation" && (
+                  <SimulationsTab
+                    income={income} expenses={expenses}
+                    k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
+                    growthRate={growthRate} withdrawalRate={withdrawalRate}
+                    onBack={() => setFireCalcSubTab("menu")}
+                  />
+                )}
               </div>
             )}
             {tab === "reports" && (
