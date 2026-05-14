@@ -13,6 +13,7 @@ export type CalculatorPrefill = {
   generatedAt?: string
   income?: number
   currentAge?: number
+  portfolioBalance?: number
 }
 
 function readPrefill(): CalculatorPrefill | null {

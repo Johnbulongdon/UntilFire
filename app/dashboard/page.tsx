@@ -1555,7 +1555,8 @@ export default function Dashboard() {
           setK401(fp.k401 || data.fire_assets || 0);
           setRothIRA(fp.rothIRA || 0);
           setTaxable(fp.taxable || 0);
-          setCashSavings(fp.cashSavings || 0);
+          // Seed cashSavings from wizard portfolio balance when no existing data
+          setCashSavings(fp.cashSavings || (prefill.portfolioBalance && prefill.portfolioBalance > 0 ? prefill.portfolioBalance : 0));
           setTotalDebt(fp.totalDebt || 0);
           setMortgageBalance(fp.mortgageBalance || 0);
           setMortgageMonthly(fp.mortgageMonthly || 0);
@@ -1568,6 +1569,7 @@ export default function Dashboard() {
           if (prefill.monthlySpendEstimate) setExpenses(prev => ({ ...prev, other: prefill.monthlySpendEstimate! }));
           if (prefill.currentAge) setFireAge(prefill.currentAge);
           if (prefill.cityName) setCityName(prefill.cityName);
+          if (prefill.portfolioBalance && prefill.portfolioBalance > 0) setCashSavings(prefill.portfolioBalance);
         }
         isLoaded.current = true;
         setProfileLoading(false);
