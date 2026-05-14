@@ -16,7 +16,6 @@ import type { CalculatorStepId } from "@/lib/analytics-events";
 import Nav from "@/app/components/landing/Nav";
 import WizardProgress from "@/app/components/landing/WizardProgress";
 import HeroScreen from "@/app/components/landing/HeroScreen";
-import GoalsScreen from "@/app/components/landing/GoalsScreen";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
 
 // -----------------------------------------------------------------------------
@@ -552,10 +551,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
         isCustomCity: city.isCustom,
         fireTarget: result.fireTarget,
         yearsToFire: result.years,
-        fireGoal,
+        fireGoal: "early",
       });
     }
-  }, [revealed, stateKey, city.isCustom, result.fireTarget, result.years, fireGoal]);
+  }, [revealed, stateKey, city.isCustom, result.fireTarget, result.years]);
 
   // Delta calculations
   const highSaver = calcFIRE((takeHome / 12) * 0.5, city.col, currentAge);
@@ -840,9 +839,9 @@ export default function Home() {
     };
     const stepId = stepMap[screen];
     if (stepId) {
-      trackCalculatorStepViewed(stepId, fireGoal);
+      trackCalculatorStepViewed(stepId, "early");
     }
-  }, [screen, fireGoal]);
+  }, [screen]);
 
   function signIn() {
     router.push('/login');
