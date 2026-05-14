@@ -1502,15 +1502,19 @@ export default function Dashboard() {
         }
       });
 
-      // Fetch current-month actuals from expenses table
+      // Fetch current-month and previous-month actuals
+      // Use gte/lt instead of LIKE — more reliable on PostgreSQL date columns
       const nowD = new Date();
-      const thisMonth = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}`;
+      const thisStart = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}-01`;
+      const nextMonthD = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 1);
+      const thisEnd = `${nextMonthD.getFullYear()}-${String(nextMonthD.getMonth() + 1).padStart(2, '0')}-01`;
       const prevD = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1);
-      const prevMonth = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}`;
+      const prevStart = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}-01`;
 
       supabase.from("expenses").select("category, amount, currency, transaction_type")
         .eq("user_id", session.user.id)
-        .like("date", `${thisMonth}-%`)
+        .gte("date", thisStart)
+        .lt("date", thisEnd)
         .then(({ data: expData }) => {
           if (expData) {
             setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
@@ -1519,7 +1523,8 @@ export default function Dashboard() {
 
       supabase.from("expenses").select("category, amount, currency, transaction_type")
         .eq("user_id", session.user.id)
-        .like("date", `${prevMonth}-%`)
+        .gte("date", prevStart)
+        .lt("date", thisStart)
         .then(({ data: prevData }) => {
           if (prevData) {
             setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
