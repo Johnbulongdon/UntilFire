@@ -10,6 +10,7 @@ import {
 import TransactionsTab from "./TransactionsTab";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
+import ReportsTab from "./ReportsTab";
 import { monteCarloFIRE } from "@/lib/fire";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1677,13 +1678,7 @@ export default function Dashboard() {
                 )}
               </div>
             )}
-            {tab === "reports" && (
-              <div style={{ textAlign: "center", padding: "80px 24px", color: "#64748B" }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
-                <div style={{ fontWeight: 700, fontSize: 20, color: "#19181E", marginBottom: 8 }}>Reports coming soon</div>
-                <div style={{ fontSize: 14 }}>Monthly summaries, tax reports, and spending trends will appear here.</div>
-              </div>
-            )}
+            {tab === "reports" && <ReportsTab />}
             {tab === "learning-hub" && <LearningHubTab />}
           </div>
         </main>
