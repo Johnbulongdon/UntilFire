@@ -1,6 +1,8 @@
 # UntilFire
 
-Personal FIRE calculator and financial independence tracker. Free calculator (no login), paid AI adviser tier.
+**Know if you can FIRE and where you stand — in 60 seconds.**
+
+Free, no login. Your personal FIRE adviser tells you exactly what to do each month to move your retirement date earlier.
 
 Live at **untilfire.com**.
 
@@ -35,17 +37,37 @@ The `/dashboard` is a single-page app with a flat 7-item sidebar nav:
 | **Reports** | Period selector (3/6/12 months), income vs expenses chart, category breakdown, month-by-month table |
 | **Learning Hub** | Calculators, SEO articles, and FIRE topics |
 
+## Tiers
+
+| Tier | Price | What you get |
+|---|---|---|
+| **Free** | $0 | Find out if FIRE is achievable for you — city, income, taxes. No login required. 263 cities worldwide. |
+| **Pro** | $9/mo | Your personal FIRE adviser: tracks your progress, spots what's slowing you down, and tells you the one move to make each month. |
+
 ## Key features
 
-- **Multi-currency expense tracking** — transactions stored in any currency, auto-converted to USD for summaries using live rates from frankfurter.app
-- **AI categorisation** — description → Claude API → category + tags, shown as a suggestion pill
-- **Two-pane cashflow UI** — sticky QuickAdd form on the right, scrollable transaction list on the left; click any row to edit inline
-- **FIRE projection** — chart of 401(k) / Roth / taxable growth over 50 years with FIRE target line
-- **Monte Carlo simulation** — 1,000-run probability distribution of retirement outcomes (FIRE Calculator tab)
-- **Budget comparison bars** — actual spend vs budget per category
-- **Recurring planner** — manual entry of recurring income/expenses with include/exclude toggles; auto-detects repeating transactions from history
-- **Reports tab** — income vs expenses bar chart (Recharts), per-category breakdown, month-by-month summary table; 3/6/12-month period selector
-- **Wizard → dashboard handoff** — calculator prefill (income, city, age, spend estimate) flows into dashboard on first login via `localStorage` key `uf_calc_prefill`
+- **60-second FIRE answer** — find out whether you can retire early, personalised to your city and income, before you create an account
+- **263 cities worldwide** — real cost-of-living data; no national averages
+- **City-level tax calculation** — US federal/state + FICA; international flat effective rates
+- **Personal FIRE adviser** (Pro) — monthly action plan based on your actual spending, not generic tips
+- **Multi-currency expense tracking** — transactions stored in any currency, auto-converted to USD using live rates
+- **FIRE projection chart** — 401(k) / Roth / taxable growth over 50 years with FIRE target line
+- **Monte Carlo simulation** — 10,000 scenarios showing your probability of reaching FIRE by your target age
+- **Spending reports** — income vs expenses chart, category breakdown, month-by-month table (3/6/12m selector)
+- **Recurring planner** — manual entry of recurring income/bills with include/exclude toggles; auto-detects repeating transactions
+- **Wizard → dashboard handoff** — calculator prefill (income, city, age, spend) flows into dashboard on first login
+
+## Competitive position
+
+The market splits into three buckets — all with the same gap:
+
+| Bucket | Who | Gap |
+|---|---|---|
+| **FIRE Calculators** | FIRECalc (free), cFIREsim (effectively abandoned) | Give you a success rate, then leave you alone. No personalisation. No next steps. |
+| **FIRE Planners** | ProjectionLab ($109/yr), Boldin ($144/yr, built for 55+) | Powerful models that require 20+ min to set up and still don't tell you what to do. US-only. |
+| **Budgeting Apps** | Monarch Money ($100–199/yr), YNAB ($109/yr) | Great for spending visibility; FIRE is an afterthought. No city-level COL. No retirement math. |
+
+**The gap UntilFire fills:** Nobody answers *"Can I actually FIRE? Where am I right now? What should I do this month?"* — the question every early-career person on the FIRE path is actually asking. UntilFire is the entry point: first answer in 60 seconds, then an adviser that keeps score and gives clear, personalised direction. See `docs/MARKET.md` for full competitive analysis.
 
 ## Major routes
 

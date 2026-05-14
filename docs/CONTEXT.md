@@ -6,13 +6,16 @@
 
 ## What is UntilFire?
 
-UntilFire is a **personal FIRE adviser** 鈥?an app that meets you where you are, understands your actual financial situation, and tells you what to do next to retire earlier. Not just a number. Not a spreadsheet. A product that grows with you from "I just heard about FIRE" to "I know exactly what to do this month."
+UntilFire is a **personal FIRE adviser** — the app that answers the question most people don't know how to ask: *"Can I actually FIRE? Where do I stand right now? And what should I do about it?"*
 
-The market is split between tools that are too simple to trust (FIRECalc, generic calculators) and tools that are too complex to give you clear next steps (ProjectionLab, Boldin). UntilFire sits in the gap: credible enough to take seriously, clear enough to act on.
+In 60 seconds with no login, you find out whether early retirement is achievable for you — personalised to your city, income, and taxes, not a national average. Then the dashboard keeps score and the adviser tells you exactly what to do each month to move your date earlier.
 
-It is free to use with no login required for the core calculator. A paid tier ($9/mo) unlocks a personalised FIRE adviser 鈥?regular guidance based on your actual spending and progress, not generic tips.
+The market is split between tools that are too simple to trust (FIRECalc, cFIREsim) and tools that are too complex to give you clear next steps (ProjectionLab, Boldin). Both leave you alone after giving you a number or a model. UntilFire doesn't. It stays with you, tracks what's actually happening, and gives you one clear action at a time.
 
-**One-line pitch:** The FIRE adviser that tells you what to do next, not just what your number is.
+Free tier: full FIRE calculator, no login, 263 cities worldwide.  
+Pro ($9/mo): your personal FIRE adviser — monthly action plan based on your actual spending, not generic tips.
+
+**One-line pitch:** Know if you can FIRE and where you stand — then let your adviser tell you what to do next.
 
 **Live at:** https://untilfire.com  
 **X/Twitter:** @GetUntilFire  
