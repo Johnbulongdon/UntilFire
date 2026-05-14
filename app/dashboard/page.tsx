@@ -495,41 +495,54 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── This Month KPI row ──────────────────────────────────────────── */}
-      {hasActuals && (
-        <div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-            <div className="uf-card" style={{ padding: "16px 18px" }}>
-              <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Income</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#059669", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px" }}>{fmt(actualIncome)}</div>
-              <div style={{ marginTop: 5 }}><TrendBadge pct={incomeTrend} /></div>
-            </div>
-            <div className="uf-card" style={{ padding: "16px 18px" }}>
-              <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Expenses</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#DC2626", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px" }}>{fmt(actualExpenses)}</div>
-              <div style={{ marginTop: 5 }}><TrendBadge pct={expenseTrend} inverse /></div>
-            </div>
-            <div className="uf-card" style={{ padding: "16px 18px" }}>
-              <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Net Surplus</div>
-              <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: netSurplus >= 0 ? "#059669" : "#DC2626" }}>
-                {netSurplus < 0 ? "−" : ""}{fmt(Math.abs(netSurplus))}
-              </div>
-              <div style={{ marginTop: 5 }}><TrendBadge pct={netTrend} /></div>
-            </div>
-            <div className="uf-card" style={{ padding: "16px 18px" }}>
-              <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Savings Rate</div>
-              <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: actualSavingsRate >= 50 ? "#059669" : actualSavingsRate >= 25 ? "#20D4BF" : "#F59E0B" }}>
-                {actualSavingsRate.toFixed(1)}%
-              </div>
-              <div style={{ marginTop: 5 }}><TrendBadge pp={srDelta} /></div>
-            </div>
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>This month</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
+              {monthName} 1–{now.getDate()} · partial month
+            </span>
+            <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 12, color: "#059669", fontWeight: 600, fontFamily: "Inter, sans-serif", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+              view full →
+            </button>
           </div>
-          {netSurplus > 0 && (
-            <div style={{ marginTop: 10, padding: "12px 16px", background: "rgba(5,150,105,0.06)", border: "1px solid rgba(5,150,105,0.15)", borderRadius: 10, fontSize: 13, color: "#047857", fontFamily: "Inter, sans-serif" }}>
-              You saved {fmt(netSurplus)} in {monthName}{retireYear ? ` — keeping you on track for ${retireYear}` : ""}.
-            </div>
-          )}
         </div>
-      )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          <div className="uf-card" style={{ padding: "16px 18px" }}>
+            <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Income</div>
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? "#059669" : "#CBD5E1" }}>
+              {hasActuals ? fmt(actualIncome) : "$0"}
+            </div>
+            <div style={{ marginTop: 5 }}><TrendBadge pct={incomeTrend} /></div>
+          </div>
+          <div className="uf-card" style={{ padding: "16px 18px" }}>
+            <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Expenses</div>
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? "#DC2626" : "#CBD5E1" }}>
+              {hasActuals ? fmt(actualExpenses) : "$0"}
+            </div>
+            <div style={{ marginTop: 5 }}><TrendBadge pct={expenseTrend} inverse /></div>
+          </div>
+          <div className="uf-card" style={{ padding: "16px 18px" }}>
+            <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Net Surplus</div>
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? (netSurplus >= 0 ? "#059669" : "#DC2626") : "#CBD5E1" }}>
+              {hasActuals ? `${netSurplus < 0 ? "−" : ""}${fmt(Math.abs(netSurplus))}` : "$0"}
+            </div>
+            <div style={{ marginTop: 5 }}><TrendBadge pct={netTrend} /></div>
+          </div>
+          <div className="uf-card" style={{ padding: "16px 18px" }}>
+            <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Savings Rate</div>
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? (actualSavingsRate >= 50 ? "#059669" : actualSavingsRate >= 25 ? "#20D4BF" : "#F59E0B") : "#CBD5E1" }}>
+              {hasActuals ? `${actualSavingsRate.toFixed(1)}%` : "—"}
+            </div>
+            <div style={{ marginTop: 5 }}><TrendBadge pp={srDelta} /></div>
+          </div>
+        </div>
+        {hasActuals && netSurplus > 0 && retireYear && (
+          <div style={{ marginTop: 10, padding: "12px 16px", background: "rgba(5,150,105,0.06)", border: "1px solid rgba(5,150,105,0.15)", borderRadius: 10, fontSize: 13, color: "#047857", fontFamily: "Inter, sans-serif" }}>
+            Your {monthName} surplus of {fmt(netSurplus)} pulled your FIRE date earlier — at this pace you&apos;d reach FIRE in {retireYear}.
+          </div>
+        )}
+      </div>
 
       {/* ── Path to FIRE chart ──────────────────────────────────────────── */}
       <div className="uf-card">
@@ -590,30 +603,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </div>
       </div>
 
-      {/* ── Quick action cards ──────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-        {([
-          { tab: "cashflow" as TabKey,         icon: "💳", title: "Cashflow",             sub: "Log this month's transactions" },
-          { tab: "reports" as TabKey,           icon: "📊", title: "Reports",              sub: "12-month trends & breakdowns" },
-          { tab: "assets" as TabKey,            icon: "🏦", title: "Assets / Liabilities", sub: "Review your net-worth components" },
-          { tab: "fire-calculator" as TabKey,   icon: "🔥", title: "FIRE Calculator",      sub: "Run a what-if scenario" },
-        ]).map(card => (
-          <button key={card.tab} onClick={() => onTabChange?.(card.tab)}
-            style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "18px 20px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, transition: "border-color 0.15s, background 0.15s", fontFamily: "inherit" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "#20D4BF"; e.currentTarget.style.background = "rgba(32,212,191,0.03)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.background = "#fff"; }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 20 }}>{card.icon}</span>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{card.title}</div>
-                <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2, fontFamily: "Inter, sans-serif" }}>{card.sub}</div>
-              </div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
