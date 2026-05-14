@@ -318,11 +318,11 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals = {}, actualIncome = 0, actualExpenses = 0 }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "" }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
-  actuals?: Record<string, number>; actualIncome?: number; actualExpenses?: number;
+  actuals?: Record<string, number>; actualIncome?: number; actualExpenses?: number; cityName?: string;
 }) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -356,8 +356,15 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 24, position: "relative" }}>
           {/* Left: headline */}
           <div>
-            <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#62FAE3", marginBottom: 10, fontWeight: 700 }}>
-              Your FIRE Journey
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#62FAE3", fontWeight: 700 }}>
+                Your FIRE Journey
+              </div>
+              {cityName && (
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 600 }}>
+                  📍 {cityName}
+                </div>
+              )}
             </div>
             {fireYear ? (
               <>
@@ -1389,6 +1396,7 @@ export default function Dashboard() {
   const [mortgageMonthly, setMortgageMonthly] = useState(0);
   const [growthRate,      setGrowthRate]      = useState(0.07);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
+  const [cityName,        setCityName]        = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
@@ -1435,19 +1443,26 @@ export default function Dashboard() {
           }
         });
       supabase.from("user_budget").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
-        // Check for calculator prefill from the landing page
-        let prefill: { income?: number; monthlySavings?: number } = {};
+        // Consume calculator wizard prefill (written by landing page before login redirect)
+        let prefill: import("@/lib/journey").CalculatorPrefill = {};
         try {
           const raw = localStorage.getItem("uf_calc_prefill");
           if (raw) { prefill = JSON.parse(raw); localStorage.removeItem("uf_calc_prefill"); }
         } catch {}
+        const prefillIncome = prefill.monthlyIncome ?? prefill.income;
 
         if (data) {
-          setIncome(prefill.income || data.income || 0);
+          setIncome(prefillIncome || data.income || 0);
           const raw = data.expenses || {};
           const fp  = raw._fire_profile || {};
           const { _fire_profile: _, ...budgetExpenses } = raw;
-          setExpenses({ housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0, ...budgetExpenses });
+          const mergedExpenses = { housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0, ...budgetExpenses };
+          setExpenses(mergedExpenses);
+          // Apply wizard spend estimate only when existing budget is all-zero
+          const hasAnyExpense = Object.values(mergedExpenses).some(v => (v as number) > 0);
+          if (!hasAnyExpense && prefill.monthlySpendEstimate) {
+            setExpenses(prev => ({ ...prev, other: prefill.monthlySpendEstimate! }));
+          }
           setFireAge(data.fire_age || 30);
           setK401(fp.k401 || data.fire_assets || 0);
           setRothIRA(fp.rothIRA || 0);
@@ -1458,9 +1473,13 @@ export default function Dashboard() {
           setMortgageMonthly(fp.mortgageMonthly || 0);
           setGrowthRate(fp.growthRate || 0.07);
           setWithdrawalRate(fp.withdrawalRate || 0.04);
-        } else if (prefill.income) {
-          // New user — no saved budget yet, seed from calculator
-          setIncome(prefill.income);
+          setCityName(fp.cityName || prefill.cityName || "");
+        } else {
+          // New user — no saved budget yet, seed everything from wizard
+          if (prefillIncome) setIncome(prefillIncome);
+          if (prefill.monthlySpendEstimate) setExpenses(prev => ({ ...prev, other: prefill.monthlySpendEstimate! }));
+          if (prefill.currentAge) setFireAge(prefill.currentAge);
+          if (prefill.cityName) setCityName(prefill.cityName);
         }
         isLoaded.current = true;
       });
@@ -1475,7 +1494,7 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate };
+      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName };
       await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
@@ -1487,7 +1506,7 @@ export default function Dashboard() {
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     }, 1000);
-  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
+  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName]);
 
   return (
     <>
@@ -1574,6 +1593,7 @@ export default function Dashboard() {
                 actuals={actuals}
                 actualIncome={actualIncome}
                 actualExpenses={actualExpenses}
+                cityName={cityName}
               />
             )}
             {tab === "cashflow" && (

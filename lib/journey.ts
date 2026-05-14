@@ -12,6 +12,7 @@ export type CalculatorPrefill = {
   retireYear?: number
   generatedAt?: string
   income?: number
+  currentAge?: number
 }
 
 function readPrefill(): CalculatorPrefill | null {
