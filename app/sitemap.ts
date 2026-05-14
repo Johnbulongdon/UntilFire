@@ -10,6 +10,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: 'https://untilfire.com/calculators',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: 'https://untilfire.com/calculators/apy',
       lastModified: new Date(),
       changeFrequency: 'monthly',
@@ -40,13 +46,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
-      url: 'https://untilfire.com/login',
+      url: 'https://untilfire.com/learn',
       lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3,
+      changeFrequency: 'weekly',
+      priority: 0.7,
     },
     {
-      url: 'https://untilfire.com/learn',
+      url: 'https://untilfire.com/learn/articles',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: 'https://untilfire.com/learn/topics',
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,

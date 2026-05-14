@@ -4,6 +4,9 @@ import { learnArticles } from '@/lib/learn'
 export const metadata = {
   title: 'Learning Hub | UntilFire',
   description: 'Short, practical guides on FIRE planning, savings rate, withdrawal rules, and reaching financial independence sooner.',
+  alternates: {
+    canonical: 'https://untilfire.com/learn',
+  },
 }
 
 export default function LearnHubPage() {
@@ -18,6 +21,7 @@ export default function LearnHubPage() {
           </p>
           <div className="uf-hub-actions">
             <Link href="/" className="uf-hub-button uf-hub-button-primary">Run the calculator</Link>
+            <Link href="/calculators" className="uf-hub-button uf-hub-button-secondary">Browse calculators</Link>
             <Link href="/dashboard" className="uf-hub-button uf-hub-button-secondary">Open dashboard</Link>
           </div>
         </header>

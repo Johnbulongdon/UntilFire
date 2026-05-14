@@ -264,7 +264,6 @@ function QuickAddForm({
   const [newSubLabel, setNewSubLabel] = useState("");
 
   const categories = draft.transaction_type === "income" ? INCOME_CATEGORIES : allExpenseCats;
-  const catInfo = ALL_CATEGORIES.find((c) => c.key === draft.category);
 
   const setField = useCallback(<K extends keyof DraftTransaction>(k: K, v: DraftTransaction[K]) => {
     setDraft((d) => ({ ...d, [k]: v }));
@@ -1309,7 +1308,7 @@ export default function TransactionsTab() {
       setTransactions((prev) => prev.filter((t) => t.id !== toast.undoId));
     }
     setToast(null);
-  }, [toast]);
+  }, [showToast, toast]);
 
   const handlePrevMonth = () => {
     const [py, pm] = viewMonth.split("-").map(Number);

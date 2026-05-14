@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next build && tsc --noEmit",
     "lint": "eslint .",
     "validate": "npm run typecheck && npm run lint && npm run build"
   },

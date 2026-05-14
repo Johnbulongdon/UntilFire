@@ -670,7 +670,7 @@ const CALCULATORS = [
   },
 ];
 
-function CalculatorsTab() {
+function _CalculatorsTab() {
   return (
     <div>
       <p style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20 }}>

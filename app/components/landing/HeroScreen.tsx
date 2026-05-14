@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { CITIES } from "@/lib/fire-data";
 
 const PREVIEW_BARS = [28, 38, 33, 48, 42, 62, 57, 72, 66, 80, 76, 95];
@@ -28,6 +29,14 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
           <div className="uf-hero-ctas">
             <button className="uf-btn uf-btn-teal uf-btn-lg uf-btn-power" onClick={onStart}>Calculate my FIRE number {"->"}</button>
             <button className="uf-btn uf-btn-ghost-dark" onClick={onSignIn}>Log in {"->"}</button>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 16 }}>
+            <Link href="/calculators" style={{ color: "rgba(255,255,255,0.88)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+              Browse calculators
+            </Link>
+            <Link href="/learn" style={{ color: "rgba(255,255,255,0.88)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+              Read FIRE guides
+            </Link>
           </div>
         </div>
 

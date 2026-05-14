@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function Nav({
   step,
   totalSteps,
@@ -13,17 +15,23 @@ export default function Nav({
 }) {
   return (
     <nav className="uf-nav">
-      <div className="uf-nav-logo">Until<span>Fire</span></div>
+      <Link href="/" className="uf-nav-logo" style={{ textDecoration: "none" }}>
+        Until<span>Fire</span>
+      </Link>
       <div className="uf-nav-dots">
         {Array.from({ length: totalSteps }).map((_, i) => (
           <div key={i} className={`uf-nav-dot ${i === step ? "active" : i < step ? "done" : ""}`} />
         ))}
       </div>
-      {step > 0 ? (
-        <button className="uf-nav-restart" onClick={onRestart}>Start over</button>
-      ) : (
-        <button className="uf-nav-signin" onClick={onSignIn}>Sign in</button>
-      )}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Link href="/calculators" className="uf-nav-restart" style={{ textDecoration: "none" }}>Calculators</Link>
+        <Link href="/learn" className="uf-nav-restart" style={{ textDecoration: "none" }}>Learn</Link>
+        {step > 0 ? (
+          <button className="uf-nav-restart" onClick={onRestart}>Start over</button>
+        ) : (
+          <button className="uf-nav-signin" onClick={onSignIn}>Sign in</button>
+        )}
+      </div>
     </nav>
   );
 }

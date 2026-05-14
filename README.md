@@ -96,9 +96,12 @@ Copy `.env.example` to `.env.local` for local dev.
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=
+STRIPE_PRO_PRICE_ID=
 STRIPE_WEBHOOK_SECRET=
-RESEND_API_KEY=
+NEXT_PUBLIC_POSTHOG_KEY=
+NEXT_PUBLIC_POSTHOG_HOST=
 ```
 
 ## Dev
@@ -107,8 +110,8 @@ RESEND_API_KEY=
 npm install
 npm run dev          # localhost:3000
 npm run build        # production build
-npm run typecheck    # tsc --noEmit
-npm run lint         # next lint
+npm run typecheck    # next build && tsc --noEmit
+npm run lint         # eslint .
 ```
 
 ## Key files
@@ -138,13 +141,13 @@ npm run lint         # next lint
 
 Push to `main` triggers a Vercel deploy. No manual steps required.
 
-The `claude/setup-gstack-locally-E87N1` branch is the active development branch.
-
 ## Recent Updates
 
 | PR | Date | Description |
 |---|---|---|
 | — | May 2026 | Overview redesigned: split hero card (white left / dark green right), 3 mini-stat boxes (Years Remaining, Progress, Status), stacked FIRE projection bar chart (5Y/15Y/All), "This Month" KPI cards from cashflow with CTA when empty |
+| — | May 2026 | SEO foundation pass: restored `/calculators` hub, added crawlable landing-page links to calculators/learn, expanded sitemap coverage, and turned `/learn/topics` into a real topic index |
+| — | May 2026 | Local/dev reliability pass: added `.env.example`, made public pages build without Supabase env vars, and aligned validation scripts with the current Next.js build flow |
 | — | May 2026 | Reports tab: income vs expenses chart, category breakdown, month-by-month table (3/6/12m selector) |
 | — | May 2026 | Recurring tab redesigned: manual entry planner with include/exclude toggles + auto-detection |
 | — | May 2026 | FIRE Calculator converted to hub-and-spoke (menu → Goals / Simulation); Monte Carlo moved off Overview |
@@ -172,13 +175,15 @@ The `claude/setup-gstack-locally-E87N1` branch is the active development branch.
 - **Assets/Liabilities/FIRE Calculator tabs** — input forms + projection chart + Monte Carlo simulation
 - **FIRE Calculator** — hub menu → Goals sub-tab (retirement target) + Simulation sub-tab (Monte Carlo); back navigation
 - **Reports tab** — period selector (3/6/12m), KPI cards, income vs expenses bar chart, category breakdown, month-by-month table
+- **Calculators hub** — `/calculators` lists all SEO calculators and links users into the main FIRE wizard
 - **Multi-currency** — transactions stored in any currency; auto-converted to USD using live Frankfurter API rates; fallback hardcoded rates if API fails
 - **Custom categories** — stored in `localStorage` key `uf_custom_cats`; custom sub-categories in `uf_custom_subcats`; both are device-local only
 - **Learning Hub articles** — 11 SEO articles at `/learn/articles`; individual article pages at `/learn/[slug]`
+- **Learning Hub topics** — topic index at `/learn/topics` clusters FIRE concepts and links related articles/calculators
+- **SEO internal linking** — landing/nav now expose crawlable links to `/calculators` and `/learn`
 
 **Placeholder / incomplete:**
 - **Stripe / Pro tier** — schema exists (`subscriptions` table, `isPro()` helper in `lib/supabase.ts`) but no paywall enforced in UI; Stripe webhook route exists at `app/api/stripe/webhook/route.ts`
-- **Learning Hub topics** — static links, no content yet at `/learn/topics`
 
 **Known technical debt:**
 - AI categorisation in `TransactionsTab.tsx` calls Anthropic API client-side with a hardcoded API key placeholder — no key is set in env, so it silently falls back to `"other"` for all descriptions
@@ -217,4 +222,4 @@ Priority order based on `docs/ROADMAP.md` Phase 2 goals:
 1. Run `npm run dev` locally and verify the change in the browser before pushing.
 2. Check that `npm run build` passes (TypeScript compilation must succeed).
 3. The design baseline is the white/green system — background `#F7F9FB`, green `#059669`, teal `#20D4BF`. Do not introduce dark/orange theming in new code.
-4. Push to the feature branch, not directly to `main`.
+4. Push directly to `main` after local verification when the change is approved to ship.
