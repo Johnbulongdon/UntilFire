@@ -382,15 +382,17 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const contribAtFire = firePoint?.["Contributions"] ?? 0;
   const marketAtFire  = firePoint?.["Market Growth"] ?? 0;
 
-  // KPI trends
-  const hasActuals = actualIncome > 0 || actualExpenses > 0;
-  const hasPrev    = prevIncome > 0 || prevExpenses > 0;
-  const netSurplus = actualIncome - actualExpenses;
-  const prevNet    = prevIncome - prevExpenses;
-  const actualSavingsRate = actualIncome > 0 ? (netSurplus / actualIncome) * 100 : 0;
+  // KPI trends — fall back to budget income when no income transactions logged
+  const effectiveIncome  = actualIncome > 0 ? actualIncome : income;
+  const incomeIsBudget   = actualIncome === 0 && income > 0;
+  const hasActuals       = actualExpenses > 0;
+  const hasPrev          = prevIncome > 0 || prevExpenses > 0;
+  const netSurplus       = effectiveIncome - actualExpenses;
+  const prevNet          = prevIncome - prevExpenses;
+  const actualSavingsRate = effectiveIncome > 0 ? (netSurplus / effectiveIncome) * 100 : 0;
   const prevSavingsRate   = prevIncome > 0 ? (prevNet / prevIncome) * 100 : 0;
   const trendPct = (cur: number, prev: number) => prev === 0 ? null : ((cur - prev) / Math.abs(prev)) * 100;
-  const incomeTrend  = hasPrev ? trendPct(actualIncome, prevIncome) : null;
+  const incomeTrend  = hasPrev ? trendPct(effectiveIncome, prevIncome > 0 ? prevIncome : income) : null;
   const expenseTrend = hasPrev ? trendPct(actualExpenses, prevExpenses) : null;
   const netTrend     = hasPrev ? trendPct(netSurplus, prevNet) : null;
   const srDelta      = (hasPrev && prevIncome > 0) ? actualSavingsRate - prevSavingsRate : null;
@@ -510,10 +512,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           <div className="uf-card" style={{ padding: "16px 18px" }}>
             <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Income</div>
-            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? "#059669" : "#CBD5E1" }}>
-              {hasActuals ? fmt(actualIncome) : "$0"}
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: effectiveIncome > 0 ? "#059669" : "#CBD5E1" }}>
+              {effectiveIncome > 0 ? fmt(effectiveIncome) : "$0"}
             </div>
-            <div style={{ marginTop: 5 }}><TrendBadge pct={incomeTrend} /></div>
+            {incomeIsBudget && effectiveIncome > 0 && (
+              <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2, fontFamily: "Inter, sans-serif" }}>budget est.</div>
+            )}
+            <div style={{ marginTop: 4 }}><TrendBadge pct={incomeTrend} /></div>
           </div>
           <div className="uf-card" style={{ padding: "16px 18px" }}>
             <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Expenses</div>
