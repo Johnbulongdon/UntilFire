@@ -1145,6 +1145,32 @@ export default function TransactionsTab() {
     setCustomSubCats((prev) => ({ ...prev, [catKey]: [...(prev[catKey] || []), sub] }));
   }, []);
 
+  // Custom categories / sub-categories (persisted in localStorage)
+  const [customCats, setCustomCats] = useState<CustomCategory[]>(() => {
+    try { return JSON.parse(localStorage.getItem("uf_custom_cats") || "[]"); } catch { return []; }
+  });
+  const [customSubCats, setCustomSubCats] = useState<Record<string, string[]>>(() => {
+    try { return JSON.parse(localStorage.getItem("uf_custom_subcats") || "{}"); } catch { return {}; }
+  });
+  useEffect(() => { localStorage.setItem("uf_custom_cats", JSON.stringify(customCats)); }, [customCats]);
+  useEffect(() => { localStorage.setItem("uf_custom_subcats", JSON.stringify(customSubCats)); }, [customSubCats]);
+
+  const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
+  const allSubCats = useMemo(() => {
+    const merged: Record<string, string[]> = { ...SUB_CATEGORIES };
+    Object.entries(customSubCats).forEach(([k, extras]) => {
+      merged[k] = [...(merged[k] || []), ...extras];
+    });
+    return merged;
+  }, [customSubCats]);
+
+  const handleAddCategory = useCallback((cat: CustomCategory) => {
+    setCustomCats((prev) => [...prev, cat]);
+  }, []);
+  const handleAddSubCategory = useCallback((catKey: string, sub: string) => {
+    setCustomSubCats((prev) => ({ ...prev, [catKey]: [...(prev[catKey] || []), sub] }));
+  }, []);
+
   // Form state (lifted so edit can populate it)
   const [draft, setDraft] = useState<DraftTransaction>(EMPTY_DRAFT);
   const [editingId, setEditingId] = useState<string | null>(null);
