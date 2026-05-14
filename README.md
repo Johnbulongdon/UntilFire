@@ -144,6 +144,7 @@ The `claude/setup-gstack-locally-E87N1` branch is the active development branch.
 
 | PR | Date | Description |
 |---|---|---|
+| — | May 2026 | Overview redesigned: split hero card (white left / dark green right), 3 mini-stat boxes (Years Remaining, Progress, Status), stacked FIRE projection bar chart (5Y/15Y/All), "This Month" KPI cards from cashflow with CTA when empty |
 | — | May 2026 | Reports tab: income vs expenses chart, category breakdown, month-by-month table (3/6/12m selector) |
 | — | May 2026 | Recurring tab redesigned: manual entry planner with include/exclude toggles + auto-detection |
 | — | May 2026 | FIRE Calculator converted to hub-and-spoke (menu → Goals / Simulation); Monte Carlo moved off Overview |
@@ -163,6 +164,7 @@ The `claude/setup-gstack-locally-E87N1` branch is the active development branch.
 
 **What works end-to-end:**
 - `/dashboard` — full FIRE dashboard, login-gated, redirects to `/login` if no session
+- **Overview tab** — greeting + split hero card (FIRE year, Years Remaining, Progress, Status / FIRE Target, Investable Assets, progress bar) + This Month KPI cards (Income, Expenses, Net Surplus, Savings Rate from cashflow transactions; CTA to Cashflow when no data logged) + stacked Path to FIRE bar chart (Contributions vs Market Growth, 5Y/15Y/All toggle)
 - **Cashflow tab → Cashflow sub-tab** — two-pane QuickAdd + transaction list; AI categorisation; multi-currency; Project/Event tags; custom categories/sub-categories; edit/delete with undo toast
 - **Cashflow tab → Categories sub-tab** — monthly spend by category (expandable, sub-cat breakdown, project breakdown); by-project/event section
 - **Cashflow tab → Recurring sub-tab** — manual entry planner (income/expense) with frequency, include/exclude toggles, subscription detection; auto-detects repeating items from history
