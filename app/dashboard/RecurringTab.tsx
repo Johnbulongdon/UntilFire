@@ -253,7 +253,6 @@ function ManualCard({
   onDelete: () => void;
 }) {
   const isIncome = item.transaction_type === "income";
-  const amountUSD = item.currency === "USD" ? item.amount : item.amount; // display as-entered
 
   return (
     <div style={{
@@ -582,7 +581,7 @@ export default function RecurringTab() {
             Recurring
           </h2>
           <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>
-            Plan your regular income and bills. We'll also detect patterns from your transaction history.
+            Plan your regular income and bills. We&apos;ll also detect patterns from your transaction history.
           </p>
         </div>
         <button
