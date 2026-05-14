@@ -431,44 +431,46 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── Hero card ───────────────────────────────────────────────────── */}
-      <div className="uf-card" style={{ padding: "28px 32px", background: "#003527", borderColor: "transparent", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(98,250,227,0.07) 0%, transparent 70%)", top: -120, right: -80, pointerEvents: "none" }} />
-
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 28, position: "relative" }}>
-          {/* Left: FIRE year + status */}
-          <div>
-            <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1.2px", textTransform: "uppercase", color: "#62FAE3", fontWeight: 700, marginBottom: 8 }}>
-              FIRE Target Year
-            </div>
-            {retireYear ? (
-              <>
-                <div style={{ fontSize: "clamp(52px, 8vw, 76px)", fontWeight: 800, color: "#FFFFFF", fontFamily: "Manrope, sans-serif", letterSpacing: "-4px", lineHeight: 1 }}>
-                  {retireYear}
-                </div>
-                <div style={{ marginTop: 10, fontSize: 15, color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}>
-                  <span style={{ color: "#FFFFFF", fontWeight: 600 }}>{fireYear} year{fireYear !== 1 ? "s" : ""}</span> remaining
-                </div>
-                <div style={{ marginTop: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", color: statusColor, background: statusBg, padding: "4px 10px", borderRadius: 20 }}>
-                    {statusLabel}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: 36, fontWeight: 800, color: "rgba(255,255,255,0.4)", fontFamily: "Manrope, sans-serif", letterSpacing: "-2px" }}>
-                  Set your inputs
-                </div>
-                <div style={{ marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}>
-                  Add income &amp; expenses in the Cashflow tab
-                </div>
-              </>
-            )}
+      <div className="uf-card" style={{ padding: 0, overflow: "hidden", display: "flex", minHeight: 180 }}>
+        {/* Left: white side — FIRE year + 3 mini-stat boxes */}
+        <div style={{ flex: "0 0 55%", padding: "28px 32px", background: "#FFFFFF" }}>
+          <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1.2px", textTransform: "uppercase", color: "#64748B", fontWeight: 700, marginBottom: 8 }}>
+            FIRE Target Year
           </div>
+          {retireYear ? (
+            <>
+              <div style={{ fontSize: "clamp(48px, 7vw, 72px)", fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-4px", lineHeight: 1 }}>
+                {retireYear}
+              </div>
+              {/* 3 mini-stat boxes */}
+              <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+                <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", flex: "1 1 0", minWidth: 90 }}>
+                  <div style={{ fontSize: 9, fontFamily: "Manrope, sans-serif", letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8", fontWeight: 700, marginBottom: 4 }}>Years Remaining</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>{fireYear} yr</div>
+                </div>
+                <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", flex: "1 1 0", minWidth: 70 }}>
+                  <div style={{ fontSize: 9, fontFamily: "Manrope, sans-serif", letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8", fontWeight: 700, marginBottom: 4 }}>Progress</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, fontFamily: "Inter, sans-serif", color: progress >= 50 ? "#059669" : progress >= 20 ? "#20D4BF" : "#F59E0B" }}>{progress.toFixed(0)}%</div>
+                </div>
+                <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", flex: "1 1 0", minWidth: 100 }}>
+                  <div style={{ fontSize: 9, fontFamily: "Manrope, sans-serif", letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8", fontWeight: 700, marginBottom: 4 }}>Status</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", color: statusColor }}>{statusLabel}</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 36, fontWeight: 800, color: "#CBD5E1", fontFamily: "Manrope, sans-serif", letterSpacing: "-2px" }}>—</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>Add income &amp; expenses in the Cashflow tab</div>
+            </>
+          )}
+        </div>
 
-          {/* Right: Target + progress bar */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 200 }}>
-            <div style={{ display: "flex", gap: 32 }}>
+        {/* Right: dark side — Target + progress bar */}
+        <div style={{ flex: "0 0 45%", padding: "28px 32px", background: "#003527", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(98,250,227,0.07) 0%, transparent 70%)", top: -80, right: -60, pointerEvents: "none" }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative", height: "100%" }}>
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginBottom: 4, fontWeight: 700 }}>FIRE Target</div>
                 <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#FFFFFF" }}>{fmt(fireTarget, true)}</div>
@@ -478,7 +480,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#62FAE3" }}>{fmt(investable, true)}</div>
               </div>
             </div>
-            <div>
+            <div style={{ marginTop: "auto" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}>$0</span>
                 <span style={{ fontSize: 13, color: "#62FAE3", fontFamily: "Inter, sans-serif", fontWeight: 700 }}>{progress.toFixed(0)}%</span>
@@ -589,7 +591,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── Quick action cards ──────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         {([
           { tab: "cashflow" as TabKey,         icon: "💳", title: "Cashflow",             sub: "Log this month's transactions" },
           { tab: "reports" as TabKey,           icon: "📊", title: "Reports",              sub: "12-month trends & breakdowns" },
