@@ -498,49 +498,68 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>This month</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
-              {monthName} 1–{now.getDate()} · partial month
-            </span>
-            <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 12, color: "#059669", fontWeight: 600, fontFamily: "Inter, sans-serif", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
-              view full →
-            </button>
-          </div>
+          {hasActuals && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
+                {monthName} 1–{now.getDate()} · partial month
+              </span>
+              <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 12, color: "#059669", fontWeight: 600, fontFamily: "Inter, sans-serif", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+                view full →
+              </button>
+            </div>
+          )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-          <div className="uf-card" style={{ padding: "16px 18px" }}>
-            <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Income</div>
-            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? "#059669" : "#CBD5E1" }}>
-              {hasActuals ? fmt(actualIncome) : "$0"}
+
+        {hasActuals ? (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+              <div className="uf-card" style={{ padding: "16px 18px" }}>
+                <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Income</div>
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: "#059669" }}>{fmt(actualIncome)}</div>
+                <div style={{ marginTop: 5 }}><TrendBadge pct={incomeTrend} /></div>
+              </div>
+              <div className="uf-card" style={{ padding: "16px 18px" }}>
+                <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Expenses</div>
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: "#DC2626" }}>{fmt(actualExpenses)}</div>
+                <div style={{ marginTop: 5 }}><TrendBadge pct={expenseTrend} inverse /></div>
+              </div>
+              <div className="uf-card" style={{ padding: "16px 18px" }}>
+                <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Net Surplus</div>
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: netSurplus >= 0 ? "#059669" : "#DC2626" }}>
+                  {netSurplus < 0 ? "−" : ""}{fmt(Math.abs(netSurplus))}
+                </div>
+                <div style={{ marginTop: 5 }}><TrendBadge pct={netTrend} /></div>
+              </div>
+              <div className="uf-card" style={{ padding: "16px 18px" }}>
+                <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Savings Rate</div>
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: actualSavingsRate >= 50 ? "#059669" : actualSavingsRate >= 25 ? "#20D4BF" : "#F59E0B" }}>
+                  {actualSavingsRate.toFixed(1)}%
+                </div>
+                <div style={{ marginTop: 5 }}><TrendBadge pp={srDelta} /></div>
+              </div>
             </div>
-            <div style={{ marginTop: 5 }}><TrendBadge pct={incomeTrend} /></div>
-          </div>
-          <div className="uf-card" style={{ padding: "16px 18px" }}>
-            <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Expenses</div>
-            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? "#DC2626" : "#CBD5E1" }}>
-              {hasActuals ? fmt(actualExpenses) : "$0"}
+            {netSurplus > 0 && retireYear && (
+              <div style={{ marginTop: 10, padding: "12px 16px", background: "rgba(5,150,105,0.06)", border: "1px solid rgba(5,150,105,0.15)", borderRadius: 10, fontSize: 13, color: "#047857", fontFamily: "Inter, sans-serif" }}>
+                Your {monthName} surplus of {fmt(netSurplus)} pulled your FIRE date earlier — at this pace you&apos;d reach FIRE in {retireYear}.
+              </div>
+            )}
+          </>
+        ) : (
+          <button onClick={() => onTabChange?.("cashflow")}
+            style={{ width: "100%", padding: "20px 24px", background: "rgba(5,150,105,0.04)", border: "1.5px dashed #A7F3D0", borderRadius: 12, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, fontFamily: "inherit", transition: "background 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(5,150,105,0.08)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(5,150,105,0.04)"; }}
+          >
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#059669", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>
+                Log your first transaction for {monthName}
+              </div>
+              <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
+                Track your income and expenses to see your real savings rate and how fast you&apos;re moving toward FIRE.
+              </div>
             </div>
-            <div style={{ marginTop: 5 }}><TrendBadge pct={expenseTrend} inverse /></div>
-          </div>
-          <div className="uf-card" style={{ padding: "16px 18px" }}>
-            <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Net Surplus</div>
-            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? (netSurplus >= 0 ? "#059669" : "#DC2626") : "#CBD5E1" }}>
-              {hasActuals ? `${netSurplus < 0 ? "−" : ""}${fmt(Math.abs(netSurplus))}` : "$0"}
-            </div>
-            <div style={{ marginTop: 5 }}><TrendBadge pct={netTrend} /></div>
-          </div>
-          <div className="uf-card" style={{ padding: "16px 18px" }}>
-            <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Savings Rate</div>
-            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: hasActuals ? (actualSavingsRate >= 50 ? "#059669" : actualSavingsRate >= 25 ? "#20D4BF" : "#F59E0B") : "#CBD5E1" }}>
-              {hasActuals ? `${actualSavingsRate.toFixed(1)}%` : "—"}
-            </div>
-            <div style={{ marginTop: 5 }}><TrendBadge pp={srDelta} /></div>
-          </div>
-        </div>
-        {hasActuals && netSurplus > 0 && retireYear && (
-          <div style={{ marginTop: 10, padding: "12px 16px", background: "rgba(5,150,105,0.06)", border: "1px solid rgba(5,150,105,0.15)", borderRadius: 10, fontSize: 13, color: "#047857", fontFamily: "Inter, sans-serif" }}>
-            Your {monthName} surplus of {fmt(netSurplus)} pulled your FIRE date earlier — at this pace you&apos;d reach FIRE in {retireYear}.
-          </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M9 18l6-6-6-6"/></svg>
+          </button>
         )}
       </div>
 
