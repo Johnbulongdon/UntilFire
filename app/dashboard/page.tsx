@@ -12,6 +12,7 @@ import TransactionsTab from "./TransactionsTab";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
+import ProfileTab from "./ProfileTab";
 import { monteCarloFIRE } from "@/lib/fire";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,7 +24,8 @@ type TabKey =
   | "liabilities"
   | "fire-calculator"
   | "reports"
-  | "learning-hub";
+  | "learning-hub"
+  | "profile";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EXPENSE_CATS = [
@@ -1397,6 +1399,11 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
     label: "Learning Hub",
     svg: '<path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12"/><path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2"/><path d="M9 10h6M9 14h4"/>',
   },
+  {
+    key: "profile",
+    label: "Profile",
+    svg: '<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>',
+  },
 ];
 
 // ─── Root ────────────────────────────────────────────────────────────────────
@@ -1412,7 +1419,7 @@ export default function Dashboard() {
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
       "overview", "cashflow", "assets", "liabilities",
-      "fire-calculator", "reports", "learning-hub",
+      "fire-calculator", "reports", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
   }, []);
@@ -1446,6 +1453,8 @@ export default function Dashboard() {
   const [cityName,        setCityName]        = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [userName, setUserName] = useState("");
+  const [userId, setUserId] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
@@ -1493,6 +1502,9 @@ export default function Dashboard() {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { window.location.href = "/login"; return; }
+
+      setUserId(session.user.id);
+      setUserEmail(session.user.email ?? "");
 
       // Fetch user display name
       supabase.auth.getUser().then(({ data: { user } }) => {
@@ -1801,6 +1813,9 @@ export default function Dashboard() {
             )}
             {tab === "reports" && <ReportsTab />}
             {tab === "learning-hub" && <LearningHubTab />}
+            {tab === "profile" && userId && (
+              <ProfileTab userId={userId} userEmail={userEmail} />
+            )}
           </div>
         </main>
       </div>

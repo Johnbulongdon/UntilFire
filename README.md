@@ -145,6 +145,7 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 
 | PR | Date | Description |
 |---|---|---|
+| — | May 2026 | Profile tab: edit display name, city (263-city search), default currency; delete account with email confirmation; `profiles.default_currency` column added to Supabase |
 | — | May 2026 | Pre-login wizard rebuilt: removed Goals step, added Portfolio Balance step (feeds startingBalance into calcFIRE), moved age to portfolio step, updated dashboard prefill to seed cashSavings, updated CTA copy |
 | — | May 2026 | Overview redesigned: split hero card (white left / dark green right), 3 mini-stat boxes (Years Remaining, Progress, Status), stacked FIRE projection bar chart (5Y/15Y/All), "This Month" KPI cards from cashflow with CTA when empty |
 | — | May 2026 | SEO foundation pass: restored `/calculators` hub, added crawlable landing-page links to calculators/learn, expanded sitemap coverage, and turned `/learn/topics` into a real topic index |
