@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import Logo from '@/app/components/Logo'
 
 interface Props {
   searchParams: Promise<{ city?: string; year?: string; years?: string }>
@@ -49,8 +50,8 @@ export default async function SharePage({ searchParams }: Props) {
 
       <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
         {/* Logo */}
-        <div style={{ marginBottom: 56, fontSize: 20, fontWeight: 800, letterSpacing: '-0.04em', color: '#064E3B' }}>
-          Until<span style={{ color: '#20D4BF' }}>Fire</span>
+        <div style={{ marginBottom: 56 }}>
+          <Logo variant="light" size={22} />
         </div>
 
         {/* Card */}

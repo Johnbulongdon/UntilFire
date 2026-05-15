@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="400" viewBox="0 0 1400 400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#064E3B"></stop>
+      <stop offset="100%" stop-color="#003527"></stop>
+    </linearGradient>
+    <clipPath id="iconClip"><rect x="20" y="60" width="280" height="280" rx="62" ry="62"></rect></clipPath>
+  </defs>
+  <rect x="20" y="60" width="280" height="280" rx="62" ry="62" fill="url(#bg)"></rect>
+  <g clip-path="url(#iconClip)" transform="translate(20 60) scale(0.2734)">
+    <circle cx="512" cy="620" r="260" fill="#62FAE3"></circle>
+    <rect x="0" y="620" width="1024" height="404" fill="#003527"></rect>
+    <rect x="100" y="615" width="824" height="8" fill="#62FAE3" opacity="0.7"></rect>
+    <line x1="325.6" y1="397.9" x2="287.0" y2="351.9" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+    <line x1="412.8" y1="347.5" x2="392.3" y2="291.1" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+    <line x1="512" y1="330" x2="512" y2="270" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+    <line x1="611.2" y1="347.5" x2="631.7" y2="291.1" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+    <line x1="698.4" y1="397.9" x2="737.0" y2="351.9" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+  </g>
+  <text x="340" y="220" font-family="Manrope, system-ui, sans-serif" font-size="135" font-weight="800" fill="#003527" letter-spacing="-5">UntilFIRE</text>
+  <text x="345" y="280" font-family="Manrope, system-ui, sans-serif" font-size="26" font-weight="700" fill="#20D4BF" letter-spacing="3.5">FINANCIAL INDEPENDENCE</text>
+</svg>

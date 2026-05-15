@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#064E3B"></stop>
+      <stop offset="100%" stop-color="#003527"></stop>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.08"></stop>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0"></stop>
+    </linearGradient>
+    <clipPath id="squircleClip">
+      <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230"></rect>
+    </clipPath>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="url(#bg)"></rect>
+  <g clip-path="url(#squircleClip)">
+    <circle cx="512" cy="620" r="260" fill="#62FAE3"></circle>
+    <rect x="0" y="620" width="1024" height="404" fill="#003527"></rect>
+    <rect x="100" y="615" width="824" height="8" fill="#62FAE3" opacity="0.7"></rect>
+    <line x1="325.6" y1="397.9" x2="287.0" y2="351.9" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+    <line x1="412.8" y1="347.5" x2="392.3" y2="291.1" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+    <line x1="512" y1="330" x2="512" y2="270" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+    <line x1="611.2" y1="347.5" x2="631.7" y2="291.1" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+    <line x1="698.4" y1="397.9" x2="737.0" y2="351.9" stroke="#62FAE3" stroke-width="16" stroke-linecap="round"></line>
+  </g>
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="url(#gloss)"></rect>
+</svg>

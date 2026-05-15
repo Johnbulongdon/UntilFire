@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
+import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
@@ -399,7 +400,7 @@ function ShareModal({
         {/* Preview card */}
         <div className="uf-share-card">
           <div className="uf-share-card-brand">
-            <span className="uf-share-card-logo">until<span>fire</span></span>
+            <Logo variant="dark" size={20} />
           </div>
           <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>Retire in</div>
           <div className="uf-share-card-number" style={{ fontSize: 28 }}>{cityName}</div>

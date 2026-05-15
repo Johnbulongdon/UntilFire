@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Logo from '@/app/components/Logo'
 import Link from 'next/link'
 
 const C = {
@@ -85,8 +86,8 @@ export default function CoastFireCalculator() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
       <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/" style={{ textDecoration: 'none', fontWeight: 800, fontSize: 18, letterSpacing: '-0.04em', color: '#064E3B' }}>
-          Until<span style={{ color: '#20D4BF' }}>Fire</span>
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <Logo variant="light" size={22} />
         </Link>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>

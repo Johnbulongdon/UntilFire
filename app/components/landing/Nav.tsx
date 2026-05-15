@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Logo from "@/app/components/Logo";
 
 export default function Nav({
   step,
@@ -16,7 +17,7 @@ export default function Nav({
   return (
     <nav className="uf-nav">
       <Link href="/" className="uf-nav-logo" style={{ textDecoration: "none" }}>
-        Until<span>Fire</span>
+        <Logo variant="dark" size={26} />
       </Link>
       <div className="uf-nav-dots">
         {Array.from({ length: totalSteps }).map((_, i) => (

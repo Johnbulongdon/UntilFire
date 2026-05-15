@@ -14,6 +14,7 @@ import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
 import LearningHubTab from "./LearningHubTab";
+import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE } from "@/lib/fire";
 
@@ -1652,7 +1653,7 @@ export default function Dashboard() {
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
-          <Link href="/" className="uf-sidebar-logo">Until<span>Fire</span></Link>
+          <Link href="/" className="uf-sidebar-logo"><Logo variant="dark" size={26} /></Link>
 
           <nav className="uf-sidebar-nav">
             {SIDEBAR_ITEMS.map(item => (

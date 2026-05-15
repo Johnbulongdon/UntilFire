@@ -6,6 +6,13 @@ export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 export default async function Image() {
+  const logoData = await fetch('https://untilfire.com/logo/horizon-color.svg')
+    .then(r => r.arrayBuffer())
+    .catch(() => null)
+  const logoSrc = logoData
+    ? `data:image/svg+xml;base64,${Buffer.from(logoData).toString('base64')}`
+    : null
+
   return new ImageResponse(
     (
       <div
@@ -38,12 +45,13 @@ export default async function Image() {
         />
 
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 32 }}>
+          {logoSrc && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoSrc} width={64} height={64} style={{ borderRadius: 14 }} alt="" />
+          )}
           <span style={{ color: '#163127', fontSize: 36, fontWeight: 800, letterSpacing: '-2px' }}>
-            Until
-          </span>
-          <span style={{ color: '#047857', fontSize: 36, fontWeight: 800, letterSpacing: '-2px' }}>
-            Fire
+            UntilFire
           </span>
         </div>
 

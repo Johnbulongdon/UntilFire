@@ -1,4 +1,5 @@
 'use client'
+import Logo from '@/app/components/Logo'
 import { supabase } from '@/lib/supabase'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -65,15 +66,8 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 400, padding: '0 24px' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            fontFamily: "'Manrope', sans-serif",
-            fontSize: 26,
-            fontWeight: 800,
-            letterSpacing: '-0.04em',
-            color: '#064E3B',
-            marginBottom: 10,
-          }}>
-            Until<span style={{ color: '#20D4BF' }}>Fire</span>
+          <div style={{ marginBottom: 10 }}>
+            <Logo variant="light" size={28} />
           </div>
           <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.5 }}>
             Sign in to track your progress<br />toward financial independence
