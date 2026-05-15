@@ -13,17 +13,22 @@ event in PostHog. **This doc and that file must stay in sync.**
 
 ```
 funnel_landing_viewed
-  → funnel_calculator_step_viewed (step_id=goals)
-  → funnel_calculator_step_viewed (step_id=city)
-  → funnel_calculator_step_viewed (step_id=income)
-  → funnel_calculator_step_viewed (step_id=savings)
-  → funnel_calculator_revealed
-  → funnel_signup_started
-  → funnel_signup_completed
-  → funnel_dashboard_first_view
-  → funnel_paywall_viewed          (helper exposed; emit site lands with paywall UI)
-  → funnel_checkout_started        (helper exposed; emit site lands with paywall UI)
-  → funnel_checkout_succeeded      (server, Stripe webhook)
+  → [primary] funnel_calculator_step_viewed (step_id=goals)
+           → funnel_calculator_step_viewed (step_id=city)
+           → funnel_calculator_step_viewed (step_id=income)
+           → funnel_calculator_step_viewed (step_id=savings)
+           → funnel_calculator_revealed
+           → funnel_signup_started
+           → funnel_signup_completed
+           → funnel_dashboard_first_view
+           → funnel_paywall_viewed     (helper exposed; emit site lands with paywall UI)
+           → funnel_checkout_started   (helper exposed; emit site lands with paywall UI)
+           → funnel_checkout_succeeded (server, Stripe webhook)
+
+  → [quiz branch] funnel_fire_type_started  (on first answer)
+               → funnel_fire_type_completed (on result mount)
+               → funnel_fire_type_shared    (optional, on share action)
+               → funnel_fire_type_cta_clicked → rejoins primary funnel
 ```
 
 ## PII rules
@@ -137,6 +142,33 @@ The server is the source of truth for checkout success. We deliberately do
 not fire a client-side echo on `/dashboard?upgraded=true`; the dashboard
 first-view event with `via_upgrade=true` is enough to spot-check the
 client-side experience without double-counting conversions.
+
+### `funnel_fire_type_started`
+
+- **Where**: `app/fire-type/page.tsx`, fired on the user's first quiz answer (confirms real engagement, not just page load).
+- **Properties**:
+  - `source` — optional. Acquisition source (e.g. `homepage-secondary`).
+
+### `funnel_fire_type_completed`
+
+- **Where**: `app/fire-type/page.tsx`, `useEffect` on `stage === 'result'` mount.
+- **Properties**:
+  - `fire_type_code` — the 4-letter result code (e.g. `PSGB`). Not PII — it is a preference category, not a financial number.
+  - `source` — optional.
+
+### `funnel_fire_type_shared`
+
+- **Where**: `app/fire-type/page.tsx`, share button handler after successful share or clipboard copy.
+- **Properties**:
+  - `fire_type_code` — 4-letter result code.
+  - `share_method` — `native` | `clipboard`.
+
+### `funnel_fire_type_cta_clicked`
+
+- **Where**: `app/fire-type/page.tsx`, onClick on the "Calculate my actual FIRE number" CTA link.
+- **Properties**:
+  - `fire_type_code` — 4-letter result code.
+  - `source` — optional.
 
 ## Adding a new event
 

@@ -37,6 +37,9 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
             <Link href="/learn" style={{ color: "rgba(255,255,255,0.88)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
               Read FIRE guides
             </Link>
+            <Link href="/fire-type?source=homepage-secondary" style={{ color: "rgba(255,255,255,0.88)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+              Take the 2-min FIRE Type quiz
+            </Link>
           </div>
         </div>
 

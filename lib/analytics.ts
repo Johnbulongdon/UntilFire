@@ -19,6 +19,10 @@ import {
   type DashboardFirstViewProperties,
   type PaywallProperties,
   type CheckoutStartedProperties,
+  type FireTypeStartedProperties,
+  type FireTypeCompletedProperties,
+  type FireTypeSharedProperties,
+  type FireTypeCtaClickedProperties,
 } from './analytics-events';
 
 function isClient(): boolean {
@@ -128,4 +132,35 @@ export function trackPaywallViewed(surface: string) {
 export function trackCheckoutStarted(surface: string) {
   const props: CheckoutStartedProperties = withVersion({ surface });
   capture(FunnelEvents.CHECKOUT_STARTED, props);
+}
+
+export function trackFireTypeStarted(input: { source?: string }) {
+  const props: FireTypeStartedProperties = withVersion({
+    ...(input.source ? { source: input.source } : {}),
+  });
+  capture(FunnelEvents.FIRE_TYPE_STARTED, props);
+}
+
+export function trackFireTypeCompleted(input: { fireTypeCode: string; source?: string }) {
+  const props: FireTypeCompletedProperties = withVersion({
+    fire_type_code: input.fireTypeCode,
+    ...(input.source ? { source: input.source } : {}),
+  });
+  capture(FunnelEvents.FIRE_TYPE_COMPLETED, props);
+}
+
+export function trackFireTypeShared(input: { fireTypeCode: string; shareMethod: 'native' | 'clipboard' }) {
+  const props: FireTypeSharedProperties = withVersion({
+    fire_type_code: input.fireTypeCode,
+    share_method: input.shareMethod,
+  });
+  capture(FunnelEvents.FIRE_TYPE_SHARED, props);
+}
+
+export function trackFireTypeCtaClicked(input: { fireTypeCode: string; source?: string }) {
+  const props: FireTypeCtaClickedProperties = withVersion({
+    fire_type_code: input.fireTypeCode,
+    ...(input.source ? { source: input.source } : {}),
+  });
+  capture(FunnelEvents.FIRE_TYPE_CTA_CLICKED, props);
 }

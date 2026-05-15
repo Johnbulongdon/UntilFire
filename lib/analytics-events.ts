@@ -17,6 +17,10 @@ export const FunnelEvents = {
   PAYWALL_VIEWED: 'funnel_paywall_viewed',
   CHECKOUT_STARTED: 'funnel_checkout_started',
   CHECKOUT_SUCCEEDED: 'funnel_checkout_succeeded',
+  FIRE_TYPE_STARTED: 'funnel_fire_type_started',
+  FIRE_TYPE_COMPLETED: 'funnel_fire_type_completed',
+  FIRE_TYPE_SHARED: 'funnel_fire_type_shared',
+  FIRE_TYPE_CTA_CLICKED: 'funnel_fire_type_cta_clicked',
 } as const;
 
 export type FunnelEventName =
@@ -95,6 +99,25 @@ export interface CheckoutSucceededServerProperties extends BaseFunnelProperties 
   stripe_session_id: string;
   mode: string;
   source: 'stripe_webhook';
+}
+
+export interface FireTypeStartedProperties extends BaseFunnelProperties {
+  source?: string;
+}
+
+export interface FireTypeCompletedProperties extends BaseFunnelProperties {
+  fire_type_code: string;
+  source?: string;
+}
+
+export interface FireTypeSharedProperties extends BaseFunnelProperties {
+  fire_type_code: string;
+  share_method: 'native' | 'clipboard';
+}
+
+export interface FireTypeCtaClickedProperties extends BaseFunnelProperties {
+  fire_type_code: string;
+  source?: string;
 }
 
 export function withVersion<P extends Record<string, unknown>>(
