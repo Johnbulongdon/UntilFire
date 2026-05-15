@@ -1185,7 +1185,7 @@ function FireCalcMenuTab({
           Choose a tool below to model your path to financial independence.
         </p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
         {tools.map(tool => (
           <div
             key={tool.title}

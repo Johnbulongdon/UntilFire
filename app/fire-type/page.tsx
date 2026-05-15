@@ -126,7 +126,7 @@ function FireTypeQuizInner() {
           </Link>
         </nav>
 
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '64px 24px 80px', textAlign: 'center' }}>
+        <div className="ft-intro-pad" style={{ maxWidth: 560, margin: '0 auto', padding: '64px 24px 80px', textAlign: 'center' }}>
           <div style={{ display: 'inline-block', background: '#ECFDF5', color: C.accent, fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 99, marginBottom: 24 }}>
             2 minutes · No login
           </div>
@@ -186,8 +186,8 @@ function FireTypeQuizInner() {
           <div style={{ height: '100%', width: `${progress}%`, background: C.teal, transition: 'width 0.3s' }} />
         </div>
 
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '48px 24px 80px' }}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '36px 28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="ft-quiz-pad" style={{ maxWidth: 560, margin: '0 auto', padding: '48px 24px 80px' }}>
+          <div className="ft-quiz-card" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '36px 28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: C.teal, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 16 }}>
               Question {currentQ + 1} of {QUIZ_QUESTIONS.length}
             </p>
@@ -263,10 +263,10 @@ function FireTypeQuizInner() {
         </button>
       </nav>
 
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px 80px' }}>
+      <div className="ft-result-pad" style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px 80px' }}>
         {/* Code badge */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-block', background: C.darkGreen, color: C.teal, fontSize: 42, fontWeight: 800, letterSpacing: '6px', padding: '16px 32px', borderRadius: 14, fontFamily: 'DM Mono, monospace', marginBottom: 16 }}>
+          <div style={{ display: 'inline-block', background: C.darkGreen, color: C.teal, fontSize: 'clamp(28px, 8vw, 42px)', fontWeight: 800, letterSpacing: 'clamp(2px, 1.5vw, 6px)', padding: '14px clamp(16px, 6vw, 32px)', borderRadius: 14, fontFamily: 'DM Mono, monospace', marginBottom: 16 }}>
             {code}
           </div>
           <h1 style={{ fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 800, color: C.text, letterSpacing: '-0.03em', margin: '0 0 10px' }}>
@@ -278,7 +278,7 @@ function FireTypeQuizInner() {
         </div>
 
         {/* Strengths */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="ft-result-strengths" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: C.accent, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 14, margin: '0 0 14px' }}>Your strengths</p>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 10 }}>
             {letters.map((l) => (
@@ -291,7 +291,7 @@ function FireTypeQuizInner() {
         </div>
 
         {/* Watch-outs */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="ft-result-strengths" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 14px' }}>Watch-outs</p>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 10 }}>
             {letters.map((l) => (
@@ -304,7 +304,7 @@ function FireTypeQuizInner() {
         </div>
 
         {/* Next move CTA */}
-        <div style={{ background: C.darkGreen, borderRadius: 16, padding: '28px 24px', marginBottom: 16, textAlign: 'center' }}>
+        <div className="ft-cta-box" style={{ background: C.darkGreen, borderRadius: 16, padding: '28px 24px', marginBottom: 16, textAlign: 'center' }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: C.teal, textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 10px' }}>Your next FIRE move</p>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: '0 0 20px', lineHeight: 1.6 }}>
             Calculate your actual FIRE number and see which lever gets you there fastest.
@@ -319,7 +319,7 @@ function FireTypeQuizInner() {
         </div>
 
         {/* Share */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="ft-share-box" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <p style={{ fontSize: 14, color: C.muted, margin: '0 0 14px' }}>Share your FIRE Type</p>
           <button
             onClick={handleShare}
@@ -339,8 +339,21 @@ function FireTypeQuizInner() {
 
 export default function FireTypePage() {
   return (
-    <Suspense>
-      <FireTypeQuizInner />
-    </Suspense>
+    <>
+      <style>{`
+        @media (max-width: 480px) {
+          .ft-intro-pad { padding: 40px 16px 60px !important; }
+          .ft-quiz-pad { padding: 28px 16px 60px !important; }
+          .ft-quiz-card { padding: 24px 18px !important; }
+          .ft-result-pad { padding: 32px 16px 60px !important; }
+          .ft-result-strengths { padding: 18px 16px !important; }
+          .ft-cta-box { padding: 20px 16px !important; }
+          .ft-share-box { padding: 16px !important; }
+        }
+      `}</style>
+      <Suspense>
+        <FireTypeQuizInner />
+      </Suspense>
+    </>
   )
 }

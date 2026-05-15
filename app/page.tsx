@@ -1154,6 +1154,23 @@ export default function Home() {
           .uf-hero .uf-h1 { font-size: 36px; }
           .uf-hero-strip { padding: 16px 24px; flex-wrap: wrap; gap: 16px; }
           .uf-goals-grid { grid-template-columns: 1fr; }
+          .uf-stat-row { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media(max-width: 480px) {
+          .uf-screen { padding: 28px 16px 20px; }
+          .uf-hero-inner { padding: 32px 16px 32px; }
+          .uf-hero-strip { padding: 12px 16px; }
+          .uf-stat-row { grid-template-columns: 1fr 1fr; }
+          .uf-delta-grid { grid-template-columns: 1fr; }
+          .uf-waitlist-form { flex-direction: column; }
+          .uf-waitlist-form input,
+          .uf-waitlist-form button { width: 100%; box-sizing: border-box; }
+          .uf-wl-inline-form { flex-direction: column; }
+          .uf-btn-lg { padding: 16px 24px; }
+          .uf-nav-row { gap: 8px; }
+          .uf-fire-date { font-size: 13px; }
+          .uf-cost-years { font-size: 32px; }
         }
 
         /* -- REVEAL -- */
