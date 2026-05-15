@@ -10,6 +10,7 @@ function adminClient() {
 }
 
 async function loopsPost(path: string, body: object) {
+  if (!process.env.LOOPS_API_KEY) return;
   return fetch(`https://app.loops.so/api/v1${path}`, {
     method: "POST",
     headers: {

@@ -14,7 +14,10 @@ export default function AuthCallback() {
           trackSignupCompleted()
           fetch("/api/email/welcome", {
             method: "POST",
-            headers: { Authorization: `Bearer ${session.access_token}` },
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
           }).catch(() => {})
         }
         // Brief delay so the PostHog XHR for funnel_signup_completed can
