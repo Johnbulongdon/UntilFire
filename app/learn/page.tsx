@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { cityLandingPages } from '@/lib/city-pages'
 import { learnArticles } from '@/lib/learn'
 
 export const metadata = {
@@ -20,7 +21,7 @@ export default function LearnHubPage() {
             Practical FIRE explainers, planning notes, and evergreen articles that make the calculators easier to use well.
           </p>
           <div className="uf-hub-actions">
-            <Link href="/" className="uf-hub-button uf-hub-button-primary">Run the calculator</Link>
+            <Link href="/?source=learn-hub" className="uf-hub-button uf-hub-button-primary">Run the calculator</Link>
             <Link href="/calculators" className="uf-hub-button uf-hub-button-secondary">Browse calculators</Link>
             <Link href="/dashboard" className="uf-hub-button uf-hub-button-secondary">Open dashboard</Link>
           </div>
@@ -36,6 +37,23 @@ export default function LearnHubPage() {
               <h2>{article.title}</h2>
               <p>{article.description}</p>
               <Link href={`/learn/${article.slug}`} className="uf-hub-link">Read article</Link>
+            </article>
+          ))}
+        </section>
+
+        <section className="uf-hub-grid" style={{ marginTop: 24 }}>
+          {cityLandingPages.map((page) => (
+            <article key={page.slug} className="uf-hub-card">
+              <div className="uf-hub-card-meta">
+                <span>{page.keyword}</span>
+                <span>{page.taxLabel}</span>
+              </div>
+              <h2>{page.city.name}</h2>
+              <p>
+                Estimated annual spending {`$${Math.round(page.city.col).toLocaleString()}`} and a
+                city-specific FIRE target page that feeds into the main calculator.
+              </p>
+              <Link href={`/fire-number/${page.slug}`} className="uf-hub-link">Explore city guide</Link>
             </article>
           ))}
         </section>

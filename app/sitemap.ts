@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { cityLandingPages } from '@/lib/city-pages'
 import { learnArticles } from '@/lib/learn'
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -72,5 +73,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }))
 
-  return [...baseRoutes, ...articleRoutes]
+  const cityRoutes: MetadataRoute.Sitemap = cityLandingPages.map((page) => ({
+    url: `https://untilfire.com/fire-number/${page.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.75,
+  }))
+
+  return [...baseRoutes, ...articleRoutes, ...cityRoutes]
 }

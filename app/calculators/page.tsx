@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { cityLandingPages } from '@/lib/city-pages'
 
 const CALCULATORS = [
   {
@@ -79,7 +80,7 @@ export default function CalculatorsHubPage() {
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 24 }}>
               <Link
-                href="/"
+                href="/?source=calculators-hub"
                 style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #059669, #064E3B)', color: '#fff', padding: '12px 18px', borderRadius: 10, fontWeight: 700, fontSize: 14 }}
               >
                 Calculate full FIRE date
@@ -160,6 +161,50 @@ export default function CalculatorsHubPage() {
             <p style={{ margin: 0, fontSize: 15, lineHeight: 1.8, color: '#64748B' }}>
               If you are just starting, begin with the <Link href="/calculators/4-percent-rule" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>FIRE Number Calculator</Link>. If you are comparing milestones, use the <Link href="/calculators/coast-fire" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Coast FIRE Calculator</Link>. If you want to understand the concepts before you model them, the <Link href="/learn" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Learning Hub</Link> explains the assumptions behind the math.
             </p>
+          </section>
+
+          <section style={{ marginTop: 24, background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '28px 24px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 18 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#059669', marginBottom: 8 }}>
+                  City intent pages
+                </div>
+                <h2 style={{ margin: 0, fontSize: 24, color: '#19181E', letterSpacing: '-0.02em' }}>
+                  Compare FIRE math in the cities people actually search for.
+                </h2>
+              </div>
+              <Link href="/learn/topics" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
+                See topic clusters
+              </Link>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
+              {cityLandingPages.map((page) => (
+                <Link
+                  key={page.slug}
+                  href={`/fire-number/${page.slug}`}
+                  style={{
+                    textDecoration: 'none',
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 16,
+                    padding: '18px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#64748B' }}>
+                    {page.keyword}
+                  </div>
+                  <div style={{ fontSize: 19, fontWeight: 800, color: '#19181E', letterSpacing: '-0.02em' }}>
+                    {page.city.name}
+                  </div>
+                  <div style={{ fontSize: 14, lineHeight: 1.7, color: '#64748B' }}>
+                    Baseline spending ${Math.round(page.city.col).toLocaleString()} / year
+                  </div>
+                </Link>
+              ))}
+            </div>
           </section>
         </div>
       </main>

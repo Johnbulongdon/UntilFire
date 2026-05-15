@@ -74,6 +74,7 @@ The market splits into three buckets — all with the same gap:
 | Route | Description |
 |---|---|
 | `/` | Landing page + 5-screen FIRE calculator wizard |
+| `/fire-number/[city-slug]` | City-specific FIRE landing pages for high-intent SEO terms |
 | `/dashboard` | Logged-in dashboard |
 | `/login` | Google OAuth sign-in |
 | `/calculators` | Calculator hub (SEO landing page) |
@@ -145,7 +146,8 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 
 | PR | Date | Description |
 |---|---|---|
-| — | May 2026 | Profile tab: edit display name, city (263-city search), default currency; delete account with email confirmation; `profiles.default_currency` column added to Supabase |
+| - | May 2026 | Growth/SEO acquisition pass: added five city landing pages under `/fire-number/*`, expanded internal linking from calculators and learn pages, refreshed launch copy, and added landing-source attribution through the public funnel |
+| - | May 2026 | Profile tab: edit display name, city (263-city search), default currency; delete account with email confirmation; `profiles.default_currency` column added to Supabase |
 | — | May 2026 | Pre-login wizard rebuilt: removed Goals step, added Portfolio Balance step (feeds startingBalance into calcFIRE), moved age to portfolio step, updated dashboard prefill to seed cashSavings, updated CTA copy |
 | — | May 2026 | Overview redesigned: split hero card (white left / dark green right), 3 mini-stat boxes (Years Remaining, Progress, Status), stacked FIRE projection bar chart (5Y/15Y/All), "This Month" KPI cards from cashflow with CTA when empty |
 | — | May 2026 | SEO foundation pass: restored `/calculators` hub, added crawlable landing-page links to calculators/learn, expanded sitemap coverage, and turned `/learn/topics` into a real topic index |
@@ -214,7 +216,8 @@ Priority order based on `docs/ROADMAP.md` Phase 2 goals:
 - [ ] Persist active tab in URL query param (`?tab=reports`) so bookmarks work
 
 **SEO / growth:**
-- [ ] First 5 city landing pages (`/fire-number/austin-tx`, `/fire-number/london`, etc.)
+- [x] First 5 city landing pages (`/fire-number/austin-tx`, `/fire-number/london`, `/fire-number/singapore`, `/fire-number/shanghai`, `/fire-number/dubai`)
+- [ ] Review Search Console / PostHog by `landing_source` and double down on the best-performing page type
 - [ ] Product Hunt launch
 
 ---

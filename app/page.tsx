@@ -13,6 +13,11 @@ import {
   trackCalculatorRevealed,
 } from "@/lib/analytics";
 import type { CalculatorStepId } from "@/lib/analytics-events";
+import {
+  getAcquisitionSource,
+  normaliseAcquisitionSource,
+  setAcquisitionSource,
+} from "@/lib/acquisition";
 import Nav from "@/app/components/landing/Nav";
 import WizardProgress from "@/app/components/landing/WizardProgress";
 import HeroScreen from "@/app/components/landing/HeroScreen";
@@ -473,9 +478,10 @@ function useCountUp(target: number, duration: number, running: boolean) {
   return val;
 }
 
-function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBalance = 0, onAdjust }: {
+function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBalance = 0, landingSource, onAdjust }: {
   city: CityState; income: number; savings: number; stateKey: string;
   currentAge?: number; portfolioBalance?: number;
+  landingSource?: string;
   onAdjust: () => void;
 }) {
   const result = calcFIRE(savings, city.col, currentAge, portfolioBalance);
@@ -551,10 +557,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
         isCustomCity: city.isCustom,
         fireTarget: result.fireTarget,
         yearsToFire: result.years,
-        fireGoal: "early",
+        landingSource,
       });
     }
-  }, [revealed, stateKey, city.isCustom, result.fireTarget, result.years]);
+  }, [revealed, stateKey, city.isCustom, result.fireTarget, result.years, landingSource]);
 
   // Delta calculations
   const highSaver = calcFIRE((takeHome / 12) * 0.5, city.col, currentAge);
@@ -695,6 +701,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                       annualCost: city.col,
                       currentAge,
                       portfolioBalance,
+                      landingSource,
                     });
                     router.push("/login");
                   }}
@@ -719,6 +726,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
       generatedAt: new Date().toISOString(),
       currentAge,
       portfolioBalance,
+      landingSource,
     });
   }}
 >
@@ -810,6 +818,20 @@ export default function Home() {
   const [savings, setSavings]             = useState(1500);
   const [portfolioBalance, setPortfolioBalance] = useState(0);
   const [currentAge, setCurrentAge]       = useState<number | undefined>(undefined);
+  const [landingSource, setLandingSourceState] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const sourceFromUrl = normaliseAcquisitionSource(
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("source")
+        : null,
+    );
+    const nextSource = sourceFromUrl ?? getAcquisitionSource();
+    if (sourceFromUrl) {
+      setAcquisitionSource(sourceFromUrl);
+    }
+    setLandingSourceState(nextSource);
+  }, []);
 
   // Auth redirect -keep existing behaviour
   useEffect(() => {
@@ -828,20 +850,20 @@ export default function Home() {
   // actually completed.
   useEffect(() => {
     if (screen === "hero") {
-      trackLandingViewed();
+      trackLandingViewed(landingSource);
       return;
     }
     const stepMap: Partial<Record<Screen, CalculatorStepId>> = {
-      goals: "goals",
       city: "city",
       income: "income",
       savings: "savings",
+      portfolio: "portfolio",
     };
     const stepId = stepMap[screen];
     if (stepId) {
-      trackCalculatorStepViewed(stepId, "early");
+      trackCalculatorStepViewed(stepId, landingSource);
     }
-  }, [screen]);
+  }, [screen, landingSource]);
 
   function signIn() {
     router.push('/login');
@@ -1322,6 +1344,7 @@ export default function Home() {
             stateKey={cityState.stateKey}
             currentAge={currentAge}
             portfolioBalance={portfolioBalance}
+            landingSource={landingSource}
             onAdjust={() => setScreen("portfolio")}
           />
         )}

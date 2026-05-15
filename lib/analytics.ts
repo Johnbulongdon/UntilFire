@@ -56,18 +56,21 @@ export function resetUser() {
   } catch {}
 }
 
-export function trackLandingViewed() {
-  capture(FunnelEvents.LANDING_VIEWED, withVersion({}));
+export function trackLandingViewed(landingSource?: string) {
+  capture(
+    FunnelEvents.LANDING_VIEWED,
+    withVersion(landingSource ? { landing_source: landingSource } : {}),
+  );
 }
 
 export function trackCalculatorStepViewed(
   stepId: CalculatorStepId,
-  fireGoal?: string,
+  landingSource?: string,
 ) {
   const props: CalculatorStepProperties = withVersion({
     step_id: stepId,
     step_index: CALCULATOR_STEP_INDEX[stepId],
-    ...(fireGoal ? { fire_goal: fireGoal } : {}),
+    ...(landingSource ? { landing_source: landingSource } : {}),
   });
   capture(FunnelEvents.CALCULATOR_STEP_VIEWED, props);
 }
@@ -77,14 +80,14 @@ export function trackCalculatorRevealed(input: {
   isCustomCity: boolean;
   fireTarget: number;
   yearsToFire: number;
-  fireGoal?: string;
+  landingSource?: string;
 }) {
   const props: CalculatorRevealedProperties = withVersion({
     state_key: input.stateKey,
     is_custom_city: input.isCustomCity,
     fire_target_bucket: bucketUSD(input.fireTarget),
     years_to_fire_bucket: bucketYears(input.yearsToFire),
-    ...(input.fireGoal ? { fire_goal: input.fireGoal } : {}),
+    ...(input.landingSource ? { landing_source: input.landingSource } : {}),
   });
   capture(FunnelEvents.CALCULATOR_REVEALED, props);
 }
@@ -92,10 +95,12 @@ export function trackCalculatorRevealed(input: {
 export function trackSignupStarted(input: {
   fromCalculator: boolean;
   stateKey?: string;
+  landingSource?: string;
 }) {
   const props: SignupStartedProperties = withVersion({
     from_calculator: input.fromCalculator,
     ...(input.stateKey ? { state_key: input.stateKey } : {}),
+    ...(input.landingSource ? { landing_source: input.landingSource } : {}),
   });
   capture(FunnelEvents.SIGNUP_STARTED, props);
 }

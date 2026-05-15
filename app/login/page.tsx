@@ -3,6 +3,9 @@ import { supabase } from '@/lib/supabase'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getAcquisitionSource } from '@/lib/acquisition'
+import { trackSignupStarted } from '@/lib/analytics'
+import { peekCalculatorPrefill } from '@/lib/journey'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,6 +21,12 @@ export default function LoginPage() {
   }, [router])
 
   async function signInWithGoogle() {
+    const prefill = peekCalculatorPrefill()
+    trackSignupStarted({
+      fromCalculator: Boolean(prefill),
+      stateKey: prefill?.stateKey,
+      landingSource: prefill?.landingSource ?? getAcquisitionSource(),
+    })
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

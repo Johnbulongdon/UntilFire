@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { cityLandingPages } from '@/lib/city-pages'
 import { getLearnArticle, learnArticles } from '@/lib/learn'
 
 type Props = {
@@ -64,7 +65,7 @@ export default async function LearnArticlePage({ params }: Props) {
             Ready to calculate your own FIRE number?
           </p>
           <Link
-            href="/"
+            href="/?source=learn-article"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -79,6 +80,31 @@ export default async function LearnArticlePage({ params }: Props) {
           >
             Run the FIRE Calculator →
           </Link>
+        </div>
+        <div style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+          {cityLandingPages.slice(0, 3).map((page) => (
+            <Link
+              key={page.slug}
+              href={`/fire-number/${page.slug}`}
+              style={{
+                textDecoration: 'none',
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: 16,
+                padding: '18px 16px',
+              }}
+            >
+              <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+                {page.keyword}
+              </div>
+              <div style={{ fontSize: 18, color: '#19181E', fontWeight: 800, marginBottom: 6 }}>
+                {page.city.name}
+              </div>
+              <div style={{ fontSize: 14, lineHeight: 1.7, color: '#64748B' }}>
+                Compare this article with a location-specific FIRE target page.
+              </div>
+            </Link>
+          ))}
         </div>
       </article>
     </main>
