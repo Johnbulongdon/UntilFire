@@ -146,6 +146,7 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 
 | PR | Date | Description |
 |---|---|---|
+| - | May 2026 | Default currency now behaves as a true dashboard unit: asset, liability, mortgage, income, and budget inputs auto-convert visually when the profile currency changes, while stored planning values remain normalized underneath |
 | - | May 2026 | Default currency now drives dashboard display logic: Overview, Cashflow summaries, Reports, Recurring, and FIRE planning cards all render in the selected profile currency while keeping normalized USD storage underneath |
 | - | May 2026 | Growth/SEO acquisition pass: added five city landing pages under `/fire-number/*`, expanded internal linking from calculators and learn pages, refreshed launch copy, and added landing-source attribution through the public funnel |
 | - | May 2026 | Profile tab: edit display name, city (263-city search), default currency; delete account with email confirmation; `profiles.default_currency` column added to Supabase |

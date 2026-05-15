@@ -739,7 +739,14 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
           </div>
           <span className="uf-tag" style={{ color: "#059669", background: "rgba(5,150,105,0.1)" }}>INCOME</span>
         </div>
-        <NumberInput value={income} onChange={setIncome} placeholder="5000" prefix={currencyPrefix} />
+        <NumberInput
+          value={income}
+          onChange={setIncome}
+          placeholder="5000"
+          prefix={currencyPrefix}
+          currency={displayCurrency}
+          rates={displayRates}
+        />
       </div>
 
       {/* Expenses */}
@@ -763,7 +770,13 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
               <div key={cat.key} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "160px 1fr 80px", alignItems: "center", gap: 12 }}>
                   <span style={{ fontSize: 13, color: "#64748B" }}>{cat.icon} {cat.label}</span>
-                  <NumberInput value={expenses[cat.key] || 0} onChange={v => setExpenses({ ...expenses, [cat.key]: v })} prefix={currencyPrefix} />
+                  <NumberInput
+                    value={expenses[cat.key] || 0}
+                    onChange={v => setExpenses({ ...expenses, [cat.key]: v })}
+                    prefix={currencyPrefix}
+                    currency={displayCurrency}
+                    rates={displayRates}
+                  />
                   <div style={{ height: 4, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${Math.min(100, income > 0 ? ((expenses[cat.key] || 0) / income) * 100 : 0)}%`, background: cat.color, borderRadius: 4, transition: "width 0.4s" }} />
                   </div>
@@ -953,7 +966,14 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
               <FieldRow label="Cash & Savings">
-                <NumberInput value={cashSavings} onChange={setCashSavings} placeholder="0" prefix={currencyPrefix} />
+                <NumberInput
+                  value={cashSavings}
+                  onChange={setCashSavings}
+                  placeholder="0"
+                  prefix={currencyPrefix}
+                  currency={displayCurrency}
+                  rates={displayRates}
+                />
               </FieldRow>
               <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
                 Checking, HYSA, emergency fund
@@ -968,13 +988,34 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
               </div>
             </div>
             <FieldRow label="401(k) Balance">
-              <NumberInput value={k401} onChange={setK401} placeholder="0" prefix={currencyPrefix} />
+              <NumberInput
+                value={k401}
+                onChange={setK401}
+                placeholder="0"
+                prefix={currencyPrefix}
+                currency={displayCurrency}
+                rates={displayRates}
+              />
             </FieldRow>
             <FieldRow label="Roth IRA Balance">
-              <NumberInput value={rothIRA} onChange={setRothIRA} placeholder="0" prefix={currencyPrefix} />
+              <NumberInput
+                value={rothIRA}
+                onChange={setRothIRA}
+                placeholder="0"
+                prefix={currencyPrefix}
+                currency={displayCurrency}
+                rates={displayRates}
+              />
             </FieldRow>
             <FieldRow label="Taxable Brokerage">
-              <NumberInput value={taxable} onChange={setTaxable} placeholder="0" prefix={currencyPrefix} />
+              <NumberInput
+                value={taxable}
+                onChange={setTaxable}
+                placeholder="0"
+                prefix={currencyPrefix}
+                currency={displayCurrency}
+                rates={displayRates}
+              />
             </FieldRow>
           </div>
         </div>
@@ -1049,7 +1090,14 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
           <SectionLabel icon="💳" text="Consumer Debt" color="#DC2626" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <FieldRow label="Non-Mortgage Debt" hint="Credit cards, auto loans, student loans">
-              <NumberInput value={totalDebt} onChange={setTotalDebt} placeholder="0" prefix={currencyPrefix} />
+              <NumberInput
+                value={totalDebt}
+                onChange={setTotalDebt}
+                placeholder="0"
+                prefix={currencyPrefix}
+                currency={displayCurrency}
+                rates={displayRates}
+              />
             </FieldRow>
           </div>
         </div>
@@ -1058,10 +1106,24 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
           <SectionLabel icon="🏠" text="Mortgage" color="#DC2626" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <FieldRow label="Mortgage Balance">
-              <NumberInput value={mortgageBalance} onChange={setMortgageBalance} placeholder="0" prefix={currencyPrefix} />
+              <NumberInput
+                value={mortgageBalance}
+                onChange={setMortgageBalance}
+                placeholder="0"
+                prefix={currencyPrefix}
+                currency={displayCurrency}
+                rates={displayRates}
+              />
             </FieldRow>
             <FieldRow label="Monthly Payment">
-              <NumberInput value={mortgageMonthly} onChange={setMortgageMonthly} placeholder="0" prefix={currencyPrefix} />
+              <NumberInput
+                value={mortgageMonthly}
+                onChange={setMortgageMonthly}
+                placeholder="0"
+                prefix={currencyPrefix}
+                currency={displayCurrency}
+                rates={displayRates}
+              />
             </FieldRow>
           </div>
         </div>
