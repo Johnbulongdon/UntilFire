@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { learnArticles } from '@/lib/learn'
+import { getLearnArticleMeta, getLearnStage, learnArticles } from '@/lib/learn'
 
 export const metadata = {
   title: 'FIRE Articles & Guides | UntilFire',
@@ -24,30 +24,42 @@ export default function ArticlesPage() {
           <div className="uf-hub-topline">Articles</div>
           <h1>FIRE guides, explained plainly.</h1>
           <p>
-            In-depth articles on financial independence, early retirement strategy, tax-advantaged accounts, and the math behind FIRE. No fluff.
+            In-depth articles on financial independence, early retirement strategy, tax-advantaged accounts, and the math behind FIRE. Use this page when you want the full library instead of a curated stage path.
           </p>
           <div className="uf-hub-actions">
             <Link href="/" className="uf-hub-button uf-hub-button-primary">Run the calculator</Link>
-            <Link href="/learn" className="uf-hub-button uf-hub-button-secondary">← Learning Hub</Link>
+            <Link href="/learn" className="uf-hub-button uf-hub-button-secondary">← Stage-based Learning Hub</Link>
+            <Link href="/learn/topics" className="uf-hub-button uf-hub-button-secondary">Browse topics</Link>
           </div>
         </header>
 
         <section className="uf-hub-grid">
-          {learnArticles.map((article) => (
-            <article key={article.slug} className="uf-hub-card">
-              <div className="uf-hub-card-meta">
-                <span style={{ color: CATEGORY_COLORS[article.category] ?? '#059669' }}>
-                  {article.category}
-                </span>
-                <span>{article.readTime}</span>
-              </div>
-              <h2>{article.title}</h2>
-              <p>{article.description}</p>
-              <Link href={`/learn/${article.slug}`} className="uf-hub-link">
-                Read article →
-              </Link>
-            </article>
-          ))}
+          {learnArticles.map((article) => {
+            const meta = getLearnArticleMeta(article)
+            const stage = getLearnStage(meta.primaryStage)
+
+            return (
+              <article key={article.slug} className="uf-hub-card">
+                <div className="uf-hub-card-meta" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+                  <span style={{ color: CATEGORY_COLORS[article.category] ?? '#059669' }}>
+                    {article.category}
+                  </span>
+                  <span>{article.readTime}</span>
+                  <span style={{ color: '#064E3B' }}>Best for: {stage.label}</span>
+                </div>
+                <h2>{article.title}</h2>
+                <p>{article.description}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                  <Link href={`/learn/${article.slug}`} className="uf-hub-link">
+                    Read article →
+                  </Link>
+                  <Link href={`/learn/stages/${stage.id}`} className="uf-hub-link" style={{ color: '#64748B' }}>
+                    {stage.label} path
+                  </Link>
+                </div>
+              </article>
+            )
+          })}
         </section>
       </div>
     </main>

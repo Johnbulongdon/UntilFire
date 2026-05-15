@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
 
 // ─── Constants (copied from TransactionsTab — kept local to avoid coupling) ───
 const EXPENSE_CATEGORIES = [
@@ -26,14 +27,6 @@ const INCOME_CATEGORIES = [
 ];
 
 const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
-
-const FALLBACK_RATES: Record<string, number> = {
-  EUR: 0.92, GBP: 0.79, JPY: 149.5, CNY: 7.27,
-  AUD: 1.56, CAD: 1.36, SGD: 1.30, HKD: 7.78,
-};
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -331,10 +324,11 @@ function ManualCard({
 }
 
 function AutoCard({
-  item, onRemove,
+  item, onRemove, formatAmount,
 }: {
   item: DetectedItem;
   onRemove: () => void;
+  formatAmount: (value: number) => string;
 }) {
   const isIncome = item.transaction_type === "income";
 
@@ -365,7 +359,7 @@ function AutoCard({
           fontSize: 16, fontWeight: 800, fontFamily: "Inter, sans-serif",
           color: isIncome ? "#059669" : "#19181E",
         }}>
-          {isIncome ? "+" : "−"}{fmt(item.avgAmountUSD)}
+          {isIncome ? "+" : "−"}{formatAmount(item.avgAmountUSD)}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <DueBadge daysUntilDue={item.daysUntilDue} />
@@ -399,7 +393,11 @@ function SectionLabel({ label }: { label: string }) {
 }
 
 // ─── Root Component ───────────────────────────────────────────────────────────
-export default function RecurringTab() {
+export default function RecurringTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES }: {
+  defaultCurrency?: string;
+  displayCurrency?: string;
+  displayRates?: Record<string, number>;
+}) {
   const [transactions, setTransactions] = useState<RawTx[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [loading, setLoading] = useState(true);
@@ -411,10 +409,17 @@ export default function RecurringTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formDesc, setFormDesc] = useState("");
   const [formAmount, setFormAmount] = useState("");
-  const [formCurrency, setFormCurrency] = useState("USD");
+  const [formCurrency, setFormCurrency] = useState(defaultCurrency);
   const [formFreq, setFormFreq] = useState<FrequencyLabel>("monthly");
   const [formType, setFormType] = useState<"expense" | "income">("expense");
   const [formCategory, setFormCategory] = useState("other");
+  const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
+
+  useEffect(() => {
+    if (!editingId && !showForm) {
+      setFormCurrency(defaultCurrency);
+    }
+  }, [defaultCurrency, editingId, showForm]);
 
   useEffect(() => {
     setManualItems(loadManual());
@@ -475,7 +480,7 @@ export default function RecurringTab() {
   // Form actions
   function openAddForm() {
     setEditingId(null);
-    setFormDesc(""); setFormAmount(""); setFormCurrency("USD");
+    setFormDesc(""); setFormAmount(""); setFormCurrency(defaultCurrency);
     setFormFreq("monthly"); setFormType("expense"); setFormCategory("other");
     setShowForm(true);
   }
@@ -752,7 +757,7 @@ export default function RecurringTab() {
               Monthly Out
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#FCA5A5", fontFamily: "Inter, sans-serif", letterSpacing: "-1px" }}>
-              {fmt(monthlyOut)}
+              {fmtDisplay(monthlyOut)}
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
               {manualExpenses.filter(i => i.included).length + visibleAutoExpenses.length} included item{(manualExpenses.filter(i => i.included).length + visibleAutoExpenses.length) !== 1 ? "s" : ""}
@@ -763,7 +768,7 @@ export default function RecurringTab() {
               Monthly In
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#62FAE3", fontFamily: "Inter, sans-serif", letterSpacing: "-1px" }}>
-              {fmt(monthlyIn)}
+              {fmtDisplay(monthlyIn)}
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
               {manualIncome.filter(i => i.included).length + visibleAutoIncome.length} included item{(manualIncome.filter(i => i.included).length + visibleAutoIncome.length) !== 1 ? "s" : ""}
@@ -838,6 +843,7 @@ export default function RecurringTab() {
                     key={item.key}
                     item={item}
                     onRemove={() => removeAutoDetected(item.key)}
+                    formatAmount={fmtDisplay}
                   />
                 ))}
               </div>
@@ -855,6 +861,7 @@ export default function RecurringTab() {
                     key={item.key}
                     item={item}
                     onRemove={() => removeAutoDetected(item.key)}
+                    formatAmount={fmtDisplay}
                   />
                 ))}
               </div>

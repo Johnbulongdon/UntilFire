@@ -1,126 +1,100 @@
-# UntilFire — Launch Posts
-Last updated: March 2026
+# UntilFire - Launch Posts
+Last updated: May 2026
 
 > Ready-to-post copy for Reddit, Hacker News, and Product Hunt.
-> Do NOT use referral links in the Reddit post (subreddit rule).
+> Do not use referral links in the Reddit post.
 
 ---
 
-## 1. Reddit — r/financialindependence Weekly Self-Promotion Thread
+## 1. Reddit - r/financialindependence Weekly Self-Promotion Thread
 
 **Where to post**: https://www.reddit.com/r/financialindependence/  
-**When**: Every Wednesday the AutoModerator posts a new "Weekly Self-Promotion Thread" — post your comment there.  
-**Rules**: No referral links. No standalone link-only posts. Must contribute meaningfully (100–250 words). Be humble, community-oriented, and transparent about pricing.
+**When**: Every Wednesday the AutoModerator posts a new Weekly Self-Promotion Thread.  
+**Rules**: No referral links. No standalone link-only posts. Be useful, transparent, and humble.
 
-**Next thread drops**: Wednesday March 25, 2026 — post your comment within the first few hours for best visibility.
+### Post Copy
 
----
+Hey everyone - I've been building **UntilFire** and wanted to share it here for feedback from people who actually care about FIRE math.
 
-### Post Copy (paste as a comment in the thread):
+The gap I kept seeing is that most tools either give you a basic number you cannot fully trust, or a very deep model that still does not tell you what to change next.
 
----
+UntilFire is my attempt to make that first answer faster and more believable.
 
-Hey everyone — I've been building **UntilFire** and wanted to share it here for feedback from the people who'd actually use it.
+**What is live today:**
+- A free no-login calculator that asks for city, income, monthly savings, and your current invested balance, then gives you a FIRE number and estimated retirement year in about a minute
+- 263 cities worldwide with cost-of-living estimates instead of one national average
+- Tax-aware calculations for US states plus effective-rate handling for international cities
+- New city pages for places like Austin, London, Singapore, Shanghai, and Dubai so people can compare FIRE math by location
+- A dashboard after signup if you want to keep tracking and improve the estimate with real numbers later
 
-The problem I kept running into: FIRE tools are either so simple they're not worth trusting, or so complex they don't tell you what to actually *do*. FIRECalc gives you a percentage. ProjectionLab gives you a model. Neither one tells you: "based on your situation, here's the thing to move first this month."
-
-I'm building toward something that does that — a personal FIRE adviser that understands your actual numbers and gives you real next steps, not just projections. Right now it starts as a calculator, and I'm adding the adviser layer as more users come on.
-
-**What's live today:**
-- Three questions (city, income, monthly savings) → your FIRE number + retirement year in about 60 seconds
-- 2025 US tax math built in (federal brackets, FICA, all 50 state rates) — or flat effective rates for international cities
-- 263 cities worldwide with real cost-of-living data — not a national average. If your city isn't there, you enter your monthly expenses directly
-- Shows how specific changes (save $500 more, cut dining 20%) shift your retirement date
-- Completely free, no login, no email
-
-Building toward: expense tracking that updates your FIRE date in real time, and a monthly adviser that tells you the one thing to do to retire faster based on your actual spending.
-
-Would love honest feedback — especially if the COL estimate for your city is wrong, or if the tax math looks off for your situation.
+I would especially love feedback if:
+- the cost-of-living estimate for your city feels off
+- the tax math looks wrong for your situation
+- the result feels directionally useful but still misses something important
 
 https://untilfire.com
 
+### Notes for posting
+
+- Reply quickly if people ask about assumptions or methodology.
+- Do not oversell. The honest tone usually performs better in this community.
+- If a city page is relevant to the thread, link that page instead of always linking the homepage.
+
 ---
 
-**Notes for posting:**
-- Engage with other people's posts in the thread before or after posting yours — the community reciprocates
-- If someone comments, reply quickly (within a few hours) — the thread moves fast on Wednesdays
-- Don't repost in subsequent weeks — participate naturally in daily threads instead
-
----
-
-## 2. Hacker News — Show HN
+## 2. Hacker News - Show HN
 
 **Where to post**: https://news.ycombinator.com/submit  
-**Title format**: Must begin with "Show HN:"  
-**Best time to post**: Tuesday–Thursday, 7–9am US Eastern time (highest HN traffic)  
-**Rules**: 
-- Must be something you built personally and are around to discuss
-- No landing pages — the product must be usable without barriers
-- Don't ask friends to upvote (against HN rules)
-- Reply to every comment, especially early ones — engagement drives algorithmic visibility
-- Be technical and honest; HN users will probe your methodology
+**Title format**: Must begin with `Show HN:`  
+**Best time**: Tuesday to Thursday, 7-9am US Eastern.
 
----
+### Title
 
-### Title:
-```
-Show HN: UntilFire – personal FIRE adviser, starting with a 60-second calculator
+```text
+Show HN: UntilFire - a city-aware FIRE calculator and planning dashboard
 ```
 
-### Post body (paste in the "text" field — optional but recommended):
+### Post Body
 
----
+I built UntilFire because I think FIRE software still has a strange gap: the fast tools feel too generic, and the powerful tools feel too heavy for the first question someone actually wants answered.
 
-I built UntilFire because I think the FIRE tool market has a clear gap: everything either gives you a simple number you can't fully trust, or a complex model that still doesn't tell you what to actually *do*.
+That first question is usually some version of:
+"Can I retire early, and how far away am I really?"
 
-The end goal is a personal FIRE adviser — an app that understands your actual financial situation and gives you specific, actionable monthly guidance. Today it's a calculator. The adviser layer is what I'm building toward.
+What is live right now:
 
-**What's live today and what makes it different:**
+1. A no-login FIRE calculator that uses city, income, monthly savings, and current invested balance before showing the result.
+2. Cost-of-living coverage across 263 cities, plus custom-city fallback.
+3. Tax-aware math for US states and international effective-rate handling.
+4. Individual calculator pages for high-intent finance searches like FIRE number, Coast FIRE, APY, savings rate, and compound interest.
+5. New city-specific landing pages for Austin, London, Singapore, Shanghai, and Dubai.
 
-1. **263 cities with real COL data** — SF ($110k/yr), Austin ($55k/yr), Bangkok ($22k/yr), Bangalore ($11k/yr). Not a multiplier against a national average. If your city isn't listed, you enter your monthly expenses directly.
+The product direction is to turn that first answer into a real ongoing dashboard: track cashflow, update your timeline, and eventually surface the single highest-impact thing to change each month.
 
-2. **Actual tax calculation** — US cities: 2025 federal brackets with standard deduction, FICA (SS + Medicare + additional surtax), all 50 state rates, shown line by line. International: flat effective rates by country. You can verify the math yourself.
+Stack: Next.js 15, Supabase, Vercel, PostHog.
 
-3. **No login, no email required** — full result (FIRE number, retirement year, delta cards showing how specific changes affect your date) before any signup is asked.
+Limitations:
+- The city landing pages are still early and intentionally simple.
+- The public calculator is deterministic, not a Monte Carlo planner.
+- The dashboard is farther along than the distribution engine, which is what I am fixing now.
 
-4. **Delta cards** — rather than just a number, it shows concretely: "cutting dining by 20% moves your date by X years", "saving $500/mo more saves you Y years". This is the start of the "what to do next" layer.
-
-**What I'm building toward:**
-- Expense tracking that updates your FIRE date as you log real spending
-- Monthly adviser: "based on last month, here's the one thing to change"
-- Scenario planning tied to real data, not manual inputs
-
-**Stack**: Next.js 15, Supabase, Tailwind CSS v4, Vercel.
-
-**Known limitations**: Starting savings balance is hardcoded at $27,400 (adding an existing savings input is next). Monte Carlo and Social Security optimisation are out of scope for now.
-
-Happy to discuss the COL data methodology, the tax calculation approach, or the product direction.
+Happy to talk about methodology, tax assumptions, or where this is still weak.
 
 https://untilfire.com
 
----
+### Notes for posting
 
-**Notes for posting:**
-- Post between 7–9am ET on a Tuesday or Wednesday
-- Check back every 30 minutes for the first 2 hours — reply to every comment
-- If someone challenges the tax math or COL data, engage seriously — HN rewards intellectual honesty
-- Don't defend — acknowledge limitations and explain your reasoning
-- The "no login" detail is important to lead with — HN is hostile to paywalled Show HNs
+- Stay around to answer every early comment.
+- If someone challenges a number, treat that as a gift and go deep on it.
+- Lead with "no login" and "city-aware" because those are the clearest product differentiators.
 
 ---
 
 ## 3. Product Hunt
 
-**Status**: Planned — do this after getting initial traction and social proof from Reddit/HN first.  
-**Ideal timing**: After you have 100+ users and some testimonials/screenshots.  
-**Preparation needed**:
-- 5 good screenshots (hero, city search, tax breakdown, reveal screen, dashboard)
-- 60-word tagline
-- Hunter with an established PH profile (ask someone in your network)
-- Notify your existing users the day before to support the launch
-- Schedule for a Tuesday at 12:01am PT
+**Status**: Wait until there is visible social proof and a cleaner screenshot set.  
+**Ideal timing**: After the city-page SEO motion and onboarding conversion improve.
 
-**Tagline draft:**
-> Find out exactly when you can retire — adjusted for your actual city, income, and taxes. 263 cities worldwide. Free, no login required.
+### Tagline draft
 
----
+> Find out exactly when you can retire - adjusted for your city, taxes, savings pace, and current portfolio.

@@ -3,20 +3,21 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { CITIES } from "@/lib/fire-data";
-
-const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD", "HKD"];
+import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 
 interface Props {
   userId: string;
   userEmail: string;
+  defaultCurrency: string;
+  onDefaultCurrencyChange: (currency: string) => void;
 }
 
-export default function ProfileTab({ userId, userEmail }: Props) {
+export default function ProfileTab({ userId, userEmail, defaultCurrency: initialDefaultCurrency, onDefaultCurrencyChange }: Props) {
   const [displayName, setDisplayName] = useState("");
   const [citySearch, setCitySearch] = useState("");
   const [selectedCity, setSelectedCity] = useState<{ name: string; key: string } | null>(null);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
-  const [defaultCurrency, setDefaultCurrency] = useState("USD");
+  const [defaultCurrency, setDefaultCurrency] = useState(initialDefaultCurrency || "USD");
   const [saving, setSaving] = useState<Record<"name" | "city" | "currency", boolean>>({
     name: false,
     city: false,
@@ -58,10 +59,15 @@ export default function ProfileTab({ userId, userEmail }: Props) {
 
       if (p?.default_currency) {
         setDefaultCurrency(p.default_currency);
+        onDefaultCurrencyChange(p.default_currency);
       }
     }
     load();
-  }, [userId]);
+  }, [userId, onDefaultCurrencyChange]);
+
+  useEffect(() => {
+    setDefaultCurrency(initialDefaultCurrency || "USD");
+  }, [initialDefaultCurrency]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -127,6 +133,7 @@ export default function ProfileTab({ userId, userEmail }: Props) {
       { onConflict: "user_id" }
     );
     setSaving((s) => ({ ...s, currency: false }));
+    onDefaultCurrencyChange(defaultCurrency);
     flash("currency");
   }
 
@@ -293,7 +300,7 @@ export default function ProfileTab({ userId, userEmail }: Props) {
             value={defaultCurrency}
             onChange={(e) => setDefaultCurrency(e.target.value)}
           >
-            {CURRENCIES.map((c) => (
+            {SUPPORTED_CURRENCIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -306,7 +313,7 @@ export default function ProfileTab({ userId, userEmail }: Props) {
           </button>
         </div>
         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, marginBottom: 0 }}>
-          Pre-fills the currency field when logging transactions.
+          Sets the dashboard display currency and pre-fills new transaction entries.
         </p>
       </div>
 

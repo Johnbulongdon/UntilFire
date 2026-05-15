@@ -26,13 +26,13 @@ export const FunnelEvents = {
 export type FunnelEventName =
   (typeof FunnelEvents)[keyof typeof FunnelEvents];
 
-export type CalculatorStepId = 'goals' | 'city' | 'income' | 'savings';
+export type CalculatorStepId = 'city' | 'income' | 'savings' | 'portfolio';
 
 export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
-  goals: 1,
-  city: 2,
-  income: 3,
-  savings: 4,
+  city: 1,
+  income: 2,
+  savings: 3,
+  portfolio: 4,
 };
 
 // Coarse buckets keep individual users from being re-identified by their
@@ -63,7 +63,7 @@ export interface BaseFunnelProperties {
 export interface CalculatorStepProperties extends BaseFunnelProperties {
   step_id: CalculatorStepId;
   step_index: number;
-  fire_goal?: string;
+  landing_source?: string;
 }
 
 export interface CalculatorRevealedProperties extends BaseFunnelProperties {
@@ -71,12 +71,13 @@ export interface CalculatorRevealedProperties extends BaseFunnelProperties {
   is_custom_city: boolean;
   fire_target_bucket: string;
   years_to_fire_bucket: string;
-  fire_goal?: string;
+  landing_source?: string;
 }
 
 export interface SignupStartedProperties extends BaseFunnelProperties {
   from_calculator: boolean;
   state_key?: string;
+  landing_source?: string;
 }
 
 export interface DashboardFirstViewProperties extends BaseFunnelProperties {

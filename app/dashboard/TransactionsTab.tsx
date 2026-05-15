@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
+import { formatUSDInCurrency } from "@/lib/currency";
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 const EXPENSE_CATEGORIES = [
@@ -695,6 +696,7 @@ function TransactionList({
   onEdit,
   onDelete,
   rates,
+  formatAmount,
 }: {
   transactions: Transaction[];
   editingId: string | null;
@@ -702,6 +704,7 @@ function TransactionList({
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
   rates: Record<string, number>;
+  formatAmount: (value: number) => string;
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income">("all");
@@ -796,7 +799,7 @@ function TransactionList({
                 <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "#94A3B8" }}>
                   <span>{dayLabel(date, todayYmd)}</span>
                   <span style={{ color: "#64748B", fontVariantNumeric: "tabular-nums" }}>
-                    {dayNet > 0 ? "+" : dayNet < 0 ? "−" : ""}{fmt(Math.abs(dayNet))}
+                    {dayNet > 0 ? "+" : dayNet < 0 ? "−" : ""}{formatAmount(Math.abs(dayNet))}
                   </span>
                 </div>
                 {txns
@@ -880,6 +883,8 @@ function MonthlySummary({
   budgetExpenses,
   rates,
   ratesFallback,
+  formatAmount,
+  displayCurrency,
 }: {
   transactions: Transaction[];
   viewMonth: string;
@@ -888,6 +893,8 @@ function MonthlySummary({
   budgetExpenses: Record<string, number> | null;
   rates: Record<string, number>;
   ratesFallback: boolean;
+  formatAmount: (value: number) => string;
+  displayCurrency: string;
 }) {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -922,7 +929,7 @@ function MonthlySummary({
     <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{label}</div>
       <div style={{ fontSize: 28, fontWeight: 800, color, letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums", lineHeight: 1.05 }}>
-        {label === "Net" && value >= 0 ? "+" : ""}{fmt(value)}
+        {label === "Net" && value >= 0 ? "+" : ""}{formatAmount(value)}
       </div>
       <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 10, fontVariantNumeric: "tabular-nums" }}>{hint}</div>
     </div>
@@ -936,7 +943,7 @@ function MonthlySummary({
           <div style={{ fontWeight: 700, fontSize: 22, color: "#064E3B", letterSpacing: "-0.4px" }}>{monthLabel}</div>
           {isMixed && (
             <div style={{ fontSize: 11, color: ratesFallback ? "#D97706" : "#94A3B8", marginTop: 2 }}>
-              Totals converted to USD · {ratesFallback ? "⚠ estimated rates (live fetch failed)" : "live rates"}
+              Totals shown in {displayCurrency} · {ratesFallback ? "⚠ estimated rates (live fetch failed)" : "live rates"}
             </div>
           )}
         </div>
@@ -952,9 +959,9 @@ function MonthlySummary({
       </div>
 
       {/* KPI grid */}
-      <div style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
-        {kpiCard("Income", incomeTotal, "#059669", prevIncome > 0 ? `vs ${fmt(prevIncome)} last month` : "No prior month data")}
-        {kpiCard("Spent", expenseTotal, "#19181E", prevSpent > 0 ? `vs ${fmt(prevSpent)} last month` : "No prior month data")}
+      <div style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : workTotal > 0 ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+        {kpiCard("Income", incomeTotal, "#059669", prevIncome > 0 ? `vs ${formatAmount(prevIncome)} last month` : "No prior month data")}
+        {kpiCard("Spent", expenseTotal, "#19181E", prevSpent > 0 ? `vs ${formatAmount(prevSpent)} last month` : "No prior month data")}
         {kpiCard("Net", net, net >= 0 ? "#047857" : "#DC2626", net >= 0 && incomeTotal > 0 ? `${((net / incomeTotal) * 100).toFixed(1)}% savings rate` : "Spending exceeds income")}
 
         {/* Donut card */}
@@ -967,7 +974,7 @@ function MonthlySummary({
                     {byCat.map((cat) => <Cell key={cat.key} fill={cat.color} />)}
                   </Pie>
                   <ChartTooltip
-                    formatter={(v) => [fmt(Number(v ?? 0)), ""]}
+                    formatter={(v) => [formatAmount(Number(v ?? 0)), ""]}
                     contentStyle={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
                   />
                 </PieChart>
@@ -999,14 +1006,14 @@ function MonthlySummary({
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
                     <span style={{ color: "#64748B" }}>{cat.label}</span>
                     <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: over ? "#DC2626" : cat.color }}>
-                      {fmt(cat.total)}
-                      {budget > 0 ? <span style={{ color: "#94A3B8", fontWeight: 400 }}> / {fmt(budget)}</span> : <span style={{ color: "#94A3B8", fontWeight: 400 }}> ({((cat.total / expenseTotal) * 100).toFixed(0)}%)</span>}
+                      {formatAmount(cat.total)}
+                      {budget > 0 ? <span style={{ color: "#94A3B8", fontWeight: 400 }}> / {formatAmount(budget)}</span> : <span style={{ color: "#94A3B8", fontWeight: 400 }}> ({((cat.total / expenseTotal) * 100).toFixed(0)}%)</span>}
                     </span>
                   </div>
                   <div style={{ height: 4, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${barPct}%`, background: over ? "#DC2626" : cat.color, borderRadius: 4, transition: "width 0.4s" }} />
                   </div>
-                  {over && <div style={{ fontSize: 11, color: "#DC2626", marginTop: 2 }}>over by {fmt(cat.total - budget)}</div>}
+                  {over && <div style={{ fontSize: 11, color: "#DC2626", marginTop: 2 }}>over by {formatAmount(cat.total - budget)}</div>}
                 </div>
               );
             })}
@@ -1084,7 +1091,11 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab() {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES }: {
+  defaultCurrency?: string;
+  displayCurrency?: string;
+  displayRates?: Record<string, number>;
+}) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const now = new Date();
@@ -1121,13 +1132,24 @@ export default function TransactionsTab() {
   }, []);
 
   // Form state (lifted so edit can populate it)
-  const [defaultCurrency, setDefaultCurrency] = useState("USD");
-  const [draft, setDraft] = useState<DraftTransaction>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<DraftTransaction>(() => ({ ...EMPTY_DRAFT(), currency: defaultCurrency }));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fmtDisplay = useCallback(
+    (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates),
+    [displayCurrency, displayRates],
+  );
+
+  useEffect(() => {
+    setDraft((current) =>
+      current.id || current.amount || current.description || current.currency !== "USD"
+        ? current
+        : { ...current, currency: defaultCurrency },
+    );
+  }, [defaultCurrency]);
 
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
@@ -1225,7 +1247,7 @@ export default function TransactionsTab() {
       setJustAddedId(data.id);
       setTimeout(() => setJustAddedId(null), 1600);
       if (viewMonth !== data.date.slice(0, 7)) setViewMonth(data.date.slice(0, 7));
-      showToast(`Added — ${data.description || `$${data.amount}`}`, data.id);
+      showToast(`Added — ${data.description || fmt(data.amount, data.currency)}`, data.id);
       if (!keepOpen) {
         setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
       } else {
@@ -1233,7 +1255,7 @@ export default function TransactionsTab() {
       }
       if (drawerOpen && !keepOpen) setDrawerOpen(false);
     }
-  }, [draft, drawerOpen, viewMonth, showToast, defaultCurrency]);
+  }, [defaultCurrency, draft, drawerOpen, viewMonth, showToast]);
 
   const handleEdit = useCallback((tx: Transaction) => {
     setEditingId(tx.id);
@@ -1259,7 +1281,7 @@ export default function TransactionsTab() {
     setEditingId(null);
     setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
     if (drawerOpen) setDrawerOpen(false);
-  }, [drawerOpen, defaultCurrency]);
+  }, [defaultCurrency, drawerOpen]);
 
   const handleDelete = useCallback(async (tx: Transaction) => {
     if (!window.confirm(`Delete "${tx.description}"?`)) return;
@@ -1271,7 +1293,7 @@ export default function TransactionsTab() {
     setTransactions((prev) => prev.filter((t) => t.id !== tx.id));
     if (editingId === tx.id) { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); }
     showToast(`Deleted "${tx.description}"`, "undo:" + tx.id, tx);
-  }, [editingId, showToast, defaultCurrency]);
+  }, [defaultCurrency, editingId, showToast]);
 
   const handleUndo = useCallback(() => {
     if (!toast) return;
@@ -1331,17 +1353,20 @@ export default function TransactionsTab() {
         budgetExpenses={budgetExpenses}
         rates={rates}
         ratesFallback={ratesFallback}
+        formatAmount={fmtDisplay}
+        displayCurrency={displayCurrency}
       />
 
       <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "start" }}>
         <TransactionList
           transactions={monthTxns}
           editingId={editingId}
-          justAddedId={justAddedId}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          rates={rates}
-        />
+        justAddedId={justAddedId}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        rates={rates}
+        formatAmount={fmtDisplay}
+      />
         <div className="cf-form-col">
           <QuickAddForm
             draft={draft}
@@ -1359,7 +1384,7 @@ export default function TransactionsTab() {
         </div>
       </div>
 
-      <MobileBar onOpen={() => { setEditingId(null); setDraft(EMPTY_DRAFT()); setDrawerOpen(true); }} />
+      <MobileBar onOpen={() => { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); setDrawerOpen(true); }} />
       <MobileDrawer open={drawerOpen} onClose={() => { setDrawerOpen(false); if (editingId) handleCancelEdit(); }}>
         <QuickAddForm
           draft={draft}
