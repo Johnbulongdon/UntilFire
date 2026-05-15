@@ -1148,6 +1148,14 @@ function FireCalcMenuTab({
   onOpenGoals: () => void;
   onOpenSimulation: () => void;
 }) {
+  const [fireTypeResult, setFireTypeResult] = useState<{ code: string; name: string } | null>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("uf_fire_type_result");
+      if (raw) setFireTypeResult(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
+
   const tools = [
     {
       icon: "🎯",
@@ -1211,6 +1219,36 @@ function FireCalcMenuTab({
             </button>
           </div>
         ))}
+
+        {/* FIRE Type quiz card */}
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ fontSize: 48, lineHeight: 1 }}>🧭</div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#19181E", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
+              {fireTypeResult ? "Your FIRE Type" : "FIRE Type Quiz"}
+            </div>
+            <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7 }}>
+              {fireTypeResult
+                ? "Discover how your personality shapes your path to financial independence."
+                : "8 quick questions to discover your FIRE personality — how you naturally think about financial independence."}
+            </div>
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {fireTypeResult ? `${fireTypeResult.code} — ${fireTypeResult.name}` : "2 minutes · No login"}
+          </div>
+          <a
+            href={`/fire-type?source=dashboard-fire-calc${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`}
+            style={{
+              background: "linear-gradient(135deg, #059669, #064E3B)",
+              color: "#fff", border: "none", borderRadius: 10,
+              padding: "12px 0", fontWeight: 700, fontSize: 14,
+              cursor: "pointer", fontFamily: "inherit", marginTop: "auto",
+              textDecoration: "none", textAlign: "center", display: "block",
+            }}
+          >
+            {fireTypeResult ? "View / retake quiz →" : "Find my FIRE Type →"}
+          </a>
+        </div>
       </div>
     </div>
   );

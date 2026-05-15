@@ -1298,6 +1298,30 @@ export default function Home() {
         {screen === "hero" && (
           <HeroScreen onStart={() => setScreen("city")} onSignIn={signIn} />
         )}
+        {screen === "hero" && (
+          <div style={{ maxWidth: 540, margin: '0 auto', padding: '0 24px 32px' }}>
+            <a
+              href="/fire-type?source=landing-hero-card"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 16,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 14, padding: '18px 20px', textDecoration: 'none',
+                transition: 'background 0.15s',
+              }}
+            >
+              <div style={{ fontSize: 32, flexShrink: 0 }}>🔥</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', marginBottom: 3 }}>
+                  Not ready to enter numbers yet?
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+                  Take the 2-min FIRE Type quiz to discover your financial independence personality.
+                </div>
+              </div>
+              <div style={{ color: '#22D3A5', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>→</div>
+            </a>
+          </div>
+        )}
         {screen === "city" && (
           <CityScreen
             onNext={c => { setCityState(c); setScreen("income"); }}
