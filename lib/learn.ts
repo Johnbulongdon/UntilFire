@@ -12,6 +12,35 @@ export type LearnArticle = {
   body: BodyNode[]
 }
 
+export type LearnStageId =
+  | 'starting-out'
+  | 'building-momentum'
+  | 'approaching-fire'
+  | 'living-in-fire'
+
+export type LearnCalculatorLink = {
+  href: string
+  label: string
+}
+
+export type LearnStage = {
+  id: LearnStageId
+  label: string
+  shortLabel: string
+  description: string
+  whatMattersNow: string
+  articleSlugs: string[]
+  calculatorLinks: LearnCalculatorLink[]
+  nextActionLabel: string
+  nextActionHref: string
+}
+
+type LearnArticleMeta = {
+  primaryStage: LearnStageId
+  secondaryStages?: LearnStageId[]
+  relatedCalculators: LearnCalculatorLink[]
+}
+
 function p(text: string): BodyNode { return { type: 'p', text } }
 function h2(text: string): BodyNode { return { type: 'h2', text } }
 
@@ -265,6 +294,210 @@ export const learnArticles: LearnArticle[] = [
   },
 ]
 
+const articleMetaBySlug: Record<string, LearnArticleMeta> = {
+  'what-is-fire-financial-independence-retire-early': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+    ],
+  },
+  'how-much-money-do-i-need-to-retire': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
+    ],
+  },
+  'what-is-the-4-percent-rule': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
+    ],
+  },
+  'why-savings-rate-matters-more-than-income': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+    ],
+  },
+  'coast-fire-vs-full-fire': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+    ],
+  },
+  'lean-fire-vs-fat-fire': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
+    ],
+  },
+  'barista-fire': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+    ],
+  },
+  'roth-ira-vs-401k-for-fire': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+    ],
+  },
+  'sequence-of-returns-risk': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/dashboard', label: 'Run Monte Carlo in Dashboard' },
+    ],
+  },
+  'how-fire-assumptions-change-your-retirement-date': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+    ],
+  },
+  'compound-interest-and-fire': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+    ],
+  },
+}
+
+export const learnStages: LearnStage[] = [
+  {
+    id: 'starting-out',
+    label: 'Starting Out',
+    shortLabel: 'Start here',
+    description: 'Learn the core ideas first: what FIRE is, why savings rate matters, and how compounding and simple rules of thumb shape the journey.',
+    whatMattersNow: 'Get the foundations right before you optimize. Learn the language, understand your savings rate, and run your first calculator with confidence.',
+    articleSlugs: [
+      'what-is-fire-financial-independence-retire-early',
+      'why-savings-rate-matters-more-than-income',
+      'compound-interest-and-fire',
+      'what-is-the-4-percent-rule',
+    ],
+    calculatorLinks: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+    ],
+    nextActionLabel: 'Run your first FIRE estimate',
+    nextActionHref: '/?source=learn-stage-starting-out',
+  },
+  {
+    id: 'building-momentum',
+    label: 'Building Momentum',
+    shortLabel: 'Build momentum',
+    description: 'You understand the basics. Now focus on account strategy, choosing the right path, and testing tradeoffs that can move your FIRE date.',
+    whatMattersNow: 'Improve the machine: account mix, pace of saving, and the specific path that fits your lifestyle and timeline.',
+    articleSlugs: [
+      'coast-fire-vs-full-fire',
+      'roth-ira-vs-401k-for-fire',
+      'lean-fire-vs-fat-fire',
+      'how-fire-assumptions-change-your-retirement-date',
+    ],
+    calculatorLinks: [
+      { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+    ],
+    nextActionLabel: 'Compare your next milestone',
+    nextActionHref: '/calculators/coast-fire',
+  },
+  {
+    id: 'approaching-fire',
+    label: 'Approaching FIRE',
+    shortLabel: 'Pressure-test',
+    description: 'As FIRE gets closer, the important work shifts to target sizing, assumption pressure-testing, and protecting the plan from fragile assumptions.',
+    whatMattersNow: 'Dial in the target. Stress-test spending, withdrawal assumptions, and downside risk before you trust the retirement date.',
+    articleSlugs: [
+      'how-much-money-do-i-need-to-retire',
+      'how-fire-assumptions-change-your-retirement-date',
+      'sequence-of-returns-risk',
+      'what-is-the-4-percent-rule',
+    ],
+    calculatorLinks: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/dashboard', label: 'Open Dashboard Simulations' },
+    ],
+    nextActionLabel: 'Pressure-test your FIRE number',
+    nextActionHref: '/calculators/4-percent-rule',
+  },
+  {
+    id: 'living-in-fire',
+    label: 'Living in FIRE',
+    shortLabel: 'Stay resilient',
+    description: 'Once work is optional, the focus shifts to withdrawal discipline, account sequencing, flexible spending, and making the plan hold up through real life.',
+    whatMattersNow: 'Protect the portfolio. Withdrawal strategy, tax-aware access, and sequence risk now matter more than pure accumulation speed.',
+    articleSlugs: [
+      'what-is-the-4-percent-rule',
+      'sequence-of-returns-risk',
+      'barista-fire',
+      'roth-ira-vs-401k-for-fire',
+    ],
+    calculatorLinks: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/dashboard', label: 'Open Dashboard Projections' },
+    ],
+    nextActionLabel: 'Review your withdrawal assumptions',
+    nextActionHref: '/dashboard',
+  },
+]
+
 export function getLearnArticle(slug: string) {
   return learnArticles.find((article) => article.slug === slug)
+}
+
+export function isLearnStageId(value: string): value is LearnStageId {
+  return learnStages.some((stage) => stage.id === value)
+}
+
+export function getLearnStage(stageId: LearnStageId) {
+  return learnStages.find((stage) => stage.id === stageId)!
+}
+
+export function getLearnArticleMeta(articleOrSlug: LearnArticle | string): LearnArticleMeta {
+  const slug = typeof articleOrSlug === 'string' ? articleOrSlug : articleOrSlug.slug
+  return articleMetaBySlug[slug]
+}
+
+export function getStageArticles(stageId: LearnStageId) {
+  const stage = getLearnStage(stageId)
+  return stage.articleSlugs
+    .map((slug) => getLearnArticle(slug))
+    .filter((article): article is LearnArticle => Boolean(article))
+}
+
+export function getRelatedArticles(slug: string, limit = 3) {
+  const meta = getLearnArticleMeta(slug)
+  const sameStage = getStageArticles(meta.primaryStage).filter((article) => article.slug !== slug)
+  const crossStage = learnArticles.filter((article) => {
+    if (article.slug === slug) return false
+    const articleMeta = getLearnArticleMeta(article)
+    return articleMeta.secondaryStages?.includes(meta.primaryStage)
+  })
+
+  return [...sameStage, ...crossStage].filter((article, index, arr) =>
+    arr.findIndex((candidate) => candidate.slug === article.slug) === index,
+  ).slice(0, limit)
 }

@@ -83,6 +83,8 @@ The market splits into three buckets — all with the same gap:
 | `/calculators/compound-interest` | Compound interest calculator |
 | `/calculators/savings-rate` | Savings rate calculator |
 | `/calculators/4-percent-rule` | FIRE number / 4% rule calculator |
+| `/learn` | Stage-first public Learning Hub |
+| `/learn/stages/[stage]` | Stage-specific public FIRE learning paths |
 | `/learn/articles` | SEO article grid (11 articles, structured body with h2/p nodes) |
 | `/learn/[slug]` | Individual article page with OpenGraph metadata |
 | `/learn/topics` | Topics index |
@@ -146,6 +148,7 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 
 | PR | Date | Description |
 |---|---|---|
+| - | May 2026 | Learning Hub is now stage-based without losing SEO: `/learn` became the stage chooser, new public `/learn/stages/[stage]` paths were added, article pages now show stage fit + related reading/tools, and the dashboard Learning Hub links into the same public stage system |
 | - | May 2026 | Default currency now behaves as a true dashboard unit: asset, liability, mortgage, income, and budget inputs auto-convert visually when the profile currency changes, while stored planning values remain normalized underneath |
 | - | May 2026 | Default currency now drives dashboard display logic: Overview, Cashflow summaries, Reports, Recurring, and FIRE planning cards all render in the selected profile currency while keeping normalized USD storage underneath |
 | - | May 2026 | Growth/SEO acquisition pass: added five city landing pages under `/fire-number/*`, expanded internal linking from calculators and learn pages, refreshed launch copy, and added landing-source attribution through the public funnel |
@@ -184,8 +187,9 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 - **Calculators hub** — `/calculators` lists all SEO calculators and links users into the main FIRE wizard
 - **Multi-currency** — transactions stored in any currency; normalized to USD for calculations, but dashboard summaries and planning cards now render in the user's selected default currency using live Frankfurter API rates with fallback hardcoded rates if API fails
 - **Custom categories** — stored in `localStorage` key `uf_custom_cats`; custom sub-categories in `uf_custom_subcats`; both are device-local only
-- **Learning Hub articles** — 11 SEO articles at `/learn/articles`; individual article pages at `/learn/[slug]`
-- **Learning Hub topics** — topic index at `/learn/topics` clusters FIRE concepts and links related articles/calculators
+- **Learning Hub stages** — `/learn` now routes readers into four guided public stages, with dedicated `/learn/stages/[stage]` pages for Starting Out, Building Momentum, Approaching FIRE, and Living in FIRE
+- **Learning Hub articles** — 11 SEO articles at `/learn/articles`; individual article pages at `/learn/[slug]` now show stage fit, related articles, and related calculators
+- **Learning Hub topics** — topic index at `/learn/topics` remains the secondary concept-based browse path
 - **SEO internal linking** — landing/nav now expose crawlable links to `/calculators` and `/learn`
 
 **Placeholder / incomplete:**
