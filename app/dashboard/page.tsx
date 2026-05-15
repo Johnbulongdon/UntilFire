@@ -13,6 +13,7 @@ import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
+import LearningHubTab from "./LearningHubTab";
 import { monteCarloFIRE } from "@/lib/fire";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1328,35 +1329,6 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
           {chartTab === "accounts" && "Stacked: 401(k) · Roth IRA · Taxable brokerage"}
           {chartTab === "networth" && "Total net worth vs debt paydown over time"}
         </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Learning Hub Tab ────────────────────────────────────────────────────────
-function LearningHubTab() {
-  const resources = [
-    { href: "/calculators", label: "Calculators", desc: "Savings rate, compound interest, SWR, and more", icon: "🧮" },
-    { href: "/learn/articles", label: "Articles", desc: "In-depth guides on FIRE, investing, and frugality", icon: "📄" },
-    { href: "/learn/topics", label: "Topics", desc: "Browse concepts: 4% rule, tax optimisation, coast FIRE", icon: "📚" },
-  ];
-  return (
-    <div>
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ fontSize: 12, color: "#059669", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 10 }}>Learning Hub</div>
-        <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 8px" }}>Build your knowledge</h2>
-        <p style={{ fontSize: 15, color: "#64748B", margin: 0 }}>Calculators, articles, and topics to help you understand and reach financial independence.</p>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
-        {resources.map(r => (
-          <Link key={r.href} href={r.href} style={{ textDecoration: "none" }}>
-            <div className="uf-card" style={{ padding: "24px", cursor: "pointer", transition: "box-shadow 0.15s" }}>
-              <div style={{ fontSize: 32, marginBottom: 14 }}>{r.icon}</div>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>{r.label}</div>
-              <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{r.desc}</div>
-            </div>
-          </Link>
-        ))}
       </div>
     </div>
   );
