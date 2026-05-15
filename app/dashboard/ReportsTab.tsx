@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer,
 } from "recharts";
+import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
 
 // ─── Constants (copied from RecurringTab — kept local to avoid coupling) ──────
 const EXPENSE_CATEGORIES = [
@@ -20,14 +21,6 @@ const EXPENSE_CATEGORIES = [
   { key: "work",          label: "Work",          code: "WK", color: "#6366f1" },
   { key: "other",         label: "Other",         code: "OT", color: "#6b7280" },
 ];
-
-const FALLBACK_RATES: Record<string, number> = {
-  EUR: 0.92, GBP: 0.79, JPY: 149.5, CNY: 7.27,
-  AUD: 1.56, CAD: 1.36, SGD: 1.30, HKD: 7.78,
-};
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -78,7 +71,7 @@ function rateColor(rate: number): string {
 }
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
+function ChartTooltip({ active, payload, label, displayCurrency, displayRates }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string; displayCurrency: string; displayRates: Record<string, number> }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -89,7 +82,7 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
       {payload.map(p => (
         <div key={p.name} style={{ display: "flex", justifyContent: "space-between", gap: 16, color: p.color, fontWeight: 600 }}>
           <span>{p.name}</span>
-          <span>{fmt(p.value)}</span>
+          <span>{formatUSDInCurrency(p.value, displayCurrency, displayRates)}</span>
         </div>
       ))}
     </div>
@@ -97,12 +90,16 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 // ─── Root Component ───────────────────────────────────────────────────────────
-export default function ReportsTab() {
+export default function ReportsTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES }: {
+  displayCurrency?: string;
+  displayRates?: Record<string, number>;
+}) {
   const [transactions, setTransactions] = useState<RawTx[]>([]);
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesFallback, setRatesFallback] = useState(false);
   const [period, setPeriod] = useState<3 | 6 | 12>(6);
+  const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
@@ -249,8 +246,8 @@ export default function ReportsTab() {
         ) : (
           <>
             {[
-              { label: "Avg Monthly Income",   value: fmt(avgIncome),           color: "#62FAE3" },
-              { label: "Avg Monthly Expenses", value: fmt(avgExpenses),         color: "#FCA5A5" },
+              { label: "Avg Monthly Income",   value: fmtDisplay(avgIncome),           color: "#62FAE3" },
+              { label: "Avg Monthly Expenses", value: fmtDisplay(avgExpenses),         color: "#FCA5A5" },
               { label: "Avg Savings Rate",     value: avgRate.toFixed(0) + "%", color: rateColor(avgRate) },
             ].map(kpi => (
               <div key={kpi.label} style={{ background: "#003527", borderRadius: 16, padding: "20px 24px" }}>
@@ -279,11 +276,11 @@ export default function ReportsTab() {
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
             <YAxis
-              tickFormatter={v => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
+              tickFormatter={v => formatUSDInCurrency(v, displayCurrency, displayRates, { compact: true })}
               tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false}
               width={45}
             />
-            <Tooltip content={<ChartTooltip />} />
+              <Tooltip content={<ChartTooltip displayCurrency={displayCurrency} displayRates={displayRates} />} />
             <Legend
               wrapperStyle={{ fontSize: 12, fontWeight: 700, paddingTop: 12 }}
               formatter={(value) => <span style={{ color: "#64748B" }}>{value}</span>}
@@ -331,7 +328,7 @@ export default function ReportsTab() {
                   </div>
                   {/* Amount */}
                   <div style={{ fontSize: 14, fontWeight: 800, color: "#19181E", fontFamily: "Inter, sans-serif", textAlign: "right", minWidth: 80 }}>
-                    {fmt(cat.total)}
+                    {fmtDisplay(cat.total)}
                   </div>
                 </div>
               );
@@ -373,13 +370,13 @@ export default function ReportsTab() {
                 {row.label}
               </span>
               <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : "#059669" }}>
-                {empty ? "—" : fmt(row.income)}
+                {empty ? "—" : fmtDisplay(row.income)}
               </span>
               <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : "#19181E" }}>
-                {empty ? "—" : fmt(row.expenses)}
+                {empty ? "—" : fmtDisplay(row.expenses)}
               </span>
               <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : row.net >= 0 ? "#059669" : "#DC2626" }}>
-                {empty ? "—" : (row.net >= 0 ? "+" : "") + fmt(row.net)}
+                {empty ? "—" : (row.net >= 0 ? "+" : "") + fmtDisplay(row.net)}
               </span>
               <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : rateColor(row.savingsRate) }}>
                 {empty ? "—" : row.savingsRate.toFixed(0) + "%"}

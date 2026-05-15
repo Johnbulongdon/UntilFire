@@ -146,6 +146,7 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 
 | PR | Date | Description |
 |---|---|---|
+| - | May 2026 | Default currency now drives dashboard display logic: Overview, Cashflow summaries, Reports, Recurring, and FIRE planning cards all render in the selected profile currency while keeping normalized USD storage underneath |
 | - | May 2026 | Growth/SEO acquisition pass: added five city landing pages under `/fire-number/*`, expanded internal linking from calculators and learn pages, refreshed launch copy, and added landing-source attribution through the public funnel |
 | - | May 2026 | Profile tab: edit display name, city (263-city search), default currency; delete account with email confirmation; `profiles.default_currency` column added to Supabase |
 | — | May 2026 | Pre-login wizard rebuilt: removed Goals step, added Portfolio Balance step (feeds startingBalance into calcFIRE), moved age to portfolio step, updated dashboard prefill to seed cashSavings, updated CTA copy |
@@ -180,7 +181,7 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 - **FIRE Calculator** — hub menu → Goals sub-tab (retirement target) + Simulation sub-tab (Monte Carlo); back navigation
 - **Reports tab** — period selector (3/6/12m), KPI cards, income vs expenses bar chart, category breakdown, month-by-month table
 - **Calculators hub** — `/calculators` lists all SEO calculators and links users into the main FIRE wizard
-- **Multi-currency** — transactions stored in any currency; auto-converted to USD using live Frankfurter API rates; fallback hardcoded rates if API fails
+- **Multi-currency** — transactions stored in any currency; normalized to USD for calculations, but dashboard summaries and planning cards now render in the user's selected default currency using live Frankfurter API rates with fallback hardcoded rates if API fails
 - **Custom categories** — stored in `localStorage` key `uf_custom_cats`; custom sub-categories in `uf_custom_subcats`; both are device-local only
 - **Learning Hub articles** — 11 SEO articles at `/learn/articles`; individual article pages at `/learn/[slug]`
 - **Learning Hub topics** — topic index at `/learn/topics` clusters FIRE concepts and links related articles/calculators

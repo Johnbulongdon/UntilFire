@@ -14,6 +14,7 @@ import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
 import { monteCarloFIRE } from "@/lib/fire";
+import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -39,21 +40,17 @@ const EXPENSE_CATS = [
 ];
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
-const fmt = (n: number, compact = false) => {
-  if (compact && Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (compact && Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
-  return "$" + Math.round(n).toLocaleString();
-};
+const fmt = (
+  n: number,
+  currency: string,
+  rates: Record<string, number>,
+  compact = false,
+) => formatUSDInCurrency(n, currency, rates, { compact });
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>) => {
   if (!currency || currency === "USD") return amount;
   const rate = rates[currency];
   return rate ? amount / rate : amount;
-};
-
-const FALLBACK_RATES: Record<string, number> = {
-  EUR: 0.92, GBP: 0.79, JPY: 149.5, CNY: 7.27,
-  AUD: 1.56, CAD: 1.36, SGD: 1.30, HKD: 7.78,
 };
 
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
@@ -123,11 +120,17 @@ function calcProjection({
 }
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
-function NumberInput({ value, onChange, placeholder = "0", prefix = "$" }: {
+function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currency, rates }: {
   value: number; onChange: (v: number) => void;
   placeholder?: string; prefix?: string;
+  currency?: string; rates?: Record<string, number>;
 }) {
   const [focused, setFocused] = useState(false);
+  const displayValue = currency && rates
+    ? Number.isFinite(value)
+      ? convertUSDAmount(value, currency, rates)
+      : value
+    : value;
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 6,
@@ -138,8 +141,16 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$" }: {
     }}>
       <span style={{ color: "#94A3B8", fontSize: 13, fontFamily: "Inter, sans-serif" }}>{prefix}</span>
       <input
-        type="number" value={value || ""} placeholder={placeholder}
-        onChange={e => onChange(Number(e.target.value))}
+        type="number" value={displayValue || ""} placeholder={placeholder}
+        onChange={e => {
+          const nextValue = Number(e.target.value);
+          if (currency && rates && currency !== "USD") {
+            const rate = rates[currency];
+            onChange(rate ? nextValue / rate : nextValue);
+            return;
+          }
+          onChange(nextValue);
+        }}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         style={{ background: "none", border: "none", outline: "none", color: "#19181E", fontSize: 14, width: "100%", fontFamily: "Inter, sans-serif" }}
       />
@@ -171,13 +182,13 @@ function KpiCard({ label, value, sub, color = "#19181E", glow = false }: {
   );
 }
 
-const ChartTooltip = ({ active, payload, label }: any) => {
+const ChartTooltip = ({ active, payload, label, currency = "USD", rates = FALLBACK_RATES }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: "#ffffff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontFamily: "Inter, sans-serif", fontSize: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
       <p style={{ color: "#64748B", marginBottom: 6 }}>Year {label}</p>
       {payload.map((p: any) => (
-        <div key={p.name} style={{ color: p.color, marginBottom: 2 }}>{p.name}: {fmt(p.value, true)}</div>
+        <div key={p.name} style={{ color: p.color, marginBottom: 2 }}>{p.name}: {fmt(p.value, currency, rates, true)}</div>
       ))}
     </div>
   );
@@ -193,11 +204,13 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
 }
 
 // ─── Monte Carlo Probability Card ─────────────────────────────────────────────
-function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate }: {
+function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, displayCurrency, displayRates }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number;
+  displayCurrency: string; displayRates: Record<string, number>;
 }) {
   const [extraSavings, setExtraSavings] = useState(0);
+  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
 
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -319,7 +332,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
           onChange={e => setExtraSavings(Number(e.target.value))}
           style={{ flex: 1, minWidth: 120, accentColor: "#064E3B" }} />
         <span style={{ fontSize: 13, fontFamily: "Inter, sans-serif", color: "#19181E", flexShrink: 0, minWidth: 90 }}>
-          +${extraSavings.toLocaleString()}/mo
+          +{fmtMoney(extraSavings)}/mo
         </span>
         {yearDelta > 0 ? (
           <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "#ECFDF5", borderRadius: 20, padding: "4px 12px", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>
@@ -334,15 +347,17 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", onTabChange }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, onTabChange }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
   actuals?: Record<string, number>; actualIncome?: number; actualExpenses?: number; cityName?: string;
   prevIncome?: number; prevExpenses?: number; userName?: string;
+  displayCurrency: string; displayRates: Record<string, number>;
   onTabChange?: (tab: TabKey) => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("15Y");
+  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
 
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -400,8 +415,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   // Status pill
   const statusLabel = savingsRate >= 50 ? "Ahead of schedule" : savingsRate >= 25 ? "On track" : income > 0 ? "Behind schedule" : "No data yet";
   const statusColor = savingsRate >= 50 ? "#059669" : savingsRate >= 25 ? "#20D4BF" : income > 0 ? "#F59E0B" : "#94A3B8";
-  const statusBg    = savingsRate >= 50 ? "rgba(5,150,105,0.15)" : savingsRate >= 25 ? "rgba(32,212,191,0.15)" : income > 0 ? "rgba(245,158,11,0.15)" : "rgba(148,163,184,0.15)";
-
   const TrendBadge = ({ pct, pp, inverse = false }: { pct?: number | null; pp?: number | null; inverse?: boolean }) => {
     const val = pp ?? pct;
     if (val === null || val === undefined) return null;
@@ -475,18 +488,18 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginBottom: 4, fontWeight: 700 }}>FIRE Target</div>
-                <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#FFFFFF" }}>{fmt(fireTarget, true)}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#FFFFFF" }}>{fmtMoney(fireTarget, true)}</div>
               </div>
               <div>
                 <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginBottom: 4, fontWeight: 700 }}>Investable Assets</div>
-                <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#62FAE3" }}>{fmt(investable, true)}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#62FAE3" }}>{fmtMoney(investable, true)}</div>
               </div>
             </div>
             <div style={{ marginTop: "auto" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}>$0</span>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}>{fmtMoney(0)}</span>
                 <span style={{ fontSize: 13, color: "#62FAE3", fontFamily: "Inter, sans-serif", fontWeight: 700 }}>{progress.toFixed(0)}%</span>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}>{fmt(fireTarget, true)}</span>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}>{fmtMoney(fireTarget, true)}</span>
               </div>
               <div style={{ height: 7, background: "rgba(255,255,255,0.12)", borderRadius: 99, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #20D4BF, #62FAE3)", borderRadius: 99, transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1)" }} />
@@ -517,18 +530,18 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
               <div className="uf-card" style={{ padding: "16px 18px" }}>
                 <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Income</div>
-                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: "#059669" }}>{fmt(actualIncome)}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: "#059669" }}>{fmtMoney(actualIncome)}</div>
                 <div style={{ marginTop: 5 }}><TrendBadge pct={incomeTrend} /></div>
               </div>
               <div className="uf-card" style={{ padding: "16px 18px" }}>
                 <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Expenses</div>
-                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: "#DC2626" }}>{fmt(actualExpenses)}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: "#DC2626" }}>{fmtMoney(actualExpenses)}</div>
                 <div style={{ marginTop: 5 }}><TrendBadge pct={expenseTrend} inverse /></div>
               </div>
               <div className="uf-card" style={{ padding: "16px 18px" }}>
                 <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Net Surplus</div>
                 <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: netSurplus >= 0 ? "#059669" : "#DC2626" }}>
-                  {netSurplus < 0 ? "−" : ""}{fmt(Math.abs(netSurplus))}
+                  {netSurplus < 0 ? "−" : ""}{fmtMoney(Math.abs(netSurplus))}
                 </div>
                 <div style={{ marginTop: 5 }}><TrendBadge pct={netTrend} /></div>
               </div>
@@ -542,7 +555,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </div>
             {netSurplus > 0 && retireYear && (
               <div style={{ marginTop: 10, padding: "12px 16px", background: "rgba(5,150,105,0.06)", border: "1px solid rgba(5,150,105,0.15)", borderRadius: 10, fontSize: 13, color: "#047857", fontFamily: "Inter, sans-serif" }}>
-                Your {monthName} surplus of {fmt(netSurplus)} pulled your FIRE date earlier — at this pace you&apos;d reach FIRE in {retireYear}.
+                Your {monthName} surplus of {fmtMoney(netSurplus)} pulled your FIRE date earlier — at this pace you&apos;d reach FIRE in {retireYear}.
               </div>
             )}
           </>
@@ -585,7 +598,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           <BarChart data={periodData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barSize={14}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
             <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={v => fmt(v, true)} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={52} />
+            <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={52} />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
@@ -594,9 +607,9 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 return (
                   <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
                     <div style={{ fontWeight: 700, marginBottom: 6, color: "#0F172A" }}>Year {label}</div>
-                    <div style={{ color: "#064E3B" }}>You contribute: {fmt(contrib, true)}</div>
-                    <div style={{ color: "#20D4BF" }}>Market grows: {fmt(mkt, true)}</div>
-                    <div style={{ color: "#64748B", marginTop: 6, borderTop: "1px solid #E2E8F0", paddingTop: 6 }}>Total: {fmt(contrib + mkt, true)}</div>
+                    <div style={{ color: "#064E3B" }}>You contribute: {fmtMoney(contrib, true)}</div>
+                    <div style={{ color: "#20D4BF" }}>Market grows: {fmtMoney(mkt, true)}</div>
+                    <div style={{ color: "#64748B", marginTop: 6, borderTop: "1px solid #E2E8F0", paddingTop: 6 }}>Total: {fmtMoney(contrib + mkt, true)}</div>
                   </div>
                 );
               }}
@@ -618,7 +631,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
           {(contribAtFire > 0 || marketAtFire > 0) && (
             <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif", textAlign: "right" }}>
-              By {retireYear ?? "target"}: <span style={{ color: "#064E3B", fontWeight: 600 }}>{fmt(contribAtFire, true)}</span> from you · <span style={{ color: "#20D4BF", fontWeight: 600 }}>{fmt(marketAtFire, true)}</span> from compounding
+              By {retireYear ?? "target"}: <span style={{ color: "#064E3B", fontWeight: 600 }}>{fmtMoney(contribAtFire, true)}</span> from you · <span style={{ color: "#20D4BF", fontWeight: 600 }}>{fmtMoney(marketAtFire, true)}</span> from compounding
             </div>
           )}
         </div>
@@ -702,11 +715,14 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayCurrency, displayRates }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
+  displayCurrency: string; displayRates: Record<string, number>;
 }) {
+  const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
+  const currencyPrefix = getCurrencySymbol(displayCurrency);
   const totalExp = EXPENSE_CATS.reduce((s, c) => s + (expenses[c.key] || 0), 0);
   const savings  = income - totalExp;
   const rate     = income > 0 ? (savings / income) * 100 : 0;
@@ -723,7 +739,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
           </div>
           <span className="uf-tag" style={{ color: "#059669", background: "rgba(5,150,105,0.1)" }}>INCOME</span>
         </div>
-        <NumberInput value={income} onChange={setIncome} placeholder="5000" />
+        <NumberInput value={income} onChange={setIncome} placeholder="5000" prefix={currencyPrefix} />
       </div>
 
       {/* Expenses */}
@@ -747,7 +763,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
               <div key={cat.key} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "160px 1fr 80px", alignItems: "center", gap: 12 }}>
                   <span style={{ fontSize: 13, color: "#64748B" }}>{cat.icon} {cat.label}</span>
-                  <NumberInput value={expenses[cat.key] || 0} onChange={v => setExpenses({ ...expenses, [cat.key]: v })} />
+                  <NumberInput value={expenses[cat.key] || 0} onChange={v => setExpenses({ ...expenses, [cat.key]: v })} prefix={currencyPrefix} />
                   <div style={{ height: 4, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${Math.min(100, income > 0 ? ((expenses[cat.key] || 0) / income) * 100 : 0)}%`, background: cat.color, borderRadius: 4, transition: "width 0.4s" }} />
                   </div>
@@ -755,7 +771,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
                 {spent > 0 && (
                   <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
                     <span style={{ fontSize: 11, fontFamily: "Inter, sans-serif", color: over ? "#DC2626" : "#64748B" }}>
-                      {over ? "⚠ " : ""}Spent {fmt(spent)}{budget > 0 ? ` / ${fmt(budget)}` : ""}
+                      {over ? "⚠ " : ""}Spent {fmtMoney(spent)}{budget > 0 ? ` / ${fmtMoney(budget)}` : ""}
                     </span>
                     {budget > 0 && (
                       <div style={{ height: 3, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
@@ -778,10 +794,10 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals }: {
         }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
             {[
-              { label: "Total Expenses", val: fmt(totalExp), color: "#DC2626" },
-              { label: "Monthly Savings", val: fmt(Math.max(0, savings)), color: "#059669" },
+              { label: "Total Expenses", val: fmtMoney(totalExp), color: "#DC2626" },
+              { label: "Monthly Savings", val: fmtMoney(Math.max(0, savings)), color: "#059669" },
               { label: "Savings Rate", val: `${rate.toFixed(1)}%`, color: rate >= 50 ? "#064E3B" : rate >= 25 ? "#059669" : "#DC2626" },
-              { label: "Annual Savings", val: fmt(Math.max(0, savings) * 12), color: "#19181E" },
+              { label: "Annual Savings", val: fmtMoney(Math.max(0, savings) * 12), color: "#19181E" },
             ].map(k => (
               <div key={k.label}>
                 <div style={{ color: "#64748B", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "Inter, sans-serif" }}>{k.label}</div>
@@ -827,11 +843,13 @@ function UserNav() {
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
+function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
+  displayCurrency: string; displayRates: Record<string, number>;
 }) {
+  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
@@ -852,16 +870,16 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
       <div className="uf-card" style={{ padding: "28px 32px", background: "#003527", borderColor: "transparent" }}>
         <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#62FAE3", marginBottom: 10, fontWeight: 700 }}>Net Worth</div>
         <div style={{ fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 800, color: netWorth >= 0 ? "#FFFFFF" : "#FCA5A5", fontFamily: "Manrope, sans-serif", letterSpacing: "-2px", lineHeight: 1 }}>
-          {fmt(netWorth)}
+          {fmtMoney(netWorth)}
         </div>
         <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmt(investable, true)} investable assets · {fmt(totalDebt + mortgageBalance, true)} total debt
+          {fmtMoney(investable, true)} investable assets · {fmtMoney(totalDebt + mortgageBalance, true)} total debt
         </div>
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
-            <span>{fmt(investable, true)} saved</span>
+            <span>{fmtMoney(investable, true)} saved</span>
             <span style={{ color: "#62FAE3", fontWeight: 700 }}>{progress.toFixed(1)}% to FIRE</span>
-            <span>{fmt(fireTarget, true)} target</span>
+            <span>{fmtMoney(fireTarget, true)} target</span>
           </div>
           <div style={{ height: 6, background: "rgba(255,255,255,0.15)", borderRadius: 99, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${progress}%`, background: "#62FAE3", borderRadius: 99, transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1)" }} />
@@ -872,9 +890,9 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
       {/* KPI row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
         {[
-          { label: "Investable Assets",  val: fmt(investable, true),   color: "#059669",  sub: "All accounts" },
-          { label: "Net Worth",          val: fmt(netWorth, true),      color: netWorth >= 0 ? "#059669" : "#DC2626", sub: "Assets − debt" },
-          { label: "Total Debt",         val: fmt(totalDebt + mortgageBalance, true), color: "#DC2626", sub: "Consumer + mortgage" },
+          { label: "Investable Assets",  val: fmtMoney(investable, true),   color: "#059669",  sub: "All accounts" },
+          { label: "Net Worth",          val: fmtMoney(netWorth, true),      color: netWorth >= 0 ? "#059669" : "#DC2626", sub: "Assets − debt" },
+          { label: "Total Debt",         val: fmtMoney(totalDebt + mortgageBalance, true), color: "#DC2626", sub: "Consumer + mortgage" },
           { label: "FIRE Progress",      val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
         ].map(k => (
           <KpiCard key={k.label} label={k.label} value={k.val} sub={k.sub} color={k.color} />
@@ -901,7 +919,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
                 <tr key={row.label}>
                   <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
                   <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Inter, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
-                    {row.val >= 0 ? fmt(row.val) : `−${fmt(Math.abs(row.val))}`}
+                    {row.val >= 0 ? fmtMoney(row.val) : `−${fmtMoney(Math.abs(row.val))}`}
                   </td>
                 </tr>
               );
@@ -914,7 +932,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate, actualNetCashflow = 0 }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -922,7 +940,10 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   growthRate: number; setGrowthRate: (v: number) => void;
   withdrawalRate: number; setWithdrawalRate: (v: number) => void;
   actualNetCashflow?: number;
+  displayCurrency: string; displayRates: Record<string, number>;
 }) {
+  const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
+  const currencyPrefix = getCurrencySymbol(displayCurrency);
   const total = k401 + rothIRA + taxable + cashSavings;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -932,7 +953,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
               <FieldRow label="Cash & Savings">
-                <NumberInput value={cashSavings} onChange={setCashSavings} placeholder="0" />
+                <NumberInput value={cashSavings} onChange={setCashSavings} placeholder="0" prefix={currencyPrefix} />
               </FieldRow>
               <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
                 Checking, HYSA, emergency fund
@@ -940,20 +961,20 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                   <span style={{ marginLeft: 8 }}>
                     · Cashflow net this month:{" "}
                     <span style={{ color: actualNetCashflow >= 0 ? "#059669" : "#DC2626", fontWeight: 600 }}>
-                      {actualNetCashflow >= 0 ? "+" : "−"}${Math.abs(Math.round(actualNetCashflow)).toLocaleString()}
+                      {actualNetCashflow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(actualNetCashflow))}
                     </span>
                   </span>
                 )}
               </div>
             </div>
             <FieldRow label="401(k) Balance">
-              <NumberInput value={k401} onChange={setK401} placeholder="0" />
+              <NumberInput value={k401} onChange={setK401} placeholder="0" prefix={currencyPrefix} />
             </FieldRow>
             <FieldRow label="Roth IRA Balance">
-              <NumberInput value={rothIRA} onChange={setRothIRA} placeholder="0" />
+              <NumberInput value={rothIRA} onChange={setRothIRA} placeholder="0" prefix={currencyPrefix} />
             </FieldRow>
             <FieldRow label="Taxable Brokerage">
-              <NumberInput value={taxable} onChange={setTaxable} placeholder="0" />
+              <NumberInput value={taxable} onChange={setTaxable} placeholder="0" prefix={currencyPrefix} />
             </FieldRow>
           </div>
         </div>
@@ -993,10 +1014,10 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
         <div className="uf-card" style={{ background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.2)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
             {[
-              { label: "Cash", val: fmt(cashSavings), pct: total > 0 ? (cashSavings / total * 100).toFixed(0) : "0", color: "#0ea5e9" },
-              { label: "401(k)", val: fmt(k401), pct: total > 0 ? (k401 / total * 100).toFixed(0) : "0", color: "#059669" },
-              { label: "Roth IRA", val: fmt(rothIRA), pct: total > 0 ? (rothIRA / total * 100).toFixed(0) : "0", color: "#20D4BF" },
-              { label: "Taxable", val: fmt(taxable), pct: total > 0 ? (taxable / total * 100).toFixed(0) : "0", color: "#047857" },
+              { label: "Cash", val: fmtMoney(cashSavings), pct: total > 0 ? (cashSavings / total * 100).toFixed(0) : "0", color: "#0ea5e9" },
+              { label: "401(k)", val: fmtMoney(k401), pct: total > 0 ? (k401 / total * 100).toFixed(0) : "0", color: "#059669" },
+              { label: "Roth IRA", val: fmtMoney(rothIRA), pct: total > 0 ? (rothIRA / total * 100).toFixed(0) : "0", color: "#20D4BF" },
+              { label: "Taxable", val: fmtMoney(taxable), pct: total > 0 ? (taxable / total * 100).toFixed(0) : "0", color: "#047857" },
             ].map(a => (
               <div key={a.label}>
                 <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{a.label}</div>
@@ -1012,11 +1033,14 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 }
 
 // ─── Liabilities Tab ──────────────────────────────────────────────────────────
-function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly }: {
+function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly, displayCurrency, displayRates }: {
   totalDebt: number; setTotalDebt: (v: number) => void;
   mortgageBalance: number; setMortgageBalance: (v: number) => void;
   mortgageMonthly: number; setMortgageMonthly: (v: number) => void;
+  displayCurrency: string; displayRates: Record<string, number>;
 }) {
+  const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
+  const currencyPrefix = getCurrencySymbol(displayCurrency);
   const totalLiabilities = totalDebt + mortgageBalance;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1025,7 +1049,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
           <SectionLabel icon="💳" text="Consumer Debt" color="#DC2626" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <FieldRow label="Non-Mortgage Debt" hint="Credit cards, auto loans, student loans">
-              <NumberInput value={totalDebt} onChange={setTotalDebt} placeholder="0" />
+              <NumberInput value={totalDebt} onChange={setTotalDebt} placeholder="0" prefix={currencyPrefix} />
             </FieldRow>
           </div>
         </div>
@@ -1034,10 +1058,10 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
           <SectionLabel icon="🏠" text="Mortgage" color="#DC2626" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <FieldRow label="Mortgage Balance">
-              <NumberInput value={mortgageBalance} onChange={setMortgageBalance} placeholder="0" />
+              <NumberInput value={mortgageBalance} onChange={setMortgageBalance} placeholder="0" prefix={currencyPrefix} />
             </FieldRow>
             <FieldRow label="Monthly Payment">
-              <NumberInput value={mortgageMonthly} onChange={setMortgageMonthly} placeholder="0" />
+              <NumberInput value={mortgageMonthly} onChange={setMortgageMonthly} placeholder="0" prefix={currencyPrefix} />
             </FieldRow>
           </div>
         </div>
@@ -1047,9 +1071,9 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
         <div className="uf-card" style={{ background: "rgba(220,38,38,0.04)", border: "1px solid rgba(220,38,38,0.2)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
             {[
-              { label: "Consumer Debt",  val: fmt(totalDebt),           color: "#DC2626" },
-              { label: "Mortgage",       val: fmt(mortgageBalance),      color: "#DC2626" },
-              { label: "Total Liabilities", val: fmt(totalLiabilities), color: "#19181E" },
+              { label: "Consumer Debt",  val: fmtMoney(totalDebt),           color: "#DC2626" },
+              { label: "Mortgage",       val: fmtMoney(mortgageBalance),      color: "#DC2626" },
+              { label: "Total Liabilities", val: fmtMoney(totalLiabilities), color: "#19181E" },
             ].map(l => (
               <div key={l.label}>
                 <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{l.label}</div>
@@ -1113,9 +1137,9 @@ function GoalsTab({ fireAge, setFireAge, onBack }: { fireAge: number; setFireAge
 }
 
 // ─── Simulations Tab ──────────────────────────────────────────────────────────
-function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, onBack }: {
+function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, displayCurrency, displayRates, onBack }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number; onBack: () => void;
+  taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number; displayCurrency: string; displayRates: Record<string, number>; onBack: () => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1130,6 +1154,7 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings 
         income={income} expenses={expenses}
         k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
         growthRate={growthRate} withdrawalRate={withdrawalRate}
+        displayCurrency={displayCurrency} displayRates={displayRates}
       />
     </div>
   );
@@ -1215,12 +1240,14 @@ function FireCalcMenuTab({
 
 // ─── Trends Tab (kept for reference, not wired to sidebar) ───────────────────
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate }: {
+function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
+  displayCurrency: string; displayRates: Record<string, number>;
 }) {
   const [chartTab, setChartTab] = useState<"growth" | "accounts" | "networth">("growth");
+  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
 
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -1275,8 +1302,8 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
               <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => fmt(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
-              <Tooltip content={<ChartTooltip />} />
+              <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
+              <Tooltip content={<ChartTooltip currency={displayCurrency} rates={displayRates} />} />
               {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "🔥 FIRE", fill: "#064E3B", fontSize: 10, fontFamily: "Inter" }} />}
               <Area type="monotone" dataKey="FIRE Target" stroke="#064E3B" strokeWidth={1.5} strokeDasharray="5 3" fill="url(#gT3)" dot={false} />
               <Area type="monotone" dataKey="Investable" stroke="#059669" strokeWidth={2.5} fill="url(#gI3)" dot={false} />
@@ -1297,8 +1324,8 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
               <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => fmt(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
-              <Tooltip content={<ChartTooltip />} />
+              <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
+              <Tooltip content={<ChartTooltip currency={displayCurrency} rates={displayRates} />} />
               <Legend wrapperStyle={{ fontSize: 11, fontFamily: "Inter", color: "#64748B", paddingTop: 10 }} />
               {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" />}
               <Area type="monotone" dataKey="401(k)" stroke="#059669" strokeWidth={2} fill="url(#g401d)" dot={false} stackId="a" />
@@ -1313,8 +1340,8 @@ function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortga
             <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
               <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => fmt(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
-              <Tooltip content={<ChartTooltip />} />
+              <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
+              <Tooltip content={<ChartTooltip currency={displayCurrency} rates={displayRates} />} />
               <ReferenceLine y={0} stroke="#DC2626" strokeDasharray="3 3" />
               {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "🔥 FIRE", fill: "#064E3B", fontSize: 10, fontFamily: "Inter" }} />}
               <Line type="monotone" dataKey="Net Worth" stroke="#059669" strokeWidth={2.5} dot={false} />
@@ -1455,6 +1482,7 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
@@ -1505,6 +1533,15 @@ export default function Dashboard() {
 
       setUserId(session.user.id);
       setUserEmail(session.user.email ?? "");
+
+      supabase
+        .from("profiles")
+        .select("default_currency")
+        .eq("user_id", session.user.id)
+        .maybeSingle()
+        .then(({ data: profile }) => {
+          if (profile?.default_currency) setDefaultCurrency(profile.default_currency);
+        });
 
       // Fetch user display name
       supabase.auth.getUser().then(({ data: { user } }) => {
@@ -1713,6 +1750,8 @@ export default function Dashboard() {
                 prevIncome={prevIncome}
                 prevExpenses={prevExpenses}
                 userName={userName}
+                displayCurrency={defaultCurrency}
+                displayRates={rates}
                 onTabChange={setTab}
               />
             )}
@@ -1736,11 +1775,11 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                {cashflowSubTab === "cashflow" && <TransactionsTab />}
-                {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} />}
-                {cashflowSubTab === "recurring" && <RecurringTab />}
+                {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} />}
+                {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
+                {cashflowSubTab === "recurring" && <RecurringTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} />
                 )}
               </div>
             )}
@@ -1759,6 +1798,8 @@ export default function Dashboard() {
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                   mortgageMonthly={mortgageMonthly} growthRate={growthRate}
                   withdrawalRate={withdrawalRate}
+                  displayCurrency={defaultCurrency}
+                  displayRates={rates}
                 />
                 <div style={{ borderTop: "1px solid #E2E8F0" }} />
                 <AssetsTab
@@ -1769,6 +1810,8 @@ export default function Dashboard() {
                   growthRate={growthRate} setGrowthRate={setGrowthRate}
                   withdrawalRate={withdrawalRate} setWithdrawalRate={setWithdrawalRate}
                   actualNetCashflow={actualIncome - actualExpenses}
+                  displayCurrency={defaultCurrency}
+                  displayRates={rates}
                 />
               </div>
             )}
@@ -1784,6 +1827,8 @@ export default function Dashboard() {
                 totalDebt={totalDebt} setTotalDebt={setTotalDebt}
                 mortgageBalance={mortgageBalance} setMortgageBalance={setMortgageBalance}
                 mortgageMonthly={mortgageMonthly} setMortgageMonthly={setMortgageMonthly}
+                displayCurrency={defaultCurrency}
+                displayRates={rates}
               />
             )}
             {tab === "fire-calculator" && (
@@ -1806,15 +1851,17 @@ export default function Dashboard() {
                     income={income} expenses={expenses}
                     k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                     growthRate={growthRate} withdrawalRate={withdrawalRate}
+                    displayCurrency={defaultCurrency}
+                    displayRates={rates}
                     onBack={() => setFireCalcSubTab("menu")}
                   />
                 )}
               </div>
             )}
-            {tab === "reports" && <ReportsTab />}
+            {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab />}
             {tab === "profile" && userId && (
-              <ProfileTab userId={userId} userEmail={userEmail} />
+              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} />
             )}
           </div>
         </main>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
 const EXPENSE_CATEGORIES = [
@@ -16,14 +17,6 @@ const EXPENSE_CATEGORIES = [
   { key: "work",          label: "Work",          code: "WK", color: "#6366f1" },
   { key: "other",         label: "Other",         code: "OT", color: "#6b7280" },
 ];
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
-
-const FALLBACK_RATES: Record<string, number> = {
-  EUR: 0.92, GBP: 0.79, JPY: 149.5, CNY: 7.27,
-  AUD: 1.56, CAD: 1.36, SGD: 1.30, HKD: 7.78,
-};
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -95,11 +88,13 @@ function CategoryRow({
   totalSpend,
   open,
   onToggle,
+  formatAmount,
 }: {
   cat: { key: string; label: string; color: string; code: string; total: number; subBreakdown: SubBreakdown[]; tagBreakdown: { tag: string; total: number }[] };
   totalSpend: number;
   open: boolean;
   onToggle: () => void;
+  formatAmount: (value: number) => string;
 }) {
   const pct = totalSpend > 0 ? (cat.total / totalSpend) * 100 : 0;
 
@@ -131,7 +126,7 @@ function CategoryRow({
           </div>
           <span style={{ fontSize: 11, color: "#64748B", fontVariantNumeric: "tabular-nums", minWidth: 28, textAlign: "right" }}>{pct.toFixed(0)}%</span>
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(cat.total)}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(cat.total)}</div>
         <Chevron open={open} />
       </div>
 
@@ -150,7 +145,7 @@ function CategoryRow({
                       <div style={{ height: 4, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${scPct}%`, background: cat.color, opacity: 0.65, borderRadius: 99 }} />
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(sc.total)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(sc.total)}</span>
                     </div>
                   );
                 })}
@@ -165,7 +160,7 @@ function CategoryRow({
                 {cat.tagBreakdown.map((tb) => (
                   <div key={tb.tag} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 600, color: "#64748B" }}>
                     <span style={{ color: "#94A3B8" }}>#</span>{tb.tag}
-                    <span style={{ color: "#19181E" }}>{fmt(tb.total)}</span>
+                    <span style={{ color: "#19181E" }}>{formatAmount(tb.total)}</span>
                   </div>
                 ))}
               </div>
@@ -188,12 +183,14 @@ function ProjectRow({
   catBreakdown,
   open,
   onToggle,
+  formatAmount,
 }: {
   tag: string;
   total: number;
   catBreakdown: CatBreakdown[];
   open: boolean;
   onToggle: () => void;
+  formatAmount: (value: number) => string;
 }) {
   return (
     <div>
@@ -213,7 +210,7 @@ function ProjectRow({
           <span style={{ fontSize: 14, fontWeight: 700, color: "#19181E" }}>{tag}</span>
           <span style={{ fontSize: 12, color: "#94A3B8" }}>{catBreakdown.length} categories</span>
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(total)}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(total)}</div>
         <Chevron open={open} />
       </div>
 
@@ -229,13 +226,13 @@ function ProjectRow({
                   <div style={{ height: 4, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${total > 0 ? (cat.total / total) * 100 : 0}%`, background: cat.color, opacity: 0.7, borderRadius: 99 }} />
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(cat.total)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(cat.total)}</span>
                 </div>
                 {cat.subBreakdown.length > 0 && (
                   <div style={{ paddingLeft: 34, display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
                     {cat.subBreakdown.map((sc) => (
                       <span key={sc.name} style={{ fontSize: 11.5, color: "#64748B", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 4, padding: "2px 8px" }}>
-                        {sc.name}: {fmt(sc.total)}
+                        {sc.name}: {formatAmount(sc.total)}
                       </span>
                     ))}
                   </div>
@@ -250,7 +247,10 @@ function ProjectRow({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function CategoriesTab() {
+export default function CategoriesTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES }: {
+  displayCurrency?: string;
+  displayRates?: Record<string, number>;
+}) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
@@ -259,6 +259,7 @@ export default function CategoriesTab() {
   const [viewMonth, setViewMonth] = useState(currentMonth);
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 
   // Merge built-in categories with any user-defined ones from localStorage
   const [customCats] = useState<{ key: string; label: string; code: string; color: string }[]>(() => {
@@ -373,7 +374,7 @@ export default function CategoriesTab() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <div style={{ fontWeight: 700, fontSize: 22, color: "#064E3B", letterSpacing: "-0.4px" }}>{monthLabel}</div>
-          {totalSpend > 0 && <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>Total spend: <strong>{fmt(totalSpend)}</strong></div>}
+          {totalSpend > 0 && <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>Total spend: <strong>{fmtDisplay(totalSpend)}</strong></div>}
         </div>
         <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <button onClick={handlePrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center" }}>
@@ -415,6 +416,7 @@ export default function CategoriesTab() {
                 totalSpend={totalSpend}
                 open={expandedCat === cat.key}
                 onToggle={() => setExpandedCat(expandedCat === cat.key ? null : cat.key)}
+                formatAmount={fmtDisplay}
               />
             ))}
           </div>
@@ -439,6 +441,7 @@ export default function CategoriesTab() {
                   catBreakdown={proj.catBreakdown}
                   open={expandedProject === proj.tag}
                   onToggle={() => setExpandedProject(expandedProject === proj.tag ? null : proj.tag)}
+                  formatAmount={fmtDisplay}
                 />
               ))}
             </div>
