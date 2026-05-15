@@ -207,7 +207,8 @@ Push to `main` triggers a Vercel deploy. No manual steps required.
 Priority order based on `docs/ROADMAP.md` Phase 2 goals:
 
 **High priority (Phase 2 distribution):**
-- [ ] Share my FIRE number — native share card + clipboard copy (social growth driver)
+- [ ] Launch FIRE Type quiz + share cards — 4-letter MBTI-style identity system (`P/A`, `S/E`, `R/G`, `B/F`) with public results, social share cards, and referral loop built around preference-based FIRE personalities rather than raw financial numbers
+- [ ] Map each FIRE Type to recommended calculators, learning stages, and onboarding paths so the quiz becomes both a share loop and a product entry point
 - [ ] Add existing savings input to landing calculator (current portfolio balance)
 - [ ] Stripe $9/mo Pro tier — checkout flow, paywall on AI features, Stripe webhook already scaffolded
 - [ ] Email onboarding sequence (Resend: Day 1 / Day 3 / Day 7)
