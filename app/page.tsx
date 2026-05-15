@@ -82,7 +82,7 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
   return (
     <div className="uf-screen">
       <WizardProgress step={2} />
-      <p className="uf-step-label">Step 3 of 4</p>
+      <p className="uf-step-label">Step 2 of 5</p>
       <div className="uf-eyebrow">Income</div>
       <h2 className="uf-h2">What do you <span className="uf-accent">earn?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
@@ -319,7 +319,7 @@ function PortfolioScreen({ onNext, onBack }: {
           autoFocus
         />
       </div>
-      <p className="uf-hint">Leave at 0 if you&apos;re just starting out — it won&apos;t affect whether you can reach FIRE.</p>
+      <p className="uf-hint">Leave at 0 if you&apos;re starting fresh. Every dollar here compounds and pulls your retirement date earlier.</p>
 
       <div style={{ marginTop: 24 }}>
         <label className="uf-label" htmlFor="uf-current-age">
@@ -565,6 +565,9 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const d2 = calcFIRE(savings + 416, city.col, currentAge);
   const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge);
   const d4 = calcFIRE(savings + 500, city.col, currentAge);
+  const portfolioYearsSaved = portfolioBalance > 0
+    ? Math.max(0, calcFIRE(savings, city.col, currentAge, 0).years - result.years)
+    : 0;
 
   const calcLabels = ["City cost-of-living", "After-tax income", "Compound growth at 7%", "25× withdrawal rule"];
 
@@ -640,6 +643,12 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 
               {/* Delta grid */}
               <div className="uf-delta-grid">
+                {portfolioBalance > 0 && portfolioYearsSaved > 0 && (
+                  <div className="uf-delta-card positive" style={{ gridColumn: "1 / -1" }}>
+                    <div className="uf-delta-label">Your {fmtUSD(portfolioBalance, 0)} head start</div>
+                    <div className="uf-delta-val pos">-{portfolioYearsSaved} yr{portfolioYearsSaved !== 1 ? "s" : ""} vs. starting from zero</div>
+                  </div>
+                )}
                 {[
                   { label: "Cut dining out by 20%",    val: (result.years - d1.years), positive: true },
                   { label: "Save $500/mo more today",  val: (result.years - d4.years), positive: true },

@@ -53,7 +53,7 @@ Last updated: March 2026
 - [ ] "Adjust inputs" flows smoothly back to savings screen (currently basic)
 - [ ] Income screen: add preset buttons ($50k, $75k, $100k, $150k)
 - [ ] Mobile UX audit — fix any layout issues on small screens
-- [ ] Add existing savings input (current portfolio balance) to FIRE calc
+- [x] Add existing savings input (current portfolio balance) to FIRE calc
 
 ### Monetisation
 - [ ] Stripe integration — $9/mo Pro tier
