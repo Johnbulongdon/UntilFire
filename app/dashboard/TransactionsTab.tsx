@@ -82,7 +82,6 @@ type Transaction = {
   description: string;
   category: string;
   tags: string[];
-  is_work_related: boolean;
   transaction_type: "expense" | "income";
   sub_category: string | null;
 };
@@ -97,7 +96,6 @@ type DraftTransaction = {
   category: string;
   sub_category: string;
   tags: string[];
-  is_work_related: boolean;
   aiSuggestion: string | null;
 };
 
@@ -111,7 +109,6 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   category: "",
   sub_category: "",
   tags: [],
-  is_work_related: false,
   aiSuggestion: null,
 });
 
@@ -119,34 +116,17 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
 async function aiCategorize(
   description: string,
   type: "expense" | "income"
-): Promise<{ category: string; tags: string[]; is_work_related: boolean }> {
-  const categories =
-    type === "income"
-      ? "salary, freelance, investment, gift, other_income"
-      : "food, transport, housing, travel, subscriptions, healthcare, entertainment, shopping, work, other";
+): Promise<{ category: string; tags: string[] }> {
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/categorise", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 200,
-        messages: [
-          {
-            role: "user",
-            content: `Categorize this ${type} transaction and respond ONLY with valid JSON, no markdown:
-Description: "${description}"
-Categories: ${categories}
-Respond with exactly: {"category": "...", "tags": ["tag1"], "is_work_related": false}
-Rules: tags: 1-3 short tags; is_work_related: true only for expense type work items; pick most specific category`,
-          },
-        ],
-      }),
+      body: JSON.stringify({ description, type }),
     });
-    const data = await response.json();
-    return JSON.parse(data.content[0].text.trim());
+    if (!res.ok) throw new Error("categorise failed");
+    return res.json();
   } catch {
-    return { category: type === "income" ? "other_income" : "other", tags: [], is_work_related: false };
+    return { category: type === "income" ? "other_income" : "other", tags: [] };
   }
 }
 
@@ -273,7 +253,7 @@ function QuickAddForm({
     if (!draft.description || draft.category) return;
     setCategorizing(true);
     const result = await aiCategorize(draft.description, draft.transaction_type);
-    setDraft((d) => ({ ...d, category: result.category, tags: result.tags, is_work_related: result.is_work_related, aiSuggestion: result.category }));
+    setDraft((d) => ({ ...d, category: result.category, tags: result.tags, aiSuggestion: result.category }));
     setCategorizing(false);
   };
 
@@ -852,7 +832,6 @@ function TransactionList({
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
                             <span style={{ fontSize: 11.5, color: "#94A3B8" }}>{cat?.label || tx.category}</span>
                             {tx.sub_category && <span style={{ fontSize: 11, color: "#64748B" }}>· {tx.sub_category}</span>}
-                            {tx.is_work_related && <span style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1", borderRadius: 4, padding: "1px 6px", fontSize: 10.5, fontWeight: 600 }}>work</span>}
                             {(tx.tags || []).slice(0, 2).map((t) => (
                               <span key={t} style={{ background: "#F1F5F9", color: "#64748B", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
                             ))}
@@ -923,8 +902,6 @@ function MonthlySummary({
   const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const expenseTotal = monthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const net = incomeTotal - expenseTotal;
-  const workTotal = monthTxns.filter((t) => t.is_work_related).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-
   const byCat = EXPENSE_CATEGORIES.map((cat) => ({
     ...cat,
     total: monthTxns.filter((t) => t.transaction_type !== "income" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
@@ -975,11 +952,10 @@ function MonthlySummary({
       </div>
 
       {/* KPI grid */}
-      <div style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : workTotal > 0 ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
         {kpiCard("Income", incomeTotal, "#059669", prevIncome > 0 ? `vs ${fmt(prevIncome)} last month` : "No prior month data")}
         {kpiCard("Spent", expenseTotal, "#19181E", prevSpent > 0 ? `vs ${fmt(prevSpent)} last month` : "No prior month data")}
         {kpiCard("Net", net, net >= 0 ? "#047857" : "#DC2626", net >= 0 && incomeTotal > 0 ? `${((net / incomeTotal) * 100).toFixed(1)}% savings rate` : "Spending exceeds income")}
-        {workTotal > 0 && kpiCard("Work", workTotal, "#6366f1", "work-related expenses")}
 
         {/* Donut card */}
         {byCat.length > 0 && (
@@ -1145,6 +1121,7 @@ export default function TransactionsTab() {
   }, []);
 
   // Form state (lifted so edit can populate it)
+  const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [draft, setDraft] = useState<DraftTransaction>(EMPTY_DRAFT);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
@@ -1180,6 +1157,17 @@ export default function TransactionsTab() {
             setBudgetExpenses(budgetCats as Record<string, number>);
           }
         });
+      supabase
+        .from("profiles")
+        .select("default_currency")
+        .eq("user_id", session.user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.default_currency) {
+            setDefaultCurrency(data.default_currency);
+            setDraft((prev) => ({ ...prev, currency: data.default_currency }));
+          }
+        });
     });
   }, []);
 
@@ -1212,7 +1200,6 @@ export default function TransactionsTab() {
       category: draft.category || (draft.transaction_type === "income" ? "other_income" : "other"),
       sub_category: draft.sub_category || null,
       tags: draft.tags,
-      is_work_related: draft.is_work_related,
       transaction_type: draft.transaction_type,
     };
 
@@ -1225,7 +1212,7 @@ export default function TransactionsTab() {
       }
       setTransactions((prev) => prev.map((t) => (t.id === draft.id ? data : t)));
       setEditingId(null);
-      setDraft(EMPTY_DRAFT());
+      setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
       showToast("Transaction updated");
     } else {
       // Insert new
@@ -1240,13 +1227,13 @@ export default function TransactionsTab() {
       if (viewMonth !== data.date.slice(0, 7)) setViewMonth(data.date.slice(0, 7));
       showToast(`Added — ${data.description || `$${data.amount}`}`, data.id);
       if (!keepOpen) {
-        setDraft(EMPTY_DRAFT());
+        setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
       } else {
         setDraft((d) => ({ ...EMPTY_DRAFT(), date: d.date, transaction_type: d.transaction_type, currency: d.currency, sub_category: "", tags: d.tags }));
       }
       if (drawerOpen && !keepOpen) setDrawerOpen(false);
     }
-  }, [draft, drawerOpen, viewMonth, showToast]);
+  }, [draft, drawerOpen, viewMonth, showToast, defaultCurrency]);
 
   const handleEdit = useCallback((tx: Transaction) => {
     setEditingId(tx.id);
@@ -1260,7 +1247,6 @@ export default function TransactionsTab() {
       category: tx.category,
       sub_category: tx.sub_category || "",
       tags: [...(tx.tags || [])],
-      is_work_related: tx.is_work_related,
       aiSuggestion: null,
     });
     // On mobile, open drawer
@@ -1271,9 +1257,9 @@ export default function TransactionsTab() {
 
   const handleCancelEdit = useCallback(() => {
     setEditingId(null);
-    setDraft(EMPTY_DRAFT());
+    setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
     if (drawerOpen) setDrawerOpen(false);
-  }, [drawerOpen]);
+  }, [drawerOpen, defaultCurrency]);
 
   const handleDelete = useCallback(async (tx: Transaction) => {
     if (!window.confirm(`Delete "${tx.description}"?`)) return;
@@ -1283,9 +1269,9 @@ export default function TransactionsTab() {
       return;
     }
     setTransactions((prev) => prev.filter((t) => t.id !== tx.id));
-    if (editingId === tx.id) { setEditingId(null); setDraft(EMPTY_DRAFT()); }
+    if (editingId === tx.id) { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); }
     showToast(`Deleted "${tx.description}"`, "undo:" + tx.id, tx);
-  }, [editingId, showToast]);
+  }, [editingId, showToast, defaultCurrency]);
 
   const handleUndo = useCallback(() => {
     if (!toast) return;

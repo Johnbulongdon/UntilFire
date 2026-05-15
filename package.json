@@ -11,6 +11,7 @@
     "validate": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.91.0",
     "@vercel/analytics": "^2.0.1",

@@ -1451,7 +1451,7 @@ export default function Dashboard() {
   const [growthRate,      setGrowthRate]      = useState(0.07);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
   const [cityName,        setCityName]        = useState("");
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -1609,7 +1609,7 @@ export default function Dashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName };
-      await supabase.from("user_budget").upsert({
+      const { error: saveError } = await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
         expenses:    { ...expenses, _fire_profile: fireProfile },
@@ -1617,8 +1617,13 @@ export default function Dashboard() {
         fire_assets: k401, // keep backwards-compatible
         updated_at:  new Date().toISOString(),
       }, { onConflict: "user_id" });
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
+      if (saveError) {
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      } else {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      }
     }, 1000);
   }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName]);
 
@@ -1662,10 +1667,12 @@ export default function Dashboard() {
         }
         @media(max-width: 640px) {
           .uf-shell { flex-direction: column; }
-          .uf-sidebar { width: 100%; min-height: unset; height: auto; position: static; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid #E2E8F0; }
-          .uf-sidebar-nav { flex-direction: row; padding: 8px 8px 8px; gap: 4px; }
-          .uf-sidebar-item { padding: 8px 10px; font-size: 12px; gap: 6px; }
-          .uf-content { padding: 16px 14px 48px; }
+          .uf-sidebar { width: 100%; min-height: unset; height: auto; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; flex-direction: row; border-right: none; border-top: 1px solid #E2E8F0; background: #fff; padding: 0; }
+          .uf-sidebar-logo { display: none; }
+          .uf-sidebar-nav { flex-direction: row; padding: 4px 0; gap: 0; flex: 1; justify-content: space-around; }
+          .uf-sidebar-item { flex-direction: column; padding: 6px 4px; font-size: 9px; gap: 2px; flex: 1; justify-content: center; align-items: center; border-radius: 0; min-width: 0; }
+          .uf-sidebar-bottom { display: none; }
+          .uf-content { padding: 16px 14px 80px; }
         }
       `}</style>
 
@@ -1692,6 +1699,7 @@ export default function Dashboard() {
           <div className="uf-sidebar-bottom">
             {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saving…</span>}
             {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Inter, sans-serif" }}>✓ Saved</span>}
+            {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Save failed</span>}
             <UserNav />
           </div>
         </aside>
