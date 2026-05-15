@@ -11,6 +11,7 @@ import {
   AXIS_STRENGTHS,
   AXIS_WATCH_OUTS,
   type AxisLetter,
+  type QuizAnswer,
 } from './quiz-data'
 import {
   trackFireTypeStarted,
@@ -40,7 +41,7 @@ function FireTypeQuizInner() {
   type Stage = 'intro' | 'quiz' | 'result'
   const [stage, setStage] = useState<Stage>('intro')
   const [currentQ, setCurrentQ] = useState(0)
-  const [answers, setAnswers] = useState<AxisLetter[]>([])
+  const [answers, setAnswers] = useState<QuizAnswer[]>([])
   const [result, setResult] = useState<{ code: string; name: string; tagline: string } | null>(null)
   const [copied, setCopied] = useState(false)
   const startedRef = useRef(false)
@@ -61,14 +62,14 @@ function FireTypeQuizInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, result])
 
-  function handleAnswer(value: AxisLetter) {
+  function handleAnswer(position: QuizAnswer) {
     // Fire started on first answer (confirms real engagement)
     if (!startedRef.current) {
       startedRef.current = true
       trackFireTypeStarted({ source })
     }
 
-    const next = [...answers, value]
+    const next = [...answers, position]
     if (next.length < QUIZ_QUESTIONS.length) {
       setAnswers(next)
       setCurrentQ(next.length)
@@ -195,38 +196,44 @@ function FireTypeQuizInner() {
               {q.prompt}
             </h2>
 
-            <div style={{ display: 'grid', gap: 12 }}>
-              {q.options.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleAnswer(opt.value)}
-                  style={{
-                    background: '#ffffff',
-                    border: `1.5px solid ${C.border}`,
-                    borderRadius: 10,
-                    padding: '16px 20px',
-                    textAlign: 'left',
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: C.text,
-                    cursor: 'pointer',
-                    minHeight: 56,
-                    lineHeight: 1.4,
-                    transition: 'border-color 0.15s, background 0.15s',
-                    fontFamily: "'Manrope', sans-serif",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = C.accent
-                    e.currentTarget.style.background = '#ECFDF5'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = C.border
-                    e.currentTarget.style.background = '#ffffff'
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            {/* Pole labels */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: C.text, maxWidth: '42%', lineHeight: 1.4 }}>{q.leftLabel}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: C.text, maxWidth: '42%', lineHeight: 1.4, textAlign: 'right' }}>{q.rightLabel}</span>
+            </div>
+
+            {/* 5 circles — outer larger (strong), center smaller (neutral) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
+              {([0, 1, 2, 3, 4] as QuizAnswer[]).map((pos) => {
+                const size = pos === 2 ? 36 : pos === 1 || pos === 3 ? 42 : 48
+                return (
+                  <button
+                    key={pos}
+                    onClick={() => handleAnswer(pos)}
+                    title={(['Strongly', 'Slightly', 'Neutral', 'Slightly', 'Strongly'] as const)[pos]}
+                    style={{
+                      width: size, height: size,
+                      borderRadius: '50%',
+                      border: `2px solid ${C.border}`,
+                      background: '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      flexShrink: 0,
+                      padding: 0,
+                      fontFamily: "'Manrope', sans-serif",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.background = '#ECFDF5' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = '#ffffff' }}
+                  />
+                )
+              })}
+            </div>
+
+            {/* Scale labels */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+              <span style={{ fontSize: 11, color: C.muted }}>Strongly</span>
+              <span style={{ fontSize: 11, color: C.muted }}>Neutral</span>
+              <span style={{ fontSize: 11, color: C.muted }}>Strongly</span>
             </div>
 
             <button

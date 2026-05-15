@@ -1,110 +1,127 @@
 // Pure data and logic for the FIRE Type Quiz. No React dependencies.
 // The quiz produces a 4-letter code: [P|A][S|E][R|G][B|F]
-//   Axis 1 PA: Planner vs Adventurer
-//   Axis 2 SE: Security vs Expansion
-//   Axis 3 RG: Reducer vs Grower
-//   Axis 4 BF: Builder vs Freedom-seeker
+//   Axis PA: Planner vs Adventurer
+//   Axis SE: Security vs Expansion
+//   Axis RG: Reducer vs Grower
+//   Axis BF: Builder vs Freedom-seeker
 
 export type Axis = "PA" | "SE" | "RG" | "BF";
 export type AxisLetter = "P" | "A" | "S" | "E" | "R" | "G" | "B" | "F";
 
-export interface QuizOption {
-  label: string;
-  axis: Axis;
-  value: AxisLetter;
-}
+// Answer position on a 5-point scale:
+// 0=strong left, 1=slight left, 2=neutral, 3=slight right, 4=strong right
+export type QuizAnswer = 0 | 1 | 2 | 3 | 4;
 
 export interface QuizQuestion {
   id: string;
   prompt: string;
-  options: [QuizOption, QuizOption];
+  leftLabel: string;
+  rightLabel: string;
+  axis: Axis;
+  leftLetter: AxisLetter;
+  rightLetter: AxisLetter;
 }
 
 export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "pa1",
     prompt: "Your ideal money plan feels like…",
-    options: [
-      { label: "A clear roadmap with milestones", axis: "PA", value: "P" },
-      { label: "A flexible path with room to change my mind", axis: "PA", value: "A" },
-    ],
+    leftLabel: "A clear roadmap with milestones",
+    rightLabel: "A flexible direction I adapt as I go",
+    axis: "PA",
+    leftLetter: "P",
+    rightLetter: "A",
   },
   {
     id: "pa2",
-    prompt: "When life changes, you usually want to…",
-    options: [
-      { label: "Update the plan and keep moving", axis: "PA", value: "P" },
-      { label: "Reconsider the destination entirely", axis: "PA", value: "A" },
-    ],
+    prompt: "When life changes direction, you…",
+    leftLabel: "Update the plan and keep moving",
+    rightLabel: "Question whether the destination still fits",
+    axis: "PA",
+    leftLetter: "P",
+    rightLetter: "A",
   },
   {
     id: "se1",
     prompt: "The best thing money can buy is…",
-    options: [
-      { label: "Peace of mind", axis: "SE", value: "S" },
-      { label: "More upside and opportunity", axis: "SE", value: "E" },
-    ],
+    leftLabel: "Peace of mind and a reliable buffer",
+    rightLabel: "Bigger opportunities and upside",
+    axis: "SE",
+    leftLetter: "S",
+    rightLetter: "E",
   },
   {
     id: "se2",
-    prompt: "If you received a $10k bonus, you'd most want to…",
-    options: [
-      { label: "Strengthen savings or reduce risk", axis: "SE", value: "S" },
-      { label: "Invest in growth, learning, or a bigger opportunity", axis: "SE", value: "E" },
-    ],
+    prompt: "A $10k windfall would most likely go toward…",
+    leftLabel: "Savings, debt paydown, or reducing risk",
+    rightLabel: "A growth investment or major opportunity",
+    axis: "SE",
+    leftLetter: "S",
+    rightLetter: "E",
   },
   {
     id: "rg1",
-    prompt: "To speed up FIRE, you'd rather…",
-    options: [
-      { label: "Trim recurring expenses", axis: "RG", value: "R" },
-      { label: "Increase income or returns", axis: "RG", value: "G" },
-    ],
+    prompt: "To reach FIRE faster, you'd rather…",
+    leftLabel: "Cut recurring costs and reduce waste",
+    rightLabel: "Grow income or find better returns",
+    axis: "RG",
+    leftLetter: "R",
+    rightLetter: "G",
   },
   {
     id: "rg2",
-    prompt: "Your financial superpower is more likely…",
-    options: [
-      { label: "Spotting waste", axis: "RG", value: "R" },
-      { label: "Finding upside", axis: "RG", value: "G" },
-    ],
+    prompt: "Your sharpest financial instinct is…",
+    leftLabel: "Spotting inefficiency and trimming it",
+    rightLabel: "Spotting potential and capturing it",
+    axis: "RG",
+    leftLetter: "R",
+    rightLetter: "G",
   },
   {
     id: "bf1",
-    prompt: "Your dream post-FIRE life is closer to…",
-    options: [
-      { label: "Building projects or creative work without pressure", axis: "BF", value: "B" },
-      { label: "Owning your time completely", axis: "BF", value: "F" },
-    ],
+    prompt: "Your dream post-FIRE life looks more like…",
+    leftLabel: "Building projects on my own terms",
+    rightLabel: "Complete freedom from structure",
+    axis: "BF",
+    leftLetter: "B",
+    rightLetter: "F",
   },
   {
     id: "bf2",
-    prompt: "You'd feel most successful if money let you…",
-    options: [
-      { label: "Work only on things I choose", axis: "BF", value: "B" },
-      { label: "Stop organizing life around work", axis: "BF", value: "F" },
-    ],
+    prompt: "Financial independence matters most because…",
+    leftLabel: "It lets me work only on what I choose",
+    rightLabel: "It lets me stop organizing life around work",
+    axis: "BF",
+    leftLetter: "B",
+    rightLetter: "F",
   },
 ];
 
+// Weights indexed by position: strong left=+2, slight left=+1, neutral=0, slight right=-1, strong right=-2
+const WEIGHTS: Record<QuizAnswer, number> = { 0: 2, 1: 1, 2: 0, 3: -1, 4: -2 };
+
 // Score answers into a 4-letter code.
-// answers[0..7] map to QUIZ_QUESTIONS[0..7].
-// For each axis pair, the majority vote wins; tie goes to the later answer.
-export function scoreQuiz(answers: AxisLetter[]): string {
-  const pickAxis = (i0: number, i1: number, a: AxisLetter, b: AxisLetter): AxisLetter => {
-    const countA = [answers[i0], answers[i1]].filter((v) => v === a).length;
-    const countB = [answers[i0], answers[i1]].filter((v) => v === b).length;
-    if (countA > countB) return a;
-    if (countB > countA) return b;
-    return answers[i1]; // tie → later answer
+// Weighted sum per axis: positive → leftLetter, negative → rightLetter, zero → tie-break on last answer.
+export function scoreQuiz(answers: QuizAnswer[]): string {
+  const axisSums: Partial<Record<Axis, number>> = {};
+  answers.forEach((ans, i) => {
+    const q = QUIZ_QUESTIONS[i];
+    axisSums[q.axis] = (axisSums[q.axis] ?? 0) + WEIGHTS[ans];
+  });
+
+  const resolveLetter = (axis: Axis): AxisLetter => {
+    const q = QUIZ_QUESTIONS.find((q) => q.axis === axis)!;
+    const sum = axisSums[axis] ?? 0;
+    if (sum > 0) return q.leftLetter;
+    if (sum < 0) return q.rightLetter;
+    // Tie: use direction of last answer for this axis (neutral pos 2 satisfies ≤ 2 → left)
+    const lastIdx = [...QUIZ_QUESTIONS.entries()]
+      .filter(([, q]) => q.axis === axis)
+      .at(-1)![0];
+    return answers[lastIdx] <= 2 ? q.leftLetter : q.rightLetter;
   };
 
-  const pa = pickAxis(0, 1, "P", "A");
-  const se = pickAxis(2, 3, "S", "E");
-  const rg = pickAxis(4, 5, "R", "G");
-  const bf = pickAxis(6, 7, "B", "F");
-
-  return `${pa}${se}${rg}${bf}`;
+  return `${resolveLetter("PA")}${resolveLetter("SE")}${resolveLetter("RG")}${resolveLetter("BF")}`;
 }
 
 // All 16 type names and taglines
