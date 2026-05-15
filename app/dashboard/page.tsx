@@ -14,6 +14,7 @@ import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
 import LearningHubTab from "./LearningHubTab";
+import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE } from "@/lib/fire";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1799,6 +1800,7 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+      <FeedbackWidget />
     </>
   );
 }
