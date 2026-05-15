@@ -1653,7 +1653,7 @@ export default function Dashboard() {
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
-          <Link href="/" className="uf-sidebar-logo"><Logo variant="dark" size={26} /></Link>
+          <Link href="/" className="uf-sidebar-logo"><Logo variant="light" size={26} /></Link>
 
           <nav className="uf-sidebar-nav">
             {SIDEBAR_ITEMS.map(item => (
