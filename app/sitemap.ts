@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { learnArticles } from '@/lib/learn'
+import { CITIES, isUS } from '@/lib/fire-data'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseRoutes: MetadataRoute.Sitemap = [
@@ -46,6 +47,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: 'https://untilfire.com/fire-number',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: 'https://untilfire.com/learn',
       lastModified: new Date(),
       changeFrequency: 'weekly',
@@ -68,9 +75,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const articleRoutes: MetadataRoute.Sitemap = learnArticles.map((article) => ({
     url: `https://untilfire.com/learn/${article.slug}`,
     lastModified: new Date(article.publishedAt),
-    changeFrequency: 'monthly',
+    changeFrequency: 'monthly' as const,
     priority: 0.6,
   }))
 
-  return [...baseRoutes, ...articleRoutes]
+  const cityRoutes: MetadataRoute.Sitemap = CITIES
+    .filter((c) => isUS(c.state))
+    .map((c) => ({
+      url: `https://untilfire.com/fire-number/${c.key}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }))
+
+  return [...baseRoutes, ...articleRoutes, ...cityRoutes]
 }
