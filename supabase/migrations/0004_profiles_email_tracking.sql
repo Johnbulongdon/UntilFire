@@ -1,0 +1,5 @@
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS welcome_email_sent_at  TIMESTAMPTZ NULL,
+  ADD COLUMN IF NOT EXISTS day1_email_sent_at     TIMESTAMPTZ NULL,
+  ADD COLUMN IF NOT EXISTS day3_email_sent_at     TIMESTAMPTZ NULL,
+  ADD COLUMN IF NOT EXISTS day7_email_sent_at     TIMESTAMPTZ NULL;

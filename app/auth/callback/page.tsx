@@ -8,10 +8,14 @@ export default function AuthCallback() {
     const code = new URLSearchParams(window.location.search).get('code')
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ data }) => {
-        const userId = data.session?.user?.id
-        if (userId) {
-          identifyUser(userId)
+        const session = data.session
+        if (session) {
+          identifyUser(session.user.id)
           trackSignupCompleted()
+          fetch("/api/email/welcome", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }).catch(() => {})
         }
         // Brief delay so the PostHog XHR for funnel_signup_completed can
         // flush before the hard navigation. Without this, the in-flight
