@@ -1606,10 +1606,26 @@ export default function Dashboard() {
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
+      const sessionId = params.get("session_id");
       setUpgradedBanner(true);
       const url = new URL(window.location.href);
       url.searchParams.delete("upgraded");
+      url.searchParams.delete("session_id");
       window.history.replaceState(null, "", url.toString());
+
+      if (sessionId) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session) return;
+          fetch("/api/stripe/sync-subscription", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ session_id: sessionId }),
+          }).catch(() => { /* best-effort */ });
+        });
+      }
     }
   }, []);
 

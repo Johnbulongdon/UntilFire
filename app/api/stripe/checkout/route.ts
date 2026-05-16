@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       customer: customerId,
       mode: "subscription",
       line_items: [{ price: STRIPE_PRO_PRICE_ID, quantity: 1 }],
-      success_url: `${origin}/dashboard?upgraded=true`,
+      success_url: `${origin}/dashboard?upgraded=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/dashboard`,
       metadata: { supabase_user_id: user.id },
       allow_promotion_codes: true,
