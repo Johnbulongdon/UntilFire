@@ -1740,6 +1740,14 @@ export default function Dashboard() {
     window.history.replaceState(null, "", url.toString());
   }, [tab]);
 
+  // Refresh Plaid account balances whenever the user navigates to assets/liabilities
+  useEffect(() => {
+    if (tab === "assets" || tab === "liabilities") {
+      refreshPlaidAccounts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
   // Budget state
   const [income,   setIncome]   = useState(0);
   const [expenses, setExpenses] = useState<Expenses>({ housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0 });
