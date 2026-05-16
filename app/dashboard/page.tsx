@@ -1061,7 +1061,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           </div>
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div>
         <div className="uf-card">
           <SectionLabel icon="📈" text="Investment Accounts" color="#059669" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1121,35 +1121,6 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           </div>
         </div>
 
-        <div className="uf-card">
-          <SectionLabel icon="⚙️" text="Assumptions" color="#64748B" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 11, color: "#64748B", fontFamily: "Inter, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>Annual Return</span>
-                <span style={{ fontSize: 13, color: "#064E3B", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>{(growthRate * 100).toFixed(1)}%</span>
-              </div>
-              <input type="range" min={0.03} max={0.12} step={0.001} value={growthRate}
-                onChange={e => setGrowthRate(Number(e.target.value))}
-                style={{ width: "100%", cursor: "pointer" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 4 }}>
-                <span>3%</span><span>7% typical</span><span>12%</span>
-              </div>
-            </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 11, color: "#64748B", fontFamily: "Inter, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>Withdrawal Rate</span>
-                <span style={{ fontSize: 13, color: "#064E3B", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>{(withdrawalRate * 100).toFixed(1)}%</span>
-              </div>
-              <input type="range" min={0.03} max={0.06} step={0.001} value={withdrawalRate}
-                onChange={e => setWithdrawalRate(Number(e.target.value))}
-                style={{ width: "100%", cursor: "pointer" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 4 }}>
-                <span>3%</span><span>4% rule</span><span>6%</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {total > 0 && (
