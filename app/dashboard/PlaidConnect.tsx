@@ -85,10 +85,15 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
     if (!session) return;
     const res = await fetch("/api/stripe/checkout", {
       method: "POST",
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
     });
     const data = await res.json();
+    if (!res.ok) { setError(data.error ?? "Failed to start upgrade"); return; }
     if (data.url) window.location.href = data.url;
+    else setError("No checkout URL received — please try again");
   };
 
   const onPlaidSuccess = useCallback(async (publicToken: string, metadata: { institution: { name: string; institution_id: string } | null }) => {

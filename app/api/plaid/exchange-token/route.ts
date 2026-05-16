@@ -57,6 +57,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Missing public_token" }, { status: 400 });
   }
 
+  // Server-side paywall: free users limited to 1 bank
+  const [{ data: sub }, { count: itemCount }] = await Promise.all([
+    admin.from("subscriptions").select("status, plan").eq("user_id", user.id).maybeSingle(),
+    admin.from("plaid_items").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+  ]);
+  const isFree = !sub || sub.status !== "active" || sub.plan !== "pro";
+  if (isFree && (itemCount ?? 0) >= 1) {
+    return NextResponse.json({ error: "Free plan allows 1 bank. Upgrade to Pro for unlimited." }, { status: 403 });
+  }
+
   try {
     const plaid = getPlaidClient();
 
