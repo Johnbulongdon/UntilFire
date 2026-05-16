@@ -1092,10 +1092,11 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, onUpgradeClick }: {
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
+  onUpgradeClick?: () => void;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1347,7 +1348,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         }
       `}</style>
 
-      <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} />
+      <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick} />
 
       <MonthlySummary
         transactions={transactions}

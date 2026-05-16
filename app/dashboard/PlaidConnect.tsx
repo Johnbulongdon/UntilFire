@@ -14,6 +14,7 @@ type SyncResult = { added: number; modified: number; removed: number };
 
 type Props = {
   onTransactionsImported?: () => void;
+  onUpgradeClick?: () => void;
 };
 
 async function getSession() {
@@ -32,7 +33,7 @@ function fmtSynced(ts: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-export default function PlaidConnect({ onTransactionsImported }: Props) {
+export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }: Props) {
   const [items, setItems] = useState<PlaidItem[]>([]);
   const [isProUser, setIsProUser] = useState<boolean | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -80,21 +81,6 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
     setLoadingLink(false);
   };
 
-  const handleUpgrade = async () => {
-    const session = await getSession();
-    if (!session) return;
-    const res = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-    const data = await res.json();
-    if (!res.ok) { setError(data.error ?? "Failed to start upgrade"); return; }
-    if (data.url) window.location.href = data.url;
-    else setError("No checkout URL received — please try again");
-  };
 
   const onPlaidSuccess = useCallback(async (publicToken: string, metadata: { institution: { name: string; institution_id: string } | null }) => {
     setError(null);
@@ -294,7 +280,7 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
             Importing transactions…
           </div>
         ) : atFreeLimit ? (
-          <button onClick={handleUpgrade} style={btnStyle("primary")}>
+          <button onClick={onUpgradeClick} style={btnStyle("primary")}>
             Upgrade for more →
           </button>
         ) : (
@@ -367,7 +353,7 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
         <div style={{ fontSize: 12, color: "#64748B", marginTop: 6, padding: "6px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
           Free plan · 1 bank included ·{" "}
           <button
-            onClick={handleUpgrade}
+            onClick={onUpgradeClick}
             style={{ background: "none", border: "none", color: "#047857", fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 12, fontFamily: "inherit" }}
           >
             Upgrade to Pro

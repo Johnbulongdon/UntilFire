@@ -9,6 +9,7 @@ import {
   BarChart, Bar,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
+import UpgradeModal from "./UpgradeModal";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
@@ -1592,6 +1593,8 @@ export default function Dashboard() {
   const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "budgets">("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation">("menu");
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradedBanner, setUpgradedBanner] = useState(false);
 
   // Read initial tab from URL query string (e.g. ?tab=cashflow)
   useEffect(() => {
@@ -1602,6 +1605,12 @@ export default function Dashboard() {
       "fire-calculator", "reports", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
+    if (params.get("upgraded") === "true") {
+      setUpgradedBanner(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("upgraded");
+      window.history.replaceState(null, "", url.toString());
+    }
   }, []);
 
   // Keep URL in sync so bookmarks / back-button work
@@ -1922,6 +1931,21 @@ export default function Dashboard() {
         {/* ── Main content ─────────────────────────────────────────────────── */}
         <main className="uf-main">
           <div className="uf-content">
+            {upgradedBanner && (
+              <div style={{
+                background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 10,
+                padding: "12px 18px", marginBottom: 16,
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
+                <span style={{ fontSize: 14, color: "#065F46", fontWeight: 600 }}>
+                  🎉 Welcome to Pro! Your bank connections are now unlimited.
+                </span>
+                <button
+                  onClick={() => setUpgradedBanner(false)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#065F46", fontSize: 20, lineHeight: 1 }}
+                >×</button>
+              </div>
+            )}
             {tab === "overview" && (
               <DashTab
                 income={income} expenses={expenses}
@@ -1961,7 +1985,7 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} />}
+                {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} onUpgradeClick={() => setUpgradeOpen(true)} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "recurring" && <RecurringTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "budgets" && (
@@ -2053,6 +2077,7 @@ export default function Dashboard() {
         </main>
       </div>
       <FeedbackWidget />
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </>
   );
 }
