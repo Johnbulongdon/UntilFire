@@ -1344,15 +1344,242 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings 
   );
 }
 
+// ─── Investment Simulations Tab ──────────────────────────────────────────────
+type AllocKey = "usStocks" | "intlStocks" | "bonds" | "other";
+type DCAFreq = "weekly" | "bi-weekly" | "monthly" | "annually";
+type RiskLevel = "conservative" | "moderate" | "aggressive";
+
+interface DCASimRow {
+  year: number;
+  portfolio: number;
+  contributions: number;
+  growth: number;
+  real: number;
+}
+
+function calcDCAProjection({
+  initialAmount, dcaAmount, dcaFrequency, years, allocation, riskLevel, includeInflation,
+}: {
+  initialAmount: number; dcaAmount: number; dcaFrequency: DCAFreq; years: number;
+  allocation: Record<AllocKey, number>; riskLevel: RiskLevel; includeInflation: boolean;
+}): DCASimRow[] {
+  const periods: Record<DCAFreq, number> = { weekly: 52, "bi-weekly": 26, monthly: 12, annually: 1 };
+  const annualContrib = dcaAmount * periods[dcaFrequency];
+
+  const rawReturn =
+    (allocation.usStocks / 100) * 0.10 +
+    (allocation.intlStocks / 100) * 0.07 +
+    (allocation.bonds / 100) * 0.03 +
+    (allocation.other / 100) * 0.05;
+  const riskMult: Record<RiskLevel, number> = { conservative: 0.75, moderate: 1.0, aggressive: 1.2 };
+  const r = rawReturn * riskMult[riskLevel];
+  const inflation = 0.03;
+
+  const rows: DCASimRow[] = [];
+  let portfolio = initialAmount;
+  let totalContrib = initialAmount;
+
+  rows.push({ year: 0, portfolio: Math.round(portfolio), contributions: Math.round(totalContrib), growth: 0, real: Math.round(portfolio) });
+
+  for (let y = 1; y <= years; y++) {
+    portfolio = portfolio * (1 + r) + annualContrib * (1 + r / 2);
+    totalContrib += annualContrib;
+    const growth = Math.max(0, portfolio - totalContrib);
+    const real = includeInflation ? portfolio / Math.pow(1 + inflation, y) : portfolio;
+    rows.push({ year: y, portfolio: Math.round(portfolio), contributions: Math.round(totalContrib), growth: Math.round(growth), real: Math.round(real) });
+  }
+  return rows;
+}
+
+function InvestSimTab({ onBack }: { onBack: () => void }) {
+  const [initialAmt, setInitialAmt] = useState(10000);
+  const [dcaAmt, setDcaAmt] = useState(500);
+  const [dcaFreq, setDcaFreq] = useState<DCAFreq>("monthly");
+  const [years, setYears] = useState(20);
+  const [risk, setRisk] = useState<RiskLevel>("moderate");
+  const [inflation, setInflation] = useState(false);
+  const [allocation, setAllocation] = useState<Record<AllocKey, number>>({ usStocks: 60, intlStocks: 20, bonds: 15, other: 5 });
+
+  function setAlloc(key: AllocKey, val: number) {
+    const clamped = Math.max(0, Math.min(100, val));
+    const delta = clamped - allocation[key];
+    const others = (Object.keys(allocation) as AllocKey[]).filter(k => k !== key);
+    const totalOthers = others.reduce((s, k) => s + allocation[k], 0);
+    const newAlloc = { ...allocation, [key]: clamped };
+    if (totalOthers > 0) {
+      others.forEach(k => {
+        newAlloc[k] = Math.max(0, Math.round(allocation[k] - delta * (allocation[k] / totalOthers)));
+      });
+    }
+    const sum = (Object.keys(newAlloc) as AllocKey[]).reduce((a, k) => a + newAlloc[k], 0);
+    if (sum !== 100) {
+      const last = others[others.length - 1];
+      newAlloc[last] = Math.max(0, newAlloc[last] + (100 - sum));
+    }
+    setAllocation(newAlloc);
+  }
+
+  const chartData = useMemo(() => calcDCAProjection({
+    initialAmount: initialAmt, dcaAmount: dcaAmt, dcaFrequency: dcaFreq,
+    years, allocation, riskLevel: risk, includeInflation: inflation,
+  }), [initialAmt, dcaAmt, dcaFreq, years, allocation, risk, inflation]);
+
+  const last = chartData[chartData.length - 1];
+  const fmtK = (n: number) => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : `$${n}`;
+
+  const ALLOC_COLORS: Record<AllocKey, string> = { usStocks: "#059669", intlStocks: "#22d3a5", bonds: "#818cf8", other: "#f97316" };
+  const ALLOC_LABELS: Record<AllocKey, string> = { usStocks: "US Stocks", intlStocks: "Intl Stocks", bonds: "Bonds", other: "Other" };
+
+  const selectStyle: React.CSSProperties = {
+    background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8,
+    padding: "9px 12px", color: "#19181E", fontSize: 14, fontFamily: "inherit",
+    cursor: "pointer", outline: "none", width: "100%",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <button onClick={onBack} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#64748B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+        ← Back to Calculator
+      </button>
+      <div>
+        <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 20, fontWeight: 700, color: "#19181E", margin: "0 0 4px" }}>Investment Simulations</h2>
+        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>Model DCA contributions with custom allocation to see how your portfolio grows over time.</p>
+      </div>
+
+      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+        {/* Controls */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 280, flex: "0 0 300px" }}>
+          <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Contributions</div>
+            <FieldRow label="Starting Amount">
+              <NumberInput value={initialAmt} onChange={setInitialAmt} />
+            </FieldRow>
+            <FieldRow label="DCA Amount">
+              <NumberInput value={dcaAmt} onChange={setDcaAmt} />
+            </FieldRow>
+            <FieldRow label="Frequency">
+              <select value={dcaFreq} onChange={e => setDcaFreq(e.target.value as DCAFreq)} style={selectStyle}>
+                <option value="weekly">Weekly</option>
+                <option value="bi-weekly">Bi-Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="annually">Annually</option>
+              </select>
+            </FieldRow>
+            <FieldRow label={`Time Horizon: ${years} years`}>
+              <input type="range" min={5} max={40} step={1} value={years}
+                onChange={e => setYears(Number(e.target.value))}
+                style={{ width: "100%", accentColor: "#059669" }} />
+            </FieldRow>
+          </div>
+
+          <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Settings</div>
+            <FieldRow label="Risk Level">
+              <select value={risk} onChange={e => setRisk(e.target.value as RiskLevel)} style={selectStyle}>
+                <option value="conservative">Conservative (~5% avg)</option>
+                <option value="moderate">Moderate (~7% avg)</option>
+                <option value="aggressive">Aggressive (~9% avg)</option>
+              </select>
+            </FieldRow>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", color: "#64748B", fontWeight: 700 }}>
+                Adjust for Inflation (3%)
+              </label>
+              <button
+                onClick={() => setInflation(v => !v)}
+                style={{
+                  width: 40, height: 22, borderRadius: 11, border: "none", cursor: "pointer",
+                  background: inflation ? "#059669" : "#CBD5E1", position: "relative", transition: "background 0.2s",
+                }}
+              >
+                <span style={{
+                  position: "absolute", top: 3, left: inflation ? 21 : 3,
+                  width: 16, height: 16, borderRadius: "50%", background: "#fff",
+                  transition: "left 0.2s",
+                }} />
+              </button>
+            </div>
+          </div>
+
+          <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Allocation</div>
+            {/* Colour bar */}
+            <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden" }}>
+              {(Object.keys(allocation) as AllocKey[]).map(k => (
+                <div key={k} style={{ width: `${allocation[k]}%`, background: ALLOC_COLORS[k], transition: "width 0.2s" }} />
+              ))}
+            </div>
+            {(Object.keys(allocation) as AllocKey[]).map(k => (
+              <div key={k} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#64748B" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: ALLOC_COLORS[k], display: "inline-block" }} />
+                    {ALLOC_LABELS[k]}
+                  </span>
+                  <span style={{ fontWeight: 700, color: "#19181E" }}>{allocation[k]}%</span>
+                </div>
+                <input type="range" min={0} max={100} step={1} value={allocation[k]}
+                  onChange={e => setAlloc(k, Number(e.target.value))}
+                  style={{ width: "100%", accentColor: ALLOC_COLORS[k] }} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Chart + stats */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: "1 1 300px", minWidth: 0 }}>
+          <div className="uf-card">
+            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Portfolio Growth</div>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                <XAxis dataKey="year" tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} label={{ value: "Year", position: "insideBottom", offset: -2, fontSize: 11, fill: "#94A3B8" }} />
+                <YAxis tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} tickFormatter={v => fmtK(v as number)} width={60} />
+                <Tooltip
+                  formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
+                  labelFormatter={l => `Year ${l}`}
+                  contentStyle={{ borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 12 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="portfolio" name="Portfolio Value" stroke="#059669" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="contributions" name="Total Contributions" stroke="#CBD5E1" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+                {inflation && (
+                  <Line type="monotone" dataKey="real" name="Real Value (inflation adj.)" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" dot={false} />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Summary stats */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            {[
+              { label: "Final Portfolio", value: fmtK(last.portfolio), color: "#059669" },
+              { label: "Total Contributed", value: fmtK(last.contributions), color: "#64748B" },
+              { label: "Market Growth", value: fmtK(last.growth), color: "#818cf8" },
+            ].map(s => (
+              <div key={s.label} className="uf-card" style={{ textAlign: "center", padding: "16px 12px" }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: "Manrope, sans-serif" }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── FIRE Calculator Menu Tab ────────────────────────────────────────────────
 function FireCalcMenuTab({
   fireAge,
   onOpenGoals,
   onOpenSimulation,
+  onOpenInvestSim,
 }: {
   fireAge: number;
   onOpenGoals: () => void;
   onOpenSimulation: () => void;
+  onOpenInvestSim: () => void;
 }) {
   const [fireTypeResult, setFireTypeResult] = useState<{ code: string; name: string } | null>(null);
   useEffect(() => {
@@ -1378,6 +1605,14 @@ function FireCalcMenuTab({
       meta: "Stress-test your plan",
       label: "Run Simulation →",
       onClick: onOpenSimulation,
+    },
+    {
+      icon: "📈",
+      title: "Investment Simulations",
+      desc: "Model DCA contributions with custom allocation and see how your portfolio grows over time, with or without inflation.",
+      meta: "What should I DCA now?",
+      label: "Open Simulator →",
+      onClick: onOpenInvestSim,
     },
   ];
 
@@ -1682,7 +1917,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "budgets">("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
-  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation">("menu");
+  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
@@ -2187,6 +2422,7 @@ export default function Dashboard() {
                     fireAge={fireAge}
                     onOpenGoals={() => setFireCalcSubTab("goals")}
                     onOpenSimulation={() => setFireCalcSubTab("simulation")}
+                    onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                   />
                 )}
                 {fireCalcSubTab === "goals" && (
@@ -2204,6 +2440,9 @@ export default function Dashboard() {
                     displayRates={rates}
                     onBack={() => setFireCalcSubTab("menu")}
                   />
+                )}
+                {fireCalcSubTab === "invest-sim" && (
+                  <InvestSimTab onBack={() => setFireCalcSubTab("menu")} />
                 )}
               </div>
             )}
