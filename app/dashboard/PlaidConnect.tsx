@@ -37,6 +37,8 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
   const [isProUser, setIsProUser] = useState<boolean | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loadingLink, setLoadingLink] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [connectResult, setConnectResult] = useState<{ name: string; added: number } | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [syncResults, setSyncResults] = useState<Record<string, SyncResult>>({});
@@ -61,6 +63,7 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
   const handleConnectClick = async () => {
     setLoadingLink(true);
     setError(null);
+    setConnectResult(null);
     const session = await getSession();
     if (!session) { setLoadingLink(false); return; }
     const res = await fetch("/api/plaid/create-link-token", {
@@ -90,8 +93,10 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
 
   const onPlaidSuccess = useCallback(async (publicToken: string, metadata: { institution: { name: string; institution_id: string } | null }) => {
     setError(null);
+    setConnectResult(null);
+    setImporting(true);
     const session = await getSession();
-    if (!session) return;
+    if (!session) { setImporting(false); return; }
     const institution = metadata.institution;
     const res = await fetch("/api/plaid/exchange-token", {
       method: "POST",
@@ -106,6 +111,7 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
       }),
     });
     const data = await res.json();
+    setImporting(false);
     setLinkToken(null);
     if (!res.ok) {
       setError(data.error ?? "Failed to import transactions");
@@ -121,6 +127,7 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
       return exists ? prev.map((it) => it.id === newItem.id ? newItem : it) : [...prev, newItem];
     });
     setSyncResults((prev) => ({ ...prev, [data.item_id]: { added: data.added_count, modified: 0, removed: 0 } }));
+    setConnectResult({ name: data.institution_name, added: data.added_count });
     onTransactionsImported?.();
   }, [onTransactionsImported]);
 
@@ -193,6 +200,10 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
 
   return (
     <div style={{ marginBottom: 24 }}>
+      <style>{`
+        @keyframes plaid-spin { to { transform: rotate(360deg); } }
+      `}</style>
+
       {/* Header row */}
       <div style={{
         display: "flex",
@@ -219,7 +230,17 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
             )}
           </div>
         </div>
-        {atFreeLimit ? (
+
+        {importing ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", fontSize: 13, fontWeight: 600 }}>
+            <span style={{
+              display: "inline-block", width: 14, height: 14,
+              border: "2px solid #D1FAE5", borderTopColor: "#047857",
+              borderRadius: "50%", animation: "plaid-spin 0.8s linear infinite",
+            }} />
+            Importing transactions…
+          </div>
+        ) : atFreeLimit ? (
           <button onClick={handleUpgrade} style={btnStyle("primary")}>
             Upgrade for more →
           </button>
@@ -287,6 +308,35 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
           </div>
         );
       })}
+
+      {/* Post-connect result banner */}
+      {connectResult && (
+        <div style={{
+          marginTop: 8,
+          padding: "10px 14px",
+          borderRadius: 8,
+          fontSize: 13,
+          background: connectResult.added > 0 ? "#ECFDF5" : "#FFFBEB",
+          border: `1px solid ${connectResult.added > 0 ? "#6EE7B7" : "#FDE68A"}`,
+          color: connectResult.added > 0 ? "#065F46" : "#92400E",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+        }}>
+          <span>
+            {connectResult.added > 0
+              ? `✓ Connected! ${connectResult.added} transactions imported from ${connectResult.name}.`
+              : `✓ ${connectResult.name} connected. No transactions found yet — tap Sync now, or check back in a few minutes.`}
+          </span>
+          <button
+            onClick={() => setConnectResult(null)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Free plan limit notice */}
       {atFreeLimit && (

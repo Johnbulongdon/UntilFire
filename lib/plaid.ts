@@ -34,9 +34,9 @@ export const PLAID_CATEGORY_MAP: Record<string, string> = {
   INCOME:                    "salary",
 };
 
-// Internal money movements — do not import as expenses
+// TRANSFER_OUT = own-account moves (skip to avoid double counting)
+// TRANSFER_IN is kept so that Wise/international bank income shows up correctly
 export const PLAID_SKIP_CATEGORIES = new Set([
-  "TRANSFER_IN",
   "TRANSFER_OUT",
   "LOAN_PAYMENTS",
 ]);
