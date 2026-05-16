@@ -1030,19 +1030,22 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
               </button>
             )}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
             {bankAssets.map(a => (
-              <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(5,150,105,0.1)" }}>
-                <div>
-                  <span style={{ fontSize: 14, color: "#19181E", fontWeight: 600 }}>{a.name}</span>
-                  {a.mask && <span style={{ fontSize: 12, color: "#94A3B8", marginLeft: 6 }}>••{a.mask}</span>}
-                  <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: 8, textTransform: "capitalize" }}>{a.subtype ?? a.type}</span>
+              <div key={a.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
+                <div style={{ fontSize: 12, color: "#94A3B8" }}>
+                  <span style={{ textTransform: "capitalize" }}>{a.subtype?.replace(/-/g, " ") ?? a.type}</span>
+                  {a.mask && <span style={{ marginLeft: 6 }}>•••• {a.mask}</span>}
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#059669" }}>{fmtMoney(a.balance_current ?? 0)}</span>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", marginTop: 4 }}>{fmtMoney(a.balance_current ?? 0)}</div>
+                {a.balance_available != null && a.balance_available !== a.balance_current && (
+                  <div style={{ fontSize: 11, color: "#94A3B8" }}>{fmtMoney(a.balance_available)} available</div>
+                )}
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(5,150,105,0.2)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(5,150,105,0.2)" }}>
             <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
             <span style={{ fontSize: 15, fontWeight: 800, color: "#064E3B" }}>{fmtMoney(bankAssetsTotal)}</span>
           </div>
@@ -1192,22 +1195,22 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
               </button>
             )}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
             {bankLiabilities.map(a => (
-              <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(220,38,38,0.1)" }}>
-                <div>
-                  <span style={{ fontSize: 14, color: "#19181E", fontWeight: 600 }}>{a.name}</span>
-                  {a.mask && <span style={{ fontSize: 12, color: "#94A3B8", marginLeft: 6 }}>••{a.mask}</span>}
-                  <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: 8, textTransform: "capitalize" }}>{a.subtype ?? a.type}</span>
-                  {a.balance_limit && (
-                    <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: 8 }}>limit {fmtMoney(a.balance_limit)}</span>
-                  )}
+              <div key={a.id} style={{ background: "#fff", border: "1px solid #FCA5A5", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
+                <div style={{ fontSize: 12, color: "#94A3B8" }}>
+                  <span style={{ textTransform: "capitalize" }}>{a.subtype?.replace(/-/g, " ") ?? a.type}</span>
+                  {a.mask && <span style={{ marginLeft: 6 }}>•••• {a.mask}</span>}
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#DC2626" }}>{fmtMoney(a.balance_current ?? 0)}</span>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#DC2626", marginTop: 4 }}>{fmtMoney(a.balance_current ?? 0)}</div>
+                {a.balance_limit != null && (
+                  <div style={{ fontSize: 11, color: "#94A3B8" }}>of {fmtMoney(a.balance_limit)} limit</div>
+                )}
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(220,38,38,0.2)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(220,38,38,0.2)" }}>
             <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
             <span style={{ fontSize: 15, fontWeight: 800, color: "#991B1B" }}>{fmtMoney(bankLiabilitiesTotal)}</span>
           </div>
