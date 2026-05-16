@@ -117,6 +117,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         .eq("user_id", user.id);
     }
 
+    // Refresh account balances
+    try {
+      const accountsResp = await plaid.accountsGet({ access_token: item.plaid_access_token });
+      const accountRows = accountsResp.data.accounts.map((a) => ({
+        user_id: user.id,
+        plaid_item_id: body.item_id,
+        plaid_account_id: a.account_id,
+        name: a.name,
+        official_name: a.official_name ?? null,
+        type: a.type,
+        subtype: a.subtype ?? null,
+        balance_current: a.balances.current ?? null,
+        balance_available: a.balances.available ?? null,
+        balance_limit: a.balances.limit ?? null,
+        iso_currency_code: a.balances.iso_currency_code ?? "USD",
+        mask: a.mask ?? null,
+        updated_at: new Date().toISOString(),
+      }));
+      if (accountRows.length > 0) {
+        await admin.from("plaid_accounts").upsert(accountRows, { onConflict: "plaid_account_id" });
+      }
+    } catch (accErr) {
+      console.error("[plaid/sync] accountsGet:", accErr);
+    }
+
     // Advance cursor
     await admin
       .from("plaid_items")

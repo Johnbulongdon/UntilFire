@@ -127,6 +127,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (expErr) console.error("[plaid/exchange-token] expenses upsert:", expErr);
     }
 
+    // Fetch and store account balances
+    try {
+      const accountsResp = await plaid.accountsGet({ access_token: accessToken });
+      const accountRows = accountsResp.data.accounts.map((a) => ({
+        user_id: user.id,
+        plaid_item_id: itemRow.id,
+        plaid_account_id: a.account_id,
+        name: a.name,
+        official_name: a.official_name ?? null,
+        type: a.type,
+        subtype: a.subtype ?? null,
+        balance_current: a.balances.current ?? null,
+        balance_available: a.balances.available ?? null,
+        balance_limit: a.balances.limit ?? null,
+        iso_currency_code: a.balances.iso_currency_code ?? "USD",
+        mask: a.mask ?? null,
+        updated_at: new Date().toISOString(),
+      }));
+      if (accountRows.length > 0) {
+        const { error: accErr } = await admin
+          .from("plaid_accounts")
+          .upsert(accountRows, { onConflict: "plaid_account_id" });
+        if (accErr) console.error("[plaid/exchange-token] accounts upsert:", accErr);
+      }
+    } catch (accErr) {
+      console.error("[plaid/exchange-token] accountsGet:", accErr);
+    }
+
     return NextResponse.json({
       item_id: itemRow.id,
       institution_name: body.institution_name,

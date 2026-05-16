@@ -21,6 +21,22 @@ import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbo
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
+
+type PlaidAccount = {
+  id: string;
+  plaid_account_id: string;
+  name: string;
+  official_name: string | null;
+  type: string;
+  subtype: string | null;
+  balance_current: number | null;
+  balance_available: number | null;
+  balance_limit: number | null;
+  iso_currency_code: string;
+  mask: string | null;
+  plaid_item_id: string;
+  updated_at: string;
+};
 type TabKey =
   | "overview"
   | "cashflow"
@@ -888,11 +904,12 @@ function UserNav() {
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates }: {
+function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [] }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
   displayCurrency: string; displayRates: Record<string, number>;
+  plaidAccounts?: PlaidAccount[];
 }) {
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const monthlyExpenses = Object.entries(expenses)
@@ -905,8 +922,10 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
     growthRate, withdrawalRate,
   }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
 
-  const investable = k401 + rothIRA + taxable + cashSavings;
-  const netWorth   = investable - totalDebt - mortgageBalance;
+  const plaidAssets       = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const plaidLiabilities  = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan").reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const investable = k401 + rothIRA + taxable + cashSavings + plaidAssets;
+  const netWorth   = investable - totalDebt - mortgageBalance - plaidLiabilities;
   const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
 
   return (
@@ -977,7 +996,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -986,12 +1005,49 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   withdrawalRate: number; setWithdrawalRate: (v: number) => void;
   actualNetCashflow?: number;
   displayCurrency: string; displayRates: Record<string, number>;
+  plaidAccounts?: PlaidAccount[];
+  onRefreshAccounts?: () => void;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
   const total = k401 + rothIRA + taxable + cashSavings;
+
+  const bankAssets = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment");
+  const bankAssetsTotal = bankAssets.reduce((s, a) => s + (a.balance_current ?? 0), 0);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {bankAssets.length > 0 && (
+        <div className="uf-card" style={{ background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.2)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 16 }}>🏦</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Bank Accounts</span>
+            </div>
+            {onRefreshAccounts && (
+              <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#047857", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                ↻ Refresh
+              </button>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {bankAssets.map(a => (
+              <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(5,150,105,0.1)" }}>
+                <div>
+                  <span style={{ fontSize: 14, color: "#19181E", fontWeight: 600 }}>{a.name}</span>
+                  {a.mask && <span style={{ fontSize: 12, color: "#94A3B8", marginLeft: 6 }}>••{a.mask}</span>}
+                  <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: 8, textTransform: "capitalize" }}>{a.subtype ?? a.type}</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#059669" }}>{fmtMoney(a.balance_current ?? 0)}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(5,150,105,0.2)" }}>
+            <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#064E3B" }}>{fmtMoney(bankAssetsTotal)}</span>
+          </div>
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div className="uf-card">
           <SectionLabel icon="📈" text="Investment Accounts" color="#059669" />
@@ -1106,17 +1162,57 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 }
 
 // ─── Liabilities Tab ──────────────────────────────────────────────────────────
-function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly, displayCurrency, displayRates }: {
+function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts }: {
   totalDebt: number; setTotalDebt: (v: number) => void;
   mortgageBalance: number; setMortgageBalance: (v: number) => void;
   mortgageMonthly: number; setMortgageMonthly: (v: number) => void;
   displayCurrency: string; displayRates: Record<string, number>;
+  plaidAccounts?: PlaidAccount[];
+  onRefreshAccounts?: () => void;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
   const totalLiabilities = totalDebt + mortgageBalance;
+
+  const bankLiabilities = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan");
+  const bankLiabilitiesTotal = bankLiabilities.reduce((s, a) => s + (a.balance_current ?? 0), 0);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {bankLiabilities.length > 0 && (
+        <div className="uf-card" style={{ background: "rgba(220,38,38,0.03)", border: "1px solid rgba(220,38,38,0.2)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 16 }}>💳</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#991B1B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Cards & Loans</span>
+            </div>
+            {onRefreshAccounts && (
+              <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#DC2626", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                ↻ Refresh
+              </button>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {bankLiabilities.map(a => (
+              <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(220,38,38,0.1)" }}>
+                <div>
+                  <span style={{ fontSize: 14, color: "#19181E", fontWeight: 600 }}>{a.name}</span>
+                  {a.mask && <span style={{ fontSize: 12, color: "#94A3B8", marginLeft: 6 }}>••{a.mask}</span>}
+                  <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: 8, textTransform: "capitalize" }}>{a.subtype ?? a.type}</span>
+                  {a.balance_limit && (
+                    <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: 8 }}>limit {fmtMoney(a.balance_limit)}</span>
+                  )}
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#DC2626" }}>{fmtMoney(a.balance_current ?? 0)}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(220,38,38,0.2)" }}>
+            <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#991B1B" }}>{fmtMoney(bankLiabilitiesTotal)}</span>
+          </div>
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div className="uf-card">
           <SectionLabel icon="💳" text="Consumer Debt" color="#DC2626" />
@@ -1595,6 +1691,7 @@ export default function Dashboard() {
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
+  const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
 
   // Read initial tab from URL query string (e.g. ?tab=cashflow)
   useEffect(() => {
@@ -1782,6 +1879,14 @@ export default function Dashboard() {
             setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
           }
         });
+
+      // Fetch Plaid account balances
+      fetch("/api/plaid/accounts", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }).then(r => r.ok ? r.json() : null).then(d => {
+        if (d?.accounts) setPlaidAccounts(d.accounts);
+      }).catch(() => {});
+
       supabase.from("user_budget").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
         // Consume calculator wizard prefill (written by landing page before login redirect)
         let prefill: import("@/lib/journey").CalculatorPrefill = {};
@@ -1866,6 +1971,17 @@ export default function Dashboard() {
       }
     }, 1000);
   }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName]);
+
+  async function refreshPlaidAccounts() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const r = await fetch("/api/plaid/accounts", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    }).catch(() => null);
+    if (!r?.ok) return;
+    const d = await r.json().catch(() => null);
+    if (d?.accounts) setPlaidAccounts(d.accounts);
+  }
 
   return (
     <>
@@ -2026,6 +2142,7 @@ export default function Dashboard() {
                   withdrawalRate={withdrawalRate}
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
+                  plaidAccounts={plaidAccounts}
                 />
                 <div style={{ borderTop: "1px solid #E2E8F0" }} />
                 <AssetsTab
@@ -2038,6 +2155,8 @@ export default function Dashboard() {
                   actualNetCashflow={actualIncome - actualExpenses}
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
+                  plaidAccounts={plaidAccounts}
+                  onRefreshAccounts={refreshPlaidAccounts}
                 />
               </div>
             )}
@@ -2055,6 +2174,8 @@ export default function Dashboard() {
                 mortgageMonthly={mortgageMonthly} setMortgageMonthly={setMortgageMonthly}
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
+                plaidAccounts={plaidAccounts}
+                onRefreshAccounts={refreshPlaidAccounts}
               />
             )}
             {tab === "fire-calculator" && (
