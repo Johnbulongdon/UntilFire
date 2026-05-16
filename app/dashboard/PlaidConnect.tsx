@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePlaidLink } from "react-plaid-link";
-import { supabase } from "@/lib/supabase";
+import { supabase, isPro } from "@/lib/supabase";
 
 type PlaidItem = {
   id: string;
@@ -34,6 +34,7 @@ function fmtSynced(ts: string | null): string {
 
 export default function PlaidConnect({ onTransactionsImported }: Props) {
   const [items, setItems] = useState<PlaidItem[]>([]);
+  const [isProUser, setIsProUser] = useState<boolean | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loadingLink, setLoadingLink] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
@@ -41,9 +42,10 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
   const [syncResults, setSyncResults] = useState<Record<string, SyncResult>>({});
   const [error, setError] = useState<string | null>(null);
 
-  // Load connected accounts on mount
+  // Load connected accounts and Pro status on mount
   useEffect(() => {
     (async () => {
+      setIsProUser(await isPro());
       const session = await getSession();
       if (!session) return;
       const res = await fetch("/api/plaid/items", {
@@ -73,6 +75,17 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
     }
     setLinkToken(data.link_token);
     setLoadingLink(false);
+  };
+
+  const handleUpgrade = async () => {
+    const session = await getSession();
+    if (!session) return;
+    const res = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
   };
 
   const onPlaidSuccess = useCallback(async (publicToken: string, metadata: { institution: { name: string; institution_id: string } | null }) => {
@@ -176,6 +189,8 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
     whiteSpace: "nowrap" as const,
   });
 
+  const atFreeLimit = isProUser === false && items.length >= 1;
+
   return (
     <div style={{ marginBottom: 24 }}>
       {/* Header row */}
@@ -204,13 +219,19 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
             )}
           </div>
         </div>
-        <button
-          onClick={handleConnectClick}
-          disabled={loadingLink}
-          style={btnStyle("primary")}
-        >
-          {loadingLink ? "Opening…" : items.length === 0 ? "Connect bank →" : "+ Add account"}
-        </button>
+        {atFreeLimit ? (
+          <button onClick={handleUpgrade} style={btnStyle("primary")}>
+            Upgrade for more →
+          </button>
+        ) : (
+          <button
+            onClick={handleConnectClick}
+            disabled={loadingLink}
+            style={btnStyle("primary")}
+          >
+            {loadingLink ? "Opening…" : items.length === 0 ? "Connect bank →" : "+ Add account"}
+          </button>
+        )}
       </div>
 
       {/* Connected institution list */}
@@ -266,6 +287,20 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
           </div>
         );
       })}
+
+      {/* Free plan limit notice */}
+      {atFreeLimit && (
+        <div style={{ fontSize: 12, color: "#64748B", marginTop: 6, padding: "6px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
+          Free plan · 1 bank included ·{" "}
+          <button
+            onClick={handleUpgrade}
+            style={{ background: "none", border: "none", color: "#047857", fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 12, fontFamily: "inherit" }}
+          >
+            Upgrade to Pro
+          </button>
+          {" "}for unlimited
+        </div>
+      )}
 
       {error && (
         <div style={{ fontSize: 13, color: "#DC2626", marginTop: 8, padding: "8px 12px", background: "#FEF2F2", borderRadius: 8, border: "1px solid #FCA5A5" }}>
