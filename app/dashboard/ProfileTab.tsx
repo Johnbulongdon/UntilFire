@@ -5,14 +5,32 @@ import { supabase } from "@/lib/supabase";
 import { CITIES } from "@/lib/fire-data";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 
+interface PlaidItem {
+  id: string;
+  institution_name: string;
+  last_synced_at: string | null;
+}
+
+function fmtSynced(ts: string | null): string {
+  if (!ts) return "never synced";
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 interface Props {
   userId: string;
   userEmail: string;
   defaultCurrency: string;
   onDefaultCurrencyChange: (currency: string) => void;
+  onTabChange: (tab: string) => void;
 }
 
-export default function ProfileTab({ userId, userEmail, defaultCurrency: initialDefaultCurrency, onDefaultCurrencyChange }: Props) {
+export default function ProfileTab({ userId, userEmail, defaultCurrency: initialDefaultCurrency, onDefaultCurrencyChange, onTabChange }: Props) {
   const [displayName, setDisplayName] = useState("");
   const [citySearch, setCitySearch] = useState("");
   const [selectedCity, setSelectedCity] = useState<{ name: string; key: string } | null>(null);
@@ -28,6 +46,7 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
     city: false,
     currency: false,
   });
+  const [plaidItems, setPlaidItems] = useState<PlaidItem[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -60,6 +79,16 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
       if (p?.default_currency) {
         setDefaultCurrency(p.default_currency);
         onDefaultCurrencyChange(p.default_currency);
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        fetch("/api/plaid/items", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+          .then((r) => r.json())
+          .then((d) => setPlaidItems(d.items ?? []))
+          .catch(() => {});
       }
     }
     load();
@@ -315,6 +344,44 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, marginBottom: 0 }}>
           Sets the dashboard display currency and pre-fills new transaction entries.
         </p>
+      </div>
+
+      {/* Connected Banks */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: 0 }}>Connected Banks</h3>
+          <button
+            onClick={() => onTabChange("cashflow")}
+            style={{ fontSize: 13, fontWeight: 600, color: "#047857", background: "none", border: "1px solid #D1FAE5", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
+          >
+            Manage →
+          </button>
+        </div>
+        {plaidItems.length === 0 ? (
+          <div style={{ fontSize: 13, color: "#94A3B8" }}>
+            No banks connected yet.{" "}
+            <button onClick={() => onTabChange("cashflow")} style={{ background: "none", border: "none", color: "#047857", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 13 }}>
+              Connect one →
+            </button>
+          </div>
+        ) : (
+          plaidItems.map((item, i) => (
+            <div key={item.id} style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "10px 0",
+              borderBottom: i < plaidItems.length - 1 ? "1px solid #F1F5F9" : "none",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 16 }}>🏦</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E" }}>{item.institution_name}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#94A3B8" }}>
+                <span style={{ color: "#059669", fontWeight: 600 }}>● Connected</span>
+                <span>{fmtSynced(item.last_synced_at)}</span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Danger zone */}

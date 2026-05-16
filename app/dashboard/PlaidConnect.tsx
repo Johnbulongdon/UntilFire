@@ -127,7 +127,9 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
       return exists ? prev.map((it) => it.id === newItem.id ? newItem : it) : [...prev, newItem];
     });
     setSyncResults((prev) => ({ ...prev, [data.item_id]: { added: data.added_count, modified: 0, removed: 0 } }));
-    setConnectResult({ name: data.institution_name, added: data.added_count });
+    const result = { name: data.institution_name, added: data.added_count };
+    setConnectResult(result);
+    setTimeout(() => setConnectResult(null), 4000);
     onTransactionsImported?.();
   }, [onTransactionsImported]);
 
@@ -202,7 +204,53 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
     <div style={{ marginBottom: 24 }}>
       <style>{`
         @keyframes plaid-spin { to { transform: rotate(360deg); } }
+        @keyframes plaid-slide-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
       `}</style>
+
+      {/* Floating toast — success / info */}
+      {connectResult && (
+        <div style={{
+          position: "fixed", top: 24, right: 24, zIndex: 9999,
+          maxWidth: 360, padding: "14px 18px", borderRadius: 12,
+          background: connectResult.added > 0 ? "#064E3B" : "#78350F",
+          color: "#ffffff",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+          display: "flex", alignItems: "flex-start", gap: 12,
+          animation: "plaid-slide-in 0.2s ease",
+        }}>
+          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>
+            {connectResult.added > 0 ? "✓" : "ℹ"}
+          </span>
+          <span style={{ fontSize: 13, lineHeight: 1.5, flex: 1 }}>
+            {connectResult.added > 0
+              ? `Connected! ${connectResult.added} transactions imported from ${connectResult.name}.`
+              : `${connectResult.name} connected. No transactions found yet — tap Sync now, or check back in a few minutes.`}
+          </span>
+          <button
+            onClick={() => setConnectResult(null)}
+            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 18, padding: 0, flexShrink: 0, lineHeight: 1 }}
+          >×</button>
+        </div>
+      )}
+
+      {/* Floating toast — error */}
+      {error && (
+        <div style={{
+          position: "fixed", top: connectResult ? 92 : 24, right: 24, zIndex: 9999,
+          maxWidth: 360, padding: "14px 18px", borderRadius: 12,
+          background: "#7F1D1D", color: "#ffffff",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+          display: "flex", alignItems: "flex-start", gap: 12,
+          animation: "plaid-slide-in 0.2s ease",
+        }}>
+          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>✕</span>
+          <span style={{ fontSize: 13, lineHeight: 1.5, flex: 1 }}>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 18, padding: 0, flexShrink: 0, lineHeight: 1 }}
+          >×</button>
+        </div>
+      )}
 
       {/* Header row */}
       <div style={{
@@ -309,35 +357,6 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
         );
       })}
 
-      {/* Post-connect result banner */}
-      {connectResult && (
-        <div style={{
-          marginTop: 8,
-          padding: "10px 14px",
-          borderRadius: 8,
-          fontSize: 13,
-          background: connectResult.added > 0 ? "#ECFDF5" : "#FFFBEB",
-          border: `1px solid ${connectResult.added > 0 ? "#6EE7B7" : "#FDE68A"}`,
-          color: connectResult.added > 0 ? "#065F46" : "#92400E",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-        }}>
-          <span>
-            {connectResult.added > 0
-              ? `✓ Connected! ${connectResult.added} transactions imported from ${connectResult.name}.`
-              : `✓ ${connectResult.name} connected. No transactions found yet — tap Sync now, or check back in a few minutes.`}
-          </span>
-          <button
-            onClick={() => setConnectResult(null)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       {/* Free plan limit notice */}
       {atFreeLimit && (
         <div style={{ fontSize: 12, color: "#64748B", marginTop: 6, padding: "6px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
@@ -352,11 +371,6 @@ export default function PlaidConnect({ onTransactionsImported }: Props) {
         </div>
       )}
 
-      {error && (
-        <div style={{ fontSize: 13, color: "#DC2626", marginTop: 8, padding: "8px 12px", background: "#FEF2F2", borderRadius: 8, border: "1px solid #FCA5A5" }}>
-          {error}
-        </div>
-      )}
     </div>
   );
 }
