@@ -29,8 +29,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       language: "en",
     });
     return NextResponse.json({ link_token: response.data.link_token });
-  } catch (err) {
-    console.error("[plaid/create-link-token]", err);
-    return NextResponse.json({ error: "Failed to create link token" }, { status: 500 });
+  } catch (err: unknown) {
+    const plaidErr = err as { response?: { data?: unknown }; message?: string };
+    console.error("[plaid/create-link-token]", plaidErr.response?.data ?? plaidErr.message ?? err);
+    const detail = (plaidErr.response?.data as { error_message?: string })?.error_message;
+    return NextResponse.json({ error: detail ?? "Failed to create link token" }, { status: 500 });
   }
 }
