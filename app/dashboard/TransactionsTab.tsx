@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
 import { formatUSDInCurrency } from "@/lib/currency";
+import PlaidConnect from "./PlaidConnect";
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 const EXPENSE_CATEGORIES = [
@@ -1098,6 +1099,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
@@ -1191,7 +1193,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           }
         });
     });
-  }, []);
+  }, [refreshKey]);
 
   const monthTxns = useMemo(
     () => transactions.filter((t) => t.date.startsWith(viewMonth)),
@@ -1344,6 +1346,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           .cf-mobile-bar { display: flex !important; position: fixed; bottom: 16px; left: 16px; right: 16px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 10px 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); align-items: center; gap: 10px; z-index: 30; }
         }
       `}</style>
+
+      <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} />
 
       <MonthlySummary
         transactions={transactions}
