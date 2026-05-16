@@ -1345,9 +1345,7 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Investment Simulations Tab ──────────────────────────────────────────────
-type AllocKey = "usStocks" | "intlStocks" | "bonds" | "other";
 type DCAFreq = "weekly" | "bi-weekly" | "monthly" | "annually";
-type RiskLevel = "conservative" | "moderate" | "aggressive";
 
 interface DCASimRow {
   year: number;
@@ -1357,22 +1355,58 @@ interface DCASimRow {
   real: number;
 }
 
+type Holding = {
+  ticker: string;
+  name: string;
+  cagr: number;
+  weight: number;
+  custom?: boolean;
+};
+
+const ETF_DATA: Record<string, { name: string; cagr: number; category: string }> = {
+  VOO:  { name: "Vanguard S&P 500 ETF",            cagr: 0.107, category: "US Equity" },
+  VTI:  { name: "Vanguard Total Stock Market ETF",  cagr: 0.107, category: "US Equity" },
+  SPY:  { name: "SPDR S&P 500 ETF",                cagr: 0.107, category: "US Equity" },
+  IVV:  { name: "iShares Core S&P 500 ETF",        cagr: 0.107, category: "US Equity" },
+  SCHB: { name: "Schwab US Broad Market ETF",       cagr: 0.107, category: "US Equity" },
+  QQQ:  { name: "Invesco Nasdaq-100 ETF",           cagr: 0.183, category: "US Growth" },
+  ARKK: { name: "ARK Innovation ETF",               cagr: 0.035, category: "US Growth" },
+  VT:   { name: "Vanguard Total World Stock ETF",   cagr: 0.092, category: "Global Equity" },
+  VXUS: { name: "Vanguard Total Intl Stock ETF",    cagr: 0.059, category: "Intl Equity" },
+  VEA:  { name: "Vanguard Developed Markets ETF",   cagr: 0.071, category: "Intl Equity" },
+  VWO:  { name: "Vanguard Emerging Markets ETF",    cagr: 0.037, category: "Emerging Markets" },
+  EFA:  { name: "iShares MSCI EAFE ETF",            cagr: 0.076, category: "Intl Equity" },
+  BND:  { name: "Vanguard Total Bond Market ETF",   cagr: 0.017, category: "US Bonds" },
+  AGG:  { name: "iShares Core US Aggregate Bond",   cagr: 0.015, category: "US Bonds" },
+  BNDX: { name: "Vanguard Total Intl Bond ETF",     cagr: 0.008, category: "Intl Bonds" },
+  SCHD: { name: "Schwab US Dividend Equity ETF",    cagr: 0.112, category: "US Dividend" },
+  VIG:  { name: "Vanguard Dividend Appreciation",   cagr: 0.111, category: "US Dividend" },
+  VYM:  { name: "Vanguard High Dividend Yield ETF", cagr: 0.095, category: "US Dividend" },
+  VNQ:  { name: "Vanguard Real Estate ETF",         cagr: 0.087, category: "Real Estate" },
+  GLD:  { name: "SPDR Gold Trust",                  cagr: 0.085, category: "Commodities" },
+  IWM:  { name: "iShares Russell 2000 ETF",         cagr: 0.090, category: "US Small Cap" },
+  AVUV: { name: "Avantis US Small Value ETF",       cagr: 0.150, category: "US Small Value" },
+  XLK:  { name: "Technology Select Sector SPDR",    cagr: 0.204, category: "Sector – Tech" },
+  SOXX: { name: "iShares Semiconductor ETF",        cagr: 0.220, category: "Sector – Semi" },
+  AAPL: { name: "Apple Inc.",                        cagr: 0.220, category: "Individual Stock" },
+  MSFT: { name: "Microsoft Corp.",                   cagr: 0.220, category: "Individual Stock" },
+  NVDA: { name: "NVIDIA Corp.",                      cagr: 0.500, category: "Individual Stock" },
+  GOOGL:{ name: "Alphabet Inc.",                     cagr: 0.150, category: "Individual Stock" },
+  AMZN: { name: "Amazon.com Inc.",                   cagr: 0.160, category: "Individual Stock" },
+  TSLA: { name: "Tesla Inc.",                        cagr: 0.270, category: "Individual Stock" },
+};
+
+const HOLDING_PALETTE = ["#059669", "#22d3a5", "#818cf8", "#f97316", "#fbbf24", "#ef4444", "#a78bfa", "#06b6d4"];
+
 function calcDCAProjection({
-  initialAmount, dcaAmount, dcaFrequency, years, allocation, riskLevel, includeInflation,
+  initialAmount, dcaAmount, dcaFrequency, years, holdings, includeInflation,
 }: {
   initialAmount: number; dcaAmount: number; dcaFrequency: DCAFreq; years: number;
-  allocation: Record<AllocKey, number>; riskLevel: RiskLevel; includeInflation: boolean;
+  holdings: Holding[]; includeInflation: boolean;
 }): DCASimRow[] {
   const periods: Record<DCAFreq, number> = { weekly: 52, "bi-weekly": 26, monthly: 12, annually: 1 };
   const annualContrib = dcaAmount * periods[dcaFrequency];
-
-  const rawReturn =
-    (allocation.usStocks / 100) * 0.10 +
-    (allocation.intlStocks / 100) * 0.07 +
-    (allocation.bonds / 100) * 0.03 +
-    (allocation.other / 100) * 0.05;
-  const riskMult: Record<RiskLevel, number> = { conservative: 0.75, moderate: 1.0, aggressive: 1.2 };
-  const r = rawReturn * riskMult[riskLevel];
+  const r = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
   const inflation = 0.03;
 
   const rows: DCASimRow[] = [];
@@ -1396,39 +1430,88 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
   const [dcaAmt, setDcaAmt] = useState(500);
   const [dcaFreq, setDcaFreq] = useState<DCAFreq>("monthly");
   const [years, setYears] = useState(20);
-  const [risk, setRisk] = useState<RiskLevel>("moderate");
   const [inflation, setInflation] = useState(false);
-  const [allocation, setAllocation] = useState<Record<AllocKey, number>>({ usStocks: 60, intlStocks: 20, bonds: 15, other: 5 });
+  const [holdings, setHoldings] = useState<Holding[]>([
+    { ticker: "VOO", name: "Vanguard S&P 500 ETF",      cagr: 0.107, weight: 60 },
+    { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
+    { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 20 },
+  ]);
+  const [tickerInput, setTickerInput] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
 
-  function setAlloc(key: AllocKey, val: number) {
+  const blendedReturn = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
+
+  const suggestions = tickerInput.length >= 1
+    ? Object.entries(ETF_DATA)
+        .filter(([ticker, info]) =>
+          !holdings.find(h => h.ticker === ticker) &&
+          (ticker.startsWith(tickerInput.toUpperCase()) ||
+           info.name.toLowerCase().includes(tickerInput.toLowerCase()))
+        )
+        .slice(0, 6)
+    : [];
+
+  function addHolding(ticker: string) {
+    const upper = ticker.toUpperCase().trim();
+    if (!upper || holdings.find(h => h.ticker === upper)) { setTickerInput(""); setShowDropdown(false); return; }
+    const info = ETF_DATA[upper];
+    const newH: Holding = info
+      ? { ticker: upper, name: info.name, cagr: info.cagr, weight: 0 }
+      : { ticker: upper, name: upper, cagr: 0.07, weight: 0, custom: true };
+    const next = [...holdings, newH];
+    const w = Math.floor(100 / next.length);
+    const rem = 100 - w * next.length;
+    setHoldings(next.map((h, i) => ({ ...h, weight: i === 0 ? w + rem : w })));
+    setTickerInput("");
+    setShowDropdown(false);
+  }
+
+  function removeHolding(ticker: string) {
+    const next = holdings.filter(h => h.ticker !== ticker);
+    if (next.length === 0) return;
+    const total = next.reduce((s, h) => s + h.weight, 0);
+    if (total === 0) {
+      const w = Math.floor(100 / next.length);
+      setHoldings(next.map((h, i) => ({ ...h, weight: i === 0 ? 100 - w * (next.length - 1) : w })));
+    } else {
+      const rebalanced = next.map(h => ({ ...h, weight: Math.round((h.weight / total) * 100) }));
+      const diff = 100 - rebalanced.reduce((s, h) => s + h.weight, 0);
+      if (diff !== 0) rebalanced[0] = { ...rebalanced[0], weight: rebalanced[0].weight + diff };
+      setHoldings(rebalanced);
+    }
+  }
+
+  function updateWeight(ticker: string, val: number) {
     const clamped = Math.max(0, Math.min(100, val));
-    const delta = clamped - allocation[key];
-    const others = (Object.keys(allocation) as AllocKey[]).filter(k => k !== key);
-    const totalOthers = others.reduce((s, k) => s + allocation[k], 0);
-    const newAlloc = { ...allocation, [key]: clamped };
-    if (totalOthers > 0) {
-      others.forEach(k => {
-        newAlloc[k] = Math.max(0, Math.round(allocation[k] - delta * (allocation[k] / totalOthers)));
-      });
-    }
-    const sum = (Object.keys(newAlloc) as AllocKey[]).reduce((a, k) => a + newAlloc[k], 0);
+    const idx = holdings.findIndex(h => h.ticker === ticker);
+    if (idx === -1) return;
+    const delta = clamped - holdings[idx].weight;
+    const others = holdings.filter((_, i) => i !== idx);
+    const totalOthers = others.reduce((s, h) => s + h.weight, 0);
+    const next = holdings.map((h, i) => {
+      if (i === idx) return { ...h, weight: clamped };
+      if (totalOthers === 0) return { ...h, weight: Math.floor((100 - clamped) / others.length) };
+      return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
+    });
+    const sum = next.reduce((s, h) => s + h.weight, 0);
     if (sum !== 100) {
-      const last = others[others.length - 1];
-      newAlloc[last] = Math.max(0, newAlloc[last] + (100 - sum));
+      const lastOtherIdx = next.findIndex((h, i) => i !== idx && h.weight > 0) ?? (idx === 0 ? 1 : 0);
+      next[lastOtherIdx] = { ...next[lastOtherIdx], weight: Math.max(0, next[lastOtherIdx].weight + (100 - sum)) };
     }
-    setAllocation(newAlloc);
+    setHoldings(next);
+  }
+
+  function updateCagr(ticker: string, cagr: number) {
+    setHoldings(hs => hs.map(h => h.ticker === ticker ? { ...h, cagr } : h));
   }
 
   const chartData = useMemo(() => calcDCAProjection({
     initialAmount: initialAmt, dcaAmount: dcaAmt, dcaFrequency: dcaFreq,
-    years, allocation, riskLevel: risk, includeInflation: inflation,
-  }), [initialAmt, dcaAmt, dcaFreq, years, allocation, risk, inflation]);
+    years, holdings, includeInflation: inflation,
+  }), [initialAmt, dcaAmt, dcaFreq, years, holdings, inflation]);
 
   const last = chartData[chartData.length - 1];
   const fmtK = (n: number) => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : `$${n}`;
-
-  const ALLOC_COLORS: Record<AllocKey, string> = { usStocks: "#059669", intlStocks: "#22d3a5", bonds: "#818cf8", other: "#f97316" };
-  const ALLOC_LABELS: Record<AllocKey, string> = { usStocks: "US Stocks", intlStocks: "Intl Stocks", bonds: "Bonds", other: "Other" };
 
   const selectStyle: React.CSSProperties = {
     background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8,
@@ -1443,7 +1526,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
       </button>
       <div>
         <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 20, fontWeight: 700, color: "#19181E", margin: "0 0 4px" }}>Investment Simulations</h2>
-        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>Model DCA contributions with custom allocation to see how your portfolio grows over time.</p>
+        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>Model DCA contributions with your actual ETFs and stocks. Returns based on 10-yr historical CAGR.</p>
       </div>
 
       <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
@@ -1470,59 +1553,110 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                 onChange={e => setYears(Number(e.target.value))}
                 style={{ width: "100%", accentColor: "#059669" }} />
             </FieldRow>
-          </div>
-
-          <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Settings</div>
-            <FieldRow label="Risk Level">
-              <select value={risk} onChange={e => setRisk(e.target.value as RiskLevel)} style={selectStyle}>
-                <option value="conservative">Conservative (~5% avg)</option>
-                <option value="moderate">Moderate (~7% avg)</option>
-                <option value="aggressive">Aggressive (~9% avg)</option>
-              </select>
-            </FieldRow>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <label style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", color: "#64748B", fontWeight: 700 }}>
                 Adjust for Inflation (3%)
               </label>
               <button
                 onClick={() => setInflation(v => !v)}
-                style={{
-                  width: 40, height: 22, borderRadius: 11, border: "none", cursor: "pointer",
-                  background: inflation ? "#059669" : "#CBD5E1", position: "relative", transition: "background 0.2s",
-                }}
+                style={{ width: 40, height: 22, borderRadius: 11, border: "none", cursor: "pointer", background: inflation ? "#059669" : "#CBD5E1", position: "relative", transition: "background 0.2s" }}
               >
-                <span style={{
-                  position: "absolute", top: 3, left: inflation ? 21 : 3,
-                  width: 16, height: 16, borderRadius: "50%", background: "#fff",
-                  transition: "left 0.2s",
-                }} />
+                <span style={{ position: "absolute", top: 3, left: inflation ? 21 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
               </button>
             </div>
           </div>
 
+          {/* Holdings / Allocation */}
           <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Allocation</div>
-            {/* Colour bar */}
-            <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden" }}>
-              {(Object.keys(allocation) as AllocKey[]).map(k => (
-                <div key={k} style={{ width: `${allocation[k]}%`, background: ALLOC_COLORS[k], transition: "width 0.2s" }} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Portfolio Holdings</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#059669" }}>
+                Blended: {(blendedReturn * 100).toFixed(1)}%/yr
+              </div>
+            </div>
+
+            {/* Colour allocation bar */}
+            <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden" }}>
+              {holdings.map((h, i) => (
+                <div key={h.ticker} style={{ width: `${h.weight}%`, background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], transition: "width 0.2s" }} />
               ))}
             </div>
-            {(Object.keys(allocation) as AllocKey[]).map(k => (
-              <div key={k} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#64748B" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: ALLOC_COLORS[k], display: "inline-block" }} />
-                    {ALLOC_LABELS[k]}
+
+            {/* Holdings list */}
+            {holdings.map((h, i) => (
+              <div key={h.ticker} style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 10, borderBottom: "1px solid #F1F5F9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], color: "#fff", borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 800, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
+                    {h.ticker}
                   </span>
-                  <span style={{ fontWeight: 700, color: "#19181E" }}>{allocation[k]}%</span>
+                  <span style={{ fontSize: 12, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
+                  {!h.custom && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#059669", flexShrink: 0 }}>{(h.cagr * 100).toFixed(1)}%</span>
+                  )}
+                  <button onClick={() => removeHolding(h.ticker)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
                 </div>
-                <input type="range" min={0} max={100} step={1} value={allocation[k]}
-                  onChange={e => setAlloc(k, Number(e.target.value))}
-                  style={{ width: "100%", accentColor: ALLOC_COLORS[k] }} />
+                {h.custom && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 11, color: "#94A3B8" }}>Expected annual return %:</span>
+                    <input
+                      type="number" min={0} max={100} step={0.1}
+                      value={(h.cagr * 100).toFixed(1)}
+                      onChange={e => updateCagr(h.ticker, Number(e.target.value) / 100)}
+                      style={{ width: 60, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 6, padding: "3px 7px", fontSize: 12, color: "#19181E", fontFamily: "inherit" }}
+                    />
+                  </div>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="range" min={0} max={100} step={1} value={h.weight}
+                    onChange={e => updateWeight(h.ticker, Number(e.target.value))}
+                    style={{ flex: 1, accentColor: HOLDING_PALETTE[i % HOLDING_PALETTE.length] }} />
+                  <input
+                    type="number" min={0} max={100} value={h.weight}
+                    onChange={e => updateWeight(h.ticker, Number(e.target.value))}
+                    style={{ width: 46, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 6, padding: "3px 7px", fontSize: 12, color: "#19181E", fontFamily: "inherit", textAlign: "right" }}
+                  />
+                  <span style={{ fontSize: 12, color: "#94A3B8" }}>%</span>
+                </div>
               </div>
             ))}
+
+            {/* Add ticker input */}
+            <div style={{ position: "relative" }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  type="text" value={tickerInput} placeholder="Add ticker (e.g. QQQ)"
+                  onChange={e => { setTickerInput(e.target.value); setShowDropdown(true); }}
+                  onFocus={() => setShowDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                  onKeyDown={e => { if (e.key === "Enter") addHolding(tickerInput); }}
+                  style={{ flex: 1, background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "8px 10px", fontSize: 13, color: "#19181E", fontFamily: "DM Mono, monospace", outline: "none" }}
+                />
+                <button
+                  onClick={() => addHolding(tickerInput)}
+                  style={{ background: "#059669", border: "none", borderRadius: 8, padding: "8px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  +
+                </button>
+              </div>
+              {showDropdown && suggestions.length > 0 && (
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, marginTop: 4, overflow: "hidden" }}>
+                  {suggestions.map(([ticker, info]) => (
+                    <button
+                      key={ticker}
+                      onMouseDown={() => addHolding(ticker)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 12px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderBottom: "1px solid #F8FAFC" }}
+                    >
+                      <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 12, color: "#19181E", minWidth: 44 }}>{ticker}</span>
+                      <span style={{ fontSize: 12, color: "#64748B", flex: 1 }}>{info.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#059669" }}>{(info.cagr * 100).toFixed(1)}%</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p style={{ margin: 0, fontSize: 10, color: "#CBD5E1", fontStyle: "italic" }}>
+              Based on 10-yr historical CAGR. Past returns don&apos;t guarantee future results.
+            </p>
           </div>
         </div>
 
