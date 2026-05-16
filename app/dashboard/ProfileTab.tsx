@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { CITIES } from "@/lib/fire-data";
-import { SUPPORTED_CURRENCIES } from "@/lib/currency";
+import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 
 interface PlaidItem {
   id: string;
@@ -27,15 +27,17 @@ interface Props {
   userEmail: string;
   defaultCurrency: string;
   onDefaultCurrencyChange: (currency: string) => void;
+  onPreferredCurrenciesChange: (currencies: string[]) => void;
   onTabChange: (tab: string) => void;
 }
 
-export default function ProfileTab({ userId, userEmail, defaultCurrency: initialDefaultCurrency, onDefaultCurrencyChange, onTabChange }: Props) {
+export default function ProfileTab({ userId, userEmail, defaultCurrency: initialDefaultCurrency, onDefaultCurrencyChange, onPreferredCurrenciesChange, onTabChange }: Props) {
   const [displayName, setDisplayName] = useState("");
   const [citySearch, setCitySearch] = useState("");
   const [selectedCity, setSelectedCity] = useState<{ name: string; key: string } | null>(null);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState(initialDefaultCurrency || "USD");
+  const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
   const [saving, setSaving] = useState<Record<"name" | "city" | "currency", boolean>>({
     name: false,
     city: false,
@@ -55,7 +57,7 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
   useEffect(() => {
     async function load() {
       const [profileRes, userRes] = await Promise.all([
-        supabase.from("profiles").select("display_name, jurisdiction, default_currency").eq("user_id", userId).single(),
+        supabase.from("profiles").select("display_name, jurisdiction, default_currency, preferred_currencies").eq("user_id", userId).single(),
         supabase.auth.getUser(),
       ]);
 
@@ -79,6 +81,11 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
       if (p?.default_currency) {
         setDefaultCurrency(p.default_currency);
         onDefaultCurrencyChange(p.default_currency);
+      }
+
+      if (p?.preferred_currencies) {
+        setPreferredCurrencies(p.preferred_currencies as string[]);
+        onPreferredCurrenciesChange(p.preferred_currencies as string[]);
       }
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -158,12 +165,19 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
   async function saveCurrency() {
     setSaving((s) => ({ ...s, currency: true }));
     await supabase.from("profiles").upsert(
-      { user_id: userId, default_currency: defaultCurrency, updated_at: new Date().toISOString() },
+      { user_id: userId, default_currency: defaultCurrency, preferred_currencies: preferredCurrencies, updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     );
     setSaving((s) => ({ ...s, currency: false }));
     onDefaultCurrencyChange(defaultCurrency);
+    onPreferredCurrenciesChange(preferredCurrencies);
     flash("currency");
+  }
+
+  function toggleCurrency(c: string) {
+    setPreferredCurrencies(prev =>
+      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+    );
   }
 
   async function handleDelete() {
@@ -344,6 +358,38 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, marginBottom: 0 }}>
           Sets the dashboard display currency and pre-fills new transaction entries.
         </p>
+
+        <div style={{ marginTop: 20 }}>
+          <label style={labelStyle}>Preferred currencies</label>
+          <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 10px" }}>
+            Only checked currencies appear in dropdowns. Leave all unchecked to show every currency.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 6 }}>
+            {SUPPORTED_CURRENCIES.map((c) => {
+              const checked = preferredCurrencies.includes(c);
+              return (
+                <label key={c} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "5px 8px", borderRadius: 8, background: checked ? "#F0FDF4" : "#F8FAFC", border: `1px solid ${checked ? "#BBF7D0" : "#E2E8F0"}`, transition: "all 0.15s" }}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleCurrency(c)}
+                    style={{ accentColor: "#059669", width: 14, height: 14, flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#19181E", fontFamily: "DM Mono, monospace" }}>{c}</span>
+                  <span style={{ fontSize: 11, color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{CURRENCY_NAMES[c]}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <button onClick={() => setPreferredCurrencies([...SUPPORTED_CURRENCIES])} style={{ fontSize: 12, color: "#059669", background: "none", border: "1px solid #D1FAE5", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
+              Select all
+            </button>
+            <button onClick={() => setPreferredCurrencies([])} style={{ fontSize: 12, color: "#64748B", background: "none", border: "1px solid #E2E8F0", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
+              Clear all
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Connected Banks */}

@@ -2129,6 +2129,7 @@ export default function Dashboard() {
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
+  const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
   const suggestedLearnStage = useMemo<LearnStageId>(() => {
     const investable = k401 + rothIRA + taxable + cashSavings;
     const monthlyExpenses = Object.entries(expenses)
@@ -2207,11 +2208,12 @@ export default function Dashboard() {
 
       supabase
         .from("profiles")
-        .select("default_currency")
+        .select("default_currency, preferred_currencies")
         .eq("user_id", session.user.id)
         .maybeSingle()
         .then(({ data: profile }) => {
           if (profile?.default_currency) setDefaultCurrency(profile.default_currency);
+          if (profile?.preferred_currencies) setPreferredCurrencies(profile.preferred_currencies as string[]);
         });
 
       // Fetch user display name
@@ -2488,9 +2490,9 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} onUpgradeClick={() => setUpgradeOpen(true)} />}
+                {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} onUpgradeClick={() => setUpgradeOpen(true)} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
-                {cashflowSubTab === "recurring" && <RecurringTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} />}
+                {cashflowSubTab === "recurring" && <RecurringTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} />
                 )}
@@ -2583,7 +2585,7 @@ export default function Dashboard() {
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "profile" && userId && (
-              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onTabChange={setTab} />
+              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onPreferredCurrenciesChange={setPreferredCurrencies} onTabChange={setTab} />
             )}
           </div>
         </main>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
+import { FALLBACK_RATES, SUPPORTED_CURRENCIES, formatUSDInCurrency } from "@/lib/currency";
 
 // ─── Constants (copied from TransactionsTab — kept local to avoid coupling) ───
 const EXPENSE_CATEGORIES = [
@@ -393,10 +393,11 @@ function SectionLabel({ label }: { label: string }) {
 }
 
 // ─── Root Component ───────────────────────────────────────────────────────────
-export default function RecurringTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES }: {
+export default function RecurringTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [] }: {
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
+  preferredCurrencies?: string[];
 }) {
   const [transactions, setTransactions] = useState<RawTx[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
@@ -647,7 +648,7 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
                 CURRENCY
               </label>
               <select value={formCurrency} onChange={e => setFormCurrency(e.target.value)} style={selectStyle}>
-                {["USD","EUR","GBP","AUD","CAD","JPY","SGD","HKD"].map(c => (
+                {(preferredCurrencies.length > 0 ? preferredCurrencies : [...SUPPORTED_CURRENCIES]).map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

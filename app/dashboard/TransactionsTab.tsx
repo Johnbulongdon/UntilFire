@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
-import { formatUSDInCurrency } from "@/lib/currency";
+import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import PlaidConnect from "./PlaidConnect";
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -48,12 +48,7 @@ const INCOME_CATEGORIES = [
 ];
 
 const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
-const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CNY", "AUD", "CAD", "SGD", "HKD"];
-
-const FALLBACK_RATES: Record<string, number> = {
-  EUR: 0.92, GBP: 0.79, JPY: 149.5, CNY: 7.27,
-  AUD: 1.56, CAD: 1.36, SGD: 1.30, HKD: 7.78,
-};
+const FALLBACK_RATES = LIB_FALLBACK_RATES;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number, currency = "USD") =>
@@ -373,7 +368,7 @@ function QuickAddForm({
             onChange={(e) => setField("currency", e.target.value)}
             style={{ fontSize: 11, fontWeight: 700, color: "#64748B", padding: "4px 8px", background: "#F1F5F9", border: "none", borderRadius: 999, cursor: "pointer", fontFamily: "inherit" }}
           >
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {(preferredCurrencies.length > 0 ? preferredCurrencies : [...SUPPORTED_CURRENCIES]).map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
 
@@ -1092,10 +1087,11 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, onUpgradeClick }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], onUpgradeClick }: {
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
+  preferredCurrencies?: string[];
   onUpgradeClick?: () => void;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
