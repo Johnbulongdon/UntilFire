@@ -20,22 +20,27 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
   async function handleSubscribe() {
     setLoading(true);
     setError(null);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setLoading(false); return; }
-    const res = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok || !data.url) {
-      setError(data.error ?? "Failed to start checkout — please try again");
-      return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setError(data.error ?? "Failed to start checkout — please try again");
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setError("Failed to start checkout — please try again");
+    } finally {
+      setLoading(false);
     }
-    window.location.href = data.url;
   }
 
   return (
