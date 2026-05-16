@@ -1014,6 +1014,9 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
   const bankAssets = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment");
   const bankAssetsTotal = bankAssets.reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const [hideZeroAssets, setHideZeroAssets] = useState(true);
+  const visibleAssets = hideZeroAssets ? bankAssets.filter(a => (a.balance_current ?? 0) !== 0) : bankAssets;
+  const hiddenAssetCount = bankAssets.length - visibleAssets.length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1024,14 +1027,21 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
               <span style={{ fontSize: 16 }}>🏦</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Bank Accounts</span>
             </div>
-            {onRefreshAccounts && (
-              <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#047857", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                ↻ Refresh
-              </button>
-            )}
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              {hiddenAssetCount > 0 || !hideZeroAssets ? (
+                <button onClick={() => setHideZeroAssets(h => !h)} style={{ background: "none", border: "none", color: "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                  {hideZeroAssets ? `Show $0 (${hiddenAssetCount})` : "Hide $0"}
+                </button>
+              ) : null}
+              {onRefreshAccounts && (
+                <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#047857", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                  ↻ Refresh
+                </button>
+              )}
+            </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
-            {bankAssets.map(a => (
+            {visibleAssets.map(a => (
               <div key={a.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
                 <div style={{ fontSize: 12, color: "#94A3B8" }}>
@@ -1179,6 +1189,9 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
 
   const bankLiabilities = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan");
   const bankLiabilitiesTotal = bankLiabilities.reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const [hideZeroLiab, setHideZeroLiab] = useState(true);
+  const visibleLiabilities = hideZeroLiab ? bankLiabilities.filter(a => (a.balance_current ?? 0) !== 0) : bankLiabilities;
+  const hiddenLiabCount = bankLiabilities.length - visibleLiabilities.length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1189,14 +1202,21 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
               <span style={{ fontSize: 16 }}>💳</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: "#991B1B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Cards & Loans</span>
             </div>
-            {onRefreshAccounts && (
-              <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#DC2626", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                ↻ Refresh
-              </button>
-            )}
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              {hiddenLiabCount > 0 || !hideZeroLiab ? (
+                <button onClick={() => setHideZeroLiab(h => !h)} style={{ background: "none", border: "none", color: "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                  {hideZeroLiab ? `Show $0 (${hiddenLiabCount})` : "Hide $0"}
+                </button>
+              ) : null}
+              {onRefreshAccounts && (
+                <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#DC2626", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                  ↻ Refresh
+                </button>
+              )}
+            </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
-            {bankLiabilities.map(a => (
+            {visibleLiabilities.map(a => (
               <div key={a.id} style={{ background: "#fff", border: "1px solid #FCA5A5", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
                 <div style={{ fontSize: 12, color: "#94A3B8" }}>
