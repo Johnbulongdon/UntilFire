@@ -907,6 +907,184 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
   );
 }
 
+// ─── Survey Modal ─────────────────────────────────────────────────────────────
+type SurveyResponses = {
+  satisfaction: number | null;
+  featuresUsed: string[];
+  missing: string | null;
+  missingOther: string;
+  recommend: string | null;
+  notes: string;
+};
+
+const SURVEY_FEATURES = [
+  "FIRE Calculator",
+  "Expense Tracking",
+  "Bank Sync",
+  "Retirement Target Planner",
+  "Learning Hub",
+];
+
+const SURVEY_MISSING = [
+  "Better budgeting tools",
+  "More city / cost-of-living data",
+  "AI-powered advice",
+  "Mobile app",
+  "Faster bank sync",
+  "Other",
+];
+
+function SurveyModal({ onSubmit, onDismiss }: {
+  onSubmit: (r: SurveyResponses) => Promise<void>;
+  onDismiss: () => void;
+}) {
+  const [satisfaction, setSatisfaction]   = useState<number | null>(null);
+  const [hovered,      setHovered]        = useState<number | null>(null);
+  const [featuresUsed, setFeaturesUsed]   = useState<string[]>([]);
+  const [missing,      setMissing]        = useState<string | null>(null);
+  const [missingOther, setMissingOther]   = useState("");
+  const [recommend,    setRecommend]      = useState<string | null>(null);
+  const [notes,        setNotes]          = useState("");
+  const [submitting,   setSubmitting]     = useState(false);
+  const [done,         setDone]           = useState(false);
+
+  const toggleFeature = (f: string) =>
+    setFeaturesUsed(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    await onSubmit({ satisfaction, featuresUsed, missing, missingOther, recommend, notes });
+    setSubmitting(false);
+    setDone(true);
+  };
+
+  const starDisplay = hovered ?? satisfaction ?? 0;
+
+  if (done) return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: "40px 32px", maxWidth: 400, width: "100%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🙏</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Thank you!</div>
+        <div style={{ fontSize: 13, color: "#64748B", marginTop: 8, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>Your feedback shapes what we build next.</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: "32px 28px 24px", maxWidth: 480, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24 }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#059669", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>Quick survey</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Help us build what matters 🙏</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontFamily: "Inter, sans-serif" }}>5 questions · takes ~90 seconds</div>
+          </div>
+        </div>
+
+        {/* Q1 — Satisfaction */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>1. Overall, how satisfied are you with UntilFire?</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[1, 2, 3, 4, 5].map(n => (
+              <button
+                key={n}
+                onClick={() => setSatisfaction(n)}
+                onMouseEnter={() => setHovered(n)}
+                onMouseLeave={() => setHovered(null)}
+                style={{ flex: 1, fontSize: 22, background: "none", border: `1.5px solid ${n <= starDisplay ? "#F59E0B" : "#E2E8F0"}`, borderRadius: 8, padding: "8px 0", cursor: "pointer", color: n <= starDisplay ? "#F59E0B" : "#E2E8F0", transition: "all 0.1s" }}
+              >★</button>
+            ))}
+          </div>
+          {satisfaction && (
+            <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
+              {["", "Very dissatisfied", "Dissatisfied", "Neutral", "Satisfied", "Very satisfied"][satisfaction]}
+            </div>
+          )}
+        </div>
+
+        {/* Q2 — Features used */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>2. Which features do you use most? <span style={{ color: "#94A3B8", fontWeight: 400 }}>(pick any)</span></div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {SURVEY_FEATURES.map(f => {
+              const active = featuresUsed.includes(f);
+              return (
+                <button key={f} onClick={() => toggleFeature(f)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#059669" : "#E2E8F0"}`, background: active ? "#F0FDF4" : "#F8FAFC", color: active ? "#064E3B" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                  {active ? "✓ " : ""}{f}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Q3 — Missing */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>3. What&apos;s the #1 thing missing or frustrating?</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {SURVEY_MISSING.map(m => {
+              const active = missing === m;
+              return (
+                <button key={m} onClick={() => setMissing(active ? null : m)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#F97316" : "#E2E8F0"}`, background: active ? "#FFF7ED" : "#F8FAFC", color: active ? "#C2410C" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                  {m}
+                </button>
+              );
+            })}
+          </div>
+          {missing === "Other" && (
+            <input
+              type="text"
+              value={missingOther}
+              onChange={e => setMissingOther(e.target.value)}
+              placeholder="Tell us more…"
+              style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", color: "#0F172A" }}
+            />
+          )}
+        </div>
+
+        {/* Q4 — Recommend */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>4. Would you recommend UntilFire to a friend?</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {([["yes", "👍 Yes", "#059669", "#F0FDF4"], ["maybe", "🤔 Maybe", "#6366F1", "#EEF2FF"], ["no", "👎 No", "#DC2626", "#FEF2F2"]] as const).map(([val, label, activeColor, activeBg]) => (
+              <button key={val} onClick={() => setRecommend(recommend === val ? null : val)} style={{ flex: 1, padding: "9px 8px", borderRadius: 9, border: `1.5px solid ${recommend === val ? activeColor : "#E2E8F0"}`, background: recommend === val ? activeBg : "#F8FAFC", color: recommend === val ? activeColor : "#64748B", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Q5 — Notes */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>5. Anything else you&apos;d like us to know? <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional)</span></div>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="Feature ideas, annoyances, compliments…"
+            rows={3}
+            style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", resize: "none", color: "#0F172A" }}
+          />
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <button
+            onClick={handleSubmit}
+            disabled={!satisfaction || submitting}
+            style={{ background: satisfaction ? "#064E3B" : "#E5E7EB", color: satisfaction ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: satisfaction ? "pointer" : "not-allowed", fontFamily: "Manrope, sans-serif" }}
+          >
+            {submitting ? "Sending…" : "Send feedback →"}
+          </button>
+          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "4px 0" }}>
+            Skip for now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Onboarding Modal ─────────────────────────────────────────────────────────
 function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
   defaultCurrency: string;
@@ -2403,6 +2581,7 @@ export default function Dashboard() {
   const plaidFetchedAt = useRef<number>(0);
   const [profileLoading, setProfileLoading] = useState(true);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [surveyOpen,     setSurveyOpen]     = useState(false);
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -2528,6 +2707,14 @@ export default function Dashboard() {
     }
   }, [profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Show survey once to engaged users (income > 0, never dismissed)
+  useEffect(() => {
+    if (!profileLoading && income > 0 && !localStorage.getItem('uf_survey_done')) {
+      const t = setTimeout(() => setSurveyOpen(true), 8000);
+      return () => clearTimeout(t);
+    }
+  }, [profileLoading, income]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Warn if user closes the tab while a save is in flight
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -2631,6 +2818,25 @@ export default function Dashboard() {
         }
       `}</style>
 
+      {surveyOpen && (
+        <SurveyModal
+          onSubmit={async (responses) => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            await fetch("/api/survey", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+              body: JSON.stringify(responses),
+            });
+            localStorage.setItem('uf_survey_done', '1');
+            setSurveyOpen(false);
+          }}
+          onDismiss={() => {
+            localStorage.setItem('uf_survey_done', '1');
+            setSurveyOpen(false);
+          }}
+        />
+      )}
       {onboardingOpen && (
         <OnboardingModal
           defaultCurrency={defaultCurrency}
