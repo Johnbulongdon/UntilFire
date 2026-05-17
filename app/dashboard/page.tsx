@@ -384,7 +384,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, onTabChange }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -392,6 +392,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   prevIncome?: number; prevExpenses?: number; userName?: string;
   displayCurrency: string; displayRates: Record<string, number>;
   onTabChange?: (tab: TabKey) => void;
+  onOpenOnboarding?: () => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("15Y");
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
@@ -470,6 +471,15 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
+      {/* ── Setup checklist ─────────────────────────────────────────────── */}
+      <SetupChecklist
+        income={income} expenses={expenses}
+        k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
+        cityName={cityName}
+        onTabChange={onTabChange}
+        onOpenOnboarding={onOpenOnboarding}
+      />
+
       {/* ── Greeting header ─────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
@@ -513,7 +523,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           ) : (
             <>
               <div style={{ fontSize: 36, fontWeight: 800, color: "#CBD5E1", fontFamily: "Manrope, sans-serif", letterSpacing: "-2px" }}>—</div>
-              <div style={{ marginTop: 8, fontSize: 13, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>Add income &amp; expenses in the Cashflow tab</div>
+              <button
+                onClick={() => onOpenOnboarding?.()}
+                style={{ marginTop: 12, background: "#064E3B", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+              >
+                Get my FIRE number →
+              </button>
             </>
           )}
         </div>
@@ -869,6 +884,141 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Onboarding Modal ─────────────────────────────────────────────────────────
+function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
+  defaultCurrency: string;
+  onComplete: (income: number, spending: number, savings: number) => void;
+  onDismiss: () => void;
+}) {
+  const [inc, setInc] = useState("");
+  const [spend, setSpend] = useState("");
+  const [save, setSave] = useState("");
+
+  const toNum = (s: string) => parseFloat(s.replace(/,/g, "")) || 0;
+  const fmt = (s: string) => {
+    const n = parseFloat(s.replace(/,/g, ""));
+    return isNaN(n) ? s : n.toLocaleString();
+  };
+
+  const handleSubmit = () => {
+    onComplete(toNum(inc), toNum(spend), toNum(save));
+  };
+
+  const Field = ({ label, hint, value, onChange }: { label: string; hint: string; value: string; onChange: (v: string) => void }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>{label}</label>
+      <div style={{ position: "relative" }}>
+        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Inter, sans-serif" }}>{defaultCurrency}</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={value}
+          onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
+          onBlur={e => onChange(fmt(e.target.value))}
+          placeholder="0"
+          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Inter, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
+          onFocus={e => { e.target.style.borderColor = "#064E3B"; }}
+        />
+      </div>
+      <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>{hint}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: "36px 32px 28px", maxWidth: 440, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24 }}>
+        {/* Header */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#20D4BF", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>Welcome to UntilFire</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.25 }}>
+            Let&apos;s find your FIRE number
+          </div>
+          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>
+            Three numbers is all it takes. You can refine everything later.
+          </div>
+        </div>
+
+        {/* Fields */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Field label="Monthly take-home pay" hint="After tax, per month" value={inc} onChange={setInc} />
+          <Field label="Monthly spending" hint="Rent, food, everything — rough total is fine" value={spend} onChange={setSpend} />
+          <Field label="Current savings & investments" hint="Total across all accounts — 0 is okay" value={save} onChange={setSave} />
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
+          <button
+            onClick={handleSubmit}
+            disabled={!inc}
+            style={{ background: inc ? "#064E3B" : "#E5E7EB", color: inc ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: inc ? "pointer" : "not-allowed", fontFamily: "Manrope, sans-serif", transition: "background 0.15s" }}
+          >
+            Get my FIRE number →
+          </button>
+          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "4px 0" }}>
+            Skip for now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Setup Checklist ──────────────────────────────────────────────────────────
+function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings, cityName, onTabChange, onOpenOnboarding }: {
+  income: number; expenses: Record<string, number | undefined>;
+  k401: number; rothIRA: number; taxable: number; cashSavings: number;
+  cityName: string;
+  onTabChange?: (tab: TabKey) => void;
+  onOpenOnboarding?: () => void;
+}) {
+  const hasExpenses = Object.values(expenses).some(v => (v ?? 0) > 0);
+  const hasAssets = k401 + rothIRA + taxable + cashSavings > 0;
+  const steps = [
+    { label: "Set your income", done: income > 0, action: () => onOpenOnboarding?.(), cta: "Add income" },
+    { label: "Add your expenses", done: hasExpenses, action: () => onTabChange?.("cashflow"), cta: "Go to Cashflow" },
+    { label: "Add savings or investments", done: hasAssets, action: () => onTabChange?.("assets"), cta: "Go to Assets" },
+    { label: "Set your city", done: cityName !== "", action: () => onTabChange?.("profile"), cta: "Go to Profile" },
+  ];
+  const completedCount = steps.filter(s => s.done).length;
+  if (completedCount === 4) return null;
+  const pct = (completedCount / 4) * 100;
+
+  return (
+    <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", fontFamily: "Manrope, sans-serif" }}>Setup checklist</div>
+          <div style={{ fontSize: 12, color: "#059669", fontFamily: "Inter, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#064E3B", fontFamily: "Manrope, sans-serif" }}>{Math.round(pct)}%</div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ height: 6, background: "#D1FAE5", borderRadius: 99, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: "#059669", borderRadius: 99, transition: "width 0.4s ease" }} />
+      </div>
+
+      {/* Steps */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {steps.map(step => (
+          <div key={step.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 20, height: 20, borderRadius: "50%", background: step.done ? "#059669" : "#D1FAE5", border: step.done ? "none" : "2px solid #6EE7B7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {step.done && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </div>
+            <span style={{ flex: 1, fontSize: 13, color: step.done ? "#6B7280" : "#064E3B", fontFamily: "Inter, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
+            {!step.done && (
+              <button onClick={step.action} style={{ background: "transparent", border: "none", color: "#059669", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0, whiteSpace: "nowrap" }}>
+                {step.cta} →
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -2076,6 +2226,7 @@ export default function Dashboard() {
   const isLoaded   = useRef(false);
   const plaidFetchedAt = useRef<number>(0);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -2191,6 +2342,13 @@ export default function Dashboard() {
     });
   }, []);
 
+  // Show onboarding modal for new users (income=0, never dismissed)
+  useEffect(() => {
+    if (!profileLoading && income === 0 && !localStorage.getItem('uf_onboarding_dismissed')) {
+      setOnboardingOpen(true);
+    }
+  }, [profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Warn if user closes the tab while a save is in flight
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -2294,6 +2452,23 @@ export default function Dashboard() {
         }
       `}</style>
 
+      {onboardingOpen && (
+        <OnboardingModal
+          defaultCurrency={defaultCurrency}
+          onComplete={(inc, spend, save) => {
+            setIncome(inc);
+            setExpenses(prev => ({ ...prev, other: spend }));
+            setTaxable(save);
+            localStorage.setItem('uf_onboarding_dismissed', '1');
+            setOnboardingOpen(false);
+          }}
+          onDismiss={() => {
+            localStorage.setItem('uf_onboarding_dismissed', '1');
+            setOnboardingOpen(false);
+          }}
+        />
+      )}
+
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
@@ -2357,6 +2532,7 @@ export default function Dashboard() {
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
                 onTabChange={setTab}
+                onOpenOnboarding={() => setOnboardingOpen(true)}
               />
             )}
             {tab === "cashflow" && (
