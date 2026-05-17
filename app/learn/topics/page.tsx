@@ -58,7 +58,7 @@ export const metadata = {
   description:
     'Browse FIRE topics by concept: savings rate, the 4% rule, Coast FIRE, Barista FIRE, retirement tax strategy, and sequence of returns risk.',
   alternates: {
-    canonical: 'https://untilfire.com/learn/topics',
+    canonical: 'https://www.untilfire.com/learn/topics',
   },
 }
 

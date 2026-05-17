@@ -17,12 +17,12 @@ export const metadata: Metadata = {
   keywords:
     'FIRE calculator, financial independence, retire early, FIRE number, savings rate calculator, how much to retire, 4% rule calculator',
   alternates: {
-    canonical: 'https://untilfire.com',
+    canonical: 'https://www.untilfire.com',
   },
   openGraph: {
     title: 'UntilFire | Find Your FIRE Number',
     description: 'Your city. Your income. Your exact retirement date. Takes 60 seconds.',
-    url: 'https://untilfire.com',
+    url: 'https://www.untilfire.com',
     siteName: 'UntilFire',
     type: 'website',
   },
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: 'UntilFire | Find Your FIRE Number',
     description: 'Your city. Your income. Your exact retirement date. Takes 60 seconds.',
   },
-  metadataBase: new URL('https://untilfire.com'),
+  metadataBase: new URL('https://www.untilfire.com'),
 }
 
 export default function RootLayout({
@@ -64,7 +64,7 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'WebApplication',
               name: 'UntilFire',
-              url: 'https://untilfire.com',
+              url: 'https://www.untilfire.com',
               description: 'Free FIRE calculator for finding your financial independence number based on your city, income, and spending.',
               applicationCategory: 'FinanceApplication',
               operatingSystem: 'Any',

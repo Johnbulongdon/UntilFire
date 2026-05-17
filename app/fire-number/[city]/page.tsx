@@ -27,7 +27,7 @@ export async function generateMetadata({
   return {
     title: `${data.name} FIRE Number Calculator: How Much to Retire Early | UntilFire`,
     description: `Estimate how much money you need to retire early in ${data.name}. Use local annual spending of ${fmt(data.col)}, state tax context, and a no-signup FIRE calculator.`,
-    alternates: { canonical: `https://untilfire.com/fire-number/${data.key}` },
+    alternates: { canonical: `https://www.untilfire.com/fire-number/${data.key}` },
     openGraph: {
       title: `${data.name} FIRE Number Calculator`,
       description: `Calculate your FIRE number for ${data.name} using local spending and tax assumptions.`,
@@ -307,9 +307,9 @@ export default async function CityPage({
               "@context": "https://schema.org",
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "Home", item: "https://untilfire.com/" },
-                { "@type": "ListItem", position: 2, name: "FIRE Number by City", item: "https://untilfire.com/fire-number" },
-                { "@type": "ListItem", position: 3, name: data.name, item: `https://untilfire.com/fire-number/${data.key}` },
+                { "@type": "ListItem", position: 1, name: "Home", item: "https://www.untilfire.com/" },
+                { "@type": "ListItem", position: 2, name: "FIRE Number by City", item: "https://www.untilfire.com/fire-number" },
+                { "@type": "ListItem", position: 3, name: data.name, item: `https://www.untilfire.com/fire-number/${data.key}` },
               ],
             },
             {
@@ -317,7 +317,7 @@ export default async function CityPage({
               "@type": "WebPage",
               name: `${data.name} FIRE Number Calculator`,
               description: `Estimate how much money you need to retire early in ${data.name}.`,
-              url: `https://untilfire.com/fire-number/${data.key}`,
+              url: `https://www.untilfire.com/fire-number/${data.key}`,
               mainEntity: {
                 "@type": "SoftwareApplication",
                 name: "UntilFire FIRE Number Calculator",

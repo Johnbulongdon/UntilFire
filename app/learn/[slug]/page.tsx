@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props) {
     title: `${article.title} | UntilFire`,
     description: article.description,
     alternates: {
-      canonical: `https://untilfire.com/learn/${article.slug}`,
+      canonical: `https://www.untilfire.com/learn/${article.slug}`,
     },
     openGraph: {
       title: article.title,

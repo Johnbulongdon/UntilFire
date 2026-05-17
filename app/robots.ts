@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/dashboard', '/transactions', '/expenses', '/api/', '/auth/', '/debug'],
     },
-    sitemap: 'https://untilfire.com/sitemap.xml',
+    sitemap: 'https://www.untilfire.com/sitemap.xml',
   }
 }
