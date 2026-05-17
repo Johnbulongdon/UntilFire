@@ -5,7 +5,7 @@ export const metadata = {
   title: 'FIRE Articles & Guides | UntilFire',
   description: 'In-depth guides on financial independence, early retirement, the 4% rule, savings rate, Roth IRA strategy, compound interest, and more.',
   alternates: {
-    canonical: 'https://untilfire.com/learn/articles',
+    canonical: 'https://www.untilfire.com/learn/articles',
   },
 }
 

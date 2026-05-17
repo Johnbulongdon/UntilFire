@@ -46,12 +46,12 @@ export const metadata: Metadata = {
     'Free FIRE calculators for retirement planning, savings rate, Coast FIRE, compound interest, and APY. Use each tool on its own or calculate your full FIRE date.',
   keywords:
     'FIRE calculators, financial calculators, FIRE number calculator, coast FIRE calculator, savings rate calculator, compound interest calculator, APY calculator',
-  alternates: { canonical: 'https://untilfire.com/calculators' },
+  alternates: { canonical: 'https://www.untilfire.com/calculators' },
   openGraph: {
     title: 'Financial Calculators for FIRE Planning | UntilFire',
     description:
       'Explore free calculators for FIRE planning, retirement math, savings rate, compounding, and Coast FIRE.',
-    url: 'https://untilfire.com/calculators',
+    url: 'https://www.untilfire.com/calculators',
     siteName: 'UntilFire',
     type: 'website',
   },
@@ -218,11 +218,11 @@ export default function CalculatorsHubPage() {
             name: 'UntilFire Calculators',
             description:
               'A hub of free FIRE planning calculators including FIRE number, Coast FIRE, savings rate, compound interest, and APY.',
-            url: 'https://untilfire.com/calculators',
+            url: 'https://www.untilfire.com/calculators',
             hasPart: CALCULATORS.map((calculator, index) => ({
               '@type': 'ListItem',
               position: index + 1,
-              url: `https://untilfire.com${calculator.href}`,
+              url: `https://www.untilfire.com${calculator.href}`,
               name: calculator.name,
             })),
           }),

@@ -116,7 +116,7 @@ export const cityLandingPages = CITY_PAGE_SEEDS.map((seed) => {
     comparedToUsAverage,
     title: `${seed.keyword} Calculator and Planning Guide | UntilFire`,
     description: `Estimate a realistic FIRE number for ${city.name} using city-specific cost of living, taxes, and retirement math. See spending, target portfolio, and the next calculator to use.`,
-    canonicalUrl: `https://untilfire.com/fire-number/${seed.slug}`,
+    canonicalUrl: `https://www.untilfire.com/fire-number/${seed.slug}`,
     heroTitle: `What is a realistic FIRE number in ${city.name}?`,
     intro:
       `Use ${city.name} as the baseline for your FIRE planning. UntilFire starts with an estimated annual spending profile for the city, then turns that into a retirement target you can pressure-test with your actual income and savings.`,

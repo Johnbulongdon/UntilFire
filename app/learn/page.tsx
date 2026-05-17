@@ -7,7 +7,7 @@ export const metadata = {
   title: 'Learning Hub | UntilFire',
   description: 'Choose your FIRE stage and get the most relevant articles, calculators, and next steps without getting overwhelmed.',
   alternates: {
-    canonical: 'https://untilfire.com/learn',
+    canonical: 'https://www.untilfire.com/learn',
   },
 }
 

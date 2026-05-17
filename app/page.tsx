@@ -370,7 +370,7 @@ function ShareModal({
 }) {
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = `https://untilfire.com/share?city=${encodeURIComponent(cityName)}&year=${retireYear}&years=${years}`;
+  const shareUrl = `https://www.untilfire.com/share?city=${encodeURIComponent(cityName)}&year=${retireYear}&years=${years}`;
   const shareText = `Ran my FIRE numbers on untilfire.com -it shows when you could retire based on where you live. Free, no login, takes 60 seconds. Mine came back ${cityName} by ${retireYear}. Worth a look.`;
   const redditTitle = `Found a free FIRE calculator that factors in your city -here's what it said for ${cityName}`;
 

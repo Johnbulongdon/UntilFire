@@ -10,6 +10,8 @@ const US_CITIES = CITIES.filter((c) => isUS(c.state));
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
+const fmtPlain = (n: number) => Math.round(n).toLocaleString("en-US");
+
 export async function generateStaticParams() {
   return US_CITIES.map((c) => ({ city: c.key }));
 }
@@ -23,12 +25,12 @@ export async function generateMetadata({
   const data = US_CITIES.find((c) => c.key === city);
   if (!data) return {};
   return {
-    title: `${data.name} FIRE Number Calculator | UntilFire`,
-    description: `How much do you need to retire in ${data.name}? Based on a local cost of living of ${fmt(data.col)}/year. Calculate your personal FIRE number in seconds.`,
-    alternates: { canonical: `https://untilfire.com/fire-number/${data.key}` },
+    title: `${data.name} FIRE Number Calculator: How Much to Retire Early | UntilFire`,
+    description: `Estimate how much money you need to retire early in ${data.name}. Use local annual spending of ${fmt(data.col)}, state tax context, and a no-signup FIRE calculator.`,
+    alternates: { canonical: `https://www.untilfire.com/fire-number/${data.key}` },
     openGraph: {
       title: `${data.name} FIRE Number Calculator`,
-      description: `Retire in ${data.name} — find your number based on local costs of ${fmt(data.col)}/yr.`,
+      description: `Calculate your FIRE number for ${data.name} using local spending and tax assumptions.`,
       type: "website",
     },
   };
@@ -47,6 +49,8 @@ export default async function CityPage({
   const tax = STATE_TAX[data.state];
   const taxRate = tax?.rate ?? 0;
   const taxLabel = tax?.label ?? data.state.toUpperCase();
+  const monthlyCost = data.col / 12;
+  const source = `fire-number-${data.key}`;
 
   const SCENARIOS = [75000, 100000, 150000];
   const SAVINGS_RATE = 0.20;
@@ -110,13 +114,15 @@ export default async function CityPage({
             How much do you need to retire in {data.name}? Based on a local cost of living of{" "}
             <strong style={{ color: "#064E3B" }}>{fmt(data.col)}/year</strong>, your FIRE target is{" "}
             <strong style={{ color: "#064E3B" }}>{fmt(fireTarget)}</strong>.
+            Use the calculator below instantly — no signup required.
           </p>
         </div>
 
         {/* Key stats */}
-        <div className="city-hero-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
+        <div className="city-hero-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 40 }}>
           {[
             { label: "Annual cost of living", value: fmt(data.col), sub: "local baseline" },
+            { label: "Monthly spending", value: fmt(monthlyCost), sub: "estimated baseline" },
             { label: "FIRE target (25× rule)", value: fmt(fireTarget), sub: "4% withdrawal" },
             { label: "State income tax", value: taxRate === 0 ? "0% — no income tax" : `${(taxRate * 100).toFixed(1)}%`, sub: taxLabel },
           ].map(({ label, value, sub }) => (
@@ -186,6 +192,46 @@ export default async function CityPage({
               The biggest levers: your savings rate and when you start. Saving 20% of take-home versus 10% can cut
               your time to retirement nearly in half. Starting at 25 instead of 35 can mean retiring a decade earlier.
             </p>
+            <p style={{ margin: 0 }}>
+              These numbers are educational estimates, not financial advice. Use them as a fast starting point, then
+              replace the defaults with your actual spending, income, savings, and investment assumptions.
+            </p>
+          </div>
+        </div>
+
+        {/* FAQ content */}
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "28px 32px", marginBottom: 48 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.4px", margin: "0 0 18px" }}>
+            {data.name} FIRE number FAQ
+          </h2>
+          <div style={{ display: "grid", gap: 18, color: "#475569", fontSize: 15, lineHeight: 1.7 }}>
+            <div>
+              <h3 style={{ fontSize: 16, color: "#19181E", margin: "0 0 6px", fontWeight: 800 }}>
+                How much money do I need to retire early in {data.name}?
+              </h3>
+              <p style={{ margin: 0 }}>
+                Using the 25× rule, a baseline annual spend of {fmt(data.col)} implies a FIRE number of {fmt(fireTarget)}.
+                Your real number can be higher or lower depending on housing, healthcare, taxes, family size, and desired lifestyle.
+              </p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 16, color: "#19181E", margin: "0 0 6px", fontWeight: 800 }}>
+                Is {data.name} expensive for FIRE?
+              </h3>
+              <p style={{ margin: 0 }}>
+                UntilFire estimates {fmt(monthlyCost)} per month as a local spending baseline for {data.name}. The more your actual
+                recurring expenses differ from that baseline, the more your FIRE target and retirement date will move.
+              </p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 16, color: "#19181E", margin: "0 0 6px", fontWeight: 800 }}>
+                What moves my FIRE date the most?
+              </h3>
+              <p style={{ margin: 0 }}>
+                Spending and savings rate usually matter more than tiny return assumptions. Lower annual spending reduces the target,
+                while a higher savings rate increases the amount invested each month.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -235,7 +281,7 @@ export default async function CityPage({
             Track your spending, model your investments, and see exactly when you can retire in {data.name}.
           </p>
           <Link
-            href="/dashboard"
+            href={`/?source=${source}`}
             style={{
               display: "inline-block",
               background: "#22d3a5",
@@ -248,10 +294,71 @@ export default async function CityPage({
               letterSpacing: "-0.2px",
             }}
           >
-            Start free — no credit card
+            Calculate my FIRE date
           </Link>
         </div>
       </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "Home", item: "https://www.untilfire.com/" },
+                { "@type": "ListItem", position: 2, name: "FIRE Number by City", item: "https://www.untilfire.com/fire-number" },
+                { "@type": "ListItem", position: 3, name: data.name, item: `https://www.untilfire.com/fire-number/${data.key}` },
+              ],
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              name: `${data.name} FIRE Number Calculator`,
+              description: `Estimate how much money you need to retire early in ${data.name}.`,
+              url: `https://www.untilfire.com/fire-number/${data.key}`,
+              mainEntity: {
+                "@type": "SoftwareApplication",
+                name: "UntilFire FIRE Number Calculator",
+                applicationCategory: "FinanceApplication",
+                operatingSystem: "Web browser",
+                offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+              },
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: `How much money do I need to retire early in ${data.name}?`,
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: `Using the 25x rule, estimated annual spending of $${fmtPlain(data.col)} implies a FIRE number of $${fmtPlain(fireTarget)} for ${data.name}.`,
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: `Is ${data.name} expensive for FIRE?`,
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: `UntilFire estimates $${fmtPlain(monthlyCost)} per month as a local spending baseline for ${data.name}. Your actual housing, taxes, healthcare, and lifestyle choices can move the target higher or lower.`,
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "What moves my FIRE date the most?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Spending and savings rate usually move a FIRE date more than tiny return assumptions. Lower spending reduces the target, while a higher savings rate increases monthly investing.",
+                  },
+                },
+              ],
+            },
+          ]),
+        }}
+      />
     </>
   );
 }

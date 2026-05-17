@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "FIRE Number by City — How Much to Retire Anywhere in the US | UntilFire",
   description:
     "Find out exactly how much you need to retire in any US city. Browse 97 cities with local cost-of-living data, state tax rates, and interactive FIRE calculators.",
-  alternates: { canonical: "https://untilfire.com/fire-number" },
+  alternates: { canonical: "https://www.untilfire.com/fire-number" },
   openGraph: {
     title: "FIRE Number by City | UntilFire",
     description: "How much do you need to retire in your city? 97 US cities with local cost-of-living data.",

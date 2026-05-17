@@ -33,7 +33,7 @@ export default function LoginPage() {
       options: {
         redirectTo: typeof window !== 'undefined'
           ? `${window.location.origin}/auth/callback`
-          : 'https://untilfire.com/auth/callback',
+          : 'https://www.untilfire.com/auth/callback',
       },
     })
   }
