@@ -1899,16 +1899,30 @@ const ETF_DATA: Record<string, { name: string; cagr: number; category: string }>
 
 const HOLDING_PALETTE = ["#059669", "#22d3a5", "#818cf8", "#f97316", "#fbbf24", "#ef4444", "#a78bfa", "#06b6d4"];
 
+type Scenario = {
+  id: "A" | "B" | "C";
+  label: string;
+  color: string;
+  holdings: Holding[];
+};
+
+const SCENARIO_COLORS: Record<string, string> = { A: "#059669", B: "#818cf8", C: "#f97316" };
+
 function calcDCAProjection({
   initialAmount, dcaAmount, dcaFrequency, years, holdings, includeInflation,
+  glideEnabled, currentAge, retirementAge, startStockPct, endStockPct,
 }: {
   initialAmount: number; dcaAmount: number; dcaFrequency: DCAFreq; years: number;
   holdings: Holding[]; includeInflation: boolean;
+  glideEnabled?: boolean; currentAge?: number; retirementAge?: number;
+  startStockPct?: number; endStockPct?: number;
 }): DCASimRow[] {
+  const STOCK_RETURN = 0.107;
+  const BOND_RETURN = 0.017;
   const periods: Record<DCAFreq, number> = { weekly: 52, "bi-weekly": 26, monthly: 12, annually: 1 };
   const annualContrib = dcaAmount * periods[dcaFrequency];
-  const r = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
   const inflation = 0.03;
+  const totalGlideYears = (retirementAge ?? 60) - (currentAge ?? 30);
 
   const rows: DCASimRow[] = [];
   let portfolio = initialAmount;
@@ -1917,6 +1931,14 @@ function calcDCAProjection({
   rows.push({ year: 0, portfolio: Math.round(portfolio), contributions: Math.round(totalContrib), growth: 0, real: Math.round(portfolio) });
 
   for (let y = 1; y <= years; y++) {
+    let r: number;
+    if (glideEnabled && totalGlideYears > 0) {
+      const t = Math.min(y, totalGlideYears) / totalGlideYears;
+      const stockFrac = ((startStockPct ?? 80) - ((startStockPct ?? 80) - (endStockPct ?? 40)) * t) / 100;
+      r = stockFrac * STOCK_RETURN + (1 - stockFrac) * BOND_RETURN;
+    } else {
+      r = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
+    }
     portfolio = portfolio * (1 + r) + annualContrib * (1 + r / 2);
     totalContrib += annualContrib;
     const growth = Math.max(0, portfolio - totalContrib);
@@ -1932,13 +1954,35 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
   const [dcaFreq, setDcaFreq] = useState<DCAFreq>("monthly");
   const [years, setYears] = useState(20);
   const [inflation, setInflation] = useState(false);
-  const [holdings, setHoldings] = useState<Holding[]>([
-    { ticker: "VOO", name: "Vanguard S&P 500 ETF",      cagr: 0.107, weight: 60 },
-    { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
-    { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 20 },
+  const [activeScenario, setActiveScenario] = useState<"A" | "B" | "C">("A");
+  const [scenarios, setScenarios] = useState<Scenario[]>([
+    { id: "A", label: "Scenario A", color: "#059669", holdings: [
+      { ticker: "VOO", name: "Vanguard S&P 500 ETF",      cagr: 0.107, weight: 60 },
+      { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
+      { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 20 },
+    ]},
+    { id: "B", label: "Scenario B", color: "#818cf8", holdings: [
+      { ticker: "QQQ", name: "Invesco Nasdaq-100 ETF",     cagr: 0.183, weight: 80 },
+      { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
+    ]},
+    { id: "C", label: "Scenario C", color: "#f97316", holdings: [
+      { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 100 },
+    ]},
   ]);
   const [tickerInput, setTickerInput] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [glideEnabled, setGlideEnabled] = useState(false);
+  const [glideCurrentAge, setGlideCurrentAge] = useState(30);
+  const [glideRetirementAge, setGlideRetirementAge] = useState(60);
+  const [glideStartStock, setGlideStartStock] = useState(80);
+  const [glideEndStock, setGlideEndStock] = useState(40);
+
+  const activeS = scenarios.find(s => s.id === activeScenario)!;
+  const holdings = activeS.holdings;
+
+  function updateScenarioHoldings(id: "A" | "B" | "C", updater: (h: Holding[]) => Holding[]) {
+    setScenarios(prev => prev.map(s => s.id === id ? { ...s, holdings: updater(s.holdings) } : s));
+  }
 
   const blendedReturn = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
 
@@ -1959,57 +2003,72 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
     const newH: Holding = info
       ? { ticker: upper, name: info.name, cagr: info.cagr, weight: 0 }
       : { ticker: upper, name: upper, cagr: 0.07, weight: 0, custom: true };
-    const next = [...holdings, newH];
-    const w = Math.floor(100 / next.length);
-    const rem = 100 - w * next.length;
-    setHoldings(next.map((h, i) => ({ ...h, weight: i === 0 ? w + rem : w })));
+    updateScenarioHoldings(activeScenario, hs => {
+      const next = [...hs, newH];
+      const w = Math.floor(100 / next.length);
+      const rem = 100 - w * next.length;
+      return next.map((h, i) => ({ ...h, weight: i === 0 ? w + rem : w }));
+    });
     setTickerInput("");
     setShowDropdown(false);
   }
 
   function removeHolding(ticker: string) {
-    const next = holdings.filter(h => h.ticker !== ticker);
-    if (next.length === 0) return;
-    const total = next.reduce((s, h) => s + h.weight, 0);
-    if (total === 0) {
-      const w = Math.floor(100 / next.length);
-      setHoldings(next.map((h, i) => ({ ...h, weight: i === 0 ? 100 - w * (next.length - 1) : w })));
-    } else {
+    updateScenarioHoldings(activeScenario, hs => {
+      const next = hs.filter(h => h.ticker !== ticker);
+      if (next.length === 0) return hs;
+      const total = next.reduce((s, h) => s + h.weight, 0);
+      if (total === 0) {
+        const w = Math.floor(100 / next.length);
+        return next.map((h, i) => ({ ...h, weight: i === 0 ? 100 - w * (next.length - 1) : w }));
+      }
       const rebalanced = next.map(h => ({ ...h, weight: Math.round((h.weight / total) * 100) }));
       const diff = 100 - rebalanced.reduce((s, h) => s + h.weight, 0);
       if (diff !== 0) rebalanced[0] = { ...rebalanced[0], weight: rebalanced[0].weight + diff };
-      setHoldings(rebalanced);
-    }
+      return rebalanced;
+    });
   }
 
   function updateWeight(ticker: string, val: number) {
-    const clamped = Math.max(0, Math.min(100, val));
-    const idx = holdings.findIndex(h => h.ticker === ticker);
-    if (idx === -1) return;
-    const delta = clamped - holdings[idx].weight;
-    const others = holdings.filter((_, i) => i !== idx);
-    const totalOthers = others.reduce((s, h) => s + h.weight, 0);
-    const next = holdings.map((h, i) => {
-      if (i === idx) return { ...h, weight: clamped };
-      if (totalOthers === 0) return { ...h, weight: Math.floor((100 - clamped) / others.length) };
-      return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
+    updateScenarioHoldings(activeScenario, hs => {
+      const clamped = Math.max(0, Math.min(100, val));
+      const idx = hs.findIndex(h => h.ticker === ticker);
+      if (idx === -1) return hs;
+      const delta = clamped - hs[idx].weight;
+      const others = hs.filter((_, i) => i !== idx);
+      const totalOthers = others.reduce((s, h) => s + h.weight, 0);
+      const next = hs.map((h, i) => {
+        if (i === idx) return { ...h, weight: clamped };
+        if (totalOthers === 0) return { ...h, weight: Math.floor((100 - clamped) / others.length) };
+        return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
+      });
+      const sum = next.reduce((s, h) => s + h.weight, 0);
+      if (sum !== 100) {
+        const fixIdx = next.findIndex((h, i) => i !== idx && h.weight > 0);
+        const fi = fixIdx === -1 ? (idx === 0 ? 1 : 0) : fixIdx;
+        next[fi] = { ...next[fi], weight: Math.max(0, next[fi].weight + (100 - sum)) };
+      }
+      return next;
     });
-    const sum = next.reduce((s, h) => s + h.weight, 0);
-    if (sum !== 100) {
-      const lastOtherIdx = next.findIndex((h, i) => i !== idx && h.weight > 0) ?? (idx === 0 ? 1 : 0);
-      next[lastOtherIdx] = { ...next[lastOtherIdx], weight: Math.max(0, next[lastOtherIdx].weight + (100 - sum)) };
-    }
-    setHoldings(next);
   }
 
   function updateCagr(ticker: string, cagr: number) {
-    setHoldings(hs => hs.map(h => h.ticker === ticker ? { ...h, cagr } : h));
+    updateScenarioHoldings(activeScenario, hs => hs.map(h => h.ticker === ticker ? { ...h, cagr } : h));
   }
 
-  const chartData = useMemo(() => calcDCAProjection({
-    initialAmount: initialAmt, dcaAmount: dcaAmt, dcaFrequency: dcaFreq,
-    years, holdings, includeInflation: inflation,
-  }), [initialAmt, dcaAmt, dcaFreq, years, holdings, inflation]);
+  const glideParams = { glideEnabled, currentAge: glideCurrentAge, retirementAge: glideRetirementAge, startStockPct: glideStartStock, endStockPct: glideEndStock };
+
+  const chartData = useMemo(() => {
+    const [rowsA, rowsB, rowsC] = scenarios.map(s =>
+      calcDCAProjection({ initialAmount: initialAmt, dcaAmount: dcaAmt, dcaFrequency: dcaFreq, years, holdings: s.holdings, includeInflation: inflation, ...glideParams })
+    );
+    return rowsA.map((a, i) => ({
+      year: a.year,
+      A: a.portfolio, B: rowsB[i].portfolio, C: rowsC[i].portfolio,
+      contributions: a.contributions,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenarios, initialAmt, dcaAmt, dcaFreq, years, inflation, glideEnabled, glideCurrentAge, glideRetirementAge, glideStartStock, glideEndStock]);
 
   const last = chartData[chartData.length - 1];
   const fmtK = (n: number) => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : `$${n}`;
@@ -2027,7 +2086,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
       </button>
       <div>
         <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 20, fontWeight: 700, color: "#19181E", margin: "0 0 4px" }}>Investment Simulations</h2>
-        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>Model DCA contributions with your actual ETFs and stocks. Returns based on 10-yr historical CAGR.</p>
+        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>Compare up to 3 portfolio scenarios with DCA contributions. Returns based on 10-yr historical CAGR.</p>
       </div>
 
       <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
@@ -2065,16 +2124,64 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                 <span style={{ position: "absolute", top: 3, left: inflation ? 21 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
               </button>
             </div>
+
+            {/* Glide path toggle */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", color: "#64748B", fontWeight: 700 }}>
+                Age-based allocation
+              </label>
+              <button
+                onClick={() => setGlideEnabled(v => !v)}
+                style={{ width: 40, height: 22, borderRadius: 11, border: "none", cursor: "pointer", background: glideEnabled ? "#818cf8" : "#CBD5E1", position: "relative", transition: "background 0.2s" }}
+              >
+                <span style={{ position: "absolute", top: 3, left: glideEnabled ? 21 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+              </button>
+            </div>
+            {glideEnabled && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 12, background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
+                <div style={{ fontSize: 11, color: "#94A3B8" }}>Linearly shifts stock/bond split from today → retirement. Overrides per-scenario holdings.</div>
+                <FieldRow label="Current Age">
+                  <NumberInput value={glideCurrentAge} onChange={setGlideCurrentAge} />
+                </FieldRow>
+                <FieldRow label="Retirement Age">
+                  <NumberInput value={glideRetirementAge} onChange={setGlideRetirementAge} />
+                </FieldRow>
+                <div style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B", fontWeight: 700 }}>
+                  Stocks today: {glideStartStock}%
+                </div>
+                <input type="range" min={0} max={100} value={glideStartStock} onChange={e => setGlideStartStock(+e.target.value)} style={{ width: "100%", accentColor: "#059669" }} />
+                <div style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B", fontWeight: 700 }}>
+                  Stocks at retirement: {glideEndStock}%
+                </div>
+                <input type="range" min={0} max={100} value={glideEndStock} onChange={e => setGlideEndStock(+e.target.value)} style={{ width: "100%", accentColor: "#059669" }} />
+                <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>
+                  Stocks @ 10.7%/yr (S&amp;P 500) · Bonds @ 1.7%/yr (Total Bond)
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Holdings / Allocation */}
+          {/* Scenario tabs + Holdings */}
           <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Portfolio Holdings</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#059669" }}>
-                Blended: {(blendedReturn * 100).toFixed(1)}%/yr
+              <div style={{ display: "flex", gap: 4 }}>
+                {(["A", "B", "C"] as const).map(id => (
+                  <button key={id} onClick={() => setActiveScenario(id)}
+                    style={{ padding: "3px 11px", borderRadius: 6, border: "none", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit",
+                      background: activeScenario === id ? SCENARIO_COLORS[id] : "#F1F5F9",
+                      color: activeScenario === id ? "#fff" : "#64748B" }}>
+                    {id}
+                  </button>
+                ))}
               </div>
             </div>
+
+            {!glideEnabled && (
+              <div style={{ fontSize: 11, color: SCENARIO_COLORS[activeScenario], fontWeight: 700 }}>
+                Blended: {(blendedReturn * 100).toFixed(1)}%/yr
+              </div>
+            )}
 
             {/* Colour allocation bar */}
             <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden" }}>
@@ -2164,7 +2271,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
         {/* Chart + stats */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: "1 1 300px", minWidth: 0 }}>
           <div className="uf-card">
-            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Portfolio Growth</div>
+            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Portfolio Growth Comparison</div>
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
@@ -2176,27 +2283,32 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                   contentStyle={{ borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 12 }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="portfolio" name="Portfolio Value" stroke="#059669" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="A" name="Scenario A" stroke="#059669" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="B" name="Scenario B" stroke="#818cf8" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="C" name="Scenario C" stroke="#f97316" strokeWidth={2.5} dot={false} />
                 <Line type="monotone" dataKey="contributions" name="Total Contributions" stroke="#CBD5E1" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
-                {inflation && (
-                  <Line type="monotone" dataKey="real" name="Real Value (inflation adj.)" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" dot={false} />
-                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Summary stats */}
+          {/* Summary stats — one card per scenario */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-            {[
-              { label: "Final Portfolio", value: fmtK(last.portfolio), color: "#059669" },
-              { label: "Total Contributed", value: fmtK(last.contributions), color: "#64748B" },
-              { label: "Market Growth", value: fmtK(last.growth), color: "#818cf8" },
-            ].map(s => (
-              <div key={s.label} className="uf-card" style={{ textAlign: "center", padding: "16px 12px" }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: "Manrope, sans-serif" }}>{s.value}</div>
-                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
-              </div>
-            ))}
+            {scenarios.map(s => {
+              const val = last[s.id as "A" | "B" | "C"];
+              return (
+                <div key={s.id} className="uf-card" style={{ textAlign: "center", padding: "16px 12px" }}>
+                  <div style={{ fontSize: 11, color: s.color, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Scenario {s.id}
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: "Manrope, sans-serif" }}>{fmtK(val)}</div>
+                  <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>Final Portfolio</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="uf-card" style={{ textAlign: "center", padding: "14px 12px" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{fmtK(last.contributions)}</div>
+            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Total Contributed</div>
           </div>
         </div>
       </div>
