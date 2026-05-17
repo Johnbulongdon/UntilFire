@@ -874,7 +874,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
 }
 
 // ─── User Nav ─────────────────────────────────────────────────────────────────
-function UserNav() {
+function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => void; isProfileActive: boolean }) {
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setEmail(user?.email ?? null));
@@ -885,9 +885,25 @@ function UserNav() {
     <Link href="/login" style={{ background: "#064E3B", color: "#fff", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Sign In</Link>
   );
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <span style={{ color: "#64748B", fontSize: 13 }}>{email}</span>
-      <button onClick={handleSignOut} style={{ background: "transparent", color: "#064E3B", border: "1px solid #064E3B", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Sign Out</button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <button
+        onClick={onProfileClick}
+        className={`uf-sidebar-item ${isProfileActive ? "active" : ""}`}
+        style={{ width: "100%" }}
+      >
+        <span className="uf-sidebar-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+        </span>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0, flex: 1 }}>
+          <span>Profile</span>
+          <span style={{ fontSize: 11, fontWeight: 400, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{email}</span>
+        </div>
+      </button>
+      <button onClick={handleSignOut} style={{ background: "transparent", border: "none", color: "#94A3B8", fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "left", padding: "4px 14px", fontFamily: "Manrope, sans-serif" }}>
+        Sign out
+      </button>
     </div>
   );
 }
@@ -1908,11 +1924,6 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
     label: "Learning Hub",
     svg: '<path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12"/><path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2"/><path d="M9 10h6M9 14h4"/>',
   },
-  {
-    key: "profile",
-    label: "Profile",
-    svg: '<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>',
-  },
 ];
 
 // ─── Root ────────────────────────────────────────────────────────────────────
@@ -2307,7 +2318,7 @@ export default function Dashboard() {
             {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saving…</span>}
             {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Inter, sans-serif" }}>✓ Saved</span>}
             {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Save failed</span>}
-            <UserNav />
+            <UserNav onProfileClick={() => setTab("profile")} isProfileActive={tab === "profile"} />
           </div>
         </aside>
 
