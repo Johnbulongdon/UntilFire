@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { cityLandingPages } from '@/lib/city-pages'
+import { CITIES, isUS } from '@/lib/fire-data'
 import { learnArticles, learnStages } from '@/lib/learn'
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -86,12 +87,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.65,
   }))
 
-  const cityRoutes: MetadataRoute.Sitemap = cityLandingPages.map((page) => ({
+  const curatedCityRoutes: MetadataRoute.Sitemap = cityLandingPages.map((page) => ({
     url: `https://untilfire.com/fire-number/${page.slug}`,
     lastModified: new Date(),
     changeFrequency: 'weekly',
     priority: 0.75,
   }))
 
-  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...cityRoutes]
+  const usCityRoutes: MetadataRoute.Sitemap = CITIES.filter((city) => isUS(city.state)).map((city) => ({
+    url: `https://untilfire.com/fire-number/${city.key}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.75,
+  }))
+
+  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes]
 }
