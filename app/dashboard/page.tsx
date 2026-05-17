@@ -18,6 +18,7 @@ import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
+import { CITIES } from "@/lib/fire-data";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -106,16 +107,19 @@ function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
   totalDebt, mortgageBalance, mortgageMonthly,
   growthRate = 0.07, withdrawalRate = 0.04, years = 50,
+  targetMonthlyExpenses,
 }: {
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
   mortgageBalance: number; mortgageMonthly: number;
   growthRate?: number; withdrawalRate?: number; years?: number;
+  targetMonthlyExpenses?: number;
 }) {
-  const annualExpenses = monthlyExpenses * 12;
+  const annualExpenses       = monthlyExpenses * 12;
+  const targetAnnualExpenses = targetMonthlyExpenses != null ? targetMonthlyExpenses * 12 : annualExpenses;
   const annualMortgage = mortgageMonthly * 12;
   const annualSavings  = annualIncome - annualExpenses - annualMortgage;
-  const fireTarget     = annualExpenses * (1 / withdrawalRate);
+  const fireTarget     = targetAnnualExpenses * (1 / withdrawalRate);
 
   const k401Contrib    = Math.min(Math.max(annualSavings * 0.4, 0), 23000);
   const rothContrib    = Math.min(Math.max(annualSavings * 0.2, 0), 7000);
@@ -384,7 +388,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, onTabChange, onOpenOnboarding, onRetirementCityChange, onLifestyleChange }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -392,8 +396,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   prevIncome?: number; prevExpenses?: number; userName?: string;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
+  retirementCityName?: string; retirementCityCol?: number; lifestyleMultiplier?: number;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
+  onRetirementCityChange?: (name: string, col: number) => void;
+  onLifestyleChange?: (multiplier: number) => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("15Y");
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
@@ -402,11 +409,15 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
 
+  const targetMonthlyExpenses = retirementCityCol > 0
+    ? (retirementCityCol * lifestyleMultiplier) / 12
+    : undefined;
+
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => calcProjection({
     annualIncome: income * 12, monthlyExpenses,
     k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
-    growthRate, withdrawalRate,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
+    growthRate, withdrawalRate, targetMonthlyExpenses,
+  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
 
   const investable  = k401 + rothIRA + taxable + cashSavings;
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
@@ -506,6 +517,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               <div style={{ fontSize: "clamp(48px, 7vw, 72px)", fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-4px", lineHeight: 1 }}>
                 {retireYear}
               </div>
+              {retirementCityName && (
+                <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, fontFamily: "Inter, sans-serif", marginTop: 4 }}>
+                  🎯 {retirementCityName} · {LIFESTYLE_TIERS.find(t => t.multiplier === lifestyleMultiplier)?.label ?? "Standard"}
+                </div>
+              )}
               {/* 3 mini-stat boxes */}
               <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
                 <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", flex: "1 1 0", minWidth: 90 }}>
@@ -562,6 +578,19 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
         </div>
       </div>
+
+      {/* ── Retirement Target ───────────────────────────────────────────── */}
+      {onRetirementCityChange && (
+        <RetirementTargetCard
+          retirementCityName={retirementCityName}
+          retirementCityCol={retirementCityCol}
+          lifestyleMultiplier={lifestyleMultiplier}
+          displayCurrency={displayCurrency}
+          displayRates={displayRates}
+          onCityChange={onRetirementCityChange}
+          onLifestyleChange={onLifestyleChange ?? (() => {})}
+        />
+      )}
 
       {/* ── This Month KPI row ──────────────────────────────────────────── */}
       <div>
@@ -1022,6 +1051,127 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Retirement Target Card ───────────────────────────────────────────────────
+const LIFESTYLE_TIERS = [
+  { label: "Frugal",   icon: "🌱", multiplier: 0.7 },
+  { label: "Standard", icon: "🏡", multiplier: 1.0 },
+  { label: "Lavish",   icon: "💎", multiplier: 1.5 },
+];
+
+function RetirementTargetCard({
+  retirementCityName, retirementCityCol, lifestyleMultiplier,
+  displayCurrency, displayRates,
+  onCityChange, onLifestyleChange,
+}: {
+  retirementCityName: string; retirementCityCol: number; lifestyleMultiplier: number;
+  displayCurrency: string; displayRates: Record<string, number>;
+  onCityChange: (name: string, col: number) => void;
+  onLifestyleChange: (multiplier: number) => void;
+}) {
+  const [citySearch, setCitySearch] = useState(retirementCityName);
+  const [open, setOpen] = useState(false);
+  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
+
+  const filtered = citySearch.length > 0
+    ? CITIES.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 8)
+    : [];
+
+  const currentTier = LIFESTYLE_TIERS.find(t => t.multiplier === lifestyleMultiplier) ?? LIFESTYLE_TIERS[1];
+  const targetAnnualSpend = retirementCityCol > 0 ? retirementCityCol * lifestyleMultiplier : 0;
+  const targetFIRENumber  = targetAnnualSpend * 25;
+
+  const handleSelect = (name: string, col: number) => {
+    onCityChange(name, col);
+    setCitySearch(name);
+    setOpen(false);
+  };
+
+  const handleClear = () => {
+    onCityChange("", 0);
+    setCitySearch("");
+    setOpen(false);
+  };
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Header */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>🎯 Retirement Target</div>
+
+      {/* City search */}
+      <div style={{ position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #E2E8F0", borderRadius: 9, padding: "9px 12px", background: "#F8FAFC" }}>
+          <span style={{ fontSize: 15 }}>📍</span>
+          <input
+            type="text"
+            value={citySearch}
+            placeholder="Where do you want to retire?"
+            onChange={e => { setCitySearch(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#0F172A", fontFamily: "Inter, sans-serif" }}
+          />
+          {retirementCityName && (
+            <button onClick={handleClear} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+          )}
+        </div>
+        {open && filtered.length > 0 && (
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 50, overflow: "hidden" }}>
+            {filtered.map(c => (
+              <button
+                key={c.key}
+                onClick={() => handleSelect(c.name, c.col)}
+                style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#0F172A", fontFamily: "Inter, sans-serif", display: "flex", gap: 8, alignItems: "center" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#F0FDF4")}
+                onMouseLeave={e => (e.currentTarget.style.background = "none")}
+              >
+                <span>{c.flag}</span>
+                <span style={{ flex: 1 }}>{c.name}</span>
+                <span style={{ fontSize: 11, color: "#94A3B8" }}>{fmtMoney(c.col / 12, true)}/mo</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lifestyle pills — only shown when a city is selected */}
+      {retirementCityCol > 0 && (
+        <>
+          <div style={{ display: "flex", gap: 8 }}>
+            {LIFESTYLE_TIERS.map(tier => {
+              const monthlySpend = retirementCityCol * tier.multiplier / 12;
+              const active = tier.multiplier === lifestyleMultiplier;
+              return (
+                <button
+                  key={tier.label}
+                  onClick={() => onLifestyleChange(tier.multiplier)}
+                  style={{
+                    flex: 1, padding: "9px 8px", border: `1.5px solid ${active ? "#059669" : "#E2E8F0"}`,
+                    borderRadius: 9, background: active ? "#F0FDF4" : "#F8FAFC",
+                    cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>{tier.icon}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: active ? "#059669" : "#64748B", fontFamily: "Manrope, sans-serif" }}>{tier.label}</span>
+                  <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>{fmtMoney(monthlySpend, true)}/mo</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Result row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F0FDF4", borderRadius: 9, padding: "10px 14px" }}>
+            <span style={{ fontSize: 12, color: "#064E3B", fontFamily: "Inter, sans-serif" }}>
+              {currentTier.icon} {retirementCityName} · {currentTier.label}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>
+              FIRE target: {fmtMoney(targetFIRENumber, true)}
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -2159,7 +2309,10 @@ export default function Dashboard() {
   const [mortgageMonthly, setMortgageMonthly] = useState(0);
   const [growthRate,      setGrowthRate]      = useState(0.07);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
-  const [cityName,        setCityName]        = useState("");
+  const [cityName,            setCityName]            = useState("");
+  const [retirementCityName,  setRetirementCityName]  = useState("");
+  const [retirementCityCol,   setRetirementCityCol]   = useState(0);
+  const [lifestyleMultiplier, setLifestyleMultiplier] = useState(1.0);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
@@ -2331,6 +2484,9 @@ export default function Dashboard() {
           setGrowthRate(fp.growthRate || 0.07);
           setWithdrawalRate(fp.withdrawalRate || 0.04);
           setCityName(fp.cityName || prefill.cityName || "");
+          setRetirementCityName(fp.retirementCityName || "");
+          setRetirementCityCol(fp.retirementCityCol || 0);
+          setLifestyleMultiplier(fp.lifestyleMultiplier || 1.0);
         } else {
           // New user — no saved budget yet, seed everything from wizard
           if (prefillIncome) setIncome(prefillIncome);
@@ -2371,7 +2527,7 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName };
+      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier };
       const { error: saveError } = await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
@@ -2535,8 +2691,13 @@ export default function Dashboard() {
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
                 plaidAccounts={plaidAccounts}
+                retirementCityName={retirementCityName}
+                retirementCityCol={retirementCityCol}
+                lifestyleMultiplier={lifestyleMultiplier}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
+                onRetirementCityChange={(name, col) => { setRetirementCityName(name); setRetirementCityCol(col); }}
+                onLifestyleChange={setLifestyleMultiplier}
               />
             )}
             {tab === "cashflow" && (
