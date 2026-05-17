@@ -3,30 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES, formatUSDInCurrency } from "@/lib/currency";
-
-// ─── Constants (copied from TransactionsTab — kept local to avoid coupling) ───
-const EXPENSE_CATEGORIES = [
-  { key: "food",          label: "Food",          code: "FD", color: "#f97316" },
-  { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5" },
-  { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8" },
-  { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9" },
-  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa" },
-  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444" },
-  { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24" },
-  { key: "shopping",      label: "Shopping",      code: "SH", color: "#ec4899" },
-  { key: "work",          label: "Work",          code: "WK", color: "#6366f1" },
-  { key: "other",         label: "Other",         code: "OT", color: "#6b7280" },
-];
-
-const INCOME_CATEGORIES = [
-  { key: "salary",       label: "Salary",     code: "SA", color: "#22d3a5" },
-  { key: "freelance",    label: "Freelance",  code: "FR", color: "#34d399" },
-  { key: "investment",   label: "Investment", code: "IV", color: "#818cf8" },
-  { key: "gift",         label: "Gift",       code: "GF", color: "#a78bfa" },
-  { key: "other_income", label: "Other",      code: "OI", color: "#6b7280" },
-];
-
-const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -210,29 +187,32 @@ function DueBadge({ daysUntilDue }: { daysUntilDue: number }) {
 
 // ─── Card components ──────────────────────────────────────────────────────────
 function CategoryCircle({ categoryKey }: { categoryKey: string }) {
-  const cat = ALL_CATEGORIES.find(c => c.key === categoryKey)
-    ?? { code: categoryKey.slice(0, 2).toUpperCase(), color: "#6b7280" };
+  const baseCat = ALL_CATEGORIES.find(c => c.key === categoryKey)
+    ?? { color: "#6b7280", emoji: "📦" };
+  const customs = loadCatCustomizations();
+  const { color, emoji } = resolveDisplay({ color: baseCat.color, emoji: baseCat.emoji }, customs, categoryKey);
   return (
     <div style={{
       width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-      background: cat.color + "22", border: `1.5px solid ${cat.color}44`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: 11, fontWeight: 800, color: cat.color, fontFamily: "Inter, sans-serif",
+      background: color, display: "flex", alignItems: "center",
+      justifyContent: "center", fontSize: 20,
     }}>
-      {cat.code}
+      {emoji}
     </div>
   );
 }
 
 function CategoryPill({ categoryKey }: { categoryKey: string }) {
-  const cat = ALL_CATEGORIES.find(c => c.key === categoryKey)
-    ?? { label: categoryKey, color: "#6b7280" };
+  const baseCat = ALL_CATEGORIES.find(c => c.key === categoryKey)
+    ?? { label: categoryKey, color: "#6b7280", emoji: "📦" };
+  const customs = loadCatCustomizations();
+  const { color } = resolveDisplay({ color: baseCat.color, emoji: baseCat.emoji }, customs, categoryKey);
   return (
     <span style={{
-      background: cat.color + "18", color: cat.color,
+      background: color + "18", color,
       borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 700,
     }}>
-      {cat.label}
+      {baseCat.label}
     </span>
   );
 }
