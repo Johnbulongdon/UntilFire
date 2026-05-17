@@ -384,13 +384,14 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
   actuals?: Record<string, number>; actualIncome?: number; actualExpenses?: number; cityName?: string;
   prevIncome?: number; prevExpenses?: number; userName?: string;
   displayCurrency: string; displayRates: Record<string, number>;
+  plaidAccounts?: PlaidAccount[];
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -476,6 +477,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         income={income} expenses={expenses}
         k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
         cityName={cityName}
+        plaidAccounts={plaidAccounts}
         onTabChange={onTabChange}
         onOpenOnboarding={onOpenOnboarding}
       />
@@ -968,19 +970,20 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
 }
 
 // ─── Setup Checklist ──────────────────────────────────────────────────────────
-function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings, cityName, onTabChange, onOpenOnboarding }: {
+function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings, cityName, plaidAccounts = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Record<string, number | undefined>;
   k401: number; rothIRA: number; taxable: number; cashSavings: number;
   cityName: string;
+  plaidAccounts?: PlaidAccount[];
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
   const hasExpenses = Object.values(expenses).some(v => (v ?? 0) > 0);
-  const hasAssets = k401 + rothIRA + taxable + cashSavings > 0;
+  const hasBankConnected = plaidAccounts.length > 0;
   const steps = [
     { label: "Set your income", done: income > 0, action: () => onOpenOnboarding?.(), cta: "Add income" },
     { label: "Add your expenses", done: hasExpenses, action: () => onTabChange?.("cashflow"), cta: "Go to Cashflow" },
-    { label: "Add savings or investments", done: hasAssets, action: () => onTabChange?.("assets"), cta: "Go to Assets" },
+    { label: "Connect your bank", done: hasBankConnected, action: () => onTabChange?.("assets"), cta: "Connect accounts" },
     { label: "Set your city", done: cityName !== "", action: () => onTabChange?.("profile"), cta: "Go to Profile" },
   ];
   const completedCount = steps.filter(s => s.done).length;
@@ -2531,6 +2534,7 @@ export default function Dashboard() {
                 userName={userName}
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
+                plaidAccounts={plaidAccounts}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
