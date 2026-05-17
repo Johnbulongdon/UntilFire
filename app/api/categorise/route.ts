@@ -9,6 +9,10 @@ export async function POST(req: NextRequest) {
   }
   try {
     const { description, type } = await req.json() as { description: string; type: "expense" | "income" };
+    if (type !== "expense" && type !== "income") {
+      return NextResponse.json({ category: "other", tags: [] });
+    }
+    const safeDescription = String(description ?? "").slice(0, 500);
 
     const categories =
       type === "income"
@@ -22,7 +26,7 @@ export async function POST(req: NextRequest) {
         {
           role: "user",
           content: `Categorize this ${type} transaction. Respond ONLY with valid JSON, no markdown.
-Description: "${description}"
+Description: "${safeDescription}"
 Categories: ${categories}
 Format: {"category": "...", "tags": ["tag1", "tag2"]}`,
         },

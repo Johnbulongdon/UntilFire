@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { adminClient } from "@/lib/supabase-admin";
 import { Resend } from "resend";
 
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -19,8 +12,12 @@ export async function POST(req: NextRequest) {
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { type, message } = await req.json() as { type: string; message: string };
-  if (!type || !message?.trim()) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  const ALLOWED_TYPES = ["bug", "feature", "general", "other"];
+  if (!type || !ALLOWED_TYPES.includes(type)) {
+    return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+  }
+  if (!message?.trim() || message.trim().length > 2000) {
+    return NextResponse.json({ error: "Message must be 1–2000 characters" }, { status: 400 });
   }
 
   const { error: dbError } = await admin.from("feedback").insert({

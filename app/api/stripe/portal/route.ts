@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { adminClient } from "@/lib/supabase-admin";
 import { getStripe } from "@/lib/stripe";
 
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -35,10 +29,14 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") || "https://untilfire.com";
   const stripe = getStripe();
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: sub.stripe_customer_id,
-    return_url: `${origin}/dashboard`,
-  });
-
-  return NextResponse.json({ url: portalSession.url });
+  try {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: sub.stripe_customer_id,
+      return_url: `${origin}/dashboard`,
+    });
+    return NextResponse.json({ url: portalSession.url });
+  } catch (err) {
+    console.error("[stripe/portal]", err);
+    return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 });
+  }
 }

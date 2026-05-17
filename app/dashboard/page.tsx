@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
   BarChart, Bar,
 } from "recharts";
@@ -230,17 +230,6 @@ function KpiCard({ label, value, sub, color = "#19181E", glow = false }: {
   );
 }
 
-const ChartTooltip = ({ active, payload, label, currency = "USD", rates = FALLBACK_RATES }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: "#ffffff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontFamily: "Inter, sans-serif", fontSize: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-      <p style={{ color: "#64748B", marginBottom: 6 }}>Year {label}</p>
-      {payload.map((p: any) => (
-        <div key={p.name} style={{ color: p.color, marginBottom: 2 }}>{p.name}: {fmt(p.value, currency, rates, true)}</div>
-      ))}
-    </div>
-  );
-};
 
 function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: string; color?: string }) {
   return (
@@ -996,7 +985,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate, setGrowthRate, withdrawalRate, setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -1670,7 +1659,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                 <XAxis dataKey="year" tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} label={{ value: "Year", position: "insideBottom", offset: -2, fontSize: 11, fill: "#94A3B8" }} />
                 <YAxis tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} tickFormatter={v => fmtK(v as number)} width={60} />
                 <Tooltip
-                  formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
+                  formatter={(value: unknown, name: unknown) => [`$${(value as number).toLocaleString()}`, String(name ?? "")]}
                   labelFormatter={l => `Year ${l}`}
                   contentStyle={{ borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 12 }}
                 />
@@ -1830,126 +1819,6 @@ function FireCalcMenuTab({
 }
 
 // ─── Trends Tab (kept for reference, not wired to sidebar) ───────────────────
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function TrendsTab({ income, expenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates }: {
-  income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; totalDebt: number; mortgageBalance: number;
-  mortgageMonthly: number; growthRate: number; withdrawalRate: number;
-  displayCurrency: string; displayRates: Record<string, number>;
-}) {
-  const [chartTab, setChartTab] = useState<"growth" | "accounts" | "networth">("growth");
-  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
-
-  const monthlyExpenses = Object.entries(expenses)
-    .filter(([k]) => !k.startsWith("_"))
-    .reduce((s, [, v]) => s + (v || 0), 0);
-
-  const { data, fireYear } = useMemo(() => calcProjection({
-    annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly,
-    growthRate, withdrawalRate,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
-
-  const chartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 7));
-
-  function ChartTabBtn({ id, label }: { id: "growth" | "accounts" | "networth"; label: string }) {
-    return (
-      <button onClick={() => setChartTab(id)} style={{
-        background: chartTab === id ? "#064E3B" : "transparent",
-        border: `1px solid ${chartTab === id ? "#064E3B" : "#E2E8F0"}`,
-        borderRadius: 6, padding: "5px 13px",
-        color: chartTab === id ? "#fff" : "#64748B",
-        fontFamily: "Inter, sans-serif", fontSize: 11,
-        letterSpacing: "0.06em", textTransform: "uppercase",
-        cursor: "pointer", transition: "all 0.2s",
-      }}>{label}</button>
-    );
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div className="uf-card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15 }}>Wealth Projection</span>
-          <div style={{ display: "flex", gap: 6 }}>
-            <ChartTabBtn id="growth" label="Growth" />
-            <ChartTabBtn id="accounts" label="Accounts" />
-            <ChartTabBtn id="networth" label="Net Worth" />
-          </div>
-        </div>
-
-        {chartTab === "growth" && (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="gI3" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#059669" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#059669" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gT3" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#064E3B" stopOpacity={0.12} />
-                  <stop offset="100%" stopColor="#064E3B" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
-              <Tooltip content={<ChartTooltip currency={displayCurrency} rates={displayRates} />} />
-              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "🔥 FIRE", fill: "#064E3B", fontSize: 10, fontFamily: "Inter" }} />}
-              <Area type="monotone" dataKey="FIRE Target" stroke="#064E3B" strokeWidth={1.5} strokeDasharray="5 3" fill="url(#gT3)" dot={false} />
-              <Area type="monotone" dataKey="Investable" stroke="#059669" strokeWidth={2.5} fill="url(#gI3)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-
-        {chartTab === "accounts" && (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <defs>
-                {[["g401d","#059669"],["gRothd","#20D4BF"],["gTaxd","#047857"]].map(([id, c]) => (
-                  <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={c} stopOpacity={0.45} />
-                    <stop offset="100%" stopColor={c} stopOpacity={0.04} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
-              <Tooltip content={<ChartTooltip currency={displayCurrency} rates={displayRates} />} />
-              <Legend wrapperStyle={{ fontSize: 11, fontFamily: "Inter", color: "#64748B", paddingTop: 10 }} />
-              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" />}
-              <Area type="monotone" dataKey="401(k)" stroke="#059669" strokeWidth={2} fill="url(#g401d)" dot={false} stackId="a" />
-              <Area type="monotone" dataKey="Roth IRA" stroke="#20D4BF" strokeWidth={2} fill="url(#gRothd)" dot={false} stackId="a" />
-              <Area type="monotone" dataKey="Taxable" stroke="#047857" strokeWidth={2} fill="url(#gTaxd)" dot={false} stackId="a" />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-
-        {chartTab === "networth" && (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#64748B", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={58} />
-              <Tooltip content={<ChartTooltip currency={displayCurrency} rates={displayRates} />} />
-              <ReferenceLine y={0} stroke="#DC2626" strokeDasharray="3 3" />
-              {fireYear && <ReferenceLine x={fireYear} stroke="#064E3B" strokeDasharray="4 3" label={{ value: "🔥 FIRE", fill: "#064E3B", fontSize: 10, fontFamily: "Inter" }} />}
-              <Line type="monotone" dataKey="Net Worth" stroke="#059669" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="Debt" stroke="#DC2626" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-
-        <p style={{ textAlign: "center", fontSize: 11, color: "#94A3B8", marginTop: 10 }}>
-          {chartTab === "growth" && "Green = investable assets · Dark dashed = FIRE target"}
-          {chartTab === "accounts" && "Stacked: 401(k) · Roth IRA · Taxable brokerage"}
-          {chartTab === "networth" && "Total net worth vs debt paydown over time"}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 // ─── Learning Hub Tab ────────────────────────────────────────────────────────
 function LearningHubTab({ recommendedStageId }: { recommendedStageId: LearnStageId }) {
@@ -2100,12 +1969,15 @@ export default function Dashboard() {
     window.history.replaceState(null, "", url.toString());
   }, [tab]);
 
-  // Refresh Plaid account balances whenever the user navigates to assets/liabilities
+  // Refresh Plaid account balances whenever the user navigates to assets/liabilities (60s TTL)
   useEffect(() => {
     if (tab === "assets" || tab === "liabilities") {
-      refreshPlaidAccounts();
+      const now = Date.now();
+      if (now - plaidFetchedAt.current > 60_000) {
+        plaidFetchedAt.current = now;
+        refreshPlaidAccounts();
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   // Budget state
@@ -2191,6 +2063,7 @@ export default function Dashboard() {
   );
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoaded   = useRef(false);
+  const plaidFetchedAt = useRef<number>(0);
   const [profileLoading, setProfileLoading] = useState(true);
 
   // Load from Supabase on mount
@@ -2585,7 +2458,7 @@ export default function Dashboard() {
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "profile" && userId && (
-              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onPreferredCurrenciesChange={setPreferredCurrencies} onTabChange={setTab} />
+              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onPreferredCurrenciesChange={setPreferredCurrencies} onTabChange={(t) => setTab(t as TabKey)} />
             )}
           </div>
         </main>

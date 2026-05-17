@@ -1,43 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { adminClient } from "@/lib/supabase-admin";
 import { Transaction as PlaidTransaction } from "plaid";
-import { getPlaidClient, PLAID_CATEGORY_MAP, PLAID_SKIP_CATEGORIES } from "@/lib/plaid";
-
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  );
-}
-
-function mapPlaidTx(tx: PlaidTransaction, userId: string) {
-  const primary = tx.personal_finance_category?.primary ?? "";
-  if (PLAID_SKIP_CATEGORIES.has(primary)) return null;
-
-  // Plaid: positive amount = debit (money out), negative = credit (money in)
-  const isIncome = tx.amount < 0;
-  const absAmount = Math.abs(tx.amount);
-  const mappedCategory = PLAID_CATEGORY_MAP[primary] ?? "other";
-  const category = isIncome
-    ? mappedCategory === "salary" ? "salary" : "other_income"
-    : mappedCategory;
-
-  return {
-    user_id: userId,
-    date: tx.date,
-    amount: absAmount,
-    currency: tx.iso_currency_code ?? "USD",
-    description: tx.merchant_name ?? tx.name,
-    category,
-    tags: [] as string[],
-    sub_category: null as string | null,
-    is_work_related: false,
-    transaction_type: isIncome ? "income" : "expense",
-    plaid_transaction_id: tx.transaction_id,
-    source: "plaid",
-  };
-}
+import { getPlaidClient, mapPlaidTx } from "@/lib/plaid";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");

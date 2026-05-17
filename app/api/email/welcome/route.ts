@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { adminClient } from "@/lib/supabase-admin";
 
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 async function loopsPost(path: string, body: object) {
   if (!process.env.LOOPS_API_KEY) return;
@@ -33,17 +26,17 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await admin
     .from("profiles")
     .select("welcome_email_sent_at")
-    .eq("id", user.id)
+    .eq("user_id", user.id)
     .single();
 
   if (profile?.welcome_email_sent_at) {
     return NextResponse.json({ skipped: true });
   }
 
-  await admin.from("profiles").upsert({
-    id: user.id,
-    welcome_email_sent_at: new Date().toISOString(),
-  });
+  await admin.from("profiles").upsert(
+    { user_id: user.id, welcome_email_sent_at: new Date().toISOString() },
+    { onConflict: "user_id" },
+  );
 
   if (process.env.LOOPS_API_KEY && user.email) {
     // Add contact to Loops, then fire the signup event to trigger the sequence

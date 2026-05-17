@@ -42,14 +42,6 @@ export default function CalculatorForm({ initialData, onSave }: CalculatorFormPr
 
   useEffect(() => {
     if (!isClient) return
-    supabase.from('user_plans').select('count', { head: true })
-      .then(result => {
-        if (result.error?.code === 'PGRST116') {
-          console.log('ℹ️ Supabase connected!')
-        } else if (result.error) {
-          console.log('❌ Supabase error:', result.error.message)
-        }
-      })
   }, [isClient])
 
   if (!isClient) {

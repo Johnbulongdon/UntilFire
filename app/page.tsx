@@ -651,7 +651,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               <div className="uf-delta-grid">
                 {portfolioBalance > 0 && portfolioYearsSaved > 0 && (
                   <div className="uf-delta-card positive" style={{ gridColumn: "1 / -1" }}>
-                    <div className="uf-delta-label">Your {fmtUSD(portfolioBalance, 0)} head start</div>
+                    <div className="uf-delta-label">Your {fmtUSD(portfolioBalance)} head start</div>
                     <div className="uf-delta-val pos">-{portfolioYearsSaved} yr{portfolioYearsSaved !== 1 ? "s" : ""} vs. starting from zero</div>
                   </div>
                 )}
