@@ -37,6 +37,7 @@ type PlaidAccount = {
   mask: string | null;
   plaid_item_id: string;
   updated_at: string;
+  apy: number | null;
 };
 type TabKey =
   | "overview"
@@ -1561,7 +1562,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, monthlyExpenses = 0 }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -1572,6 +1573,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
   onRefreshAccounts?: () => void;
+  monthlyExpenses?: number;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -1582,6 +1584,98 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const [hideZeroAssets, setHideZeroAssets] = useState(true);
   const visibleAssets = hideZeroAssets ? bankAssets.filter(a => (a.balance_current ?? 0) !== 0) : bankAssets;
   const hiddenAssetCount = bankAssets.length - visibleAssets.length;
+
+  // ── Account type metadata ────────────────────────────────────────────────
+  const ACCOUNT_TYPE_META: Record<string, { label: string; emoji: string; color: string }> = {
+    checking:        { label: "Checking",      emoji: "🏧", color: "#3B82F6" },
+    savings:         { label: "Savings",       emoji: "🏦", color: "#059669" },
+    "money market":  { label: "Money Market",  emoji: "💰", color: "#0EA5E9" },
+    money_market:    { label: "Money Market",  emoji: "💰", color: "#0EA5E9" },
+    cd:              { label: "CD",            emoji: "📄", color: "#8B5CF6" },
+    "credit card":   { label: "Credit Card",   emoji: "💳", color: "#F97316" },
+    mortgage:        { label: "Mortgage",      emoji: "🏠", color: "#6366F1" },
+    auto:            { label: "Auto Loan",     emoji: "🚗", color: "#F59E0B" },
+    brokerage:       { label: "Brokerage",     emoji: "📈", color: "#059669" },
+    ira:             { label: "IRA",           emoji: "📈", color: "#059669" },
+  };
+  const getTypeMeta = (subtype: string | null, type: string) => {
+    const key = (subtype ?? "").toLowerCase().replace(/-/g, " ");
+    return ACCOUNT_TYPE_META[key] ?? ACCOUNT_TYPE_META[type?.toLowerCase()] ?? { label: subtype ?? type, emoji: "💼", color: "#6B7280" };
+  };
+
+  // ── APY state (optimistic overrides while saving) ───────────────────────
+  const [apyMap, setApyMap] = useState<Record<string, number | null>>({});
+  const effectiveApy = (a: PlaidAccount) => apyMap[a.id] !== undefined ? apyMap[a.id] : a.apy;
+
+  const handleSaveApy = async (accountId: string, apy: number | null) => {
+    setApyMap(prev => ({ ...prev, [accountId]: apy }));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch(`/api/plaid/accounts/${accountId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ apy }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const orig = plaidAccounts.find(a => a.id === accountId)?.apy ?? null;
+      setApyMap(prev => ({ ...prev, [accountId]: orig }));
+    } else {
+      onRefreshAccounts?.();
+    }
+  };
+
+  function ApyField({ account }: { account: PlaidAccount }) {
+    const currentApy = effectiveApy(account);
+    const [editing, setEditing] = useState(false);
+    const [val, setVal] = useState(currentApy != null ? String(currentApy) : "");
+    useEffect(() => { setVal(currentApy != null ? String(currentApy) : ""); }, [currentApy]);
+
+    const commit = () => {
+      const n = parseFloat(val);
+      handleSaveApy(account.id, isNaN(n) || n <= 0 ? null : n);
+      setEditing(false);
+    };
+
+    if (editing) return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+        <input autoFocus type="number" step="0.01" min="0" max="20" value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
+          onBlur={commit}
+          style={{ width: 68, border: "1px solid #059669", borderRadius: 6, padding: "3px 6px", fontSize: 12, outline: "none", fontFamily: "inherit" }}
+          placeholder="e.g. 4.8"
+        />
+        <span style={{ fontSize: 12, color: "#64748B" }}>% APY</span>
+      </div>
+    );
+
+    return (
+      <button onClick={() => setEditing(true)}
+        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#94A3B8", textAlign: "left", padding: 0, fontFamily: "inherit", marginTop: 2 }}>
+        {currentApy != null ? `${currentApy}% APY ✏️` : "＋ Enter APY"}
+      </button>
+    );
+  }
+
+  // ── Emergency fund logic ─────────────────────────────────────────────────
+  const HYSA_THRESHOLD = 3.5;
+  const savingsAccts = bankAssets.filter(a =>
+    ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "))
+  );
+  const hasPlaidSavings = savingsAccts.length > 0;
+  const hasHysa = savingsAccts.some(a => (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD);
+  const savingsBalance = hasPlaidSavings
+    ? savingsAccts.reduce((s, a) => s + (a.balance_current ?? 0), 0)
+    : cashSavings;
+  const efMin = monthlyExpenses * 3;
+  const efMax = monthlyExpenses * 6;
+  const efPct = efMin > 0 ? Math.min(100, (savingsBalance / efMin) * 100) : 0;
+  const efStatus = savingsBalance >= efMax ? "full" : savingsBalance >= efMin ? "ok" : savingsBalance > 0 ? "partial" : "empty";
+  const monthsCovered = monthlyExpenses > 0 ? savingsBalance / monthlyExpenses : 0;
+  const avgApy = savingsAccts.length > 0
+    ? savingsAccts.filter(a => effectiveApy(a) != null).reduce((s, a) => s + (effectiveApy(a) ?? 0), 0) /
+      Math.max(1, savingsAccts.filter(a => effectiveApy(a) != null).length)
+    : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1605,20 +1699,30 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
               )}
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
-            {visibleAssets.map(a => (
-              <div key={a.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
-                <div style={{ fontSize: 12, color: "#94A3B8" }}>
-                  <span style={{ textTransform: "capitalize" }}>{a.subtype?.replace(/-/g, " ") ?? a.type}</span>
-                  {a.mask && <span style={{ marginLeft: 6 }}>•••• {a.mask}</span>}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
+            {visibleAssets.map(a => {
+              const meta = getTypeMeta(a.subtype, a.type);
+              const isSavingsType = ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "));
+              const isHysaAccount = isSavingsType && (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD;
+              return (
+                <div key={a.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>{meta.emoji}</span>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#19181E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{a.name}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                    <span style={{ background: meta.color + "18", color: meta.color, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{meta.label}</span>
+                    {isHysaAccount && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>HYSA ✓</span>}
+                    {a.mask && <span style={{ fontSize: 11, color: "#94A3B8" }}>•••• {a.mask}</span>}
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", marginTop: 2 }}>{fmtMoney(a.balance_current ?? 0)}</div>
+                  {a.balance_available != null && a.balance_available !== a.balance_current && (
+                    <div style={{ fontSize: 11, color: "#94A3B8" }}>{fmtMoney(a.balance_available)} available</div>
+                  )}
+                  {isSavingsType && <ApyField account={a} />}
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", marginTop: 4 }}>{fmtMoney(a.balance_current ?? 0)}</div>
-                {a.balance_available != null && a.balance_available !== a.balance_current && (
-                  <div style={{ fontSize: 11, color: "#94A3B8" }}>{fmtMoney(a.balance_available)} available</div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(5,150,105,0.2)" }}>
             <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
@@ -1626,6 +1730,70 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           </div>
         </div>
       )}
+
+      {/* ── Emergency Fund card ──────────────────────────────────────────── */}
+      {monthlyExpenses > 0 && (
+        <div className="uf-card" style={{
+          background: efStatus === "full" ? "rgba(5,150,105,0.04)" : efStatus === "ok" ? "rgba(20,184,166,0.04)" : efStatus === "partial" ? "rgba(245,158,11,0.04)" : "rgba(220,38,38,0.04)",
+          border: `1px solid ${efStatus === "full" ? "rgba(5,150,105,0.2)" : efStatus === "ok" ? "rgba(20,184,166,0.2)" : efStatus === "partial" ? "rgba(245,158,11,0.25)" : "rgba(220,38,38,0.2)"}`,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: 16 }}>🛡️</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Fund</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748B", fontWeight: 500 }}>3–6 months of expenses</span>
+          </div>
+
+          {/* Three-stat row */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 14 }}>
+            {[
+              { label: "Current Savings", value: fmtMoney(savingsBalance), color: efStatus === "full" || efStatus === "ok" ? "#059669" : "#19181E" },
+              { label: "Min · 3 months", value: fmtMoney(efMin) },
+              { label: "Target · 6 months", value: fmtMoney(efMax) },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 3 }}>{s.label}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: s.color ?? "#19181E", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ height: 6, background: "#F1F5F9", borderRadius: 99, overflow: "hidden", marginBottom: 10 }}>
+            <div style={{
+              height: "100%", borderRadius: 99,
+              width: `${efPct}%`,
+              background: efStatus === "full" ? "#059669" : efStatus === "ok" ? "#14B8A6" : efStatus === "partial" ? "#F59E0B" : "#DC2626",
+              transition: "width 0.4s ease",
+            }} />
+          </div>
+
+          {/* Status badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: hasHysa ? 0 : 12 }}>
+            {efStatus === "full" && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✅ Fully funded ({monthsCovered.toFixed(1)} months)</span>}
+            {efStatus === "ok" && <span style={{ background: "#CCFBF1", color: "#0F766E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✓ On track ({monthsCovered.toFixed(1)} months)</span>}
+            {efStatus === "partial" && <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Partially funded ({monthsCovered.toFixed(1)} months)</span>}
+            {efStatus === "empty" && <span style={{ background: "#FEE2E2", color: "#991B1B", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Not started</span>}
+            {hasHysa && avgApy > 0 && (
+              <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(savingsBalance * avgApy / 100 / 12))}/mo interest</span>
+            )}
+          </div>
+
+          {/* HYSA recommendation banner */}
+          {!hasHysa && (
+            <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "10px 14px", marginTop: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#92400E", marginBottom: 4 }}>💡 Consider a High-Yield Savings Account (HYSA)</div>
+              <div style={{ fontSize: 12, color: "#78350F", lineHeight: 1.5 }}>
+                {plaidAccounts.length === 0
+                  ? "Connect a bank to track your emergency fund automatically. Using your manual Cash & Savings entry above."
+                  : !hasPlaidSavings
+                    ? "No savings account detected. A HYSA earns 10–20× more than a typical checking account — top rates are currently 4.5–5.0% APY."
+                    : "Enter your savings APY above. If it's below 3.5%, you may be leaving money on the table — top HYSA rates are currently 4.5–5.0% APY."}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <div className="uf-card">
           <SectionLabel icon="📈" text="Investment Accounts" color="#059669" />
@@ -2672,6 +2840,9 @@ export default function Dashboard() {
   // Budget state
   const [income,   setIncome]   = useState(0);
   const [expenses, setExpenses] = useState<Expenses>({ housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0 });
+  const monthlyExpenses = Object.entries(expenses)
+    .filter(([k]) => !k.startsWith("_"))
+    .reduce((s, [, v]) => s + ((v as number) || 0), 0);
 
   // FIRE profile state (stored in expenses._fire_profile to avoid schema changes)
   const [fireAge,         setFireAge]         = useState(30);
@@ -3162,6 +3333,7 @@ export default function Dashboard() {
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
                   onRefreshAccounts={refreshPlaidAccounts}
+                  monthlyExpenses={monthlyExpenses}
                 />
               </div>
             )}
