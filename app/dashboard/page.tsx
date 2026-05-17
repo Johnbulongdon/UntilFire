@@ -483,9 +483,9 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── Hero card ───────────────────────────────────────────────────── */}
-      <div className="uf-card" style={{ padding: 0, overflow: "hidden", display: "flex", minHeight: 180 }}>
+      <div className="uf-card uf-hero-split" style={{ padding: 0, overflow: "hidden", display: "flex", minHeight: 180 }}>
         {/* Left: white side — FIRE year + 3 mini-stat boxes */}
-        <div style={{ flex: "0 0 55%", padding: "28px 32px", background: "#FFFFFF" }}>
+        <div className="uf-hero-left" style={{ flex: "0 0 55%", padding: "28px 32px", background: "#FFFFFF" }}>
           <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1.2px", textTransform: "uppercase", color: "#64748B", fontWeight: 700, marginBottom: 8 }}>
             FIRE Target Year
           </div>
@@ -519,7 +519,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </div>
 
         {/* Right: dark side — Target + progress bar */}
-        <div style={{ flex: "0 0 45%", padding: "28px 32px", background: "#003527", position: "relative", overflow: "hidden" }}>
+        <div className="uf-hero-right" style={{ flex: "0 0 45%", padding: "28px 32px", background: "#003527", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(98,250,227,0.07) 0%, transparent 70%)", top: -80, right: -60, pointerEvents: "none" }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative", height: "100%" }}>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
@@ -2268,13 +2268,17 @@ export default function Dashboard() {
           .uf-content { padding: 20px 20px 48px; }
         }
         @media(max-width: 640px) {
-          .uf-shell { flex-direction: column; }
-          .uf-sidebar { width: 100%; min-height: unset; height: auto; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; flex-direction: row; border-right: none; border-top: 1px solid #E2E8F0; background: #fff; padding: 0; }
+          .uf-shell { flex-direction: column; overflow-x: hidden; }
+          .uf-sidebar { width: 100%; min-height: unset; height: auto; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; flex-direction: row; border-right: none; border-top: 1px solid #E2E8F0; background: #fff; padding: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
           .uf-sidebar-logo { display: none; }
           .uf-sidebar-nav { flex-direction: row; padding: 4px 0; gap: 0; flex: 1; justify-content: space-around; }
           .uf-sidebar-item { flex-direction: column; padding: 6px 4px; font-size: 9px; gap: 2px; flex: 1; justify-content: center; align-items: center; border-radius: 0; min-width: 0; }
           .uf-sidebar-bottom { display: none; }
-          .uf-content { padding: 16px 14px 80px; }
+          .uf-content { padding: 16px 16px calc(72px + env(safe-area-inset-bottom, 0px)); }
+          .uf-main { overflow-x: hidden; }
+          .uf-hero-split { flex-direction: column; min-height: unset; }
+          .uf-hero-left { flex: none !important; padding: 20px 18px !important; }
+          .uf-hero-right { flex: none !important; padding: 20px 18px !important; }
         }
       `}</style>
 
