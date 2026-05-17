@@ -44,6 +44,7 @@ type TabKey =
   | "assets"
   | "liabilities"
   | "fire-calculator"
+  | "goals"
   | "reports"
   | "learning-hub"
   | "profile";
@@ -388,7 +389,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, onTabChange, onOpenOnboarding, onRetirementCityChange, onLifestyleChange }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -399,8 +400,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   retirementCityName?: string; retirementCityCol?: number; lifestyleMultiplier?: number;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
-  onRetirementCityChange?: (name: string, col: number) => void;
-  onLifestyleChange?: (multiplier: number) => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("15Y");
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
@@ -578,19 +577,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
         </div>
       </div>
-
-      {/* ── Retirement Target ───────────────────────────────────────────── */}
-      {onRetirementCityChange && (
-        <RetirementTargetCard
-          retirementCityName={retirementCityName}
-          retirementCityCol={retirementCityCol}
-          lifestyleMultiplier={lifestyleMultiplier}
-          displayCurrency={displayCurrency}
-          displayRates={displayRates}
-          onCityChange={onRetirementCityChange}
-          onLifestyleChange={onLifestyleChange ?? (() => {})}
-        />
-      )}
 
       {/* ── This Month KPI row ──────────────────────────────────────────── */}
       <div>
@@ -1051,6 +1037,33 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Goals Tab ────────────────────────────────────────────────────────────────
+function GoalsPageTab({
+  retirementCityName, retirementCityCol, lifestyleMultiplier,
+  displayCurrency, displayRates,
+  onCityChange, onLifestyleChange,
+}: {
+  retirementCityName: string; retirementCityCol: number; lifestyleMultiplier: number;
+  displayCurrency: string; displayRates: Record<string, number>;
+  onCityChange: (name: string, col: number) => void;
+  onLifestyleChange: (multiplier: number) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Goals</div>
+      <RetirementTargetCard
+        retirementCityName={retirementCityName}
+        retirementCityCol={retirementCityCol}
+        lifestyleMultiplier={lifestyleMultiplier}
+        displayCurrency={displayCurrency}
+        displayRates={displayRates}
+        onCityChange={onCityChange}
+        onLifestyleChange={onLifestyleChange}
+      />
     </div>
   );
 }
@@ -2218,6 +2231,11 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3.5" rx="0.5"/><circle cx="9" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="9" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="16" r="0.6" fill="currentColor" stroke="none"/>',
   },
   {
+    key: "goals",
+    label: "Goals",
+    svg: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  },
+  {
     key: "reports",
     label: "Reports",
     svg: '<path d="M7 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/><path d="M9 13l2 2 4-4"/>',
@@ -2696,8 +2714,6 @@ export default function Dashboard() {
                 lifestyleMultiplier={lifestyleMultiplier}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
-                onRetirementCityChange={(name, col) => { setRetirementCityName(name); setRetirementCityCol(col); }}
-                onLifestyleChange={setLifestyleMultiplier}
               />
             )}
             {tab === "cashflow" && (
@@ -2811,6 +2827,17 @@ export default function Dashboard() {
                   <InvestSimTab onBack={() => setFireCalcSubTab("menu")} />
                 )}
               </div>
+            )}
+            {tab === "goals" && (
+              <GoalsPageTab
+                retirementCityName={retirementCityName}
+                retirementCityCol={retirementCityCol}
+                lifestyleMultiplier={lifestyleMultiplier}
+                displayCurrency={defaultCurrency}
+                displayRates={rates}
+                onCityChange={(name, col) => { setRetirementCityName(name); setRetirementCityCol(col); }}
+                onLifestyleChange={setLifestyleMultiplier}
+              />
             )}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
