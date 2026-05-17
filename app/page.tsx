@@ -494,8 +494,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
         monthlyIncome: Math.round(takeHome / 12),
         monthlySavings: savings,
         annualCostOfLiving: city.col,
+        fireYears: result.years,
+        currentAge,
       }),
-    [takeHome, savings, city.col],
+    [takeHome, savings, city.col, result.years, currentAge],
   );
   const topRevealAction = revealActions[0] ?? null;
 
@@ -567,10 +569,19 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const highSaver = calcFIRE((takeHome / 12) * 0.5, city.col, currentAge);
   const costYears = Math.max(0, result.years - highSaver.years).toFixed(1);
 
-  const d1 = calcFIRE(savings + city.col * 0.04 / 12, city.col, currentAge);
+  const [extraSavings, setExtraSavings] = useState(500);
+  const [diningCutPct, setDiningCutPct] = useState(20);
+
+  const d1 = calcFIRE(savings + city.col * (diningCutPct / 100) / 12, city.col, currentAge);
   const d2 = calcFIRE(savings + 416, city.col, currentAge);
   const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge);
-  const d4 = calcFIRE(savings + 500, city.col, currentAge);
+  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge);
+
+  function fmtDelta(yrs: number): string {
+    if (yrs < 1 / 12) return "< 1 month sooner";
+    if (yrs < 2) return `${Math.round(yrs * 12)} month${Math.round(yrs * 12) !== 1 ? "s" : ""} sooner`;
+    return `${yrs.toFixed(1)} years sooner`;
+  }
   const portfolioYearsSaved = portfolioBalance > 0
     ? Math.max(0, calcFIRE(savings, city.col, currentAge, 0).years - result.years)
     : 0;
@@ -647,7 +658,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                 <div className="uf-cost-sub">of freedom vs. someone saving 50% of their income</div>
               </div>
 
-              {/* Delta grid */}
+              {/* Delta grid — interactive */}
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748B", marginBottom: 10 }}>
+                How your decisions change your FIRE date
+              </div>
               <div className="uf-delta-grid">
                 {portfolioBalance > 0 && portfolioYearsSaved > 0 && (
                   <div className="uf-delta-card positive" style={{ gridColumn: "1 / -1" }}>
@@ -655,21 +669,52 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                     <div className="uf-delta-val pos">-{portfolioYearsSaved} yr{portfolioYearsSaved !== 1 ? "s" : ""} vs. starting from zero</div>
                   </div>
                 )}
-                {[
-                  { label: "Cut dining out by 20%",    val: (result.years - d1.years), positive: true },
-                  { label: "Save $500/mo more today",  val: (result.years - d4.years), positive: true },
-                  { label: "Take a 10% pay cut",       val: (d3.years - result.years), positive: false },
-                  { label: "Invest your annual bonus", val: (result.years - d2.years), positive: true },
-                ].map((item, i) => (
-                  <div key={i} className={`uf-delta-card ${item.positive ? "positive" : "negative"}`}>
-                    <div className="uf-delta-label">{item.label}</div>
-                    <div className={`uf-delta-val ${item.positive ? "pos" : "neg"}`}>
-                      {item.positive
-                        ? item.val > 0 ? `-${item.val.toFixed(1)} yrs` : "< 1 yr"
-                        : `+${item.val.toFixed(1)} yrs`}
-                    </div>
+
+                {/* Interactive: dining cut */}
+                <div className="uf-delta-card positive">
+                  <div className="uf-delta-label">Cut dining out by {diningCutPct}%</div>
+                  <div className="uf-delta-val pos">
+                    {(result.years - d1.years) > 0 ? fmtDelta(result.years - d1.years) : "< 1 month sooner"}
                   </div>
-                ))}
+                  <input
+                    type="range" min={5} max={50} step={5} value={diningCutPct}
+                    onChange={e => setDiningCutPct(Number(e.target.value))}
+                    style={{ width: "100%", marginTop: 10, accentColor: "#059669" }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 3 }}>
+                    <span>5%</span><span>50%</span>
+                  </div>
+                </div>
+
+                {/* Interactive: extra savings */}
+                <div className="uf-delta-card positive">
+                  <div className="uf-delta-label">Save ${extraSavings.toLocaleString()}/mo more</div>
+                  <div className="uf-delta-val pos">
+                    {(result.years - d4.years) > 0 ? fmtDelta(result.years - d4.years) : "< 1 month sooner"}
+                  </div>
+                  <input
+                    type="range" min={100} max={2000} step={100} value={extraSavings}
+                    onChange={e => setExtraSavings(Number(e.target.value))}
+                    style={{ width: "100%", marginTop: 10, accentColor: "#059669" }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 3 }}>
+                    <span>$100</span><span>$2,000</span>
+                  </div>
+                </div>
+
+                {/* Static: pay cut */}
+                <div className="uf-delta-card negative">
+                  <div className="uf-delta-label">Take a 10% pay cut</div>
+                  <div className="uf-delta-val neg">+{(d3.years - result.years).toFixed(1)} yrs delayed</div>
+                </div>
+
+                {/* Static: annual bonus */}
+                <div className="uf-delta-card positive">
+                  <div className="uf-delta-label">Invest your annual bonus</div>
+                  <div className="uf-delta-val pos">
+                    {(result.years - d2.years) > 0 ? fmtDelta(result.years - d2.years) : "< 1 month sooner"}
+                  </div>
+                </div>
               </div>
 
               <div style={{ marginBottom: 18 }}>

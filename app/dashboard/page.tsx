@@ -419,6 +419,34 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     growthRate, withdrawalRate, targetMonthlyExpenses,
   }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
 
+  const nextMoveScenarios = useMemo(() => {
+    if (!(income > 0 && fireYear !== null)) return null;
+    return [
+      {
+        label: "Save $500/mo more",
+        detail: "Redirect $500/month from spending to investments",
+        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: Math.max(0, monthlyExpenses - 500), k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+      },
+      {
+        label: "Cut expenses 10%",
+        detail: `Reduce monthly spending from spending to ${Math.round(monthlyExpenses * 0.9).toLocaleString()}`,
+        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: monthlyExpenses * 0.9, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+      },
+      {
+        label: "Grow income 10%",
+        detail: "Raise, side income, or freelance — all goes straight to your FIRE date",
+        result: calcProjection({ annualIncome: income * 1.1 * 12, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+      },
+    ]
+      .map(s => ({
+        label: s.label,
+        detail: s.detail,
+        deltaYears: s.result.fireYear !== null ? Math.max(0, fireYear! - s.result.fireYear) : 0,
+        newRetireYear: s.result.fireYear !== null ? new Date().getFullYear() + s.result.fireYear : null,
+      }))
+      .sort((a, b) => b.deltaYears - a.deltaYears);
+  }, [income, monthlyExpenses, fireYear, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+
   const investable  = k401 + rothIRA + taxable + cashSavings;
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
@@ -648,6 +676,42 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </button>
         )}
       </div>
+
+      {/* ── Next Move: Highest-Impact Acceleration Card ──────────────────── */}
+      {nextMoveScenarios && nextMoveScenarios.length > 0 && (() => {
+        const [best, ...rest] = nextMoveScenarios;
+        const fmtAccel = (yrs: number) =>
+          yrs >= 2 ? `${yrs.toFixed(1)} years sooner` : `${Math.round(yrs * 12)} months sooner`;
+        return (
+          <div className="uf-card" style={{ border: "1.5px solid rgba(5,150,105,0.3)", background: "linear-gradient(135deg, rgba(5,150,105,0.03) 0%, #fff 100%)" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#059669", marginBottom: 12, fontFamily: "Manrope, sans-serif" }}>
+              Your Highest-Impact Move
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>{best.label}</div>
+                <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Inter, sans-serif" }}>{best.detail}</div>
+              </div>
+              {best.deltaYears > 0 && (
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>{fmtAccel(best.deltaYears)}</div>
+                  {best.newRetireYear && retireYear && (
+                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2, fontFamily: "Inter, sans-serif" }}>retire in {best.newRetireYear} vs {retireYear}</div>
+                  )}
+                </div>
+              )}
+            </div>
+            {rest.filter(s => s.deltaYears > 0).slice(0, 2).map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #F1F5F9", paddingTop: 10, marginTop: 10 }}>
+                <span style={{ fontSize: 13, color: "#64748B", fontFamily: "Inter, sans-serif" }}>{s.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.08)", borderRadius: 20, padding: "3px 10px", fontFamily: "Inter, sans-serif" }}>
+                  {fmtAccel(s.deltaYears)}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* ── Path to FIRE chart ──────────────────────────────────────────── */}
       <div className="uf-card">

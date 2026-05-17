@@ -1,100 +1,150 @@
-# UntilFire
+# UntilFire — Freedom Acceleration Engine
 
-**Know if you can FIRE and where you stand — in 60 seconds.**
+> **"Guessing is expensive."**
 
-Free, no login. Your personal FIRE adviser tells you exactly what to do each month to move your retirement date earlier.
+UntilFire is not a budgeting app. It is a **Freedom Acceleration Engine** — a tool that makes the financial cost of every decision visible, quantified, and personal.
 
-Live at **untilfire.com**.
+Live at **[untilfire.com](https://untilfire.com)**.
 
-## Stack
+---
+
+## Why UntilFire exists
+
+Most finance apps track what already happened. They show you where your money went. They leave you alone.
+
+UntilFire focuses on what you should do next — and shows you the exact cost, in years of freedom, of each decision you make or avoid.
+
+- Save an extra $500/month? **That's 2.1 years sooner.**
+- Take a 10% pay cut? **That's 3.4 years later.**
+- Cut one recurring subscription? **That's 8 months back.**
+
+Every input has a visible, quantified consequence. That's the Decision Impact Engine.
+
+---
+
+## The core product promise
+
+UntilFire helps you understand how every financial decision accelerates or delays your path to financial independence — and shows you what to do next.
+
+Users feel **clarity**, **momentum**, and **strategic control** over their future. Not guilt or shame.
+
+---
+
+## Decision Impact Engine
+
+Unlike calculators that return a single number and walk away, UntilFire shows the _delta_: how many years sooner (or later) you reach FIRE based on each choice. The reveal screen includes an interactive decision grid — drag sliders to see how cutting dining or investing more moves your retirement date in real time.
+
+The "Your Highest-Impact Move" card in the dashboard shows the top acceleration opportunity from your live numbers, ranked by years saved: save more, cut expenses, or grow income — whichever moves your date the most.
+
+---
+
+## Current features
+
+**Free — no login required**
+
+- **City-adjusted FIRE number** — cost-of-living normalization across 263 cities worldwide
+- **Tax-accurate projection** — US federal/state/FICA + international effective rates; after-tax take-home as the savings basis
+- **Interactive decision grid** — adjust dining-cut % and extra savings with sliders; FIRE date impact updates live
+- **Quantified recommendations** — "Raise your savings rate from 12% to 20% → 2.3 years sooner" instead of generic advice
+- **Wizard → dashboard handoff** — calculator prefill flows into dashboard on first login
+
+**Logged-in dashboard**
+
+- **Acceleration card** — always-visible highest-impact move ranked by years saved
+- **FIRE projection chart** — stacked contributions vs. market growth over 50 years
+- **Monte Carlo simulation** — probability of reaching FIRE given market volatility
+- **Multi-currency expense tracking** — transactions in any currency, normalized to USD
+- **Recurring planner** — automatic detection + manual entry of recurring bills
+- **Spending reports** — income vs. expenses chart, category breakdown, 3/6/12m selector
+- **Investment simulations** — DCA with 3-scenario overlay, age-based glide path
+
+**Growth / SEO**
+
+- 5 city landing pages (`/fire-number/austin-tx`, `/fire-number/london`, `/fire-number/singapore`, `/fire-number/shanghai`, `/fire-number/dubai`)
+- Public Learning Hub with 4 guided stages and 11 SEO articles
+- FIRE Type personality quiz at `/fire-type`
+- 6 standalone calculators at `/calculators`
+
+---
+
+## Long-term vision
+
+UntilFire becomes the operating system for your financial independence journey: a live, personalized map where every decision has a visible price tag in years of freedom.
+
+Roadmap:
+- AI-guided monthly action plans based on actual spending
+- Plaid-connected real-time delta tracking
+- Milestone notifications when you hit an acceleration target
+- Income acceleration pathways tailored to your FIRE type
+
+---
+
+## Tech stack
 
 | Layer | Tech |
 |---|---|
 | Framework | Next.js 15 (App Router) |
-| Auth + DB | Supabase (Google OAuth, Postgres) |
-| Styling | Tailwind CSS v4 + inline styles (Manrope / Inter) |
+| Auth + DB | Supabase (Google OAuth, Postgres, RLS) |
+| Styling | Tailwind CSS v4 + inline styles |
 | Charts | Recharts |
 | Payments | Stripe |
 | Email | Resend |
 | Hosting | Vercel |
 | Analytics | Vercel Analytics, PostHog, Google Analytics |
 
-## Design system
+**Design system:** White/green. Background `#F7F9FB`, primary green `#064E3B` / `#059669`, teal `#22d3a5`, accent orange `#f97316`. Fonts: Manrope (headings), Inter (UI).
 
-White/green. Background `#F7F9FB`, primary green `#064E3B` / `#059669`, teal `#22d3a5`, accent orange `#f97316`, borders `#E2E8F0`. Fonts: Syne (headings), DM Sans (UI), DM Mono (numbers).
+---
 
-## Dashboard navigation
-
-The `/dashboard` is a single-page app with a flat 7-item sidebar nav:
-
-| Tab | Content |
-|---|---|
-| **Overview** | Net worth summary, FIRE projection chart, KPI cards |
-| **Cashflow** | Budget settings + two-pane transaction tracker (sticky form + scrollable list) |
-| **Assets** | Portfolio overview, 401(k) / Roth IRA / taxable brokerage inputs |
-| **Liabilities** | Debt and mortgage inputs |
-| **FIRE Calculator** | Menu hub → Goals (target retirement age) + Monte Carlo simulations |
-| **Reports** | Period selector (3/6/12 months), income vs expenses chart, category breakdown, month-by-month table |
-| **Learning Hub** | Calculators, SEO articles, and FIRE topics |
-
-## Tiers
-
-| Tier | Price | What you get |
-|---|---|---|
-| **Free** | $0 | Find out if FIRE is achievable for you — city, income, taxes. No login required. 263 cities worldwide. |
-| **Pro** | $9/mo | Your personal FIRE adviser: tracks your progress, spots what's slowing you down, and tells you the one move to make each month. |
-
-## Key features
-
-- **60-second FIRE answer** — find out whether you can retire early, personalised to your city and income, before you create an account
-- **263 cities worldwide** — real cost-of-living data; no national averages
-- **City-level tax calculation** — US federal/state + FICA; international flat effective rates
-- **Personal FIRE adviser** (Pro) — monthly action plan based on your actual spending, not generic tips
-- **Multi-currency expense tracking** — transactions stored in any currency, auto-converted to USD using live rates
-- **FIRE projection chart** — 401(k) / Roth / taxable growth over 50 years with FIRE target line
-- **Monte Carlo simulation** — 10,000 scenarios showing your probability of reaching FIRE by your target age
-- **Spending reports** — income vs expenses chart, category breakdown, month-by-month table (3/6/12m selector)
-- **Recurring planner** — manual entry of recurring income/bills with include/exclude toggles; auto-detects repeating transactions
-- **Wizard → dashboard handoff** — calculator prefill (income, city, age, spend) flows into dashboard on first login
-
-## Competitive position
-
-The market splits into three buckets — all with the same gap:
+## How it compares
 
 | Bucket | Who | Gap |
 |---|---|---|
-| **FIRE Calculators** | FIRECalc (free), cFIREsim (effectively abandoned) | Give you a success rate, then leave you alone. No personalisation. No next steps. |
-| **FIRE Planners** | ProjectionLab ($109/yr), Boldin ($144/yr, built for 55+) | Powerful models that require 20+ min to set up and still don't tell you what to do. US-only. |
-| **Budgeting Apps** | Monarch Money ($100–199/yr), YNAB ($109/yr) | Great for spending visibility; FIRE is an afterthought. No city-level COL. No retirement math. |
+| **FIRE Calculators** | FIRECalc, cFIREsim | Give you a success rate, then leave you alone |
+| **FIRE Planners** | ProjectionLab, Boldin | Powerful but 20+ min setup; no guidance on what to do |
+| **Budgeting Apps** | Monarch, YNAB | Great visibility; FIRE is an afterthought |
+| **UntilFire** | — | 60-second answer + decision impact + what to do next |
 
-**The gap UntilFire fills:** Nobody answers *"Can I actually FIRE? Where am I right now? What should I do this month?"* — the question every early-career person on the FIRE path is actually asking. UntilFire is the entry point: first answer in 60 seconds, then an adviser that keeps score and gives clear, personalised direction. See `docs/MARKET.md` for full competitive analysis.
+---
 
 ## Major routes
 
 | Route | Description |
 |---|---|
 | `/` | Landing page + 5-screen FIRE calculator wizard |
-| `/fire-number/[city-slug]` | City-specific FIRE landing pages for high-intent SEO terms |
-| `/dashboard` | Logged-in dashboard |
+| `/fire-number/[city-slug]` | City-specific SEO landing pages |
+| `/dashboard` | Logged-in Freedom Acceleration Engine dashboard |
 | `/login` | Google OAuth sign-in |
-| `/calculators` | Calculator hub (SEO landing page) |
-| `/calculators/coast-fire` | Coast FIRE calculator |
-| `/calculators/apy` | APY calculator |
-| `/calculators/compound-interest` | Compound interest calculator |
-| `/calculators/savings-rate` | Savings rate calculator |
-| `/calculators/4-percent-rule` | FIRE number / 4% rule calculator |
-| `/learn` | Stage-first public Learning Hub |
-| `/learn/stages/[stage]` | Stage-specific public FIRE learning paths |
-| `/learn/articles` | SEO article grid (11 articles, structured body with h2/p nodes) |
-| `/learn/[slug]` | Individual article page with OpenGraph metadata |
-| `/learn/topics` | Topics index |
-| `/auth/callback` | OAuth callback handler |
-| `/api/waitlist` | Email capture endpoint |
-| `/api/stripe/*` | Stripe checkout, portal, webhook |
+| `/calculators` | Calculator hub |
+| `/learn` | Stage-based public Learning Hub |
+| `/learn/stages/[stage]` | Public FIRE learning paths |
+| `/learn/[slug]` | Individual SEO articles |
+| `/fire-type` | FIRE personality quiz |
+| `/auth/callback` | OAuth callback |
+| `/api/waitlist` | Email capture |
+| `/api/stripe/*` | Checkout, portal, webhook |
+
+---
+
+## Key files
+
+| File | Purpose |
+|---|---|
+| `app/page.tsx` | Landing + full calculator wizard + interactive reveal |
+| `app/components/landing/HeroScreen.tsx` | Hero copy and stats strip |
+| `app/dashboard/page.tsx` | Dashboard shell, all tabs, acceleration card |
+| `app/dashboard/TransactionsTab.tsx` | Cashflow two-pane with AI categorisation |
+| `lib/fire/index.ts` | FIRE engine surface, `recommendActionsForReveal` |
+| `lib/fire-data.ts` | 263 cities, tax logic, `calcFIRE()` |
+| `lib/supabase.ts` | Supabase client, `isPro()` |
+| `lib/journey.ts` | `CalculatorPrefill` type + localStorage helpers |
+| `app/globals.css` | Global design tokens and component classes |
+
+---
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local` for local dev.
+Copy `.env.example` to `.env.local`:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
@@ -113,125 +163,30 @@ NEXT_PUBLIC_POSTHOG_HOST=
 npm install
 npm run dev          # localhost:3000
 npm run build        # production build
-npm run typecheck    # next build && tsc --noEmit
+npm run typecheck    # tsc --noEmit
 npm run lint         # eslint .
 ```
 
-## Key files
+---
 
-| File | Purpose |
-|---|---|
-| `app/page.tsx` | Landing + full calculator wizard |
-| `app/dashboard/page.tsx` | Dashboard shell, sidebar nav, tab routing, FIRE goals form |
-| `app/dashboard/TransactionsTab.tsx` | Cashflow two-pane layout with AI categorisation |
-| `app/dashboard/CategoriesTab.tsx` | Monthly spend by category, expandable rows, project breakdown |
-| `app/dashboard/RecurringTab.tsx` | Recurring planner — manual entry + auto-detection |
-| `app/dashboard/ReportsTab.tsx` | Monthly reports — chart, category breakdown, summary table |
-| `lib/supabase.ts` | Supabase client singleton |
-| `lib/journey.ts` | `CalculatorPrefill` type + localStorage read/write helpers |
-| `lib/fire-data.ts` | 263 cities, tax logic, `calcFIRE()` |
-| `lib/fire/index.ts` | Monte Carlo simulation + FIRE engine |
-| `app/globals.css` | Global design tokens |
+## Tiers
+
+| Tier | Price | What you get |
+|---|---|---|
+| **Free** | $0 | 60-second FIRE answer, interactive decision impact grid, city/tax-adjusted — no login |
+| **Pro** | $9/mo | Full dashboard: acceleration card, expense tracking, Monte Carlo, monthly action plans |
+
+---
 
 ## Supabase tables
 
 - `user_budget` — income, expense categories, FIRE profile per user
-- `expenses` — individual transactions (with AI categorisation, multi-currency)
+- `expenses` — individual transactions (multi-currency, AI-categorised)
 - `waitlist` — pre-signup email captures
-- `subscriptions` — Stripe subscription status per user
+- `subscriptions` — Stripe subscription status
+
+---
 
 ## Deployment
 
-Push to `main` triggers a Vercel deploy. No manual steps required.
-
-## Recent Updates
-
-| PR | Date | Description |
-|---|---|---|
-| - | May 2026 | Learning Hub is now stage-based without losing SEO: `/learn` became the stage chooser, new public `/learn/stages/[stage]` paths were added, article pages now show stage fit + related reading/tools, and the dashboard Learning Hub links into the same public stage system |
-| - | May 2026 | Default currency now behaves as a true dashboard unit: asset, liability, mortgage, income, and budget inputs auto-convert visually when the profile currency changes, while stored planning values remain normalized underneath |
-| - | May 2026 | Default currency now drives dashboard display logic: Overview, Cashflow summaries, Reports, Recurring, and FIRE planning cards all render in the selected profile currency while keeping normalized USD storage underneath |
-| - | May 2026 | Growth/SEO acquisition pass: added five city landing pages under `/fire-number/*`, expanded internal linking from calculators and learn pages, refreshed launch copy, and added landing-source attribution through the public funnel |
-| - | May 2026 | Profile tab: edit display name, city (263-city search), default currency; delete account with email confirmation; `profiles.default_currency` column added to Supabase |
-| — | May 2026 | Pre-login wizard rebuilt: removed Goals step, added Portfolio Balance step (feeds startingBalance into calcFIRE), moved age to portfolio step, updated dashboard prefill to seed cashSavings, updated CTA copy |
-| — | May 2026 | Overview redesigned: split hero card (white left / dark green right), 3 mini-stat boxes (Years Remaining, Progress, Status), stacked FIRE projection bar chart (5Y/15Y/All), "This Month" KPI cards from cashflow with CTA when empty |
-| — | May 2026 | SEO foundation pass: restored `/calculators` hub, added crawlable landing-page links to calculators/learn, expanded sitemap coverage, and turned `/learn/topics` into a real topic index |
-| — | May 2026 | Local/dev reliability pass: added `.env.example`, made public pages build without Supabase env vars, and aligned validation scripts with the current Next.js build flow |
-| — | May 2026 | Reports tab: income vs expenses chart, category breakdown, month-by-month table (3/6/12m selector) |
-| — | May 2026 | Recurring tab redesigned: manual entry planner with include/exclude toggles + auto-detection |
-| — | May 2026 | FIRE Calculator converted to hub-and-spoke (menu → Goals / Simulation); Monte Carlo moved off Overview |
-| — | May 2026 | Wizard → dashboard prefill handoff fixed: `monthlyIncome`, `currentAge`, `cityName` now flow correctly |
-| — | May 2026 | Learning Hub articles page populated with 11 SEO articles; structured `BodyNode` body type |
-| #27 | May 2026 | Custom expense categories + sub-categories (localStorage); removed "Work expense" checkbox |
-| #26 | May 2026 | Fixed crash on Cashflow tab (missing `existingTags` prop in mobile drawer); fixed FX fallback overwrite |
-| #25 | May 2026 | Project/Event tag input in QuickAdd form — groups transactions across time periods |
-| #24 | May 2026 | `FALLBACK_RATES` constant seeds FX rates so conversion never silently breaks on API failure |
-| #23 | May 2026 | Multi-currency conversion in dashboard actuals KPIs and transaction day-net headers |
-| #22 | May 2026 | Cashflow sub-tabs (Cashflow / Categories / Recurring / Budgets); new CategoriesTab analytics |
-| #21 | May 2026 | Two-pane cashflow layout; flat 7-item sidebar; Learning Hub tab |
-
----
-
-## Current State
-
-**What works end-to-end:**
-- `/dashboard` — full FIRE dashboard, login-gated, redirects to `/login` if no session
-- **Overview tab** — greeting + split hero card (FIRE year, Years Remaining, Progress, Status / FIRE Target, Investable Assets, progress bar) + This Month KPI cards (Income, Expenses, Net Surplus, Savings Rate from cashflow transactions; CTA to Cashflow when no data logged) + stacked Path to FIRE bar chart (Contributions vs Market Growth, 5Y/15Y/All toggle)
-- **Cashflow tab → Cashflow sub-tab** — two-pane QuickAdd + transaction list; AI categorisation; multi-currency; Project/Event tags; custom categories/sub-categories; edit/delete with undo toast
-- **Cashflow tab → Categories sub-tab** — monthly spend by category (expandable, sub-cat breakdown, project breakdown); by-project/event section
-- **Cashflow tab → Recurring sub-tab** — manual entry planner (income/expense) with frequency, include/exclude toggles, subscription detection; auto-detects repeating items from history
-- **Cashflow tab → Budgets sub-tab** — budget bars (budget vs actual per category)
-- **Assets/Liabilities/FIRE Calculator tabs** — input forms + projection chart + Monte Carlo simulation
-- **FIRE Calculator** — hub menu → Goals sub-tab (retirement target) + Simulation sub-tab (Monte Carlo); back navigation
-- **Reports tab** — period selector (3/6/12m), KPI cards, income vs expenses bar chart, category breakdown, month-by-month table
-- **Calculators hub** — `/calculators` lists all SEO calculators and links users into the main FIRE wizard
-- **Multi-currency** — transactions stored in any currency; normalized to USD for calculations, but dashboard summaries and planning cards now render in the user's selected default currency using live Frankfurter API rates with fallback hardcoded rates if API fails
-- **Custom categories** — stored in `localStorage` key `uf_custom_cats`; custom sub-categories in `uf_custom_subcats`; both are device-local only
-- **Learning Hub stages** — `/learn` now routes readers into four guided public stages, with dedicated `/learn/stages/[stage]` pages for Starting Out, Building Momentum, Approaching FIRE, and Living in FIRE
-- **Learning Hub articles** — 11 SEO articles at `/learn/articles`; individual article pages at `/learn/[slug]` now show stage fit, related articles, and related calculators
-- **Learning Hub topics** — topic index at `/learn/topics` remains the secondary concept-based browse path
-- **SEO internal linking** — landing/nav now expose crawlable links to `/calculators` and `/learn`
-
-**Placeholder / incomplete:**
-- **Stripe / Pro tier** — schema exists (`subscriptions` table, `isPro()` helper in `lib/supabase.ts`) but no paywall enforced in UI; Stripe webhook route exists at `app/api/stripe/webhook/route.ts`
-
-**Known technical debt:**
-- AI categorisation in `TransactionsTab.tsx` calls Anthropic API client-side with a hardcoded API key placeholder — no key is set in env, so it silently falls back to `"other"` for all descriptions
-- Custom categories are device-local (localStorage), not synced across devices via Supabase
-- `is_work_related` field: checkbox removed from form but field still written as `false` on every save; old transactions with `true` show a "work" pill in the list
-
----
-
-## Pending Work
-
-Priority order based on `docs/ROADMAP.md` Phase 2 goals:
-
-**High priority (Phase 2 distribution):**
-- [ ] Launch FIRE Type quiz + share cards — 4-letter MBTI-style identity system (`P/A`, `S/E`, `R/G`, `B/F`) with public results, social share cards, and referral loop built around preference-based FIRE personalities rather than raw financial numbers
-- [ ] Map each FIRE Type to recommended calculators, learning stages, and onboarding paths so the quiz becomes both a share loop and a product entry point
-- [ ] Add existing savings input to landing calculator (current portfolio balance)
-- [ ] Stripe $9/mo Pro tier — checkout flow, paywall on AI features, Stripe webhook already scaffolded
-- [ ] Email onboarding sequence (Resend: Day 1 / Day 3 / Day 7)
-- [ ] Reddit launch (r/financialindependence weekly promo thread — see `docs/LAUNCH_POSTS.md`)
-
-**Product improvements:**
-- [ ] Mobile UX audit — Cashflow QuickAdd form is hidden on mobile behind bottom drawer; verify UX
-- [ ] Migrate custom categories to Supabase for cross-device sync
-- [ ] Fix AI categorisation — wire `ANTHROPIC_API_KEY` env var or move to a server route
-- [ ] Fix inconsistent "Budget tab" label in empty states (should be "Cashflow")
-- [ ] Add error toasts for failed Supabase saves/deletes (currently silent)
-- [ ] Persist active tab in URL query param (`?tab=reports`) so bookmarks work
-
-**SEO / growth:**
-- [x] First 5 city landing pages (`/fire-number/austin-tx`, `/fire-number/london`, `/fire-number/singapore`, `/fire-number/shanghai`, `/fire-number/dubai`)
-- [ ] Review Search Console / PostHog by `landing_source` and double down on the best-performing page type
-- [ ] Product Hunt launch
-
----
-
-## Making UI changes safely
-
-1. Run `npm run dev` locally and verify the change in the browser before pushing.
-2. Check that `npm run build` passes (TypeScript compilation must succeed).
-3. The design baseline is the white/green system — background `#F7F9FB`, green `#059669`, teal `#20D4BF`. Do not introduce dark/orange theming in new code.
-4. Push directly to `main` after local verification when the change is approved to ship.
+Push to `main` triggers a Vercel deploy automatically.
