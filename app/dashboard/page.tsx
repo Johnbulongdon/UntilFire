@@ -389,7 +389,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -398,6 +398,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
   retirementCityName?: string; retirementCityCol?: number; lifestyleMultiplier?: number;
+  fireAge?: number;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -526,6 +527,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", flex: "1 1 0", minWidth: 90 }}>
                   <div style={{ fontSize: 9, fontFamily: "Manrope, sans-serif", letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8", fontWeight: 700, marginBottom: 4 }}>Years Remaining</div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>{fireYear} yr</div>
+                  {fireAge > 0 && <div style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Inter, sans-serif", marginTop: 2 }}>age {fireAge + (fireYear ?? 0)}</div>}
                 </div>
                 <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", flex: "1 1 0", minWidth: 70 }}>
                   <div style={{ fontSize: 9, fontFamily: "Manrope, sans-serif", letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8", fontWeight: 700, marginBottom: 4 }}>Progress</div>
@@ -2712,6 +2714,7 @@ export default function Dashboard() {
                 retirementCityName={retirementCityName}
                 retirementCityCol={retirementCityCol}
                 lifestyleMultiplier={lifestyleMultiplier}
+                fireAge={fireAge}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
