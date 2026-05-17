@@ -1977,7 +1977,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
   const [glideStartStock, setGlideStartStock] = useState(80);
   const [glideEndStock, setGlideEndStock] = useState(40);
 
-  const activeS = scenarios.find(s => s.id === activeScenario)!;
+  const activeS = scenarios.find(s => s.id === activeScenario) ?? scenarios[0];
   const holdings = activeS.holdings;
 
   function updateScenarioHoldings(id: "A" | "B" | "C", updater: (h: Holding[]) => Holding[]) {
@@ -2043,10 +2043,11 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
         return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
       });
       const sum = next.reduce((s, h) => s + h.weight, 0);
-      if (sum !== 100) {
+      if (sum !== 100 && next.length > 1) {
         const fixIdx = next.findIndex((h, i) => i !== idx && h.weight > 0);
-        const fi = fixIdx === -1 ? (idx === 0 ? 1 : 0) : fixIdx;
-        next[fi] = { ...next[fi], weight: Math.max(0, next[fi].weight + (100 - sum)) };
+        if (fixIdx !== -1) {
+          next[fixIdx] = { ...next[fixIdx], weight: Math.max(0, next[fixIdx].weight + (100 - sum)) };
+        }
       }
       return next;
     });
@@ -2185,13 +2186,13 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 
             {/* Colour allocation bar */}
             <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden" }}>
-              {holdings.map((h, i) => (
+              {holdings.filter(h => h && h.ticker).map((h, i) => (
                 <div key={h.ticker} style={{ width: `${h.weight}%`, background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], transition: "width 0.2s" }} />
               ))}
             </div>
 
             {/* Holdings list */}
-            {holdings.map((h, i) => (
+            {holdings.filter(h => h && h.ticker).map((h, i) => (
               <div key={h.ticker} style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 10, borderBottom: "1px solid #F1F5F9" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], color: "#fff", borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 800, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
