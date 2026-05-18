@@ -787,8 +787,6 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 >
   Track this in your dashboard
 </Link>
-              <Link href="/learn/how-fire-assumptions-change-your-retirement-date" className="uf-btn uf-btn-ghost uf-btn-full" style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>See what changes your retirement date</Link>
-
               <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
                 <button className="uf-btn uf-btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={onAdjust}>Adjust inputs</button>
               </div>
@@ -994,10 +992,10 @@ export default function Home() {
 
         /* -- INPUTS -- */
         .uf-label { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; letter-spacing: 0.2px; }
-        .uf-input { width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; padding: 11px 14px; font-family: var(--font-body); font-size: 14px; color: var(--text); outline: none; transition: border-color 0.2s; }
+        .uf-input { width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; padding: 13px 14px; font-family: var(--font-body); font-size: 16px; color: var(--text); outline: none; transition: border-color 0.2s; }
         .uf-input:focus { border-color: #047857; box-shadow: 0 0 0 3px rgba(6,78,59,0.12); }
         .uf-input-mono { font-family: var(--font-mono); font-size: 18px; font-weight: 500; }
-        .uf-input-big { padding: 12px 14px; }
+        .uf-input-big { padding: 14px 16px; }
         .uf-big-input-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         .uf-input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; pointer-events: none; }
         .uf-big-prefix { font-size: 18px; font-weight: 500; }
@@ -1178,7 +1176,7 @@ export default function Home() {
           .uf-stat-row { grid-template-columns: 1fr 1fr; }
           .uf-delta-grid { grid-template-columns: 1fr; }
 .uf-wl-inline-form { flex-direction: column; }
-          .uf-btn-lg { padding: 16px 24px; }
+          .uf-btn-lg { padding: 16px 24px; min-height: 48px; }
           .uf-nav-row { gap: 8px; }
           .uf-fire-date { font-size: 13px; }
           .uf-cost-years { font-size: 32px; }
