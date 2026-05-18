@@ -1,8 +1,8 @@
 # UntilFire
 
-**Know if you can FIRE and where you stand — in 60 seconds.**
+**Find your freedom date.**
 
-Free, no login. Your personal FIRE adviser tells you exactly what to do each month to move your retirement date earlier.
+UntilFire shows when work can become optional — your FIRE number, your timeline, and the monthly moves that can bring freedom closer. Free, no login.
 
 Live at **untilfire.com**.
 

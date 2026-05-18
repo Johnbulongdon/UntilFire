@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'UntilFire - Find Your FIRE Number & Retire Early'
+export const alt = 'UntilFire - Know When You Can Stop Working'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -70,8 +70,8 @@ export default async function Image() {
             alignItems: 'center',
           }}
         >
-          <span>Find out exactly</span>
-          <span style={{ color: '#047857' }}>when you can retire</span>
+          <span>Most people don’t know</span>
+          <span style={{ color: '#047857' }}>when they can stop working</span>
         </div>
 
         {/* Subheading */}
@@ -85,7 +85,7 @@ export default async function Image() {
             display: 'flex',
           }}
         >
-          Free FIRE calculator - adjusted for your city, income and spending. Takes 60 seconds.
+          See your FIRE number, retirement timeline, and monthly moves in 60 seconds. Free, no login.
         </div>
 
         {/* Stats row */}
