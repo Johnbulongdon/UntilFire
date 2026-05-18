@@ -27,6 +27,7 @@ export default function Nav({
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Link href="/calculators" className="uf-nav-restart" style={{ textDecoration: "none" }}>Calculators</Link>
         <Link href="/learn" className="uf-nav-restart" style={{ textDecoration: "none" }}>Learn</Link>
+        <Link href="/pricing" className="uf-nav-restart" style={{ textDecoration: "none" }}>Pricing</Link>
         {step > 0 ? (
           <button className="uf-nav-restart" onClick={onRestart}>Start over</button>
         ) : (
