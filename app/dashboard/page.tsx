@@ -2885,6 +2885,7 @@ export default function Dashboard() {
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
+  const [subscription, setSubscription] = useState<{ plan: "free" | "pro" } | null>(null);
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
 
   // Read initial tab from URL query string (e.g. ?tab=cashflow)
@@ -2970,6 +2971,35 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("subscriptions")
+      .select("plan")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setSubscription({ plan: (data?.plan as "free" | "pro") ?? "free" });
+      });
+  }, [userId]);
+
+  useEffect(() => {
+    if (!upgradedBanner || !userId) return;
+    setSubscription({ plan: "pro" });
+  }, [upgradedBanner, userId]);
+
+  async function handleManageBilling() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch("/api/stripe/portal", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+  }
+
   const suggestedLearnStage = useMemo<LearnStageId>(() => {
     const investable = k401 + rothIRA + taxable + cashSavings;
     const monthlyExpenses = Object.entries(expenses)
@@ -3523,7 +3553,7 @@ export default function Dashboard() {
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "profile" && userId && (
-              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onPreferredCurrenciesChange={setPreferredCurrencies} onTabChange={(t) => setTab(t as TabKey)} />
+              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onPreferredCurrenciesChange={setPreferredCurrencies} onTabChange={(t) => setTab(t as TabKey)} subscription={subscription} onUpgradeClick={() => setUpgradeOpen(true)} onManageBilling={handleManageBilling} />
             )}
           </div>
         </main>
