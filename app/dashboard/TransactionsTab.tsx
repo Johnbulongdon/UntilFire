@@ -951,7 +951,7 @@ function MonthlySummary({
       </div>
 
       {/* KPI grid */}
-      <div style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+      <div className="uf-kpi-grid" style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
         {kpiCard("Income", incomeTotal, "#059669", prevIncome > 0 ? `vs ${formatAmount(prevIncome)} last month` : "No prior month data")}
         {kpiCard("Spent", expenseTotal, "#19181E", prevSpent > 0 ? `vs ${formatAmount(prevSpent)} last month` : "No prior month data")}
         {kpiCard("Net", net, net >= 0 ? "#047857" : "#DC2626", net >= 0 && incomeTotal > 0 ? `${((net / incomeTotal) * 100).toFixed(1)}% savings rate` : "Spending exceeds income")}

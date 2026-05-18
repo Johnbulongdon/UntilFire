@@ -628,7 +628,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
         {hasActuals ? (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+            <div className="uf-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
               <div className="uf-card" style={{ padding: "16px 18px" }}>
                 <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Income</div>
                 <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: "#059669" }}>{fmtMoney(actualIncome)}</div>
@@ -2834,7 +2834,7 @@ function LearningHubTab({ recommendedStageId }: { recommendedStageId: LearnStage
 }
 
 // ─── Sidebar items (flat) ─────────────────────────────────────────────────────
-const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
+const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: string }[] = [
   {
     key: "overview",
     label: "Overview",
@@ -2858,6 +2858,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
   {
     key: "fire-calculator",
     label: "FIRE Calculator",
+    mobileLabel: "FIRE Calc",
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3.5" rx="0.5"/><circle cx="9" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="9" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="16" r="0.6" fill="currentColor" stroke="none"/>',
   },
   {
@@ -2873,6 +2874,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
   {
     key: "learning-hub",
     label: "Learning Hub",
+    mobileLabel: "Learn",
     svg: '<path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12"/><path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2"/><path d="M9 10h6M9 14h4"/>',
   },
 ];
@@ -3287,6 +3289,7 @@ export default function Dashboard() {
         select option { background: #ffffff; }
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+        .uf-nav-label-mobile { display: none; }
 
         @media(max-width: 900px) {
           .uf-shell { flex-direction: column; }
@@ -3296,11 +3299,16 @@ export default function Dashboard() {
           .uf-sidebar-item { flex-direction: column; padding: 6px 4px; font-size: 9px; gap: 2px; flex: 1; justify-content: center; align-items: center; border-radius: 0; min-width: 0; width: auto; }
           .uf-sidebar-bottom { display: none; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
-          .uf-content { padding: 16px 16px calc(60px + env(safe-area-inset-bottom, 0px)); }
+          .uf-content { padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(60px + env(safe-area-inset-bottom, 0px)); }
           .uf-hero-split { flex-direction: column; min-height: unset; }
           .uf-hero-left { flex: none !important; padding: 20px 18px !important; }
           .uf-hero-right { flex: none !important; padding: 20px 18px !important; }
           .cf-mobile-bar { bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; }
+          .uf-nav-label-full { display: none; }
+          .uf-nav-label-mobile { display: block; }
+          .uf-kpi-grid { display: flex !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory; grid-template-columns: none !important; }
+          .uf-kpi-grid::-webkit-scrollbar { display: none; }
+          .uf-kpi-grid > * { flex-shrink: 0 !important; min-width: 130px !important; scroll-snap-align: start; }
         }
       `}</style>
 
@@ -3359,7 +3367,8 @@ export default function Dashboard() {
                 <span className="uf-sidebar-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
                 </span>
-                {item.label}
+                <span className="uf-nav-label-full">{item.label}</span>
+                <span className="uf-nav-label-mobile">{item.mobileLabel ?? item.label}</span>
               </button>
             ))}
           </nav>
