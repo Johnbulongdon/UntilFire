@@ -33,6 +33,76 @@ function fmtUSD(n: number) {
 }
 
 type IncomeMode = "annual" | "monthly" | "biweekly" | "hourly" | "takehome";
+type ShareCardKind = "identity" | "benchmark";
+
+type FireIdentity = {
+  name: string;
+  headline: string;
+  description: string;
+};
+
+type SavingsBenchmark = {
+  headline: string;
+  detail: string;
+  source: string;
+  savingsRate: number;
+  baselineRate: number;
+};
+
+// Public baseline placeholder: U.S. personal saving rate is published by BEA/FRED.
+// City-level savings-rate data is not reliably public, so we use this as a conservative
+// finance-awareness benchmark and keep the copy framed as a "benchmark", not a census claim.
+const PUBLIC_SAVINGS_RATE_BASELINE = 5;
+
+function deriveFireIdentity(savingsRate: number, portfolioBalance: number): FireIdentity {
+  if (portfolioBalance > 100000) {
+    return {
+      name: "Coast Candidate",
+      headline: "Your investments are already doing part of the work.",
+      description: "Your existing portfolio gives compounding a head start. The next unlock is protecting that momentum.",
+    };
+  }
+
+  if (savingsRate >= 30) {
+    return {
+      name: "Freedom Builder",
+      headline: "Your path is powered by savings rate + consistency.",
+      description: "You are turning income into optionality. Keeping lifestyle growth below income growth is your edge.",
+    };
+  }
+
+  if (savingsRate >= 15) {
+    return {
+      name: "Acceleration Seeker",
+      headline: "You have the engine — now widen the gap.",
+      description: "Your biggest lever is increasing the spread between monthly income and lifestyle costs.",
+    };
+  }
+
+  return {
+    name: "Reset Starter",
+    headline: "Your first win is building a repeatable savings rhythm.",
+    description: "Small automatic moves matter most at this stage because every month creates a stronger baseline.",
+  };
+}
+
+function getSavingsBenchmark(cityName: string, savings: number, monthlyTakeHome: number): SavingsBenchmark {
+  const savingsRate = monthlyTakeHome > 0 ? Math.round((savings / monthlyTakeHome) * 100) : 0;
+  const city = cityName.split(",")[0] || cityName;
+  const beatsBaseline = savingsRate > PUBLIC_SAVINGS_RATE_BASELINE;
+
+  return {
+    headline: beatsBaseline
+      ? `You’re ahead of the pack in ${city}.`
+      : `You’ve got a clear starting line in ${city}.`,
+    detail: beatsBaseline
+      ? `Your ${savingsRate}% savings rate beats the public U.S. personal-saving-rate benchmark we use until city-level data is available.`
+      : `Your ${savingsRate}% savings rate is below the public U.S. personal-saving-rate benchmark — a small monthly gap can change the timeline fast.`,
+    source: `Benchmark: public U.S. personal saving rate baseline, rounded to ${PUBLIC_SAVINGS_RATE_BASELINE}%. City-specific benchmarks can replace this later.`,
+    savingsRate,
+    baselineRate: PUBLIC_SAVINGS_RATE_BASELINE,
+  };
+}
 
 const INCOME_MODES: { key: IncomeMode; label: string; unit: string; hint: string }[] = [
   { key: "annual", label: "Annual", unit: "/yr", hint: "Before-tax yearly salary or compensation." },
@@ -363,26 +433,46 @@ function PortfolioScreen({ onNext, onBack }: {
 // -----------------------------------------------------------------------------
 
 function ShareModal({
-  retireYear, years, cityName, onClose,
+  cityName, fireIdentity, benchmark, onClose,
 }: {
-  retireYear: number; years: number; cityName: string;
+  cityName: string;
+  fireIdentity: FireIdentity; benchmark: SavingsBenchmark;
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<ShareCardKind>("identity");
 
-  const shareUrl = `https://untilfire.com/share?city=${encodeURIComponent(cityName)}&year=${retireYear}&years=${years}`;
-  const shareText = `Found my freedom date on untilfire.com — it shows when work could become optional based on where you live. Free, no login, takes 60 seconds. Mine came back ${cityName} around ${retireYear}. Worth a look.`;
-  const redditTitle = `Found a free tool that estimates your freedom date by city — here's what it showed for ${cityName}`;
+  const cityShort = cityName.split(",")[0] || cityName;
+  const shareUrl = `https://untilfire.com/?source=share-${selectedCard}`;
+  const benchmarkShareBody = benchmark.savingsRate > benchmark.baselineRate
+    ? `My savings rate beats the benchmark in ${cityShort}. Find your freedom date at UntilFire.`
+    : `I found my FIRE starting point in ${cityShort}. Find your freedom date at UntilFire.`;
+  const shareCards: Record<ShareCardKind, { label: string; title: string; body: string; text: string }> = {
+    identity: {
+      label: "Card A · FIRE Type",
+      title: `I’m a ${fireIdentity.name} 🔥`,
+      body: `${fireIdentity.headline} Find your FIRE Type at UntilFire.`,
+      text: `I’m a ${fireIdentity.name} 🔥\n${fireIdentity.headline}\nFind your FIRE Type at UntilFire.`,
+    },
+    benchmark: {
+      label: "Card B · Benchmark",
+      title: benchmark.headline,
+      body: benchmarkShareBody,
+      text: `${benchmark.headline}\n${benchmarkShareBody}`,
+    },
+  };
+  const activeShare = shareCards[selectedCard];
+  const redditTitle = activeShare.title;
 
   function copyToClipboard() {
-    navigator.clipboard.writeText(`${shareText}\n${shareUrl}`).then(() => {
+    navigator.clipboard.writeText(`${activeShare.text}\n${shareUrl}`).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   }
 
   function openShare(platform: "x" | "facebook" | "reddit") {
-    const encodedText = encodeURIComponent(shareText);
+    const encodedText = encodeURIComponent(activeShare.text);
     const encodedUrl = encodeURIComponent(shareUrl);
     const urls = {
       x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
@@ -400,17 +490,31 @@ function ShareModal({
       <div className="uf-share-modal">
         <button className="uf-share-close" onClick={onClose} aria-label="Close">×</button>
 
-        <div className="uf-share-heading">Share this discovery</div>
+        <div className="uf-share-heading">Choose what you want to share</div>
+        <div className="uf-share-subheading">Pick a privacy-safe version. We won’t share your exact income, FIRE number, or freedom date by default.</div>
+
+        <div className="uf-share-card-options" role="tablist" aria-label="Share card options">
+          {(Object.keys(shareCards) as ShareCardKind[]).map((kind) => (
+            <button
+              key={kind}
+              className={`uf-share-card-option ${selectedCard === kind ? "active" : ""}`}
+              onClick={() => setSelectedCard(kind)}
+              type="button"
+            >
+              {shareCards[kind].label}
+            </button>
+          ))}
+        </div>
 
         {/* Preview card */}
         <div className="uf-share-card">
           <div className="uf-share-card-brand">
             <Logo variant="dark" size={20} />
           </div>
-          <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>Freedom date</div>
-          <div className="uf-share-card-number" style={{ fontSize: 28 }}>{cityName}</div>
-          <div className="uf-share-card-meta" style={{ fontSize: 22, color: '#62FAE3', fontWeight: 800 }}>around {retireYear}</div>
-          <div className="uf-share-card-city" style={{ color: 'rgba(255,255,255,0.4)' }}>{years} years away · work optional timeline</div>
+          <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>{selectedCard === "identity" ? "FIRE Type" : "Benchmark"}</div>
+          <div className="uf-share-card-number" style={{ fontSize: 28, lineHeight: 1.1 }}>{activeShare.title}</div>
+          <div className="uf-share-card-meta" style={{ fontSize: 15, color: '#62FAE3', fontWeight: 800, lineHeight: 1.35 }}>{activeShare.body}</div>
+          <div className="uf-share-card-city" style={{ color: 'rgba(255,255,255,0.4)' }}>No exact income · no FIRE number · no freedom date</div>
           <div className="uf-share-card-divider" />
           <div className="uf-share-card-url">Find your freedom date {"->"} untilfire.com</div>
         </div>
@@ -578,6 +682,9 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const d4 = calcFIRE(savings + extraSavings, city.col, currentAge);
   const monthlyMoveYearsSaved = Math.max(0, result.years - d4.years);
   const monthlyMoveRetireYear = d4.retireYear;
+  const monthlyTakeHome = takeHome / 12;
+  const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
+  const fireIdentity = deriveFireIdentity(savingsBenchmark.savingsRate, portfolioBalance);
 
   function fmtDelta(yrs: number): string {
     if (yrs < 1 / 12) return "< 1 month sooner";
@@ -593,10 +700,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   return (
     <div className="uf-screen uf-reveal-screen">
       {showShare && (
-        <ShareModal
-          retireYear={result.retireYear}
-          years={result.years}
+          <ShareModal
           cityName={city.name}
+          fireIdentity={fireIdentity}
+          benchmark={savingsBenchmark}
           onClose={() => setShowShare(false)}
         />
       )}
@@ -655,7 +762,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                   <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
-                Share my freedom date
+                Share my FIRE Type
               </button>
             )}
           </div>
@@ -675,6 +782,25 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   <span className="uf-result-milestone-icon">⚡</span>
                   <span>One monthly move ready</span>
                 </div>
+              </div>
+
+              <div className="uf-benchmark-card">
+                <div className="uf-insight-kicker">Savings rate benchmark</div>
+                <div className="uf-insight-title">{savingsBenchmark.headline}</div>
+                <div className="uf-insight-copy">{savingsBenchmark.detail}</div>
+                <div className="uf-insight-source">{savingsBenchmark.source}</div>
+              </div>
+
+              <div className="uf-identity-card">
+                <div className="uf-insight-kicker">Your FIRE Type</div>
+                <div className="uf-identity-row">
+                  <div className="uf-identity-icon">🔥</div>
+                  <div>
+                    <div className="uf-insight-title">{fireIdentity.name}</div>
+                    <div className="uf-insight-copy">{fireIdentity.headline}</div>
+                  </div>
+                </div>
+                <div className="uf-insight-source">{fireIdentity.description}</div>
               </div>
 
               {/* Monthly move aha */}
@@ -1331,6 +1457,15 @@ export default function Home() {
         .uf-result-milestone-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: #ECFDF5; color: #047857; font-size: 12px; flex: 0 0 auto; }
         .uf-result-milestone.active { background: #F7FEE7; border-color: #BEF264; color: #365314; }
         .uf-result-milestone.active .uf-result-milestone-icon { background: #9FE870; color: #163300; }
+        .uf-benchmark-card, .uf-identity-card { background: #FFFFFF; border: 1px solid #DDEFE3; border-radius: 18px; padding: 18px; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(15,23,42,0.05); animation: cardLiftIn 0.55s cubic-bezier(0.22,1,0.36,1) 0.08s both; }
+        .uf-benchmark-card { background: linear-gradient(135deg, #F7FEE7 0%, #FFFFFF 72%); border-color: #BEF264; }
+        .uf-identity-card { background: linear-gradient(135deg, #F0FDFA 0%, #FFFFFF 72%); border-color: #99F6E4; }
+        .uf-insight-kicker { font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.12em; color: #047857; margin-bottom: 8px; }
+        .uf-insight-title { font-size: 22px; font-weight: 900; letter-spacing: -0.03em; color: #0F172A; line-height: 1.1; }
+        .uf-insight-copy { font-size: 14px; color: #334155; line-height: 1.45; margin-top: 8px; }
+        .uf-insight-source { font-size: 11px; color: #64748B; line-height: 1.45; margin-top: 10px; }
+        .uf-identity-row { display: flex; align-items: center; gap: 12px; }
+        .uf-identity-icon { width: 42px; height: 42px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: #064E3B; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); flex: 0 0 auto; }
         .uf-monthly-move-card { background: linear-gradient(135deg, #064E3B 0%, #047857 100%); border: 1px solid rgba(159,232,112,0.32); border-radius: 18px; padding: 18px 18px 16px; margin-bottom: 16px; color: white; box-shadow: 0 14px 35px rgba(6,78,59,0.18); animation: cardLiftIn 0.6s cubic-bezier(0.22,1,0.36,1) 0.12s both, softGlow 3.2s ease-in-out 0.9s infinite; }
 
         .uf-cost-card { background: #ECFDF5; border: 1px solid #D1FAE5; border-radius: 14px; padding: 20px 24px; text-align: center; margin-bottom: 20px; }
@@ -1368,7 +1503,12 @@ export default function Home() {
         @keyframes slideUp { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .uf-share-close { position: absolute; top: 14px; right: 14px; background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s; }
         .uf-share-close:hover { background: var(--bg-elevated); color: var(--text); }
-        .uf-share-heading { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 20px; letter-spacing: -0.3px; }
+        .uf-share-heading { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 8px; letter-spacing: -0.3px; }
+        .uf-share-subheading { font-size: 12px; line-height: 1.45; color: var(--text-muted); margin-bottom: 14px; }
+        .uf-share-card-options { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 14px; }
+        .uf-share-card-option { border: 1px solid var(--border); background: #fff; color: var(--text-muted); border-radius: 10px; padding: 10px 12px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.18s; }
+        .uf-share-card-option:hover { border-color: #047857; color: #047857; }
+        .uf-share-card-option.active { background: #ECFDF5; border-color: #047857; color: #064E3B; box-shadow: 0 0 0 3px rgba(5,150,105,0.10); }
 
         /* Share preview card */
         .uf-share-card { background: #003527; border: none; border-radius: 16px; padding: 26px 24px 20px; margin-bottom: 20px; text-align: center; position: relative; overflow: hidden; }
@@ -1400,6 +1540,9 @@ export default function Home() {
           .uf-result-milestone { justify-content: flex-start; border-radius: 14px; min-height: 42px; }
           .uf-celebration-pill { font-size: 11px; padding: 6px 10px; }
           .uf-monthly-move-card { padding: 16px; }
+          .uf-share-card-options { grid-template-columns: 1fr; }
+          .uf-benchmark-card, .uf-identity-card { padding: 16px; }
+          .uf-insight-title { font-size: 20px; }
           .uf-confetti span { width: 6px; height: 10px; }
         }
 
@@ -1409,6 +1552,8 @@ export default function Home() {
           .uf-fire-hero,
           .uf-celebration-pill,
           .uf-result-milestones,
+          .uf-benchmark-card,
+          .uf-identity-card,
           .uf-monthly-move-card,
           .uf-confetti span { animation: none !important; }
           .uf-confetti { display: none; }
