@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import UpgradeModal from "./UpgradeModal";
+import TourModal from "./TourModal";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
@@ -37,6 +38,7 @@ type PlaidAccount = {
   mask: string | null;
   plaid_item_id: string;
   updated_at: string;
+  apy: number | null;
 };
 type TabKey =
   | "overview"
@@ -419,6 +421,34 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     growthRate, withdrawalRate, targetMonthlyExpenses,
   }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
 
+  const nextMoveScenarios = useMemo(() => {
+    if (!(income > 0 && fireYear !== null)) return null;
+    return [
+      {
+        label: "Save $500/mo more",
+        detail: "Redirect $500/month from spending to investments",
+        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: Math.max(0, monthlyExpenses - 500), k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+      },
+      {
+        label: "Cut expenses 10%",
+        detail: `Reduce monthly spending from spending to ${Math.round(monthlyExpenses * 0.9).toLocaleString()}`,
+        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: monthlyExpenses * 0.9, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+      },
+      {
+        label: "Grow income 10%",
+        detail: "Raise, side income, or freelance — all goes straight to your FIRE date",
+        result: calcProjection({ annualIncome: income * 1.1 * 12, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+      },
+    ]
+      .map(s => ({
+        label: s.label,
+        detail: s.detail,
+        deltaYears: s.result.fireYear !== null ? Math.max(0, fireYear! - s.result.fireYear) : 0,
+        newRetireYear: s.result.fireYear !== null ? new Date().getFullYear() + s.result.fireYear : null,
+      }))
+      .sort((a, b) => b.deltaYears - a.deltaYears);
+  }, [income, monthlyExpenses, fireYear, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+
   const investable  = k401 + rothIRA + taxable + cashSavings;
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
@@ -598,7 +628,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
         {hasActuals ? (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+            <div className="uf-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
               <div className="uf-card" style={{ padding: "16px 18px" }}>
                 <div style={{ fontSize: 11, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 700, marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Income</div>
                 <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: "#059669" }}>{fmtMoney(actualIncome)}</div>
@@ -648,6 +678,42 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </button>
         )}
       </div>
+
+      {/* ── Next Move: Highest-Impact Acceleration Card ──────────────────── */}
+      {nextMoveScenarios && nextMoveScenarios.length > 0 && (() => {
+        const [best, ...rest] = nextMoveScenarios;
+        const fmtAccel = (yrs: number) =>
+          yrs >= 2 ? `${yrs.toFixed(1)} years sooner` : `${Math.round(yrs * 12)} months sooner`;
+        return (
+          <div className="uf-card" style={{ border: "1.5px solid rgba(5,150,105,0.3)", background: "linear-gradient(135deg, rgba(5,150,105,0.03) 0%, #fff 100%)" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#059669", marginBottom: 12, fontFamily: "Manrope, sans-serif" }}>
+              Your Highest-Impact Move
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>{best.label}</div>
+                <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Inter, sans-serif" }}>{best.detail}</div>
+              </div>
+              {best.deltaYears > 0 && (
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>{fmtAccel(best.deltaYears)}</div>
+                  {best.newRetireYear && retireYear && (
+                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2, fontFamily: "Inter, sans-serif" }}>retire in {best.newRetireYear} vs {retireYear}</div>
+                  )}
+                </div>
+              )}
+            </div>
+            {rest.filter(s => s.deltaYears > 0).slice(0, 2).map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #F1F5F9", paddingTop: 10, marginTop: 10 }}>
+                <span style={{ fontSize: 13, color: "#64748B", fontFamily: "Inter, sans-serif" }}>{s.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.08)", borderRadius: 20, padding: "3px 10px", fontFamily: "Inter, sans-serif" }}>
+                  {fmtAccel(s.deltaYears)}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* ── Path to FIRE chart ──────────────────────────────────────────── */}
       <div className="uf-card">
@@ -1497,7 +1563,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, monthlyExpenses = 0 }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -1508,6 +1574,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
   onRefreshAccounts?: () => void;
+  monthlyExpenses?: number;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -1518,6 +1585,98 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const [hideZeroAssets, setHideZeroAssets] = useState(true);
   const visibleAssets = hideZeroAssets ? bankAssets.filter(a => (a.balance_current ?? 0) !== 0) : bankAssets;
   const hiddenAssetCount = bankAssets.length - visibleAssets.length;
+
+  // ── Account type metadata ────────────────────────────────────────────────
+  const ACCOUNT_TYPE_META: Record<string, { label: string; emoji: string; color: string }> = {
+    checking:        { label: "Checking",      emoji: "🏧", color: "#3B82F6" },
+    savings:         { label: "Savings",       emoji: "🏦", color: "#059669" },
+    "money market":  { label: "Money Market",  emoji: "💰", color: "#0EA5E9" },
+    money_market:    { label: "Money Market",  emoji: "💰", color: "#0EA5E9" },
+    cd:              { label: "CD",            emoji: "📄", color: "#8B5CF6" },
+    "credit card":   { label: "Credit Card",   emoji: "💳", color: "#F97316" },
+    mortgage:        { label: "Mortgage",      emoji: "🏠", color: "#6366F1" },
+    auto:            { label: "Auto Loan",     emoji: "🚗", color: "#F59E0B" },
+    brokerage:       { label: "Brokerage",     emoji: "📈", color: "#059669" },
+    ira:             { label: "IRA",           emoji: "📈", color: "#059669" },
+  };
+  const getTypeMeta = (subtype: string | null, type: string) => {
+    const key = (subtype ?? "").toLowerCase().replace(/-/g, " ");
+    return ACCOUNT_TYPE_META[key] ?? ACCOUNT_TYPE_META[type?.toLowerCase()] ?? { label: subtype ?? type, emoji: "💼", color: "#6B7280" };
+  };
+
+  // ── APY state (optimistic overrides while saving) ───────────────────────
+  const [apyMap, setApyMap] = useState<Record<string, number | null>>({});
+  const effectiveApy = (a: PlaidAccount) => apyMap[a.id] !== undefined ? apyMap[a.id] : a.apy;
+
+  const handleSaveApy = async (accountId: string, apy: number | null) => {
+    setApyMap(prev => ({ ...prev, [accountId]: apy }));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch(`/api/plaid/accounts/${accountId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ apy }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const orig = plaidAccounts.find(a => a.id === accountId)?.apy ?? null;
+      setApyMap(prev => ({ ...prev, [accountId]: orig }));
+    } else {
+      onRefreshAccounts?.();
+    }
+  };
+
+  function ApyField({ account }: { account: PlaidAccount }) {
+    const currentApy = effectiveApy(account);
+    const [editing, setEditing] = useState(false);
+    const [val, setVal] = useState(currentApy != null ? String(currentApy) : "");
+    useEffect(() => { setVal(currentApy != null ? String(currentApy) : ""); }, [currentApy]);
+
+    const commit = () => {
+      const n = parseFloat(val);
+      handleSaveApy(account.id, isNaN(n) || n <= 0 ? null : n);
+      setEditing(false);
+    };
+
+    if (editing) return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+        <input autoFocus type="number" step="0.01" min="0" max="20" value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
+          onBlur={commit}
+          style={{ width: 68, border: "1px solid #059669", borderRadius: 6, padding: "3px 6px", fontSize: 12, outline: "none", fontFamily: "inherit" }}
+          placeholder="e.g. 4.8"
+        />
+        <span style={{ fontSize: 12, color: "#64748B" }}>% APY</span>
+      </div>
+    );
+
+    return (
+      <button onClick={() => setEditing(true)}
+        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#94A3B8", textAlign: "left", padding: 0, fontFamily: "inherit", marginTop: 2 }}>
+        {currentApy != null ? `${currentApy}% APY ✏️` : "＋ Enter APY"}
+      </button>
+    );
+  }
+
+  // ── Emergency fund logic ─────────────────────────────────────────────────
+  const HYSA_THRESHOLD = 3.5;
+  const savingsAccts = bankAssets.filter(a =>
+    ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "))
+  );
+  const hasPlaidSavings = savingsAccts.length > 0;
+  const hasHysa = savingsAccts.some(a => (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD);
+  const savingsBalance = hasPlaidSavings
+    ? savingsAccts.reduce((s, a) => s + (a.balance_current ?? 0), 0)
+    : cashSavings;
+  const efMin = monthlyExpenses * 3;
+  const efMax = monthlyExpenses * 6;
+  const efPct = efMin > 0 ? Math.min(100, (savingsBalance / efMin) * 100) : 0;
+  const efStatus = savingsBalance >= efMax ? "full" : savingsBalance >= efMin ? "ok" : savingsBalance > 0 ? "partial" : "empty";
+  const monthsCovered = monthlyExpenses > 0 ? savingsBalance / monthlyExpenses : 0;
+  const avgApy = savingsAccts.length > 0
+    ? savingsAccts.filter(a => effectiveApy(a) != null).reduce((s, a) => s + (effectiveApy(a) ?? 0), 0) /
+      Math.max(1, savingsAccts.filter(a => effectiveApy(a) != null).length)
+    : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1541,20 +1700,30 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
               )}
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
-            {visibleAssets.map(a => (
-              <div key={a.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
-                <div style={{ fontSize: 12, color: "#94A3B8" }}>
-                  <span style={{ textTransform: "capitalize" }}>{a.subtype?.replace(/-/g, " ") ?? a.type}</span>
-                  {a.mask && <span style={{ marginLeft: 6 }}>•••• {a.mask}</span>}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
+            {visibleAssets.map(a => {
+              const meta = getTypeMeta(a.subtype, a.type);
+              const isSavingsType = ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "));
+              const isHysaAccount = isSavingsType && (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD;
+              return (
+                <div key={a.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>{meta.emoji}</span>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#19181E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{a.name}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                    <span style={{ background: meta.color + "18", color: meta.color, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{meta.label}</span>
+                    {isHysaAccount && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>HYSA ✓</span>}
+                    {a.mask && <span style={{ fontSize: 11, color: "#94A3B8" }}>•••• {a.mask}</span>}
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", marginTop: 2 }}>{fmtMoney(a.balance_current ?? 0)}</div>
+                  {a.balance_available != null && a.balance_available !== a.balance_current && (
+                    <div style={{ fontSize: 11, color: "#94A3B8" }}>{fmtMoney(a.balance_available)} available</div>
+                  )}
+                  {isSavingsType && <ApyField account={a} />}
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", marginTop: 4 }}>{fmtMoney(a.balance_current ?? 0)}</div>
-                {a.balance_available != null && a.balance_available !== a.balance_current && (
-                  <div style={{ fontSize: 11, color: "#94A3B8" }}>{fmtMoney(a.balance_available)} available</div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(5,150,105,0.2)" }}>
             <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
@@ -1562,6 +1731,70 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           </div>
         </div>
       )}
+
+      {/* ── Emergency Fund card ──────────────────────────────────────────── */}
+      {monthlyExpenses > 0 && (
+        <div className="uf-card" style={{
+          background: efStatus === "full" ? "rgba(5,150,105,0.04)" : efStatus === "ok" ? "rgba(20,184,166,0.04)" : efStatus === "partial" ? "rgba(245,158,11,0.04)" : "rgba(220,38,38,0.04)",
+          border: `1px solid ${efStatus === "full" ? "rgba(5,150,105,0.2)" : efStatus === "ok" ? "rgba(20,184,166,0.2)" : efStatus === "partial" ? "rgba(245,158,11,0.25)" : "rgba(220,38,38,0.2)"}`,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: 16 }}>🛡️</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Fund</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748B", fontWeight: 500 }}>3–6 months of expenses</span>
+          </div>
+
+          {/* Three-stat row */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 14 }}>
+            {[
+              { label: "Current Savings", value: fmtMoney(savingsBalance), color: efStatus === "full" || efStatus === "ok" ? "#059669" : "#19181E" },
+              { label: "Min · 3 months", value: fmtMoney(efMin) },
+              { label: "Target · 6 months", value: fmtMoney(efMax) },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 3 }}>{s.label}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: s.color ?? "#19181E", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ height: 6, background: "#F1F5F9", borderRadius: 99, overflow: "hidden", marginBottom: 10 }}>
+            <div style={{
+              height: "100%", borderRadius: 99,
+              width: `${efPct}%`,
+              background: efStatus === "full" ? "#059669" : efStatus === "ok" ? "#14B8A6" : efStatus === "partial" ? "#F59E0B" : "#DC2626",
+              transition: "width 0.4s ease",
+            }} />
+          </div>
+
+          {/* Status badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: hasHysa ? 0 : 12 }}>
+            {efStatus === "full" && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✅ Fully funded ({monthsCovered.toFixed(1)} months)</span>}
+            {efStatus === "ok" && <span style={{ background: "#CCFBF1", color: "#0F766E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✓ On track ({monthsCovered.toFixed(1)} months)</span>}
+            {efStatus === "partial" && <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Partially funded ({monthsCovered.toFixed(1)} months)</span>}
+            {efStatus === "empty" && <span style={{ background: "#FEE2E2", color: "#991B1B", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Not started</span>}
+            {hasHysa && avgApy > 0 && (
+              <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(savingsBalance * avgApy / 100 / 12))}/mo interest</span>
+            )}
+          </div>
+
+          {/* HYSA recommendation banner */}
+          {!hasHysa && (
+            <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "10px 14px", marginTop: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#92400E", marginBottom: 4 }}>💡 Consider a High-Yield Savings Account (HYSA)</div>
+              <div style={{ fontSize: 12, color: "#78350F", lineHeight: 1.5 }}>
+                {plaidAccounts.length === 0
+                  ? "Connect a bank to track your emergency fund automatically. Using your manual Cash & Savings entry above."
+                  : !hasPlaidSavings
+                    ? "No savings account detected. A HYSA earns 10–20× more than a typical checking account — top rates are currently 4.5–5.0% APY."
+                    : "Enter your savings APY above. If it's below 3.5%, you may be leaving money on the table — top HYSA rates are currently 4.5–5.0% APY."}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <div className="uf-card">
           <SectionLabel icon="📈" text="Investment Accounts" color="#059669" />
@@ -1864,51 +2097,72 @@ type Holding = {
   custom?: boolean;
 };
 
-const ETF_DATA: Record<string, { name: string; cagr: number; category: string }> = {
-  VOO:  { name: "Vanguard S&P 500 ETF",            cagr: 0.107, category: "US Equity" },
-  VTI:  { name: "Vanguard Total Stock Market ETF",  cagr: 0.107, category: "US Equity" },
-  SPY:  { name: "SPDR S&P 500 ETF",                cagr: 0.107, category: "US Equity" },
-  IVV:  { name: "iShares Core S&P 500 ETF",        cagr: 0.107, category: "US Equity" },
-  SCHB: { name: "Schwab US Broad Market ETF",       cagr: 0.107, category: "US Equity" },
-  QQQ:  { name: "Invesco Nasdaq-100 ETF",           cagr: 0.183, category: "US Growth" },
-  ARKK: { name: "ARK Innovation ETF",               cagr: 0.035, category: "US Growth" },
-  VT:   { name: "Vanguard Total World Stock ETF",   cagr: 0.092, category: "Global Equity" },
-  VXUS: { name: "Vanguard Total Intl Stock ETF",    cagr: 0.059, category: "Intl Equity" },
-  VEA:  { name: "Vanguard Developed Markets ETF",   cagr: 0.071, category: "Intl Equity" },
-  VWO:  { name: "Vanguard Emerging Markets ETF",    cagr: 0.037, category: "Emerging Markets" },
-  EFA:  { name: "iShares MSCI EAFE ETF",            cagr: 0.076, category: "Intl Equity" },
-  BND:  { name: "Vanguard Total Bond Market ETF",   cagr: 0.017, category: "US Bonds" },
-  AGG:  { name: "iShares Core US Aggregate Bond",   cagr: 0.015, category: "US Bonds" },
-  BNDX: { name: "Vanguard Total Intl Bond ETF",     cagr: 0.008, category: "Intl Bonds" },
-  SCHD: { name: "Schwab US Dividend Equity ETF",    cagr: 0.112, category: "US Dividend" },
-  VIG:  { name: "Vanguard Dividend Appreciation",   cagr: 0.111, category: "US Dividend" },
-  VYM:  { name: "Vanguard High Dividend Yield ETF", cagr: 0.095, category: "US Dividend" },
-  VNQ:  { name: "Vanguard Real Estate ETF",         cagr: 0.087, category: "Real Estate" },
-  GLD:  { name: "SPDR Gold Trust",                  cagr: 0.085, category: "Commodities" },
-  IWM:  { name: "iShares Russell 2000 ETF",         cagr: 0.090, category: "US Small Cap" },
-  AVUV: { name: "Avantis US Small Value ETF",       cagr: 0.150, category: "US Small Value" },
-  XLK:  { name: "Technology Select Sector SPDR",    cagr: 0.204, category: "Sector – Tech" },
-  SOXX: { name: "iShares Semiconductor ETF",        cagr: 0.220, category: "Sector – Semi" },
-  AAPL: { name: "Apple Inc.",                        cagr: 0.220, category: "Individual Stock" },
-  MSFT: { name: "Microsoft Corp.",                   cagr: 0.220, category: "Individual Stock" },
-  NVDA: { name: "NVIDIA Corp.",                      cagr: 0.500, category: "Individual Stock" },
-  GOOGL:{ name: "Alphabet Inc.",                     cagr: 0.150, category: "Individual Stock" },
-  AMZN: { name: "Amazon.com Inc.",                   cagr: 0.160, category: "Individual Stock" },
-  TSLA: { name: "Tesla Inc.",                        cagr: 0.270, category: "Individual Stock" },
+const ETF_DATA: Record<string, { name: string; cagr: number; category: string; stddev: number; maxDD: number }> = {
+  VOO:  { name: "Vanguard S&P 500 ETF",            cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  VTI:  { name: "Vanguard Total Stock Market ETF",  cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  SPY:  { name: "SPDR S&P 500 ETF",                cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  IVV:  { name: "iShares Core S&P 500 ETF",        cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  SCHB: { name: "Schwab US Broad Market ETF",       cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  QQQ:  { name: "Invesco Nasdaq-100 ETF",           cagr: 0.183, category: "US Growth",         stddev: 0.22, maxDD: 0.83 },
+  ARKK: { name: "ARK Innovation ETF",               cagr: 0.035, category: "US Growth",         stddev: 0.55, maxDD: 0.75 },
+  VT:   { name: "Vanguard Total World Stock ETF",   cagr: 0.092, category: "Global Equity",     stddev: 0.16, maxDD: 0.55 },
+  VXUS: { name: "Vanguard Total Intl Stock ETF",    cagr: 0.059, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
+  VEA:  { name: "Vanguard Developed Markets ETF",   cagr: 0.071, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
+  VWO:  { name: "Vanguard Emerging Markets ETF",    cagr: 0.037, category: "Emerging Markets",  stddev: 0.22, maxDD: 0.65 },
+  EFA:  { name: "iShares MSCI EAFE ETF",            cagr: 0.076, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
+  BND:  { name: "Vanguard Total Bond Market ETF",   cagr: 0.017, category: "US Bonds",          stddev: 0.05, maxDD: 0.20 },
+  AGG:  { name: "iShares Core US Aggregate Bond",   cagr: 0.015, category: "US Bonds",          stddev: 0.05, maxDD: 0.20 },
+  BNDX: { name: "Vanguard Total Intl Bond ETF",     cagr: 0.008, category: "Intl Bonds",        stddev: 0.05, maxDD: 0.22 },
+  SCHD: { name: "Schwab US Dividend Equity ETF",    cagr: 0.112, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
+  VIG:  { name: "Vanguard Dividend Appreciation",   cagr: 0.111, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
+  VYM:  { name: "Vanguard High Dividend Yield ETF", cagr: 0.095, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
+  VNQ:  { name: "Vanguard Real Estate ETF",         cagr: 0.087, category: "Real Estate",       stddev: 0.20, maxDD: 0.70 },
+  GLD:  { name: "SPDR Gold Trust",                  cagr: 0.085, category: "Commodities",       stddev: 0.16, maxDD: 0.42 },
+  IWM:  { name: "iShares Russell 2000 ETF",         cagr: 0.090, category: "US Small Cap",      stddev: 0.22, maxDD: 0.59 },
+  AVUV: { name: "Avantis US Small Value ETF",       cagr: 0.150, category: "US Small Value",    stddev: 0.22, maxDD: 0.55 },
+  XLK:  { name: "Technology Select Sector SPDR",    cagr: 0.204, category: "Sector – Tech",     stddev: 0.22, maxDD: 0.57 },
+  SOXX: { name: "iShares Semiconductor ETF",        cagr: 0.220, category: "Sector – Semi",     stddev: 0.30, maxDD: 0.65 },
+  AAPL: { name: "Apple Inc.",                        cagr: 0.220, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
+  MSFT: { name: "Microsoft Corp.",                   cagr: 0.220, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
+  NVDA: { name: "NVIDIA Corp.",                      cagr: 0.500, category: "Individual Stock", stddev: 0.60, maxDD: 0.66 },
+  GOOGL:{ name: "Alphabet Inc.",                     cagr: 0.150, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
+  AMZN: { name: "Amazon.com Inc.",                   cagr: 0.160, category: "Individual Stock", stddev: 0.30, maxDD: 0.56 },
+  TSLA: { name: "Tesla Inc.",                        cagr: 0.270, category: "Individual Stock", stddev: 0.65, maxDD: 0.73 },
 };
 
 const HOLDING_PALETTE = ["#059669", "#22d3a5", "#818cf8", "#f97316", "#fbbf24", "#ef4444", "#a78bfa", "#06b6d4"];
 
+type Scenario = {
+  id: "A" | "B" | "C";
+  label: string;
+  color: string;
+  holdings: Holding[];
+  initialAmount: number;
+  dcaAmount: number;
+  dcaFrequency: DCAFreq;
+  years: number;
+  glideEnabled: boolean;
+  glideCurrentAge: number;
+  glideRetirementAge: number;
+  glideStartStock: number;
+  glideEndStock: number;
+};
+
 function calcDCAProjection({
   initialAmount, dcaAmount, dcaFrequency, years, holdings, includeInflation,
+  glideEnabled, currentAge, retirementAge, startStockPct, endStockPct,
 }: {
   initialAmount: number; dcaAmount: number; dcaFrequency: DCAFreq; years: number;
   holdings: Holding[]; includeInflation: boolean;
+  glideEnabled?: boolean; currentAge?: number; retirementAge?: number;
+  startStockPct?: number; endStockPct?: number;
 }): DCASimRow[] {
+  const STOCK_RETURN = 0.107;
+  const BOND_RETURN = 0.017;
   const periods: Record<DCAFreq, number> = { weekly: 52, "bi-weekly": 26, monthly: 12, annually: 1 };
   const annualContrib = dcaAmount * periods[dcaFrequency];
-  const r = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
   const inflation = 0.03;
+  const totalGlideYears = (retirementAge ?? 60) - (currentAge ?? 30);
 
   const rows: DCASimRow[] = [];
   let portfolio = initialAmount;
@@ -1917,6 +2171,14 @@ function calcDCAProjection({
   rows.push({ year: 0, portfolio: Math.round(portfolio), contributions: Math.round(totalContrib), growth: 0, real: Math.round(portfolio) });
 
   for (let y = 1; y <= years; y++) {
+    let r: number;
+    if (glideEnabled && totalGlideYears > 0) {
+      const t = Math.min(y, totalGlideYears) / totalGlideYears;
+      const stockFrac = ((startStockPct ?? 80) - ((startStockPct ?? 80) - (endStockPct ?? 40)) * t) / 100;
+      r = stockFrac * STOCK_RETURN + (1 - stockFrac) * BOND_RETURN;
+    } else {
+      r = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
+    }
     portfolio = portfolio * (1 + r) + annualContrib * (1 + r / 2);
     totalContrib += annualContrib;
     const growth = Math.max(0, portfolio - totalContrib);
@@ -1926,26 +2188,54 @@ function calcDCAProjection({
   return rows;
 }
 
-function InvestSimTab({ onBack }: { onBack: () => void }) {
-  const [initialAmt, setInitialAmt] = useState(10000);
-  const [dcaAmt, setDcaAmt] = useState(500);
-  const [dcaFreq, setDcaFreq] = useState<DCAFreq>("monthly");
-  const [years, setYears] = useState(20);
-  const [inflation, setInflation] = useState(false);
-  const [holdings, setHoldings] = useState<Holding[]>([
-    { ticker: "VOO", name: "Vanguard S&P 500 ETF",      cagr: 0.107, weight: 60 },
-    { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
-    { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 20 },
-  ]);
+function calcPortfolioRisk(holdings: Holding[]): { volatility: number; maxDrawdown: number; sharpe: number; assetClasses: string[] } {
+  const RISK_FREE = 0.04;
+  let blendedReturn = 0;
+  let weightedVol = 0;
+  let weightedDD = 0;
+  const classes = new Set<string>();
+  for (const h of holdings) {
+    const w = h.weight / 100;
+    const etf = ETF_DATA[h.ticker];
+    blendedReturn += w * h.cagr;
+    weightedVol += w * (etf?.stddev ?? 0.18);
+    weightedDD += w * (etf?.maxDD ?? 0.50);
+    classes.add(etf?.category ?? "Other");
+  }
+  const sharpe = weightedVol > 0 ? (blendedReturn - RISK_FREE) / weightedVol : 0;
+  return { volatility: weightedVol, maxDrawdown: weightedDD, sharpe, assetClasses: [...classes] };
+}
+
+function diversificationLabel(classes: string[]): { label: string; color: string } {
+  const n = classes.length;
+  if (n >= 4) return { label: "Well Diversified", color: "#059669" };
+  if (n === 3) return { label: "Diversified", color: "#0ea5e9" };
+  if (n === 2) return { label: "Moderate", color: "#f59e0b" };
+  return { label: "Concentrated", color: "#ef4444" };
+}
+
+function riskProfileLabel(volatility: number): { label: string; color: string } {
+  if (volatility < 0.10) return { label: "Conservative", color: "#059669" };
+  if (volatility < 0.16) return { label: "Moderate", color: "#0ea5e9" };
+  if (volatility < 0.22) return { label: "Aggressive", color: "#f59e0b" };
+  return { label: "High Risk", color: "#ef4444" };
+}
+
+type PlanCardProps = {
+  s: Scenario;
+  updateScenario: (id: "A" | "B" | "C", patch: Partial<Omit<Scenario, "id">>) => void;
+  updateHoldings: (id: "A" | "B" | "C", updater: (h: Holding[]) => Holding[]) => void;
+};
+
+function PlanCard({ s, updateScenario, updateHoldings }: PlanCardProps) {
   const [tickerInput, setTickerInput] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const blendedReturn = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
-
+  const blendedReturn = s.holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
   const suggestions = tickerInput.length >= 1
     ? Object.entries(ETF_DATA)
         .filter(([ticker, info]) =>
-          !holdings.find(h => h.ticker === ticker) &&
+          !s.holdings.find(h => h.ticker === ticker) &&
           (ticker.startsWith(tickerInput.toUpperCase()) ||
            info.name.toLowerCase().includes(tickerInput.toLowerCase()))
         )
@@ -1954,71 +2244,258 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 
   function addHolding(ticker: string) {
     const upper = ticker.toUpperCase().trim();
-    if (!upper || holdings.find(h => h.ticker === upper)) { setTickerInput(""); setShowDropdown(false); return; }
+    if (!upper || s.holdings.find(h => h.ticker === upper)) { setTickerInput(""); setShowDropdown(false); return; }
     const info = ETF_DATA[upper];
     const newH: Holding = info
       ? { ticker: upper, name: info.name, cagr: info.cagr, weight: 0 }
       : { ticker: upper, name: upper, cagr: 0.07, weight: 0, custom: true };
-    const next = [...holdings, newH];
-    const w = Math.floor(100 / next.length);
-    const rem = 100 - w * next.length;
-    setHoldings(next.map((h, i) => ({ ...h, weight: i === 0 ? w + rem : w })));
+    updateHoldings(s.id, hs => {
+      const next = [...hs, newH];
+      const w = Math.floor(100 / next.length);
+      const rem = 100 - w * next.length;
+      return next.map((h, i) => ({ ...h, weight: i === 0 ? w + rem : w }));
+    });
     setTickerInput("");
     setShowDropdown(false);
   }
 
   function removeHolding(ticker: string) {
-    const next = holdings.filter(h => h.ticker !== ticker);
-    if (next.length === 0) return;
-    const total = next.reduce((s, h) => s + h.weight, 0);
-    if (total === 0) {
-      const w = Math.floor(100 / next.length);
-      setHoldings(next.map((h, i) => ({ ...h, weight: i === 0 ? 100 - w * (next.length - 1) : w })));
-    } else {
+    updateHoldings(s.id, hs => {
+      const next = hs.filter(h => h.ticker !== ticker);
+      if (next.length === 0) return hs;
+      const total = next.reduce((sum, h) => sum + h.weight, 0);
+      if (total === 0) {
+        const w = Math.floor(100 / next.length);
+        return next.map((h, i) => ({ ...h, weight: i === 0 ? 100 - w * (next.length - 1) : w }));
+      }
       const rebalanced = next.map(h => ({ ...h, weight: Math.round((h.weight / total) * 100) }));
-      const diff = 100 - rebalanced.reduce((s, h) => s + h.weight, 0);
+      const diff = 100 - rebalanced.reduce((sum, h) => sum + h.weight, 0);
       if (diff !== 0) rebalanced[0] = { ...rebalanced[0], weight: rebalanced[0].weight + diff };
-      setHoldings(rebalanced);
-    }
+      return rebalanced;
+    });
   }
 
   function updateWeight(ticker: string, val: number) {
-    const clamped = Math.max(0, Math.min(100, val));
-    const idx = holdings.findIndex(h => h.ticker === ticker);
-    if (idx === -1) return;
-    const delta = clamped - holdings[idx].weight;
-    const others = holdings.filter((_, i) => i !== idx);
-    const totalOthers = others.reduce((s, h) => s + h.weight, 0);
-    const next = holdings.map((h, i) => {
-      if (i === idx) return { ...h, weight: clamped };
-      if (totalOthers === 0) return { ...h, weight: Math.floor((100 - clamped) / others.length) };
-      return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
+    updateHoldings(s.id, hs => {
+      const clamped = Math.max(0, Math.min(100, val));
+      const idx = hs.findIndex(h => h.ticker === ticker);
+      if (idx === -1) return hs;
+      const delta = clamped - hs[idx].weight;
+      const others = hs.filter((_, i) => i !== idx);
+      const totalOthers = others.reduce((sum, h) => sum + h.weight, 0);
+      const next = hs.map((h, i) => {
+        if (i === idx) return { ...h, weight: clamped };
+        if (totalOthers === 0) return { ...h, weight: Math.floor((100 - clamped) / others.length) };
+        return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
+      });
+      const sum = next.reduce((acc, h) => acc + h.weight, 0);
+      if (sum !== 100 && next.length > 1) {
+        const fixIdx = next.findIndex((h, i) => i !== idx && h.weight > 0);
+        if (fixIdx !== -1) next[fixIdx] = { ...next[fixIdx], weight: Math.max(0, next[fixIdx].weight + (100 - sum)) };
+      }
+      return next;
     });
-    const sum = next.reduce((s, h) => s + h.weight, 0);
-    if (sum !== 100) {
-      const lastOtherIdx = next.findIndex((h, i) => i !== idx && h.weight > 0) ?? (idx === 0 ? 1 : 0);
-      next[lastOtherIdx] = { ...next[lastOtherIdx], weight: Math.max(0, next[lastOtherIdx].weight + (100 - sum)) };
-    }
-    setHoldings(next);
   }
 
   function updateCagr(ticker: string, cagr: number) {
-    setHoldings(hs => hs.map(h => h.ticker === ticker ? { ...h, cagr } : h));
+    updateHoldings(s.id, hs => hs.map(h => h.ticker === ticker ? { ...h, cagr } : h));
   }
 
-  const chartData = useMemo(() => calcDCAProjection({
-    initialAmount: initialAmt, dcaAmount: dcaAmt, dcaFrequency: dcaFreq,
-    years, holdings, includeInflation: inflation,
-  }), [initialAmt, dcaAmt, dcaFreq, years, holdings, inflation]);
+  return (
+    <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, minWidth: 260 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+        <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 800, fontSize: 15, color: "#19181E" }}>{s.label}</span>
+        {!s.glideEnabled && (
+          <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: s.color }}>{(blendedReturn * 100).toFixed(1)}%/yr</span>
+        )}
+      </div>
 
-  const last = chartData[chartData.length - 1];
+      <FieldRow label="Starting Amount">
+        <NumberInput value={s.initialAmount} onChange={v => updateScenario(s.id, { initialAmount: v })} />
+      </FieldRow>
+
+      <FieldRow label="DCA Amount">
+        <div style={{ display: "flex", gap: 6 }}>
+          <NumberInput value={s.dcaAmount} onChange={v => updateScenario(s.id, { dcaAmount: v })} />
+          <select
+            value={s.dcaFrequency}
+            onChange={e => updateScenario(s.id, { dcaFrequency: e.target.value as DCAFreq })}
+            style={{ background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 8px", color: "#19181E", fontSize: 12, fontFamily: "inherit", cursor: "pointer", outline: "none", flexShrink: 0 }}
+          >
+            <option value="weekly">Wkly</option>
+            <option value="bi-weekly">Bi-wk</option>
+            <option value="monthly">Mo</option>
+            <option value="annually">Yr</option>
+          </select>
+        </div>
+      </FieldRow>
+
+      <FieldRow label={`Horizon: ${s.years} yrs`}>
+        <input type="range" min={5} max={40} step={1} value={s.years}
+          onChange={e => updateScenario(s.id, { years: Number(e.target.value) })}
+          style={{ width: "100%", accentColor: s.color }} />
+      </FieldRow>
+
+      <button
+        onClick={() => updateScenario(s.id, { glideEnabled: !s.glideEnabled })}
+        style={{ width: "100%", padding: "7px 0", borderRadius: 8, border: `1.5px solid ${s.glideEnabled ? s.color : "#E2E8F0"}`, background: s.glideEnabled ? s.color + "18" : "#F1F5F9", color: s.glideEnabled ? s.color : "#64748B", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}
+      >
+        {s.glideEnabled ? "✓ " : ""}Age Glide
+      </button>
+
+      {s.glideEnabled && (
+        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>Shifts stock/bond from today → retirement. Overrides holdings.</div>
+          <FieldRow label="Current Age"><NumberInput value={s.glideCurrentAge} onChange={v => updateScenario(s.id, { glideCurrentAge: v })} /></FieldRow>
+          <FieldRow label="Retirement Age"><NumberInput value={s.glideRetirementAge} onChange={v => updateScenario(s.id, { glideRetirementAge: v })} /></FieldRow>
+          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Stocks today: {s.glideStartStock}%</div>
+          <input type="range" min={0} max={100} value={s.glideStartStock} onChange={e => updateScenario(s.id, { glideStartStock: +e.target.value })} style={{ width: "100%", accentColor: s.color }} />
+          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Stocks at retirement: {s.glideEndStock}%</div>
+          <input type="range" min={0} max={100} value={s.glideEndStock} onChange={e => updateScenario(s.id, { glideEndStock: +e.target.value })} style={{ width: "100%", accentColor: s.color }} />
+          <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>Stocks @ 10.7%/yr · Bonds @ 1.7%/yr</div>
+        </div>
+      )}
+
+      <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Holdings</div>
+
+        <div style={{ display: "flex", height: 5, borderRadius: 3, overflow: "hidden", marginBottom: 10 }}>
+          {s.holdings.filter(h => h.ticker).map((h, i) => (
+            <div key={h.ticker} style={{ width: `${h.weight}%`, background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], transition: "width 0.2s" }} />
+          ))}
+        </div>
+
+        {s.holdings.filter(h => h.ticker).map((h, i) => (
+          <div key={h.ticker} style={{ display: "flex", flexDirection: "column", gap: 5, paddingBottom: 8, borderBottom: "1px solid #F8FAFC" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], color: "#fff", borderRadius: 4, padding: "2px 6px", fontSize: 10, fontWeight: 800, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>{h.ticker}</span>
+              <span style={{ fontSize: 11, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
+              {!h.custom && ETF_DATA[h.ticker] && (
+                <>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#059669", flexShrink: 0 }}>{(h.cagr * 100).toFixed(1)}%</span>
+                  <span style={{ fontSize: 9, color: "#94A3B8", flexShrink: 0 }}>±{(ETF_DATA[h.ticker].stddev * 100).toFixed(0)}%</span>
+                </>
+              )}
+              <button onClick={() => removeHolding(h.ticker)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+            </div>
+            {h.custom && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 10, color: "#94A3B8" }}>Return %:</span>
+                <input type="number" min={0} max={100} step={0.1} value={(h.cagr * 100).toFixed(1)}
+                  onChange={e => updateCagr(h.ticker, Number(e.target.value) / 100)}
+                  style={{ width: 52, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 5, padding: "2px 5px", fontSize: 11, color: "#19181E", fontFamily: "inherit" }} />
+              </div>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="range" min={0} max={100} step={1} value={h.weight}
+                onChange={e => updateWeight(h.ticker, Number(e.target.value))}
+                style={{ flex: 1, accentColor: HOLDING_PALETTE[i % HOLDING_PALETTE.length] }} />
+              <input type="number" min={0} max={100} value={h.weight}
+                onChange={e => updateWeight(h.ticker, Number(e.target.value))}
+                style={{ width: 40, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 5, padding: "2px 5px", fontSize: 11, color: "#19181E", fontFamily: "inherit", textAlign: "right" }} />
+              <span style={{ fontSize: 11, color: "#94A3B8" }}>%</span>
+            </div>
+          </div>
+        ))}
+
+        <div style={{ position: "relative", marginTop: 6 }}>
+          <div style={{ display: "flex", gap: 5 }}>
+            <input type="text" value={tickerInput} placeholder="Add ticker…"
+              onChange={e => { setTickerInput(e.target.value); setShowDropdown(true); }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              onKeyDown={e => { if (e.key === "Enter") addHolding(tickerInput); }}
+              style={{ flex: 1, background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 7, padding: "6px 8px", fontSize: 12, color: "#19181E", fontFamily: "DM Mono, monospace", outline: "none" }} />
+            <button onClick={() => addHolding(tickerInput)} style={{ background: s.color, border: "none", borderRadius: 7, padding: "6px 12px", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>+</button>
+          </div>
+          {showDropdown && suggestions.length > 0 && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, marginTop: 3, overflow: "hidden" }}>
+              {suggestions.map(([ticker, info]) => (
+                <button key={ticker} onMouseDown={() => addHolding(ticker)}
+                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 10px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderBottom: "1px solid #F8FAFC" }}>
+                  <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 11, color: "#19181E", minWidth: 40 }}>{ticker}</span>
+                  <span style={{ fontSize: 11, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#059669" }}>{(info.cagr * 100).toFixed(1)}%</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <p style={{ margin: "6px 0 0", fontSize: 10, color: "#CBD5E1", fontStyle: "italic" }}>
+          Based on 10-yr historical CAGR. Past returns don&apos;t guarantee future results.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function InvestSimTab({ onBack }: { onBack: () => void }) {
+  const PLAN_DEFAULTS = {
+    initialAmount: 10000, dcaAmount: 500, dcaFrequency: "monthly" as DCAFreq,
+    years: 20, glideEnabled: false,
+    glideCurrentAge: 30, glideRetirementAge: 60, glideStartStock: 80, glideEndStock: 40,
+  };
+
+  const [inflation, setInflation] = useState(false);
+
+  const [scenarios, setScenarios] = useState<Scenario[]>([
+    { id: "A", label: "Plan A", color: "#059669", ...PLAN_DEFAULTS, holdings: [
+      { ticker: "VOO", name: "Vanguard S&P 500 ETF",      cagr: 0.107, weight: 60 },
+      { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
+      { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 20 },
+    ]},
+    { id: "B", label: "Plan B", color: "#818cf8", ...PLAN_DEFAULTS, holdings: [
+      { ticker: "QQQ", name: "Invesco Nasdaq-100 ETF",     cagr: 0.183, weight: 80 },
+      { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
+    ]},
+    { id: "C", label: "Plan C", color: "#f97316", ...PLAN_DEFAULTS, holdings: [
+      { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 100 },
+    ]},
+  ]);
+
+  function updateScenario(id: "A" | "B" | "C", patch: Partial<Omit<Scenario, "id">>) {
+    setScenarios(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
+  }
+
+  function updateHoldings(id: "A" | "B" | "C", updater: (h: Holding[]) => Holding[]) {
+    setScenarios(prev => prev.map(s => s.id === id ? { ...s, holdings: updater(s.holdings) } : s));
+  }
+
+  const scenarioRisks = useMemo(
+    () => scenarios.map(s => ({ id: s.id, ...calcPortfolioRisk(s.holdings) })),
+    [scenarios]
+  );
+
+  const { chartData, scenarioFinals } = useMemo(() => {
+    const projections = scenarios.map(s =>
+      calcDCAProjection({
+        initialAmount: s.initialAmount, dcaAmount: s.dcaAmount,
+        dcaFrequency: s.dcaFrequency, years: s.years,
+        holdings: s.holdings, includeInflation: inflation,
+        glideEnabled: s.glideEnabled, currentAge: s.glideCurrentAge,
+        retirementAge: s.glideRetirementAge, startStockPct: s.glideStartStock,
+        endStockPct: s.glideEndStock,
+      })
+    );
+    const maxYears = Math.max(...scenarios.map(s => s.years));
+    const data = Array.from({ length: maxYears + 1 }, (_, i) => {
+      const point: Record<string, number> = { year: i };
+      scenarios.forEach((s, si) => {
+        const rows = projections[si];
+        point[s.id] = rows[Math.min(i, rows.length - 1)].portfolio;
+      });
+      return point;
+    });
+    const finals = scenarios.map((s, si) => {
+      const last = projections[si].at(-1)!;
+      return { id: s.id, final: last.portfolio, contributed: last.contributions };
+    });
+    return { chartData: data, scenarioFinals: finals };
+  }, [scenarios, inflation]);
+
   const fmtK = (n: number) => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : `$${n}`;
 
-  const selectStyle: React.CSSProperties = {
-    background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8,
-    padding: "9px 12px", color: "#19181E", fontSize: 14, fontFamily: "inherit",
-    cursor: "pointer", outline: "none", width: "100%",
-  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -2027,178 +2504,151 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
       </button>
       <div>
         <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 20, fontWeight: 700, color: "#19181E", margin: "0 0 4px" }}>Investment Simulations</h2>
-        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>Model DCA contributions with your actual ETFs and stocks. Returns based on 10-yr historical CAGR.</p>
+        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>Each plan has its own contribution settings and holdings. Compare strategies side-by-side.</p>
       </div>
 
-      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-        {/* Controls */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 280, flex: "0 0 300px" }}>
-          <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Contributions</div>
-            <FieldRow label="Starting Amount">
-              <NumberInput value={initialAmt} onChange={setInitialAmt} />
-            </FieldRow>
-            <FieldRow label="DCA Amount">
-              <NumberInput value={dcaAmt} onChange={setDcaAmt} />
-            </FieldRow>
-            <FieldRow label="Frequency">
-              <select value={dcaFreq} onChange={e => setDcaFreq(e.target.value as DCAFreq)} style={selectStyle}>
-                <option value="weekly">Weekly</option>
-                <option value="bi-weekly">Bi-Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="annually">Annually</option>
-              </select>
-            </FieldRow>
-            <FieldRow label={`Time Horizon: ${years} years`}>
-              <input type="range" min={5} max={40} step={1} value={years}
-                onChange={e => setYears(Number(e.target.value))}
-                style={{ width: "100%", accentColor: "#059669" }} />
-            </FieldRow>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <label style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", color: "#64748B", fontWeight: 700 }}>
-                Adjust for Inflation (3%)
-              </label>
-              <button
-                onClick={() => setInflation(v => !v)}
-                style={{ width: 40, height: 22, borderRadius: 11, border: "none", cursor: "pointer", background: inflation ? "#059669" : "#CBD5E1", position: "relative", transition: "background 0.2s" }}
-              >
-                <span style={{ position: "absolute", top: 3, left: inflation ? 21 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
-              </button>
-            </div>
-          </div>
+      {/* 3 Plan Cards */}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+        {scenarios.map(s => <PlanCard key={s.id} s={s} updateScenario={updateScenario} updateHoldings={updateHoldings} />)}
+      </div>
 
-          {/* Holdings / Allocation */}
-          <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 14, color: "#19181E" }}>Portfolio Holdings</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#059669" }}>
-                Blended: {(blendedReturn * 100).toFixed(1)}%/yr
-              </div>
-            </div>
+      {/* Chart */}
+      <div className="uf-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15 }}>Portfolio Growth Comparison</div>
+          <button
+            onClick={() => setInflation(v => !v)}
+            style={{ padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, border: `1.5px solid ${inflation ? "#059669" : "#E2E8F0"}`, background: inflation ? "#05966915" : "#F1F5F9", color: inflation ? "#059669" : "#64748B", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {inflation ? "✓ " : ""}Inflation-adjusted (3%)
+          </button>
+        </div>
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+            <XAxis dataKey="year" tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} label={{ value: "Year", position: "insideBottom", offset: -2, fontSize: 11, fill: "#94A3B8" }} />
+            <YAxis tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} tickFormatter={v => fmtK(v as number)} width={60} />
+            <Tooltip
+              formatter={(value: unknown, name: unknown) => [`$${(value as number).toLocaleString()}`, String(name ?? "")]}
+              labelFormatter={l => `Year ${l}`}
+              contentStyle={{ borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 12 }}
+            />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Line type="monotone" dataKey="A" name="Plan A" stroke="#059669" strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="B" name="Plan B" stroke="#818cf8" strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="C" name="Plan C" stroke="#f97316" strokeWidth={2.5} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
-            {/* Colour allocation bar */}
-            <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden" }}>
-              {holdings.map((h, i) => (
-                <div key={h.ticker} style={{ width: `${h.weight}%`, background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], transition: "width 0.2s" }} />
+      {/* Summary cards — per-plan final value at their own horizon */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        {scenarioFinals.map((sf, i) => {
+          const s = scenarios[i];
+          return (
+            <div key={sf.id} className="uf-card" style={{ textAlign: "center", padding: "16px 12px" }}>
+              <div style={{ fontSize: 11, color: s.color, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: "Manrope, sans-serif" }}>{fmtK(sf.final)}</div>
+              <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>after {s.years} yrs</div>
+              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>Contributed: {fmtK(sf.contributed)}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Risk & Return Comparison */}
+      <div className="uf-card" style={{ padding: "16px 20px" }}>
+        <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Risk &amp; Return Comparison</div>
+        <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 16 }}>
+          Volatility estimated from historical data (assumes full correlation between holdings — conservative upper bound).
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, marginBottom: 8 }}>
+          <div />
+          {scenarios.map(s => (
+            <div key={s.id} style={{ fontSize: 12, fontWeight: 700, color: s.color, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {s.label}
+            </div>
+          ))}
+        </div>
+
+        {([
+          {
+            label: "Annual Return",
+            values: scenarios.map(s => `${(s.holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0) * 100).toFixed(1)}%`),
+            bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) > parseFloat(b) ? a : b)),
+          },
+          {
+            label: "Volatility (est.)",
+            values: scenarioRisks.map(r => `${(r.volatility * 100).toFixed(1)}%`),
+            bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) < parseFloat(b) ? a : b)),
+          },
+          {
+            label: "Sharpe Ratio",
+            values: scenarioRisks.map(r => r.sharpe.toFixed(2)),
+            bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) > parseFloat(b) ? a : b)),
+          },
+          {
+            label: "Max Drawdown (est.)",
+            values: scenarioRisks.map(r => `-${(r.maxDrawdown * 100).toFixed(0)}%`),
+            bestFn: (vals: string[]) => { const nums = vals.map(v => Math.abs(parseFloat(v))); return nums.indexOf(Math.min(...nums)); },
+          },
+          {
+            label: "Asset Classes",
+            values: scenarioRisks.map(r => { const d = diversificationLabel(r.assetClasses); return `${r.assetClasses.length} · ${d.label}`; }),
+            bestFn: (vals: string[]) => { const counts = vals.map(v => parseInt(v)); return counts.indexOf(Math.max(...counts)); },
+          },
+        ] as { label: string; values: string[]; bestFn: (v: string[]) => number }[]).map(({ label, values, bestFn }) => {
+          const bestIdx = bestFn(values);
+          return (
+            <div key={label} style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, padding: "8px 0", borderBottom: "1px solid #F1F5F9" }}>
+              <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, display: "flex", alignItems: "center" }}>{label}</div>
+              {values.map((v, i) => (
+                <div key={i} style={{ fontSize: 13, fontWeight: bestIdx === i ? 800 : 600, color: bestIdx === i ? scenarios[i].color : "#475569", textAlign: "center", background: bestIdx === i ? scenarios[i].color + "12" : "transparent", borderRadius: 6, padding: "3px 6px" }}>
+                  {v}{bestIdx === i && <span style={{ marginLeft: 4, fontSize: 10 }}>★</span>}
+                </div>
               ))}
             </div>
+          );
+        })}
 
-            {/* Holdings list */}
-            {holdings.map((h, i) => (
-              <div key={h.ticker} style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 10, borderBottom: "1px solid #F1F5F9" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], color: "#fff", borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 800, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
-                    {h.ticker}
-                  </span>
-                  <span style={{ fontSize: 12, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
-                  {!h.custom && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#059669", flexShrink: 0 }}>{(h.cagr * 100).toFixed(1)}%</span>
-                  )}
-                  <button onClick={() => removeHolding(h.ticker)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
-                </div>
-                {h.custom && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 11, color: "#94A3B8" }}>Expected annual return %:</span>
-                    <input
-                      type="number" min={0} max={100} step={0.1}
-                      value={(h.cagr * 100).toFixed(1)}
-                      onChange={e => updateCagr(h.ticker, Number(e.target.value) / 100)}
-                      style={{ width: 60, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 6, padding: "3px 7px", fontSize: 12, color: "#19181E", fontFamily: "inherit" }}
-                    />
-                  </div>
-                )}
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="range" min={0} max={100} step={1} value={h.weight}
-                    onChange={e => updateWeight(h.ticker, Number(e.target.value))}
-                    style={{ flex: 1, accentColor: HOLDING_PALETTE[i % HOLDING_PALETTE.length] }} />
-                  <input
-                    type="number" min={0} max={100} value={h.weight}
-                    onChange={e => updateWeight(h.ticker, Number(e.target.value))}
-                    style={{ width: 46, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 6, padding: "3px 7px", fontSize: 12, color: "#19181E", fontFamily: "inherit", textAlign: "right" }}
-                  />
-                  <span style={{ fontSize: 12, color: "#94A3B8" }}>%</span>
-                </div>
+        <div style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, marginTop: 12 }}>
+          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, display: "flex", alignItems: "center" }}>Risk Profile</div>
+          {scenarioRisks.map(r => {
+            const rp = riskProfileLabel(r.volatility);
+            return (
+              <div key={r.id} style={{ textAlign: "center" }}>
+                <span style={{ background: rp.color + "18", color: rp.color, borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{rp.label}</span>
               </div>
-            ))}
+            );
+          })}
+        </div>
 
-            {/* Add ticker input */}
-            <div style={{ position: "relative" }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                <input
-                  type="text" value={tickerInput} placeholder="Add ticker (e.g. QQQ)"
-                  onChange={e => { setTickerInput(e.target.value); setShowDropdown(true); }}
-                  onFocus={() => setShowDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                  onKeyDown={e => { if (e.key === "Enter") addHolding(tickerInput); }}
-                  style={{ flex: 1, background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "8px 10px", fontSize: 13, color: "#19181E", fontFamily: "DM Mono, monospace", outline: "none" }}
-                />
-                <button
-                  onClick={() => addHolding(tickerInput)}
-                  style={{ background: "#059669", border: "none", borderRadius: 8, padding: "8px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
-                >
-                  +
-                </button>
+        {(() => {
+          const bestSharpeIdx = scenarioRisks.reduce((bi, r, i) => r.sharpe > scenarioRisks[bi].sharpe ? i : bi, 0);
+          const lowestVolIdx = scenarioRisks.reduce((bi, r, i) => r.volatility < scenarioRisks[bi].volatility ? i : bi, 0);
+          const bestRetIdx = scenarios.reduce((bi, s, i) => {
+            const r = s.holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0);
+            const rb = scenarios[bi].holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0);
+            return r > rb ? i : bi;
+          }, 0);
+          return (
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 12, color: "#475569" }}>
+                <span style={{ color: scenarios[bestSharpeIdx].color, fontWeight: 700 }}>🏆 Best risk-adjusted return:</span>{" "}
+                {scenarios[bestSharpeIdx].label} (Sharpe {scenarioRisks[bestSharpeIdx].sharpe.toFixed(2)}) — highest return per unit of risk
               </div>
-              {showDropdown && suggestions.length > 0 && (
-                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, marginTop: 4, overflow: "hidden" }}>
-                  {suggestions.map(([ticker, info]) => (
-                    <button
-                      key={ticker}
-                      onMouseDown={() => addHolding(ticker)}
-                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 12px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderBottom: "1px solid #F8FAFC" }}
-                    >
-                      <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 12, color: "#19181E", minWidth: 44 }}>{ticker}</span>
-                      <span style={{ fontSize: 12, color: "#64748B", flex: 1 }}>{info.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#059669" }}>{(info.cagr * 100).toFixed(1)}%</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div style={{ fontSize: 12, color: "#475569" }}>
+                <span style={{ color: scenarios[lowestVolIdx].color, fontWeight: 700 }}>🛡️ Lowest volatility:</span>{" "}
+                {scenarios[lowestVolIdx].label} ({(scenarioRisks[lowestVolIdx].volatility * 100).toFixed(1)}% est. annual vol)
+              </div>
+              <div style={{ fontSize: 12, color: "#475569" }}>
+                <span style={{ color: scenarios[bestRetIdx].color, fontWeight: 700 }}>📈 Highest raw return:</span>{" "}
+                {scenarios[bestRetIdx].label} ({(scenarios[bestRetIdx].holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0) * 100).toFixed(1)}%/yr) — highest return but with more risk
+              </div>
             </div>
-            <p style={{ margin: 0, fontSize: 10, color: "#CBD5E1", fontStyle: "italic" }}>
-              Based on 10-yr historical CAGR. Past returns don&apos;t guarantee future results.
-            </p>
-          </div>
-        </div>
-
-        {/* Chart + stats */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: "1 1 300px", minWidth: 0 }}>
-          <div className="uf-card">
-            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Portfolio Growth</div>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="year" tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} label={{ value: "Year", position: "insideBottom", offset: -2, fontSize: 11, fill: "#94A3B8" }} />
-                <YAxis tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} tickFormatter={v => fmtK(v as number)} width={60} />
-                <Tooltip
-                  formatter={(value: unknown, name: unknown) => [`$${(value as number).toLocaleString()}`, String(name ?? "")]}
-                  labelFormatter={l => `Year ${l}`}
-                  contentStyle={{ borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 12 }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="portfolio" name="Portfolio Value" stroke="#059669" strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="contributions" name="Total Contributions" stroke="#CBD5E1" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
-                {inflation && (
-                  <Line type="monotone" dataKey="real" name="Real Value (inflation adj.)" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" dot={false} />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Summary stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-            {[
-              { label: "Final Portfolio", value: fmtK(last.portfolio), color: "#059669" },
-              { label: "Total Contributed", value: fmtK(last.contributions), color: "#64748B" },
-              { label: "Market Growth", value: fmtK(last.growth), color: "#818cf8" },
-            ].map(s => (
-              <div key={s.label} className="uf-card" style={{ textAlign: "center", padding: "16px 12px" }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: "Manrope, sans-serif" }}>{s.value}</div>
-                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -2384,7 +2834,7 @@ function LearningHubTab({ recommendedStageId }: { recommendedStageId: LearnStage
 }
 
 // ─── Sidebar items (flat) ─────────────────────────────────────────────────────
-const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
+const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: string }[] = [
   {
     key: "overview",
     label: "Overview",
@@ -2408,6 +2858,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
   {
     key: "fire-calculator",
     label: "FIRE Calculator",
+    mobileLabel: "FIRE Calc",
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3.5" rx="0.5"/><circle cx="9" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="9" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="16" r="0.6" fill="currentColor" stroke="none"/>',
   },
   {
@@ -2423,6 +2874,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; svg: string }[] = [
   {
     key: "learning-hub",
     label: "Learning Hub",
+    mobileLabel: "Learn",
     svg: '<path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12"/><path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2"/><path d="M9 10h6M9 14h4"/>',
   },
 ];
@@ -2435,6 +2887,7 @@ export default function Dashboard() {
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
+  const [subscription, setSubscription] = useState<{ plan: "free" | "pro" } | null>(null);
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
 
   // Read initial tab from URL query string (e.g. ?tab=cashflow)
@@ -2495,6 +2948,9 @@ export default function Dashboard() {
   // Budget state
   const [income,   setIncome]   = useState(0);
   const [expenses, setExpenses] = useState<Expenses>({ housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0 });
+  const monthlyExpenses = Object.entries(expenses)
+    .filter(([k]) => !k.startsWith("_"))
+    .reduce((s, [, v]) => s + ((v as number) || 0), 0);
 
   // FIRE profile state (stored in expenses._fire_profile to avoid schema changes)
   const [fireAge,         setFireAge]         = useState(30);
@@ -2517,6 +2973,35 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("subscriptions")
+      .select("plan")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setSubscription({ plan: (data?.plan as "free" | "pro") ?? "free" });
+      });
+  }, [userId]);
+
+  useEffect(() => {
+    if (!upgradedBanner || !userId) return;
+    setSubscription({ plan: "pro" });
+  }, [upgradedBanner, userId]);
+
+  async function handleManageBilling() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch("/api/stripe/portal", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+  }
+
   const suggestedLearnStage = useMemo<LearnStageId>(() => {
     const investable = k401 + rothIRA + taxable + cashSavings;
     const monthlyExpenses = Object.entries(expenses)
@@ -2582,6 +3067,13 @@ export default function Dashboard() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [surveyOpen,     setSurveyOpen]     = useState(false);
+  const [tourOpen,       setTourOpen]       = useState(() => {
+    try { return !localStorage.getItem('uf_tour_done') } catch { return false }
+  });
+  function closeTour() {
+    setTourOpen(false);
+    try { localStorage.setItem('uf_tour_done', '1') } catch {}
+  }
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -2751,7 +3243,7 @@ export default function Dashboard() {
         setTimeout(() => setSaveStatus("idle"), 2000);
       }
     }, 1000);
-  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName]);
+  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier]);
 
   async function refreshPlaidAccounts() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -2783,7 +3275,7 @@ export default function Dashboard() {
         .uf-shell { display: flex; min-height: 100vh; }
         .uf-sidebar { width: 248px; min-height: 100vh; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: #F8FAFC; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; flex-shrink: 0; }
         .uf-main { flex: 1; overflow-y: auto; min-width: 0; }
-        .uf-content { max-width: 1060px; margin: 0 auto; padding: 32px 36px 60px; }
+        .uf-content { padding: 32px 36px 60px; }
 
         .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: #064E3B; letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid #E2E8F0; }
         .uf-sidebar-logo span { color: #20D4BF; }
@@ -2797,24 +3289,26 @@ export default function Dashboard() {
         select option { background: #ffffff; }
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+        .uf-nav-label-mobile { display: none; }
 
         @media(max-width: 900px) {
-          .uf-sidebar { width: 196px; }
-          .uf-content { padding: 20px 20px 48px; }
-        }
-        @media(max-width: 640px) {
           .uf-shell { flex-direction: column; }
-          .uf-sidebar { width: 100%; min-height: unset; height: auto; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; flex-direction: row; border-right: none; border-top: 1px solid #E2E8F0; background: #fff; padding: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+          .uf-sidebar { width: 100%; min-height: 0; height: 56px; max-height: 56px; overflow: hidden; position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 100; flex-direction: row; border-right: none; border-top: 1px solid #E2E8F0; background: #fff; padding: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
           .uf-sidebar-logo { display: none; }
           .uf-sidebar-nav { flex-direction: row; padding: 4px 0; gap: 0; flex: 1; justify-content: space-around; }
-          .uf-sidebar-item { flex-direction: column; padding: 6px 4px; font-size: 9px; gap: 2px; flex: 1; justify-content: center; align-items: center; border-radius: 0; min-width: 0; }
+          .uf-sidebar-item { flex-direction: column; padding: 6px 4px; font-size: 9px; gap: 2px; flex: 1; justify-content: center; align-items: center; border-radius: 0; min-width: 0; width: auto; }
           .uf-sidebar-bottom { display: none; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
-          .uf-content { padding: 16px 16px calc(72px + env(safe-area-inset-bottom, 0px)); }
+          .uf-content { padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(60px + env(safe-area-inset-bottom, 0px)); }
           .uf-hero-split { flex-direction: column; min-height: unset; }
           .uf-hero-left { flex: none !important; padding: 20px 18px !important; }
           .uf-hero-right { flex: none !important; padding: 20px 18px !important; }
-          .cf-mobile-bar { bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important; }
+          .cf-mobile-bar { bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; }
+          .uf-nav-label-full { display: none; }
+          .uf-nav-label-mobile { display: block; white-space: nowrap; overflow: hidden; max-width: 100%; }
+          .uf-kpi-grid { display: flex !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory; grid-template-columns: none !important; }
+          .uf-kpi-grid::-webkit-scrollbar { display: none; }
+          .uf-kpi-grid > * { flex-shrink: 0 !important; min-width: 130px !important; scroll-snap-align: start; }
         }
       `}</style>
 
@@ -2853,6 +3347,9 @@ export default function Dashboard() {
           }}
         />
       )}
+      {tourOpen && !onboardingOpen && !surveyOpen && (
+        <TourModal onClose={closeTour} />
+      )}
 
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
@@ -2863,13 +3360,15 @@ export default function Dashboard() {
             {SIDEBAR_ITEMS.map(item => (
               <button
                 key={item.key}
+                data-tour-item={item.key}
                 className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
                 onClick={() => { setTab(item.key); if (item.key !== "fire-calculator") setFireCalcSubTab("menu"); }}
               >
                 <span className="uf-sidebar-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
                 </span>
-                {item.label}
+                <span className="uf-nav-label-full">{item.label}</span>
+                <span className="uf-nav-label-mobile">{item.mobileLabel ?? item.label}</span>
               </button>
             ))}
           </nav>
@@ -2879,6 +3378,13 @@ export default function Dashboard() {
             {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Inter, sans-serif" }}>✓ Saved</span>}
             {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Save failed</span>}
             <UserNav onProfileClick={() => setTab("profile")} isProfileActive={tab === "profile"} />
+            <button
+              onClick={() => setTourOpen(true)}
+              style={{ background: "none", border: "none", color: "#94A3B8", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}
+            >
+              <span style={{ width: 16, height: 16, borderRadius: "50%", border: "1.5px solid #CBD5E1", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>?</span>
+              Take a tour
+            </button>
           </div>
         </aside>
 
@@ -2985,6 +3491,7 @@ export default function Dashboard() {
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
                   onRefreshAccounts={refreshPlaidAccounts}
+                  monthlyExpenses={monthlyExpenses}
                 />
               </div>
             )}
@@ -3051,7 +3558,7 @@ export default function Dashboard() {
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "profile" && userId && (
-              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onPreferredCurrenciesChange={setPreferredCurrencies} onTabChange={(t) => setTab(t as TabKey)} />
+              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onPreferredCurrenciesChange={setPreferredCurrencies} onTabChange={(t) => setTab(t as TabKey)} subscription={subscription} onUpgradeClick={() => setUpgradeOpen(true)} onManageBilling={handleManageBilling} />
             )}
           </div>
         </main>

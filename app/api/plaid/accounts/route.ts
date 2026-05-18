@@ -12,7 +12,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const { data: accounts, error } = await admin
     .from("plaid_accounts")
-    .select("id, plaid_account_id, name, official_name, type, subtype, balance_current, balance_available, balance_limit, iso_currency_code, mask, plaid_item_id, updated_at")
+    .select("id, plaid_account_id, name, official_name, type, subtype, balance_current, balance_available, balance_limit, iso_currency_code, mask, plaid_item_id, updated_at, apy")
     .eq("user_id", user.id)
     .order("type")
     .order("name");

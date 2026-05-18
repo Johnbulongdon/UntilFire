@@ -29,9 +29,12 @@ interface Props {
   onDefaultCurrencyChange: (currency: string) => void;
   onPreferredCurrenciesChange: (currencies: string[]) => void;
   onTabChange: (tab: string) => void;
+  subscription: { plan: "free" | "pro" } | null;
+  onUpgradeClick: () => void;
+  onManageBilling: () => void;
 }
 
-export default function ProfileTab({ userId, userEmail, defaultCurrency: initialDefaultCurrency, onDefaultCurrencyChange, onPreferredCurrenciesChange, onTabChange }: Props) {
+export default function ProfileTab({ userId, userEmail, defaultCurrency: initialDefaultCurrency, onDefaultCurrencyChange, onPreferredCurrenciesChange, onTabChange, subscription, onUpgradeClick, onManageBilling }: Props) {
   const [displayName, setDisplayName] = useState("");
   const [citySearch, setCitySearch] = useState("");
   const [selectedCity, setSelectedCity] = useState<{ name: string; key: string } | null>(null);
@@ -390,6 +393,48 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Subscription */}
+      <div style={cardStyle}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Subscription</h3>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{
+              display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+              background: subscription?.plan === "pro" ? "#f0fdf4" : "#fff7ed",
+              color: subscription?.plan === "pro" ? "#059669" : "#f97316",
+              border: `1px solid ${subscription?.plan === "pro" ? "#bbf7d0" : "#fed7aa"}`,
+            }}>
+              {subscription?.plan === "pro" ? "Pro" : "Free"}
+            </span>
+            <span style={{ fontSize: 13, color: "#6b7280" }}>
+              {subscription?.plan === "pro"
+                ? "UntilFire Pro — $9/month"
+                : "Free plan — limited features"}
+            </span>
+          </div>
+          {subscription?.plan === "pro" ? (
+            <button
+              onClick={onManageBilling}
+              style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid #E2E8F0", background: "transparent", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+            >
+              Manage billing
+            </button>
+          ) : (
+            <button
+              onClick={onUpgradeClick}
+              style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#f97316", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+            >
+              Upgrade to Pro
+            </button>
+          )}
+        </div>
+        {subscription?.plan !== "pro" && (
+          <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10, marginBottom: 0 }}>
+            Unlock AI adviser, unlimited scenarios, and priority support.
+          </p>
+        )}
       </div>
 
       {/* Connected Banks */}

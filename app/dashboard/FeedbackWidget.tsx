@@ -73,7 +73,7 @@ export default function FeedbackWidget() {
       <style>{`
         .uf-feedback-btn { transition: transform 0.15s, box-shadow 0.15s; }
         .uf-feedback-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(6,78,59,0.35) !important; }
-        @media(max-width: 640px) { .uf-feedback-btn { bottom: 76px !important; } }
+        @media(max-width: 900px) { .uf-feedback-btn { bottom: calc(56px + 16px + env(safe-area-inset-bottom, 0px)) !important; right: 16px !important; } }
       `}</style>
 
       {/* Floating button */}
