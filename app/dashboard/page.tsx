@@ -2141,7 +2141,6 @@ type Scenario = {
   dcaAmount: number;
   dcaFrequency: DCAFreq;
   years: number;
-  inflation: boolean;
   glideEnabled: boolean;
   glideCurrentAge: number;
   glideRetirementAge: number;
@@ -2222,12 +2221,223 @@ function riskProfileLabel(volatility: number): { label: string; color: string } 
   return { label: "High Risk", color: "#ef4444" };
 }
 
+type PlanCardProps = {
+  s: Scenario;
+  updateScenario: (id: "A" | "B" | "C", patch: Partial<Omit<Scenario, "id">>) => void;
+  updateHoldings: (id: "A" | "B" | "C", updater: (h: Holding[]) => Holding[]) => void;
+};
+
+function PlanCard({ s, updateScenario, updateHoldings }: PlanCardProps) {
+  const [tickerInput, setTickerInput] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const blendedReturn = s.holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
+  const suggestions = tickerInput.length >= 1
+    ? Object.entries(ETF_DATA)
+        .filter(([ticker, info]) =>
+          !s.holdings.find(h => h.ticker === ticker) &&
+          (ticker.startsWith(tickerInput.toUpperCase()) ||
+           info.name.toLowerCase().includes(tickerInput.toLowerCase()))
+        )
+        .slice(0, 6)
+    : [];
+
+  function addHolding(ticker: string) {
+    const upper = ticker.toUpperCase().trim();
+    if (!upper || s.holdings.find(h => h.ticker === upper)) { setTickerInput(""); setShowDropdown(false); return; }
+    const info = ETF_DATA[upper];
+    const newH: Holding = info
+      ? { ticker: upper, name: info.name, cagr: info.cagr, weight: 0 }
+      : { ticker: upper, name: upper, cagr: 0.07, weight: 0, custom: true };
+    updateHoldings(s.id, hs => {
+      const next = [...hs, newH];
+      const w = Math.floor(100 / next.length);
+      const rem = 100 - w * next.length;
+      return next.map((h, i) => ({ ...h, weight: i === 0 ? w + rem : w }));
+    });
+    setTickerInput("");
+    setShowDropdown(false);
+  }
+
+  function removeHolding(ticker: string) {
+    updateHoldings(s.id, hs => {
+      const next = hs.filter(h => h.ticker !== ticker);
+      if (next.length === 0) return hs;
+      const total = next.reduce((sum, h) => sum + h.weight, 0);
+      if (total === 0) {
+        const w = Math.floor(100 / next.length);
+        return next.map((h, i) => ({ ...h, weight: i === 0 ? 100 - w * (next.length - 1) : w }));
+      }
+      const rebalanced = next.map(h => ({ ...h, weight: Math.round((h.weight / total) * 100) }));
+      const diff = 100 - rebalanced.reduce((sum, h) => sum + h.weight, 0);
+      if (diff !== 0) rebalanced[0] = { ...rebalanced[0], weight: rebalanced[0].weight + diff };
+      return rebalanced;
+    });
+  }
+
+  function updateWeight(ticker: string, val: number) {
+    updateHoldings(s.id, hs => {
+      const clamped = Math.max(0, Math.min(100, val));
+      const idx = hs.findIndex(h => h.ticker === ticker);
+      if (idx === -1) return hs;
+      const delta = clamped - hs[idx].weight;
+      const others = hs.filter((_, i) => i !== idx);
+      const totalOthers = others.reduce((sum, h) => sum + h.weight, 0);
+      const next = hs.map((h, i) => {
+        if (i === idx) return { ...h, weight: clamped };
+        if (totalOthers === 0) return { ...h, weight: Math.floor((100 - clamped) / others.length) };
+        return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
+      });
+      const sum = next.reduce((acc, h) => acc + h.weight, 0);
+      if (sum !== 100 && next.length > 1) {
+        const fixIdx = next.findIndex((h, i) => i !== idx && h.weight > 0);
+        if (fixIdx !== -1) next[fixIdx] = { ...next[fixIdx], weight: Math.max(0, next[fixIdx].weight + (100 - sum)) };
+      }
+      return next;
+    });
+  }
+
+  function updateCagr(ticker: string, cagr: number) {
+    updateHoldings(s.id, hs => hs.map(h => h.ticker === ticker ? { ...h, cagr } : h));
+  }
+
+  return (
+    <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, minWidth: 260 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+        <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 800, fontSize: 15, color: "#19181E" }}>{s.label}</span>
+        {!s.glideEnabled && (
+          <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: s.color }}>{(blendedReturn * 100).toFixed(1)}%/yr</span>
+        )}
+      </div>
+
+      <FieldRow label="Starting Amount">
+        <NumberInput value={s.initialAmount} onChange={v => updateScenario(s.id, { initialAmount: v })} />
+      </FieldRow>
+
+      <FieldRow label="DCA Amount">
+        <div style={{ display: "flex", gap: 6 }}>
+          <NumberInput value={s.dcaAmount} onChange={v => updateScenario(s.id, { dcaAmount: v })} />
+          <select
+            value={s.dcaFrequency}
+            onChange={e => updateScenario(s.id, { dcaFrequency: e.target.value as DCAFreq })}
+            style={{ background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 8px", color: "#19181E", fontSize: 12, fontFamily: "inherit", cursor: "pointer", outline: "none", flexShrink: 0 }}
+          >
+            <option value="weekly">Wkly</option>
+            <option value="bi-weekly">Bi-wk</option>
+            <option value="monthly">Mo</option>
+            <option value="annually">Yr</option>
+          </select>
+        </div>
+      </FieldRow>
+
+      <FieldRow label={`Horizon: ${s.years} yrs`}>
+        <input type="range" min={5} max={40} step={1} value={s.years}
+          onChange={e => updateScenario(s.id, { years: Number(e.target.value) })}
+          style={{ width: "100%", accentColor: s.color }} />
+      </FieldRow>
+
+      <button
+        onClick={() => updateScenario(s.id, { glideEnabled: !s.glideEnabled })}
+        style={{ width: "100%", padding: "7px 0", borderRadius: 8, border: `1.5px solid ${s.glideEnabled ? s.color : "#E2E8F0"}`, background: s.glideEnabled ? s.color + "18" : "#F1F5F9", color: s.glideEnabled ? s.color : "#64748B", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}
+      >
+        {s.glideEnabled ? "✓ " : ""}Age Glide
+      </button>
+
+      {s.glideEnabled && (
+        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>Shifts stock/bond from today → retirement. Overrides holdings.</div>
+          <FieldRow label="Current Age"><NumberInput value={s.glideCurrentAge} onChange={v => updateScenario(s.id, { glideCurrentAge: v })} /></FieldRow>
+          <FieldRow label="Retirement Age"><NumberInput value={s.glideRetirementAge} onChange={v => updateScenario(s.id, { glideRetirementAge: v })} /></FieldRow>
+          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Stocks today: {s.glideStartStock}%</div>
+          <input type="range" min={0} max={100} value={s.glideStartStock} onChange={e => updateScenario(s.id, { glideStartStock: +e.target.value })} style={{ width: "100%", accentColor: s.color }} />
+          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Stocks at retirement: {s.glideEndStock}%</div>
+          <input type="range" min={0} max={100} value={s.glideEndStock} onChange={e => updateScenario(s.id, { glideEndStock: +e.target.value })} style={{ width: "100%", accentColor: s.color }} />
+          <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>Stocks @ 10.7%/yr · Bonds @ 1.7%/yr</div>
+        </div>
+      )}
+
+      <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Holdings</div>
+
+        <div style={{ display: "flex", height: 5, borderRadius: 3, overflow: "hidden", marginBottom: 10 }}>
+          {s.holdings.filter(h => h.ticker).map((h, i) => (
+            <div key={h.ticker} style={{ width: `${h.weight}%`, background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], transition: "width 0.2s" }} />
+          ))}
+        </div>
+
+        {s.holdings.filter(h => h.ticker).map((h, i) => (
+          <div key={h.ticker} style={{ display: "flex", flexDirection: "column", gap: 5, paddingBottom: 8, borderBottom: "1px solid #F8FAFC" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], color: "#fff", borderRadius: 4, padding: "2px 6px", fontSize: 10, fontWeight: 800, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>{h.ticker}</span>
+              <span style={{ fontSize: 11, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
+              {!h.custom && ETF_DATA[h.ticker] && (
+                <>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#059669", flexShrink: 0 }}>{(h.cagr * 100).toFixed(1)}%</span>
+                  <span style={{ fontSize: 9, color: "#94A3B8", flexShrink: 0 }}>±{(ETF_DATA[h.ticker].stddev * 100).toFixed(0)}%</span>
+                </>
+              )}
+              <button onClick={() => removeHolding(h.ticker)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+            </div>
+            {h.custom && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 10, color: "#94A3B8" }}>Return %:</span>
+                <input type="number" min={0} max={100} step={0.1} value={(h.cagr * 100).toFixed(1)}
+                  onChange={e => updateCagr(h.ticker, Number(e.target.value) / 100)}
+                  style={{ width: 52, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 5, padding: "2px 5px", fontSize: 11, color: "#19181E", fontFamily: "inherit" }} />
+              </div>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="range" min={0} max={100} step={1} value={h.weight}
+                onChange={e => updateWeight(h.ticker, Number(e.target.value))}
+                style={{ flex: 1, accentColor: HOLDING_PALETTE[i % HOLDING_PALETTE.length] }} />
+              <input type="number" min={0} max={100} value={h.weight}
+                onChange={e => updateWeight(h.ticker, Number(e.target.value))}
+                style={{ width: 40, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 5, padding: "2px 5px", fontSize: 11, color: "#19181E", fontFamily: "inherit", textAlign: "right" }} />
+              <span style={{ fontSize: 11, color: "#94A3B8" }}>%</span>
+            </div>
+          </div>
+        ))}
+
+        <div style={{ position: "relative", marginTop: 6 }}>
+          <div style={{ display: "flex", gap: 5 }}>
+            <input type="text" value={tickerInput} placeholder="Add ticker…"
+              onChange={e => { setTickerInput(e.target.value); setShowDropdown(true); }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              onKeyDown={e => { if (e.key === "Enter") addHolding(tickerInput); }}
+              style={{ flex: 1, background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 7, padding: "6px 8px", fontSize: 12, color: "#19181E", fontFamily: "DM Mono, monospace", outline: "none" }} />
+            <button onClick={() => addHolding(tickerInput)} style={{ background: s.color, border: "none", borderRadius: 7, padding: "6px 12px", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>+</button>
+          </div>
+          {showDropdown && suggestions.length > 0 && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, marginTop: 3, overflow: "hidden" }}>
+              {suggestions.map(([ticker, info]) => (
+                <button key={ticker} onMouseDown={() => addHolding(ticker)}
+                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 10px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderBottom: "1px solid #F8FAFC" }}>
+                  <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 11, color: "#19181E", minWidth: 40 }}>{ticker}</span>
+                  <span style={{ fontSize: 11, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#059669" }}>{(info.cagr * 100).toFixed(1)}%</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <p style={{ margin: "6px 0 0", fontSize: 10, color: "#CBD5E1", fontStyle: "italic" }}>
+          Based on 10-yr historical CAGR. Past returns don&apos;t guarantee future results.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function InvestSimTab({ onBack }: { onBack: () => void }) {
   const PLAN_DEFAULTS = {
     initialAmount: 10000, dcaAmount: 500, dcaFrequency: "monthly" as DCAFreq,
-    years: 20, inflation: false, glideEnabled: false,
+    years: 20, glideEnabled: false,
     glideCurrentAge: 30, glideRetirementAge: 60, glideStartStock: 80, glideEndStock: 40,
   };
+
+  const [inflation, setInflation] = useState(false);
 
   const [scenarios, setScenarios] = useState<Scenario[]>([
     { id: "A", label: "Plan A", color: "#059669", ...PLAN_DEFAULTS, holdings: [
@@ -2262,7 +2472,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
       calcDCAProjection({
         initialAmount: s.initialAmount, dcaAmount: s.dcaAmount,
         dcaFrequency: s.dcaFrequency, years: s.years,
-        holdings: s.holdings, includeInflation: s.inflation,
+        holdings: s.holdings, includeInflation: inflation,
         glideEnabled: s.glideEnabled, currentAge: s.glideCurrentAge,
         retirementAge: s.glideRetirementAge, startStockPct: s.glideStartStock,
         endStockPct: s.glideEndStock,
@@ -2282,222 +2492,10 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
       return { id: s.id, final: last.portfolio, contributed: last.contributions };
     });
     return { chartData: data, scenarioFinals: finals };
-  }, [scenarios]);
+  }, [scenarios, inflation]);
 
   const fmtK = (n: number) => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : `$${n}`;
 
-  function PlanCard({ s }: { s: Scenario }) {
-    const [tickerInput, setTickerInput] = useState("");
-    const [showDropdown, setShowDropdown] = useState(false);
-
-    const blendedReturn = s.holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
-    const suggestions = tickerInput.length >= 1
-      ? Object.entries(ETF_DATA)
-          .filter(([ticker, info]) =>
-            !s.holdings.find(h => h.ticker === ticker) &&
-            (ticker.startsWith(tickerInput.toUpperCase()) ||
-             info.name.toLowerCase().includes(tickerInput.toLowerCase()))
-          )
-          .slice(0, 6)
-      : [];
-
-    function addHolding(ticker: string) {
-      const upper = ticker.toUpperCase().trim();
-      if (!upper || s.holdings.find(h => h.ticker === upper)) { setTickerInput(""); setShowDropdown(false); return; }
-      const info = ETF_DATA[upper];
-      const newH: Holding = info
-        ? { ticker: upper, name: info.name, cagr: info.cagr, weight: 0 }
-        : { ticker: upper, name: upper, cagr: 0.07, weight: 0, custom: true };
-      updateHoldings(s.id, hs => {
-        const next = [...hs, newH];
-        const w = Math.floor(100 / next.length);
-        const rem = 100 - w * next.length;
-        return next.map((h, i) => ({ ...h, weight: i === 0 ? w + rem : w }));
-      });
-      setTickerInput("");
-      setShowDropdown(false);
-    }
-
-    function removeHolding(ticker: string) {
-      updateHoldings(s.id, hs => {
-        const next = hs.filter(h => h.ticker !== ticker);
-        if (next.length === 0) return hs;
-        const total = next.reduce((sum, h) => sum + h.weight, 0);
-        if (total === 0) {
-          const w = Math.floor(100 / next.length);
-          return next.map((h, i) => ({ ...h, weight: i === 0 ? 100 - w * (next.length - 1) : w }));
-        }
-        const rebalanced = next.map(h => ({ ...h, weight: Math.round((h.weight / total) * 100) }));
-        const diff = 100 - rebalanced.reduce((sum, h) => sum + h.weight, 0);
-        if (diff !== 0) rebalanced[0] = { ...rebalanced[0], weight: rebalanced[0].weight + diff };
-        return rebalanced;
-      });
-    }
-
-    function updateWeight(ticker: string, val: number) {
-      updateHoldings(s.id, hs => {
-        const clamped = Math.max(0, Math.min(100, val));
-        const idx = hs.findIndex(h => h.ticker === ticker);
-        if (idx === -1) return hs;
-        const delta = clamped - hs[idx].weight;
-        const others = hs.filter((_, i) => i !== idx);
-        const totalOthers = others.reduce((sum, h) => sum + h.weight, 0);
-        const next = hs.map((h, i) => {
-          if (i === idx) return { ...h, weight: clamped };
-          if (totalOthers === 0) return { ...h, weight: Math.floor((100 - clamped) / others.length) };
-          return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
-        });
-        const sum = next.reduce((acc, h) => acc + h.weight, 0);
-        if (sum !== 100 && next.length > 1) {
-          const fixIdx = next.findIndex((h, i) => i !== idx && h.weight > 0);
-          if (fixIdx !== -1) next[fixIdx] = { ...next[fixIdx], weight: Math.max(0, next[fixIdx].weight + (100 - sum)) };
-        }
-        return next;
-      });
-    }
-
-    function updateCagr(ticker: string, cagr: number) {
-      updateHoldings(s.id, hs => hs.map(h => h.ticker === ticker ? { ...h, cagr } : h));
-    }
-
-    return (
-      <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, minWidth: 260 }}>
-        {/* Plan header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-          <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 800, fontSize: 15, color: "#19181E" }}>{s.label}</span>
-          {!s.glideEnabled && (
-            <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: s.color }}>{(blendedReturn * 100).toFixed(1)}%/yr</span>
-          )}
-        </div>
-
-        <FieldRow label="Starting Amount">
-          <NumberInput value={s.initialAmount} onChange={v => updateScenario(s.id, { initialAmount: v })} />
-        </FieldRow>
-
-        <FieldRow label="DCA Amount">
-          <div style={{ display: "flex", gap: 6 }}>
-            <NumberInput value={s.dcaAmount} onChange={v => updateScenario(s.id, { dcaAmount: v })} />
-            <select
-              value={s.dcaFrequency}
-              onChange={e => updateScenario(s.id, { dcaFrequency: e.target.value as DCAFreq })}
-              style={{ background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 8px", color: "#19181E", fontSize: 12, fontFamily: "inherit", cursor: "pointer", outline: "none", flexShrink: 0 }}
-            >
-              <option value="weekly">Wkly</option>
-              <option value="bi-weekly">Bi-wk</option>
-              <option value="monthly">Mo</option>
-              <option value="annually">Yr</option>
-            </select>
-          </div>
-        </FieldRow>
-
-        <FieldRow label={`Horizon: ${s.years} yrs`}>
-          <input type="range" min={5} max={40} step={1} value={s.years}
-            onChange={e => updateScenario(s.id, { years: Number(e.target.value) })}
-            style={{ width: "100%", accentColor: s.color }} />
-        </FieldRow>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => updateScenario(s.id, { inflation: !s.inflation })}
-            style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1.5px solid ${s.inflation ? s.color : "#E2E8F0"}`, background: s.inflation ? s.color + "18" : "#F1F5F9", color: s.inflation ? s.color : "#64748B", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}
-          >
-            {s.inflation ? "✓ " : ""}Inflation
-          </button>
-          <button
-            onClick={() => updateScenario(s.id, { glideEnabled: !s.glideEnabled })}
-            style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1.5px solid ${s.glideEnabled ? s.color : "#E2E8F0"}`, background: s.glideEnabled ? s.color + "18" : "#F1F5F9", color: s.glideEnabled ? s.color : "#64748B", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}
-          >
-            {s.glideEnabled ? "✓ " : ""}Age Glide
-          </button>
-        </div>
-
-        {s.glideEnabled && (
-          <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>Shifts stock/bond from today → retirement. Overrides holdings.</div>
-            <FieldRow label="Current Age"><NumberInput value={s.glideCurrentAge} onChange={v => updateScenario(s.id, { glideCurrentAge: v })} /></FieldRow>
-            <FieldRow label="Retirement Age"><NumberInput value={s.glideRetirementAge} onChange={v => updateScenario(s.id, { glideRetirementAge: v })} /></FieldRow>
-            <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Stocks today: {s.glideStartStock}%</div>
-            <input type="range" min={0} max={100} value={s.glideStartStock} onChange={e => updateScenario(s.id, { glideStartStock: +e.target.value })} style={{ width: "100%", accentColor: s.color }} />
-            <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Stocks at retirement: {s.glideEndStock}%</div>
-            <input type="range" min={0} max={100} value={s.glideEndStock} onChange={e => updateScenario(s.id, { glideEndStock: +e.target.value })} style={{ width: "100%", accentColor: s.color }} />
-            <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>Stocks @ 10.7%/yr · Bonds @ 1.7%/yr</div>
-          </div>
-        )}
-
-        {/* Holdings */}
-        <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Holdings</div>
-
-          <div style={{ display: "flex", height: 5, borderRadius: 3, overflow: "hidden", marginBottom: 10 }}>
-            {s.holdings.filter(h => h.ticker).map((h, i) => (
-              <div key={h.ticker} style={{ width: `${h.weight}%`, background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], transition: "width 0.2s" }} />
-            ))}
-          </div>
-
-          {s.holdings.filter(h => h.ticker).map((h, i) => (
-            <div key={h.ticker} style={{ display: "flex", flexDirection: "column", gap: 5, paddingBottom: 8, borderBottom: "1px solid #F8FAFC" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], color: "#fff", borderRadius: 4, padding: "2px 6px", fontSize: 10, fontWeight: 800, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>{h.ticker}</span>
-                <span style={{ fontSize: 11, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
-                {!h.custom && ETF_DATA[h.ticker] && (
-                  <>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#059669", flexShrink: 0 }}>{(h.cagr * 100).toFixed(1)}%</span>
-                    <span style={{ fontSize: 9, color: "#94A3B8", flexShrink: 0 }}>±{(ETF_DATA[h.ticker].stddev * 100).toFixed(0)}%</span>
-                  </>
-                )}
-                <button onClick={() => removeHolding(h.ticker)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
-              </div>
-              {h.custom && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 10, color: "#94A3B8" }}>Return %:</span>
-                  <input type="number" min={0} max={100} step={0.1} value={(h.cagr * 100).toFixed(1)}
-                    onChange={e => updateCagr(h.ticker, Number(e.target.value) / 100)}
-                    style={{ width: 52, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 5, padding: "2px 5px", fontSize: 11, color: "#19181E", fontFamily: "inherit" }} />
-                </div>
-              )}
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <input type="range" min={0} max={100} step={1} value={h.weight}
-                  onChange={e => updateWeight(h.ticker, Number(e.target.value))}
-                  style={{ flex: 1, accentColor: HOLDING_PALETTE[i % HOLDING_PALETTE.length] }} />
-                <input type="number" min={0} max={100} value={h.weight}
-                  onChange={e => updateWeight(h.ticker, Number(e.target.value))}
-                  style={{ width: 40, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 5, padding: "2px 5px", fontSize: 11, color: "#19181E", fontFamily: "inherit", textAlign: "right" }} />
-                <span style={{ fontSize: 11, color: "#94A3B8" }}>%</span>
-              </div>
-            </div>
-          ))}
-
-          <div style={{ position: "relative", marginTop: 6 }}>
-            <div style={{ display: "flex", gap: 5 }}>
-              <input type="text" value={tickerInput} placeholder="Add ticker…"
-                onChange={e => { setTickerInput(e.target.value); setShowDropdown(true); }}
-                onFocus={() => setShowDropdown(true)}
-                onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                onKeyDown={e => { if (e.key === "Enter") addHolding(tickerInput); }}
-                style={{ flex: 1, background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 7, padding: "6px 8px", fontSize: 12, color: "#19181E", fontFamily: "DM Mono, monospace", outline: "none" }} />
-              <button onClick={() => addHolding(tickerInput)} style={{ background: s.color, border: "none", borderRadius: 7, padding: "6px 12px", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>+</button>
-            </div>
-            {showDropdown && suggestions.length > 0 && (
-              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, marginTop: 3, overflow: "hidden" }}>
-                {suggestions.map(([ticker, info]) => (
-                  <button key={ticker} onMouseDown={() => addHolding(ticker)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 10px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderBottom: "1px solid #F8FAFC" }}>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 11, color: "#19181E", minWidth: 40 }}>{ticker}</span>
-                    <span style={{ fontSize: 11, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.name}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#059669" }}>{(info.cagr * 100).toFixed(1)}%</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <p style={{ margin: "6px 0 0", fontSize: 10, color: "#CBD5E1", fontStyle: "italic" }}>
-            Based on 10-yr historical CAGR. Past returns don&apos;t guarantee future results.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -2511,12 +2509,20 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 
       {/* 3 Plan Cards */}
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
-        {scenarios.map(s => <PlanCard key={s.id} s={s} />)}
+        {scenarios.map(s => <PlanCard key={s.id} s={s} updateScenario={updateScenario} updateHoldings={updateHoldings} />)}
       </div>
 
       {/* Chart */}
       <div className="uf-card">
-        <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Portfolio Growth Comparison</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15 }}>Portfolio Growth Comparison</div>
+          <button
+            onClick={() => setInflation(v => !v)}
+            style={{ padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, border: `1.5px solid ${inflation ? "#059669" : "#E2E8F0"}`, background: inflation ? "#05966915" : "#F1F5F9", color: inflation ? "#059669" : "#64748B", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {inflation ? "✓ " : ""}Inflation-adjusted (3%)
+          </button>
+        </div>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
