@@ -494,8 +494,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
         monthlyIncome: Math.round(takeHome / 12),
         monthlySavings: savings,
         annualCostOfLiving: city.col,
+        fireYears: result.years,
+        currentAge,
       }),
-    [takeHome, savings, city.col],
+    [takeHome, savings, city.col, result.years, currentAge],
   );
   const topRevealAction = revealActions[0] ?? null;
 
@@ -567,10 +569,19 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const highSaver = calcFIRE((takeHome / 12) * 0.5, city.col, currentAge);
   const costYears = Math.max(0, result.years - highSaver.years).toFixed(1);
 
-  const d1 = calcFIRE(savings + city.col * 0.04 / 12, city.col, currentAge);
+  const [extraSavings, setExtraSavings] = useState(500);
+  const [diningCutPct, setDiningCutPct] = useState(20);
+
+  const d1 = calcFIRE(savings + city.col * (diningCutPct / 100) / 12, city.col, currentAge);
   const d2 = calcFIRE(savings + 416, city.col, currentAge);
   const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge);
-  const d4 = calcFIRE(savings + 500, city.col, currentAge);
+  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge);
+
+  function fmtDelta(yrs: number): string {
+    if (yrs < 1 / 12) return "< 1 month sooner";
+    if (yrs < 2) return `${Math.round(yrs * 12)} month${Math.round(yrs * 12) !== 1 ? "s" : ""} sooner`;
+    return `${yrs.toFixed(1)} years sooner`;
+  }
   const portfolioYearsSaved = portfolioBalance > 0
     ? Math.max(0, calcFIRE(savings, city.col, currentAge, 0).years - result.years)
     : 0;
@@ -647,7 +658,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                 <div className="uf-cost-sub">of freedom vs. someone saving 50% of their income</div>
               </div>
 
-              {/* Delta grid */}
+              {/* Delta grid — interactive */}
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748B", marginBottom: 10 }}>
+                How your decisions change your FIRE date
+              </div>
               <div className="uf-delta-grid">
                 {portfolioBalance > 0 && portfolioYearsSaved > 0 && (
                   <div className="uf-delta-card positive" style={{ gridColumn: "1 / -1" }}>
@@ -655,21 +669,52 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                     <div className="uf-delta-val pos">-{portfolioYearsSaved} yr{portfolioYearsSaved !== 1 ? "s" : ""} vs. starting from zero</div>
                   </div>
                 )}
-                {[
-                  { label: "Cut dining out by 20%",    val: (result.years - d1.years), positive: true },
-                  { label: "Save $500/mo more today",  val: (result.years - d4.years), positive: true },
-                  { label: "Take a 10% pay cut",       val: (d3.years - result.years), positive: false },
-                  { label: "Invest your annual bonus", val: (result.years - d2.years), positive: true },
-                ].map((item, i) => (
-                  <div key={i} className={`uf-delta-card ${item.positive ? "positive" : "negative"}`}>
-                    <div className="uf-delta-label">{item.label}</div>
-                    <div className={`uf-delta-val ${item.positive ? "pos" : "neg"}`}>
-                      {item.positive
-                        ? item.val > 0 ? `-${item.val.toFixed(1)} yrs` : "< 1 yr"
-                        : `+${item.val.toFixed(1)} yrs`}
-                    </div>
+
+                {/* Interactive: dining cut */}
+                <div className="uf-delta-card positive">
+                  <div className="uf-delta-label">Cut dining out by {diningCutPct}%</div>
+                  <div className="uf-delta-val pos">
+                    {(result.years - d1.years) > 0 ? fmtDelta(result.years - d1.years) : "< 1 month sooner"}
                   </div>
-                ))}
+                  <input
+                    type="range" min={5} max={50} step={5} value={diningCutPct}
+                    onChange={e => setDiningCutPct(Number(e.target.value))}
+                    style={{ width: "100%", marginTop: 10, accentColor: "#059669" }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 3 }}>
+                    <span>5%</span><span>50%</span>
+                  </div>
+                </div>
+
+                {/* Interactive: extra savings */}
+                <div className="uf-delta-card positive">
+                  <div className="uf-delta-label">Save ${extraSavings.toLocaleString()}/mo more</div>
+                  <div className="uf-delta-val pos">
+                    {(result.years - d4.years) > 0 ? fmtDelta(result.years - d4.years) : "< 1 month sooner"}
+                  </div>
+                  <input
+                    type="range" min={100} max={2000} step={100} value={extraSavings}
+                    onChange={e => setExtraSavings(Number(e.target.value))}
+                    style={{ width: "100%", marginTop: 10, accentColor: "#059669" }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 3 }}>
+                    <span>$100</span><span>$2,000</span>
+                  </div>
+                </div>
+
+                {/* Static: pay cut */}
+                <div className="uf-delta-card negative">
+                  <div className="uf-delta-label">Take a 10% pay cut</div>
+                  <div className="uf-delta-val neg">+{(d3.years - result.years).toFixed(1)} yrs delayed</div>
+                </div>
+
+                {/* Static: annual bonus */}
+                <div className="uf-delta-card positive">
+                  <div className="uf-delta-label">Invest your annual bonus</div>
+                  <div className="uf-delta-val pos">
+                    {(result.years - d2.years) > 0 ? fmtDelta(result.years - d2.years) : "< 1 month sooner"}
+                  </div>
+                </div>
               </div>
 
               <div style={{ marginBottom: 18 }}>
@@ -742,8 +787,6 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 >
   Track this in your dashboard
 </Link>
-              <Link href="/learn/how-fire-assumptions-change-your-retirement-date" className="uf-btn uf-btn-ghost uf-btn-full" style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>See what changes your retirement date</Link>
-
               <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
                 <button className="uf-btn uf-btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={onAdjust}>Adjust inputs</button>
               </div>
@@ -759,59 +802,6 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 }
 
 // -----------------------------------------------------------------------------
-// WAITLIST
-// -----------------------------------------------------------------------------
-
-function WaitlistSection() {
-  const [email, setEmail]   = useState("");
-  const [status, setStatus] = useState<"idle"|"loading"|"done"|"error">("idle");
-
-  async function handleSubmit() {
-    if (!email) return;
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      setStatus(res.ok ? "done" : "error");
-    } catch { setStatus("error"); }
-  }
-
-  return (
-    <div className="uf-waitlist">
-      <div className="uf-eyebrow" style={{ textAlign: "center", marginBottom: 16 }}>🔥 Coming Soon</div>
-      <h2 className="uf-h2" style={{ textAlign: "center", marginBottom: 12 }}>Get the AI roadmap</h2>
-      <p className="uf-body" style={{ textAlign: "center", marginBottom: 32 }}>
-        Join the waitlist for the AI-powered FIRE roadmap: a personalized monthly plan to retire faster. Launching at $9/mo.
-      </p>
-      {status === "done" ? (
-        <div className="uf-waitlist-success">🎉 You&apos;re on the list! We&apos;ll email you when we launch.</div>
-      ) : (
-        <div className="uf-waitlist-form">
-          <input
-            type="email" placeholder="your@email.com" value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSubmit()}
-            className="uf-input"
-          />
-          <button
-            className="uf-btn uf-btn-primary"
-            disabled={status === "loading"}
-            onClick={handleSubmit}
-            style={{ whiteSpace: "nowrap" }}
-          >
-            {status === "loading" ? "Joining..." : "Join waitlist"}
-          </button>
-        </div>
-      )}
-      {status === "error" && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 12 }}>Something went wrong. Try again.</p>}
-      <p className="uf-hint" style={{ textAlign: "center", marginTop: 16 }}>No spam. Unsubscribe anytime.</p>
-    </div>
-  );
-}
-
 // -----------------------------------------------------------------------------
 // ROOT
 // -----------------------------------------------------------------------------
@@ -1002,10 +992,10 @@ export default function Home() {
 
         /* -- INPUTS -- */
         .uf-label { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; letter-spacing: 0.2px; }
-        .uf-input { width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; padding: 11px 14px; font-family: var(--font-body); font-size: 14px; color: var(--text); outline: none; transition: border-color 0.2s; }
+        .uf-input { width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; padding: 13px 14px; font-family: var(--font-body); font-size: 16px; color: var(--text); outline: none; transition: border-color 0.2s; }
         .uf-input:focus { border-color: #047857; box-shadow: 0 0 0 3px rgba(6,78,59,0.12); }
         .uf-input-mono { font-family: var(--font-mono); font-size: 18px; font-weight: 500; }
-        .uf-input-big { padding: 12px 14px; }
+        .uf-input-big { padding: 14px 16px; }
         .uf-big-input-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         .uf-input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; pointer-events: none; }
         .uf-big-prefix { font-size: 18px; font-weight: 500; }
@@ -1185,11 +1175,8 @@ export default function Home() {
           .uf-hero-strip { padding: 12px 16px; }
           .uf-stat-row { grid-template-columns: 1fr 1fr; }
           .uf-delta-grid { grid-template-columns: 1fr; }
-          .uf-waitlist-form { flex-direction: column; }
-          .uf-waitlist-form input,
-          .uf-waitlist-form button { width: 100%; box-sizing: border-box; }
-          .uf-wl-inline-form { flex-direction: column; }
-          .uf-btn-lg { padding: 16px 24px; }
+.uf-wl-inline-form { flex-direction: column; }
+          .uf-btn-lg { padding: 16px 24px; min-height: 48px; }
           .uf-nav-row { gap: 8px; }
           .uf-fire-date { font-size: 13px; }
           .uf-cost-years { font-size: 32px; }
@@ -1275,12 +1262,7 @@ export default function Home() {
         .uf-wl-inline-form { display: flex; gap: 8px; }
         .uf-wl-done { display: flex; align-items: center; gap: 12px; background: #ECFDF5; border-color: #D1FAE5; }
 
-        /* -- WAITLIST -- */
-        .uf-waitlist { max-width: 520px; margin: 0 auto; padding: 48px 24px 64px; position: relative; z-index: 1; }
-        .uf-waitlist-success { background: #ECFDF5; border: 1px solid #D1FAE5; border-radius: 14px; padding: 20px 24px; color: var(--accent); font-weight: 700; font-size: 16px; text-align: center; }
-        .uf-waitlist-form { display: flex; gap: 10px; }
-
-        /* -- SHARE TRIGGER -- */
+/* -- SHARE TRIGGER -- */
         .uf-share-trigger { display: inline-flex; align-items: center; gap: 8px; margin: 18px auto 0; padding: 10px 22px; border-radius: 8px; background: #ECFDF5; border: 1px solid #D1FAE5; color: var(--accent); font-family: var(--font-body); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
         .uf-share-trigger:hover { background: #D1FAE5; border-color: #047857; transform: translateY(-1px); }
 
@@ -1400,8 +1382,6 @@ export default function Home() {
           />
         )}
 
-        <div className="uf-section-sep" aria-hidden="true" />
-        <WaitlistSection />
       </div>
     </>
   );

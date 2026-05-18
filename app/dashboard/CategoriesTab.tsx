@@ -3,20 +3,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
-
-// ─── Shared constants ─────────────────────────────────────────────────────────
-const EXPENSE_CATEGORIES = [
-  { key: "food",          label: "Food",          code: "FD", color: "#f97316" },
-  { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5" },
-  { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8" },
-  { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9" },
-  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa" },
-  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444" },
-  { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24" },
-  { key: "shopping",      label: "Shopping",      code: "SH", color: "#ec4899" },
-  { key: "work",          label: "Work",          code: "WK", color: "#6366f1" },
-  { key: "other",         label: "Other",         code: "OT", color: "#6b7280" },
-];
+import {
+  EXPENSE_CATEGORIES, CategoryDef,
+  loadCatCustomizations, saveCatCustomizations,
+  CatCustomizations, COLOR_PALETTE, EMOJI_PALETTE, resolveDisplay,
+} from "@/lib/categories";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -37,7 +28,11 @@ type Transaction = {
 };
 
 type SubBreakdown = { name: string; total: number };
-type CatBreakdown = { key: string; label: string; color: string; total: number; subBreakdown: SubBreakdown[] };
+type TagBreakdown = { tag: string; total: number };
+type CatBreakdown = {
+  key: string; label: string; color: string; emoji: string; code: string;
+  total: number; subBreakdown: SubBreakdown[]; tagBreakdown: TagBreakdown[];
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function groupBySubCat(txns: Transaction[], rates: Record<string, number>): SubBreakdown[] {
@@ -51,20 +46,32 @@ function groupBySubCat(txns: Transaction[], rates: Record<string, number>): SubB
     .sort((a, b) => b.total - a.total);
 }
 
-function groupByCat(txns: Transaction[], rates: Record<string, number>): CatBreakdown[] {
+type AnyCat = { key: string; label: string; code: string; color: string; emoji?: string };
+
+function groupByCat(
+  txns: Transaction[],
+  rates: Record<string, number>,
+  allCats: AnyCat[],
+  customs: CatCustomizations,
+): CatBreakdown[] {
   const map: Record<string, Transaction[]> = {};
   txns.forEach((t) => {
     if (!map[t.category]) map[t.category] = [];
     map[t.category].push(t);
   });
   return Object.entries(map).map(([key, catTxns]) => {
-    const meta = EXPENSE_CATEGORIES.find((c) => c.key === key);
+    const meta = allCats.find((c) => c.key === key);
+    const base = { color: meta?.color ?? "#6b7280", emoji: meta?.emoji ?? "📦" };
+    const { color, emoji } = resolveDisplay(base, customs, key);
     return {
       key,
       label: meta?.label || key,
-      color: meta?.color || "#6b7280",
+      code: meta?.code || key.slice(0, 2).toUpperCase(),
+      color,
+      emoji,
       total: catTxns.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
       subBreakdown: groupBySubCat(catTxns, rates),
+      tagBreakdown: [],
     };
   }).sort((a, b) => b.total - a.total);
 }
@@ -89,12 +96,22 @@ function CategoryRow({
   open,
   onToggle,
   formatAmount,
+  isEditing,
+  onEdit,
+  onCloseEdit,
+  catCustomizations,
+  setCatCustomizations,
 }: {
-  cat: { key: string; label: string; color: string; code: string; total: number; subBreakdown: SubBreakdown[]; tagBreakdown: { tag: string; total: number }[] };
+  cat: CatBreakdown;
   totalSpend: number;
   open: boolean;
   onToggle: () => void;
   formatAmount: (value: number) => string;
+  isEditing: boolean;
+  onEdit: () => void;
+  onCloseEdit: () => void;
+  catCustomizations: CatCustomizations;
+  setCatCustomizations: React.Dispatch<React.SetStateAction<CatCustomizations>>;
 }) {
   const pct = totalSpend > 0 ? (cat.total / totalSpend) * 100 : 0;
 
@@ -107,17 +124,26 @@ function CategoryRow({
           display: "grid", gridTemplateColumns: "36px 1fr 160px 80px 24px",
           gap: 12, alignItems: "center", padding: "14px 20px",
           borderTop: "1px solid #F1F5F9", cursor: "pointer",
-          background: open ? "#F8FAFC" : "transparent",
+          background: open || isEditing ? "#F8FAFC" : "transparent",
         }}
-        onMouseEnter={(e) => { if (!open) (e.currentTarget as HTMLElement).style.background = "#F8FAFC"; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = open ? "#F8FAFC" : "transparent"; }}
+        onMouseEnter={(e) => { if (!open && !isEditing) (e.currentTarget as HTMLElement).style.background = "#F8FAFC"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = open || isEditing ? "#F8FAFC" : "transparent"; }}
       >
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: cat.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", flexShrink: 0 }}>
-          {cat.code}
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: cat.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+          {cat.emoji}
         </div>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#19181E" }}>{cat.label}</div>
-          <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 1 }}>{cat.subBreakdown.length > 0 ? `${cat.subBreakdown.length} sub-categories` : "No sub-categories"}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#19181E" }}>{cat.label}</div>
+            <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 1 }}>{cat.subBreakdown.length > 0 ? `${cat.subBreakdown.length} sub-categories` : "No sub-categories"}</div>
+          </div>
+          <button
+            onClick={e => { e.stopPropagation(); isEditing ? onCloseEdit() : onEdit(); }}
+            title="Customize color & emoji"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: isEditing ? "#059669" : "#CBD5E1", fontSize: 14, lineHeight: 1, flexShrink: 0 }}
+          >
+            ✏️
+          </button>
         </div>
         {/* Bar */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -130,7 +156,61 @@ function CategoryRow({
         <Chevron open={open} />
       </div>
 
-      {/* Expanded */}
+      {/* Inline edit panel */}
+      {isEditing && (
+        <div style={{ background: "#F0FDF4", borderTop: "1px solid #BBF7D0", padding: "14px 20px 14px 68px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#047857", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Customize {cat.label}
+            </span>
+            <button onClick={onCloseEdit} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>✕</button>
+          </div>
+
+          {/* Color swatches */}
+          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 6 }}>Color</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+            {COLOR_PALETTE.map(c => (
+              <button
+                key={c}
+                onClick={() => setCatCustomizations(prev => ({ ...prev, [cat.key]: { ...prev[cat.key], color: c } }))}
+                style={{
+                  width: 26, height: 26, borderRadius: "50%", background: c, cursor: "pointer",
+                  border: cat.color === c ? "2.5px solid #0F172A" : "2.5px solid transparent",
+                  outline: "none", boxShadow: cat.color === c ? "0 0 0 1px #fff inset" : "none",
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Emoji grid */}
+          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 6 }}>Emoji</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
+            {EMOJI_PALETTE.map(em => (
+              <button
+                key={em}
+                onClick={() => setCatCustomizations(prev => ({ ...prev, [cat.key]: { ...prev[cat.key], emoji: em } }))}
+                style={{
+                  width: 34, height: 34, background: cat.emoji === em ? "#DCFCE7" : "transparent",
+                  border: cat.emoji === em ? "1.5px solid #059669" : "1.5px solid #E2E8F0",
+                  borderRadius: 6, cursor: "pointer", fontSize: 18, lineHeight: 1,
+                }}
+              >
+                {em}
+              </button>
+            ))}
+          </div>
+
+          {/* Reset */}
+          <button
+            onClick={() => setCatCustomizations(prev => { const n = { ...prev }; delete n[cat.key]; return n; })}
+            style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+          >
+            Reset to default
+          </button>
+        </div>
+      )}
+
+      {/* Expanded sub-categories + tags */}
       {open && (
         <div style={{ background: "#F8FAFC", borderTop: "1px solid #F1F5F9", padding: "12px 20px 16px 68px" }}>
           {cat.subBreakdown.length > 0 && (
@@ -259,10 +339,14 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   const [viewMonth, setViewMonth] = useState(currentMonth);
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [catCustomizations, setCatCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
   const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 
+  useEffect(() => { saveCatCustomizations(catCustomizations); }, [catCustomizations]);
+
   // Merge built-in categories with any user-defined ones from localStorage
-  const [customCats] = useState<{ key: string; label: string; code: string; color: string }[]>(() => {
+  const [customCats] = useState<{ key: string; label: string; code: string; color: string; emoji?: string }[]>(() => {
     try { return JSON.parse(localStorage.getItem("uf_custom_cats") || "[]"); } catch { return []; }
   });
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
@@ -311,21 +395,32 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
 
         const subBreakdown = groupBySubCat(catTxns, rates);
 
-        // Tag breakdown for this category
         const tagMap: Record<string, number> = {};
         catTxns.forEach((t) => {
           (t.tags || []).forEach((tag) => {
             tagMap[tag] = (tagMap[tag] || 0) + toUSD(t.amount, t.currency, rates);
           });
         });
-        const tagBreakdown = Object.entries(tagMap)
+        const tagBreakdown: TagBreakdown[] = Object.entries(tagMap)
           .map(([tag, ttl]) => ({ tag, total: ttl }))
           .sort((a, b) => b.total - a.total);
 
-        return { ...cat, total, subBreakdown, tagBreakdown };
+        const base = { color: cat.color, emoji: (cat as { emoji?: string }).emoji ?? "📦" };
+        const { color, emoji } = resolveDisplay(base, catCustomizations, cat.key);
+
+        return {
+          key: cat.key,
+          label: cat.label,
+          code: cat.code,
+          color,
+          emoji,
+          total,
+          subBreakdown,
+          tagBreakdown,
+        };
       })
-      .filter(Boolean) as ({ key: string; label: string; code: string; color: string } & { total: number; subBreakdown: SubBreakdown[]; tagBreakdown: { tag: string; total: number }[] })[];
-  }, [expTxns, rates, allExpenseCats]);
+      .filter(Boolean) as CatBreakdown[];
+  }, [expTxns, rates, allExpenseCats, catCustomizations]);
 
   // Project groups (by tag)
   const projectGroups = useMemo(() => {
@@ -340,10 +435,10 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
       .map(([tag, txns]) => ({
         tag,
         total: txns.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
-        catBreakdown: groupByCat(txns, rates),
+        catBreakdown: groupByCat(txns, rates, allExpenseCats, catCustomizations),
       }))
       .sort((a, b) => b.total - a.total);
-  }, [expTxns, rates]);
+  }, [expTxns, rates, allExpenseCats, catCustomizations]);
 
   const handlePrevMonth = () => {
     const [py, pm] = viewMonth.split("-").map(Number);
@@ -417,6 +512,11 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
                 open={expandedCat === cat.key}
                 onToggle={() => setExpandedCat(expandedCat === cat.key ? null : cat.key)}
                 formatAmount={fmtDisplay}
+                isEditing={editingCat === cat.key}
+                onEdit={() => setEditingCat(cat.key)}
+                onCloseEdit={() => setEditingCat(null)}
+                catCustomizations={catCustomizations}
+                setCatCustomizations={setCatCustomizations}
               />
             ))}
           </div>

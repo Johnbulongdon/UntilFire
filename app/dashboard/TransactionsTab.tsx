@@ -5,20 +5,11 @@ import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
 import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import PlaidConnect from "./PlaidConnect";
-
-// ─── Categories ───────────────────────────────────────────────────────────────
-const EXPENSE_CATEGORIES = [
-  { key: "food",          label: "Food",          code: "FD", color: "#f97316" },
-  { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5" },
-  { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8" },
-  { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9" },
-  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa" },
-  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444" },
-  { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24" },
-  { key: "shopping",      label: "Shopping",      code: "SH", color: "#ec4899" },
-  { key: "work",          label: "Work",          code: "WK", color: "#6366f1" },
-  { key: "other",         label: "Other",         code: "OT", color: "#6b7280" },
-];
+import {
+  EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES as ALL_CATEGORIES_BASE,
+  COLOR_PALETTE, EMOJI_PALETTE,
+  loadCatCustomizations, saveCatCustomizations, CatCustomizations, resolveDisplay,
+} from "@/lib/categories";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   travel:        ["Hotels", "Flights", "Food & Drink", "Transport", "Activities", "Shopping", "Other"],
@@ -32,22 +23,9 @@ const SUB_CATEGORIES: Record<string, string[]> = {
   work:          ["Equipment", "Software", "Travel", "Training", "Meals", "Other"],
 };
 
-const COLOR_PALETTE = [
-  "#f43f5e", "#f97316", "#eab308", "#84cc16", "#14b8a6",
-  "#0ea5e9", "#8b5cf6", "#ec4899", "#a855f7", "#6b7280",
-];
+type CustomCategory = { key: string; label: string; code: string; color: string; emoji?: string };
 
-type CustomCategory = { key: string; label: string; code: string; color: string };
-
-const INCOME_CATEGORIES = [
-  { key: "salary",       label: "Salary",     code: "SA", color: "#22d3a5" },
-  { key: "freelance",    label: "Freelance",  code: "FR", color: "#34d399" },
-  { key: "investment",   label: "Investment", code: "IV", color: "#818cf8" },
-  { key: "gift",         label: "Gift",       code: "GF", color: "#a78bfa" },
-  { key: "other_income", label: "Other",      code: "OI", color: "#6b7280" },
-];
-
-const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
+const ALL_CATEGORIES = ALL_CATEGORIES_BASE;
 const FALLBACK_RATES = LIB_FALLBACK_RATES;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -215,6 +193,7 @@ function QuickAddForm({
   allExpenseCats,
   allSubCats,
   colorPalette,
+  emojiPalette,
   preferredCurrencies,
   onAddCategory,
   onAddSubCategory,
@@ -225,9 +204,10 @@ function QuickAddForm({
   editing: boolean;
   onCancelEdit: () => void;
   existingTags: string[];
-  allExpenseCats: typeof EXPENSE_CATEGORIES;
+  allExpenseCats: { key: string; label: string; code: string; color: string; emoji?: string }[];
   allSubCats: Record<string, string[]>;
   colorPalette: string[];
+  emojiPalette: string[];
   preferredCurrencies: string[];
   onAddCategory: (cat: CustomCategory) => void;
   onAddSubCategory: (catKey: string, sub: string) => void;
@@ -239,6 +219,7 @@ function QuickAddForm({
   const [showCatForm, setShowCatForm] = useState(false);
   const [newCatLabel, setNewCatLabel] = useState("");
   const [newCatColor, setNewCatColor] = useState(colorPalette[0]);
+  const [newCatEmoji, setNewCatEmoji] = useState("");
   const [showSubForm, setShowSubForm] = useState(false);
   const [newSubLabel, setNewSubLabel] = useState("");
 
@@ -474,9 +455,9 @@ function QuickAddForm({
                       if (!label) return;
                       const key = label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
                       const code = label.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "CU";
-                      onAddCategory({ key, label, code, color: newCatColor });
+                      onAddCategory({ key, label, code, color: newCatColor, emoji: newCatEmoji || undefined });
                       setField("category", key); setField("sub_category", "");
-                      setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]);
+                      setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]); setNewCatEmoji("");
                     }
                     if (e.key === "Escape") { setShowCatForm(false); setNewCatLabel(""); }
                   }}
@@ -491,6 +472,15 @@ function QuickAddForm({
                     />
                   ))}
                 </div>
+                <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 4, marginTop: 2 }}>Emoji <span style={{ fontWeight: 400, color: "#94A3B8" }}>optional</span></div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
+                  {emojiPalette.map((em) => (
+                    <button key={em} type="button" onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)}
+                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "#DCFCE7" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "#059669" : "#E2E8F0"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
+                      {em}
+                    </button>
+                  ))}
+                </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button
                     type="button"
@@ -499,9 +489,9 @@ function QuickAddForm({
                       if (!label) return;
                       const key = label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
                       const code = label.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "CU";
-                      onAddCategory({ key, label, code, color: newCatColor });
+                      onAddCategory({ key, label, code, color: newCatColor, emoji: newCatEmoji || undefined });
                       setField("category", key); setField("sub_category", "");
-                      setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]);
+                      setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]); setNewCatEmoji("");
                     }}
                     style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                   >
@@ -695,6 +685,7 @@ function TransactionList({
   onDelete,
   rates,
   formatAmount,
+  catCustomizations,
 }: {
   transactions: Transaction[];
   editingId: string | null;
@@ -703,6 +694,7 @@ function TransactionList({
   onDelete: (tx: Transaction) => void;
   rates: Record<string, number>;
   formatAmount: (value: number) => string;
+  catCustomizations: CatCustomizations;
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income">("all");
@@ -807,6 +799,8 @@ function TransactionList({
                     const cat = ALL_CATEGORIES.find((c) => c.key === tx.category);
                     const isEditing = editingId === tx.id;
                     const wasJustAdded = justAddedId === tx.id;
+                    const baseDisplay = { color: cat?.color || "#6b7280", emoji: (cat as {emoji?: string})?.emoji || "📦" };
+                    const { color: chipColor, emoji: chipEmoji } = resolveDisplay(baseDisplay, catCustomizations, tx.category);
 
                     return (
                       <div
@@ -823,8 +817,8 @@ function TransactionList({
                         onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isEditing ? "#ECFDF5" : "transparent"; }}
                       >
                         {/* Category chip */}
-                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: cat?.color || "#6b7280", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", flexShrink: 0 }}>
-                          {cat?.code || (isIncome ? "IN" : "EX")}
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: chipColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                          {chipEmoji}
                         </div>
 
                         {/* Description + meta */}
@@ -957,7 +951,7 @@ function MonthlySummary({
       </div>
 
       {/* KPI grid */}
-      <div style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+      <div className="uf-kpi-grid" style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
         {kpiCard("Income", incomeTotal, "#059669", prevIncome > 0 ? `vs ${formatAmount(prevIncome)} last month` : "No prior month data")}
         {kpiCard("Spent", expenseTotal, "#19181E", prevSpent > 0 ? `vs ${formatAmount(prevSpent)} last month` : "No prior month data")}
         {kpiCard("Net", net, net >= 0 ? "#047857" : "#DC2626", net >= 0 && incomeTotal > 0 ? `${((net / incomeTotal) * 100).toFixed(1)}% savings rate` : "Spending exceeds income")}
@@ -1081,8 +1075,11 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 40, opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity 200ms" }} />
       <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "#fff", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
-        <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", margin: "10px auto 6px", cursor: "pointer" }} />
-        <div style={{ flex: 1, overflowY: "auto" }}>{children}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 16px 4px", position: "relative" }}>
+          <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", cursor: "pointer" }} />
+          <button onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "#94A3B8", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>{children}</div>
       </div>
     </>
   );
@@ -1107,6 +1104,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [ratesFallback, setRatesFallback] = useState(false);
 
   // Custom categories / sub-categories (persisted in localStorage)
+  const [catCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
+
   const [customCats, setCustomCats] = useState<CustomCategory[]>(() => {
     try { return JSON.parse(localStorage.getItem("uf_custom_cats") || "[]"); } catch { return []; }
   });
@@ -1363,12 +1362,13 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         <TransactionList
           transactions={monthTxns}
           editingId={editingId}
-        justAddedId={justAddedId}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        rates={rates}
-        formatAmount={fmtDisplay}
-      />
+          justAddedId={justAddedId}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          rates={rates}
+          formatAmount={fmtDisplay}
+          catCustomizations={catCustomizations}
+        />
         <div className="cf-form-col">
           <QuickAddForm
             draft={draft}
@@ -1380,6 +1380,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
             allExpenseCats={allExpenseCats}
             allSubCats={allSubCats}
             colorPalette={COLOR_PALETTE}
+            emojiPalette={EMOJI_PALETTE}
             preferredCurrencies={preferredCurrencies}
             onAddCategory={handleAddCategory}
             onAddSubCategory={handleAddSubCategory}
@@ -1399,6 +1400,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           allExpenseCats={allExpenseCats}
           allSubCats={allSubCats}
           colorPalette={COLOR_PALETTE}
+          emojiPalette={EMOJI_PALETTE}
           onAddCategory={handleAddCategory}
           onAddSubCategory={handleAddSubCategory}
           preferredCurrencies={preferredCurrencies}

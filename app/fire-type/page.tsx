@@ -44,6 +44,7 @@ function FireTypeQuizInner() {
   const [answers, setAnswers] = useState<QuizAnswer[]>([])
   const [result, setResult] = useState<{ code: string; name: string; tagline: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [pendingAnswer, setPendingAnswer] = useState<QuizAnswer | null>(null)
   const startedRef = useRef(false)
 
   // Fire completed event once when result mounts
@@ -63,26 +64,30 @@ function FireTypeQuizInner() {
   }, [stage, result])
 
   function handleAnswer(position: QuizAnswer) {
-    // Fire started on first answer (confirms real engagement)
+    if (pendingAnswer !== null) return
     if (!startedRef.current) {
       startedRef.current = true
       trackFireTypeStarted({ source })
     }
-
-    const next = [...answers, position]
-    if (next.length < QUIZ_QUESTIONS.length) {
-      setAnswers(next)
-      setCurrentQ(next.length)
-    } else {
-      const code = scoreQuiz(next)
-      const meta = getTypeMeta(code)
-      setAnswers(next)
-      setResult({ code, ...meta })
-      setStage('result')
-    }
+    setPendingAnswer(position)
+    setTimeout(() => {
+      setPendingAnswer(null)
+      const next = [...answers, position]
+      if (next.length < QUIZ_QUESTIONS.length) {
+        setAnswers(next)
+        setCurrentQ(next.length)
+      } else {
+        const code = scoreQuiz(next)
+        const meta = getTypeMeta(code)
+        setAnswers(next)
+        setResult({ code, ...meta })
+        setStage('result')
+      }
+    }, 280)
   }
 
   function handleBack() {
+    if (pendingAnswer !== null) return
     if (currentQ === 0) {
       setStage('intro')
       return
@@ -188,7 +193,7 @@ function FireTypeQuizInner() {
         </div>
 
         <div className="ft-quiz-pad" style={{ maxWidth: 560, margin: '0 auto', padding: '48px 24px 80px' }}>
-          <div className="ft-quiz-card" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '36px 28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div key={currentQ} className="ft-quiz-card" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '36px 28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', animation: 'ft-slide-in 0.22s ease-out' }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: C.teal, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 16 }}>
               Question {currentQ + 1} of {QUIZ_QUESTIONS.length}
             </p>
@@ -206,6 +211,8 @@ function FireTypeQuizInner() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
               {([0, 1, 2, 3, 4] as QuizAnswer[]).map((pos) => {
                 const size = pos === 2 ? 36 : pos === 1 || pos === 3 ? 42 : 48
+                const isSelected = pendingAnswer === pos
+                const isPending = pendingAnswer !== null
                 return (
                   <button
                     key={pos}
@@ -214,16 +221,18 @@ function FireTypeQuizInner() {
                     style={{
                       width: size, height: size,
                       borderRadius: '50%',
-                      border: `2px solid ${C.border}`,
-                      background: '#ffffff',
-                      cursor: 'pointer',
+                      border: `2px solid ${isSelected ? C.accent : C.border}`,
+                      background: isSelected ? C.accent : '#ffffff',
+                      cursor: isPending ? 'default' : 'pointer',
                       transition: 'all 0.15s',
                       flexShrink: 0,
                       padding: 0,
                       fontFamily: "'Manrope', sans-serif",
+                      transform: isSelected ? 'scale(1.18)' : 'scale(1)',
+                      pointerEvents: isPending ? 'none' : 'auto',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.background = '#ECFDF5' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = '#ffffff' }}
+                    onMouseEnter={!isPending ? (e) => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.background = '#ECFDF5' } : undefined}
+                    onMouseLeave={!isPending ? (e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = '#ffffff' } : undefined}
                   />
                 )
               })}
@@ -348,6 +357,10 @@ export default function FireTypePage() {
   return (
     <>
       <style>{`
+        @keyframes ft-slide-in {
+          from { opacity: 0; transform: translateX(28px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
         @media (max-width: 480px) {
           .ft-intro-pad { padding: 40px 16px 60px !important; }
           .ft-quiz-pad { padding: 28px 16px 60px !important; }

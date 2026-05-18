@@ -7,20 +7,7 @@ import {
   Legend, ResponsiveContainer,
 } from "recharts";
 import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
-
-// ─── Constants (copied from RecurringTab — kept local to avoid coupling) ──────
-const EXPENSE_CATEGORIES = [
-  { key: "food",          label: "Food",          code: "FD", color: "#f97316" },
-  { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5" },
-  { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8" },
-  { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9" },
-  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa" },
-  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444" },
-  { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24" },
-  { key: "shopping",      label: "Shopping",      code: "SH", color: "#ec4899" },
-  { key: "work",          label: "Work",          code: "WK", color: "#6366f1" },
-  { key: "other",         label: "Other",         code: "OT", color: "#6b7280" },
-];
+import { EXPENSE_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -99,6 +86,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesFallback, setRatesFallback] = useState(false);
   const [period, setPeriod] = useState<3 | 6 | 12>(6);
+  const [catCustomizations] = useState(loadCatCustomizations);
   const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 
   useEffect(() => {
@@ -152,15 +140,20 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
     const periodTxns = transactions.filter(
       t => t.date >= months[0] && t.transaction_type !== "income"
     );
-    return EXPENSE_CATEGORIES.map(cat => ({
-      ...cat,
-      total: periodTxns
-        .filter(t => t.category === cat.key)
-        .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
-    }))
+    return EXPENSE_CATEGORIES.map(cat => {
+      const { color, emoji } = resolveDisplay({ color: cat.color, emoji: cat.emoji }, catCustomizations, cat.key);
+      return {
+        ...cat,
+        color,
+        emoji,
+        total: periodTxns
+          .filter(t => t.category === cat.key)
+          .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+      };
+    })
       .filter(c => c.total > 0)
       .sort((a, b) => b.total - a.total);
-  }, [months, transactions, rates]);
+  }, [months, transactions, rates, catCustomizations]);
 
   const grandTotal = catTotals.reduce((s, c) => s + c.total, 0);
 
@@ -309,11 +302,10 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
                   {/* Circle */}
                   <div style={{
                     width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-                    background: cat.color + "22", border: `1.5px solid ${cat.color}44`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 800, color: cat.color, fontFamily: "Inter, sans-serif",
+                    background: cat.color, display: "flex", alignItems: "center",
+                    justifyContent: "center", fontSize: 20,
                   }}>
-                    {cat.code}
+                    {cat.emoji}
                   </div>
                   {/* Bar */}
                   <div>

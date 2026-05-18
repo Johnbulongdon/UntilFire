@@ -23,9 +23,9 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
     <div className={`uf-hero${mounted ? " uf-hero--mounted" : ""}`}>
       <div className="uf-hero-inner">
         <div className="uf-hero-content">
-          <div className="uf-badge"><span className="uf-badge-dot" /> Free - no credit card required</div>
-          <h1 className="uf-h1">Financial Independence<br /><span className="uf-accent-flame">Through Trusted Growth.</span></h1>
-          <p className="uf-body">Know exactly when you can retire - adjusted for your city, your income, and the 4% rule. Takes 60 seconds. No login required.</p>
+          <div className="uf-badge"><span className="uf-badge-dot" /> Free · No login · 60 seconds</div>
+          <h1 className="uf-h1"><span className="uf-accent-flame">Guessing is expensive.</span><br />Know your FIRE date — and the moves that get you there sooner.</h1>
+          <p className="uf-body">UntilFire calculates your path to financial independence, adjusted for your city, income, and taxes — then shows exactly how every financial decision accelerates or delays your freedom date.</p>
           <div className="uf-hero-ctas">
             <button className="uf-btn uf-btn-teal uf-btn-lg uf-btn-power" onClick={onStart}>Calculate my FIRE number {"->"}</button>
             <button className="uf-btn uf-btn-ghost-dark" onClick={onSignIn}>Log in {"->"}</button>
