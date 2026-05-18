@@ -54,7 +54,45 @@ type SavingsBenchmark = {
 // finance-awareness benchmark and keep the copy framed as a "benchmark", not a census claim.
 const PUBLIC_SAVINGS_RATE_BASELINE = 5;
 
-function deriveFireIdentity(savingsRate: number, portfolioBalance: number): FireIdentity {
+const FIRE_STAGES = {
+  ignition: {
+    index: 0,
+    name: "Ignition",
+    description: "You're building the foundation. The biggest levers right now are savings rate and income growth.",
+  },
+  momentum: {
+    index: 1,
+    name: "Momentum",
+    description: "Compounding is doing real work. Stay consistent, widen the gap, and let time do the heavy lifting.",
+  },
+  "final-stretch": {
+    index: 2,
+    name: "Final Stretch",
+    description: "You're close. Focus shifts from accumulation to protecting what you've built.",
+  },
+  achieved: {
+    index: 3,
+    name: "FIRE Achieved",
+    description: "The accumulation phase is complete. Focus now is withdrawal strategy and designing the life you want.",
+  },
+} as const;
+type FireStage = keyof typeof FIRE_STAGES;
+
+function deriveFireIdentity(savingsRate: number, portfolioBalance: number, yearsToFire?: number): FireIdentity {
+  if (yearsToFire === 0) {
+    return {
+      name: "FIRE Achieved",
+      headline: "Your portfolio already covers your cost of living.",
+      description: "The accumulation phase is done. The work ahead is protecting what you've built and designing the life you want.",
+    };
+  }
+  if (yearsToFire !== undefined && yearsToFire <= 5) {
+    return {
+      name: "Final Stretch",
+      headline: "You're in the home stretch — protect your momentum.",
+      description: "At this stage the biggest risk is behavioural: don't chase returns or take on unnecessary risk. Consistency wins.",
+    };
+  }
   if (portfolioBalance > 100000) {
     return {
       name: "Coast Candidate",
@@ -685,7 +723,13 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const monthlyMoveRetireYear = d4.retireYear;
   const monthlyTakeHome = takeHome / 12;
   const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
-  const fireIdentity = deriveFireIdentity(savingsBenchmark.savingsRate, portfolioBalance);
+  const fireIdentity = deriveFireIdentity(savingsBenchmark.savingsRate, portfolioBalance, result.years);
+  const fireStage: FireStage = result.years === 0 ? "achieved"
+    : result.years <= 5 ? "final-stretch"
+    : result.years <= 15 ? "momentum"
+    : "ignition";
+  const isAlreadyFire = fireStage === "achieved";
+  const stageData = FIRE_STAGES[fireStage];
 
   function fmtDelta(yrs: number): string {
     if (yrs < 1 / 12) return "< 1 month sooner";
@@ -756,11 +800,13 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                       Age {result.age}
                     </span>
                     <span style={{ fontSize: 12, opacity: 0.7, fontWeight: 500, letterSpacing: "0.02em" }}>
-                      in {result.years} year{result.years === 1 ? '' : 's'} · {result.retireYear}
+                      {isAlreadyFire ? `Right now · ${result.retireYear}` : `in ${result.years} year${result.years === 1 ? '' : 's'} · ${result.retireYear}`}
                     </span>
                   </div>
                 ) : (
-                  `Work could become optional in ${result.retireYear} (${result.years} year${result.years === 1 ? '' : 's'} from now)`
+                  isAlreadyFire
+                    ? `Work is already optional as of ${result.retireYear}.`
+                    : `Work could become optional in ${result.retireYear} (${result.years} year${result.years === 1 ? '' : 's'} from now)`
                 )}
               </div>
               <div className="uf-fire-date-line" />
@@ -790,7 +836,22 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                 </div>
                 <div className="uf-result-milestone active">
                   <span className="uf-result-milestone-icon">⚡</span>
-                  <span>One monthly move ready</span>
+                  <span>{isAlreadyFire ? "Next chapter awaits" : "One monthly move ready"}</span>
+                </div>
+              </div>
+
+              {/* Stage indicator */}
+              <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: "16px 18px", marginBottom: 18 }}>
+                <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+                  {([0, 1, 2, 3] as const).map(i => (
+                    <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= stageData.index ? "#059669" : "#D1FAE5" }} />
+                  ))}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#059669", marginBottom: 4 }}>
+                  Stage {stageData.index + 1} of 4 — {stageData.name}
+                </div>
+                <div style={{ fontSize: 13, color: "#065F46", fontWeight: 500, lineHeight: 1.5 }}>
+                  {stageData.description}
                 </div>
               </div>
 
@@ -813,7 +874,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                 <div className="uf-insight-source">{fireIdentity.description}</div>
               </div>
 
-              {/* Monthly move aha */}
+              {!isAlreadyFire && (/* Monthly move aha */
               <div className="uf-monthly-move-card">
                 <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "#A7F3D0", marginBottom: 8 }}>
                   One monthly move
@@ -825,14 +886,17 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   At that pace, work could become optional around {monthlyMoveRetireYear}{d4.age !== undefined ? `, at age ${d4.age}` : ""}. Adjust the slider below to find a monthly move that feels realistic.
                 </div>
               </div>
+              )}
 
-              {/* Cost statement */}
+              {!isAlreadyFire && (/* Cost statement */
               <div className="uf-cost-card">
                 <div className="uf-cost-label">At your current savings rate, your spending is costing you</div>
                 <div className="uf-cost-years">{costYears} years</div>
                 <div className="uf-cost-sub">of freedom vs. someone saving 50% of their income</div>
               </div>
+              )}
 
+              {!isAlreadyFire && (<>
               {/* Delta grid — interactive */}
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748B", marginBottom: 10 }}>
                 How your decisions change your FIRE date
@@ -891,8 +955,9 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   </div>
                 </div>
               </div>
+              </>)}
 
-              <div style={{ marginBottom: 18 }}>
+              {!isAlreadyFire && (<div style={{ marginBottom: 18 }}>
                 {topRevealAction ? (
                   <div
                     style={{
@@ -936,7 +1001,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                     router.push("/login");
                   }}
                 />
-              </div>
+              </div>)}
 
               {/* PRIMARY CTA */}
               <Link

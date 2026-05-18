@@ -51,6 +51,7 @@ export function recommendActionsForReveal({
   fireYears?: number;
   currentAge?: number;
 }): RevealAction[] {
+  if ((fireYears ?? 1) <= 0) return [];
   const savingsRate = monthlyIncome > 0 ? monthlySavings / monthlyIncome : 0;
   const actions: RevealAction[] = [];
 
