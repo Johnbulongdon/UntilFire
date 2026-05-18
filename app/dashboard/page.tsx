@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import UpgradeModal from "./UpgradeModal";
+import TourModal from "./TourModal";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
@@ -3089,6 +3090,13 @@ export default function Dashboard() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [surveyOpen,     setSurveyOpen]     = useState(false);
+  const [tourOpen,       setTourOpen]       = useState(() => {
+    try { return !localStorage.getItem('uf_tour_done') } catch { return false }
+  });
+  function closeTour() {
+    setTourOpen(false);
+    try { localStorage.setItem('uf_tour_done', '1') } catch {}
+  }
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -3360,6 +3368,9 @@ export default function Dashboard() {
           }}
         />
       )}
+      {tourOpen && !onboardingOpen && !surveyOpen && (
+        <TourModal onClose={closeTour} />
+      )}
 
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
@@ -3386,6 +3397,13 @@ export default function Dashboard() {
             {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Inter, sans-serif" }}>✓ Saved</span>}
             {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Save failed</span>}
             <UserNav onProfileClick={() => setTab("profile")} isProfileActive={tab === "profile"} />
+            <button
+              onClick={() => setTourOpen(true)}
+              style={{ background: "none", border: "none", color: "#94A3B8", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}
+            >
+              <span style={{ width: 16, height: 16, borderRadius: "50%", border: "1.5px solid #CBD5E1", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>?</span>
+              Take a tour
+            </button>
           </div>
         </aside>
 
