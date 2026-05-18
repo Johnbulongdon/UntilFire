@@ -996,7 +996,7 @@ export default function Home() {
         .uf-input:focus { border-color: #047857; box-shadow: 0 0 0 3px rgba(6,78,59,0.12); }
         .uf-input-mono { font-family: var(--font-mono); font-size: 18px; font-weight: 500; }
         .uf-input-big { padding: 14px 16px; }
-        .uf-big-input-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .uf-big-input-wrap { position: relative; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         .uf-input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; pointer-events: none; }
         .uf-big-prefix { font-size: 18px; font-weight: 500; }
         .uf-unit { font-size: 14px; color: var(--text-muted); white-space: nowrap; }
