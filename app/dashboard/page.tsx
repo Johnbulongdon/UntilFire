@@ -3289,10 +3289,6 @@ export default function Dashboard() {
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
         @media(max-width: 900px) {
-          .uf-sidebar { width: 196px; }
-          .uf-content { padding: 20px 20px 48px; }
-        }
-        @media(max-width: 640px) {
           .uf-shell { flex-direction: column; }
           .uf-sidebar { width: 100%; min-height: unset; height: auto; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; flex-direction: row; border-right: none; border-top: 1px solid #E2E8F0; background: #fff; padding: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
           .uf-sidebar-logo { display: none; }

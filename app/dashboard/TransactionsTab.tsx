@@ -1075,8 +1075,11 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 40, opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity 200ms" }} />
       <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "#fff", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
-        <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", margin: "10px auto 6px", cursor: "pointer" }} />
-        <div style={{ flex: 1, overflowY: "auto" }}>{children}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 16px 4px", position: "relative" }}>
+          <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", cursor: "pointer" }} />
+          <button onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "#94A3B8", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>{children}</div>
       </div>
     </>
   );
