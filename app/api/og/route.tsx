@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
               display: 'flex',
             }}
           >
-            Retire in
+            Freedom date
           </div>
           <div
             style={{
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
               display: 'flex',
             }}
           >
-            by {year}
+            around {year}
           </div>
           <div
             style={{
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
               display: 'flex',
             }}
           >
-            {years} year{years !== 1 ? 's' : ''} away 路 free calculator
+            {years} year{years !== 1 ? 's' : ''} away · work optional timeline
           </div>
         </div>
 
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
               }}
             />
             <span style={{ color: '#163127', fontSize: 20 }}>
-              What does your city look like?
+              Find your freedom date
             </span>
           </div>
           <span style={{ color: '#059669', fontSize: 20, fontWeight: 600 }}>

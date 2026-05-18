@@ -122,8 +122,8 @@ UntilFire shows when work can become optional — your FIRE number, your timelin
 - [x] Fire Type analytics events
 - [x] Public share page at `/share`
 - [x] Dynamic OG image route for share cards
-- [ ] Decide whether FIRE Type is a primary Product Hunt asset or secondary acquisition experiment
-- [ ] Update share copy from “retire by” language to “freedom date / work optional” language
+- [x] Decide whether FIRE Type is a primary Product Hunt asset or secondary acquisition experiment
+- [x] Update share copy from “retire by” language to “freedom date / work optional” language
 
 ---
 
@@ -133,13 +133,13 @@ UntilFire shows when work can become optional — your FIRE number, your timelin
 
 ### Must Fix Before Launch
 
-- [ ] **Fix main CTA path:** clicking the primary homepage CTA must immediately open or scroll to the first calculator step. No dead-feeling click, hidden flow, or repeated CTA.
-- [ ] **Align live homepage copy:** hero should use “Find your freedom date” / “work can become optional” / “monthly moves that bring freedom closer.”
-- [ ] **Rename primary CTA:** prefer “Find my freedom date” over “Calculate my FIRE number.”
-- [ ] **Make first calculator step obvious:** show a clear “Step 1” prompt, input, progress, and continue button above the fold after CTA click.
-- [ ] **Show the differentiator visually:** above the fold or on the result screen, show example monthly moves like “Invest +$300/mo → freedom 1.8 years sooner.”
-- [ ] **Add trust line near hero/result:** privacy + transparent assumptions + city/tax methodology, e.g. “Private by default. No account required. Built with city-level cost and tax assumptions.”
-- [ ] **Update retirement-heavy copy:** replace “retire by” where it weakens the broader freedom/work-optional positioning.
+- [x] **Fix main CTA path:** clicking the primary homepage CTA must immediately open or scroll to the first calculator step. No dead-feeling click, hidden flow, or repeated CTA.
+- [x] **Align live homepage copy:** hero should use “Find your freedom date” / “work can become optional” / “monthly moves that bring freedom closer.”
+- [x] **Rename primary CTA:** prefer “Find my freedom date” over “Calculate my FIRE number.”
+- [x] **Make first calculator step obvious:** show a clear “Step 1” prompt, input, progress, and continue button above the fold after CTA click.
+- [x] **Show the differentiator visually:** above the fold or on the result screen, show example monthly moves like “Invest +$300/mo → freedom 1.8 years sooner.”
+- [x] **Add trust line near hero/result:** privacy + transparent assumptions + city/tax methodology, e.g. “Private by default. No account required. Built with city-level cost and tax assumptions.”
+- [x] **Update retirement-heavy copy:** replace “retire by” where it weakens the broader freedom/work-optional positioning.
 - [ ] **Mobile QA:** complete full no-login calculator flow on mobile viewport and fix layout/CTA issues.
 - [ ] **End-to-end no-login QA:** homepage → calculator → result → adjust inputs → share/save path must work without account creation.
 

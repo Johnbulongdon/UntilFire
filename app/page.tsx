@@ -371,8 +371,8 @@ function ShareModal({
   const [copied, setCopied] = useState(false);
 
   const shareUrl = `https://untilfire.com/share?city=${encodeURIComponent(cityName)}&year=${retireYear}&years=${years}`;
-  const shareText = `Ran my FIRE numbers on untilfire.com -it shows when you could retire based on where you live. Free, no login, takes 60 seconds. Mine came back ${cityName} by ${retireYear}. Worth a look.`;
-  const redditTitle = `Found a free FIRE calculator that factors in your city -here's what it said for ${cityName}`;
+  const shareText = `Found my freedom date on untilfire.com — it shows when work could become optional based on where you live. Free, no login, takes 60 seconds. Mine came back ${cityName} around ${retireYear}. Worth a look.`;
+  const redditTitle = `Found a free tool that estimates your freedom date by city — here's what it showed for ${cityName}`;
 
   function copyToClipboard() {
     navigator.clipboard.writeText(`${shareText}\n${shareUrl}`).then(() => {
@@ -407,12 +407,12 @@ function ShareModal({
           <div className="uf-share-card-brand">
             <Logo variant="dark" size={20} />
           </div>
-          <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>Retire in</div>
+          <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>Freedom date</div>
           <div className="uf-share-card-number" style={{ fontSize: 28 }}>{cityName}</div>
-          <div className="uf-share-card-meta" style={{ fontSize: 22, color: '#62FAE3', fontWeight: 800 }}>by {retireYear}</div>
-          <div className="uf-share-card-city" style={{ color: 'rgba(255,255,255,0.4)' }}>{years} years away · free calculator</div>
+          <div className="uf-share-card-meta" style={{ fontSize: 22, color: '#62FAE3', fontWeight: 800 }}>around {retireYear}</div>
+          <div className="uf-share-card-city" style={{ color: 'rgba(255,255,255,0.4)' }}>{years} years away · work optional timeline</div>
           <div className="uf-share-card-divider" />
-          <div className="uf-share-card-url">What does your city look like? {"->"}untilfire.com</div>
+          <div className="uf-share-card-url">Find your freedom date {"->"} untilfire.com</div>
         </div>
 
         {/* Platform buttons */}
@@ -576,6 +576,8 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const d2 = calcFIRE(savings + 416, city.col, currentAge);
   const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge);
   const d4 = calcFIRE(savings + extraSavings, city.col, currentAge);
+  const monthlyMoveYearsSaved = Math.max(0, result.years - d4.years);
+  const monthlyMoveRetireYear = d4.retireYear;
 
   function fmtDelta(yrs: number): string {
     if (yrs < 1 / 12) return "< 1 month sooner";
@@ -631,9 +633,12 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
             <div className="uf-fire-date-row">
               <div className="uf-fire-date-line" />
               <div className="uf-fire-date">
+                <span style={{ display: "block", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: "#64748B", marginBottom: 4 }}>
+                  Your freedom date
+                </span>
                 {result.age !== undefined
-                  ? `You could retire in ${result.retireYear} at age ${result.age}`
-                  : `You could retire in ${result.retireYear} (${result.years} year${result.years === 1 ? '' : 's'} from now)`}
+                  ? `Work could become optional in ${result.retireYear} at age ${result.age}`
+                  : `Work could become optional in ${result.retireYear} (${result.years} year${result.years === 1 ? '' : 's'} from now)`}
               </div>
               <div className="uf-fire-date-line" />
             </div>
@@ -644,13 +649,47 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                   <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
-                Share my FIRE number
+                Share my freedom date
               </button>
             )}
           </div>
 
           {revealed && (
             <>
+              {/* Monthly move aha */}
+              <div style={{
+                background: "linear-gradient(135deg, #064E3B 0%, #047857 100%)",
+                borderRadius: 18,
+                padding: "18px 18px 16px",
+                marginBottom: 16,
+                color: "white",
+                boxShadow: "0 14px 35px rgba(6,78,59,0.18)",
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "#A7F3D0", marginBottom: 8 }}>
+                  One monthly move
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 850, lineHeight: 1.2, letterSpacing: "-0.02em" }}>
+                  Invest ${extraSavings.toLocaleString()}/mo more and your freedom date moves {monthlyMoveYearsSaved > 0 ? fmtDelta(monthlyMoveYearsSaved) : "closer"}.
+                </div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", marginTop: 8, lineHeight: 1.45 }}>
+                  At that pace, work could become optional around {monthlyMoveRetireYear}. Adjust the slider below to find a monthly move that feels realistic.
+                </div>
+              </div>
+
+              {/* Trust statement */}
+              <div style={{
+                background: "#FFFFFF",
+                border: "1px solid #E2E8F0",
+                borderRadius: 14,
+                padding: "12px 14px",
+                marginBottom: 18,
+                color: "#475569",
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}>
+                <strong style={{ color: "#064E3B" }}>Private first:</strong> no login required for this estimate, and UntilFire does not store your financial details from this no-login calculator. Projection uses your inputs, a 7% real return assumption, and the 25× / 4% FIRE rule.
+              </div>
+
               {/* Cost statement */}
               <div className="uf-cost-card">
                 <div className="uf-cost-label">At your current savings rate, your spending is costing you</div>
