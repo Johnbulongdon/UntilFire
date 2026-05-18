@@ -136,7 +136,7 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
 }) {
   const isCustomJurisdiction = stateKey === "custom";
   const [mode, setMode] = useState<IncomeMode>(isCustomJurisdiction ? "takehome" : "annual");
-  const [rawValue, setRawValue] = useState<string>("90000");
+  const [rawValue, setRawValue] = useState<string>("");
   const [takeHomeRaw, setTakeHomeRaw] = useState<string>("");
 
   const numVal = parseFloat(rawValue) || 0;
@@ -200,6 +200,7 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
               type="number"
               className="uf-input uf-input-mono uf-input-big"
               style={{ paddingLeft: 28 }}
+              placeholder="e.g. 90,000"
               value={rawValue}
               min={0}
               onChange={(e) => setRawValue(e.target.value)}
@@ -286,7 +287,7 @@ function SavingsScreen({ income, onNext, onBack }: {
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={2} />
+      <WizardProgress step={3} />
       <p className="uf-step-label">Step 3 of 5</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">How much are you <span className="uf-accent">saving?</span></h2>
@@ -372,7 +373,7 @@ function PortfolioScreen({ onNext, onBack }: {
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={3} />
+      <WizardProgress step={4} />
       <p className="uf-step-label">Step 4 of 5</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">What&apos;s your <span className="uf-accent">current portfolio?</span></h2>
@@ -825,20 +826,6 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                 </div>
               </div>
 
-              {/* Trust statement */}
-              <div style={{
-                background: "#FFFFFF",
-                border: "1px solid #E2E8F0",
-                borderRadius: 14,
-                padding: "12px 14px",
-                marginBottom: 18,
-                color: "#475569",
-                fontSize: 12,
-                lineHeight: 1.5,
-              }}>
-                <strong style={{ color: "#064E3B" }}>Private first:</strong> no login required for this estimate, and UntilFire does not store your financial details from this no-login calculator. Projection uses your inputs, a 7% real return assumption, and the 25× / 4% FIRE rule.
-              </div>
-
               {/* Cost statement */}
               <div className="uf-cost-card">
                 <div className="uf-cost-label">At your current savings rate, your spending is costing you</div>
@@ -977,6 +964,18 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 </Link>
               <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
                 <button className="uf-btn uf-btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={onAdjust}>Adjust inputs</button>
+              </div>
+              <div style={{
+                background: "#FFFFFF",
+                border: "1px solid #E2E8F0",
+                borderRadius: 14,
+                padding: "12px 14px",
+                marginBottom: 12,
+                color: "#475569",
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}>
+                <strong style={{ color: "#064E3B" }}>Private first:</strong> no login required for this estimate, and UntilFire does not store your financial details from this no-login calculator. Projection uses your inputs, a 7% real return assumption, and the 25× / 4% FIRE rule.
               </div>
               <p className="uf-disclaimer">
                 Estimate only. Not financial advice. Based on 7% real return (historical S&P500 average after inflation).
