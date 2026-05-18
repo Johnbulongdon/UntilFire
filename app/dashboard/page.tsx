@@ -3305,7 +3305,7 @@ export default function Dashboard() {
           .uf-hero-right { flex: none !important; padding: 20px 18px !important; }
           .cf-mobile-bar { bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; }
           .uf-nav-label-full { display: none; }
-          .uf-nav-label-mobile { display: block; }
+          .uf-nav-label-mobile { display: block; white-space: nowrap; overflow: hidden; max-width: 100%; }
           .uf-kpi-grid { display: flex !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory; grid-template-columns: none !important; }
           .uf-kpi-grid::-webkit-scrollbar { display: none; }
           .uf-kpi-grid > * { flex-shrink: 0 !important; min-width: 130px !important; scroll-snap-align: start; }
