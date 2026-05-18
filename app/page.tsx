@@ -804,59 +804,6 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 }
 
 // -----------------------------------------------------------------------------
-// WAITLIST
-// -----------------------------------------------------------------------------
-
-function WaitlistSection() {
-  const [email, setEmail]   = useState("");
-  const [status, setStatus] = useState<"idle"|"loading"|"done"|"error">("idle");
-
-  async function handleSubmit() {
-    if (!email) return;
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      setStatus(res.ok ? "done" : "error");
-    } catch { setStatus("error"); }
-  }
-
-  return (
-    <div className="uf-waitlist">
-      <div className="uf-eyebrow" style={{ textAlign: "center", marginBottom: 16 }}>🔥 Coming Soon</div>
-      <h2 className="uf-h2" style={{ textAlign: "center", marginBottom: 12 }}>Get the AI roadmap</h2>
-      <p className="uf-body" style={{ textAlign: "center", marginBottom: 32 }}>
-        Join the waitlist for the AI-powered FIRE roadmap: a personalized monthly plan to retire faster. Launching at $9/mo.
-      </p>
-      {status === "done" ? (
-        <div className="uf-waitlist-success">🎉 You&apos;re on the list! We&apos;ll email you when we launch.</div>
-      ) : (
-        <div className="uf-waitlist-form">
-          <input
-            type="email" placeholder="your@email.com" value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSubmit()}
-            className="uf-input"
-          />
-          <button
-            className="uf-btn uf-btn-primary"
-            disabled={status === "loading"}
-            onClick={handleSubmit}
-            style={{ whiteSpace: "nowrap" }}
-          >
-            {status === "loading" ? "Joining..." : "Join waitlist"}
-          </button>
-        </div>
-      )}
-      {status === "error" && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 12 }}>Something went wrong. Try again.</p>}
-      <p className="uf-hint" style={{ textAlign: "center", marginTop: 16 }}>No spam. Unsubscribe anytime.</p>
-    </div>
-  );
-}
-
 // -----------------------------------------------------------------------------
 // ROOT
 // -----------------------------------------------------------------------------
@@ -1230,10 +1177,7 @@ export default function Home() {
           .uf-hero-strip { padding: 12px 16px; }
           .uf-stat-row { grid-template-columns: 1fr 1fr; }
           .uf-delta-grid { grid-template-columns: 1fr; }
-          .uf-waitlist-form { flex-direction: column; }
-          .uf-waitlist-form input,
-          .uf-waitlist-form button { width: 100%; box-sizing: border-box; }
-          .uf-wl-inline-form { flex-direction: column; }
+.uf-wl-inline-form { flex-direction: column; }
           .uf-btn-lg { padding: 16px 24px; }
           .uf-nav-row { gap: 8px; }
           .uf-fire-date { font-size: 13px; }
@@ -1320,12 +1264,7 @@ export default function Home() {
         .uf-wl-inline-form { display: flex; gap: 8px; }
         .uf-wl-done { display: flex; align-items: center; gap: 12px; background: #ECFDF5; border-color: #D1FAE5; }
 
-        /* -- WAITLIST -- */
-        .uf-waitlist { max-width: 520px; margin: 0 auto; padding: 48px 24px 64px; position: relative; z-index: 1; }
-        .uf-waitlist-success { background: #ECFDF5; border: 1px solid #D1FAE5; border-radius: 14px; padding: 20px 24px; color: var(--accent); font-weight: 700; font-size: 16px; text-align: center; }
-        .uf-waitlist-form { display: flex; gap: 10px; }
-
-        /* -- SHARE TRIGGER -- */
+/* -- SHARE TRIGGER -- */
         .uf-share-trigger { display: inline-flex; align-items: center; gap: 8px; margin: 18px auto 0; padding: 10px 22px; border-radius: 8px; background: #ECFDF5; border: 1px solid #D1FAE5; color: var(--accent); font-family: var(--font-body); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
         .uf-share-trigger:hover { background: #D1FAE5; border-color: #047857; transform: translateY(-1px); }
 
@@ -1445,8 +1384,6 @@ export default function Home() {
           />
         )}
 
-        <div className="uf-section-sep" aria-hidden="true" />
-        <WaitlistSection />
       </div>
     </>
   );
