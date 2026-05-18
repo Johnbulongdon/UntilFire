@@ -4,6 +4,10 @@ import Script from 'next/script'
 import { AuthProvider } from '../lib/auth-context'
 import { Toaster } from 'react-hot-toast'
 import { Analytics } from '@vercel/analytics/react'
+import {
+  UNTILFIRE_ANCHOR_COPY,
+  UNTILFIRE_ANCHOR_DESCRIPTION,
+} from '@/lib/positioning'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -11,25 +15,24 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'UntilFire | Find Your FIRE Number',
-  description:
-    'Calculate when you can retire based on your city, income, and spending. Get your FIRE number and retirement timeline in about 60 seconds for free.',
+  title: 'UntilFire | Know When You Can Stop Working',
+  description: UNTILFIRE_ANCHOR_COPY,
   keywords:
-    'FIRE calculator, financial independence, retire early, FIRE number, savings rate calculator, how much to retire, 4% rule calculator',
+    'FIRE planner, financial independence, retire early, FIRE number, retirement timeline, savings rate calculator, how much to retire, 4% rule calculator',
   alternates: {
     canonical: 'https://untilfire.com',
   },
   openGraph: {
-    title: 'UntilFire | Find Your FIRE Number',
-    description: 'Your city. Your income. Your exact retirement date. Takes 60 seconds.',
+    title: 'UntilFire | Know When You Can Stop Working',
+    description: UNTILFIRE_ANCHOR_DESCRIPTION,
     url: 'https://untilfire.com',
     siteName: 'UntilFire',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'UntilFire | Find Your FIRE Number',
-    description: 'Your city. Your income. Your exact retirement date. Takes 60 seconds.',
+    title: 'UntilFire | Know When You Can Stop Working',
+    description: UNTILFIRE_ANCHOR_DESCRIPTION,
   },
   metadataBase: new URL('https://untilfire.com'),
 }
@@ -65,7 +68,7 @@ export default function RootLayout({
               '@type': 'WebApplication',
               name: 'UntilFire',
               url: 'https://untilfire.com',
-              description: 'Free FIRE calculator for finding your financial independence number based on your city, income, and spending.',
+              description: UNTILFIRE_ANCHOR_COPY,
               applicationCategory: 'FinanceApplication',
               operatingSystem: 'Any',
               offers: {
