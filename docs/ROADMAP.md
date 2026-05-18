@@ -246,15 +246,17 @@ UntilFire shows when work can become optional — your FIRE number, your timelin
 
 ---
 
-## Priority Decisions Needed
+## Priority Decisions
 
-John should choose the next product bet before implementation continues:
+John has chosen the next product direction:
 
-1. **Launch path:** Product Hunt first, or private/friends beta first?
-2. **Core aha:** Is the main aha “freedom date” only, or “freedom date + one monthly move”?
-3. **Plaid:** Should bank connection be visible at Product Hunt launch, or kept as a logged-in dashboard feature after trust is built?
-4. **FIRE Type:** Is the quiz a primary acquisition hook, or a secondary fun/share loop?
-5. **Monetisation:** Should Pro be launched with Stripe now, or should paid conversion wait until the monthly moves adviser is stronger?
+1. **Launch path:** Do private/friends beta and soft public launch on Reddit/X before Product Hunt.
+2. **Readiness gate:** Use beta/soft-launch quotas before PH: roughly 50 real visitors, 20 completed freedom-date results, 5 feedback replies, and zero critical flow issues. Stronger gate: 100 visitors, 50 completed results, and 10 people willing to support/comment.
+3. **Core aha:** Lead with “freedom date + one monthly move.” The result should not stop at a number/date.
+4. **Plaid:** Keep bank connection as a logged-in dashboard feature after trust is built; do not make it central to Product Hunt.
+5. **FIRE Type:** Keep quiz as a secondary social/share loop, not the main launch promise.
+6. **Monetisation:** Keep Stripe/Pro infrastructure ready, but soft-hide paid conversion until the monthly moves adviser is stronger.
+7. **Next sprint:** Product Hunt Funnel Sprint — fix CTA, update hero copy, show one monthly move, add trust line, QA mobile/no-login flow, update share copy, and prepare launch assets.
 
 ---
 
