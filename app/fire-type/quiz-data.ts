@@ -25,7 +25,7 @@ export interface QuizQuestion {
 export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "pa1",
-    prompt: "Your ideal money plan feels like…",
+    prompt: "When managing money, you feel most in control when…",
     leftLabel: "A clear roadmap with milestones",
     rightLabel: "A flexible direction I adapt as I go",
     axis: "PA",
@@ -70,7 +70,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   },
   {
     id: "rg2",
-    prompt: "Your sharpest financial instinct is…",
+    prompt: "When you review your finances, your first move is usually to…",
     leftLabel: "Spotting inefficiency and trimming it",
     rightLabel: "Spotting potential and capturing it",
     axis: "RG",
@@ -88,7 +88,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   },
   {
     id: "bf2",
-    prompt: "Financial independence matters most because…",
+    prompt: "The real point of financial independence, for you, is…",
     leftLabel: "It lets me work only on what I choose",
     rightLabel: "It lets me stop organizing life around work",
     axis: "BF",
