@@ -27,7 +27,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const response = await plaid.linkTokenCreate({
       user: { client_user_id: user.id },
       client_name: "UntilFire",
-      products: [Products.Transactions],
+      products: [Products.Transactions, Products.Investments],
       country_codes: [CountryCode.Us],
       language: "en",
     });

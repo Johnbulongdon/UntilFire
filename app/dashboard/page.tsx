@@ -40,6 +40,21 @@ type PlaidAccount = {
   updated_at: string;
   apy: number | null;
 };
+type PlaidHolding = {
+  account_id: string;
+  security_id: string;
+  quantity: number;
+  institution_price: number | null;
+  institution_value: number | null;
+  cost_basis: number | null;
+  iso_currency_code: string | null;
+};
+type PlaidSecurity = {
+  security_id: string;
+  name: string | null;
+  ticker_symbol: string | null;
+  type: string | null;
+};
 type TabKey =
   | "overview"
   | "cashflow"
@@ -1563,7 +1578,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, monthlyExpenses = 0 }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, monthlyExpenses = 0, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -1575,6 +1590,10 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   plaidAccounts?: PlaidAccount[];
   onRefreshAccounts?: () => void;
   monthlyExpenses?: number;
+  plaidHoldings?: PlaidHolding[];
+  plaidSecurities?: Record<string, PlaidSecurity>;
+  holdingsNeedsReconnect?: string[];
+  holdingsLoading?: boolean;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -1856,6 +1875,49 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
         </div>
 
       </div>
+
+      {plaidAccounts.some(a => a.type === "investment") && (
+        <div className="uf-card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <SectionLabel icon="📊" text="Holdings" color="#059669" />
+            {holdingsLoading && <span style={{ fontSize: 11, color: "#94A3B8" }}>Refreshing…</span>}
+          </div>
+          {holdingsNeedsReconnect.length > 0 && (
+            <div style={{ background: "#FEF9C3", border: "1px solid #FDE047", borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "#854D0E" }}>
+              ⚠️ {holdingsNeedsReconnect.join(", ")}: Disconnect and reconnect to enable holdings data.
+            </div>
+          )}
+          {plaidHoldings.length === 0 && !holdingsLoading ? (
+            <div style={{ fontSize: 13, color: "#94A3B8", textAlign: "center", padding: "20px 0" }}>
+              No holdings data yet.{holdingsNeedsReconnect.length > 0 ? " Reconnect your account above." : ""}
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 80px 90px 100px", gap: 8, fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" }}>
+                <span>Ticker</span><span>Security</span><span style={{ textAlign: "right" }}>Qty</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Value</span>
+              </div>
+              {[...plaidHoldings]
+                .sort((a, b) => (b.institution_value ?? 0) - (a.institution_value ?? 0))
+                .map((h, i) => {
+                  const sec = plaidSecurities[h.security_id];
+                  return (
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "80px 1fr 80px 90px 100px", gap: 8, fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
+                      <span style={{ fontWeight: 700, color: "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
+                      <span style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
+                      <span style={{ textAlign: "right", color: "#64748B" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
+                      <span style={{ textAlign: "right", color: "#64748B" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
+                      <span style={{ textAlign: "right", fontWeight: 600, color: "#0F172A" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
+                    </div>
+                  );
+                })}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "2px solid #E2E8F0", fontSize: 14, fontWeight: 700 }}>
+                <span style={{ color: "#64748B" }}>Total portfolio value</span>
+                <span style={{ color: "#059669" }}>${Math.round(plaidHoldings.reduce((s, h) => s + (h.institution_value ?? 0), 0)).toLocaleString()}</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {total > 0 && (
         <div className="uf-card" style={{ background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.2)" }}>
@@ -2889,6 +2951,10 @@ export default function Dashboard() {
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [subscription, setSubscription] = useState<{ plan: "free" | "pro" } | null>(null);
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
+  const [plaidHoldings, setPlaidHoldings] = useState<PlaidHolding[]>([]);
+  const [plaidSecurities, setPlaidSecurities] = useState<Record<string, PlaidSecurity>>({});
+  const [holdingsNeedsReconnect, setHoldingsNeedsReconnect] = useState<string[]>([]);
+  const [holdingsLoading, setHoldingsLoading] = useState(false);
 
   // Read initial tab from URL query string (e.g. ?tab=cashflow)
   useEffect(() => {
@@ -2942,6 +3008,9 @@ export default function Dashboard() {
         plaidFetchedAt.current = now;
         refreshPlaidAccounts();
       }
+    }
+    if (tab === "assets") {
+      refreshPlaidHoldings();
     }
   }, [tab]);
 
@@ -3256,6 +3325,24 @@ export default function Dashboard() {
     if (d?.accounts) setPlaidAccounts(d.accounts);
   }
 
+  async function refreshPlaidHoldings() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    setHoldingsLoading(true);
+    try {
+      const r = await fetch("/api/plaid/holdings", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }).catch(() => null);
+      if (!r?.ok) return;
+      const d = await r.json().catch(() => null);
+      if (d?.holdings) setPlaidHoldings(d.holdings);
+      if (d?.securities) setPlaidSecurities(d.securities);
+      if (d?.needs_reconnect) setHoldingsNeedsReconnect(d.needs_reconnect);
+    } finally {
+      setHoldingsLoading(false);
+    }
+  }
+
   return (
     <>
       <style>{`
@@ -3492,6 +3579,10 @@ export default function Dashboard() {
                   plaidAccounts={plaidAccounts}
                   onRefreshAccounts={refreshPlaidAccounts}
                   monthlyExpenses={monthlyExpenses}
+                  plaidHoldings={plaidHoldings}
+                  plaidSecurities={plaidSecurities}
+                  holdingsNeedsReconnect={holdingsNeedsReconnect}
+                  holdingsLoading={holdingsLoading}
                 />
               </div>
             )}
