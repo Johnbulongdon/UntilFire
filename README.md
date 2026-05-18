@@ -1,8 +1,8 @@
 # UntilFire — Freedom Acceleration Engine
 
-> **"Guessing is expensive."**
+**Find your freedom date.**
 
-UntilFire is not a budgeting app. It is a **Freedom Acceleration Engine** — a tool that makes the financial cost of every decision visible, quantified, and personal.
+UntilFire shows when work can become optional — your FIRE number, your timeline, and the monthly moves that can bring freedom closer. Free, no login.
 
 Live at **[untilfire.com](https://untilfire.com)**.
 

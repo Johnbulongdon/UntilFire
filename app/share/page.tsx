@@ -13,17 +13,17 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const ogUrl = `/api/og?city=${encodeURIComponent(safeCity)}&year=${encodeURIComponent(year)}&years=${encodeURIComponent(years)}`
 
   return {
-    title: `FIRE timeline for ${safeCity} — retire by ${year}`,
-    description: `${years} years away on a typical income. Free calculator — find out when you could retire in your city.`,
+    title: `Freedom date for ${safeCity} — work optional around ${year}`,
+    description: `${years} years away on a typical income. Free, no-login calculator — find out when work could become optional in your city.`,
     openGraph: {
-      title: `FIRE timeline for ${safeCity} — retire by ${year}`,
-      description: `${years} years away on a typical income. Free calculator — find out when you could retire in your city.`,
-      images: [{ url: ogUrl, width: 1200, height: 630, alt: `Retire in ${safeCity} by ${year}` }],
+      title: `Freedom date for ${safeCity} — work optional around ${year}`,
+      description: `${years} years away on a typical income. Free, no-login calculator — find out when work could become optional in your city.`,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: `Freedom date for ${safeCity} around ${year}` }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `FIRE timeline for ${safeCity} — retire by ${year}`,
-      description: `${years} years away on a typical income. Free calculator — find out when you could retire in your city.`,
+      title: `Freedom date for ${safeCity} — work optional around ${year}`,
+      description: `${years} years away on a typical income. Free, no-login calculator — find out when work could become optional in your city.`,
       images: [ogUrl],
     },
   }
@@ -64,17 +64,17 @@ export default async function SharePage({ searchParams }: Props) {
           marginBottom: 32,
         }}>
           <p style={{ fontSize: 13, color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: "'Inter', sans-serif" }}>
-            Retire in
+            Freedom date
           </p>
           <h1 style={{ fontSize: 40, fontWeight: 800, margin: '0 0 4px', color: '#064E3B', letterSpacing: '-0.02em' }}>
             {safeCity}
           </h1>
           <p style={{ fontSize: 56, fontWeight: 800, color: '#059669', margin: '0 0 10px', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-            by {year}
+            around {year}
           </p>
           {yearsNum > 0 && (
             <p style={{ fontSize: 16, color: '#64748B', margin: '0 0 0', fontFamily: "'Inter', sans-serif" }}>
-              {yearsNum} years away · based on a typical income
+              {yearsNum} years away · work optional timeline
             </p>
           )}
         </div>
@@ -98,7 +98,7 @@ export default async function SharePage({ searchParams }: Props) {
             letterSpacing: '-0.01em',
           }}
         >
-          Calculate yours — free →
+          Find your freedom date — free →
         </Link>
         <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 14, fontFamily: "'Inter', sans-serif" }}>
           No login required. Takes 60 seconds.

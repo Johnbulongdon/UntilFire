@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CITIES } from "@/lib/fire-data";
+import {
+  UNTILFIRE_ANCHOR_DESCRIPTION,
+  UNTILFIRE_ANCHOR_HEADLINE,
+} from "@/lib/positioning";
 
 const PREVIEW_BARS = [28, 38, 33, 48, 42, 62, 57, 72, 66, 80, 76, 95];
 const HERO_STATS = [
@@ -24,10 +28,10 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
       <div className="uf-hero-inner">
         <div className="uf-hero-content">
           <div className="uf-badge"><span className="uf-badge-dot" /> Free · No login · 60 seconds</div>
-          <h1 className="uf-h1"><span className="uf-accent-flame">Guessing is expensive.</span><br />Know your FIRE date — and the moves that get you there sooner.</h1>
-          <p className="uf-body">UntilFire calculates your path to financial independence, adjusted for your city, income, and taxes — then shows exactly how every financial decision accelerates or delays your freedom date.</p>
+          <h1 className="uf-h1">{UNTILFIRE_ANCHOR_HEADLINE}</h1>
+          <p className="uf-body">{UNTILFIRE_ANCHOR_DESCRIPTION}</p>
           <div className="uf-hero-ctas">
-            <button className="uf-btn uf-btn-teal uf-btn-lg uf-btn-power" onClick={onStart}>Calculate my FIRE number {"->"}</button>
+            <button className="uf-btn uf-btn-teal uf-btn-lg uf-btn-power" onClick={onStart}>See when I can FIRE {"->"}</button>
             <button className="uf-btn uf-btn-ghost-dark" onClick={onSignIn}>Log in {"->"}</button>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 16 }}>
