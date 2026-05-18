@@ -2096,37 +2096,37 @@ type Holding = {
   custom?: boolean;
 };
 
-const ETF_DATA: Record<string, { name: string; cagr: number; category: string }> = {
-  VOO:  { name: "Vanguard S&P 500 ETF",            cagr: 0.107, category: "US Equity" },
-  VTI:  { name: "Vanguard Total Stock Market ETF",  cagr: 0.107, category: "US Equity" },
-  SPY:  { name: "SPDR S&P 500 ETF",                cagr: 0.107, category: "US Equity" },
-  IVV:  { name: "iShares Core S&P 500 ETF",        cagr: 0.107, category: "US Equity" },
-  SCHB: { name: "Schwab US Broad Market ETF",       cagr: 0.107, category: "US Equity" },
-  QQQ:  { name: "Invesco Nasdaq-100 ETF",           cagr: 0.183, category: "US Growth" },
-  ARKK: { name: "ARK Innovation ETF",               cagr: 0.035, category: "US Growth" },
-  VT:   { name: "Vanguard Total World Stock ETF",   cagr: 0.092, category: "Global Equity" },
-  VXUS: { name: "Vanguard Total Intl Stock ETF",    cagr: 0.059, category: "Intl Equity" },
-  VEA:  { name: "Vanguard Developed Markets ETF",   cagr: 0.071, category: "Intl Equity" },
-  VWO:  { name: "Vanguard Emerging Markets ETF",    cagr: 0.037, category: "Emerging Markets" },
-  EFA:  { name: "iShares MSCI EAFE ETF",            cagr: 0.076, category: "Intl Equity" },
-  BND:  { name: "Vanguard Total Bond Market ETF",   cagr: 0.017, category: "US Bonds" },
-  AGG:  { name: "iShares Core US Aggregate Bond",   cagr: 0.015, category: "US Bonds" },
-  BNDX: { name: "Vanguard Total Intl Bond ETF",     cagr: 0.008, category: "Intl Bonds" },
-  SCHD: { name: "Schwab US Dividend Equity ETF",    cagr: 0.112, category: "US Dividend" },
-  VIG:  { name: "Vanguard Dividend Appreciation",   cagr: 0.111, category: "US Dividend" },
-  VYM:  { name: "Vanguard High Dividend Yield ETF", cagr: 0.095, category: "US Dividend" },
-  VNQ:  { name: "Vanguard Real Estate ETF",         cagr: 0.087, category: "Real Estate" },
-  GLD:  { name: "SPDR Gold Trust",                  cagr: 0.085, category: "Commodities" },
-  IWM:  { name: "iShares Russell 2000 ETF",         cagr: 0.090, category: "US Small Cap" },
-  AVUV: { name: "Avantis US Small Value ETF",       cagr: 0.150, category: "US Small Value" },
-  XLK:  { name: "Technology Select Sector SPDR",    cagr: 0.204, category: "Sector – Tech" },
-  SOXX: { name: "iShares Semiconductor ETF",        cagr: 0.220, category: "Sector – Semi" },
-  AAPL: { name: "Apple Inc.",                        cagr: 0.220, category: "Individual Stock" },
-  MSFT: { name: "Microsoft Corp.",                   cagr: 0.220, category: "Individual Stock" },
-  NVDA: { name: "NVIDIA Corp.",                      cagr: 0.500, category: "Individual Stock" },
-  GOOGL:{ name: "Alphabet Inc.",                     cagr: 0.150, category: "Individual Stock" },
-  AMZN: { name: "Amazon.com Inc.",                   cagr: 0.160, category: "Individual Stock" },
-  TSLA: { name: "Tesla Inc.",                        cagr: 0.270, category: "Individual Stock" },
+const ETF_DATA: Record<string, { name: string; cagr: number; category: string; stddev: number; maxDD: number }> = {
+  VOO:  { name: "Vanguard S&P 500 ETF",            cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  VTI:  { name: "Vanguard Total Stock Market ETF",  cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  SPY:  { name: "SPDR S&P 500 ETF",                cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  IVV:  { name: "iShares Core S&P 500 ETF",        cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  SCHB: { name: "Schwab US Broad Market ETF",       cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
+  QQQ:  { name: "Invesco Nasdaq-100 ETF",           cagr: 0.183, category: "US Growth",         stddev: 0.22, maxDD: 0.83 },
+  ARKK: { name: "ARK Innovation ETF",               cagr: 0.035, category: "US Growth",         stddev: 0.55, maxDD: 0.75 },
+  VT:   { name: "Vanguard Total World Stock ETF",   cagr: 0.092, category: "Global Equity",     stddev: 0.16, maxDD: 0.55 },
+  VXUS: { name: "Vanguard Total Intl Stock ETF",    cagr: 0.059, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
+  VEA:  { name: "Vanguard Developed Markets ETF",   cagr: 0.071, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
+  VWO:  { name: "Vanguard Emerging Markets ETF",    cagr: 0.037, category: "Emerging Markets",  stddev: 0.22, maxDD: 0.65 },
+  EFA:  { name: "iShares MSCI EAFE ETF",            cagr: 0.076, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
+  BND:  { name: "Vanguard Total Bond Market ETF",   cagr: 0.017, category: "US Bonds",          stddev: 0.05, maxDD: 0.20 },
+  AGG:  { name: "iShares Core US Aggregate Bond",   cagr: 0.015, category: "US Bonds",          stddev: 0.05, maxDD: 0.20 },
+  BNDX: { name: "Vanguard Total Intl Bond ETF",     cagr: 0.008, category: "Intl Bonds",        stddev: 0.05, maxDD: 0.22 },
+  SCHD: { name: "Schwab US Dividend Equity ETF",    cagr: 0.112, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
+  VIG:  { name: "Vanguard Dividend Appreciation",   cagr: 0.111, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
+  VYM:  { name: "Vanguard High Dividend Yield ETF", cagr: 0.095, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
+  VNQ:  { name: "Vanguard Real Estate ETF",         cagr: 0.087, category: "Real Estate",       stddev: 0.20, maxDD: 0.70 },
+  GLD:  { name: "SPDR Gold Trust",                  cagr: 0.085, category: "Commodities",       stddev: 0.16, maxDD: 0.42 },
+  IWM:  { name: "iShares Russell 2000 ETF",         cagr: 0.090, category: "US Small Cap",      stddev: 0.22, maxDD: 0.59 },
+  AVUV: { name: "Avantis US Small Value ETF",       cagr: 0.150, category: "US Small Value",    stddev: 0.22, maxDD: 0.55 },
+  XLK:  { name: "Technology Select Sector SPDR",    cagr: 0.204, category: "Sector – Tech",     stddev: 0.22, maxDD: 0.57 },
+  SOXX: { name: "iShares Semiconductor ETF",        cagr: 0.220, category: "Sector – Semi",     stddev: 0.30, maxDD: 0.65 },
+  AAPL: { name: "Apple Inc.",                        cagr: 0.220, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
+  MSFT: { name: "Microsoft Corp.",                   cagr: 0.220, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
+  NVDA: { name: "NVIDIA Corp.",                      cagr: 0.500, category: "Individual Stock", stddev: 0.60, maxDD: 0.66 },
+  GOOGL:{ name: "Alphabet Inc.",                     cagr: 0.150, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
+  AMZN: { name: "Amazon.com Inc.",                   cagr: 0.160, category: "Individual Stock", stddev: 0.30, maxDD: 0.56 },
+  TSLA: { name: "Tesla Inc.",                        cagr: 0.270, category: "Individual Stock", stddev: 0.65, maxDD: 0.73 },
 };
 
 const HOLDING_PALETTE = ["#059669", "#22d3a5", "#818cf8", "#f97316", "#fbbf24", "#ef4444", "#a78bfa", "#06b6d4"];
@@ -2180,6 +2180,39 @@ function calcDCAProjection({
   return rows;
 }
 
+function calcPortfolioRisk(holdings: Holding[]): { volatility: number; maxDrawdown: number; sharpe: number; assetClasses: string[] } {
+  const RISK_FREE = 0.04;
+  let blendedReturn = 0;
+  let weightedVol = 0;
+  let weightedDD = 0;
+  const classes = new Set<string>();
+  for (const h of holdings) {
+    const w = h.weight / 100;
+    const etf = ETF_DATA[h.ticker];
+    blendedReturn += w * h.cagr;
+    weightedVol += w * (etf?.stddev ?? 0.18);
+    weightedDD += w * (etf?.maxDD ?? 0.50);
+    classes.add(etf?.category ?? "Other");
+  }
+  const sharpe = weightedVol > 0 ? (blendedReturn - RISK_FREE) / weightedVol : 0;
+  return { volatility: weightedVol, maxDrawdown: weightedDD, sharpe, assetClasses: [...classes] };
+}
+
+function diversificationLabel(classes: string[]): { label: string; color: string } {
+  const n = classes.length;
+  if (n >= 4) return { label: "Well Diversified", color: "#059669" };
+  if (n === 3) return { label: "Diversified", color: "#0ea5e9" };
+  if (n === 2) return { label: "Moderate", color: "#f59e0b" };
+  return { label: "Concentrated", color: "#ef4444" };
+}
+
+function riskProfileLabel(volatility: number): { label: string; color: string } {
+  if (volatility < 0.10) return { label: "Conservative", color: "#059669" };
+  if (volatility < 0.16) return { label: "Moderate", color: "#0ea5e9" };
+  if (volatility < 0.22) return { label: "Aggressive", color: "#f59e0b" };
+  return { label: "High Risk", color: "#ef4444" };
+}
+
 function InvestSimTab({ onBack }: { onBack: () => void }) {
   const [initialAmt, setInitialAmt] = useState(10000);
   const [dcaAmt, setDcaAmt] = useState(500);
@@ -2217,6 +2250,11 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
   }
 
   const blendedReturn = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
+
+  const scenarioRisks = useMemo(
+    () => scenarios.map(s => ({ id: s.id, ...calcPortfolioRisk(s.holdings) })),
+    [scenarios]
+  );
 
   const suggestions = tickerInput.length >= 1
     ? Object.entries(ETF_DATA)
@@ -2432,7 +2470,12 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                   </span>
                   <span style={{ fontSize: 12, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
                   {!h.custom && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#059669", flexShrink: 0 }}>{(h.cagr * 100).toFixed(1)}%</span>
+                    <>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#059669", flexShrink: 0 }}>{(h.cagr * 100).toFixed(1)}%</span>
+                      {ETF_DATA[h.ticker] && (
+                        <span style={{ fontSize: 10, color: "#94A3B8", flexShrink: 0 }}>±{(ETF_DATA[h.ticker].stddev * 100).toFixed(0)}%</span>
+                      )}
+                    </>
                   )}
                   <button onClick={() => removeHolding(h.ticker)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
                 </div>
@@ -2539,6 +2582,122 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               );
             })}
           </div>
+          {/* Risk & Return Comparison */}
+          <div className="uf-card" style={{ padding: "16px 20px" }}>
+            <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Risk &amp; Return Comparison</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 16 }}>
+              Volatility estimated from historical data (assumes full correlation between holdings — conservative upper bound).
+            </div>
+
+            {/* Header row */}
+            <div style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, marginBottom: 8 }}>
+              <div />
+              {scenarios.map(s => (
+                <div key={s.id} style={{ fontSize: 12, fontWeight: 700, color: s.color, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Scenario {s.id}
+                </div>
+              ))}
+            </div>
+
+            {/* Metric rows */}
+            {([
+              {
+                label: "Annual Return",
+                values: scenarios.map(s => `${(s.holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0) * 100).toFixed(1)}%`),
+                bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) > parseFloat(b) ? a : b)),
+              },
+              {
+                label: "Volatility (est.)",
+                values: scenarioRisks.map(r => `${(r.volatility * 100).toFixed(1)}%`),
+                bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) < parseFloat(b) ? a : b)),
+              },
+              {
+                label: "Sharpe Ratio",
+                values: scenarioRisks.map(r => r.sharpe.toFixed(2)),
+                bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) > parseFloat(b) ? a : b)),
+              },
+              {
+                label: "Max Drawdown (est.)",
+                values: scenarioRisks.map(r => `-${(r.maxDrawdown * 100).toFixed(0)}%`),
+                bestFn: (vals: string[]) => {
+                  const nums = vals.map(v => Math.abs(parseFloat(v)));
+                  return nums.indexOf(Math.min(...nums));
+                },
+              },
+              {
+                label: "Asset Classes",
+                values: scenarioRisks.map(r => {
+                  const d = diversificationLabel(r.assetClasses);
+                  return `${r.assetClasses.length} · ${d.label}`;
+                }),
+                bestFn: (vals: string[]) => {
+                  const counts = vals.map(v => parseInt(v));
+                  return counts.indexOf(Math.max(...counts));
+                },
+              },
+            ] as { label: string; values: string[]; bestFn: (v: string[]) => number }[]).map(({ label, values, bestFn }) => {
+              const bestIdx = bestFn(values);
+              return (
+                <div key={label} style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, padding: "8px 0", borderBottom: "1px solid #F1F5F9" }}>
+                  <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, display: "flex", alignItems: "center" }}>{label}</div>
+                  {values.map((v, i) => (
+                    <div key={i} style={{
+                      fontSize: 13, fontWeight: bestIdx === i ? 800 : 600,
+                      color: bestIdx === i ? scenarios[i].color : "#475569",
+                      textAlign: "center",
+                      background: bestIdx === i ? scenarios[i].color + "12" : "transparent",
+                      borderRadius: 6, padding: "3px 6px",
+                    }}>
+                      {v}{bestIdx === i && <span style={{ marginLeft: 4, fontSize: 10 }}>★</span>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+
+            {/* Risk profile chips */}
+            <div style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, marginTop: 12 }}>
+              <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, display: "flex", alignItems: "center" }}>Risk Profile</div>
+              {scenarioRisks.map(r => {
+                const rp = riskProfileLabel(r.volatility);
+                return (
+                  <div key={r.id} style={{ textAlign: "center" }}>
+                    <span style={{ background: rp.color + "18", color: rp.color, borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                      {rp.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Recommendation summary */}
+            {(() => {
+              const bestSharpeIdx = scenarioRisks.reduce((bi, r, i) => r.sharpe > scenarioRisks[bi].sharpe ? i : bi, 0);
+              const lowestVolIdx = scenarioRisks.reduce((bi, r, i) => r.volatility < scenarioRisks[bi].volatility ? i : bi, 0);
+              const bestRetIdx = scenarios.reduce((bi, s, i) => {
+                const r = s.holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0);
+                const rb = scenarios[bi].holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0);
+                return r > rb ? i : bi;
+              }, 0);
+              return (
+                <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ fontSize: 12, color: "#475569" }}>
+                    <span style={{ color: scenarios[bestSharpeIdx].color, fontWeight: 700 }}>🏆 Best risk-adjusted return:</span>{" "}
+                    Scenario {scenarios[bestSharpeIdx].id} (Sharpe {scenarioRisks[bestSharpeIdx].sharpe.toFixed(2)}) — highest return per unit of risk
+                  </div>
+                  <div style={{ fontSize: 12, color: "#475569" }}>
+                    <span style={{ color: scenarios[lowestVolIdx].color, fontWeight: 700 }}>🛡️ Lowest volatility:</span>{" "}
+                    Scenario {scenarios[lowestVolIdx].id} ({(scenarioRisks[lowestVolIdx].volatility * 100).toFixed(1)}% est. annual vol)
+                  </div>
+                  <div style={{ fontSize: 12, color: "#475569" }}>
+                    <span style={{ color: scenarios[bestRetIdx].color, fontWeight: 700 }}>📈 Highest raw return:</span>{" "}
+                    Scenario {scenarios[bestRetIdx].id} ({(scenarios[bestRetIdx].holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0) * 100).toFixed(1)}%/yr) — highest return but with more risk
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
           <div className="uf-card" style={{ textAlign: "center", padding: "14px 12px" }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{fmtK(last.contributions)}</div>
             <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Total Contributed</div>
