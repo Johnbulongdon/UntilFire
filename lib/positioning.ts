@@ -1,8 +1,8 @@
 export const UNTILFIRE_ANCHOR_HEADLINE =
-  "Most people don’t know when they can stop working.";
+  "Find out the exact age you can stop working.";
 
 export const UNTILFIRE_ANCHOR_DESCRIPTION =
-  "UntilFire shows your FIRE number, your retirement timeline, and the monthly moves that can bring that date closer — in 60 seconds.";
+  "Enter your income, city, and savings. In 60 seconds, get your FIRE number, your exact retirement age, and the monthly moves that get you there faster.";
 
 export const UNTILFIRE_ANCHOR_PROOF = "Free, no login.";
 
