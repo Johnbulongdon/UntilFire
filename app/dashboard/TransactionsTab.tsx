@@ -283,7 +283,9 @@ function QuickAddForm({
       overflow: "hidden",
       position: "sticky",
       top: 24,
-      alignSelf: "start",
+      height: "calc(100vh - 48px)",
+      display: "flex",
+      flexDirection: "column",
       boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
     }}>
       {/* Header */}
@@ -301,7 +303,7 @@ function QuickAddForm({
       </div>
 
       {/* Body */}
-      <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", maxHeight: "calc(100vh - 220px)" }}>
+      <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1, minHeight: 0 }}>
         {/* Type toggle */}
         <div style={{ display: "inline-flex", background: "#F1F5F9", borderRadius: 999, padding: 3, alignSelf: "flex-start" }}>
           {(["expense", "income"] as const).map((t) => (
@@ -726,7 +728,7 @@ function TransactionList({
   }, [filtered]);
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", height: "100%" }}>
       {/* List header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #E2E8F0", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
@@ -768,7 +770,7 @@ function TransactionList({
       </div>
 
       {/* Scrollable list */}
-      <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 340px)", minHeight: 200 }}>
+      <div style={{ overflowY: "auto", flex: 1, minHeight: 200 }}>
         {groups.length === 0 ? (
           <div style={{ padding: "60px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "#94A3B8", textAlign: "center" }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1358,7 +1360,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         displayCurrency={displayCurrency}
       />
 
-      <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "start" }}>
+      <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "stretch" }}>
         <TransactionList
           transactions={monthTxns}
           editingId={editingId}
