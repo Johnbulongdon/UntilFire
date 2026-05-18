@@ -7,19 +7,18 @@ export const metadata: Metadata = {
 };
 
 const FREE_FEATURES = [
-  "FIRE number calculator",
-  "263 cities cost-of-living data",
+  "FIRE number calculator (263 cities)",
+  "Full dashboard — cashflow, assets & liabilities",
+  "Expense & budget tracking",
+  "Investment portfolio simulator",
+  "1 bank connection via Plaid",
   "Share your FIRE number",
-  "APY, Coast FIRE & savings rate calculators",
-  "Learning hub & FIRE articles",
+  "All free calculators & learning hub",
 ];
 
 const PRO_FEATURES = [
   "Everything in Free",
-  "Persistent dashboard & saved FIRE profile",
-  "Expense & cashflow tracking",
-  "Bank connections & auto-sync (Plaid)",
-  "Investment portfolio simulator",
+  "Unlimited bank connections (Plaid)",
   "AI FIRE adviser (coming soon)",
 ];
 
