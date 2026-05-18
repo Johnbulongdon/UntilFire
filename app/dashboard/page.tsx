@@ -3381,6 +3381,7 @@ export default function Dashboard() {
             {SIDEBAR_ITEMS.map(item => (
               <button
                 key={item.key}
+                data-tour-item={item.key}
                 className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
                 onClick={() => { setTab(item.key); if (item.key !== "fire-calculator") setFireCalcSubTab("menu"); }}
               >
