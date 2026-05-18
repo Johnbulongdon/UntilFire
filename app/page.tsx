@@ -622,7 +622,13 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
       {!calcPhase && (
         <div className="uf-number-phase">
           {/* Hero number */}
-          <div className="uf-fire-hero">
+          <div className={`uf-fire-hero ${revealed ? "uf-fire-hero-celebrate" : ""}`}>
+            {revealed && (
+              <div className="uf-confetti" aria-hidden="true">
+                <span /><span /><span /><span /><span /><span /><span /><span />
+              </div>
+            )}
+            {revealed && <div className="uf-celebration-pill">🎉 Projection unlocked</div>}
             <div className="uf-fire-eyebrow">Your estimated FIRE number</div>
             <div ref={numRef} className="uf-fire-num">
               {fmtUSD(counted)}
@@ -656,15 +662,23 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 
           {revealed && (
             <>
+              <div className="uf-result-milestones" aria-label="Your result summary">
+                <div className="uf-result-milestone">
+                  <span className="uf-result-milestone-icon">✓</span>
+                  <span>FIRE number found</span>
+                </div>
+                <div className="uf-result-milestone">
+                  <span className="uf-result-milestone-icon">✓</span>
+                  <span>Freedom date mapped</span>
+                </div>
+                <div className="uf-result-milestone active">
+                  <span className="uf-result-milestone-icon">⚡</span>
+                  <span>One monthly move ready</span>
+                </div>
+              </div>
+
               {/* Monthly move aha */}
-              <div style={{
-                background: "linear-gradient(135deg, #064E3B 0%, #047857 100%)",
-                borderRadius: 18,
-                padding: "18px 18px 16px",
-                marginBottom: 16,
-                color: "white",
-                boxShadow: "0 14px 35px rgba(6,78,59,0.18)",
-              }}>
+              <div className="uf-monthly-move-card">
                 <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "#A7F3D0", marginBottom: 8 }}>
                   One monthly move
                 </div>
@@ -1231,7 +1245,27 @@ export default function Home() {
         .uf-calc-bar-track { max-width: 320px; margin: 0 auto; background: var(--border); border-radius: 4px; height: 3px; overflow: hidden; }
         .uf-calc-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
 
-        .uf-number-phase {}
+        .uf-number-phase { animation: resultStageIn 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+        @keyframes resultStageIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes confettiFall {
+          0% { opacity: 0; transform: translate3d(0,-32px,0) rotate(0deg) scale(0.6); }
+          12% { opacity: 1; }
+          100% { opacity: 0; transform: translate3d(var(--x),126px,0) rotate(var(--r)) scale(1); }
+        }
+        @keyframes celebrationPop {
+          0% { opacity: 0; transform: translateY(-8px) scale(0.9); }
+          70% { opacity: 1; transform: translateY(0) scale(1.04); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes cardLiftIn {
+          from { opacity: 0; transform: translateY(18px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes softGlow {
+          0%,100% { box-shadow: 0 14px 35px rgba(6,78,59,0.18), 0 0 0 rgba(159,232,112,0); }
+          50% { box-shadow: 0 18px 42px rgba(6,78,59,0.24), 0 0 0 6px rgba(159,232,112,0.13); }
+        }
 
         @keyframes fireGlow {
           0%   { text-shadow: 0 0 0px rgba(6,78,59,0); }
@@ -1255,11 +1289,26 @@ export default function Home() {
           padding: 40px 24px;
           margin-bottom: 28px;
           border-radius: 16px;
-          background: #003527;
+          background: radial-gradient(circle at 50% 0%, rgba(98,250,227,0.16), transparent 34%), #003527;
           animation: pulseBorder 2.5s ease 0.8s infinite;
           width: 100%;
           overflow: hidden;
+          position: relative;
+          isolation: isolate;
         }
+        .uf-fire-hero-celebrate { border: 1px solid rgba(159,232,112,0.34); }
+        .uf-celebration-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; margin-bottom: 14px; border-radius: 999px; background: rgba(159,232,112,0.14); border: 1px solid rgba(159,232,112,0.28); color: #D9FFB8; font-size: 12px; font-weight: 800; letter-spacing: 0.01em; animation: celebrationPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
+        .uf-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+        .uf-confetti span { position: absolute; top: 18px; left: 50%; width: 7px; height: 12px; border-radius: 3px; background: #9FE870; animation: confettiFall 1.25s ease-out forwards; }
+        .uf-confetti span:nth-child(1) { --x: -220px; --r: -180deg; left: 16%; background: #62FAE3; animation-delay: 0.02s; }
+        .uf-confetti span:nth-child(2) { --x: -120px; --r: 150deg; left: 30%; background: #A7F3D0; animation-delay: 0.10s; }
+        .uf-confetti span:nth-child(3) { --x: -42px; --r: -120deg; left: 43%; background: #FDE68A; animation-delay: 0.04s; }
+        .uf-confetti span:nth-child(4) { --x: 34px; --r: 210deg; left: 52%; background: #9FE870; animation-delay: 0.12s; }
+        .uf-confetti span:nth-child(5) { --x: 96px; --r: -240deg; left: 60%; background: #62FAE3; animation-delay: 0.06s; }
+        .uf-confetti span:nth-child(6) { --x: 156px; --r: 190deg; left: 70%; background: #FCA5A5; animation-delay: 0.14s; }
+        .uf-confetti span:nth-child(7) { --x: 212px; --r: -160deg; left: 82%; background: #A7F3D0; animation-delay: 0.08s; }
+        .uf-confetti span:nth-child(8) { --x: 250px; --r: 260deg; left: 90%; background: #FDE68A; animation-delay: 0.16s; }
+        .uf-fire-hero > *:not(.uf-confetti) { position: relative; z-index: 1; }
         .uf-fire-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--teal-bright); margin-bottom: 18px; }
         .uf-fire-num {
           font-family: var(--font-mono);
@@ -1276,6 +1325,13 @@ export default function Home() {
         .uf-fire-date-line { height: 1px; flex: 1; max-width: 60px; background: rgba(255,255,255,0.15); }
         .uf-fire-date { font-family: var(--font-mono); font-size: 16px; color: var(--teal-bright); letter-spacing: 0.5px; font-weight: 700; }
         .uf-fire-city { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 8px; }
+
+        .uf-result-milestones { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: -8px 0 16px; animation: cardLiftIn 0.55s cubic-bezier(0.22,1,0.36,1) 0.05s both; }
+        .uf-result-milestone { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2E8F0; color: #475569; font-size: 12px; font-weight: 800; text-align: center; box-shadow: 0 1px 4px rgba(15,23,42,0.04); }
+        .uf-result-milestone-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: #ECFDF5; color: #047857; font-size: 12px; flex: 0 0 auto; }
+        .uf-result-milestone.active { background: #F7FEE7; border-color: #BEF264; color: #365314; }
+        .uf-result-milestone.active .uf-result-milestone-icon { background: #9FE870; color: #163300; }
+        .uf-monthly-move-card { background: linear-gradient(135deg, #064E3B 0%, #047857 100%); border: 1px solid rgba(159,232,112,0.32); border-radius: 18px; padding: 18px 18px 16px; margin-bottom: 16px; color: white; box-shadow: 0 14px 35px rgba(6,78,59,0.18); animation: cardLiftIn 0.6s cubic-bezier(0.22,1,0.36,1) 0.12s both, softGlow 3.2s ease-in-out 0.9s infinite; }
 
         .uf-cost-card { background: #ECFDF5; border: 1px solid #D1FAE5; border-radius: 14px; padding: 20px 24px; text-align: center; margin-bottom: 20px; }
         .uf-cost-label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
@@ -1338,6 +1394,25 @@ export default function Home() {
         .uf-share-reddit:hover { background: #e03d00; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,69,0,0.35); }
         .uf-share-copy { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
         .uf-share-copy:hover { color: var(--text); background: #fff; border-color: var(--accent); }
+
+        @media (max-width: 640px) {
+          .uf-result-milestones { grid-template-columns: 1fr; gap: 8px; }
+          .uf-result-milestone { justify-content: flex-start; border-radius: 14px; min-height: 42px; }
+          .uf-celebration-pill { font-size: 11px; padding: 6px 10px; }
+          .uf-monthly-move-card { padding: 16px; }
+          .uf-confetti span { width: 6px; height: 10px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .uf-number-phase,
+          .uf-fire-slam,
+          .uf-fire-hero,
+          .uf-celebration-pill,
+          .uf-result-milestones,
+          .uf-monthly-move-card,
+          .uf-confetti span { animation: none !important; }
+          .uf-confetti { display: none; }
+        }
 
         /* -- FOOTER DIVIDER -- */
       `}</style>
