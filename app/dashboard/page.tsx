@@ -3275,7 +3275,7 @@ export default function Dashboard() {
         .uf-shell { display: flex; min-height: 100vh; }
         .uf-sidebar { width: 248px; min-height: 100vh; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: #F8FAFC; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; flex-shrink: 0; }
         .uf-main { flex: 1; overflow-y: auto; min-width: 0; }
-        .uf-content { max-width: 1060px; margin: 0 auto; padding: 32px 36px 60px; }
+        .uf-content { padding: 32px 36px 60px; }
 
         .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: #064E3B; letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid #E2E8F0; }
         .uf-sidebar-logo span { color: #20D4BF; }
