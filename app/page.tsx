@@ -411,7 +411,7 @@ function PortfolioScreen({ onNext, onBack }: {
           onChange={e => setAgeRaw(e.target.value)}
           style={{ maxWidth: 160 }}
         />
-        <p className="uf-hint">Used to show your retirement age. Leave blank to see only the year.</p>
+        <p className="uf-hint">We&apos;ll show you exactly which age freedom hits.</p>
       </div>
 
       <div className="uf-nav-row">
@@ -749,9 +749,18 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                 <span style={{ display: "block", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: "#64748B", marginBottom: 4 }}>
                   Your freedom date
                 </span>
-                {result.age !== undefined
-                  ? `Work could become optional in ${result.retireYear} at age ${result.age}`
-                  : `Work could become optional in ${result.retireYear} (${result.years} year${result.years === 1 ? '' : 's'} from now)`}
+                {result.age !== undefined ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                    <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                      Age {result.age}
+                    </span>
+                    <span style={{ fontSize: 12, opacity: 0.7, fontWeight: 500, letterSpacing: "0.02em" }}>
+                      in {result.years} year{result.years === 1 ? '' : 's'} · {result.retireYear}
+                    </span>
+                  </div>
+                ) : (
+                  `Work could become optional in ${result.retireYear} (${result.years} year${result.years === 1 ? '' : 's'} from now)`
+                )}
               </div>
               <div className="uf-fire-date-line" />
             </div>
@@ -812,7 +821,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   Invest ${extraSavings.toLocaleString()}/mo more and your freedom date moves {monthlyMoveYearsSaved > 0 ? fmtDelta(monthlyMoveYearsSaved) : "closer"}.
                 </div>
                 <div style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", marginTop: 8, lineHeight: 1.45 }}>
-                  At that pace, work could become optional around {monthlyMoveRetireYear}. Adjust the slider below to find a monthly move that feels realistic.
+                  At that pace, work could become optional around {monthlyMoveRetireYear}{d4.age !== undefined ? `, at age ${d4.age}` : ""}. Adjust the slider below to find a monthly move that feels realistic.
                 </div>
               </div>
 
