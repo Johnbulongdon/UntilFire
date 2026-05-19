@@ -968,7 +968,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               <div style={{ background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
                 <div className="uf-chart-move-grid">
                   {/* Chart card */}
-                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "24px 28px 16px", boxShadow: "0 24px 40px -28px rgba(15,23,42,0.14)" }}>
+                  <div className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, paddingBottom: 16, boxShadow: "0 24px 40px -28px rgba(15,23,42,0.14)" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
                       <div>
                         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Your path to FIRE</div>
@@ -994,7 +994,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 
                   {/* Monthly move sidebar */}
                   {!isAlreadyFire && (
-                    <div style={{ background: "#003527", color: "#fff", borderRadius: 16, padding: "24px 24px 26px", position: "relative", overflow: "hidden", boxShadow: "0 24px 40px -28px rgba(15,23,42,0.16)" }}>
+                    <div className="uf-reveal-card" style={{ background: "#003527", color: "#fff", borderRadius: 16, paddingBottom: "clamp(18px, 2.5vw, 26px)", position: "relative", overflow: "hidden", boxShadow: "0 24px 40px -28px rgba(15,23,42,0.16)" }}>
                       <div aria-hidden style={{ position: "absolute", top: -80, right: -80, width: 220, height: 220, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 65%)", opacity: 0.16, pointerEvents: "none" }} />
                       <div style={{ position: "relative" }}>
                         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>The monthly move</div>
@@ -1042,7 +1042,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               {/* ── IDENTITY ROW ── */}
               <div className="uf-identity-grid" style={{ marginBottom: 16 }}>
                 {/* FIRE type — dark green */}
-                <div style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, padding: "24px", minHeight: 160, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div className="uf-reveal-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div aria-hidden style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 70%)", opacity: 0.22, pointerEvents: "none" }} />
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>Your FIRE type</div>
                   <div style={{ position: "relative" }}>
@@ -1051,11 +1051,11 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   </div>
                 </div>
                 {/* Savings benchmark — light */}
-                <div style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, padding: "24px", minHeight: 160, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Savings rate benchmark</div>
                   <div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                      <div style={{ fontSize: 52, fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsMultiple}×</div>
+                      <div style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsMultiple}×</div>
                       <div style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>ahead of the U.S. average</div>
                     </div>
                     <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
@@ -1088,7 +1088,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                       const label = y > 0 ? (mo > 0 ? `${y}y ${mo}mo` : `${y}y`) : `${mo}mo`;
                       const sign = isNeg ? "+" : "−";
                       return (
-                        <div key={i} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "16px", display: "flex", flexDirection: "column", gap: 8, minHeight: 116 }}>
+                        <div key={i} className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, display: "flex", flexDirection: "column", gap: 8, minHeight: 100 }}>
                           <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: isNeg ? "#B45309" : "#003527", fontVariantNumeric: "tabular-nums" }}>{sign}{label}</div>
                           <div style={{ fontSize: 13, color: "#0F172A", fontWeight: 600, lineHeight: 1.3 }}>{m.label}</div>
                           <div style={{ fontSize: 11, color: "#6B7280", marginTop: "auto" }}>{m.detail}</div>
@@ -1100,22 +1100,22 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               )}
 
               {/* ── FOOTER CTA ── */}
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 12 }}>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.005em" }}>Lock this trajectory in your dashboard.</div>
                   <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren&apos;t stored · 7% real return, 25× / 4% FIRE rule</div>
                 </div>
-                <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
-                  <button style={{ height: 42, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }} onClick={() => setShowShare(true)}>
+                <div className="uf-footer-btns">
+                  <button style={{ height: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }} onClick={() => setShowShare(true)}>
                     <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
                     Share
                   </button>
-                  <button style={{ height: 42, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }} onClick={onAdjust}>
+                  <button style={{ height: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }} onClick={onAdjust}>
                     Adjust inputs
                   </button>
                   <Link
                     href="/login"
-                    style={{ height: 42, padding: "0 20px", borderRadius: 10, background: "#003527", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center" }}
+                    style={{ height: 44, padding: "0 20px", borderRadius: 10, background: "#003527", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}
                     onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource })}
                   >
                     Track this →
@@ -1717,7 +1717,7 @@ export default function Home() {
         .uf-reveal-hero-grid {
           display: grid;
           grid-template-columns: 1.4fr 1fr;
-          gap: clamp(24px, 4vw, 56px);
+          gap: clamp(20px, 4vw, 56px);
           align-items: end;
         }
         .uf-reveal-hero-right {
@@ -1740,15 +1740,34 @@ export default function Home() {
           grid-template-columns: repeat(4, 1fr);
           gap: 12px;
         }
+        /* card padding adapts across breakpoints */
+        .uf-reveal-card { padding: clamp(14px, 2.5vw, 24px); }
+        /* footer buttons row */
+        .uf-footer-btns { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+        /* 1024px — decision grid 4→2 col before it gets cramped */
+        @media (max-width: 1024px) {
+          .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        /* 900px — chart stacks above monthly move */
         @media (max-width: 900px) {
           .uf-chart-move-grid { grid-template-columns: 1fr; }
           .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
         }
+        /* 640px — hero stacks, identity stacks */
         @media (max-width: 640px) {
-          .uf-reveal-hero-grid { grid-template-columns: 1fr; gap: 28px; }
-          .uf-reveal-hero-right { padding-left: 0; border-left: none; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.14); }
+          .uf-reveal-hero-grid { grid-template-columns: 1fr; gap: 24px; }
+          .uf-reveal-hero-right { padding-left: 0; border-left: none; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.14); }
           .uf-identity-grid { grid-template-columns: 1fr; }
           .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
+          .uf-footer-btns { width: 100%; }
+          .uf-footer-btns > * { flex: 1 1 auto; justify-content: center; text-align: center; }
+        }
+        /* 480px — footer buttons stack to full-width column */
+        @media (max-width: 480px) {
+          .uf-footer-btns { flex-direction: column; }
+          .uf-footer-btns > * { width: 100%; }
+          .uf-decision-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
         }
         /* -- FOOTER DIVIDER -- */
       `}</style>
