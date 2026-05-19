@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { gsap } from "gsap";
 import Link from "next/link";
 import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
@@ -605,21 +606,6 @@ function ShareModal({
 // SCREEN 4 -REVEAL
 // -----------------------------------------------------------------------------
 
-function useCountUp(target: number, duration: number, running: boolean) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!running) return;
-    const start = performance.now();
-    function ease(t: number) { return 1 - Math.pow(1 - t, 4); }
-    function tick(now: number) {
-      const t = Math.min((now - start) / duration, 1);
-      setVal(Math.round(ease(t) * target));
-      if (t < 1) requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  }, [target, duration, running]);
-  return val;
-}
 
 function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear, currentAge }: {
   data: { basePts: {t:number;value:number}[]; boostedPts: {t:number;value:number}[]; maxYears: number; fireTarget: number };
@@ -722,8 +708,8 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const [revealed, setRevealed] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const numRef = useRef<HTMLDivElement>(null);
-
-  const counted = useCountUp(result.fireTarget, 2200, counting);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const belowRef = useRef<HTMLDivElement>(null);
 
   // Run calculating sequence
   useEffect(() => {
@@ -746,18 +732,51 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
     setTimeout(() => {
       setCalcPhase(false);
       setCounting(true);
-      // Trigger slam animation
-      setTimeout(() => {
-        numRef.current?.classList.add("uf-fire-slam");
-      }, 50);
     }, calcSteps.length * 620 + 800);
   }, []);
 
+  // GSAP hero entrance + count-up
   useEffect(() => {
-    if (counted >= result.fireTarget && counting) {
-      setTimeout(() => setRevealed(true), 300);
-    }
-  }, [counted, result.fireTarget, counting]);
+    if (!counting || !heroRef.current) return;
+    const target = result.fireTarget;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.fromTo('[data-gsap="chip"]',       { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.45 })
+        .fromTo('[data-gsap="date-label"]', { opacity: 0, y: 14  }, { opacity: 1, y: 0, duration: 0.55 }, "-=0.25")
+        .fromTo('[data-gsap="date-date"]',  { opacity: 0, y: 30  }, { opacity: 1, y: 0, duration: 0.7  }, "-=0.4")
+        .fromTo('[data-gsap="date-sub"]',   { opacity: 0         }, { opacity: 1,        duration: 0.5  }, "-=0.3")
+        .fromTo('[data-gsap="fire-right"]', { opacity: 0, x: 22  }, { opacity: 1, x: 0, duration: 0.65 }, "<-=0.45")
+        .fromTo('[data-gsap="milestone"]',  { opacity: 0, y: 8   }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.07 }, "-=0.25");
+
+      const proxy = { val: 0 };
+      gsap.to(proxy, {
+        val: target,
+        duration: 2.0,
+        ease: "power4.out",
+        delay: 0.35,
+        onUpdate() {
+          if (numRef.current) numRef.current.textContent = fmtUSD(Math.round(proxy.val));
+        },
+        onComplete() {
+          setTimeout(() => setRevealed(true), 220);
+        },
+      });
+    }, heroRef);
+    return () => ctx.revert();
+  }, [counting]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // GSAP below-hero entrance
+  useEffect(() => {
+    if (!revealed || !belowRef.current) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.fromTo('[data-gsap="chart-section"]', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.65 })
+        .fromTo('[data-gsap="identity-card"]',  { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.55, stagger: 0.1 }, "-=0.3")
+        .fromTo('[data-gsap="decision-card"]',  { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.06 }, "-=0.25")
+        .fromTo('[data-gsap="footer-cta"]',     { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
+    }, belowRef);
+    return () => ctx.revert();
+  }, [revealed]);
 
   // Fire the reveal funnel event exactly once per mount, when the projection
   // is fully settled. Done inside an effect so the event is tied to the
@@ -882,7 +901,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
         <div className="uf-number-phase">
 
           {/* ── GREEN GRADIENT HERO ── */}
-          <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #059669 0%, #003527 100%)", color: "#fff", padding: "clamp(32px, 5vw, 64px) clamp(20px, 4vw, 56px) clamp(28px, 4vw, 56px)", marginBottom: 0, borderRadius: "16px 16px 0 0" }}>
+          <div ref={heroRef} style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #059669 0%, #003527 100%)", color: "#fff", padding: "clamp(32px, 5vw, 64px) clamp(20px, 4vw, 56px) clamp(28px, 4vw, 56px)", marginBottom: 0, borderRadius: "16px 16px 0 0" }}>
             {/* Decorative circles */}
             <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "18s", ["--ring-delay" as string]: "0s", ["--ring-lo" as string]: "0.06", ["--ring-hi" as string]: "0.14", position: "absolute", top: -200, right: -80, width: 560, height: 560, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.08)", pointerEvents: "none" }} />
             <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "13s", ["--ring-delay" as string]: "2.5s", ["--ring-lo" as string]: "0.05", ["--ring-hi" as string]: "0.12", position: "absolute", top: -100, right: 20, width: 380, height: 380, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.06)", pointerEvents: "none" }} />
@@ -897,7 +916,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 
             <div style={{ maxWidth: 1180, margin: "0 auto", position: "relative" }}>
               {/* Stage chip */}
-              <div className="uf-stage-chip-anim" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "7px 12px 7px 10px", background: "rgba(34,211,165,0.10)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, marginBottom: 28 }}>
+              <div data-gsap="chip" className="uf-stage-chip-anim" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "7px 12px 7px 10px", background: "rgba(34,211,165,0.10)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, marginBottom: 28, opacity: 0 }}>
                 <div style={{ display: "flex", gap: 3 }}>
                   {stages4.map((_, i) => (
                     <div key={i} style={{ width: 5, height: 5, borderRadius: 99, background: i <= stageIdx ? "#22D3A5" : "rgba(34,211,165,0.25)" }} />
@@ -910,10 +929,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               <div className="uf-reveal-hero-grid">
                 {/* Left: freedom date */}
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#22D3A5" }}>
+                  <div data-gsap="date-label" style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#22D3A5", opacity: 0 }}>
                     Your freedom date
                   </div>
-                  <div style={{ marginTop: 14, lineHeight: 0.95, fontWeight: 600, letterSpacing: "-0.045em" }}>
+                  <div data-gsap="date-date" style={{ marginTop: 14, lineHeight: 0.95, fontWeight: 600, letterSpacing: "-0.045em", opacity: 0 }}>
                     <div style={{ fontSize: "clamp(48px, 8vw, 96px)", color: "#fff", whiteSpace: "nowrap" }}>
                       {isAlreadyFire ? "Now" : fireMonthFull}
                     </div>
@@ -923,7 +942,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                       </div>
                     )}
                   </div>
-                  <div style={{ marginTop: 18, fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(255,255,255,0.72)", fontWeight: 500, letterSpacing: "-0.005em" }}>
+                  <div data-gsap="date-sub" style={{ marginTop: 18, fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(255,255,255,0.72)", fontWeight: 500, letterSpacing: "-0.005em", opacity: 0 }}>
                     {result.age !== undefined && !isAlreadyFire && (
                       <>Age <b style={{ color: "#fff", fontWeight: 700 }}>{result.age}</b>
                       <span style={{ margin: "0 10px", opacity: 0.4 }}>·</span>
@@ -936,19 +955,17 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                 </div>
 
                 {/* Right: FIRE number + milestones */}
-                <div className="uf-reveal-hero-right">
+                <div data-gsap="fire-right" className="uf-reveal-hero-right" style={{ opacity: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>
                     FIRE number
                   </div>
-                  <div ref={numRef} className="uf-fire-num" style={{ marginTop: 10, fontSize: "clamp(32px, 4vw, 48px)", lineHeight: 1, fontWeight: 600, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "#fff" }}>
-                    {fmtUSD(counted)}
-                  </div>
+                  <div ref={numRef} className="uf-fire-num" style={{ marginTop: 10, fontSize: "clamp(32px, 4vw, 48px)", lineHeight: 1, fontWeight: 600, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "#fff" }} />
                   <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.5)", maxWidth: 260, lineHeight: 1.45 }}>
                     25× annual expenses at the 4% safe withdrawal rate.
                   </div>
                   <div style={{ marginTop: 22, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {milestones.map((m) => (
-                      <div key={m.label} style={{ flex: "1 1 auto", minWidth: 100, padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                      <div data-gsap="milestone" key={m.label} style={{ flex: "1 1 auto", minWidth: 100, padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8, opacity: 0 }}>
                         <div style={{ width: 14, height: 14, borderRadius: 99, flexShrink: 0, background: m.done ? "#22D3A5" : "rgba(34,211,165,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           {m.done
                             ? <svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 5l2 2 4-4" stroke="#003527" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -966,8 +983,8 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 
           {/* ── CHART + MONTHLY MOVE ── */}
           {revealed && (
-            <>
-              <div className="uf-section-up" style={{ ["--su-delay" as string]: "0.15s", background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
+            <div ref={belowRef}>
+              <div data-gsap="chart-section" style={{ background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
                 <div className="uf-chart-move-grid">
                   {/* Chart card */}
                   <div className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, paddingBottom: 16, boxShadow: "0 24px 40px -28px rgba(15,23,42,0.14)" }}>
@@ -1043,9 +1060,9 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               </div>
 
               {/* ── IDENTITY ROW ── */}
-              <div className="uf-section-up uf-identity-grid" style={{ ["--su-delay" as string]: "0.3s", marginBottom: 16 }}>
+              <div className="uf-identity-grid" style={{ marginBottom: 16 }}>
                 {/* FIRE type — dark green */}
-                <div className="uf-reveal-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div data-gsap="identity-card" className="uf-reveal-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div aria-hidden style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 70%)", opacity: 0.22, pointerEvents: "none" }} />
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>Your FIRE type</div>
                   <div style={{ position: "relative" }}>
@@ -1054,7 +1071,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   </div>
                 </div>
                 {/* Savings benchmark — light */}
-                <div className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div data-gsap="identity-card" className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Savings rate benchmark</div>
                   <div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -1070,7 +1087,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 
               {/* ── DECISION IMPACT ── */}
               {!isAlreadyFire && (
-                <div className="uf-section-up" style={{ ["--su-delay" as string]: "0.45s", marginBottom: 16 }}>
+                <div style={{ marginBottom: 16 }}>
                   <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Decision impact</div>
@@ -1091,7 +1108,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                       const label = y > 0 ? (mo > 0 ? `${y}y ${mo}mo` : `${y}y`) : `${mo}mo`;
                       const sign = isNeg ? "+" : "−";
                       return (
-                        <div key={i} className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, display: "flex", flexDirection: "column", gap: 8, minHeight: 100 }}>
+                        <div data-gsap="decision-card" key={i} className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, display: "flex", flexDirection: "column", gap: 8, minHeight: 100 }}>
                           <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: isNeg ? "#B45309" : "#003527", fontVariantNumeric: "tabular-nums" }}>{sign}{label}</div>
                           <div style={{ fontSize: 13, color: "#0F172A", fontWeight: 600, lineHeight: 1.3 }}>{m.label}</div>
                           <div style={{ fontSize: 11, color: "#6B7280", marginTop: "auto" }}>{m.detail}</div>
@@ -1103,7 +1120,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               )}
 
               {/* ── FOOTER CTA ── */}
-              <div className="uf-section-up" style={{ ["--su-delay" as string]: "0.55s", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 12 }}>
+              <div data-gsap="footer-cta" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.005em" }}>Lock this trajectory in your dashboard.</div>
                   <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren&apos;t stored · 7% real return, 25× / 4% FIRE rule</div>
@@ -1128,7 +1145,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               <p className="uf-disclaimer">
                 Estimate only. Not financial advice. Based on 7% real return (historical S&P500 average after inflation).
               </p>
-            </>
+            </div>
           )}
         </div>
       )}
