@@ -24,7 +24,7 @@ export default function Nav({
           <div key={i} className={`uf-nav-dot ${i === step ? "active" : i < step ? "done" : ""}`} />
         ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="uf-nav-actions">
         <Link href="/calculators" className="uf-nav-restart" style={{ textDecoration: "none" }}>Calculators</Link>
         <Link href="/learn" className="uf-nav-restart" style={{ textDecoration: "none" }}>Learn</Link>
         <Link href="/pricing" className="uf-nav-restart" style={{ textDecoration: "none" }}>Pricing</Link>

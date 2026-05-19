@@ -1458,12 +1458,13 @@ export default function Home() {
 
         /* -- NAV -- */
         .uf-nav { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: rgba(255,255,255,0.95); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; backdrop-filter: blur(12px); }
-        .uf-nav-logo { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: #064E3B; letter-spacing: -0.5px; }
+        .uf-nav-logo { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: #064E3B; letter-spacing: -0.5px; flex: 0 0 auto; min-width: 0; }
         .uf-nav-logo span { color: var(--teal); }
-        .uf-nav-dots { display: flex; gap: 6px; align-items: center; }
-        .uf-nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+        .uf-nav-dots { display: flex; gap: 6px; align-items: center; flex: 0 1 auto; min-width: 0; }
+        .uf-nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.3s; flex: 0 0 auto; }
         .uf-nav-dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
         .uf-nav-dot.done { background: var(--teal); }
+        .uf-nav-actions { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
         .uf-nav-restart { font-size: 13px; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: var(--font-body); transition: color 0.2s; }
         .uf-nav-restart:hover { color: var(--text); }
         .uf-nav-signin { font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
@@ -1727,6 +1728,9 @@ export default function Home() {
 
         /* Mobile responsive for hero */
         @media(max-width: 900px) {
+          .uf-nav { padding: 0 18px; gap: 14px; }
+          .uf-nav-dots { margin-left: auto; }
+          .uf-nav-actions { display: none; }
           .uf-hero-inner { grid-template-columns: 1fr; padding: 48px 24px 48px; gap: 32px; }
           .uf-hero-preview { display: none; }
           .uf-hero .uf-h1 { font-size: 36px; }
@@ -1736,6 +1740,8 @@ export default function Home() {
         }
 
         @media(max-width: 480px) {
+          .uf-nav { justify-content: flex-start; padding: 0 16px; }
+          .uf-nav-dots { display: none; }
           .uf-screen { padding: 28px 16px 20px; }
           .uf-hero-inner { padding: 32px 16px 32px; }
           .uf-hero-ctas { display: grid; grid-template-columns: 1fr; width: 100%; gap: 10px; }
