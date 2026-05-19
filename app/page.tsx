@@ -603,6 +603,72 @@ function ShareModal({
 }
 
 // -----------------------------------------------------------------------------
+// GROWTH BAR CHART
+// -----------------------------------------------------------------------------
+
+function GrowthBarChart({
+  bars,
+  fireTarget,
+  fireYear,
+}: {
+  bars: { year: number; contributions: number; returns: number }[];
+  fireTarget: number;
+  fireYear: number;
+}) {
+  const W = 560, H = 200, padL = 52, padR = 16, padT = 20, padB = 36;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+
+  const maxVal = Math.max(...bars.map(b => b.contributions + b.returns), fireTarget) * 1.05;
+  const yS = (v: number) => padT + innerH - (v / maxVal) * innerH;
+  const barCount = bars.length;
+  const gap = 4;
+  const barW = Math.max(8, (innerW - gap * (barCount - 1)) / barCount);
+  const xS = (i: number) => padL + i * (barW + gap);
+  const fireY = yS(fireTarget);
+  const yTicks = [0, 0.25, 0.5, 0.75, 1.0].map(f => fireTarget * f);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+      {yTicks.map((v, i) => (
+        <g key={i}>
+          <line x1={padL} x2={W - padR} y1={yS(v)} y2={yS(v)} stroke="#E2E8F0" strokeWidth="0.8" strokeDasharray="3 3" />
+          <text x={padL - 6} y={yS(v)} textAnchor="end" dominantBaseline="middle" fontSize="9" fill="#94A3B8" fontWeight="600">
+            {v === 0 ? "$0" : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${Math.round(v / 1000)}k`}
+          </text>
+        </g>
+      ))}
+      <line x1={padL} x2={W - padR} y1={fireY} y2={fireY} stroke="#059669" strokeWidth="1.5" strokeDasharray="4 3" />
+      <text x={W - padR} y={fireY - 6} textAnchor="end" fontSize="9" fontWeight="700" fill="#059669" letterSpacing="0.04em">FIRE</text>
+      {bars.map((b, i) => {
+        const contribH = Math.max(0, (b.contributions / maxVal) * innerH);
+        const returnsH = Math.max(0, (b.returns / maxVal) * innerH);
+        const x = xS(i);
+        const bottomY = padT + innerH;
+        return (
+          <g key={i}>
+            <rect x={x} y={bottomY - contribH} width={barW} height={contribH} fill="#059669" rx="2" />
+            {returnsH > 0 && <rect x={x} y={bottomY - contribH - returnsH} width={barW} height={returnsH} fill="#62FAE3" rx="2" />}
+            <text x={x + barW / 2} y={H - padB + 14} textAnchor="middle" fontSize="9" fill="#94A3B8" fontWeight="600">
+              {b.year === 0 ? "Now" : `+${b.year}y`}
+            </text>
+          </g>
+        );
+      })}
+      {bars.length > 0 && (() => {
+        const last = bars[bars.length - 1];
+        const total = last.contributions + last.returns;
+        return (
+          <text x={xS(bars.length - 1) + barW / 2} y={yS(total) - 6} textAnchor="middle" fontSize="9" fontWeight="700" fill="#064E3B">
+            {fireYear}
+          </text>
+        );
+      })()}
+    </svg>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // SCREEN 4 -REVEAL
 // -----------------------------------------------------------------------------
 
@@ -719,6 +785,27 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const d2 = calcFIRE(savings + 416, city.col, currentAge);
   const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge);
   const d4 = calcFIRE(savings + extraSavings, city.col, currentAge);
+
+  const chartBars = useMemo(() => {
+    const r = 0.07;
+    const totalYears = Math.ceil(result.years);
+    const step = Math.max(1, Math.ceil(totalYears / 10));
+    const pts: { year: number; contributions: number; returns: number }[] = [];
+    for (let t = 0; t <= totalYears; t += step) {
+      const grow = Math.pow(1 + r, t);
+      const total = portfolioBalance * grow + savings * 12 * (grow - 1) / r;
+      const totalContrib = portfolioBalance + savings * 12 * t;
+      pts.push({ year: t, contributions: totalContrib, returns: Math.max(0, total - totalContrib) });
+    }
+    if (pts[pts.length - 1]?.year !== totalYears) {
+      const grow = Math.pow(1 + r, totalYears);
+      const total = portfolioBalance * grow + savings * 12 * (grow - 1) / r;
+      const totalContrib = portfolioBalance + savings * 12 * totalYears;
+      pts.push({ year: totalYears, contributions: totalContrib, returns: Math.max(0, total - totalContrib) });
+    }
+    return pts;
+  }, [portfolioBalance, savings, result.years]);
+
   const monthlyMoveYearsSaved = Math.max(0, result.years - d4.years);
   const monthlyMoveRetireYear = d4.retireYear;
   const monthlyTakeHome = takeHome / 12;
@@ -837,6 +924,34 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                 <div className="uf-result-milestone active">
                   <span className="uf-result-milestone-icon">⚡</span>
                   <span>{isAlreadyFire ? "Next chapter awaits" : "One monthly move ready"}</span>
+                </div>
+              </div>
+
+              {/* Growth bar chart — contributions vs returns */}
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "18px 20px 12px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#059669", marginBottom: 4 }}>
+                      Your path to FIRE
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.01em" }}>
+                      How compounding builds your wealth
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 14, fontSize: 11, fontWeight: 600 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#64748B" }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: "#059669", display: "inline-block", flexShrink: 0 }} />
+                      Your savings
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#64748B" }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: "#62FAE3", display: "inline-block", flexShrink: 0 }} />
+                      Market returns
+                    </span>
+                  </div>
+                </div>
+                <GrowthBarChart bars={chartBars} fireTarget={result.fireTarget} fireYear={result.retireYear} />
+                <div style={{ marginTop: 8, fontSize: 11, color: "#94A3B8", textAlign: "center" }}>
+                  7% real return · 4% rule · based on your numbers
                 </div>
               </div>
 
