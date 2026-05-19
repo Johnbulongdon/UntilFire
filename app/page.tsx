@@ -785,60 +785,93 @@ function GrowthBarChart({
   bars,
   fireTarget,
   fireYear,
+  fmtCcy,
 }: {
   bars: { year: number; contributions: number; returns: number }[];
   fireTarget: number;
   fireYear: number;
+  fmtCcy: (n: number) => string;
 }) {
-  const W = 560, H = 200, padL = 52, padR = 16, padT = 20, padB = 36;
+  const W = 600, H = 260, padL = 56, padR = 20, padT = 32, padB = 40;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
 
-  const maxVal = Math.max(...bars.map(b => b.contributions + b.returns), fireTarget) * 1.05;
+  const maxVal = Math.max(...bars.map(b => b.contributions + b.returns), fireTarget) * 1.08;
   const yS = (v: number) => padT + innerH - (v / maxVal) * innerH;
   const barCount = bars.length;
-  const gap = 4;
-  const barW = Math.max(8, (innerW - gap * (barCount - 1)) / barCount);
+  const gap = 5;
+  const barW = Math.max(10, (innerW - gap * (barCount - 1)) / barCount);
   const xS = (i: number) => padL + i * (barW + gap);
   const fireY = yS(fireTarget);
   const yTicks = [0, 0.25, 0.5, 0.75, 1.0].map(f => fireTarget * f);
 
+  const lastBar = bars.length > 0 ? bars[bars.length - 1] : null;
+  const lastTotal = lastBar ? lastBar.contributions + lastBar.returns : 0;
+  const returnsPct = lastBar && lastTotal > 0 ? Math.round(lastBar.returns / lastTotal * 100) : 0;
+  const lastBarCx = bars.length > 0 ? xS(bars.length - 1) + barW / 2 : 0;
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+      {/* Grid lines */}
       {yTicks.map((v, i) => (
         <g key={i}>
-          <line x1={padL} x2={W - padR} y1={yS(v)} y2={yS(v)} stroke="#E2E8F0" strokeWidth="0.8" strokeDasharray="3 3" />
-          <text x={padL - 6} y={yS(v)} textAnchor="end" dominantBaseline="middle" fontSize="9" fill="#94A3B8" fontWeight="600">
+          <line x1={padL} x2={W - padR} y1={yS(v)} y2={yS(v)} stroke="#F1F5F9" strokeWidth="1" />
+          <text x={padL - 8} y={yS(v)} textAnchor="end" dominantBaseline="middle" fontSize="9" fill="#94A3B8" fontWeight="600">
             {v === 0 ? "$0" : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${Math.round(v / 1000)}k`}
           </text>
         </g>
       ))}
-      <line x1={padL} x2={W - padR} y1={fireY} y2={fireY} stroke="#059669" strokeWidth="1.5" strokeDasharray="4 3" />
-      <text x={W - padR} y={fireY - 6} textAnchor="end" fontSize="9" fontWeight="700" fill="#059669" letterSpacing="0.04em">FIRE</text>
+
+      {/* FIRE target line */}
+      <line x1={padL} x2={W - padR} y1={fireY} y2={fireY} stroke="#059669" strokeWidth="1.5" strokeDasharray="5 3" opacity="0.7" />
+      <text x={padL + 4} y={fireY - 6} fontSize="9" fontWeight="700" fill="#059669" letterSpacing="0.04em">
+        FIRE · {fmtCcy(fireTarget)}
+      </text>
+
+      {/* Stacked bars */}
       {bars.map((b, i) => {
         const contribH = Math.max(0, (b.contributions / maxVal) * innerH);
         const returnsH = Math.max(0, (b.returns / maxVal) * innerH);
         const x = xS(i);
         const bottomY = padT + innerH;
+        const isLast = i === bars.length - 1;
         return (
           <g key={i}>
-            <rect x={x} y={bottomY - contribH} width={barW} height={contribH} fill="#059669" rx="2" />
-            {returnsH > 0 && <rect x={x} y={bottomY - contribH - returnsH} width={barW} height={returnsH} fill="#62FAE3" rx="2" />}
+            {/* Contributions bar (green, bottom) */}
+            <rect x={x} y={bottomY - contribH} width={barW} height={contribH}
+              fill={isLast ? "#047857" : "#059669"} rx="2" />
+            {/* Returns bar (teal, top) */}
+            {returnsH > 0 && (
+              <rect x={x} y={bottomY - contribH - returnsH} width={barW} height={returnsH}
+                fill={isLast ? "#14B8A6" : "#22D4BF"} rx="2" />
+            )}
+            {/* X-axis label */}
             <text x={x + barW / 2} y={H - padB + 14} textAnchor="middle" fontSize="9" fill="#94A3B8" fontWeight="600">
               {b.year === 0 ? "Now" : `+${b.year}y`}
             </text>
           </g>
         );
       })}
-      {bars.length > 0 && (() => {
-        const last = bars[bars.length - 1];
-        const total = last.contributions + last.returns;
-        return (
-          <text x={xS(bars.length - 1) + barW / 2} y={yS(total) - 6} textAnchor="middle" fontSize="9" fontWeight="700" fill="#064E3B">
+
+      {/* Last bar annotations */}
+      {lastBar && (
+        <>
+          {/* Dot at FIRE target on last bar */}
+          <circle cx={lastBarCx} cy={fireY} r={5} fill="#22D4BF" />
+          {/* Retire year label */}
+          <text x={lastBarCx} y={yS(lastTotal) - (returnsPct > 0 ? 22 : 6)}
+            textAnchor="middle" fontSize="9" fontWeight="700" fill="#0F172A">
             {fireYear}
           </text>
-        );
-      })()}
+          {/* Returns percentage annotation */}
+          {returnsPct > 0 && (
+            <text x={lastBarCx} y={yS(lastTotal) - 8}
+              textAnchor="middle" fontSize="9" fontWeight="800" fill="#14B8A6">
+              {returnsPct}% returns
+            </text>
+          )}
+        </>
+      )}
     </svg>
   );
 }
@@ -1107,31 +1140,42 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               </div>
 
               {/* Growth bar chart — contributions vs returns */}
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "18px 20px 12px", marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "20px 20px 14px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#059669", marginBottom: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669", marginBottom: 4 }}>
                       Your path to FIRE
                     </div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.01em" }}>
-                      How compounding builds your wealth
+                      Compounded at 7% real return
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 14, fontSize: 11, fontWeight: 600 }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#64748B" }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 2, background: "#059669", display: "inline-block", flexShrink: 0 }} />
+                  <div style={{ display: "flex", gap: 14, fontSize: 11, fontWeight: 600, alignItems: "center" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#475569" }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: "#059669", display: "inline-block" }} />
                       Your savings
                     </span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#64748B" }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 2, background: "#62FAE3", display: "inline-block", flexShrink: 0 }} />
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#475569" }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: "#22D4BF", display: "inline-block" }} />
                       Market returns
                     </span>
                   </div>
                 </div>
-                <GrowthBarChart bars={chartBars} fireTarget={result.fireTarget} fireYear={result.retireYear} />
-                <div style={{ marginTop: 8, fontSize: 11, color: "#94A3B8", textAlign: "center" }}>
-                  7% real return · 4% rule · based on your numbers
-                </div>
+                <GrowthBarChart bars={chartBars} fireTarget={result.fireTarget} fireYear={result.retireYear} fmtCcy={fmtCcy} />
+                {chartBars.length > 0 && (() => {
+                  const last = chartBars[chartBars.length - 1];
+                  const totalFireVal = last.contributions + last.returns;
+                  const returnsPct = totalFireVal > 0 ? Math.round(last.returns / totalFireVal * 100) : 0;
+                  return returnsPct > 0 ? (
+                    <div style={{ marginTop: 12, padding: "10px 14px", background: "#F0FDF4", borderRadius: 10, border: "1px solid #BBF7D0", display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 18, flexShrink: 0 }}>📈</span>
+                      <span style={{ fontSize: 12, color: "#065F46", lineHeight: 1.4 }}>
+                        <strong>{returnsPct}% of your FIRE number</strong> comes from market compounding — not from what you saved.{" "}
+                        <span style={{ color: "#047857" }}>That&apos;s {fmtCcy(last.returns)} the market added for you.</span>
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
 
               {/* Stage indicator */}
