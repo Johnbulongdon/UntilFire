@@ -12,6 +12,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: siteUrl('/fire-calculator'),
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
       url: siteUrl('/calculators'),
       lastModified: new Date(),
       changeFrequency: 'weekly',

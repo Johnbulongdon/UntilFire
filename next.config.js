@@ -5,13 +5,8 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: '/fire-calculator',
-        destination: '/calculators/4-percent-rule',
-        permanent: true,
-      },
-      {
         source: '/fire-number-calculator',
-        destination: '/calculators/4-percent-rule',
+        destination: '/fire-calculator',
         permanent: true,
       },
       {

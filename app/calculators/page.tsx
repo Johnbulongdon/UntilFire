@@ -4,6 +4,13 @@ import { cityLandingPages } from '@/lib/city-pages'
 
 const CALCULATORS = [
   {
+    href: '/fire-calculator',
+    name: 'FIRE Calculator',
+    description: 'Find your FIRE date, FIRE number, Coast FIRE milestone, savings rate, and monthly moves in one planning flow.',
+    keyword: 'FIRE calculator',
+    accent: '#064E3B',
+  },
+  {
     href: '/calculators/4-percent-rule',
     name: 'FIRE Number Calculator',
     description: 'Estimate how much you need invested to retire using the 4% rule and adjustable withdrawal rates.',
@@ -159,7 +166,7 @@ export default function CalculatorsHubPage() {
               The calculator pages are designed for high-intent search queries. Someone looking for an APY calculator has a different immediate question than someone looking for a FIRE number calculator. The goal is to answer both well, then connect them back to the full planning journey.
             </p>
             <p style={{ margin: 0, fontSize: 15, lineHeight: 1.8, color: '#64748B' }}>
-              If you are just starting, begin with the <Link href="/calculators/4-percent-rule" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>FIRE Number Calculator</Link>. If you are comparing milestones, use the <Link href="/calculators/coast-fire" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Coast FIRE Calculator</Link>. If you want to understand the concepts before you model them, the <Link href="/learn" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Learning Hub</Link> explains the assumptions behind the math.
+              If you are just starting, begin with the <Link href="/fire-calculator" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>FIRE Calculator</Link> for the full freedom-date view, then use the <Link href="/calculators/4-percent-rule" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>FIRE Number Calculator</Link> to pressure-test withdrawal rates. If you are comparing milestones, use the <Link href="/calculators/coast-fire" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Coast FIRE Calculator</Link>. If you want to understand the concepts before you model them, the <Link href="/learn" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Learning Hub</Link> explains the assumptions behind the math.
             </p>
           </section>
 
