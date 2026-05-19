@@ -56,7 +56,7 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
 
       <div style={{
         width: "100%",
-        minHeight: "100vh",
+        height: "calc(100vh - 56px)",
         position: "relative",
         background: "radial-gradient(ellipse 1100px 600px at 50% 40%, #0a4a36 0%, #053828 32%, #02261b 70%, #001610 100%)",
         overflow: "hidden",
@@ -116,53 +116,6 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
           }}
         />
 
-        {/* Nav */}
-        <header style={{
-          position: "absolute",
-          top: 0, left: 0, right: 0,
-          height: 72,
-          display: "flex",
-          alignItems: "center",
-          padding: isMobile ? "0 24px" : "0 56px",
-          borderBottom: "1px solid rgba(255,255,255,0.12)",
-          zIndex: 5,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: 7,
-              background: "#62FAE3",
-              display: "grid", placeItems: "center",
-              color: "#003527",
-              fontWeight: 800, fontSize: 14,
-            }}>◐</div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: "rgba(255,255,255,0.92)", letterSpacing: "-0.01em" }}>
-              UntilFire
-            </div>
-          </div>
-          <div style={{ flex: 1 }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <button
-              onClick={onSignIn}
-              style={{ background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontSize: 14, color: "rgba(255,255,255,0.6)", fontFamily: "inherit" }}
-            >
-              Log in
-            </button>
-            <button
-              onClick={onStart}
-              style={{
-                height: 40, padding: "0 18px",
-                background: "rgba(255,255,255,0.92)",
-                color: "#003527",
-                border: "none", borderRadius: 9999,
-                fontWeight: 700, fontSize: 14, letterSpacing: "-0.005em",
-                cursor: "pointer", fontFamily: "inherit",
-              }}
-            >
-              Get started
-            </button>
-          </div>
-        </header>
-
         {/* Main content */}
         <div style={{
           position: "absolute",
@@ -172,7 +125,7 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
-          padding: isMobile ? "104px 24px 48px" : "104px 80px 48px",
+          padding: isMobile ? "32px 24px 48px" : "32px 80px 48px",
         }}>
           {/* Eyebrow pill */}
           <div style={{

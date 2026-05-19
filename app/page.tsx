@@ -1641,6 +1641,7 @@ export default function Home() {
         totalSteps={totalDots}
         onRestart={() => setScreen("hero")}
         onSignIn={signIn}
+        isDark={screen === "hero"}
       />
 
       <div className="uf-page">
