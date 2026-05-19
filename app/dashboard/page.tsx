@@ -3168,6 +3168,27 @@ export default function Dashboard() {
         .then(({ data: profile }) => {
           if (profile?.default_currency) setDefaultCurrency(profile.default_currency);
           if (profile?.preferred_currencies) setPreferredCurrencies(profile.preferred_currencies as string[]);
+          if (!profile?.default_currency) {
+            try {
+              const raw = localStorage.getItem("uf_calc_prefill");
+              if (raw) {
+                const prefill = JSON.parse(raw) as { defaultCurrency?: string };
+                if (prefill.defaultCurrency) {
+                  setDefaultCurrency(prefill.defaultCurrency);
+                  setPreferredCurrencies([prefill.defaultCurrency]);
+                  void supabase.from("profiles").upsert(
+                    {
+                      user_id: session.user.id,
+                      default_currency: prefill.defaultCurrency,
+                      preferred_currencies: [prefill.defaultCurrency],
+                      updated_at: new Date().toISOString(),
+                    },
+                    { onConflict: "user_id" },
+                  );
+                }
+              }
+            } catch {}
+          }
         });
 
       // Fetch user display name
@@ -3222,6 +3243,10 @@ export default function Dashboard() {
           if (raw) { prefill = JSON.parse(raw); localStorage.removeItem("uf_calc_prefill"); }
         } catch {}
         const prefillIncome = prefill.monthlyIncome ?? prefill.income;
+        if (prefill.defaultCurrency) {
+          setDefaultCurrency(prefill.defaultCurrency);
+          setPreferredCurrencies((prev) => (prev.length > 0 ? prev : [prefill.defaultCurrency!]));
+        }
 
         if (data) {
           setIncome(prefillIncome || data.income || 0);

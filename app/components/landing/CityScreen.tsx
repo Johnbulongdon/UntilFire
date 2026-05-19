@@ -84,8 +84,8 @@ export default function CityScreen({
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={1} />
-      <p className="uf-step-label">Step 2 of 4</p>
+      <WizardProgress step={0} />
+      <p className="uf-step-label">Step 1 of 5</p>
       <div className="uf-eyebrow">Location</div>
       <h2 className="uf-h2">
         Where do you want

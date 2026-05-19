@@ -23,6 +23,13 @@ import Nav from "@/app/components/landing/Nav";
 import WizardProgress from "@/app/components/landing/WizardProgress";
 import HeroScreen from "@/app/components/landing/HeroScreen";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
+import {
+  CURRENCY_NAMES,
+  FALLBACK_RATES,
+  SUPPORTED_CURRENCIES,
+  getCurrencySymbol,
+  type SupportedCurrency,
+} from "@/lib/currency";
 
 // -----------------------------------------------------------------------------
 // HELPERS
@@ -167,15 +174,77 @@ function toAnnualGross(value: number, mode: IncomeMode): number {
   }
 }
 
-function IncomeScreen({ stateKey, onNext, onBack }: {
+const POPULAR_CURRENCIES: SupportedCurrency[] = ["USD", "EUR", "GBP", "CAD", "AUD", "SGD", "INR", "JPY", "CHF", "NZD"];
+
+function CurrencyScreen({ onNext, onBack }: { onNext: (currency: SupportedCurrency) => void; onBack: () => void }) {
+  const [selected, setSelected] = useState<SupportedCurrency>("USD");
+
+  return (
+    <div className="uf-screen">
+      <WizardProgress step={1} />
+      <p className="uf-step-label">Step 2 of 5</p>
+      <div className="uf-eyebrow">Currency</div>
+      <h2 className="uf-h2">What currency do you <span className="uf-accent">earn in?</span></h2>
+      <p className="uf-body" style={{ marginBottom: 24 }}>
+        We&apos;ll use this as your default dashboard currency and convert the calculator inputs automatically.
+      </p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 16 }}>
+        {POPULAR_CURRENCIES.map((currency) => (
+          <button
+            key={currency}
+            type="button"
+            onClick={() => setSelected(currency)}
+            className={`uf-currency-btn${selected === currency ? " selected" : ""}`}
+          >
+            <span className="uf-currency-code">{currency}</span>
+            <span className="uf-currency-name">{CURRENCY_NAMES[currency]}</span>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <label className="uf-label">Other currencies</label>
+        <select
+          className="uf-input"
+          value={POPULAR_CURRENCIES.includes(selected) ? "" : selected}
+          onChange={(e) => {
+            if (e.target.value) setSelected(e.target.value as SupportedCurrency);
+          }}
+        >
+          <option value="">Choose from full list...</option>
+          {SUPPORTED_CURRENCIES.filter((currency) => !POPULAR_CURRENCIES.includes(currency)).map((currency) => (
+            <option key={currency} value={currency}>
+              {currency} - {CURRENCY_NAMES[currency]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="uf-nav-row">
+        <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
+        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(selected)}>
+          Continue with {selected} {"->"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
   stateKey: string;
+  currency?: SupportedCurrency;
   onNext: (income: number) => void;
   onBack: () => void;
 }) {
+  const isNonUSD = currency !== "USD";
   const isCustomJurisdiction = stateKey === "custom";
-  const [mode, setMode] = useState<IncomeMode>(isCustomJurisdiction ? "takehome" : "annual");
+  const forceTakeHome = isNonUSD || isCustomJurisdiction;
+  const [mode, setMode] = useState<IncomeMode>(forceTakeHome ? "takehome" : "annual");
   const [rawValue, setRawValue] = useState<string>("");
   const [takeHomeRaw, setTakeHomeRaw] = useState<string>("");
+  const currencySymbol = getCurrencySymbol(currency);
+  const fxRate = FALLBACK_RATES[currency] ?? 1;
 
   const numVal = parseFloat(rawValue) || 0;
   const annualGross = mode === "takehome" ? 0 : toAnnualGross(numVal, mode);
@@ -189,43 +258,42 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
   const displayHourly = displayTakeHome / 2080;
   const displayEffRate = mode === "takehome" ? null : (tax?.effectiveRate ?? 0);
 
-  const incomeForFIRE = mode === "takehome" ? annualTakeHome : (tax?.takeHome ?? 0);
+  const takeHomeForPlanner = mode === "takehome" ? annualTakeHome : (tax?.takeHome ?? 0);
+  const incomeForFIRE = isNonUSD ? Math.round(takeHomeForPlanner / fxRate) : takeHomeForPlanner;
   const canContinue = mode === "takehome" ? monthlyTakeHome > 0 : annualGross > 0;
 
   return (
     <div className="uf-screen">
       <WizardProgress step={2} />
-      <p className="uf-step-label">Step 2 of 5</p>
+      <p className="uf-step-label">Step 3 of 5</p>
       <div className="uf-eyebrow">Income</div>
       <h2 className="uf-h2">What do you <span className="uf-accent">earn?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
         Enter however your pay is structured. We&apos;ll handle the conversion.
       </p>
 
-      <div className="uf-mode-pills">
-        {INCOME_MODES.map((m) => {
-          const disabled = isCustomJurisdiction && m.key !== "takehome";
-          return (
+      {!forceTakeHome && (
+        <div className="uf-mode-pills">
+          {INCOME_MODES.map((m) => (
             <button
               key={m.key}
               className={`uf-mode-pill ${mode === m.key ? "active" : ""}`}
-              disabled={disabled}
-              style={disabled ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
               onClick={() => {
-                if (disabled) return;
                 setMode(m.key);
                 setRawValue("");
               }}
             >
               {m.label}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
       <p className="uf-hint" style={{ marginBottom: 16 }}>
-        {isCustomJurisdiction
-          ? "Custom city: tax jurisdiction is unknown, so enter your monthly take-home directly."
-          : INCOME_MODES.find((m) => m.key === mode)?.hint}
+        {isNonUSD
+          ? `Non-USD currency: enter your monthly take-home in ${currency}. We'll convert it to USD automatically.`
+          : isCustomJurisdiction
+            ? "Custom city: tax jurisdiction is unknown, so enter your monthly take-home directly."
+            : INCOME_MODES.find((m) => m.key === mode)?.hint}
       </p>
 
       {mode !== "takehome" ? (
@@ -249,9 +317,9 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
         </>
       ) : (
         <>
-          <label className="uf-label">Monthly take-home income</label>
+          <label className="uf-label">Monthly take-home income ({currency})</label>
           <div className="uf-big-input-wrap">
-            <span className="uf-input-prefix uf-big-prefix">$</span>
+            <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
             <input
               type="number"
               className="uf-input uf-input-mono uf-input-big"
@@ -263,6 +331,7 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
             />
             <span className="uf-unit">/month</span>
           </div>
+          {isNonUSD && <p className="uf-hint">1 {currency} ≈ {(1 / fxRate).toFixed(4)} USD (indicative rate)</p>}
         </>
       )}
 
@@ -275,11 +344,15 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
         ) : null}
         <div className="uf-card">
           <div className="uf-card-sub">Annual take-home</div>
-          <div className="uf-card-main">{fmtUSD(displayTakeHome)}</div>
+          <div className="uf-card-main">
+            {isNonUSD ? `${currencySymbol}${Math.round(displayTakeHome).toLocaleString()}` : fmtUSD(displayTakeHome)}
+          </div>
         </div>
         <div className="uf-card">
           <div className="uf-card-sub">Monthly take-home</div>
-          <div className="uf-card-main">{fmtUSD(displayMonthly)}</div>
+          <div className="uf-card-main">
+            {isNonUSD ? `${currencySymbol}${Math.round(displayMonthly).toLocaleString()}` : fmtUSD(displayMonthly)}
+          </div>
         </div>
         {displayEffRate !== null ? (
           <div className="uf-card">
@@ -287,11 +360,13 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
             <div className="uf-card-main">{displayEffRate.toFixed(1)}%</div>
           </div>
         ) : null}
-        <div className="uf-card uf-card-accent">
-          <div className="uf-card-sub">Hourly take-home</div>
-          <div className="uf-hourly">{displayHourly.toFixed(2)}/hr</div>
-          <div className="uf-card-hint">Based on 2,080 working hours/yr</div>
-        </div>
+        {!isNonUSD && (
+          <div className="uf-card uf-card-accent">
+            <div className="uf-card-sub">Hourly take-home</div>
+            <div className="uf-hourly">{displayHourly.toFixed(2)}/hr</div>
+            <div className="uf-card-hint">Based on 2,080 working hours/yr</div>
+          </div>
+        )}
       </div>
 
       <div className="uf-nav-row">
@@ -309,33 +384,39 @@ function IncomeScreen({ stateKey, onNext, onBack }: {
 // -----------------------------------------------------------------------------
 
 // income is now always annual take-home (already post-tax) from IncomeScreen
-function SavingsScreen({ income, onNext, onBack }: {
+function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   income: number;
+  currency?: SupportedCurrency;
   onNext: (savings: number) => void;
   onBack: () => void;
 }) {
-  const [savings, setSavings] = useState(1500);
-  // income is already take-home annual -divide by 12 for monthly
+  const isNonUSD = currency !== "USD";
+  const currencySymbol = getCurrencySymbol(currency);
+  const fxRate = FALLBACK_RATES[currency] ?? 1;
+  const sliderMax = isNonUSD ? Math.round(10000 * fxRate) : 10000;
+  const sliderStep = isNonUSD ? Math.max(1, Math.round(100 * fxRate)) : 100;
+  const [savings, setSavings] = useState(isNonUSD ? Math.round(1500 * fxRate) : 1500);
   const monthly = income / 12;
-  const rate = monthly > 0 ? Math.round((savings / monthly) * 100) : 0;
+  const monthlyLocal = isNonUSD ? monthly * fxRate : monthly;
+  const rate = monthlyLocal > 0 ? Math.round((savings / monthlyLocal) * 100) : 0;
 
   const rateColor = rate < 15 ? "var(--danger)" : rate < 30 ? "var(--accent)" : "var(--teal)";
   const rateLabel = rate < 10 ? "Very low" : rate < 20 ? "Below average" : rate < 30 ? "Average"
-    : rate < 40 ? "Good" : rate < 50 ? "Strong" : "FIRE pace! 🔥";
+    : rate < 40 ? "Good" : rate < 50 ? "Strong" : "FIRE pace!";
 
   return (
     <div className="uf-screen">
       <WizardProgress step={3} />
-      <p className="uf-step-label">Step 3 of 5</p>
+      <p className="uf-step-label">Step 4 of 5</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">How much are you <span className="uf-accent">saving?</span></h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
         Don&apos;t worry about being exact -we&apos;ll help you track real numbers after setup.
       </p>
 
-      <label className="uf-label">Monthly savings amount</label>
+      <label className="uf-label">Monthly savings amount ({currency})</label>
       <div className="uf-big-input-wrap">
-        <span className="uf-input-prefix uf-big-prefix">$</span>
+        <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
         <input
           type="number"
           className="uf-input uf-input-mono uf-input-big"
@@ -350,17 +431,19 @@ function SavingsScreen({ income, onNext, onBack }: {
 
       <div className="uf-slider-wrap">
         <input
-          type="range" min={0} max={10000} step={100}
-          value={Math.min(savings, 10000)}
+          type="range" min={0} max={sliderMax} step={sliderStep}
+          value={Math.min(savings, sliderMax)}
           className="uf-range"
           onChange={e => setSavings(parseInt(e.target.value))}
         />
-        <div className="uf-range-labels"><span>$0</span><span>$5k</span><span>$10k/mo</span></div>
+        <div className="uf-range-labels">
+          <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(sliderMax / 2).toLocaleString()}</span><span>{currencySymbol}{sliderMax.toLocaleString()}/mo</span>
+        </div>
       </div>
 
       <div className="uf-stat-row">
         <div className="uf-stat-box">
-          <div className="uf-stat-val uf-accent">{fmtUSD(savings)}/mo</div>
+          <div className="uf-stat-val uf-accent">{currencySymbol}{Math.round(savings).toLocaleString()}/mo</div>
           <div className="uf-stat-lab">Monthly savings</div>
         </div>
         <div className="uf-stat-box">
@@ -384,8 +467,8 @@ function SavingsScreen({ income, onNext, onBack }: {
 
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(savings)}>
-          Next →
+        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(isNonUSD ? Math.round(savings / fxRate) : savings)}>
+          Next {"->"}
         </button>
       </div>
     </div>
@@ -396,14 +479,19 @@ function SavingsScreen({ income, onNext, onBack }: {
 // PORTFOLIO BALANCE + AGE SCREEN
 // -----------------------------------------------------------------------------
 
-function PortfolioScreen({ onNext, onBack }: {
+function PortfolioScreen({ currency = "USD", onNext, onBack }: {
+  currency?: SupportedCurrency;
   onNext: (portfolio: number, age?: number) => void;
   onBack: () => void;
 }) {
+  const isNonUSD = currency !== "USD";
+  const currencySymbol = getCurrencySymbol(currency);
+  const fxRate = FALLBACK_RATES[currency] ?? 1;
   const [portfolioRaw, setPortfolioRaw] = useState<string>("");
   const [ageRaw, setAgeRaw] = useState<string>("");
 
-  const portfolio = Math.max(0, parseInt(portfolioRaw.replace(/,/g, ""), 10) || 0);
+  const portfolioInput = Math.max(0, parseInt(portfolioRaw.replace(/,/g, ""), 10) || 0);
+  const portfolio = isNonUSD ? Math.round(portfolioInput / fxRate) : portfolioInput;
   const parsedAge = (() => {
     const n = parseInt(ageRaw, 10);
     return Number.isFinite(n) && n >= 16 && n <= 90 ? n : undefined;
@@ -412,16 +500,16 @@ function PortfolioScreen({ onNext, onBack }: {
   return (
     <div className="uf-screen">
       <WizardProgress step={4} />
-      <p className="uf-step-label">Step 4 of 5</p>
+      <p className="uf-step-label">Step 5 of 5</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">What&apos;s your <span className="uf-accent">current portfolio?</span></h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
         Include 401(k), IRA, brokerage, and other long-term savings. Estimate is fine. Zero is fine too.
       </p>
 
-      <label className="uf-label">Total invested savings</label>
+      <label className="uf-label">Total invested savings ({currency})</label>
       <div className="uf-big-input-wrap">
-        <span className="uf-input-prefix uf-big-prefix">$</span>
+        <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
         <input
           type="number"
           className="uf-input uf-input-mono uf-input-big"
@@ -689,8 +777,9 @@ function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear
   );
 }
 
-function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBalance = 0, landingSource, onAdjust }: {
+function RevealScreen({ city, income, savings, stateKey, currency = "USD", currentAge, portfolioBalance = 0, landingSource, onAdjust }: {
   city: CityState; income: number; savings: number; stateKey: string;
+  currency?: SupportedCurrency;
   currentAge?: number; portfolioBalance?: number;
   landingSource?: string;
   onAdjust: () => void;
@@ -1049,7 +1138,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                           href="/login"
                           className="uf-automate-btn"
                           style={{ display: "block", marginTop: 22, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none" }}
-                          onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource })}
+                          onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
                         >
                           Automate this →
                         </Link>
@@ -1136,7 +1225,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   <Link
                     href="/login"
                     style={{ height: 44, padding: "0 20px", borderRadius: 10, background: "#003527", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}
-                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource })}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
                   >
                     Track this →
                   </Link>
@@ -1158,7 +1247,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 // ROOT
 // -----------------------------------------------------------------------------
 
-type Screen = "hero" | "city" | "income" | "savings" | "portfolio" | "reveal";
+type Screen = "hero" | "city" | "currency" | "income" | "savings" | "portfolio" | "reveal";
 
 export default function Home() {
   const router = useRouter();
@@ -1166,6 +1255,7 @@ export default function Home() {
 
   // Wizard state
   const [cityState, setCityState]         = useState<CityState | null>(null);
+  const [currency, setCurrency]           = useState<SupportedCurrency>("USD");
   const [income, setIncome]               = useState(90000);
   const [savings, setSavings]             = useState(1500);
   const [portfolioBalance, setPortfolioBalance] = useState(0);
@@ -1207,6 +1297,7 @@ export default function Home() {
     }
     const stepMap: Partial<Record<Screen, CalculatorStepId>> = {
       city: "city",
+      currency: "currency",
       income: "income",
       savings: "savings",
       portfolio: "portfolio",
@@ -1221,8 +1312,8 @@ export default function Home() {
     router.push('/login');
   }
 
-  const STEP_MAP: Record<Screen, number> = { hero: 0, city: 1, income: 2, savings: 3, portfolio: 4, reveal: 5 };
-  const totalDots = 6;
+  const STEP_MAP: Record<Screen, number> = { hero: 0, city: 1, currency: 2, income: 3, savings: 4, portfolio: 5, reveal: 6 };
+  const totalDots = 7;
 
   return (
     <>
@@ -1328,6 +1419,13 @@ export default function Home() {
         .uf-wline { flex: 1; height: 2px; background: var(--border); margin: 0 2px; transition: background 0.4s; }
         .uf-wline.done { background: var(--teal); }
         .uf-wline.active { background: var(--accent); }
+
+        /* -- CURRENCY -- */
+        .uf-currency-btn { display: flex; flex-direction: column; align-items: flex-start; padding: 12px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; }
+        .uf-currency-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+        .uf-currency-btn.selected { border-color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent); }
+        .uf-currency-code { font-weight: 800; font-size: 15px; color: var(--text); font-family: var(--font-display); }
+        .uf-currency-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
         /* -- BUTTONS -- */
         .uf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 8px; font-family: var(--font-body); font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; }
@@ -1880,26 +1978,35 @@ export default function Home() {
         )}
         {screen === "city" && (
           <CityScreen
-            onNext={c => { setCityState(c); setScreen("income"); }}
+            onNext={c => { setCityState(c); setScreen("currency"); }}
             onBack={() => setScreen("hero")}
+          />
+        )}
+        {screen === "currency" && (
+          <CurrencyScreen
+            onNext={nextCurrency => { setCurrency(nextCurrency); setScreen("income"); }}
+            onBack={() => setScreen("city")}
           />
         )}
         {screen === "income" && (
           <IncomeScreen
             stateKey={cityState?.stateKey ?? "custom"}
+            currency={currency}
             onNext={inc => { setIncome(inc); setScreen("savings"); }}
-            onBack={() => setScreen("city")}
+            onBack={() => setScreen("currency")}
           />
         )}
         {screen === "savings" && (
           <SavingsScreen
             income={income}
+            currency={currency}
             onNext={sav => { setSavings(sav); setScreen("portfolio"); }}
             onBack={() => setScreen("income")}
           />
         )}
         {screen === "portfolio" && (
           <PortfolioScreen
+            currency={currency}
             onNext={(p, age) => { setPortfolioBalance(p); setCurrentAge(age); setScreen("reveal"); }}
             onBack={() => setScreen("savings")}
           />
@@ -1910,6 +2017,7 @@ export default function Home() {
             income={income}
             savings={savings}
             stateKey={cityState.stateKey}
+            currency={currency}
             currentAge={currentAge}
             portfolioBalance={portfolioBalance}
             landingSource={landingSource}

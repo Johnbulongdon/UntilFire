@@ -1,7 +1,7 @@
 "use client";
 
 export default function WizardProgress({ step }: { step: number }) {
-  const steps = ["Goals", "City", "Income", "Finances"];
+  const steps = ["City", "Currency", "Income", "Savings", "Portfolio"];
   return (
     <div className="uf-wizard-progress">
       {steps.map((label, i) => (

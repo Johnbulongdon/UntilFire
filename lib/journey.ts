@@ -15,6 +15,7 @@ export type CalculatorPrefill = {
   currentAge?: number
   portfolioBalance?: number
   landingSource?: string
+  defaultCurrency?: string
 }
 
 function readPrefill(): CalculatorPrefill | null {
