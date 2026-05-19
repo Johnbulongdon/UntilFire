@@ -174,53 +174,123 @@ function toAnnualGross(value: number, mode: IncomeMode): number {
 
 const POPULAR_CURRENCIES: SupportedCurrency[] = ["USD", "EUR", "GBP", "CAD", "AUD", "SGD", "INR", "JPY", "CHF", "NZD"];
 
+const CURRENCY_FLAG: Partial<Record<SupportedCurrency, string>> = {
+  USD:"🇺🇸", EUR:"🇪🇺", GBP:"🇬🇧", CAD:"🇨🇦", AUD:"🇦🇺",
+  SGD:"🇸🇬", INR:"🇮🇳", JPY:"🇯🇵", CHF:"🇨🇭", NZD:"🇳🇿",
+  CNY:"🇨🇳", HKD:"🇭🇰", KRW:"🇰🇷", SEK:"🇸🇪", NOK:"🇳🇴",
+  DKK:"🇩🇰", MYR:"🇲🇾", THB:"🇹🇭", IDR:"🇮🇩", PHP:"🇵🇭",
+  VND:"🇻🇳", TWD:"🇹🇼", MXN:"🇲🇽", BRL:"🇧🇷", ZAR:"🇿🇦",
+  AED:"🇦🇪", SAR:"🇸🇦", TRY:"🇹🇷", PLN:"🇵🇱", CZK:"🇨🇿",
+  HUF:"🇭🇺", ILS:"🇮🇱", NGN:"🇳🇬", PKR:"🇵🇰",
+};
+
+const CURRENCY_CONFETTI_COLORS: Record<string, string[]> = {
+  USD: ["#B22234","#FFFFFF","#3C3B6E","#B22234","#FFFFFF","#3C3B6E"],
+  EUR: ["#003399","#FFCC00","#003399","#FFCC00","#FFFFFF"],
+  GBP: ["#CF142B","#FFFFFF","#00247D","#CF142B","#FFFFFF"],
+  CAD: ["#FF0000","#FFFFFF","#FF0000","#FFFFFF"],
+  AUD: ["#00008B","#FF0000","#FFFFFF","#FFCC00","#00008B"],
+  SGD: ["#EF3340","#FFFFFF","#EF3340","#FFFFFF"],
+  INR: ["#FF9933","#138808","#FFFFFF","#000080","#FF9933"],
+  JPY: ["#BC002D","#FFFFFF","#BC002D","#FFFFFF"],
+  CHF: ["#FF0000","#FFFFFF","#FF0000","#FFFFFF"],
+  NZD: ["#00247D","#CC142B","#FFFFFF","#000000","#CC142B"],
+};
+const DEFAULT_CONFETTI_COLORS = ["#62FAE3","#9FE870","#FDE68A","#FCA5A5","#A7F3D0"];
+
+const CONFETTI_POSITIONS = [
+  { left:"3%",  x:"-160px", r:"-200deg", delay:"0.00s" },
+  { left:"9%",  x:"-100px", r: "170deg", delay:"0.04s" },
+  { left:"15%", x: "-60px", r:"-140deg", delay:"0.02s" },
+  { left:"21%", x: "-20px", r: "220deg", delay:"0.08s" },
+  { left:"27%", x:  "20px", r:"-180deg", delay:"0.04s" },
+  { left:"33%", x:  "60px", r: "150deg", delay:"0.10s" },
+  { left:"40%", x: "100px", r:"-160deg", delay:"0.02s" },
+  { left:"47%", x: "160px", r: "240deg", delay:"0.12s" },
+  { left:"53%", x: "-80px", r:"-120deg", delay:"0.06s" },
+  { left:"60%", x: "140px", r: "200deg", delay:"0.14s" },
+  { left:"67%", x:"-140px", r:"-220deg", delay:"0.04s" },
+  { left:"73%", x:  "80px", r: "160deg", delay:"0.08s" },
+  { left:"79%", x: "-40px", r: "-80deg", delay:"0.10s" },
+  { left:"85%", x: "120px", r: "180deg", delay:"0.16s" },
+  { left:"91%", x:"-120px", r:"-240deg", delay:"0.06s" },
+  { left:"97%", x:  "40px", r: "130deg", delay:"0.12s" },
+];
+
 function CurrencyScreen({ onNext, onBack }: { onNext: (c: SupportedCurrency) => void; onBack: () => void }) {
   const [selected, setSelected] = useState<SupportedCurrency>("USD");
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [burstCurrency, setBurstCurrency] = useState<SupportedCurrency>("USD");
 
   return (
-    <div className="uf-screen">
-      <WizardProgress step={2} />
-      <p className="uf-step-label">Step 2 of 6</p>
-      <div className="uf-eyebrow">Currency</div>
-      <h2 className="uf-h2">What currency do you <span className="uf-accent">earn in?</span></h2>
-      <p className="uf-body" style={{ marginBottom: 24 }}>
-        We&apos;ll let you enter your income and savings in your local currency and convert everything automatically.
-      </p>
+    <>
+      {confettiKey > 0 && (
+        <div key={confettiKey} className="uf-currency-confetti" aria-hidden>
+          {CONFETTI_POSITIONS.map((pos, i) => {
+            const colors = CURRENCY_CONFETTI_COLORS[burstCurrency] ?? DEFAULT_CONFETTI_COLORS;
+            return (
+              <span
+                key={i}
+                style={{
+                  left: pos.left,
+                  background: colors[i % colors.length],
+                  animationDelay: pos.delay,
+                  "--x": pos.x,
+                  "--r": pos.r,
+                } as React.CSSProperties}
+              />
+            );
+          })}
+        </div>
+      )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
-        {POPULAR_CURRENCIES.map(c => (
-          <button
-            key={c}
-            onClick={() => setSelected(c)}
-            className={`uf-currency-btn${selected === c ? " selected" : ""}`}
-          >
-            <span className="uf-currency-code">{c}</span>
-            <span className="uf-currency-name">{CURRENCY_NAMES[c]}</span>
-          </button>
-        ))}
-      </div>
+      <div className="uf-screen">
+        <WizardProgress step={2} />
+        <p className="uf-step-label">Step 2 of 6</p>
+        <div className="uf-eyebrow">Currency</div>
+        <h2 className="uf-h2">What currency do you <span className="uf-accent">earn in?</span></h2>
+        <p className="uf-body" style={{ marginBottom: 24 }}>
+          We&apos;ll let you enter your income and savings in your local currency and convert everything automatically.
+        </p>
 
-      <div style={{ marginBottom: 28 }}>
-        <label className="uf-label">Other currencies</label>
-        <select
-          className="uf-input"
-          value={POPULAR_CURRENCIES.includes(selected) ? "" : selected}
-          onChange={e => { if (e.target.value) setSelected(e.target.value as SupportedCurrency); }}
-        >
-          <option value="">Choose from full list…</option>
-          {SUPPORTED_CURRENCIES.filter(c => !POPULAR_CURRENCIES.includes(c)).map(c => (
-            <option key={c} value={c}>{c} — {CURRENCY_NAMES[c]}</option>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
+          {POPULAR_CURRENCIES.map(c => (
+            <button
+              key={c}
+              onClick={() => { setSelected(c); setBurstCurrency(c); setConfettiKey(k => k + 1); }}
+              className={`uf-currency-btn${selected === c ? " selected" : ""}`}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>{CURRENCY_FLAG[c]}</span>
+                <span className="uf-currency-code">{c}</span>
+              </div>
+              <span className="uf-currency-name">{CURRENCY_NAMES[c]}</span>
+            </button>
           ))}
-        </select>
-      </div>
+        </div>
 
-      <div className="uf-nav-row">
-        <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(selected)}>
-          Continue with {selected} →
-        </button>
+        <div style={{ marginBottom: 28 }}>
+          <label className="uf-label">Other currencies</label>
+          <select
+            className="uf-input"
+            value={POPULAR_CURRENCIES.includes(selected) ? "" : selected}
+            onChange={e => { if (e.target.value) setSelected(e.target.value as SupportedCurrency); }}
+          >
+            <option value="">Choose from full list…</option>
+            {SUPPORTED_CURRENCIES.filter(c => !POPULAR_CURRENCIES.includes(c)).map(c => (
+              <option key={c} value={c}>{CURRENCY_FLAG[c as SupportedCurrency] ?? ""} {c} — {CURRENCY_NAMES[c]}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="uf-nav-row">
+          <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
+          <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(selected)}>
+            Continue with {selected} →
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -1377,6 +1447,13 @@ export default function Home() {
         .uf-currency-btn.selected { border-color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent); }
         .uf-currency-code { font-weight: 800; font-size: 15px; color: var(--text); font-family: var(--font-display); }
         .uf-currency-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        @keyframes currencyConfettiFall {
+          0%   { opacity: 0; transform: translate3d(0, -24px, 0) rotate(0deg) scale(0.5); }
+          8%   { opacity: 1; }
+          100% { opacity: 0; transform: translate3d(var(--x), 100vh, 0) rotate(var(--r)) scale(1.1); }
+        }
+        .uf-currency-confetti { position: fixed; top: 0; left: 0; right: 0; height: 100vh; pointer-events: none; z-index: 200; overflow: hidden; }
+        .uf-currency-confetti span { position: absolute; top: 0; width: 8px; height: 13px; border-radius: 3px; animation: currencyConfettiFall 1.35s ease-out forwards; }
         .uf-nav-restart { font-size: 13px; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: var(--font-body); transition: color 0.2s; }
         .uf-nav-restart:hover { color: var(--text); }
         .uf-nav-signin { font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
