@@ -623,39 +623,82 @@ function useCountUp(target: number, duration: number, running: boolean) {
 }
 
 function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear }: {
-  data: { pts: { year: number; base: number; boosted: number }[]; maxYears: number; fireTarget: number };
+  data: { basePts: {t:number;value:number}[]; boostedPts: {t:number;value:number}[]; maxYears: number; fireTarget: number };
   extraSavings: number;
   baseRetireYear: number;
   boostedRetireYear: number;
 }) {
-  if (data.pts.length < 2) return null;
-  const W = 320, H = 190;
-  const PAD = { t: 20, r: 24, b: 30, l: 50 };
-  const innerW = W - PAD.l - PAD.r;
-  const innerH = H - PAD.t - PAD.b;
-  const maxVal = Math.max(...data.pts.map(p => Math.max(p.base, p.boosted)), data.fireTarget) * 1.08;
-  const xScale = (y: number) => PAD.l + (y / data.maxYears) * innerW;
-  const yScale = (v: number) => PAD.t + innerH - (v / maxVal) * innerH;
-  const toPath = (key: "base" | "boosted") =>
-    data.pts.map((p, i) => `${i === 0 ? "M" : "L"}${xScale(p.year).toFixed(1)},${yScale(p[key]).toFixed(1)}`).join(" ");
-  const yTicks: number[] = [];
-  const step = maxVal > 3_000_000 ? 1_000_000 : maxVal > 1_500_000 ? 500_000 : 250_000;
-  for (let v = step; v <= maxVal; v += step) yTicks.push(v);
-  const xLabels = Array.from({ length: Math.floor(data.maxYears / 4) + 1 }, (_, i) => i * 4).filter(y => y <= data.maxYears);
-  const fireY = yScale(data.fireTarget);
-  const fmtA = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(v % 1_000_000 === 0 ? 0 : 1)}M` : `$${Math.round(v / 1000)}k`;
-  const lastBase = data.pts.at(-1)!;
+  if (data.basePts.length < 2) return null;
+  const W = 920, H = 340;
+  const padL = 56, padR = 32, padT = 28, padB = 40;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const yMax = data.fireTarget * 1.08;
+  const xS = (t: number) => padL + (t / Math.max(data.maxYears, 0.1)) * innerW;
+  const yS = (v: number) => padT + innerH - (Math.min(v, yMax) / yMax) * innerH;
+  const toPathPts = (pts: {t:number;value:number}[]) =>
+    pts.map((p, i) => `${i === 0 ? "M" : "L"}${xS(p.t).toFixed(2)},${yS(p.value).toFixed(2)}`).join(" ");
+  const toAreaPts = (pts: {t:number;value:number}[]) => {
+    const top = toPathPts(pts);
+    const last = pts[pts.length - 1], first = pts[0];
+    return `${top} L${xS(last.t).toFixed(2)},${yS(0).toFixed(2)} L${xS(first.t).toFixed(2)},${yS(0).toFixed(2)} Z`;
+  };
+  const yearStep = Math.max(1, Math.ceil(data.maxYears / 6));
+  const xTicks = Array.from({ length: Math.floor(data.maxYears / yearStep) + 1 }, (_, i) => i * yearStep).filter(y => y <= data.maxYears + 0.5);
+  const yTicks = [0, 0.5e6, 1e6, 1.5e6, 2e6].filter(v => v <= yMax * 0.98);
+  const fireY = yS(data.fireTarget);
+  const baseLast = data.basePts[data.basePts.length - 1];
+  const boostedLast = data.boostedPts[data.boostedPts.length - 1];
+  const fmtFire = (v: number) => v >= 1e6 ? `$${(v / 1e6).toFixed(2)}M` : `$${Math.round(v / 1000)}k`;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: W, overflow: "visible", display: "block" }}>
-      {yTicks.map(v => <line key={v} x1={PAD.l} x2={W - PAD.r} y1={yScale(v)} y2={yScale(v)} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />)}
-      <line x1={PAD.l} x2={W - PAD.r} y1={fireY} y2={fireY} stroke="rgba(34,211,165,0.45)" strokeWidth={1.5} strokeDasharray="5 3" />
-      <text x={W - PAD.r + 4} y={fireY + 4} fontSize={9} fill="rgba(34,211,165,0.8)" fontWeight="700" fontFamily="monospace">FIRE</text>
-      {yTicks.map(v => <text key={v} x={PAD.l - 6} y={yScale(v) + 4} fontSize={9} fill="rgba(255,255,255,0.28)" textAnchor="end" fontFamily="monospace">{fmtA(v)}</text>)}
-      {xLabels.map(y => <text key={y} x={xScale(y)} y={H - 4} fontSize={9} fill="rgba(255,255,255,0.28)" textAnchor="middle">{y === 0 ? "Today" : `+${y}y`}</text>)}
-      <path d={toPath("base")} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={1.5} />
-      {extraSavings > 0 && <path d={toPath("boosted")} fill="none" stroke="#22D3A5" strokeWidth={2} />}
-      <text x={xScale(lastBase.year) - 4} y={yScale(lastBase.base) - 6} fontSize={9} fill="rgba(255,255,255,0.35)" textAnchor="end" fontWeight="700">BASE · {baseRetireYear}</text>
-      {extraSavings > 0 && <text x={xScale(lastBase.year) - 4} y={yScale(lastBase.boosted) - 6} fontSize={9} fill="#22D3A5" textAnchor="end" fontWeight="700">+${extraSavings}/mo · {boostedRetireYear}</text>}
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }}>
+      <defs>
+        <linearGradient id="fg-base" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6B7280" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#6B7280" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="fg-new" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#22D3A5" stopOpacity="0.34" />
+          <stop offset="100%" stopColor="#22D3A5" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {yTicks.map(v => (
+        <g key={v}>
+          <line x1={padL} x2={W - padR} y1={yS(v)} y2={yS(v)} stroke="#E2E8F0" strokeDasharray="3 4" />
+          <text x={padL - 10} y={yS(v)} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#6B7280" fontWeight="600">
+            {v === 0 ? "$0" : `$${(v / 1e6).toFixed(1)}M`}
+          </text>
+        </g>
+      ))}
+      {xTicks.map(y => (
+        <text key={y} x={xS(y)} y={H - padB + 18} textAnchor="middle" fontSize="10" fill="#6B7280" fontWeight="600">
+          {y === 0 ? "Today" : `+${y}y`}
+        </text>
+      ))}
+      <line x1={padL} x2={W - padR} y1={fireY} y2={fireY} stroke="#059669" strokeWidth="1.2" strokeDasharray="2 4" />
+      <text x={W - padR} y={fireY - 8} textAnchor="end" fontSize="10" fontWeight="700" fill="#059669">
+        FIRE · {fmtFire(data.fireTarget)}
+      </text>
+      <path d={toAreaPts(data.basePts)} fill="url(#fg-base)" />
+      <path d={toPathPts(data.basePts)} fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 4" />
+      {extraSavings > 0 && (
+        <>
+          <path d={toAreaPts(data.boostedPts)} fill="url(#fg-new)" />
+          <path d={toPathPts(data.boostedPts)} fill="none" stroke="#003527" strokeWidth="2.6" strokeLinecap="round" />
+        </>
+      )}
+      <circle cx={xS(baseLast.t)} cy={yS(baseLast.value)} r="5" fill="#fff" stroke="#6B7280" strokeWidth="2" />
+      {extraSavings > 0 && (
+        <circle cx={xS(boostedLast.t)} cy={yS(boostedLast.value)} r="6" fill="#003527" stroke="#fff" strokeWidth="2.5" />
+      )}
+      <text x={xS(baseLast.t) + 10} y={yS(baseLast.value) + 8} fontSize="10" fontWeight="700" fill="#6B7280">
+        BASE · {baseRetireYear}
+      </text>
+      {extraSavings > 0 && (
+        <text x={xS(boostedLast.t) - 8} y={yS(boostedLast.value) - 16} textAnchor="end" fontSize="11" fontWeight="700" fill="#003527">
+          NEW · {boostedRetireYear}
+        </text>
+      )}
     </svg>
   );
 }
@@ -746,19 +789,12 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
     }
   }, [revealed, stateKey, city.isCustom, result.fireTarget, result.years, landingSource]);
 
-  // Delta calculations
-  const highSaver = calcFIRE((takeHome / 12) * 0.5, city.col, currentAge);
-  const costYears = Math.max(0, result.years - highSaver.years).toFixed(1);
-
   const [extraSavings, setExtraSavings] = useState(500);
-  const [diningCutPct, setDiningCutPct] = useState(20);
 
-  const d1 = calcFIRE(savings + city.col * (diningCutPct / 100) / 12, city.col, currentAge);
-  const d2 = calcFIRE(savings + 416, city.col, currentAge);
-  const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge);
-  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge);
-  const monthlyMoveYearsSaved = Math.max(0, result.years - d4.years);
-  const monthlyMoveRetireYear = d4.retireYear;
+  const d1 = calcFIRE(savings + Math.round(city.col * 0.2 / 12), city.col, currentAge, portfolioBalance);
+  const d2 = calcFIRE(savings + 416, city.col, currentAge, portfolioBalance);
+  const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge, portfolioBalance);
+  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge, portfolioBalance);
   const monthlyTakeHome = takeHome / 12;
   const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
   const fireIdentity = deriveFireIdentity(savingsBenchmark.savingsRate, portfolioBalance, result.years);
@@ -769,48 +805,69 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const isAlreadyFire = fireStage === "achieved";
   const stageData = FIRE_STAGES[fireStage];
 
-  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const fireMonth = MONTHS[Math.max(0, Math.floor((result.years % 1) * 12))];
+  const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const fireMonthFull = MONTHS_FULL[Math.max(0, Math.floor((result.years % 1) * 12))];
+  const savedYears = Math.max(0, result.years - d4.years);
+  const savedY = Math.floor(savedYears);
+  const savedM = Math.round((savedYears - savedY) * 12);
+  const monthlyMoveLabel = savedY > 0 ? `${savedY}y ${savedM}mo` : `${savedM}mo`;
+  const newDateLabel = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + Math.round(d4.years * 12));
+    return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+  })();
+  const yearsLabel = result.years < 1 ? "less than a year" : `${Math.floor(result.years)}y ${Math.round((result.years % 1) * 12)}mo`;
+  const extraAtFire = extraSavings * 12 * d4.years * 1.4;
+  const extraAtFireLabel = extraAtFire >= 1_000_000 ? `$${(extraAtFire / 1_000_000).toFixed(2)}M` : `$${Math.round(extraAtFire / 1000)}k`;
+  const monthlyTakeHomeForBenchmark = takeHome / 12;
+  const savingsRatePct = Math.round((savings / (monthlyTakeHomeForBenchmark || 1)) * 100);
+  const savingsMultiple = ((savingsRatePct / PUBLIC_SAVINGS_RATE_BASELINE) || 0).toFixed(1);
+  const milestones = [
+    { label: "FIRE number found", done: true },
+    { label: "Freedom date mapped", done: true },
+    { label: isAlreadyFire ? "Next chapter awaits" : "Monthly move ready", done: !isAlreadyFire },
+  ];
   const chartData = useMemo(() => {
-    const pts: { year: number; base: number; boosted: number }[] = [];
-    let base = portfolioBalance;
-    let boosted = portfolioBalance;
+    const r = 0.07;
     const annualBase = savings * 12;
     const annualBoosted = (savings + extraSavings) * 12;
-    const maxYears = Math.min(Math.ceil(result.years) + 4, 25);
-    for (let y = 0; y <= maxYears; y++) {
-      pts.push({ year: y, base: Math.round(base), boosted: Math.round(boosted) });
-      base = (base + annualBase) * 1.07;
-      boosted = (boosted + annualBoosted) * 1.07;
-    }
-    return { pts, maxYears: Math.max(1, maxYears), fireTarget: result.fireTarget ?? 0 };
-  }, [portfolioBalance, savings, extraSavings, result.years, result.fireTarget]);
-  const extraAtFire = extraSavings > 0 && result.years > 0
-    ? Math.round(extraSavings * ((Math.pow(1 + 0.07 / 12, result.years * 12) - 1) / (0.07 / 12)))
-    : 0;
-
-  function fmtDelta(yrs: number): string {
-    if (yrs < 1 / 12) return "< 1 month sooner";
-    if (yrs < 2) return `${Math.round(yrs * 12)} month${Math.round(yrs * 12) !== 1 ? "s" : ""} sooner`;
-    return `${yrs.toFixed(1)} years sooner`;
-  }
-  const portfolioYearsSaved = portfolioBalance > 0
-    ? Math.max(0, calcFIRE(savings, city.col, currentAge, 0).years - result.years)
-    : 0;
+    const buildPts = (annual: number, years: number) => {
+      const stepsPerYear = 4;
+      const totalSteps = Math.ceil(years * stepsPerYear);
+      const pts: { t: number; value: number }[] = [];
+      for (let i = 0; i <= totalSteps; i++) {
+        const t = i / stepsPerYear;
+        const grow = Math.pow(1 + r, t);
+        pts.push({ t, value: portfolioBalance * grow + annual * (grow - 1) / r });
+      }
+      return pts;
+    };
+    const maxYears = Math.max(result.years, d4.years, 1);
+    return {
+      basePts: buildPts(annualBase, result.years > 0 ? result.years : 20),
+      boostedPts: buildPts(annualBoosted, d4.years > 0 ? d4.years : 20),
+      maxYears,
+      fireTarget: result.fireTarget ?? 0,
+    };
+  }, [portfolioBalance, savings, extraSavings, result.years, result.fireTarget, d4.years]);
 
   const calcLabels = ["City cost-of-living", "After-tax income", "Compound growth at 7%", "25× withdrawal rule"];
+
+  const stageIdx = stageData.index;
+  const stages4 = ["Ignition", "Momentum", "Final Stretch", "FIRE Achieved"] as const;
 
   return (
     <div className="uf-screen uf-reveal-screen">
       {showShare && (
-          <ShareModal
+        <ShareModal
           cityName={city.name}
           fireIdentity={fireIdentity}
           benchmark={savingsBenchmark}
           onClose={() => setShowShare(false)}
         />
       )}
-      {/* PHASE 1 */}
+
+      {/* PHASE 1 — calculating */}
       {calcPhase && (
         <div className="uf-calc-phase">
           <div className="uf-calc-label">Running your projection...</div>
@@ -828,241 +885,239 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
         </div>
       )}
 
-      {/* PHASE 2 */}
+      {/* PHASE 2 — reveal */}
       {!calcPhase && (
         <div className="uf-number-phase">
 
-          {/* ── DARK HERO ── */}
-          <div className="uf-reveal-dark">
+          {/* ── GREEN GRADIENT HERO ── */}
+          <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #059669 0%, #003527 100%)", color: "#fff", padding: "clamp(32px, 5vw, 64px) clamp(20px, 4vw, 56px) clamp(28px, 4vw, 56px)", marginBottom: 0, borderRadius: "16px 16px 0 0" }}>
+            {/* Decorative circles */}
+            <div aria-hidden style={{ position: "absolute", top: -200, right: -80, width: 560, height: 560, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.08)", pointerEvents: "none" }} />
+            <div aria-hidden style={{ position: "absolute", top: -100, right: 20, width: 380, height: 380, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.06)", pointerEvents: "none" }} />
+            <div aria-hidden style={{ position: "absolute", top: 40, right: 140, width: 220, height: 220, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.04)", pointerEvents: "none" }} />
             {revealed && (
               <div className="uf-confetti" aria-hidden="true">
                 <span /><span /><span /><span /><span /><span /><span /><span />
               </div>
             )}
-            <div className="uf-reveal-hero-grid">
-              {/* Left column */}
-              <div className="uf-reveal-left">
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,211,165,0.12)", border: "1px solid rgba(34,211,165,0.25)", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: "#22D3A5", letterSpacing: "0.5px", marginBottom: 14 }}>
-                  {stageData.name}
+
+            <div style={{ maxWidth: 1180, margin: "0 auto", position: "relative" }}>
+              {/* Stage chip */}
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "7px 12px 7px 10px", background: "rgba(34,211,165,0.10)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, marginBottom: 28 }}>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {stages4.map((_, i) => (
+                    <div key={i} style={{ width: 5, height: 5, borderRadius: 99, background: i <= stageIdx ? "#22D3A5" : "rgba(34,211,165,0.25)" }} />
+                  ))}
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>Your freedom date</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 44, fontWeight: 900, color: "#fff", letterSpacing: "-2px", lineHeight: 1 }}>{isAlreadyFire ? "Now" : fireMonth}</span>
-                  <span style={{ fontSize: 30, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: "-1px", lineHeight: 1 }}>{result.retireYear}</span>
-                </div>
-                {result.age !== undefined && !isAlreadyFire && (
-                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.48)", marginBottom: 12 }}>
-                    Age {result.age} · {result.years < 1 ? "less than a year" : `${Math.round(result.years)} year${result.years >= 2 ? "s" : ""}`} from now
-                  </div>
-                )}
-                {isAlreadyFire && (
-                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.48)", marginBottom: 12 }}>Work is already optional.</div>
-                )}
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 18 }}>📍 {city.name}</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(34,211,165,0.6)", letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 4 }}>FIRE number</div>
-                <div ref={numRef} className="uf-fire-num" style={{ color: "#fff", marginBottom: 4 }}>{fmtUSD(counted)}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 20 }}>25× annual expenses · 4% safe withdrawal rate</div>
-                {revealed && (
-                  <>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 14 }}>
-                      {["FIRE number found", "Freedom date mapped", isAlreadyFire ? "Next chapter awaits" : "Monthly move ready"].map(m => (
-                        <div key={m} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "4px 10px", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>
-                          <span style={{ color: "#22D3A5" }}>✓</span> {m}
-                        </div>
-                      ))}
-                    </div>
-                    <button className="uf-share-trigger" onClick={() => setShowShare(true)}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                      </svg>
-                      Share my FIRE Type
-                    </button>
-                  </>
-                )}
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#22D3A5", textTransform: "uppercase" }}>{stageData.name}</span>
               </div>
 
-              {/* Right column — chart */}
-              <div className="uf-reveal-right">
-                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 2 }}>Your path to FIRE</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", marginBottom: 14 }}>Compounded at 7% real return</div>
-                <FireGrowthChart data={chartData} extraSavings={extraSavings} baseRetireYear={result.retireYear} boostedRetireYear={d4.retireYear} />
-                <div style={{ marginTop: 14 }}>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 6 }}>
-                    Monthly boost: <span style={{ color: "#22D3A5", fontWeight: 700 }}>+${extraSavings.toLocaleString()}/mo</span>
+              {/* 2-column grid */}
+              <div className="uf-reveal-hero-grid">
+                {/* Left: freedom date */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#22D3A5" }}>
+                    Your freedom date
                   </div>
-                  <input
-                    type="range" min={0} max={2000} step={100} value={extraSavings}
-                    onChange={e => setExtraSavings(Number(e.target.value))}
-                    style={{ width: "100%", accentColor: "#22D3A5" }}
-                  />
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 3 }}>
-                    <span>$0</span><span>$2,000/mo</span>
+                  <div style={{ marginTop: 14, fontSize: "clamp(56px, 9vw, 104px)", lineHeight: 0.95, fontWeight: 600, letterSpacing: "-0.045em", wordBreak: "break-word" }}>
+                    {isAlreadyFire ? "Now" : fireMonthFull}&nbsp;<span style={{ color: "#22D3A5" }}>{result.retireYear}</span>
+                  </div>
+                  <div style={{ marginTop: 18, fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(255,255,255,0.72)", fontWeight: 500, letterSpacing: "-0.005em" }}>
+                    {result.age !== undefined && !isAlreadyFire && (
+                      <>Age <b style={{ color: "#fff", fontWeight: 700 }}>{result.age}</b>
+                      <span style={{ margin: "0 10px", opacity: 0.4 }}>·</span>
+                      <b style={{ color: "#fff", fontWeight: 700 }}>{yearsLabel}</b> from now
+                      <span style={{ margin: "0 10px", opacity: 0.4 }}>·</span>
+                      {city.name}</>
+                    )}
+                    {isAlreadyFire && city.name}
+                  </div>
+                </div>
+
+                {/* Right: FIRE number + milestones */}
+                <div className="uf-reveal-hero-right">
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>
+                    FIRE number
+                  </div>
+                  <div ref={numRef} className="uf-fire-num" style={{ marginTop: 10, fontSize: "clamp(32px, 4vw, 48px)", lineHeight: 1, fontWeight: 600, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "#fff" }}>
+                    {fmtUSD(counted)}
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.5)", maxWidth: 260, lineHeight: 1.45 }}>
+                    25× annual expenses at the 4% safe withdrawal rate.
+                  </div>
+                  <div style={{ marginTop: 22, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {milestones.map((m) => (
+                      <div key={m.label} style={{ flex: "1 1 auto", minWidth: 100, padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 14, height: 14, borderRadius: 99, flexShrink: 0, background: m.done ? "#22D3A5" : "rgba(34,211,165,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {m.done
+                            ? <svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 5l2 2 4-4" stroke="#003527" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            : <svg width="8" height="8" viewBox="0 0 10 10"><path d="M3 5h4M5 3l2 2-2 2" stroke="#22D3A5" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          }
+                        </div>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>{m.label}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ── LIGHT SECTION ── */}
+          {/* ── CHART + MONTHLY MOVE ── */}
           {revealed && (
             <>
-              {/* Stage indicator */}
-              <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: "16px 18px", marginBottom: 18 }}>
-                <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-                  {([0, 1, 2, 3] as const).map(i => (
-                    <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= stageData.index ? "#059669" : "#D1FAE5" }} />
-                  ))}
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#059669", marginBottom: 4 }}>
-                  Stage {stageData.index + 1} of 4 — {stageData.name}
-                </div>
-                <div style={{ fontSize: 13, color: "#065F46", fontWeight: 500, lineHeight: 1.5 }}>{stageData.description}</div>
-              </div>
-
-              <div className="uf-benchmark-card">
-                <div className="uf-insight-kicker">Savings rate benchmark</div>
-                <div className="uf-insight-title">{savingsBenchmark.headline}</div>
-                <div className="uf-insight-copy">{savingsBenchmark.detail}</div>
-                <div className="uf-insight-source">{savingsBenchmark.source}</div>
-              </div>
-
-              <div className="uf-identity-card">
-                <div className="uf-insight-kicker">Your FIRE Type</div>
-                <div className="uf-identity-row">
-                  <div className="uf-identity-icon">🔥</div>
-                  <div>
-                    <div className="uf-insight-title">{fireIdentity.name}</div>
-                    <div className="uf-insight-copy">{fireIdentity.headline}</div>
-                  </div>
-                </div>
-                <div className="uf-insight-source">{fireIdentity.description}</div>
-              </div>
-
-              {!isAlreadyFire && (
-                <div className="uf-monthly-move-card">
-                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "#A7F3D0", marginBottom: 8 }}>The monthly move</div>
-                  <div style={{ fontSize: 22, fontWeight: 850, lineHeight: 1.2, letterSpacing: "-0.02em" }}>
-                    Invest ${extraSavings.toLocaleString()}/mo more and your freedom date moves {monthlyMoveYearsSaved > 0 ? fmtDelta(monthlyMoveYearsSaved) : "closer"}.
-                  </div>
-                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", marginTop: 8, lineHeight: 1.45 }}>
-                    At that pace, work could become optional around {monthlyMoveRetireYear}{d4.age !== undefined ? `, at age ${d4.age}` : ""}. Adjust the slider in the chart above.
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 14, background: "rgba(0,0,0,0.18)", borderRadius: 10, padding: "12px 14px" }}>
-                    {[
-                      { label: "NEW DATE", value: `${MONTHS[Math.max(0, Math.floor((d4.years % 1) * 12))]} ${d4.retireYear}` },
-                      { label: "YEARS CUT", value: monthlyMoveYearsSaved < 1 ? `${Math.round(monthlyMoveYearsSaved * 12)}mo` : `${monthlyMoveYearsSaved.toFixed(1)}y` },
-                      { label: "EXTRA AT FIRE", value: extraAtFire > 0 ? `$${Math.round(extraAtFire / 1000)}k` : "—" },
-                    ].map(({ label, value }) => (
-                      <div key={label}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: "#A7F3D0", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>{label}</div>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{value}</div>
+              <div style={{ background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
+                <div className="uf-chart-move-grid">
+                  {/* Chart card */}
+                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "24px 28px 16px", boxShadow: "0 24px 40px -28px rgba(15,23,42,0.14)" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Your path to FIRE</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginTop: 6, letterSpacing: "-0.015em" }}>Compounded at 7% real return</div>
                       </div>
-                    ))}
+                      <div style={{ display: "flex", gap: 18, fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#6B7280" }}>
+                          <span style={{ display: "inline-block", width: 14, borderTop: "2px dashed #6B7280" }} />
+                          Base plan
+                        </span>
+                        {extraSavings > 0 && (
+                          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#003527" }}>
+                            <span style={{ display: "inline-block", width: 14, borderTop: "2.5px solid #003527" }} />
+                            With +${extraSavings}/mo
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 8 }}>
+                      <FireGrowthChart data={chartData} extraSavings={extraSavings} baseRetireYear={result.retireYear} boostedRetireYear={d4.retireYear} />
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {!isAlreadyFire && (
-                <div className="uf-cost-card">
-                  <div className="uf-cost-label">At your current savings rate, your spending is costing you</div>
-                  <div className="uf-cost-years">{costYears} years</div>
-                  <div className="uf-cost-sub">of freedom vs. someone saving 50% of their income</div>
-                </div>
-              )}
-
-              {!isAlreadyFire && (<>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748B", marginBottom: 10 }}>
-                  Decision impact — what each lever buys you
-                </div>
-                <div className="uf-delta-grid">
-                  {portfolioBalance > 0 && portfolioYearsSaved > 0 && (
-                    <div className="uf-delta-card positive" style={{ gridColumn: "1 / -1" }}>
-                      <div className="uf-delta-label">Your {fmtUSD(portfolioBalance)} head start</div>
-                      <div className="uf-delta-val pos">-{portfolioYearsSaved} yr{portfolioYearsSaved !== 1 ? "s" : ""} vs. starting from zero</div>
+                  {/* Monthly move sidebar */}
+                  {!isAlreadyFire && (
+                    <div style={{ background: "#003527", color: "#fff", borderRadius: 16, padding: "24px 24px 26px", position: "relative", overflow: "hidden", boxShadow: "0 24px 40px -28px rgba(15,23,42,0.16)" }}>
+                      <div aria-hidden style={{ position: "absolute", top: -80, right: -80, width: 220, height: 220, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 65%)", opacity: 0.16, pointerEvents: "none" }} />
+                      <div style={{ position: "relative" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>The monthly move</div>
+                        <div style={{ marginTop: 12, fontSize: 19, lineHeight: 1.3, fontWeight: 500, letterSpacing: "-0.01em" }}>
+                          Invest <span style={{ color: "#22D3A5", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>${extraSavings}</span> more / month and your freedom date moves{" "}
+                          <span style={{ color: "#22D3A5", fontWeight: 700 }}>{savedYears > 0 ? monthlyMoveLabel : "closer"}</span> sooner.
+                        </div>
+                        <div style={{ marginTop: 22 }}>
+                          <input
+                            type="range" min="0" max="2000" step="50" value={extraSavings}
+                            onChange={e => setExtraSavings(Number(e.target.value))}
+                            style={{ width: "100%", accentColor: "#22D3A5", height: 4 }}
+                          />
+                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>
+                            <span>$0</span><span>$500</span><span>$1k</span><span>$1.5k</span><span>$2k</span>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.12)", display: "flex", flexDirection: "column", gap: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, letterSpacing: "0.04em" }}>NEW DATE</span>
+                            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em" }}>{newDateLabel}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, letterSpacing: "0.04em" }}>YEARS CUT</span>
+                            <span style={{ fontSize: 16, fontWeight: 700, color: "#22D3A5", fontVariantNumeric: "tabular-nums" }}>{savedYears > 0 ? monthlyMoveLabel : "—"}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, letterSpacing: "0.04em" }}>EXTRA AT FIRE</span>
+                            <span style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{extraSavings > 0 ? `+${extraAtFireLabel}` : "—"}</span>
+                          </div>
+                        </div>
+                        <Link
+                          href="/login"
+                          style={{ display: "block", marginTop: 22, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none" }}
+                          onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource })}
+                        >
+                          Automate this →
+                        </Link>
+                      </div>
                     </div>
                   )}
-                  <div className="uf-delta-card positive">
-                    <div className="uf-delta-label">Cut dining out by {diningCutPct}%</div>
-                    <div className="uf-delta-val pos">{(result.years - d1.years) > 0 ? fmtDelta(result.years - d1.years) : "< 1 month sooner"}</div>
-                    <input type="range" min={5} max={50} step={5} value={diningCutPct} onChange={e => setDiningCutPct(Number(e.target.value))} style={{ width: "100%", marginTop: 10, accentColor: "#059669" }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 3 }}>
-                      <span>5%</span><span>50%</span>
-                    </div>
-                  </div>
-                  <div className="uf-delta-card negative">
-                    <div className="uf-delta-label">Take a 10% pay cut</div>
-                    <div className="uf-delta-val neg">+{(d3.years - result.years).toFixed(1)} yrs delayed</div>
-                  </div>
-                  <div className="uf-delta-card positive">
-                    <div className="uf-delta-label">Invest your annual bonus</div>
-                    <div className="uf-delta-val pos">{(result.years - d2.years) > 0 ? fmtDelta(result.years - d2.years) : "< 1 month sooner"}</div>
+                </div>
+              </div>
+
+              {/* ── IDENTITY ROW ── */}
+              <div className="uf-identity-grid" style={{ marginBottom: 16 }}>
+                {/* FIRE type — dark green */}
+                <div style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, padding: "24px", minHeight: 160, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div aria-hidden style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 70%)", opacity: 0.22, pointerEvents: "none" }} />
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>Your FIRE type</div>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.05 }}>{fireIdentity.name}</div>
+                    <div style={{ marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.45, maxWidth: 320 }}>{fireIdentity.headline}</div>
                   </div>
                 </div>
-              </>)}
-
-              {!isAlreadyFire && (
-                <div style={{ marginBottom: 18 }}>
-                  {topRevealAction ? (
-                    <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 14, padding: "14px 16px", marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#047857", marginBottom: 6 }}>Recommended next move</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#064E3B", lineHeight: 1.35 }}>{topRevealAction.title}</div>
-                      <div style={{ fontSize: 13, color: "#065F46", marginTop: 6 }}>{topRevealAction.rationale}</div>
+                {/* Savings benchmark — light */}
+                <div style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, padding: "24px", minHeight: 160, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Savings rate benchmark</div>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                      <div style={{ fontSize: 52, fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsMultiple}×</div>
+                      <div style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>ahead of the U.S. average</div>
                     </div>
-                  ) : null}
-                  <NextActions
-                    actions={revealActions}
-                    variant="light"
-                    heading="What to do next"
-                    subheading="These moves are ranked by projected FIRE-date impact from your current inputs."
-                    layout="stack"
-                    onAction={() => {
-                      saveCalculatorPrefill({
-                        monthlyIncome: Math.round(takeHome / 12),
-                        monthlySavings: savings,
-                        monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)),
-                        cityName: city.name,
-                        stateKey,
-                        fireTarget: result.fireTarget,
-                        annualCost: city.col,
-                        currentAge,
-                        portfolioBalance,
-                        landingSource,
-                      });
-                      router.push("/login");
-                    }}
-                  />
+                    <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
+                      You save <b style={{ color: "#0F172A" }}>{savingsRatePct}%</b> of take-home, vs. <b style={{ color: "#0F172A" }}>{PUBLIC_SAVINGS_RATE_BASELINE}%</b> nationally.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── DECISION IMPACT ── */}
+              {!isAlreadyFire && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Decision impact</div>
+                      <div style={{ fontSize: 18, color: "#0F172A", marginTop: 4, fontWeight: 600, letterSpacing: "-0.01em" }}>What each lever buys you</div>
+                    </div>
+                    <span style={{ fontSize: 12, color: "#6B7280" }}>vs. today's plan</span>
+                  </div>
+                  <div className="uf-decision-grid">
+                    {[
+                      { label: "Cut dining out by 20%", delta: result.years - d1.years, detail: "~$" + Math.round(city.col * 0.2 / 12) + "/mo redirected" },
+                      { label: "Save $250/mo more", delta: result.years - calcFIRE(savings + 250, city.col, currentAge, portfolioBalance).years, detail: "Auto-transfer to brokerage" },
+                      { label: "Take a 10% pay cut", delta: d3.years - result.years, detail: "Career trade-off" },
+                      { label: "Invest annual bonus", delta: result.years - d2.years, detail: "Lump-sum, fully invested" },
+                    ].map((m, i) => {
+                      const isNeg = m.delta < 0;
+                      const abs = Math.abs(m.delta);
+                      const y = Math.floor(abs), mo = Math.round((abs - y) * 12);
+                      const label = y > 0 ? (mo > 0 ? `${y}y ${mo}mo` : `${y}y`) : `${mo}mo`;
+                      const sign = isNeg ? "+" : "−";
+                      return (
+                        <div key={i} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "16px", display: "flex", flexDirection: "column", gap: 8, minHeight: 116 }}>
+                          <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: isNeg ? "#B45309" : "#003527", fontVariantNumeric: "tabular-nums" }}>{sign}{label}</div>
+                          <div style={{ fontSize: 13, color: "#0F172A", fontWeight: 600, lineHeight: 1.3 }}>{m.label}</div>
+                          <div style={{ fontSize: 11, color: "#6B7280", marginTop: "auto" }}>{m.detail}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
-              <Link
-                href="/login"
-                className="uf-btn uf-btn-teal uf-btn-full uf-btn-lg"
-                style={{ marginBottom: 10, display: "flex", justifyContent: "center" }}
-                onClick={() => {
-                  saveCalculatorPrefill({
-                    monthlyIncome: Math.round(takeHome / 12),
-                    monthlySavings: savings,
-                    monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)),
-                    cityName: city.name,
-                    stateKey,
-                    fireTarget: result.fireTarget,
-                    annualCost: city.col,
-                    retireYear: result.retireYear,
-                    generatedAt: new Date().toISOString(),
-                    currentAge,
-                    portfolioBalance,
-                    landingSource,
-                  });
-                }}
-              >
-                Track this in your dashboard
-              </Link>
-              <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-                <button className="uf-btn uf-btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={onAdjust}>Adjust inputs</button>
-              </div>
-              <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 14, padding: "12px 14px", marginBottom: 12, color: "#475569", fontSize: 12, lineHeight: 1.5 }}>
-                <strong style={{ color: "#064E3B" }}>Private first:</strong> no login required for this estimate, and UntilFire does not store your financial details from this no-login calculator. Projection uses your inputs, a 7% real return assumption, and the 25× / 4% FIRE rule.
+              {/* ── FOOTER CTA ── */}
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.005em" }}>Lock this trajectory in your dashboard.</div>
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren't stored · 7% real return, 25× / 4% FIRE rule</div>
+                </div>
+                <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+                  <button style={{ height: 42, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }} onClick={onAdjust}>
+                    Adjust inputs
+                  </button>
+                  <Link
+                    href="/login"
+                    style={{ height: 42, padding: "0 20px", borderRadius: 10, background: "#003527", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center" }}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource })}
+                  >
+                    Track this →
+                  </Link>
+                </div>
               </div>
               <p className="uf-disclaimer">
                 Estimate only. Not financial advice. Based on 7% real return (historical S&P500 average after inflation).
@@ -1202,7 +1257,7 @@ export default function Home() {
         .uf-atm-orb-2 { width: 450px; height: 450px; top: 40vh; left: -120px; background: radial-gradient(circle, rgba(32,212,191,0.07) 0%, transparent 70%); animation: orbDrift2 18s ease-in-out 2s infinite alternate; }
         .uf-atm-orb-3 { width: 360px; height: 360px; top: 20vh; right: -100px; background: radial-gradient(circle, rgba(6,78,59,0.05) 0%, transparent 70%); animation: orbDrift3 22s ease-in-out 4s infinite alternate; }
         .uf-screen { width: 100%; max-width: 540px; margin: 0 auto; padding: 40px 24px 24px; position: relative; z-index: 1; }
-        .uf-reveal-screen { max-width: 680px; }
+        .uf-reveal-screen { max-width: 1100px; padding-left: 0; padding-right: 0; padding-top: 0; }
         .uf-section-sep { width: 240px; height: 1px; margin: 0 auto; background: linear-gradient(90deg, transparent, var(--border-light), transparent); position: relative; z-index: 1; }
 
         /* -- TYPOGRAPHY -- */
@@ -1655,27 +1710,42 @@ export default function Home() {
           .uf-confetti { display: none; }
         }
 
-        /* -- REVEAL HYBRID LAYOUT -- */
-        .uf-reveal-dark {
-          background: #08080E;
-          border-radius: 20px;
-          padding: 28px 24px;
-          margin-bottom: 20px;
-          position: relative;
-          overflow: hidden;
-          isolation: isolate;
-        }
+        /* -- REVEAL DESIGN E LAYOUT -- */
         .uf-reveal-hero-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 28px;
+          grid-template-columns: 1.4fr 1fr;
+          gap: clamp(24px, 4vw, 56px);
+          align-items: end;
+        }
+        .uf-reveal-hero-right {
+          padding-left: clamp(16px, 3vw, 40px);
+          border-left: 1px solid rgba(255,255,255,0.14);
+        }
+        .uf-chart-move-grid {
+          display: grid;
+          grid-template-columns: 1.7fr 1fr;
+          gap: 20px;
           align-items: start;
         }
-        .uf-reveal-left { display: flex; flex-direction: column; align-items: flex-start; }
-        .uf-reveal-right { display: flex; flex-direction: column; }
-        @media (max-width: 680px) {
-          .uf-reveal-hero-grid { grid-template-columns: 1fr; }
-          .uf-reveal-dark { padding: 22px 18px; }
+        .uf-identity-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .uf-decision-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+        @media (max-width: 900px) {
+          .uf-chart-move-grid { grid-template-columns: 1fr; }
+          .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+          .uf-reveal-hero-grid { grid-template-columns: 1fr; gap: 28px; }
+          .uf-reveal-hero-right { padding-left: 0; border-left: none; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.14); }
+          .uf-identity-grid { grid-template-columns: 1fr; }
+          .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
         }
         /* -- FOOTER DIVIDER -- */
       `}</style>
