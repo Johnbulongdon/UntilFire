@@ -174,14 +174,15 @@ function toAnnualGross(value: number, mode: IncomeMode): number {
 
 const POPULAR_CURRENCIES: SupportedCurrency[] = ["USD", "EUR", "GBP", "CAD", "AUD", "SGD", "INR", "JPY", "CHF", "NZD"];
 
-const CURRENCY_FLAG: Partial<Record<SupportedCurrency, string>> = {
-  USD:"🇺🇸", EUR:"🇪🇺", GBP:"🇬🇧", CAD:"🇨🇦", AUD:"🇦🇺",
-  SGD:"🇸🇬", INR:"🇮🇳", JPY:"🇯🇵", CHF:"🇨🇭", NZD:"🇳🇿",
-  CNY:"🇨🇳", HKD:"🇭🇰", KRW:"🇰🇷", SEK:"🇸🇪", NOK:"🇳🇴",
-  DKK:"🇩🇰", MYR:"🇲🇾", THB:"🇹🇭", IDR:"🇮🇩", PHP:"🇵🇭",
-  VND:"🇻🇳", TWD:"🇹🇼", MXN:"🇲🇽", BRL:"🇧🇷", ZAR:"🇿🇦",
-  AED:"🇦🇪", SAR:"🇸🇦", TRY:"🇹🇷", PLN:"🇵🇱", CZK:"🇨🇿",
-  HUF:"🇭🇺", ILS:"🇮🇱", NGN:"🇳🇬", PKR:"🇵🇰",
+// ISO 3166-1 alpha-2 codes for flag images (flagcdn.com)
+const CURRENCY_COUNTRY: Partial<Record<SupportedCurrency, string>> = {
+  USD:"us", EUR:"eu", GBP:"gb", CAD:"ca", AUD:"au",
+  SGD:"sg", INR:"in", JPY:"jp", CHF:"ch", NZD:"nz",
+  CNY:"cn", HKD:"hk", KRW:"kr", SEK:"se", NOK:"no",
+  DKK:"dk", MYR:"my", THB:"th", IDR:"id", PHP:"ph",
+  VND:"vn", TWD:"tw", MXN:"mx", BRL:"br", ZAR:"za",
+  AED:"ae", SAR:"sa", TRY:"tr", PLN:"pl", CZK:"cz",
+  HUF:"hu", ILS:"il", NGN:"ng", PKR:"pk",
 };
 
 const CURRENCY_CONFETTI_COLORS: Record<string, string[]> = {
@@ -222,26 +223,37 @@ function CurrencyScreen({ onNext, onBack }: { onNext: (c: SupportedCurrency) => 
   const [confettiKey, setConfettiKey] = useState(0);
   const [burstCurrency, setBurstCurrency] = useState<SupportedCurrency>("USD");
 
+  const colors = CURRENCY_CONFETTI_COLORS[burstCurrency] ?? DEFAULT_CONFETTI_COLORS;
+
+  // Generate unique per-piece keyframes with x/r values embedded — avoids CSS custom property issues
+  const confettiCSS = confettiKey > 0
+    ? CONFETTI_POSITIONS.map((pos, i) => `
+        @keyframes ccF${confettiKey}x${i} {
+          0%   { opacity:0; transform:translate3d(0,-20px,0) rotate(0deg) scale(0.5); }
+          8%   { opacity:1; }
+          100% { opacity:0; transform:translate3d(${pos.x},100vh,0) rotate(${pos.r}) scale(1.1); }
+        }
+      `).join("")
+    : "";
+
   return (
     <>
       {confettiKey > 0 && (
-        <div key={confettiKey} className="uf-currency-confetti" aria-hidden>
-          {CONFETTI_POSITIONS.map((pos, i) => {
-            const colors = CURRENCY_CONFETTI_COLORS[burstCurrency] ?? DEFAULT_CONFETTI_COLORS;
-            return (
+        <>
+          <style>{confettiCSS}</style>
+          <div className="uf-currency-confetti" aria-hidden>
+            {CONFETTI_POSITIONS.map((pos, i) => (
               <span
-                key={i}
+                key={`${confettiKey}-${i}`}
                 style={{
                   left: pos.left,
                   background: colors[i % colors.length],
-                  animationDelay: pos.delay,
-                  "--x": pos.x,
-                  "--r": pos.r,
-                } as React.CSSProperties}
+                  animation: `ccF${confettiKey}x${i} 1.35s ease-out ${pos.delay} forwards`,
+                }}
               />
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       <div className="uf-screen">
@@ -261,7 +273,16 @@ function CurrencyScreen({ onNext, onBack }: { onNext: (c: SupportedCurrency) => 
               className={`uf-currency-btn${selected === c ? " selected" : ""}`}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>{CURRENCY_FLAG[c]}</span>
+                {CURRENCY_COUNTRY[c] && (
+                  <img
+                    src={`https://flagcdn.com/w20/${CURRENCY_COUNTRY[c]}.png`}
+                    srcSet={`https://flagcdn.com/w40/${CURRENCY_COUNTRY[c]}.png 2x`}
+                    width={20}
+                    height={15}
+                    alt=""
+                    style={{ borderRadius: 2, objectFit: "cover", display: "block", flexShrink: 0 }}
+                  />
+                )}
                 <span className="uf-currency-code">{c}</span>
               </div>
               <span className="uf-currency-name">{CURRENCY_NAMES[c]}</span>
@@ -278,7 +299,7 @@ function CurrencyScreen({ onNext, onBack }: { onNext: (c: SupportedCurrency) => 
           >
             <option value="">Choose from full list…</option>
             {SUPPORTED_CURRENCIES.filter(c => !POPULAR_CURRENCIES.includes(c)).map(c => (
-              <option key={c} value={c}>{CURRENCY_FLAG[c as SupportedCurrency] ?? ""} {c} — {CURRENCY_NAMES[c]}</option>
+              <option key={c} value={c}>{c} — {CURRENCY_NAMES[c]}</option>
             ))}
           </select>
         </div>
@@ -1447,13 +1468,8 @@ export default function Home() {
         .uf-currency-btn.selected { border-color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent); }
         .uf-currency-code { font-weight: 800; font-size: 15px; color: var(--text); font-family: var(--font-display); }
         .uf-currency-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        @keyframes currencyConfettiFall {
-          0%   { opacity: 0; transform: translate3d(0, -24px, 0) rotate(0deg) scale(0.5); }
-          8%   { opacity: 1; }
-          100% { opacity: 0; transform: translate3d(var(--x), 100vh, 0) rotate(var(--r)) scale(1.1); }
-        }
         .uf-currency-confetti { position: fixed; top: 0; left: 0; right: 0; height: 100vh; pointer-events: none; z-index: 200; overflow: hidden; }
-        .uf-currency-confetti span { position: absolute; top: 0; width: 8px; height: 13px; border-radius: 3px; animation: currencyConfettiFall 1.35s ease-out forwards; }
+        .uf-currency-confetti span { position: absolute; top: 0; width: 8px; height: 13px; border-radius: 3px; }
         .uf-nav-restart { font-size: 13px; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: var(--font-body); transition: color 0.2s; }
         .uf-nav-restart:hover { color: var(--text); }
         .uf-nav-signin { font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
