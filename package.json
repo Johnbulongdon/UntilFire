@@ -19,7 +19,7 @@
     "date-fns": "^4.1.0",
     "gsap": "^3.15.0",
     "lucide-react": "^0.562.0",
-    "next": "15.5.15",
+    "next": "^15.5.18",
     "plaid": "^42.2.0",
     "posthog-js": "^1.372.6",
     "react": "19.0.0",
@@ -39,14 +39,16 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9.38.0",
-    "eslint-config-next": "15.5.15",
+    "eslint-config-next": "^15.5.18",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "overrides": {
+    "brace-expansion": "^5.0.6",
     "dompurify": "^3.4.2",
     "postcss": "^8.5.10",
     "protobufjs": "^7.5.5",
-    "svix": "^1.92.2"
+    "svix": "^1.92.2",
+    "ws": "^8.20.1"
   }
 }

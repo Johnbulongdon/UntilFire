@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
-import { supabase, isPro } from "@/lib/supabase";
+import { isPro, supabase } from "@/lib/supabase";
 
 type PlaidItem = {
   id: string;
@@ -18,7 +18,9 @@ type Props = {
 };
 
 async function getSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return session;
 }
 
@@ -45,7 +47,6 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
   const [syncResults, setSyncResults] = useState<Record<string, SyncResult>>({});
   const [error, setError] = useState<string | null>(null);
 
-  // Load connected accounts and Pro status on mount
   useEffect(() => {
     (async () => {
       setIsProUser(await isPro());
@@ -66,7 +67,10 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     setError(null);
     setConnectResult(null);
     const session = await getSession();
-    if (!session) { setLoadingLink(false); return; }
+    if (!session) {
+      setLoadingLink(false);
+      return;
+    }
     const res = await fetch("/api/plaid/create-link-token", {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
@@ -81,56 +85,69 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     setLoadingLink(false);
   };
 
-
-  const onPlaidSuccess = useCallback(async (publicToken: string, metadata: { institution: { name: string; institution_id: string } | null }) => {
-    setError(null);
-    setConnectResult(null);
-    setImporting(true);
-    const session = await getSession();
-    if (!session) { setImporting(false); return; }
-    const institution = metadata.institution;
-    const res = await fetch("/api/plaid/exchange-token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        public_token: publicToken,
-        institution_name: institution?.name ?? "Unknown Bank",
-        institution_id: institution?.institution_id ?? "",
-      }),
-    });
-    const data = await res.json();
-    setImporting(false);
-    setLinkToken(null);
-    if (!res.ok) {
-      setError(data.error ?? "Failed to import transactions");
-      return;
-    }
-    const newItem: PlaidItem = {
-      id: data.item_id,
-      institution_name: data.institution_name,
-      last_synced_at: new Date().toISOString(),
-    };
-    setItems((prev) => {
-      const exists = prev.find((it) => it.id === newItem.id);
-      return exists ? prev.map((it) => it.id === newItem.id ? newItem : it) : [...prev, newItem];
-    });
-    setSyncResults((prev) => ({ ...prev, [data.item_id]: { added: data.added_count, modified: 0, removed: 0 } }));
-    const result = { name: data.institution_name, added: data.added_count };
-    setConnectResult(result);
-    setTimeout(() => setConnectResult(null), 4000);
-    onTransactionsImported?.();
-  }, [onTransactionsImported]);
+  const onPlaidSuccess = useCallback(
+    async (
+      publicToken: string,
+      metadata: { institution: { name: string; institution_id: string } | null },
+    ) => {
+      setError(null);
+      setConnectResult(null);
+      setImporting(true);
+      const session = await getSession();
+      if (!session) {
+        setImporting(false);
+        return;
+      }
+      const institution = metadata.institution;
+      const res = await fetch("/api/plaid/exchange-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          public_token: publicToken,
+          institution_name: institution?.name ?? "Unknown Bank",
+          institution_id: institution?.institution_id ?? "",
+        }),
+      });
+      const data = await res.json();
+      setImporting(false);
+      setLinkToken(null);
+      if (!res.ok) {
+        setError(data.error ?? "Failed to import transactions");
+        return;
+      }
+      const newItem: PlaidItem = {
+        id: data.item_id,
+        institution_name: data.institution_name,
+        last_synced_at: new Date().toISOString(),
+      };
+      setItems((prev) => {
+        const exists = prev.find((it) => it.id === newItem.id);
+        return exists ? prev.map((it) => (it.id === newItem.id ? newItem : it)) : [...prev, newItem];
+      });
+      setSyncResults((prev) => ({
+        ...prev,
+        [data.item_id]: { added: data.added_count, modified: 0, removed: 0 },
+      }));
+      const result = { name: data.institution_name, added: data.added_count };
+      setConnectResult(result);
+      setTimeout(() => setConnectResult(null), 4000);
+      onTransactionsImported?.();
+    },
+    [onTransactionsImported],
+  );
 
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: onPlaidSuccess,
-    onExit: () => { setLinkToken(null); setLoadingLink(false); },
+    onExit: () => {
+      setLinkToken(null);
+      setLoadingLink(false);
+    },
   });
 
-  // Auto-open when link token is ready
   useEffect(() => {
     if (ready && linkToken) open();
   }, [ready, linkToken, open]);
@@ -139,7 +156,10 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     setSyncingId(itemId);
     setError(null);
     const session = await getSession();
-    if (!session) { setSyncingId(null); return; }
+    if (!session) {
+      setSyncingId(null);
+      return;
+    }
     const res = await fetch("/api/plaid/sync", {
       method: "POST",
       headers: {
@@ -150,11 +170,14 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     });
     const data = await res.json();
     setSyncingId(null);
-    if (!res.ok) { setError(data.error ?? "Sync failed"); return; }
+    if (!res.ok) {
+      setError(data.error ?? "Sync failed");
+      return;
+    }
     setSyncResults((prev) => ({ ...prev, [itemId]: data }));
-    setItems((prev) => prev.map((it) =>
-      it.id === itemId ? { ...it, last_synced_at: new Date().toISOString() } : it,
-    ));
+    setItems((prev) =>
+      prev.map((it) => (it.id === itemId ? { ...it, last_synced_at: new Date().toISOString() } : it)),
+    );
     onTransactionsImported?.();
   };
 
@@ -162,7 +185,10 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     if (!confirm(`Disconnect ${name}? Your imported transactions will be kept.`)) return;
     setDisconnectingId(itemId);
     const session = await getSession();
-    if (!session) { setDisconnectingId(null); return; }
+    if (!session) {
+      setDisconnectingId(null);
+      return;
+    }
     await fetch("/api/plaid/disconnect", {
       method: "DELETE",
       headers: {
@@ -173,7 +199,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     });
     setDisconnectingId(null);
     setItems((prev) => prev.filter((it) => it.id !== itemId));
-    setSyncResults((prev) => { const n = { ...prev }; delete n[itemId]; return n; });
+    setSyncResults((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
   };
 
   const btnStyle = (variant: "primary" | "ghost"): React.CSSProperties => ({
@@ -186,7 +216,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     fontWeight: 700,
     cursor: "pointer",
     fontFamily: "inherit",
-    whiteSpace: "nowrap" as const,
+    whiteSpace: "nowrap",
   });
 
   const atFreeLimit = isProUser === false && items.length >= 1;
@@ -198,66 +228,105 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
         @keyframes plaid-slide-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
       `}</style>
 
-      {/* Floating toast — success / info */}
       {connectResult && (
-        <div style={{
-          position: "fixed", top: 24, right: 24, zIndex: 9999,
-          maxWidth: 360, padding: "14px 18px", borderRadius: 12,
-          background: connectResult.added > 0 ? "#064E3B" : "#78350F",
-          color: "#ffffff",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-          display: "flex", alignItems: "flex-start", gap: 12,
-          animation: "plaid-slide-in 0.2s ease",
-        }}>
-          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>
-            {connectResult.added > 0 ? "✓" : "ℹ"}
-          </span>
+        <div
+          style={{
+            position: "fixed",
+            top: 24,
+            right: 24,
+            zIndex: 9999,
+            maxWidth: 360,
+            padding: "14px 18px",
+            borderRadius: 12,
+            background: connectResult.added > 0 ? "#064E3B" : "#78350F",
+            color: "#ffffff",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+            animation: "plaid-slide-in 0.2s ease",
+          }}
+        >
           <span style={{ fontSize: 13, lineHeight: 1.5, flex: 1 }}>
             {connectResult.added > 0
               ? `Connected! ${connectResult.added} transactions imported from ${connectResult.name}.`
-              : `${connectResult.name} connected. No transactions found yet — tap Sync now, or check back in a few minutes.`}
+              : `${connectResult.name} connected. No transactions found yet - tap Sync now, or check back in a few minutes.`}
           </span>
           <button
             onClick={() => setConnectResult(null)}
-            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 18, padding: 0, flexShrink: 0, lineHeight: 1 }}
-          >×</button>
+            style={{
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.7)",
+              cursor: "pointer",
+              fontSize: 18,
+              padding: 0,
+              flexShrink: 0,
+              lineHeight: 1,
+            }}
+          >
+            x
+          </button>
         </div>
       )}
 
-      {/* Floating toast — error */}
       {error && (
-        <div style={{
-          position: "fixed", top: connectResult ? 92 : 24, right: 24, zIndex: 9999,
-          maxWidth: 360, padding: "14px 18px", borderRadius: 12,
-          background: "#7F1D1D", color: "#ffffff",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-          display: "flex", alignItems: "flex-start", gap: 12,
-          animation: "plaid-slide-in 0.2s ease",
-        }}>
-          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>✕</span>
+        <div
+          style={{
+            position: "fixed",
+            top: connectResult ? 92 : 24,
+            right: 24,
+            zIndex: 9999,
+            maxWidth: 360,
+            padding: "14px 18px",
+            borderRadius: 12,
+            background: "#7F1D1D",
+            color: "#ffffff",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+            animation: "plaid-slide-in 0.2s ease",
+          }}
+        >
+          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>!</span>
           <span style={{ fontSize: 13, lineHeight: 1.5, flex: 1 }}>{error}</span>
           <button
             onClick={() => setError(null)}
-            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 18, padding: 0, flexShrink: 0, lineHeight: 1 }}
-          >×</button>
+            style={{
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.7)",
+              cursor: "pointer",
+              fontSize: 18,
+              padding: 0,
+              flexShrink: 0,
+              lineHeight: 1,
+            }}
+          >
+            x
+          </button>
         </div>
       )}
 
-      {/* Header row */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 16,
-        background: "#F8FAFC",
-        border: "1px solid #E2E8F0",
-        borderRadius: 12,
-        padding: "14px 18px",
-        marginBottom: items.length > 0 ? 10 : 0,
-        flexWrap: "wrap",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          background: "#F8FAFC",
+          border: "1px solid #E2E8F0",
+          borderRadius: 12,
+          padding: "14px 18px",
+          marginBottom: items.length > 0 ? 10 : 0,
+          flexWrap: "wrap",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 20 }}>🏦</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#047857", letterSpacing: "0.08em" }}>
+            BANK
+          </span>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E" }}>
               {items.length === 0 ? "Connect your bank account" : "Connected accounts"}
@@ -271,57 +340,66 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
         </div>
 
         {importing ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", fontSize: 13, fontWeight: 600 }}>
-            <span style={{
-              display: "inline-block", width: 14, height: 14,
-              border: "2px solid #D1FAE5", borderTopColor: "#047857",
-              borderRadius: "50%", animation: "plaid-spin 0.8s linear infinite",
-            }} />
-            Importing transactions…
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: "#047857",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            <span
+              style={{
+                display: "inline-block",
+                width: 14,
+                height: 14,
+                border: "2px solid #D1FAE5",
+                borderTopColor: "#047857",
+                borderRadius: "50%",
+                animation: "plaid-spin 0.8s linear infinite",
+              }}
+            />
+            Importing transactions...
           </div>
         ) : atFreeLimit ? (
           <button onClick={onUpgradeClick} style={btnStyle("primary")}>
-            Upgrade for more →
+            Upgrade for more -&gt;
           </button>
         ) : (
-          <button
-            onClick={handleConnectClick}
-            disabled={loadingLink}
-            style={btnStyle("primary")}
-          >
-            {loadingLink ? "Opening…" : items.length === 0 ? "Connect bank →" : "+ Add account"}
+          <button onClick={handleConnectClick} disabled={loadingLink} style={btnStyle("primary")}>
+            {loadingLink ? "Opening..." : items.length === 0 ? "Connect bank ->" : "+ Add account"}
           </button>
         )}
       </div>
 
-      {/* Connected institution list */}
       {items.map((item) => {
         const result = syncResults[item.id];
         const isSyncing = syncingId === item.id;
         const isDisconnecting = disconnectingId === item.id;
         return (
-          <div key={item.id} style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            background: "#ffffff",
-            border: "1px solid #E2E8F0",
-            borderRadius: 10,
-            padding: "12px 16px",
-            marginBottom: 6,
-            flexWrap: "wrap",
-          }}>
+          <div
+            key={item.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              background: "#ffffff",
+              border: "1px solid #E2E8F0",
+              borderRadius: 10,
+              padding: "12px 16px",
+              marginBottom: 6,
+              flexWrap: "wrap",
+            }}
+          >
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#064E3B" }}>
-                {item.institution_name}
-              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#064E3B" }}>{item.institution_name}</div>
               <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
                 Last synced: {fmtSynced(item.last_synced_at)}
                 {result && result.added > 0 && (
-                  <span style={{ color: "#059669", marginLeft: 8 }}>
-                    ✓ {result.added} imported
-                  </span>
+                  <span style={{ color: "#059669", marginLeft: 8 }}>+{result.added} imported</span>
                 )}
                 {result && result.added === 0 && result.modified === 0 && result.removed === 0 && (
                   <span style={{ color: "#94A3B8", marginLeft: 8 }}>up to date</span>
@@ -334,34 +412,51 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
                 disabled={isSyncing || isDisconnecting}
                 style={btnStyle("ghost")}
               >
-                {isSyncing ? "Syncing…" : "Sync now"}
+                {isSyncing ? "Syncing..." : "Sync now"}
               </button>
               <button
                 onClick={() => handleDisconnect(item.id, item.institution_name)}
                 disabled={isSyncing || isDisconnecting}
                 style={{ ...btnStyle("ghost"), color: "#DC2626", borderColor: "#FCA5A5" }}
               >
-                {isDisconnecting ? "Removing…" : "Disconnect"}
+                {isDisconnecting ? "Removing..." : "Disconnect"}
               </button>
             </div>
           </div>
         );
       })}
 
-      {/* Free plan limit notice */}
       {atFreeLimit && (
-        <div style={{ fontSize: 12, color: "#64748B", marginTop: 6, padding: "6px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
-          Free plan · 1 bank included ·{" "}
+        <div
+          style={{
+            fontSize: 12,
+            color: "#64748B",
+            marginTop: 6,
+            padding: "6px 12px",
+            background: "#F8FAFC",
+            borderRadius: 8,
+            border: "1px solid #E2E8F0",
+          }}
+        >
+          Free plan | 1 bank included |{" "}
           <button
             onClick={onUpgradeClick}
-            style={{ background: "none", border: "none", color: "#047857", fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 12, fontFamily: "inherit" }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#047857",
+              fontWeight: 700,
+              cursor: "pointer",
+              padding: 0,
+              fontSize: 12,
+              fontFamily: "inherit",
+            }}
           >
             Upgrade to Pro
-          </button>
-          {" "}for unlimited
+          </button>{" "}
+          for unlimited
         </div>
       )}
-
     </div>
   );
 }

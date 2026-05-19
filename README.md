@@ -65,6 +65,12 @@ The "Your Highest-Impact Move" card in the dashboard shows the top acceleration 
 - FIRE Type personality quiz at `/fire-type`
 - 6 standalone calculators at `/calculators`
 
+## Latest updates
+
+- Hardened `/api/waitlist` with email normalization, format validation, duplicate-safe success handling, and basic burst protection
+- Removed stale `/debug` crawler blocking and cleaned the Plaid connection panel so its status/error UI uses stable plain-text copy
+- Upgraded the Next.js baseline and dependency overrides so the repo validates cleanly on the latest `main` checkout with `npm run validate`
+
 ---
 
 ## Long-term vision
