@@ -1,6 +1,6 @@
 # UntilFire — Freedom Acceleration Engine
 
-**Find your freedom date.**
+**Find your freedom path.**
 
 UntilFire shows when work can become optional — your FIRE number, your timeline, and the monthly moves that can bring freedom closer. Free, no login.
 
