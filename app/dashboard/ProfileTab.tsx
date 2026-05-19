@@ -442,7 +442,7 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: 0 }}>Connected Banks</h3>
           <button
-            onClick={() => onTabChange("cashflow")}
+            onClick={() => onTabChange("assets")}
             style={{ fontSize: 13, fontWeight: 600, color: "#047857", background: "none", border: "1px solid #D1FAE5", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
           >
             Manage →
@@ -451,7 +451,7 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
         {plaidItems.length === 0 ? (
           <div style={{ fontSize: 13, color: "#94A3B8" }}>
             No banks connected yet.{" "}
-            <button onClick={() => onTabChange("cashflow")} style={{ background: "none", border: "none", color: "#047857", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 13 }}>
+            <button onClick={() => onTabChange("assets")} style={{ background: "none", border: "none", color: "#047857", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 13 }}>
               Connect one →
             </button>
           </div>
