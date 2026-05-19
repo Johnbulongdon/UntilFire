@@ -73,7 +73,18 @@ export default function FeedbackWidget() {
       <style>{`
         .uf-feedback-btn { transition: transform 0.15s, box-shadow 0.15s; }
         .uf-feedback-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(6,78,59,0.35) !important; }
-        @media(max-width: 900px) { .uf-feedback-btn { bottom: calc(56px + 16px + env(safe-area-inset-bottom, 0px)) !important; right: 16px !important; } }
+        @media(max-width: 900px) {
+          .uf-feedback-btn {
+            bottom: calc(56px + 12px + env(safe-area-inset-bottom, 0px)) !important;
+            right: 12px !important;
+            width: 44px !important;
+            height: 44px !important;
+            padding: 0 !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+          }
+          .uf-feedback-label { display: none !important; }
+        }
       `}</style>
 
       {/* Floating button */}
@@ -105,7 +116,7 @@ export default function FeedbackWidget() {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
-        Feedback
+        <span className="uf-feedback-label">Feedback</span>
       </button>
 
       {/* Backdrop + modal */}

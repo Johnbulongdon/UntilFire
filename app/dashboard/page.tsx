@@ -3414,7 +3414,7 @@ export default function Dashboard() {
           .uf-sidebar-item { flex-direction: column; padding: 6px 4px; font-size: 9px; gap: 2px; flex: 1; justify-content: center; align-items: center; border-radius: 0; min-width: 0; width: auto; }
           .uf-sidebar-bottom { display: none; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
-          .uf-content { padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(60px + env(safe-area-inset-bottom, 0px)); }
+          .uf-content { padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
           .uf-hero-split { flex-direction: column; min-height: unset; }
           .uf-hero-left { flex: none !important; padding: 20px 18px !important; }
           .uf-hero-right { flex: none !important; padding: 20px 18px !important; }

@@ -202,10 +202,44 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="uf-reports" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <style>{`
+        .uf-reports { width: 100%; max-width: 100%; overflow-x: hidden; }
+        .uf-report-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .uf-report-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        .uf-report-periods { display: flex; gap: 6px; }
+        .uf-report-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .uf-report-kpi-card { min-width: 0; background: #003527; border-radius: 16px; padding: 20px 24px; }
+        .uf-report-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 24px; max-width: 100%; overflow: hidden; }
+        .uf-report-chart { width: 100%; min-width: 0; }
+        .uf-report-category-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; }
+        .uf-report-category-name { min-width: 0; }
+        .uf-report-month-grid { display: grid; grid-template-columns: 80px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 80px; gap: 8px; }
+        .uf-report-money { min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+        @media (max-width: 640px) {
+          .uf-reports { gap: 18px !important; }
+          .uf-report-header { flex-direction: column; align-items: stretch; }
+          .uf-report-controls { align-items: stretch; }
+          .uf-report-periods { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
+          .uf-report-periods button { width: 100%; }
+          .uf-report-kpi-grid { grid-template-columns: 1fr; gap: 10px; }
+          .uf-report-kpi-card { padding: 18px 20px; }
+          .uf-report-card { padding: 18px 14px; border-radius: 14px; }
+          .uf-report-chart { height: 210px; }
+          .uf-report-category-row { grid-template-columns: 36px minmax(0, 1fr) 30px 62px; gap: 8px; }
+          .uf-report-category-row > div:first-child { width: 36px !important; height: 36px !important; font-size: 18px !important; }
+          .uf-report-category-row > div:nth-child(3), .uf-report-category-row > div:last-child { min-width: 0 !important; font-size: 12px !important; }
+          .uf-report-category-name > div:first-child { font-size: 12px !important; }
+          .uf-report-month-grid { grid-template-columns: 54px minmax(52px, 1fr) minmax(52px, 1fr) minmax(52px, 1fr) 42px; gap: 6px; }
+          .uf-report-month-grid.uf-report-table-head { font-size: 9px !important; letter-spacing: 0.04em !important; }
+          .uf-report-month-row { font-size: 12px !important; }
+          .uf-report-month-row span:first-child { font-size: 12px !important; }
+        }
+      `}</style>
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div className="uf-report-header">
         <div>
           <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "#19181E", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
             Reports
@@ -214,8 +248,8 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
             Monthly income, expenses, and savings trends.
           </p>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          <div style={{ display: "flex", gap: 6 }}>
+        <div className="uf-report-controls">
+          <div className="uf-report-periods">
             {([3, 6, 12] as const).map(p => (
               <button key={p} onClick={() => setPeriod(p)} style={periodBtnStyle(p)}>
                 {p}m
@@ -231,7 +265,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       </div>
 
       {/* ── KPI row ──────────────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+      <div className="uf-report-kpi-grid">
         {activeMths.length === 0 ? (
           <div style={{ gridColumn: "1 / -1", background: "#003527", borderRadius: 16, padding: "24px", textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
             No transactions in this period — try a wider range or add some in Cashflow.
@@ -243,7 +277,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
               { label: "Avg Monthly Expenses", value: fmtDisplay(avgExpenses),         color: "#FCA5A5" },
               { label: "Avg Savings Rate",     value: avgRate.toFixed(0) + "%", color: rateColor(avgRate) },
             ].map(kpi => (
-              <div key={kpi.label} style={{ background: "#003527", borderRadius: 16, padding: "20px 24px" }}>
+              <div key={kpi.label} className="uf-report-kpi-card">
                 <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
                   {kpi.label}
                 </div>
@@ -260,10 +294,11 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       </div>
 
       {/* ── Income vs Expenses chart ──────────────────────────────────────── */}
-      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "24px" }}>
+      <div className="uf-report-card">
         <div style={{ fontSize: 13, fontWeight: 800, color: "#19181E", marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Income vs Expenses
         </div>
+        <div className="uf-report-chart">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barCategoryGap="30%">
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
@@ -282,10 +317,11 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
             <Bar dataKey="expenses" name="Expenses" fill="#FCA5A5" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* ── Category breakdown ────────────────────────────────────────────── */}
-      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "24px" }}>
+      <div className="uf-report-card">
         <div style={{ fontSize: 13, fontWeight: 800, color: "#19181E", marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Spending by Category · last {period} months
         </div>
@@ -298,7 +334,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
             {catTotals.map(cat => {
               const pct = grandTotal > 0 ? (cat.total / grandTotal) * 100 : 0;
               return (
-                <div key={cat.key} style={{ display: "grid", gridTemplateColumns: "40px 1fr auto auto", gap: 14, alignItems: "center" }}>
+                <div key={cat.key} className="uf-report-category-row">
                   {/* Circle */}
                   <div style={{
                     width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
@@ -308,7 +344,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
                     {cat.emoji}
                   </div>
                   {/* Bar */}
-                  <div>
+                  <div className="uf-report-category-name">
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#19181E", marginBottom: 4 }}>{cat.label}</div>
                     <div style={{ height: 6, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${pct}%`, background: cat.color + "88", borderRadius: 99 }} />
@@ -330,14 +366,13 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       </div>
 
       {/* ── Month-by-month table ──────────────────────────────────────────── */}
-      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "24px" }}>
+      <div className="uf-report-card">
         <div style={{ fontSize: 13, fontWeight: 800, color: "#19181E", marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Month by Month
         </div>
         {/* Header */}
-        <div style={{
-          display: "grid", gridTemplateColumns: "80px 1fr 1fr 1fr 80px",
-          gap: 8, padding: "0 0 10px", borderBottom: "1px solid #F1F5F9",
+        <div className="uf-report-month-grid uf-report-table-head" style={{
+          padding: "0 0 10px", borderBottom: "1px solid #F1F5F9",
           fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em",
         }}>
           <span>Month</span>
@@ -352,22 +387,22 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
           return (
             <div
               key={row.month}
+              className="uf-report-month-grid uf-report-month-row"
               style={{
-                display: "grid", gridTemplateColumns: "80px 1fr 1fr 1fr 80px",
-                gap: 8, padding: "12px 0", borderBottom: "1px solid #F8FAFC",
+                padding: "12px 0", borderBottom: "1px solid #F8FAFC",
                 fontSize: 14, fontFamily: "Inter, sans-serif",
               }}
             >
               <span style={{ fontWeight: 600, color: "#64748B", fontFamily: "Manrope, sans-serif", fontSize: 13 }}>
                 {row.label}
               </span>
-              <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : "#059669" }}>
+              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : "#059669" }}>
                 {empty ? "—" : fmtDisplay(row.income)}
               </span>
-              <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : "#19181E" }}>
+              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : "#19181E" }}>
                 {empty ? "—" : fmtDisplay(row.expenses)}
               </span>
-              <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : row.net >= 0 ? "#059669" : "#DC2626" }}>
+              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : row.net >= 0 ? "#059669" : "#DC2626" }}>
                 {empty ? "—" : (row.net >= 0 ? "+" : "") + fmtDisplay(row.net)}
               </span>
               <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : rateColor(row.savingsRate) }}>
