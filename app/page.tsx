@@ -905,8 +905,15 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#22D3A5" }}>
                     Your freedom date
                   </div>
-                  <div style={{ marginTop: 14, fontSize: "clamp(56px, 9vw, 104px)", lineHeight: 0.95, fontWeight: 600, letterSpacing: "-0.045em", wordBreak: "break-word" }}>
-                    {isAlreadyFire ? "Now" : fireMonthFull}&nbsp;<span style={{ color: "#22D3A5" }}>{result.retireYear}</span>
+                  <div style={{ marginTop: 14, lineHeight: 0.95, fontWeight: 600, letterSpacing: "-0.045em" }}>
+                    <div style={{ fontSize: "clamp(48px, 8vw, 96px)", color: "#fff", whiteSpace: "nowrap" }}>
+                      {isAlreadyFire ? "Now" : fireMonthFull}
+                    </div>
+                    {!isAlreadyFire && (
+                      <div style={{ fontSize: "clamp(48px, 8vw, 96px)", color: "#22D3A5", whiteSpace: "nowrap" }}>
+                        {result.retireYear}
+                      </div>
+                    )}
                   </div>
                   <div style={{ marginTop: 18, fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(255,255,255,0.72)", fontWeight: 500, letterSpacing: "-0.005em" }}>
                     {result.age !== undefined && !isAlreadyFire && (
@@ -1093,6 +1100,10 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                   <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren&apos;t stored · 7% real return, 25× / 4% FIRE rule</div>
                 </div>
                 <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+                  <button style={{ height: 42, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }} onClick={() => setShowShare(true)}>
+                    <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
+                    Share
+                  </button>
                   <button style={{ height: 42, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }} onClick={onAdjust}>
                     Adjust inputs
                   </button>
