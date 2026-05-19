@@ -275,7 +275,7 @@ function QuickAddForm({
   const showAiPill = !!draft.aiSuggestion && draft.aiSuggestion !== draft.category && !isIncome;
 
   return (
-    <div style={{
+    <div className="cf-quick-form" style={{
       background: "#fff",
       border: "1px solid #E2E8F0",
       borderRadius: 12,
@@ -302,7 +302,7 @@ function QuickAddForm({
       </div>
 
       {/* Body */}
-      <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1, minHeight: 0 }}>
+      <div className="cf-quick-form-body" style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1, minHeight: 0 }}>
         {/* Type toggle */}
         <div style={{ display: "inline-flex", background: "#F1F5F9", borderRadius: 999, padding: 3, alignSelf: "flex-start" }}>
           {(["expense", "income"] as const).map((t) => (
@@ -623,7 +623,7 @@ function QuickAddForm({
       </div>
 
       {/* Footer */}
-      <div style={{ padding: "14px 20px 18px", borderTop: "1px solid #E2E8F0", background: "linear-gradient(180deg, transparent, #FAFBFC)", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", borderTop: "1px solid #E2E8F0", background: "linear-gradient(180deg, transparent, #FAFBFC)", display: "flex", flexDirection: "column", gap: 10 }}>
         {!editing && (
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 12 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -672,6 +672,32 @@ function QuickAddForm({
       <style>{`
         @media (max-width: 1024px) { .cf-form-pane { display: none; } }
         .cf-form-pane { display: flex; flex-direction: column; }
+        @media (max-width: 1024px) {
+          .cf-mobile-drawer {
+            max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px) !important;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+          }
+          .cf-quick-form {
+            position: relative !important;
+            top: auto !important;
+            height: auto !important;
+            max-height: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+          .cf-quick-form-body {
+            overflow-y: visible !important;
+            padding-bottom: 18px !important;
+          }
+          .cf-quick-form-footer {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+            background: linear-gradient(180deg, rgba(250,251,252,0.92), #fff 24%) !important;
+          }
+        }
       `}</style>
     </div>
   );
@@ -1075,7 +1101,7 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 40, opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity 200ms" }} />
-      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "#fff", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
+      <div className="cf-mobile-drawer" style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "#fff", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 16px 4px", position: "relative" }}>
           <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", cursor: "pointer" }} />
           <button onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "#94A3B8", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
@@ -1340,7 +1366,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         @media (max-width: 1024px) {
           .cf-split { grid-template-columns: 1fr !important; }
           .cf-form-col { display: none; }
-          .cf-mobile-bar { display: flex !important; position: fixed; bottom: 16px; left: 16px; right: 16px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 10px 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); align-items: center; gap: 10px; z-index: 30; }
+          .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 10px 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); align-items: center; gap: 10px; z-index: 30; }
         }
       `}</style>
 

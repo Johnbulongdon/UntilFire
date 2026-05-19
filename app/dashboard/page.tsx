@@ -264,10 +264,11 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
 }
 
 // ─── Monte Carlo Probability Card ─────────────────────────────────────────────
-function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, displayCurrency, displayRates }: {
+function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, displayCurrency, displayRates, onOpenBudgets, onOpenProfile }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number;
   displayCurrency: string; displayRates: Record<string, number>;
+  onOpenBudgets?: () => void; onOpenProfile?: () => void;
 }) {
   const [extraSavings, setExtraSavings] = useState(0);
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
@@ -299,9 +300,21 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
   if (!base) {
     return (
       <div className="uf-card" style={{ padding: "28px 32px", textAlign: "center" }}>
-        <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>
-          Enter your income and expenses in the <strong>Goals</strong> section above to see your retirement success probability.
+        <div style={{ fontSize: 30, marginBottom: 10 }}>🎲</div>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#064E3B", margin: "0 0 8px", fontFamily: "Manrope, sans-serif" }}>
+          Add your monthly basics first
+        </h3>
+        <p style={{ color: "#64748B", fontSize: 14, margin: "0 auto 18px", lineHeight: 1.6, maxWidth: 460 }}>
+          Monte Carlo needs your income and monthly expenses before it can estimate your FIRE success probability. Add those in <strong>Cashflow → Budgets</strong>, then keep your FIRE age and goal settings in <strong>Profile</strong>.
         </p>
+        <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={onOpenBudgets} style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Add budget basics →
+          </button>
+          <button onClick={onOpenProfile} style={{ background: "#F0FDF4", color: "#047857", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Open Profile setup →
+          </button>
+        </div>
       </div>
     );
   }
@@ -2080,6 +2093,15 @@ const FIRE_GOAL_OPTIONS = [
 
 function GoalsTab({ fireAge, setFireAge, onBack }: { fireAge: number; setFireAge: (v: number) => void; onBack: () => void }) {
   const [goalId, setGoalId] = useState("early-retirement");
+  const [ageSaved, setAgeSaved] = useState(false);
+  const ageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function handleAgeChange(nextAge: number) {
+    setFireAge(nextAge);
+    setAgeSaved(true);
+    if (ageTimer.current) clearTimeout(ageTimer.current);
+    ageTimer.current = setTimeout(() => setAgeSaved(false), 2200);
+  }
+  useEffect(() => () => { if (ageTimer.current) clearTimeout(ageTimer.current); }, []);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <button onClick={onBack} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#64748B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
@@ -2111,8 +2133,11 @@ function GoalsTab({ fireAge, setFireAge, onBack }: { fireAge: number; setFireAge
         <SectionLabel icon="🎂" text="Current Age" color="#064E3B" />
         <div style={{ maxWidth: 280 }}>
           <FieldRow label="Your current age" hint="Used to calculate your FIRE date">
-            <NumberInput value={fireAge} onChange={setFireAge} placeholder="30" prefix="🎂" />
+            <NumberInput value={fireAge} onChange={handleAgeChange} placeholder="30" prefix="🎂" />
           </FieldRow>
+          <div style={{ marginTop: 10, fontSize: 12, color: ageSaved ? "#059669" : "#94A3B8", fontWeight: ageSaved ? 700 : 500 }}>
+            {ageSaved ? "✓ Age updated — saving automatically" : "Your age saves automatically and updates your FIRE date."}
+          </div>
         </div>
       </div>
     </div>
@@ -2120,9 +2145,10 @@ function GoalsTab({ fireAge, setFireAge, onBack }: { fireAge: number; setFireAge
 }
 
 // ─── Simulations Tab ──────────────────────────────────────────────────────────
-function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, displayCurrency, displayRates, onBack }: {
+function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, displayCurrency, displayRates, onBack, onOpenBudgets, onOpenProfile }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number; displayCurrency: string; displayRates: Record<string, number>; onBack: () => void;
+  onOpenBudgets?: () => void; onOpenProfile?: () => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -2138,6 +2164,7 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings 
         k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
         growthRate={growthRate} withdrawalRate={withdrawalRate}
         displayCurrency={displayCurrency} displayRates={displayRates}
+        onOpenBudgets={onOpenBudgets} onOpenProfile={onOpenProfile}
       />
     </div>
   );
@@ -3657,6 +3684,8 @@ export default function Dashboard() {
                     displayCurrency={defaultCurrency}
                     displayRates={rates}
                     onBack={() => setFireCalcSubTab("menu")}
+                    onOpenBudgets={() => { setTab("cashflow"); setCashflowSubTab("budgets"); }}
+                    onOpenProfile={() => setTab("profile")}
                   />
                 )}
                 {fireCalcSubTab === "invest-sim" && (

@@ -395,6 +395,34 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
         </div>
       </div>
 
+      {/* FIRE setup */}
+      <div style={cardStyle}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 10px" }}>FIRE setup</h3>
+        <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, margin: "0 0 14px" }}>
+          Keep your age, target, and FIRE personality tools in one place so simulations know what to use.
+        </p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={() => onTabChange("fire-calculator")}
+            style={{ ...btnStyle("primary"), whiteSpace: "normal" }}
+          >
+            Set age & FIRE goal →
+          </button>
+          <button
+            onClick={() => onTabChange("goals")}
+            style={{ padding: "9px 16px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "1px solid #BBF7D0", background: "#F0FDF4", color: "#047857", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            Retirement target →
+          </button>
+          <a
+            href="/fire-type?source=dashboard-profile"
+            style={{ padding: "9px 16px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "1px solid #E2E8F0", background: "#fff", color: "#374151", textDecoration: "none" }}
+          >
+            FIRE Type quiz →
+          </a>
+        </div>
+      </div>
+
       {/* Subscription */}
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Subscription</h3>
