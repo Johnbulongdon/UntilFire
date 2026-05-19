@@ -45,6 +45,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,300;9..144,0,400;9..144,1,300;9..144,1,400;9..144,1,500&display=swap"
+          rel="stylesheet"
+        />
         {/* Existing script (keep) */}
         <Script id="remove-extension-attributes" strategy="beforeInteractive">
           {`
