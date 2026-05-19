@@ -6,8 +6,7 @@ import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
-import { calcFIRE, calcTakeHome, recommendActionsForReveal } from "@/lib/fire";
-import NextActions from "@/components/NextActions";
+import { calcFIRE, calcTakeHome } from "@/lib/fire";
 import {
   trackLandingViewed,
   trackCalculatorStepViewed,
@@ -711,19 +710,6 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 }) {
   const result = calcFIRE(savings, city.col, currentAge, portfolioBalance);
   const { takeHome } = calcTakeHome(income, stateKey);
-  const router = useRouter();
-  const revealActions = useMemo(
-    () =>
-      recommendActionsForReveal({
-        monthlyIncome: Math.round(takeHome / 12),
-        monthlySavings: savings,
-        annualCostOfLiving: city.col,
-        fireYears: result.years,
-        currentAge,
-      }),
-    [takeHome, savings, city.col, result.years, currentAge],
-  );
-  const topRevealAction = revealActions[0] ?? null;
 
   // Phase 1: calculating steps
   const [calcPhase, setCalcPhase] = useState(true);
@@ -1074,7 +1060,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Decision impact</div>
                       <div style={{ fontSize: 18, color: "#0F172A", marginTop: 4, fontWeight: 600, letterSpacing: "-0.01em" }}>What each lever buys you</div>
                     </div>
-                    <span style={{ fontSize: 12, color: "#6B7280" }}>vs. today's plan</span>
+                    <span style={{ fontSize: 12, color: "#6B7280" }}>vs. today&apos;s plan</span>
                   </div>
                   <div className="uf-decision-grid">
                     {[
@@ -1104,7 +1090,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.005em" }}>Lock this trajectory in your dashboard.</div>
-                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren't stored · 7% real return, 25× / 4% FIRE rule</div>
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren&apos;t stored · 7% real return, 25× / 4% FIRE rule</div>
                 </div>
                 <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
                   <button style={{ height: 42, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }} onClick={onAdjust}>
