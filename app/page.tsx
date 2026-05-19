@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { gsap } from "gsap";
 import Link from "next/link";
 import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
-import { calcFIRE, calcTakeHome, recommendActionsForReveal } from "@/lib/fire";
-import NextActions from "@/components/NextActions";
+import { calcFIRE, calcTakeHome } from "@/lib/fire";
 import {
   trackLandingViewed,
   trackCalculatorStepViewed,
@@ -218,107 +218,6 @@ const CONFETTI_POSITIONS = [
   { left:"97%", x:  "40px", r: "130deg", delay:"0.12s" },
 ];
 
-function CurrencyScreen({ onNext, onBack }: { onNext: (c: SupportedCurrency) => void; onBack: () => void }) {
-  const [selected, setSelected] = useState<SupportedCurrency>("USD");
-  const [confettiKey, setConfettiKey] = useState(0);
-  const [burstCurrency, setBurstCurrency] = useState<SupportedCurrency>("USD");
-
-  const colors = CURRENCY_CONFETTI_COLORS[burstCurrency] ?? DEFAULT_CONFETTI_COLORS;
-
-  // Generate unique per-piece keyframes with x/r values embedded — avoids CSS custom property issues
-  const confettiCSS = confettiKey > 0
-    ? CONFETTI_POSITIONS.map((pos, i) => `
-        @keyframes ccF${confettiKey}x${i} {
-          0%   { opacity:0; transform:translate3d(0,-20px,0) rotate(0deg) scale(0.5); }
-          8%   { opacity:1; }
-          100% { opacity:0; transform:translate3d(${pos.x},100vh,0) rotate(${pos.r}) scale(1.1); }
-        }
-      `).join("")
-    : "";
-
-  return (
-    <>
-      {confettiKey > 0 && (
-        <>
-          <style>{confettiCSS}</style>
-          <div className="uf-currency-confetti" aria-hidden>
-            {CONFETTI_POSITIONS.map((pos, i) => (
-              <span
-                key={`${confettiKey}-${i}`}
-                style={{
-                  left: pos.left,
-                  background: colors[i % colors.length],
-                  animation: `ccF${confettiKey}x${i} 1.35s ease-out ${pos.delay} forwards`,
-                }}
-              />
-            ))}
-          </div>
-        </>
-      )}
-
-      <div className="uf-screen">
-        <WizardProgress step={2} />
-        <p className="uf-step-label">Step 2 of 6</p>
-        <div className="uf-eyebrow">Currency</div>
-        <h2 className="uf-h2">What currency do you <span className="uf-accent">earn in?</span></h2>
-        <p className="uf-body" style={{ marginBottom: 24 }}>
-          We&apos;ll let you enter your income and savings in your local currency and convert everything automatically.
-        </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
-          {POPULAR_CURRENCIES.map(c => (
-            <button
-              key={c}
-              onClick={() => { setSelected(c); setBurstCurrency(c); setConfettiKey(k => k + 1); }}
-              className={`uf-currency-btn${selected === c ? " selected" : ""}`}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                {CURRENCY_COUNTRY[c] && (
-                  <img
-                    src={`https://flagcdn.com/w20/${CURRENCY_COUNTRY[c]}.png`}
-                    srcSet={`https://flagcdn.com/w40/${CURRENCY_COUNTRY[c]}.png 2x`}
-                    width={20}
-                    height={15}
-                    alt=""
-                    style={{ borderRadius: 2, objectFit: "cover", display: "block", flexShrink: 0 }}
-                  />
-                )}
-                <span className="uf-currency-code">{c}</span>
-              </div>
-              <span className="uf-currency-name">{CURRENCY_NAMES[c]}</span>
-            </button>
-          ))}
-        </div>
-
-        <div style={{ marginBottom: 28 }}>
-          <label className="uf-label">Other currencies</label>
-          <select
-            className="uf-input"
-            value={POPULAR_CURRENCIES.includes(selected) ? "" : selected}
-            onChange={e => { if (e.target.value) setSelected(e.target.value as SupportedCurrency); }}
-          >
-            <option value="">Choose from full list…</option>
-            {SUPPORTED_CURRENCIES.filter(c => !POPULAR_CURRENCIES.includes(c)).map(c => (
-              <option key={c} value={c}>{c} — {CURRENCY_NAMES[c]}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="uf-nav-row">
-          <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-          <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(selected)}>
-            Continue with {selected} →
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// SCREEN 3 — INCOME
-// -----------------------------------------------------------------------------
-
 function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
   stateKey: string;
   currency?: SupportedCurrency;
@@ -461,11 +360,7 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
   );
 }
 
-// -----------------------------------------------------------------------------
-// SCREEN 4 — SAVINGS
-// -----------------------------------------------------------------------------
 
-// income is always annual take-home in USD from IncomeScreen
 function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   income: number;
   currency?: SupportedCurrency;
@@ -562,9 +457,6 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   );
 }
 
-// -----------------------------------------------------------------------------
-// PORTFOLIO BALANCE + AGE SCREEN
-// -----------------------------------------------------------------------------
 
 function PortfolioScreen({ currency = "USD", onNext, onBack }: {
   currency?: SupportedCurrency;
@@ -637,6 +529,7 @@ function PortfolioScreen({ currency = "USD", onNext, onBack }: {
     </div>
   );
 }
+
 
 // -----------------------------------------------------------------------------
 // WAITLIST INLINE -shown on reveal screen
@@ -777,6 +670,7 @@ function ShareModal({
   );
 }
 
+
 // -----------------------------------------------------------------------------
 // GROWTH BAR CHART
 // -----------------------------------------------------------------------------
@@ -878,49 +772,16 @@ function GrowthBarChart({
 
 // -----------------------------------------------------------------------------
 // SCREEN 4 -REVEAL
-// -----------------------------------------------------------------------------
-
-function useCountUp(target: number, duration: number, running: boolean) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!running) return;
-    const start = performance.now();
-    function ease(t: number) { return 1 - Math.pow(1 - t, 4); }
-    function tick(now: number) {
-      const t = Math.min((now - start) / duration, 1);
-      setVal(Math.round(ease(t) * target));
-      if (t < 1) requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  }, [target, duration, running]);
-  return val;
-}
-
-function RevealScreen({ city, income, savings, stateKey, currency = "USD", currentAge, portfolioBalance = 0, landingSource, onAdjust }: {
+function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBalance = 0, landingSource, onAdjust, currency = "USD" }: {
   city: CityState; income: number; savings: number; stateKey: string;
-  currency?: SupportedCurrency;
   currentAge?: number; portfolioBalance?: number;
   landingSource?: string;
   onAdjust: () => void;
+  currency?: SupportedCurrency;
 }) {
   const result = calcFIRE(savings, city.col, currentAge, portfolioBalance);
   const { takeHome } = calcTakeHome(income, stateKey);
   const fmtCcy = (usd: number) => formatUSDInCurrency(usd, currency, FALLBACK_RATES);
-  const fxRate = FALLBACK_RATES[currency] ?? 1;
-  const currSymbol = getCurrencySymbol(currency);
-  const router = useRouter();
-  const revealActions = useMemo(
-    () =>
-      recommendActionsForReveal({
-        monthlyIncome: Math.round(takeHome / 12),
-        monthlySavings: savings,
-        annualCostOfLiving: city.col,
-        fireYears: result.years,
-        currentAge,
-      }),
-    [takeHome, savings, city.col, result.years, currentAge],
-  );
-  const topRevealAction = revealActions[0] ?? null;
 
   // Phase 1: calculating steps
   const [calcPhase, setCalcPhase] = useState(true);
@@ -932,8 +793,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const [revealed, setRevealed] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const numRef = useRef<HTMLDivElement>(null);
-
-  const counted = useCountUp(result.fireTarget, 2200, counting);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const belowRef = useRef<HTMLDivElement>(null);
 
   // Run calculating sequence
   useEffect(() => {
@@ -956,18 +817,51 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     setTimeout(() => {
       setCalcPhase(false);
       setCounting(true);
-      // Trigger slam animation
-      setTimeout(() => {
-        numRef.current?.classList.add("uf-fire-slam");
-      }, 50);
     }, calcSteps.length * 620 + 800);
   }, []);
 
+  // GSAP hero entrance + count-up
   useEffect(() => {
-    if (counted >= result.fireTarget && counting) {
-      setTimeout(() => setRevealed(true), 300);
-    }
-  }, [counted, result.fireTarget, counting]);
+    if (!counting || !heroRef.current) return;
+    const target = result.fireTarget;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.fromTo('[data-gsap="chip"]',       { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.45 })
+        .fromTo('[data-gsap="date-label"]', { opacity: 0, y: 14  }, { opacity: 1, y: 0, duration: 0.55 }, "-=0.25")
+        .fromTo('[data-gsap="date-date"]',  { opacity: 0, y: 30  }, { opacity: 1, y: 0, duration: 0.7  }, "-=0.4")
+        .fromTo('[data-gsap="date-sub"]',   { opacity: 0         }, { opacity: 1,        duration: 0.5  }, "-=0.3")
+        .fromTo('[data-gsap="fire-right"]', { opacity: 0, x: 22  }, { opacity: 1, x: 0, duration: 0.65 }, "<-=0.45")
+        .fromTo('[data-gsap="milestone"]',  { opacity: 0, y: 8   }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.07 }, "-=0.25");
+
+      const proxy = { val: 0 };
+      gsap.to(proxy, {
+        val: target,
+        duration: 2.0,
+        ease: "power4.out",
+        delay: 0.35,
+        onUpdate() {
+          if (numRef.current) numRef.current.textContent = fmtUSD(Math.round(proxy.val));
+        },
+        onComplete() {
+          setTimeout(() => setRevealed(true), 220);
+        },
+      });
+    }, heroRef);
+    return () => ctx.revert();
+  }, [counting]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // GSAP below-hero entrance
+  useEffect(() => {
+    if (!revealed || !belowRef.current) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.fromTo('[data-gsap="chart-section"]', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.65 })
+        .fromTo('[data-gsap="identity-card"]',  { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.55, stagger: 0.1 }, "-=0.3")
+        .fromTo('[data-gsap="decision-card"]',  { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.06 }, "-=0.25")
+        .fromTo('[data-gsap="footer-cta"]',     { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
+    }, belowRef);
+    return () => ctx.revert();
+  }, [revealed]);
 
   // Fire the reveal funnel event exactly once per mount, when the projection
   // is fully settled. Done inside an effect so the event is tied to the
@@ -986,18 +880,49 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     }
   }, [revealed, stateKey, city.isCustom, result.fireTarget, result.years, landingSource]);
 
-  // Delta calculations
-  const highSaver = calcFIRE((takeHome / 12) * 0.5, city.col, currentAge);
-  const costYears = Math.max(0, result.years - highSaver.years).toFixed(1);
-
   const [extraSavings, setExtraSavings] = useState(500);
-  const [diningCutPct, setDiningCutPct] = useState(20);
 
-  const d1 = calcFIRE(savings + city.col * (diningCutPct / 100) / 12, city.col, currentAge);
-  const d2 = calcFIRE(savings + 416, city.col, currentAge);
-  const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge);
-  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge);
+  const d1 = calcFIRE(savings + Math.round(city.col * 0.2 / 12), city.col, currentAge, portfolioBalance);
+  const d2 = calcFIRE(savings + 416, city.col, currentAge, portfolioBalance);
+  const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge, portfolioBalance);
+  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge, portfolioBalance);
+  const monthlyTakeHome = takeHome / 12;
+  const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
+  const fireIdentity = deriveFireIdentity(savingsBenchmark.savingsRate, portfolioBalance, result.years);
+  const fireStage: FireStage = result.years === 0 ? "achieved"
+    : result.years <= 5 ? "final-stretch"
+    : result.years <= 15 ? "momentum"
+    : "ignition";
+  const isAlreadyFire = fireStage === "achieved";
+  const stageData = FIRE_STAGES[fireStage];
 
+  const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const fireMonthFull = MONTHS_FULL[Math.max(0, Math.floor((result.years % 1) * 12))];
+  const savedYears = Math.max(0, result.years - d4.years);
+  const savedY = Math.floor(savedYears);
+  const savedM = Math.round((savedYears - savedY) * 12);
+  const monthlyMoveLabel = savedY > 0 && savedM > 0 ? `${savedY}y ${savedM}mo` : savedY > 0 ? `${savedY}y` : `${savedM}mo`;
+  const newDateLabel = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + Math.round(d4.years * 12));
+    return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+  })();
+  const yearsLabel = (() => {
+    if (result.years < 1) return "less than a year";
+    const y = Math.floor(result.years);
+    const m = Math.round((result.years % 1) * 12);
+    return m > 0 ? `${y}y ${m}mo` : `${y}y`;
+  })();
+  const extraAtFire = extraSavings * 12 * d4.years * 1.4;
+  const extraAtFireLabel = extraAtFire >= 1_000_000 ? `$${(extraAtFire / 1_000_000).toFixed(2)}M` : `$${Math.round(extraAtFire / 1000)}k`;
+  const monthlyTakeHomeForBenchmark = takeHome / 12;
+  const savingsRatePct = Math.round((savings / (monthlyTakeHomeForBenchmark || 1)) * 100);
+  const savingsMultiple = ((savingsRatePct / PUBLIC_SAVINGS_RATE_BASELINE) || 0).toFixed(1);
+  const milestones = [
+    { label: "FIRE number found", done: true },
+    { label: "Freedom date mapped", done: true },
+    { label: isAlreadyFire ? "Next chapter awaits" : "Monthly move ready", done: !isAlreadyFire },
+  ];
   const chartBars = useMemo(() => {
     const r = 0.07;
     const totalYears = Math.ceil(result.years);
@@ -1018,40 +943,23 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     return pts;
   }, [portfolioBalance, savings, result.years]);
 
-  const monthlyMoveYearsSaved = Math.max(0, result.years - d4.years);
-  const monthlyMoveRetireYear = d4.retireYear;
-  const monthlyTakeHome = takeHome / 12;
-  const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
-  const fireIdentity = deriveFireIdentity(savingsBenchmark.savingsRate, portfolioBalance, result.years);
-  const fireStage: FireStage = result.years === 0 ? "achieved"
-    : result.years <= 5 ? "final-stretch"
-    : result.years <= 15 ? "momentum"
-    : "ignition";
-  const isAlreadyFire = fireStage === "achieved";
-  const stageData = FIRE_STAGES[fireStage];
-
-  function fmtDelta(yrs: number): string {
-    if (yrs < 1 / 12) return "< 1 month sooner";
-    if (yrs < 2) return `${Math.round(yrs * 12)} month${Math.round(yrs * 12) !== 1 ? "s" : ""} sooner`;
-    return `${yrs.toFixed(1)} years sooner`;
-  }
-  const portfolioYearsSaved = portfolioBalance > 0
-    ? Math.max(0, calcFIRE(savings, city.col, currentAge, 0).years - result.years)
-    : 0;
-
   const calcLabels = ["City cost-of-living", "After-tax income", "Compound growth at 7%", "25× withdrawal rule"];
+
+  const stageIdx = stageData.index;
+  const stages4 = ["Ignition", "Momentum", "Final Stretch", "FIRE Achieved"] as const;
 
   return (
     <div className="uf-screen uf-reveal-screen">
       {showShare && (
-          <ShareModal
+        <ShareModal
           cityName={city.name}
           fireIdentity={fireIdentity}
           benchmark={savingsBenchmark}
           onClose={() => setShowShare(false)}
         />
       )}
-      {/* PHASE 1 */}
+
+      {/* PHASE 1 — calculating */}
       {calcPhase && (
         <div className="uf-calc-phase">
           <div className="uf-calc-label">Running your projection...</div>
@@ -1069,321 +977,254 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         </div>
       )}
 
-      {/* PHASE 2 */}
+      {/* PHASE 2 — reveal */}
       {!calcPhase && (
         <div className="uf-number-phase">
-          {/* Hero number */}
-          <div className={`uf-fire-hero ${revealed ? "uf-fire-hero-celebrate" : ""}`}>
+
+          {/* ── GREEN GRADIENT HERO ── */}
+          <div ref={heroRef} style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #059669 0%, #003527 100%)", color: "#fff", padding: "clamp(32px, 5vw, 64px) clamp(20px, 4vw, 56px) clamp(28px, 4vw, 56px)", marginBottom: 0, borderRadius: "16px 16px 0 0" }}>
+            {/* Decorative circles */}
+            <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "18s", ["--ring-delay" as string]: "0s", ["--ring-lo" as string]: "0.06", ["--ring-hi" as string]: "0.14", position: "absolute", top: -200, right: -80, width: 560, height: 560, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.08)", pointerEvents: "none" }} />
+            <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "13s", ["--ring-delay" as string]: "2.5s", ["--ring-lo" as string]: "0.05", ["--ring-hi" as string]: "0.12", position: "absolute", top: -100, right: 20, width: 380, height: 380, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.06)", pointerEvents: "none" }} />
+            <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "9s", ["--ring-delay" as string]: "5s", ["--ring-lo" as string]: "0.03", ["--ring-hi" as string]: "0.09", position: "absolute", top: 40, right: 140, width: 220, height: 220, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.04)", pointerEvents: "none" }} />
             {revealed && (
               <div className="uf-confetti" aria-hidden="true">
                 <span /><span /><span /><span /><span /><span /><span /><span />
+                <span /><span /><span /><span /><span /><span /><span /><span />
+                <span /><span /><span /><span /><span /><span /><span /><span />
               </div>
             )}
-            {revealed && <div className="uf-celebration-pill">🎉 Projection unlocked</div>}
-            <div className="uf-fire-eyebrow">Your estimated FIRE number</div>
-            <div ref={numRef} className="uf-fire-num">
-              {fmtCcy(counted)}
-            </div>
-            <div style={{ fontSize: 13, color: "#64748B", textAlign: "center", marginBottom: 8, fontFamily: "'Manrope', sans-serif" }}>
-              Based on the 4% rule: save this amount and live off investment returns without running out of money.
-            </div>
-            <div className="uf-fire-date-row">
-              <div className="uf-fire-date-line" />
-              <div className="uf-fire-date">
-                <span style={{ display: "block", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: "#64748B", marginBottom: 4 }}>
-                  Your freedom date
-                </span>
-                {result.age !== undefined ? (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                    <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-                      Age {result.age}
-                    </span>
-                    <span style={{ fontSize: 12, opacity: 0.7, fontWeight: 500, letterSpacing: "0.02em" }}>
-                      {isAlreadyFire ? `Right now · ${result.retireYear}` : `in ${result.years} year${result.years === 1 ? '' : 's'} · ${result.retireYear}`}
-                    </span>
-                  </div>
-                ) : (
-                  isAlreadyFire
-                    ? `Work is already optional as of ${result.retireYear}.`
-                    : `Work could become optional in ${result.retireYear} (${result.years} year${result.years === 1 ? '' : 's'} from now)`
-                )}
-              </div>
-              <div className="uf-fire-date-line" />
-            </div>
-            <div className="uf-fire-city">{city.name}</div>
-            {revealed && (
-              <button className="uf-share-trigger" onClick={() => setShowShare(true)}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
-                Share my FIRE Type
-              </button>
-            )}
-          </div>
 
-          {revealed && (
-            <>
-              <div className="uf-result-milestones" aria-label="Your result summary">
-                <div className="uf-result-milestone">
-                  <span className="uf-result-milestone-icon">✓</span>
-                  <span>FIRE number found</span>
-                </div>
-                <div className="uf-result-milestone">
-                  <span className="uf-result-milestone-icon">✓</span>
-                  <span>Freedom date mapped</span>
-                </div>
-                <div className="uf-result-milestone active">
-                  <span className="uf-result-milestone-icon">⚡</span>
-                  <span>{isAlreadyFire ? "Next chapter awaits" : "One monthly move ready"}</span>
-                </div>
-              </div>
-
-              {/* Growth bar chart — contributions vs returns */}
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "20px 20px 14px", marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669", marginBottom: 4 }}>
-                      Your path to FIRE
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.01em" }}>
-                      Compounded at 7% real return
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 14, fontSize: 11, fontWeight: 600, alignItems: "center" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#475569" }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 2, background: "#059669", display: "inline-block" }} />
-                      Your savings
-                    </span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#475569" }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 2, background: "#22D4BF", display: "inline-block" }} />
-                      Market returns
-                    </span>
-                  </div>
-                </div>
-                <GrowthBarChart bars={chartBars} fireTarget={result.fireTarget} fireYear={result.retireYear} fmtCcy={fmtCcy} />
-                {chartBars.length > 0 && (() => {
-                  const last = chartBars[chartBars.length - 1];
-                  const totalFireVal = last.contributions + last.returns;
-                  const returnsPct = totalFireVal > 0 ? Math.round(last.returns / totalFireVal * 100) : 0;
-                  return returnsPct > 0 ? (
-                    <div style={{ marginTop: 12, padding: "10px 14px", background: "#F0FDF4", borderRadius: 10, border: "1px solid #BBF7D0", display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 18, flexShrink: 0 }}>📈</span>
-                      <span style={{ fontSize: 12, color: "#065F46", lineHeight: 1.4 }}>
-                        <strong>{returnsPct}% of your FIRE number</strong> comes from market compounding — not from what you saved.{" "}
-                        <span style={{ color: "#047857" }}>That&apos;s {fmtCcy(last.returns)} the market added for you.</span>
-                      </span>
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-
-              {/* Stage indicator */}
-              <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: "16px 18px", marginBottom: 18 }}>
-                <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-                  {([0, 1, 2, 3] as const).map(i => (
-                    <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= stageData.index ? "#059669" : "#D1FAE5" }} />
+            <div style={{ maxWidth: 1180, margin: "0 auto", position: "relative" }}>
+              {/* Stage chip */}
+              <div data-gsap="chip" className="uf-stage-chip-anim" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "7px 12px 7px 10px", background: "rgba(34,211,165,0.10)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, marginBottom: 28, opacity: 0 }}>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {stages4.map((_, i) => (
+                    <div key={i} style={{ width: 5, height: 5, borderRadius: 99, background: i <= stageIdx ? "#22D3A5" : "rgba(34,211,165,0.25)" }} />
                   ))}
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#059669", marginBottom: 4 }}>
-                  Stage {stageData.index + 1} of 4 — {stageData.name}
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#22D3A5", textTransform: "uppercase" }}>{stageData.name}</span>
+              </div>
+
+              {/* 2-column grid */}
+              <div className="uf-reveal-hero-grid">
+                {/* Left: freedom date */}
+                <div>
+                  <div data-gsap="date-label" style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#22D3A5", opacity: 0 }}>
+                    Your freedom date
+                  </div>
+                  <div data-gsap="date-date" style={{ marginTop: 14, lineHeight: 0.95, fontWeight: 600, letterSpacing: "-0.045em", opacity: 0 }}>
+                    <div style={{ fontSize: "clamp(48px, 8vw, 96px)", color: "#fff", whiteSpace: "nowrap" }}>
+                      {isAlreadyFire ? "Now" : fireMonthFull}
+                    </div>
+                    {!isAlreadyFire && (
+                      <div style={{ fontSize: "clamp(48px, 8vw, 96px)", color: "#22D3A5", whiteSpace: "nowrap" }}>
+                        {result.retireYear}
+                      </div>
+                    )}
+                  </div>
+                  <div data-gsap="date-sub" style={{ marginTop: 18, fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(255,255,255,0.72)", fontWeight: 500, letterSpacing: "-0.005em", opacity: 0 }}>
+                    {result.age !== undefined && !isAlreadyFire && (
+                      <>Age <b style={{ color: "#fff", fontWeight: 700 }}>{result.age}</b>
+                      <span style={{ margin: "0 10px", opacity: 0.4 }}>·</span>
+                      <b style={{ color: "#fff", fontWeight: 700 }}>{yearsLabel}</b> from now
+                      <span style={{ margin: "0 10px", opacity: 0.4 }}>·</span>
+                      {city.name}</>
+                    )}
+                    {isAlreadyFire && city.name}
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: "#065F46", fontWeight: 500, lineHeight: 1.5 }}>
-                  {stageData.description}
+
+                {/* Right: FIRE number + milestones */}
+                <div data-gsap="fire-right" className="uf-reveal-hero-right" style={{ opacity: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>
+                    FIRE number
+                  </div>
+                  <div ref={numRef} className="uf-fire-num" style={{ marginTop: 10, fontSize: "clamp(32px, 4vw, 48px)", lineHeight: 1, fontWeight: 600, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "#fff" }} />
+                  <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.5)", maxWidth: 260, lineHeight: 1.45 }}>
+                    25× annual expenses at the 4% safe withdrawal rate.
+                  </div>
+                  <div style={{ marginTop: 22, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {milestones.map((m) => (
+                      <div data-gsap="milestone" key={m.label} style={{ flex: "1 1 auto", minWidth: 100, padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8, opacity: 0 }}>
+                        <div style={{ width: 14, height: 14, borderRadius: 99, flexShrink: 0, background: m.done ? "#22D3A5" : "rgba(34,211,165,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {m.done
+                            ? <svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 5l2 2 4-4" stroke="#003527" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            : <svg width="8" height="8" viewBox="0 0 10 10"><path d="M3 5h4M5 3l2 2-2 2" stroke="#22D3A5" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          }
+                        </div>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>{m.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── CHART + MONTHLY MOVE ── */}
+          {revealed && (
+            <div ref={belowRef}>
+              <div data-gsap="chart-section" style={{ background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
+                <div className="uf-chart-move-grid">
+                  {/* Chart card */}
+                  <div className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, paddingBottom: 16, boxShadow: "0 24px 40px -28px rgba(15,23,42,0.14)" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Your path to FIRE</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginTop: 6, letterSpacing: "-0.015em" }}>Compounded at 7% real return</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 14, fontSize: 11, fontWeight: 600, alignItems: "center", flexShrink: 0 }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#475569" }}>
+                          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: "#059669" }} />
+                          Your savings
+                        </span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#475569" }}>
+                          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: "#22D4BF" }} />
+                          Market returns
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 8 }}>
+                      <GrowthBarChart bars={chartBars} fireTarget={result.fireTarget} fireYear={result.retireYear} fmtCcy={fmtCcy} />
+                    </div>
+                  </div>
+
+                  {/* Monthly move sidebar */}
+                  {!isAlreadyFire && (
+                    <div className="uf-reveal-card" style={{ background: "#003527", color: "#fff", borderRadius: 16, paddingBottom: "clamp(18px, 2.5vw, 26px)", position: "relative", overflow: "hidden", boxShadow: "0 24px 40px -28px rgba(15,23,42,0.16)" }}>
+                      <div aria-hidden style={{ position: "absolute", top: -80, right: -80, width: 220, height: 220, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 65%)", opacity: 0.16, pointerEvents: "none" }} />
+                      <div style={{ position: "relative" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>The monthly move</div>
+                        <div style={{ marginTop: 12, fontSize: 19, lineHeight: 1.3, fontWeight: 500, letterSpacing: "-0.01em" }}>
+                          Invest <span style={{ color: "#22D3A5", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>${extraSavings}</span> more / month and your freedom date moves{" "}
+                          <span style={{ color: "#22D3A5", fontWeight: 700 }}>{savedYears > 0 ? monthlyMoveLabel : "closer"}</span> sooner.
+                        </div>
+                        <div style={{ marginTop: 22 }}>
+                          <input
+                            type="range" min="0" max="2000" step="50" value={extraSavings}
+                            onChange={e => setExtraSavings(Number(e.target.value))}
+                            style={{ width: "100%", accentColor: "#22D3A5", height: 4 }}
+                          />
+                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>
+                            <span>$0</span><span>$500</span><span>$1k</span><span>$1.5k</span><span>$2k</span>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.12)", display: "flex", flexDirection: "column", gap: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, letterSpacing: "0.04em" }}>NEW DATE</span>
+                            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em" }}>{newDateLabel}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, letterSpacing: "0.04em" }}>YEARS CUT</span>
+                            <span style={{ fontSize: 16, fontWeight: 700, color: "#22D3A5", fontVariantNumeric: "tabular-nums" }}>{savedYears > 0 ? monthlyMoveLabel : "—"}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, letterSpacing: "0.04em" }}>EXTRA AT FIRE</span>
+                            <span style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{extraSavings > 0 ? `+${extraAtFireLabel}` : "—"}</span>
+                          </div>
+                        </div>
+                        <Link
+                          href="/login"
+                          className="uf-automate-btn"
+                          style={{ display: "block", marginTop: 22, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none" }}
+                          onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource })}
+                        >
+                          Automate this →
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="uf-benchmark-card">
-                <div className="uf-insight-kicker">Savings rate benchmark</div>
-                <div className="uf-insight-title">{savingsBenchmark.headline}</div>
-                <div className="uf-insight-copy">{savingsBenchmark.detail}</div>
-                <div className="uf-insight-source">{savingsBenchmark.source}</div>
-              </div>
-
-              <div className="uf-identity-card">
-                <div className="uf-insight-kicker">Your FIRE Type</div>
-                <div className="uf-identity-row">
-                  <div className="uf-identity-icon">🔥</div>
+              {/* ── IDENTITY ROW ── */}
+              <div className="uf-identity-grid" style={{ marginBottom: 16 }}>
+                {/* FIRE type — dark green */}
+                <div data-gsap="identity-card" className="uf-reveal-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div aria-hidden style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 70%)", opacity: 0.22, pointerEvents: "none" }} />
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>Your FIRE type</div>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.05 }}>{fireIdentity.name}</div>
+                    <div style={{ marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.45, maxWidth: 320 }}>{fireIdentity.headline}</div>
+                  </div>
+                </div>
+                {/* Savings benchmark — light */}
+                <div data-gsap="identity-card" className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Savings rate benchmark</div>
                   <div>
-                    <div className="uf-insight-title">{fireIdentity.name}</div>
-                    <div className="uf-insight-copy">{fireIdentity.headline}</div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                      <div style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsMultiple}×</div>
+                      <div style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>ahead of the U.S. average</div>
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
+                      You save <b style={{ color: "#0F172A" }}>{savingsRatePct}%</b> of take-home, vs. <b style={{ color: "#0F172A" }}>{PUBLIC_SAVINGS_RATE_BASELINE}%</b> nationally.
+                    </div>
                   </div>
                 </div>
-                <div className="uf-insight-source">{fireIdentity.description}</div>
               </div>
 
-              {!isAlreadyFire && (/* Monthly move aha */
-              <div className="uf-monthly-move-card">
-                <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "#A7F3D0", marginBottom: 8 }}>
-                  One monthly move
+              {/* ── DECISION IMPACT ── */}
+              {!isAlreadyFire && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Decision impact</div>
+                      <div style={{ fontSize: 18, color: "#0F172A", marginTop: 4, fontWeight: 600, letterSpacing: "-0.01em" }}>What each lever buys you</div>
+                    </div>
+                    <span style={{ fontSize: 12, color: "#6B7280" }}>vs. today&apos;s plan</span>
+                  </div>
+                  <div className="uf-decision-grid">
+                    {[
+                      { label: "Cut dining out by 20%", delta: result.years - d1.years, detail: "~$" + Math.round(city.col * 0.2 / 12) + "/mo redirected" },
+                      { label: "Save $250/mo more", delta: result.years - calcFIRE(savings + 250, city.col, currentAge, portfolioBalance).years, detail: "Auto-transfer to brokerage" },
+                      { label: "Take a 10% pay cut", delta: d3.years - result.years, detail: "Career trade-off" },
+                      { label: "Invest annual bonus", delta: result.years - d2.years, detail: "Lump-sum, fully invested" },
+                    ].map((m, i) => {
+                      const isNeg = m.delta < 0;
+                      const abs = Math.abs(m.delta);
+                      const y = Math.floor(abs), mo = Math.round((abs - y) * 12);
+                      const label = y > 0 ? (mo > 0 ? `${y}y ${mo}mo` : `${y}y`) : `${mo}mo`;
+                      const sign = isNeg ? "+" : "−";
+                      return (
+                        <div data-gsap="decision-card" key={i} className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, display: "flex", flexDirection: "column", gap: 8, minHeight: 100 }}>
+                          <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: isNeg ? "#B45309" : "#003527", fontVariantNumeric: "tabular-nums" }}>{sign}{label}</div>
+                          <div style={{ fontSize: 13, color: "#0F172A", fontWeight: 600, lineHeight: 1.3 }}>{m.label}</div>
+                          <div style={{ fontSize: 11, color: "#6B7280", marginTop: "auto" }}>{m.detail}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 850, lineHeight: 1.2, letterSpacing: "-0.02em" }}>
-                  Invest {currSymbol}{Math.round(extraSavings * fxRate).toLocaleString()}/mo more and your freedom date moves {monthlyMoveYearsSaved > 0 ? fmtDelta(monthlyMoveYearsSaved) : "closer"}.
-                </div>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", marginTop: 8, lineHeight: 1.45 }}>
-                  At that pace, work could become optional around {monthlyMoveRetireYear}{d4.age !== undefined ? `, at age ${d4.age}` : ""}. Adjust the slider below to find a monthly move that feels realistic.
-                </div>
-              </div>
               )}
 
-              {!isAlreadyFire && (/* Cost statement */
-              <div className="uf-cost-card">
-                <div className="uf-cost-label">At your current savings rate, your spending is costing you</div>
-                <div className="uf-cost-years">{costYears} years</div>
-                <div className="uf-cost-sub">of freedom vs. someone saving 50% of their income</div>
-              </div>
-              )}
-
-              {!isAlreadyFire && (<>
-              {/* Delta grid — interactive */}
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748B", marginBottom: 10 }}>
-                How your decisions change your FIRE date
-              </div>
-              <div className="uf-delta-grid">
-                {portfolioBalance > 0 && portfolioYearsSaved > 0 && (
-                  <div className="uf-delta-card positive" style={{ gridColumn: "1 / -1" }}>
-                    <div className="uf-delta-label">Your {fmtCcy(portfolioBalance)} head start</div>
-                    <div className="uf-delta-val pos">-{portfolioYearsSaved} yr{portfolioYearsSaved !== 1 ? "s" : ""} vs. starting from zero</div>
-                  </div>
-                )}
-
-                {/* Interactive: dining cut */}
-                <div className="uf-delta-card positive">
-                  <div className="uf-delta-label">Cut dining out by {diningCutPct}%</div>
-                  <div className="uf-delta-val pos">
-                    {(result.years - d1.years) > 0 ? fmtDelta(result.years - d1.years) : "< 1 month sooner"}
-                  </div>
-                  <input
-                    type="range" min={5} max={50} step={5} value={diningCutPct}
-                    onChange={e => setDiningCutPct(Number(e.target.value))}
-                    style={{ width: "100%", marginTop: 10, accentColor: "#059669" }}
-                  />
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 3 }}>
-                    <span>5%</span><span>50%</span>
-                  </div>
+              {/* ── FOOTER CTA ── */}
+              <div data-gsap="footer-cta" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.005em" }}>Lock this trajectory in your dashboard.</div>
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren&apos;t stored · 7% real return, 25× / 4% FIRE rule</div>
                 </div>
-
-                {/* Interactive: extra savings */}
-                <div className="uf-delta-card positive">
-                  <div className="uf-delta-label">Save {currSymbol}{Math.round(extraSavings * fxRate).toLocaleString()}/mo more</div>
-                  <div className="uf-delta-val pos">
-                    {(result.years - d4.years) > 0 ? fmtDelta(result.years - d4.years) : "< 1 month sooner"}
-                  </div>
-                  <input
-                    type="range" min={100} max={2000} step={100} value={extraSavings}
-                    onChange={e => setExtraSavings(Number(e.target.value))}
-                    style={{ width: "100%", marginTop: 10, accentColor: "#059669" }}
-                  />
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94A3B8", marginTop: 3 }}>
-                    <span>{currSymbol}{Math.round(100 * fxRate)}</span><span>{currSymbol}{Math.round(2000 * fxRate).toLocaleString()}</span>
-                  </div>
-                </div>
-
-                {/* Static: pay cut */}
-                <div className="uf-delta-card negative">
-                  <div className="uf-delta-label">Take a 10% pay cut</div>
-                  <div className="uf-delta-val neg">+{(d3.years - result.years).toFixed(1)} yrs delayed</div>
-                </div>
-
-                {/* Static: annual bonus */}
-                <div className="uf-delta-card positive">
-                  <div className="uf-delta-label">Invest your annual bonus</div>
-                  <div className="uf-delta-val pos">
-                    {(result.years - d2.years) > 0 ? fmtDelta(result.years - d2.years) : "< 1 month sooner"}
-                  </div>
-                </div>
-              </div>
-              </>)}
-
-              {!isAlreadyFire && (<div style={{ marginBottom: 18 }}>
-                {topRevealAction ? (
-                  <div
-                    style={{
-                      background: "#ECFDF5",
-                      border: "1px solid #A7F3D0",
-                      borderRadius: 14,
-                      padding: "14px 16px",
-                      marginBottom: 12,
-                    }}
+                <div className="uf-footer-btns">
+                  <button style={{ height: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }} onClick={() => setShowShare(true)}>
+                    <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
+                    Share
+                  </button>
+                  <button style={{ height: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }} onClick={onAdjust}>
+                    Adjust inputs
+                  </button>
+                  <Link
+                    href="/login"
+                    style={{ height: 44, padding: "0 20px", borderRadius: 10, background: "#003527", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource })}
                   >
-                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#047857", marginBottom: 6 }}>
-                      Recommended next move
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#064E3B", lineHeight: 1.35 }}>
-                      {topRevealAction.title}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#065F46", marginTop: 6 }}>
-                      {topRevealAction.rationale}
-                    </div>
-                  </div>
-                ) : null}
-                <NextActions
-                  actions={revealActions}
-                  variant="light"
-                  heading="What to do next"
-                  subheading="These moves are ranked by projected FIRE-date impact from your current inputs."
-                  layout="stack"
-                  onAction={() => {
-                    saveCalculatorPrefill({
-                      monthlyIncome: Math.round(takeHome / 12),
-                      monthlySavings: savings,
-                      monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)),
-                      cityName: city.name,
-                      stateKey,
-                      fireTarget: result.fireTarget,
-                      annualCost: city.col,
-                      currentAge,
-                      portfolioBalance,
-                      landingSource,
-                    });
-                    router.push("/login");
-                  }}
-                />
-              </div>)}
-
-              {/* PRIMARY CTA */}
-              <Link
-  href="/login"
-  className="uf-btn uf-btn-teal uf-btn-full uf-btn-lg"
-  style={{ marginBottom: 10, display: "flex", justifyContent: "center" }}
-  onClick={() => {
-    saveCalculatorPrefill({
-      monthlyIncome: Math.round(takeHome / 12),
-      monthlySavings: savings,
-      monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)),
-      cityName: city.name,
-      stateKey,
-      fireTarget: result.fireTarget,
-      annualCost: city.col,
-      retireYear: result.retireYear,
-      generatedAt: new Date().toISOString(),
-      currentAge,
-      portfolioBalance,
-      landingSource,
-    });
-  }}
->
-  Track this in your dashboard
-</Link>
-              <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-                <button className="uf-btn uf-btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={onAdjust}>Adjust inputs</button>
-              </div>
-              <div style={{
-                background: "#FFFFFF",
-                border: "1px solid #E2E8F0",
-                borderRadius: 14,
-                padding: "12px 14px",
-                marginBottom: 12,
-                color: "#475569",
-                fontSize: 12,
-                lineHeight: 1.5,
-              }}>
-                <strong style={{ color: "#064E3B" }}>Private first:</strong> no login required for this estimate, and UntilFire does not store your financial details from this no-login calculator. Projection uses your inputs, a 7% real return assumption, and the 25× / 4% FIRE rule.
+                    Track this →
+                  </Link>
+                </div>
               </div>
               <p className="uf-disclaimer">
                 Estimate only. Not financial advice. Based on 7% real return (historical S&P500 average after inflation).
               </p>
-            </>
+            </div>
           )}
         </div>
       )}
@@ -1404,11 +1245,11 @@ export default function Home() {
 
   // Wizard state
   const [cityState, setCityState]         = useState<CityState | null>(null);
-  const [currency, setCurrency]           = useState<SupportedCurrency>("USD");
   const [income, setIncome]               = useState(90000);
   const [savings, setSavings]             = useState(1500);
   const [portfolioBalance, setPortfolioBalance] = useState(0);
   const [currentAge, setCurrentAge]       = useState<number | undefined>(undefined);
+  const [currency, setCurrency]           = useState<SupportedCurrency>("USD");
   const [landingSource, setLandingSourceState] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -1505,15 +1346,6 @@ export default function Home() {
         .uf-nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
         .uf-nav-dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
         .uf-nav-dot.done { background: var(--teal); }
-
-        /* -- CURRENCY -- */
-        .uf-currency-btn { display: flex; flex-direction: column; align-items: flex-start; padding: 12px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; }
-        .uf-currency-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
-        .uf-currency-btn.selected { border-color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent); }
-        .uf-currency-code { font-weight: 800; font-size: 15px; color: var(--text); font-family: var(--font-display); }
-        .uf-currency-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .uf-currency-confetti { position: fixed; top: 0; left: 0; right: 0; height: 100vh; pointer-events: none; z-index: 200; overflow: hidden; }
-        .uf-currency-confetti span { position: absolute; top: 0; width: 8px; height: 13px; border-radius: 3px; }
         .uf-nav-restart { font-size: 13px; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: var(--font-body); transition: color 0.2s; }
         .uf-nav-restart:hover { color: var(--text); }
         .uf-nav-signin { font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
@@ -1529,7 +1361,7 @@ export default function Home() {
         .uf-atm-orb-2 { width: 450px; height: 450px; top: 40vh; left: -120px; background: radial-gradient(circle, rgba(32,212,191,0.07) 0%, transparent 70%); animation: orbDrift2 18s ease-in-out 2s infinite alternate; }
         .uf-atm-orb-3 { width: 360px; height: 360px; top: 20vh; right: -100px; background: radial-gradient(circle, rgba(6,78,59,0.05) 0%, transparent 70%); animation: orbDrift3 22s ease-in-out 4s infinite alternate; }
         .uf-screen { width: 100%; max-width: 540px; margin: 0 auto; padding: 40px 24px 24px; position: relative; z-index: 1; }
-        .uf-reveal-screen { max-width: 680px; }
+        .uf-reveal-screen { max-width: 1100px; padding-left: 0; padding-right: 0; padding-top: 0; }
         .uf-section-sep { width: 240px; height: 1px; margin: 0 auto; background: linear-gradient(90deg, transparent, var(--border-light), transparent); position: relative; z-index: 1; }
 
         /* -- TYPOGRAPHY -- */
@@ -1586,6 +1418,14 @@ export default function Home() {
         .uf-btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
         .uf-btn-ghost:hover { color: var(--text); background: var(--bg-elevated); border-color: var(--text-dim); }
         .uf-btn-teal { background: var(--teal-bright); color: #003527; font-weight: 700; }
+        /* -- CURRENCY -- */
+        .uf-currency-btn { display: flex; flex-direction: column; align-items: flex-start; padding: 12px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; }
+        .uf-currency-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+        .uf-currency-btn.selected { border-color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent); }
+        .uf-currency-code { font-weight: 800; font-size: 15px; color: var(--text); font-family: var(--font-display); }
+        .uf-currency-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .uf-currency-confetti { position: fixed; top: 0; left: 0; right: 0; height: 100vh; pointer-events: none; z-index: 200; overflow: hidden; }
+        .uf-currency-confetti span { position: absolute; top: 0; width: 8px; height: 13px; border-radius: 3px; }
         .uf-btn-teal:hover { background: #4df5d6; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(98,250,227,0.35); }
         .uf-btn-full { width: 100%; }
         .uf-btn-lg { padding: 18px 36px; font-size: 17px; }
@@ -1798,9 +1638,10 @@ export default function Home() {
         @keyframes resultStageIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
         @keyframes confettiFall {
-          0% { opacity: 0; transform: translate3d(0,-32px,0) rotate(0deg) scale(0.6); }
-          12% { opacity: 1; }
-          100% { opacity: 0; transform: translate3d(var(--x),126px,0) rotate(var(--r)) scale(1); }
+          0%   { opacity: 0; transform: translate3d(0,-44px,0) rotate(0deg) scale(0.5); }
+          8%   { opacity: 1; }
+          88%  { opacity: 1; }
+          100% { opacity: 0; transform: translate3d(var(--x),340px,0) rotate(var(--r)) scale(1.1); }
         }
         @keyframes celebrationPop {
           0% { opacity: 0; transform: translateY(-8px) scale(0.9); }
@@ -1815,15 +1656,30 @@ export default function Home() {
           0%,100% { box-shadow: 0 14px 35px rgba(6,78,59,0.18), 0 0 0 rgba(159,232,112,0); }
           50% { box-shadow: 0 18px 42px rgba(6,78,59,0.24), 0 0 0 6px rgba(159,232,112,0.13); }
         }
-
+        @keyframes ringDrift {
+          0%,100% { opacity: var(--ring-lo, 0.06); transform: scale(1); }
+          50%     { opacity: var(--ring-hi, 0.14); transform: scale(1.05); }
+        }
+        @keyframes chipPulse {
+          0%,100% { box-shadow: 0 0 0 0 rgba(34,211,165,0); }
+          50%     { box-shadow: 0 0 0 8px rgba(34,211,165,0.14); }
+        }
+        @keyframes sectionSlideUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes automateShimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
         @keyframes fireGlow {
-          0%   { text-shadow: 0 0 0px rgba(6,78,59,0); }
-          40%  { text-shadow: 0 0 40px rgba(6,78,59,0.3); }
-          100% { text-shadow: 0 0 20px rgba(6,78,59,0.2); }
+          0%   { text-shadow: 0 0 0px rgba(34,211,165,0); }
+          40%  { text-shadow: 0 0 48px rgba(34,211,165,0.55), 0 0 80px rgba(34,211,165,0.25); }
+          100% { text-shadow: 0 0 28px rgba(34,211,165,0.35); }
         }
         @keyframes revealSlam {
           0%   { opacity: 0; transform: scale(0.55); }
-          60%  { opacity: 1; transform: scale(1.06); }
+          60%  { opacity: 1; transform: scale(1.08); }
           80%  { transform: scale(0.97); }
           100% { transform: scale(1); }
         }
@@ -1831,7 +1687,16 @@ export default function Home() {
           0%,100% { box-shadow: 0 0 0 0 rgba(6,78,59,0); }
           50%      { box-shadow: 0 0 0 8px rgba(6,78,59,0.08); }
         }
-        .uf-fire-slam { animation: revealSlam 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards, fireGlow 1.6s ease 0.5s forwards; }
+        .uf-fire-slam { animation: revealSlam 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards, fireGlow 2s ease 0.4s forwards; }
+        .uf-reveal-ring { animation: ringDrift var(--ring-dur,16s) ease-in-out var(--ring-delay,0s) infinite; }
+        .uf-stage-chip-anim { animation: chipPulse 3s ease-in-out 1.4s infinite; }
+        .uf-section-up { animation: sectionSlideUp 0.65s cubic-bezier(0.22,1,0.36,1) var(--su-delay,0s) both; }
+        .uf-automate-btn {
+          background: linear-gradient(90deg, #22D3A5 0%, #62FAE3 38%, #22D3A5 62%, #1ab896 100%);
+          background-size: 200% auto;
+          animation: automateShimmer 2.6s linear infinite;
+          color: #003527 !important; border: none !important;
+        }
 
         .uf-fire-hero {
           text-align: center;
@@ -1848,15 +1713,36 @@ export default function Home() {
         .uf-fire-hero-celebrate { border: 1px solid rgba(159,232,112,0.34); }
         .uf-celebration-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; margin-bottom: 14px; border-radius: 999px; background: rgba(159,232,112,0.14); border: 1px solid rgba(159,232,112,0.28); color: #D9FFB8; font-size: 12px; font-weight: 800; letter-spacing: 0.01em; animation: celebrationPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
         .uf-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
-        .uf-confetti span { position: absolute; top: 18px; left: 50%; width: 7px; height: 12px; border-radius: 3px; background: #9FE870; animation: confettiFall 1.25s ease-out forwards; }
-        .uf-confetti span:nth-child(1) { --x: -220px; --r: -180deg; left: 16%; background: #62FAE3; animation-delay: 0.02s; }
-        .uf-confetti span:nth-child(2) { --x: -120px; --r: 150deg; left: 30%; background: #A7F3D0; animation-delay: 0.10s; }
-        .uf-confetti span:nth-child(3) { --x: -42px; --r: -120deg; left: 43%; background: #FDE68A; animation-delay: 0.04s; }
-        .uf-confetti span:nth-child(4) { --x: 34px; --r: 210deg; left: 52%; background: #9FE870; animation-delay: 0.12s; }
-        .uf-confetti span:nth-child(5) { --x: 96px; --r: -240deg; left: 60%; background: #62FAE3; animation-delay: 0.06s; }
-        .uf-confetti span:nth-child(6) { --x: 156px; --r: 190deg; left: 70%; background: #FCA5A5; animation-delay: 0.14s; }
-        .uf-confetti span:nth-child(7) { --x: 212px; --r: -160deg; left: 82%; background: #A7F3D0; animation-delay: 0.08s; }
-        .uf-confetti span:nth-child(8) { --x: 250px; --r: 260deg; left: 90%; background: #FDE68A; animation-delay: 0.16s; }
+        .uf-confetti span {
+          position: absolute; top: 8px;
+          width: var(--w,8px); height: var(--h,13px);
+          border-radius: var(--br,3px);
+          animation: confettiFall var(--dur,1.9s) ease-out var(--delay,0s) forwards;
+        }
+        .uf-confetti span:nth-child(1)  { left:3%;  background:#62FAE3; --x:-280px; --r:-210deg; --delay:.02s; --w:6px;  --h:11px; }
+        .uf-confetti span:nth-child(2)  { left:9%;  background:#FDE68A; --x:-200px; --r:170deg;  --delay:.30s; --br:50%; --w:10px; --h:10px; }
+        .uf-confetti span:nth-child(3)  { left:15%; background:#9FE870; --x:-140px; --r:-150deg; --delay:.06s; }
+        .uf-confetti span:nth-child(4)  { left:21%; background:#22D3A5; --x: -90px; --r:200deg;  --delay:.40s; --br:2px; --w:11px; --h:6px; }
+        .uf-confetti span:nth-child(5)  { left:27%; background:#FCA5A5; --x: -44px; --r:-180deg; --delay:.10s; --br:50%; --w:9px;  --h:9px; }
+        .uf-confetti span:nth-child(6)  { left:33%; background:#FDE68A; --x:   8px; --r:160deg;  --delay:.48s; --w:7px;  --h:13px; }
+        .uf-confetti span:nth-child(7)  { left:39%; background:#62FAE3; --x:  52px; --r:-200deg; --delay:.14s; --br:2px; --w:12px; --h:6px; }
+        .uf-confetti span:nth-child(8)  { left:45%; background:#9FE870; --x:  86px; --r:230deg;  --delay:.52s; }
+        .uf-confetti span:nth-child(9)  { left:51%; background:#fff;    --x: 108px; --r:-170deg; --delay:.04s; --br:50%; --w:7px;  --h:7px;  --dur:1.6s; }
+        .uf-confetti span:nth-child(10) { left:57%; background:#FCA5A5; --x: 134px; --r:190deg;  --delay:.36s; }
+        .uf-confetti span:nth-child(11) { left:63%; background:#22D3A5; --x: 164px; --r:-220deg; --delay:.08s; --br:2px; --w:9px;  --h:6px; }
+        .uf-confetti span:nth-child(12) { left:69%; background:#FDE68A; --x: 200px; --r:180deg;  --delay:.44s; --br:50%; --w:11px; --h:11px; }
+        .uf-confetti span:nth-child(13) { left:75%; background:#9FE870; --x: 238px; --r:-160deg; --delay:.12s; }
+        .uf-confetti span:nth-child(14) { left:81%; background:#62FAE3; --x: 268px; --r:200deg;  --delay:.56s; --br:2px; --w:13px; --h:5px; }
+        .uf-confetti span:nth-child(15) { left:87%; background:#FCA5A5; --x: 298px; --r:-240deg; --delay:.16s; --br:50%; --w:8px;  --h:8px; }
+        .uf-confetti span:nth-child(16) { left:93%; background:#FDE68A; --x: 320px; --r:170deg;  --delay:.60s; }
+        .uf-confetti span:nth-child(17) { left:6%;  background:#22D3A5; --x:-260px; --r:190deg;  --delay:.75s; --br:50%; --w:9px;  --h:9px; }
+        .uf-confetti span:nth-child(18) { left:18%; background:#FDE68A; --x:-160px; --r:-160deg; --delay:.82s; }
+        .uf-confetti span:nth-child(19) { left:30%; background:#62FAE3; --x: -70px; --r:210deg;  --delay:.68s; --br:2px; --w:10px; --h:6px; }
+        .uf-confetti span:nth-child(20) { left:42%; background:#FCA5A5; --x:  28px; --r:-200deg; --delay:.88s; --br:50%; --w:8px;  --h:8px; }
+        .uf-confetti span:nth-child(21) { left:55%; background:#9FE870; --x: 118px; --r:170deg;  --delay:.74s; }
+        .uf-confetti span:nth-child(22) { left:67%; background:#fff;    --x: 188px; --r:-220deg; --delay:.94s; --br:2px; --w:11px; --h:7px; }
+        .uf-confetti span:nth-child(23) { left:79%; background:#22D3A5; --x: 256px; --r:190deg;  --delay:.80s; --br:50%; --w:9px;  --h:9px; }
+        .uf-confetti span:nth-child(24) { left:91%; background:#FDE68A; --x: 308px; --r:-170deg; --delay:1.0s; }
         .uf-fire-hero > *:not(.uf-confetti) { position: relative; z-index: 1; }
         .uf-fire-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--teal-bright); margin-bottom: 18px; }
         .uf-fire-num {
@@ -1982,6 +1868,62 @@ export default function Home() {
           .uf-confetti { display: none; }
         }
 
+        /* -- REVEAL DESIGN E LAYOUT -- */
+        .uf-reveal-hero-grid {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: clamp(20px, 4vw, 56px);
+          align-items: end;
+        }
+        .uf-reveal-hero-right {
+          padding-left: clamp(16px, 3vw, 40px);
+          border-left: 1px solid rgba(255,255,255,0.14);
+        }
+        .uf-chart-move-grid {
+          display: grid;
+          grid-template-columns: 1.7fr 1fr;
+          gap: 20px;
+          align-items: start;
+        }
+        .uf-identity-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .uf-decision-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+        /* card padding adapts across breakpoints */
+        .uf-reveal-card { padding: clamp(14px, 2.5vw, 24px); }
+        /* footer buttons row */
+        .uf-footer-btns { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+        /* 1024px — decision grid 4→2 col before it gets cramped */
+        @media (max-width: 1024px) {
+          .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        /* 900px — chart stacks above monthly move */
+        @media (max-width: 900px) {
+          .uf-chart-move-grid { grid-template-columns: 1fr; }
+          .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        /* 640px — hero stacks, identity stacks */
+        @media (max-width: 640px) {
+          .uf-reveal-hero-grid { grid-template-columns: 1fr; gap: 24px; }
+          .uf-reveal-hero-right { padding-left: 0; border-left: none; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.14); }
+          .uf-identity-grid { grid-template-columns: 1fr; }
+          .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
+          .uf-footer-btns { width: 100%; }
+          .uf-footer-btns > * { flex: 1 1 auto; justify-content: center; text-align: center; }
+        }
+        /* 480px — footer buttons stack to full-width column */
+        @media (max-width: 480px) {
+          .uf-footer-btns { flex-direction: column; }
+          .uf-footer-btns > * { width: 100%; }
+          .uf-decision-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        }
         /* -- FOOTER DIVIDER -- */
       `}</style>
 
@@ -1990,7 +1932,6 @@ export default function Home() {
         totalSteps={totalDots}
         onRestart={() => setScreen("hero")}
         onSignIn={signIn}
-        isDark={screen === "hero"}
       />
 
       <div className="uf-page">
@@ -2067,10 +2008,10 @@ export default function Home() {
             income={income}
             savings={savings}
             stateKey={cityState.stateKey}
-            currency={currency}
             currentAge={currentAge}
             portfolioBalance={portfolioBalance}
             landingSource={landingSource}
+            currency={currency}
             onAdjust={() => setScreen("portfolio")}
           />
         )}
@@ -2079,3 +2020,104 @@ export default function Home() {
     </>
   );
 }
+// -----------------------------------------------------------------------------
+// SCREEN 2B — CURRENCY (between city and income)
+// -----------------------------------------------------------------------------
+
+function CurrencyScreen({ onNext, onBack }: { onNext: (c: SupportedCurrency) => void; onBack: () => void }) {
+  const [selected, setSelected] = useState<SupportedCurrency>("USD");
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [burstCurrency, setBurstCurrency] = useState<SupportedCurrency>("USD");
+
+  const colors = CURRENCY_CONFETTI_COLORS[burstCurrency] ?? DEFAULT_CONFETTI_COLORS;
+
+  // Generate unique per-piece keyframes with x/r values embedded — avoids CSS custom property issues
+  const confettiCSS = confettiKey > 0
+    ? CONFETTI_POSITIONS.map((pos, i) => `
+        @keyframes ccF${confettiKey}x${i} {
+          0%   { opacity:0; transform:translate3d(0,-20px,0) rotate(0deg) scale(0.5); }
+          8%   { opacity:1; }
+          100% { opacity:0; transform:translate3d(${pos.x},100vh,0) rotate(${pos.r}) scale(1.1); }
+        }
+      `).join("")
+    : "";
+
+  return (
+    <>
+      {confettiKey > 0 && (
+        <>
+          <style>{confettiCSS}</style>
+          <div className="uf-currency-confetti" aria-hidden>
+            {CONFETTI_POSITIONS.map((pos, i) => (
+              <span
+                key={`${confettiKey}-${i}`}
+                style={{
+                  left: pos.left,
+                  background: colors[i % colors.length],
+                  animation: `ccF${confettiKey}x${i} 1.35s ease-out ${pos.delay} forwards`,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="uf-screen">
+        <WizardProgress step={2} />
+        <p className="uf-step-label">Step 2 of 6</p>
+        <div className="uf-eyebrow">Currency</div>
+        <h2 className="uf-h2">What currency do you <span className="uf-accent">earn in?</span></h2>
+        <p className="uf-body" style={{ marginBottom: 24 }}>
+          We&apos;ll let you enter your income and savings in your local currency and convert everything automatically.
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
+          {POPULAR_CURRENCIES.map(c => (
+            <button
+              key={c}
+              onClick={() => { setSelected(c); setBurstCurrency(c); setConfettiKey(k => k + 1); }}
+              className={`uf-currency-btn${selected === c ? " selected" : ""}`}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                {CURRENCY_COUNTRY[c] && (
+                  <img
+                    src={`https://flagcdn.com/w20/${CURRENCY_COUNTRY[c]}.png`}
+                    srcSet={`https://flagcdn.com/w40/${CURRENCY_COUNTRY[c]}.png 2x`}
+                    width={20}
+                    height={15}
+                    alt=""
+                    style={{ borderRadius: 2, objectFit: "cover", display: "block", flexShrink: 0 }}
+                  />
+                )}
+                <span className="uf-currency-code">{c}</span>
+              </div>
+              <span className="uf-currency-name">{CURRENCY_NAMES[c]}</span>
+            </button>
+          ))}
+        </div>
+
+        <div style={{ marginBottom: 28 }}>
+          <label className="uf-label">Other currencies</label>
+          <select
+            className="uf-input"
+            value={POPULAR_CURRENCIES.includes(selected) ? "" : selected}
+            onChange={e => { if (e.target.value) setSelected(e.target.value as SupportedCurrency); }}
+          >
+            <option value="">Choose from full list…</option>
+            {SUPPORTED_CURRENCIES.filter(c => !POPULAR_CURRENCIES.includes(c)).map(c => (
+              <option key={c} value={c}>{c} — {CURRENCY_NAMES[c]}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="uf-nav-row">
+          <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
+          <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(selected)}>
+            Continue with {selected} →
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
