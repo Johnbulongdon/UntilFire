@@ -181,9 +181,9 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
             maxWidth: 820,
             fontFamily: "inherit",
           }}>
-            The day work becomes{" "}
+            The personal finance app built for{" "}
             <em style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 400, fontStyle: "italic", color: "#62FAE3" }}>
-              optional
+              FIRE
             </em>
             .
           </h1>
@@ -197,7 +197,7 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
             color: "rgba(255,255,255,0.7)",
             fontWeight: 400,
           }}>
-            UntilFire turns three numbers into one date — and the single monthly move that brings it closer.
+            See your FIRE number, your timeline, and the money moves that get you there faster. Free, no login.
           </p>
 
           {/* CTAs */}
