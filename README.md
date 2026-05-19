@@ -1,12 +1,7 @@
-# UntilFire — Freedom Acceleration Engine
-
-**Find your freedom path.**
-
-*The personal finance app built for FIRE.*
-
-UntilFire shows when work can become optional — your FIRE number, your timeline, and the monthly moves that can bring freedom closer. Free, no login.
-
-Live at **[untilfire.com](https://untilfire.com)**.
+** UntilFire
+The personal finance app built for FIRE.
+See your FIRE number, your timeline, and the money moves that get you there faster.
+Free, no login.
 
 ---
 
