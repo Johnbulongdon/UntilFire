@@ -26,13 +26,14 @@ export const FunnelEvents = {
 export type FunnelEventName =
   (typeof FunnelEvents)[keyof typeof FunnelEvents];
 
-export type CalculatorStepId = 'city' | 'income' | 'savings' | 'portfolio';
+export type CalculatorStepId = 'city' | 'currency' | 'income' | 'savings' | 'portfolio';
 
 export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   city: 1,
-  income: 2,
-  savings: 3,
-  portfolio: 4,
+  currency: 2,
+  income: 3,
+  savings: 4,
+  portfolio: 5,
 };
 
 // Coarse buckets keep individual users from being re-identified by their
