@@ -8,6 +8,7 @@ import {
   UNTILFIRE_ANCHOR_COPY,
   UNTILFIRE_ANCHOR_DESCRIPTION,
 } from '@/lib/positioning'
+import { SITE_URL } from '@/lib/site'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -20,12 +21,12 @@ export const metadata: Metadata = {
   keywords:
     'FIRE planner, financial independence, retire early, FIRE number, retirement timeline, savings rate calculator, how much to retire, 4% rule calculator',
   alternates: {
-    canonical: 'https://untilfire.com',
+    canonical: SITE_URL,
   },
   openGraph: {
     title: 'UntilFire | Know When You Can Stop Working',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
-    url: 'https://untilfire.com',
+    url: SITE_URL,
     siteName: 'UntilFire',
     type: 'website',
   },
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
     title: 'UntilFire | Know When You Can Stop Working',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
   },
-  metadataBase: new URL('https://untilfire.com'),
+  metadataBase: new URL(SITE_URL),
 }
 
 export default function RootLayout({
@@ -67,7 +68,7 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'WebApplication',
               name: 'UntilFire',
-              url: 'https://untilfire.com',
+              url: SITE_URL,
               description: UNTILFIRE_ANCHOR_COPY,
               applicationCategory: 'FinanceApplication',
               operatingSystem: 'Any',

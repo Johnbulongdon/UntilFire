@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No subscription found" }, { status: 404 });
   }
 
-  const origin = req.headers.get("origin") || "https://untilfire.com";
+  const origin = req.headers.get("origin") || "https://www.untilfire.com";
   const stripe = getStripe();
 
   try {

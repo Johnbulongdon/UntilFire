@@ -25,7 +25,7 @@ export async function generateMetadata({
   return {
     title: `${data.name} FIRE Number Calculator | UntilFire`,
     description: `How much do you need to retire in ${data.name}? Based on a local cost of living of ${fmt(data.col)}/year. Calculate your personal FIRE number in seconds.`,
-    alternates: { canonical: `https://untilfire.com/fire-number/${data.key}` },
+    alternates: { canonical: `https://www.untilfire.com/fire-number/${data.key}` },
     openGraph: {
       title: `${data.name} FIRE Number Calculator`,
       description: `Retire in ${data.name} — find your number based on local costs of ${fmt(data.col)}/yr.`,

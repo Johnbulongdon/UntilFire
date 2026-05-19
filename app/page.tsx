@@ -673,7 +673,7 @@ function ShareModal({
   const [selectedCard, setSelectedCard] = useState<ShareCardKind>("identity");
 
   const cityShort = cityName.split(",")[0] || cityName;
-  const shareUrl = `https://untilfire.com/?source=share-${selectedCard}`;
+  const shareUrl = `https://www.untilfire.com/?source=share-${selectedCard}`;
   const benchmarkShareBody = benchmark.savingsRate > benchmark.baselineRate
     ? `My savings rate beats the benchmark in ${cityShort}. Find your freedom date at UntilFire.`
     : `I found my FIRE starting point in ${cityShort}. Find your freedom date at UntilFire.`;

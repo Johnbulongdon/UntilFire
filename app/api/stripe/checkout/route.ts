@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       customerId = customer.id;
     }
 
-    const origin = req.headers.get("origin") || "https://untilfire.com";
+    const origin = req.headers.get("origin") || "https://www.untilfire.com";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,

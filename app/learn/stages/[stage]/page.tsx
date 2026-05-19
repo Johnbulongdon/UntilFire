@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props) {
     title: `${stageData.label} FIRE Guides | UntilFire`,
     description: stageData.description,
     alternates: {
-      canonical: `https://untilfire.com/learn/stages/${stageData.id}`,
+      canonical: `https://www.untilfire.com/learn/stages/${stageData.id}`,
     },
   }
 }

@@ -269,8 +269,8 @@ export default async function CityFireNumberPage({ params }: Props) {
               '@context': 'https://schema.org',
               '@type': 'BreadcrumbList',
               itemListElement: [
-                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://untilfire.com/' },
-                { '@type': 'ListItem', position: 2, name: 'Calculators', item: 'https://untilfire.com/calculators' },
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+                { '@type': 'ListItem', position: 2, name: 'Calculators', item: 'https://www.untilfire.com/calculators' },
                 { '@type': 'ListItem', position: 3, name: page.city.name, item: page.canonicalUrl },
               ],
             },

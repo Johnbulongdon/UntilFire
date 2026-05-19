@@ -99,7 +99,7 @@ function FireTypeQuizInner() {
 
   async function handleShare() {
     if (!result) return
-    const text = `I got ${result.code} — ${result.name} on UntilFire.\n\nFind your FIRE Type:\nhttps://untilfire.com/fire-type`
+    const text = `I got ${result.code} — ${result.name} on UntilFire.\n\nFind your FIRE Type:\nhttps://www.untilfire.com/fire-type`
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ text })
