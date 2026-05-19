@@ -582,16 +582,21 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 // PORTFOLIO BALANCE + AGE SCREEN
 // -----------------------------------------------------------------------------
 
-function PortfolioScreen({ currency = "USD", onNext, onBack }: {
+function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initialAge, onNext, onBack }: {
   currency?: SupportedCurrency;
+  initialPortfolioBalance?: number;
+  initialAge?: number;
   onNext: (portfolio: number, age?: number) => void;
   onBack: () => void;
 }) {
   const isNonUSD = currency !== "USD";
   const currencySymbol = getCurrencySymbol(currency);
   const fxRate = FALLBACK_RATES[currency] ?? 1;
-  const [portfolioRaw, setPortfolioRaw] = useState<string>("");
-  const [ageRaw, setAgeRaw] = useState<string>("");
+  const initialPortfolioInput = initialPortfolioBalance > 0
+    ? String(isNonUSD ? Math.round(initialPortfolioBalance * fxRate) : initialPortfolioBalance)
+    : "";
+  const [portfolioRaw, setPortfolioRaw] = useState<string>(initialPortfolioInput);
+  const [ageRaw, setAgeRaw] = useState<string>(initialAge ? String(initialAge) : "");
 
   const portfolioInput = Math.max(0, parseInt(portfolioRaw.replace(/,/g, ""), 10) || 0);
   const portfolio = isNonUSD ? Math.round(portfolioInput / fxRate) : portfolioInput;
@@ -991,7 +996,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const d1 = calcFIRE(savings + Math.round(city.col * 0.2 / 12), city.col, currentAge, portfolioBalance);
   const d2 = calcFIRE(savings + 416, city.col, currentAge, portfolioBalance);
-  const d3 = calcFIRE(Math.max(0, savings - income * 0.1 / 12), city.col, currentAge, portfolioBalance);
+  const d3 = calcFIRE(savings + income * 0.1 / 12, city.col, currentAge, portfolioBalance);
   const d4 = calcFIRE(savings + extraSavings, city.col, currentAge, portfolioBalance);
   const monthlyTakeHome = takeHome / 12;
   const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
@@ -1291,7 +1296,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     {[
                       { label: "Cut dining out by 20%", delta: result.years - d1.years, detail: "~$" + Math.round(city.col * 0.2 / 12) + "/mo redirected" },
                       { label: "Save $250/mo more", delta: result.years - calcFIRE(savings + 250, city.col, currentAge, portfolioBalance).years, detail: "Auto-transfer to brokerage" },
-                      { label: "Take a 10% pay cut", delta: d3.years - result.years, detail: "Career trade-off" },
+                      { label: "Earn 10% more", delta: result.years - d3.years, detail: "Invest the raise" },
                       { label: "Invest annual bonus", delta: result.years - d2.years, detail: "Lump-sum, fully invested" },
                     ].map((m, i) => {
                       const isNeg = m.delta < 0;
@@ -1733,10 +1738,13 @@ export default function Home() {
         @media(max-width: 480px) {
           .uf-screen { padding: 28px 16px 20px; }
           .uf-hero-inner { padding: 32px 16px 32px; }
+          .uf-hero-ctas { display: grid; grid-template-columns: 1fr; width: 100%; gap: 10px; }
+          .uf-hero-ctas .uf-btn { width: 100%; min-height: 52px; text-align: center; }
+          .uf-mobile-primary-action { order: 0; }
           .uf-hero-strip { padding: 12px 16px; }
           .uf-stat-row { grid-template-columns: 1fr 1fr; }
           .uf-delta-grid { grid-template-columns: 1fr; }
-.uf-wl-inline-form { flex-direction: column; }
+          .uf-wl-inline-form { flex-direction: column; }
           .uf-btn-lg { padding: 16px 24px; min-height: 48px; }
           .uf-nav-row { gap: 8px; }
           .uf-fire-date { font-size: 13px; }
@@ -2060,31 +2068,7 @@ export default function Home() {
           <div className="uf-atm-orb uf-atm-orb-3" />
         </div>
         {screen === "hero" && (
-          <HeroScreen onStart={() => setScreen("city")} onSignIn={signIn} />
-        )}
-        {screen === "hero" && (
-          <div style={{ maxWidth: 540, margin: '0 auto', padding: '0 24px 32px' }}>
-            <a
-              href="/fire-type?source=landing-hero-card"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 16,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 14, padding: '18px 20px', textDecoration: 'none',
-                transition: 'background 0.15s',
-              }}
-            >
-              <div style={{ fontSize: 32, flexShrink: 0 }}>🔥</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', marginBottom: 3 }}>
-                  Not ready to enter numbers yet?
-                </div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
-                  Take the 2-min FIRE Type quiz to discover your financial independence personality.
-                </div>
-              </div>
-              <div style={{ color: '#22D3A5', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>→</div>
-            </a>
-          </div>
+          <HeroScreen onStart={() => setScreen("city")} />
         )}
         {screen === "city" && (
           <CityScreen
@@ -2117,6 +2101,8 @@ export default function Home() {
         {screen === "portfolio" && (
           <PortfolioScreen
             currency={currency}
+            initialPortfolioBalance={portfolioBalance}
+            initialAge={currentAge}
             onNext={(p, age) => { setPortfolioBalance(p); setCurrentAge(age); setScreen("reveal"); }}
             onBack={() => setScreen("savings")}
           />

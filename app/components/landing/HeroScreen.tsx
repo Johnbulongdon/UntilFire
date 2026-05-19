@@ -15,7 +15,7 @@ const HERO_STATS = [
   { v: "0", l: "Data stored without login" },
 ];
 
-export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void; onSignIn: () => void }) {
+export default function HeroScreen({ onStart }: { onStart: () => void }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setMounted(true));
@@ -30,12 +30,9 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
           <h1 className="uf-h1">{UNTILFIRE_ANCHOR_HEADLINE}</h1>
           <p className="uf-body">{UNTILFIRE_ANCHOR_DESCRIPTION}</p>
           <div className="uf-hero-ctas">
-            <button className="uf-btn uf-btn-teal uf-btn-lg uf-btn-power" onClick={onStart}>Find my FIRE number {"→"}</button>
-            <button className="uf-btn uf-btn-ghost-dark" onClick={onSignIn}>Log in {"->"}</button>
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <Link href="/fire-type?source=homepage-secondary" style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none", fontSize: 13, fontWeight: 500 }}>
-              Or take the 2-min FIRE Type quiz →
+            <button className="uf-btn uf-btn-teal uf-btn-lg uf-btn-power uf-mobile-primary-action" onClick={onStart}>Find my freedom date {"→"}</button>
+            <Link href="/fire-type?source=homepage-secondary" className="uf-btn uf-btn-ghost-dark uf-btn-lg">
+              Take the FIRE Type quiz {"→"}
             </Link>
           </div>
         </div>

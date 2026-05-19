@@ -43,6 +43,22 @@ const siteConfig = fs.readFileSync(path.join(repoRoot, 'lib/site.ts'), 'utf8');
 assert.match(siteConfig, /SITE_URL\s*=\s*['"]https:\/\/www\.untilfire\.com['"]/, 'SITE_URL must use canonical www host');
 assert.match(siteConfig, /siteUrl\(/, 'siteUrl helper should centralize absolute URL generation');
 
+const landingSource = fs.readFileSync(path.join(repoRoot, 'app/page.tsx'), 'utf8');
+const heroSource = fs.readFileSync(path.join(repoRoot, 'app/components/landing/HeroScreen.tsx'), 'utf8');
+
+assert.match(heroSource, /Find my freedom date/i, 'Homepage primary CTA should lead with freedom date, not FIRE number');
+assert.doesNotMatch(heroSource, /Find my FIRE number/i, 'Homepage hero CTA should not say Find my FIRE number');
+assert.doesNotMatch(heroSource, />\s*Log in/i, 'Homepage hero should not show a secondary Log in CTA beside the no-login start button');
+assert.match(heroSource, /fire-type\?source=homepage-secondary/i, 'Homepage hero should offer the FIRE Type personality test next to the primary CTA');
+assert.match(heroSource, /uf-hero-ctas[^]*uf-btn-power[^]*fire-type\?source=homepage-secondary/i, 'FIRE Type quiz should sit in the hero CTA row, not below it');
+
+assert.match(landingSource, /Earn 10% more/i, 'Decision-impact cards should keep the pay lever positive');
+assert.doesNotMatch(landingSource, /Take a 10% pay cut/i, 'Decision-impact cards should not show confusing pay-cut acceleration copy');
+assert.match(landingSource, /initialPortfolioBalance/i, 'Adjust Inputs should preserve portfolio value when returning to the portfolio step');
+assert.match(landingSource, /initialAge/i, 'Adjust Inputs should preserve current age when returning to the portfolio step');
+assert.match(landingSource, /uf-mobile-primary-action/i, 'Mobile CSS should prioritize the primary action on small screens');
+assert.match(landingSource, /@media\(max-width:\s*480px\)[^]*uf-hero-ctas[^]*grid-template-columns:\s*1fr/i, 'Mobile hero CTAs should stack cleanly on narrow screens');
+
 const fireCalculatorSource = fs.readFileSync(path.join(repoRoot, 'app/fire-calculator/page.tsx'), 'utf8');
 for (const required of [
   'FIRE calculator',
