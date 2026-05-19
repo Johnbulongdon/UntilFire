@@ -884,18 +884,20 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
           {/* ── GREEN GRADIENT HERO ── */}
           <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #059669 0%, #003527 100%)", color: "#fff", padding: "clamp(32px, 5vw, 64px) clamp(20px, 4vw, 56px) clamp(28px, 4vw, 56px)", marginBottom: 0, borderRadius: "16px 16px 0 0" }}>
             {/* Decorative circles */}
-            <div aria-hidden style={{ position: "absolute", top: -200, right: -80, width: 560, height: 560, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.08)", pointerEvents: "none" }} />
-            <div aria-hidden style={{ position: "absolute", top: -100, right: 20, width: 380, height: 380, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.06)", pointerEvents: "none" }} />
-            <div aria-hidden style={{ position: "absolute", top: 40, right: 140, width: 220, height: 220, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.04)", pointerEvents: "none" }} />
+            <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "18s", ["--ring-delay" as string]: "0s", ["--ring-lo" as string]: "0.06", ["--ring-hi" as string]: "0.14", position: "absolute", top: -200, right: -80, width: 560, height: 560, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.08)", pointerEvents: "none" }} />
+            <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "13s", ["--ring-delay" as string]: "2.5s", ["--ring-lo" as string]: "0.05", ["--ring-hi" as string]: "0.12", position: "absolute", top: -100, right: 20, width: 380, height: 380, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.06)", pointerEvents: "none" }} />
+            <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "9s", ["--ring-delay" as string]: "5s", ["--ring-lo" as string]: "0.03", ["--ring-hi" as string]: "0.09", position: "absolute", top: 40, right: 140, width: 220, height: 220, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.04)", pointerEvents: "none" }} />
             {revealed && (
               <div className="uf-confetti" aria-hidden="true">
+                <span /><span /><span /><span /><span /><span /><span /><span />
+                <span /><span /><span /><span /><span /><span /><span /><span />
                 <span /><span /><span /><span /><span /><span /><span /><span />
               </div>
             )}
 
             <div style={{ maxWidth: 1180, margin: "0 auto", position: "relative" }}>
               {/* Stage chip */}
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "7px 12px 7px 10px", background: "rgba(34,211,165,0.10)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, marginBottom: 28 }}>
+              <div className="uf-stage-chip-anim" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "7px 12px 7px 10px", background: "rgba(34,211,165,0.10)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, marginBottom: 28 }}>
                 <div style={{ display: "flex", gap: 3 }}>
                   {stages4.map((_, i) => (
                     <div key={i} style={{ width: 5, height: 5, borderRadius: 99, background: i <= stageIdx ? "#22D3A5" : "rgba(34,211,165,0.25)" }} />
@@ -965,7 +967,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
           {/* ── CHART + MONTHLY MOVE ── */}
           {revealed && (
             <>
-              <div style={{ background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
+              <div className="uf-section-up" style={{ ["--su-delay" as string]: "0.15s", background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
                 <div className="uf-chart-move-grid">
                   {/* Chart card */}
                   <div className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, paddingBottom: 16, boxShadow: "0 24px 40px -28px rgba(15,23,42,0.14)" }}>
@@ -1028,6 +1030,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                         </div>
                         <Link
                           href="/login"
+                          className="uf-automate-btn"
                           style={{ display: "block", marginTop: 22, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none" }}
                           onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource })}
                         >
@@ -1040,7 +1043,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               </div>
 
               {/* ── IDENTITY ROW ── */}
-              <div className="uf-identity-grid" style={{ marginBottom: 16 }}>
+              <div className="uf-section-up uf-identity-grid" style={{ ["--su-delay" as string]: "0.3s", marginBottom: 16 }}>
                 {/* FIRE type — dark green */}
                 <div className="uf-reveal-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div aria-hidden style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 70%)", opacity: 0.22, pointerEvents: "none" }} />
@@ -1067,7 +1070,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
 
               {/* ── DECISION IMPACT ── */}
               {!isAlreadyFire && (
-                <div style={{ marginBottom: 16 }}>
+                <div className="uf-section-up" style={{ ["--su-delay" as string]: "0.45s", marginBottom: 16 }}>
                   <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Decision impact</div>
@@ -1100,7 +1103,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
               )}
 
               {/* ── FOOTER CTA ── */}
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 12 }}>
+              <div className="uf-section-up" style={{ ["--su-delay" as string]: "0.55s", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.005em" }}>Lock this trajectory in your dashboard.</div>
                   <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren&apos;t stored · 7% real return, 25× / 4% FIRE rule</div>
@@ -1529,9 +1532,10 @@ export default function Home() {
         @keyframes resultStageIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
         @keyframes confettiFall {
-          0% { opacity: 0; transform: translate3d(0,-32px,0) rotate(0deg) scale(0.6); }
-          12% { opacity: 1; }
-          100% { opacity: 0; transform: translate3d(var(--x),126px,0) rotate(var(--r)) scale(1); }
+          0%   { opacity: 0; transform: translate3d(0,-44px,0) rotate(0deg) scale(0.5); }
+          8%   { opacity: 1; }
+          88%  { opacity: 1; }
+          100% { opacity: 0; transform: translate3d(var(--x),340px,0) rotate(var(--r)) scale(1.1); }
         }
         @keyframes celebrationPop {
           0% { opacity: 0; transform: translateY(-8px) scale(0.9); }
@@ -1546,15 +1550,30 @@ export default function Home() {
           0%,100% { box-shadow: 0 14px 35px rgba(6,78,59,0.18), 0 0 0 rgba(159,232,112,0); }
           50% { box-shadow: 0 18px 42px rgba(6,78,59,0.24), 0 0 0 6px rgba(159,232,112,0.13); }
         }
-
+        @keyframes ringDrift {
+          0%,100% { opacity: var(--ring-lo, 0.06); transform: scale(1); }
+          50%     { opacity: var(--ring-hi, 0.14); transform: scale(1.05); }
+        }
+        @keyframes chipPulse {
+          0%,100% { box-shadow: 0 0 0 0 rgba(34,211,165,0); }
+          50%     { box-shadow: 0 0 0 8px rgba(34,211,165,0.14); }
+        }
+        @keyframes sectionSlideUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes automateShimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
         @keyframes fireGlow {
-          0%   { text-shadow: 0 0 0px rgba(6,78,59,0); }
-          40%  { text-shadow: 0 0 40px rgba(6,78,59,0.3); }
-          100% { text-shadow: 0 0 20px rgba(6,78,59,0.2); }
+          0%   { text-shadow: 0 0 0px rgba(34,211,165,0); }
+          40%  { text-shadow: 0 0 48px rgba(34,211,165,0.55), 0 0 80px rgba(34,211,165,0.25); }
+          100% { text-shadow: 0 0 28px rgba(34,211,165,0.35); }
         }
         @keyframes revealSlam {
           0%   { opacity: 0; transform: scale(0.55); }
-          60%  { opacity: 1; transform: scale(1.06); }
+          60%  { opacity: 1; transform: scale(1.08); }
           80%  { transform: scale(0.97); }
           100% { transform: scale(1); }
         }
@@ -1562,7 +1581,16 @@ export default function Home() {
           0%,100% { box-shadow: 0 0 0 0 rgba(6,78,59,0); }
           50%      { box-shadow: 0 0 0 8px rgba(6,78,59,0.08); }
         }
-        .uf-fire-slam { animation: revealSlam 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards, fireGlow 1.6s ease 0.5s forwards; }
+        .uf-fire-slam { animation: revealSlam 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards, fireGlow 2s ease 0.4s forwards; }
+        .uf-reveal-ring { animation: ringDrift var(--ring-dur,16s) ease-in-out var(--ring-delay,0s) infinite; }
+        .uf-stage-chip-anim { animation: chipPulse 3s ease-in-out 1.4s infinite; }
+        .uf-section-up { animation: sectionSlideUp 0.65s cubic-bezier(0.22,1,0.36,1) var(--su-delay,0s) both; }
+        .uf-automate-btn {
+          background: linear-gradient(90deg, #22D3A5 0%, #62FAE3 38%, #22D3A5 62%, #1ab896 100%);
+          background-size: 200% auto;
+          animation: automateShimmer 2.6s linear infinite;
+          color: #003527 !important; border: none !important;
+        }
 
         .uf-fire-hero {
           text-align: center;
@@ -1579,15 +1607,36 @@ export default function Home() {
         .uf-fire-hero-celebrate { border: 1px solid rgba(159,232,112,0.34); }
         .uf-celebration-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; margin-bottom: 14px; border-radius: 999px; background: rgba(159,232,112,0.14); border: 1px solid rgba(159,232,112,0.28); color: #D9FFB8; font-size: 12px; font-weight: 800; letter-spacing: 0.01em; animation: celebrationPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
         .uf-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
-        .uf-confetti span { position: absolute; top: 18px; left: 50%; width: 7px; height: 12px; border-radius: 3px; background: #9FE870; animation: confettiFall 1.25s ease-out forwards; }
-        .uf-confetti span:nth-child(1) { --x: -220px; --r: -180deg; left: 16%; background: #62FAE3; animation-delay: 0.02s; }
-        .uf-confetti span:nth-child(2) { --x: -120px; --r: 150deg; left: 30%; background: #A7F3D0; animation-delay: 0.10s; }
-        .uf-confetti span:nth-child(3) { --x: -42px; --r: -120deg; left: 43%; background: #FDE68A; animation-delay: 0.04s; }
-        .uf-confetti span:nth-child(4) { --x: 34px; --r: 210deg; left: 52%; background: #9FE870; animation-delay: 0.12s; }
-        .uf-confetti span:nth-child(5) { --x: 96px; --r: -240deg; left: 60%; background: #62FAE3; animation-delay: 0.06s; }
-        .uf-confetti span:nth-child(6) { --x: 156px; --r: 190deg; left: 70%; background: #FCA5A5; animation-delay: 0.14s; }
-        .uf-confetti span:nth-child(7) { --x: 212px; --r: -160deg; left: 82%; background: #A7F3D0; animation-delay: 0.08s; }
-        .uf-confetti span:nth-child(8) { --x: 250px; --r: 260deg; left: 90%; background: #FDE68A; animation-delay: 0.16s; }
+        .uf-confetti span {
+          position: absolute; top: 8px;
+          width: var(--w,8px); height: var(--h,13px);
+          border-radius: var(--br,3px);
+          animation: confettiFall var(--dur,1.9s) ease-out var(--delay,0s) forwards;
+        }
+        .uf-confetti span:nth-child(1)  { left:3%;  background:#62FAE3; --x:-280px; --r:-210deg; --delay:.02s; --w:6px;  --h:11px; }
+        .uf-confetti span:nth-child(2)  { left:9%;  background:#FDE68A; --x:-200px; --r:170deg;  --delay:.30s; --br:50%; --w:10px; --h:10px; }
+        .uf-confetti span:nth-child(3)  { left:15%; background:#9FE870; --x:-140px; --r:-150deg; --delay:.06s; }
+        .uf-confetti span:nth-child(4)  { left:21%; background:#22D3A5; --x: -90px; --r:200deg;  --delay:.40s; --br:2px; --w:11px; --h:6px; }
+        .uf-confetti span:nth-child(5)  { left:27%; background:#FCA5A5; --x: -44px; --r:-180deg; --delay:.10s; --br:50%; --w:9px;  --h:9px; }
+        .uf-confetti span:nth-child(6)  { left:33%; background:#FDE68A; --x:   8px; --r:160deg;  --delay:.48s; --w:7px;  --h:13px; }
+        .uf-confetti span:nth-child(7)  { left:39%; background:#62FAE3; --x:  52px; --r:-200deg; --delay:.14s; --br:2px; --w:12px; --h:6px; }
+        .uf-confetti span:nth-child(8)  { left:45%; background:#9FE870; --x:  86px; --r:230deg;  --delay:.52s; }
+        .uf-confetti span:nth-child(9)  { left:51%; background:#fff;    --x: 108px; --r:-170deg; --delay:.04s; --br:50%; --w:7px;  --h:7px;  --dur:1.6s; }
+        .uf-confetti span:nth-child(10) { left:57%; background:#FCA5A5; --x: 134px; --r:190deg;  --delay:.36s; }
+        .uf-confetti span:nth-child(11) { left:63%; background:#22D3A5; --x: 164px; --r:-220deg; --delay:.08s; --br:2px; --w:9px;  --h:6px; }
+        .uf-confetti span:nth-child(12) { left:69%; background:#FDE68A; --x: 200px; --r:180deg;  --delay:.44s; --br:50%; --w:11px; --h:11px; }
+        .uf-confetti span:nth-child(13) { left:75%; background:#9FE870; --x: 238px; --r:-160deg; --delay:.12s; }
+        .uf-confetti span:nth-child(14) { left:81%; background:#62FAE3; --x: 268px; --r:200deg;  --delay:.56s; --br:2px; --w:13px; --h:5px; }
+        .uf-confetti span:nth-child(15) { left:87%; background:#FCA5A5; --x: 298px; --r:-240deg; --delay:.16s; --br:50%; --w:8px;  --h:8px; }
+        .uf-confetti span:nth-child(16) { left:93%; background:#FDE68A; --x: 320px; --r:170deg;  --delay:.60s; }
+        .uf-confetti span:nth-child(17) { left:6%;  background:#22D3A5; --x:-260px; --r:190deg;  --delay:.75s; --br:50%; --w:9px;  --h:9px; }
+        .uf-confetti span:nth-child(18) { left:18%; background:#FDE68A; --x:-160px; --r:-160deg; --delay:.82s; }
+        .uf-confetti span:nth-child(19) { left:30%; background:#62FAE3; --x: -70px; --r:210deg;  --delay:.68s; --br:2px; --w:10px; --h:6px; }
+        .uf-confetti span:nth-child(20) { left:42%; background:#FCA5A5; --x:  28px; --r:-200deg; --delay:.88s; --br:50%; --w:8px;  --h:8px; }
+        .uf-confetti span:nth-child(21) { left:55%; background:#9FE870; --x: 118px; --r:170deg;  --delay:.74s; }
+        .uf-confetti span:nth-child(22) { left:67%; background:#fff;    --x: 188px; --r:-220deg; --delay:.94s; --br:2px; --w:11px; --h:7px; }
+        .uf-confetti span:nth-child(23) { left:79%; background:#22D3A5; --x: 256px; --r:190deg;  --delay:.80s; --br:50%; --w:9px;  --h:9px; }
+        .uf-confetti span:nth-child(24) { left:91%; background:#FDE68A; --x: 308px; --r:-170deg; --delay:1.0s; }
         .uf-fire-hero > *:not(.uf-confetti) { position: relative; z-index: 1; }
         .uf-fire-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--teal-bright); margin-bottom: 18px; }
         .uf-fire-num {
