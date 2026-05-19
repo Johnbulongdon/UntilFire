@@ -621,11 +621,12 @@ function useCountUp(target: number, duration: number, running: boolean) {
   return val;
 }
 
-function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear }: {
+function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear, currentAge }: {
   data: { basePts: {t:number;value:number}[]; boostedPts: {t:number;value:number}[]; maxYears: number; fireTarget: number };
   extraSavings: number;
   baseRetireYear: number;
   boostedRetireYear: number;
+  currentAge?: number;
 }) {
   if (data.basePts.length < 2) return null;
   const W = 920, H = 340;
@@ -671,7 +672,7 @@ function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear
       ))}
       {xTicks.map(y => (
         <text key={y} x={xS(y)} y={H - padB + 18} textAnchor="middle" fontSize="10" fill="#6B7280" fontWeight="600">
-          {y === 0 ? "Today" : `+${y}y`}
+          {currentAge ? `${currentAge + y}` : (y === 0 ? "Today" : `+${y}y`)}
         </text>
       ))}
       <line x1={padL} x2={W - padR} y1={fireY} y2={fireY} stroke="#059669" strokeWidth="1.2" strokeDasharray="2 4" />
@@ -796,13 +797,18 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
   const savedYears = Math.max(0, result.years - d4.years);
   const savedY = Math.floor(savedYears);
   const savedM = Math.round((savedYears - savedY) * 12);
-  const monthlyMoveLabel = savedY > 0 ? `${savedY}y ${savedM}mo` : `${savedM}mo`;
+  const monthlyMoveLabel = savedY > 0 && savedM > 0 ? `${savedY}y ${savedM}mo` : savedY > 0 ? `${savedY}y` : `${savedM}mo`;
   const newDateLabel = (() => {
     const d = new Date();
     d.setMonth(d.getMonth() + Math.round(d4.years * 12));
     return d.toLocaleString("en-US", { month: "long", year: "numeric" });
   })();
-  const yearsLabel = result.years < 1 ? "less than a year" : `${Math.floor(result.years)}y ${Math.round((result.years % 1) * 12)}mo`;
+  const yearsLabel = (() => {
+    if (result.years < 1) return "less than a year";
+    const y = Math.floor(result.years);
+    const m = Math.round((result.years % 1) * 12);
+    return m > 0 ? `${y}y ${m}mo` : `${y}y`;
+  })();
   const extraAtFire = extraSavings * 12 * d4.years * 1.4;
   const extraAtFireLabel = extraAtFire >= 1_000_000 ? `$${(extraAtFire / 1_000_000).toFixed(2)}M` : `$${Math.round(extraAtFire / 1000)}k`;
   const monthlyTakeHomeForBenchmark = takeHome / 12;
@@ -982,7 +988,7 @@ function RevealScreen({ city, income, savings, stateKey, currentAge, portfolioBa
                       </div>
                     </div>
                     <div style={{ marginTop: 8 }}>
-                      <FireGrowthChart data={chartData} extraSavings={extraSavings} baseRetireYear={result.retireYear} boostedRetireYear={d4.retireYear} />
+                      <FireGrowthChart data={chartData} extraSavings={extraSavings} baseRetireYear={result.retireYear} boostedRetireYear={d4.retireYear} currentAge={currentAge} />
                     </div>
                   </div>
 

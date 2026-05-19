@@ -18,15 +18,28 @@ function compute({
 }: FireInputs): FireOutput {
   const fireTarget = annualExpenses * (1 / withdrawalRate);
   let bal = startingBalance;
+  let balPrev = startingBalance;
   let yrs = 0;
   while (bal < fireTarget && yrs < maxYears) {
+    balPrev = bal;
     bal = bal * (1 + expectedRealReturn) + monthlySavings * 12;
     yrs++;
   }
+  // Interpolate to find the exact fractional year when balance crosses FIRE target
+  let fractionalYears = yrs;
+  if (yrs > 0 && yrs < maxYears) {
+    const annual = monthlySavings * 12;
+    const k = annual / expectedRealReturn;
+    const ratio = (fireTarget + k) / (balPrev + k);
+    if (ratio > 1) {
+      const t = Math.log(ratio) / Math.log(1 + expectedRealReturn);
+      fractionalYears = (yrs - 1) + Math.min(Math.max(t, 0), 1);
+    }
+  }
   const out: FireOutput = {
     fireTarget,
-    years: yrs,
-    retireYear: new Date().getFullYear() + yrs,
+    years: fractionalYears,
+    retireYear: new Date().getFullYear() + Math.floor(fractionalYears),
   };
   if (typeof currentAge === 'number' && currentAge > 0) {
     out.age = currentAge + yrs;
