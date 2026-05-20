@@ -91,7 +91,7 @@ Roadmap:
 | Payments | Stripe |
 | Bank Sync | Plaid |
 | AI | Anthropic SDK (Claude) |
-| Email | Resend |
+| Email | Loops.so |
 | Hosting | Vercel |
 | Analytics | Vercel Analytics, PostHog |
 
@@ -193,7 +193,7 @@ npm run lint         # eslint .
 | Tier | Price | What you get |
 |---|---|---|
 | **Free** | $0 | 60-second FIRE answer, interactive decision impact grid, city/tax-adjusted — no login |
-| **Pro** | $9/mo | Full dashboard: overview, expense tracking, Plaid bank sync, recurring detection, reports, Monte Carlo, investment sims |
+| **Pro** | $4.99/mo | Unlimited connected bank accounts via Plaid (free tier: 1 account); auto-categorisation coming soon |
 
 ---
 
@@ -266,7 +266,7 @@ Push to `main` triggers a Vercel deploy automatically.
 
 **High priority:**
 - [ ] Fix AI categorisation — move to a `/api/categorise` server route with `ANTHROPIC_API_KEY`, then re-enable
-- [ ] Email onboarding sequence (Resend/Loops: Day 1 / Day 3 / Day 7)
+- [ ] Email onboarding sequence (Loops.so: Day 1 / Day 3 / Day 7)
 - [ ] Zero-savings warning in calculator wizard — user can currently advance with $0 savings and see a misleading FIRE date
 
 **Product improvements:**
