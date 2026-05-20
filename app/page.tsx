@@ -150,11 +150,11 @@ function getSavingsBenchmark(cityName: string, savings: number, monthlyTakeHome:
 }
 
 const INCOME_MODES: { key: IncomeMode; label: string; unit: string; hint: string }[] = [
-  { key: "annual", label: "Annual", unit: "/yr", hint: "Before-tax yearly salary or compensation." },
-  { key: "monthly", label: "Monthly", unit: "/mo", hint: "Gross monthly income before taxes." },
+  { key: "takehome", label: "Monthly take-home", unit: "/mo", hint: "Use the amount that lands in your bank each month. An estimate is fine." },
+  { key: "annual", label: "Annual gross", unit: "/yr", hint: "Before-tax yearly salary or compensation." },
+  { key: "monthly", label: "Monthly gross", unit: "/mo", hint: "Gross monthly income before taxes." },
   { key: "biweekly", label: "Bi-weekly", unit: "/check", hint: "Amount per paycheck if paid every 2 weeks." },
   { key: "hourly", label: "Hourly", unit: "/hr", hint: "Hourly gross wage (assuming 40h/week)." },
-  { key: "takehome", label: "Take-home", unit: "/mo", hint: "Use the amount that lands in your bank each month." },
 ];
 
 function toAnnualGross(value: number, mode: IncomeMode): number {
@@ -364,7 +364,7 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
   const isNonUSD = currency !== "USD";
   const isCustomJurisdiction = stateKey === "custom";
   const forceTakeHome = isNonUSD || isCustomJurisdiction;
-  const [mode, setMode] = useState<IncomeMode>(forceTakeHome ? "takehome" : "annual");
+  const [mode, setMode] = useState<IncomeMode>("takehome");
   const [rawValue, setRawValue] = useState<string>("");
   const [takeHomeRaw, setTakeHomeRaw] = useState<string>("");
   const currencySymbol = getCurrencySymbol(currency);
@@ -393,7 +393,9 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
       <div className="uf-eyebrow">Income</div>
       <h2 className="uf-h2">What do you <span className="uf-accent">earn?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
-        Enter however your pay is structured. We&apos;ll handle the conversion.
+        {forceTakeHome
+          ? "Start with the monthly amount that lands in your bank. A rough estimate is fine."
+          : "Start with the monthly amount that lands in your bank. If you prefer, switch to gross pay and we’ll estimate take-home."}
       </p>
 
       {!forceTakeHome && (
@@ -405,6 +407,7 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
               onClick={() => {
                 setMode(m.key);
                 setRawValue("");
+                setTakeHomeRaw("");
               }}
             >
               {m.label}
@@ -441,13 +444,14 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
         </>
       ) : (
         <>
-          <label className="uf-label">Monthly take-home income ({currency})</label>
+          <label className="uf-label">Monthly take-home pay ({currency})</label>
           <div className="uf-big-input-wrap">
             <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
             <input
               type="number"
               className="uf-input uf-input-mono uf-input-big"
               style={{ paddingLeft: 28 }}
+              placeholder="e.g. 5,000"
               value={takeHomeRaw}
               min={0}
               onChange={(e) => setTakeHomeRaw(e.target.value)}
@@ -920,7 +924,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   onAdjust: () => void;
 }) {
   const result = calcFIRE(savings, city.col, currentAge, portfolioBalance);
-  const { takeHome } = calcTakeHome(income, stateKey);
+  const takeHome = income;
 
   // Phase 1: calculating steps
   const [calcPhase, setCalcPhase] = useState(true);

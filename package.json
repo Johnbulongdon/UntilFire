@@ -14,6 +14,7 @@
     "test:cashflow-mobile-save": "node scripts/verify-cashflow-mobile-save-reachable.mjs",
     "test:expense-guidance": "node scripts/verify-expense-guidance-copy.mjs",
     "test:city-coverage": "node scripts/verify-city-coverage.mjs",
+    "test:income-default": "node scripts/verify-income-default.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
