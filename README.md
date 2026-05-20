@@ -235,6 +235,8 @@ Push to `main` triggers a Vercel deploy automatically.
 | #35 | May 2026 | Fix orphaned `fireGoal` references causing production crash on landing page |
 | #36–40 | May 2026 | Mobile nav simplification; Plaid/Assets integration; hero copy + `lib/positioning.ts` constants; SEO canonicalization; mobile dashboard UX fixes |
 | #41 | May 2026 | Cashflow UX fixes; emoji icons in QuickAdd; empty-state copy; Fraunces font; AI cat paused; custom cat Supabase sync; `is_work_related` removed from save path; `RetirementTargetCard` uses stored withdrawal rate |
+| #42 | May 2026 | README fully rewritten — accurate feature list, all 15 env vars, Plaid/GSAP/Anthropic in tech stack, Pro plan updated to $4.99/unlimited accounts, email provider updated to Loops.so |
+| #43 | May 2026 | Zero-savings warning in wizard savings step; reveal footer buttons (Share, Adjust inputs, Track this) now have CSS hover states |
 
 ---
 
@@ -267,8 +269,5 @@ Push to `main` triggers a Vercel deploy automatically.
 **High priority:**
 - [ ] Fix AI categorisation — move to a `/api/categorise` server route with `ANTHROPIC_API_KEY`, then re-enable
 - [ ] Email onboarding sequence (Loops.so: Day 1 / Day 3 / Day 7)
-- [ ] Zero-savings warning in calculator wizard — user can currently advance with $0 savings and see a misleading FIRE date
-
 **Product improvements:**
 - [ ] Mobile UX audit — Cashflow QuickAdd is behind a bottom drawer on mobile; behaviour and discoverability need review
-- [ ] Button hover/active states — several CTAs use inline styles that block CSS pseudo-classes, leaving no visual hover feedback
