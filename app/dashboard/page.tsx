@@ -2749,12 +2749,12 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 // ─── FIRE Calculator Menu Tab ────────────────────────────────────────────────
 function FireCalcMenuTab({
   fireAge,
-  onOpenGoals,
+  onOpenProfile,
   onOpenSimulation,
   onOpenInvestSim,
 }: {
   fireAge: number;
-  onOpenGoals: () => void;
+  onOpenProfile: () => void;
   onOpenSimulation: () => void;
   onOpenInvestSim: () => void;
 }) {
@@ -2769,26 +2769,26 @@ function FireCalcMenuTab({
   const tools = [
     {
       icon: "🎯",
-      title: "Set Your Goals",
-      desc: "Choose your FIRE style — Early Retirement, Coast, Barista, or Fat FIRE — and set your target retirement age.",
-      meta: `Target: retire at ${fireAge}`,
-      label: "Open Goals →",
-      onClick: onOpenGoals,
+      title: "Profile Assumptions",
+      desc: "Keep your age, target city, lifestyle, and FIRE type in Profile so every freedom-date calculation uses the same source of truth.",
+      meta: `Current age: ${fireAge}`,
+      label: "Edit in Profile →",
+      onClick: onOpenProfile,
     },
     {
       icon: "🎲",
-      title: "Monte Carlo Simulation",
-      desc: "Run 10,000 randomised market scenarios to see your probability of reaching FIRE by your target age.",
+      title: "Confidence Check",
+      desc: "Run 10,000 randomised market scenarios to see how resilient your freedom date is by your target age.",
       meta: "Stress-test your plan",
-      label: "Run Simulation →",
+      label: "Check Confidence →",
       onClick: onOpenSimulation,
     },
     {
       icon: "📈",
-      title: "Investment Simulations",
-      desc: "Model DCA contributions with custom allocation and see how your portfolio grows over time, with or without inflation.",
-      meta: "What should I DCA now?",
-      label: "Open Simulator →",
+      title: "Advanced Investing Simulator",
+      desc: "Optional advanced tool: model DCA contributions with custom allocation and inflation assumptions.",
+      meta: "Advanced / optional",
+      label: "Open Advanced →",
       onClick: onOpenInvestSim,
     },
   ];
@@ -2797,10 +2797,10 @@ function FireCalcMenuTab({
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
       <div>
         <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "#19181E", margin: "0 0 6px", letterSpacing: "-0.5px" }}>
-          FIRE Calculator
+          Freedom Date
         </h2>
         <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>
-          Choose a tool below to model your path to financial independence.
+          Start with your core freedom-date view. Assumptions live in Profile; advanced checks stay here when you need them.
         </p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
@@ -2971,7 +2971,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   },
 ];
 
-type MobilePrimaryKey = "home" | "portfolio" | "freedom" | "profile";
+type MobilePrimaryKey = "home" | "money" | "freedom" | "profile";
 
 const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string }[] = [
   {
@@ -2980,8 +2980,8 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
     svg: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
   },
   {
-    key: "portfolio",
-    label: "Portfolio",
+    key: "money",
+    label: "Money",
     svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
   },
   {
@@ -3208,26 +3208,25 @@ export default function Dashboard() {
 
   const openMobilePrimary = (key: MobilePrimaryKey) => {
     if (key === "home") openDashboardTab("overview");
-    if (key === "portfolio") openDashboardTab("cashflow");
-    if (key === "freedom") openDashboardTab("fire-calculator");
+    if (key === "money") { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); }
+    if (key === "freedom") { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }
     if (key === "profile") openDashboardTab("profile");
   };
 
   const isMobilePrimaryActive = (key: MobilePrimaryKey) => {
     if (key === "home") return tab === "overview";
-    if (key === "portfolio") return tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports";
-    if (key === "freedom") return tab === "fire-calculator" || tab === "goals";
-    return tab === "profile";
+    if (key === "money") return tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports";
+    if (key === "freedom") return tab === "fire-calculator";
+    return tab === "profile" || tab === "goals";
   };
 
   const mobileDrawerItems = [
-    { label: "Cashflow", tab: "cashflow" as TabKey, helper: "Transactions, budgets, categories" },
-    { label: "Assets", tab: "assets" as TabKey, helper: "Portfolio and connected accounts" },
-    { label: "Liabilities", tab: "liabilities" as TabKey, helper: "Debt and mortgage details" },
-    { label: "Reports", tab: "reports" as TabKey, helper: "Monthly spending insights" },
-    { label: "Freedom Date", tab: "fire-calculator" as TabKey, helper: "Calculator, goals, simulations" },
-    { label: "Retirement Target", tab: "goals" as TabKey, helper: "City and lifestyle target" },
-    { label: "Learning Hub", tab: "learning-hub" as TabKey, helper: "FIRE guides by stage" },
+    { label: "Cashflow & Budget", tab: "cashflow" as TabKey, helper: "Income, spending, savings rate" },
+    { label: "Accounts / Net Worth", tab: "assets" as TabKey, helper: "Assets, debts, connected accounts" },
+    { label: "Insights", tab: "reports" as TabKey, helper: "Monthly spending patterns" },
+    { label: "Freedom Date", tab: "fire-calculator" as TabKey, helper: "Result, levers, confidence check" },
+    { label: "Profile & Assumptions", tab: "profile" as TabKey, helper: "Age, target, FIRE type, settings" },
+    { label: "Learning Hub", tab: "learning-hub" as TabKey, helper: "Guides and explainers" },
   ];
 
   // Load from Supabase on mount
@@ -3697,31 +3696,29 @@ export default function Dashboard() {
               </div>
             )}
             {(tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports") && (
-              <nav className="uf-mobile-group-switch" aria-label="Portfolio sections">
+              <nav className="uf-mobile-group-switch" aria-label="Money sections">
                 {([
-                  { label: "Cashflow", tab: "cashflow" as TabKey },
-                  { label: "Assets", tab: "assets" as TabKey },
-                  { label: "Liabilities", tab: "liabilities" as TabKey },
-                  { label: "Reports", tab: "reports" as TabKey },
+                  { label: "Cashflow", active: tab === "cashflow" && cashflowSubTab !== "budgets", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
+                  { label: "Budget", active: tab === "cashflow" && cashflowSubTab === "budgets", onClick: () => { setCashflowSubTab("budgets"); openDashboardTab("cashflow"); } },
+                  { label: "Net Worth", active: tab === "assets" || tab === "liabilities", onClick: () => openDashboardTab("assets") },
+                  { label: "Insights", active: tab === "reports", onClick: () => openDashboardTab("reports") },
                 ]).map(item => (
                   <button
-                    key={item.tab}
-                    className={`uf-mobile-group-button ${tab === item.tab ? "active" : ""}`}
-                    onClick={() => openDashboardTab(item.tab)}
+                    key={item.label}
+                    className={`uf-mobile-group-button ${item.active ? "active" : ""}`}
+                    onClick={item.onClick}
                   >
                     {item.label}
                   </button>
                 ))}
               </nav>
             )}
-            {(tab === "fire-calculator" || tab === "goals") && (
+            {tab === "fire-calculator" && (
               <nav className="uf-mobile-group-switch" aria-label="Freedom sections">
                 {([
-                  { label: "Calculator", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { setTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                  { label: "FIRE Goal", active: tab === "fire-calculator" && fireCalcSubTab === "goals", onClick: () => { setTab("fire-calculator"); setFireCalcSubTab("goals"); } },
-                  { label: "Monte Carlo", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { setTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
-                  { label: "Investing", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { setTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
-                  { label: "Target", active: tab === "goals", onClick: () => openDashboardTab("goals") },
+                  { label: "Freedom Date", active: fireCalcSubTab === "menu", onClick: () => setFireCalcSubTab("menu") },
+                  { label: "Confidence", active: fireCalcSubTab === "simulation", onClick: () => setFireCalcSubTab("simulation") },
+                  { label: "Advanced", active: fireCalcSubTab === "invest-sim", onClick: () => setFireCalcSubTab("invest-sim") },
                 ]).map(item => (
                   <button
                     key={item.label}
@@ -3850,7 +3847,7 @@ export default function Dashboard() {
                 {fireCalcSubTab === "menu" && (
                   <FireCalcMenuTab
                     fireAge={fireAge}
-                    onOpenGoals={() => setFireCalcSubTab("goals")}
+                    onOpenProfile={() => setTab("profile")}
                     onOpenSimulation={() => setFireCalcSubTab("simulation")}
                     onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                   />
@@ -3892,7 +3889,24 @@ export default function Dashboard() {
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "profile" && userId && (
-              <ProfileTab userId={userId} userEmail={userEmail} defaultCurrency={defaultCurrency} onDefaultCurrencyChange={setDefaultCurrency} onPreferredCurrenciesChange={setPreferredCurrencies} onTabChange={(t) => setTab(t as TabKey)} subscription={subscription} onUpgradeClick={() => setUpgradeOpen(true)} onManageBilling={handleManageBilling} />
+              <ProfileTab
+                userId={userId}
+                userEmail={userEmail}
+                defaultCurrency={defaultCurrency}
+                onDefaultCurrencyChange={setDefaultCurrency}
+                onPreferredCurrenciesChange={setPreferredCurrencies}
+                onTabChange={(t) => setTab(t as TabKey)}
+                subscription={subscription}
+                onUpgradeClick={() => setUpgradeOpen(true)}
+                onManageBilling={handleManageBilling}
+                fireAge={fireAge}
+                onFireAgeChange={setFireAge}
+                retirementCityName={retirementCityName}
+                retirementCityCol={retirementCityCol}
+                lifestyleMultiplier={lifestyleMultiplier}
+                onRetirementCityChange={(name, col) => { setRetirementCityName(name); setRetirementCityCol(col); }}
+                onLifestyleChange={setLifestyleMultiplier}
+              />
             )}
           </div>
         </main>

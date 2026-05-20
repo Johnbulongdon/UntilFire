@@ -32,13 +32,41 @@ interface Props {
   subscription: { plan: "free" | "pro" } | null;
   onUpgradeClick: () => void;
   onManageBilling: () => void;
+  fireAge: number;
+  onFireAgeChange: (age: number) => void;
+  retirementCityName: string;
+  retirementCityCol: number;
+  lifestyleMultiplier: number;
+  onRetirementCityChange: (name: string, col: number) => void;
+  onLifestyleChange: (multiplier: number) => void;
 }
 
-export default function ProfileTab({ userId, userEmail, defaultCurrency: initialDefaultCurrency, onDefaultCurrencyChange, onPreferredCurrenciesChange, onTabChange, subscription, onUpgradeClick, onManageBilling }: Props) {
+export default function ProfileTab({
+  userId,
+  userEmail,
+  defaultCurrency: initialDefaultCurrency,
+  onDefaultCurrencyChange,
+  onPreferredCurrenciesChange,
+  onTabChange,
+  subscription,
+  onUpgradeClick,
+  onManageBilling,
+  fireAge,
+  onFireAgeChange,
+  retirementCityName,
+  retirementCityCol,
+  lifestyleMultiplier,
+  onRetirementCityChange,
+  onLifestyleChange,
+}: Props) {
   const [displayName, setDisplayName] = useState("");
   const [citySearch, setCitySearch] = useState("");
   const [selectedCity, setSelectedCity] = useState<{ name: string; key: string } | null>(null);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [retirementCitySearch, setRetirementCitySearch] = useState(retirementCityName);
+  const [showRetirementCityDropdown, setShowRetirementCityDropdown] = useState(false);
+  const [fireProfileSaved, setFireProfileSaved] = useState(false);
+  const [fireTypeResult, setFireTypeResult] = useState<{ code: string; name: string } | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState(initialDefaultCurrency || "USD");
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
   const [saving, setSaving] = useState<Record<"name" | "city" | "currency", boolean>>({
@@ -102,11 +130,22 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
       }
     }
     load();
-  }, [userId, onDefaultCurrencyChange]);
+  }, [userId, onDefaultCurrencyChange, onPreferredCurrenciesChange]);
 
   useEffect(() => {
     setDefaultCurrency(initialDefaultCurrency || "USD");
   }, [initialDefaultCurrency]);
+
+  useEffect(() => {
+    setRetirementCitySearch(retirementCityName);
+  }, [retirementCityName]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("uf_fire_type_result");
+      if (raw) setFireTypeResult(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -121,6 +160,38 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
   const filteredCities = citySearch.length >= 2
     ? CITIES.filter((c) => c.name.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 8)
     : [];
+
+  const filteredRetirementCities = retirementCitySearch.length >= 2
+    ? CITIES.filter((c) => c.name.toLowerCase().includes(retirementCitySearch.toLowerCase())).slice(0, 8)
+    : [];
+
+  const lifestyleTiers = [
+    { label: "Frugal", multiplier: 0.7, icon: "🌱" },
+    { label: "Standard", multiplier: 1.0, icon: "🏡" },
+    { label: "Lavish", multiplier: 1.5, icon: "💎" },
+  ];
+
+  const selectedLifestyle = lifestyleTiers.find(t => t.multiplier === lifestyleMultiplier) ?? lifestyleTiers[1];
+  const targetAnnualSpend = retirementCityCol > 0 ? retirementCityCol * lifestyleMultiplier : 0;
+  const targetFireNumber = targetAnnualSpend * 25;
+  const formatMoney = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: defaultCurrency, maximumFractionDigits: 0 }).format(n);
+
+  function markFireProfileSaved() {
+    setFireProfileSaved(true);
+    setTimeout(() => setFireProfileSaved(false), 2000);
+  }
+
+  function updateFireAge(nextAge: number) {
+    onFireAgeChange(nextAge);
+    markFireProfileSaved();
+  }
+
+  function updateRetirementCity(name: string, col: number) {
+    onRetirementCityChange(name, col);
+    setRetirementCitySearch(name);
+    setShowRetirementCityDropdown(false);
+    markFireProfileSaved();
+  }
 
   function flash(key: "name" | "city" | "currency") {
     setSaved((prev) => ({ ...prev, [key]: true }));
@@ -395,31 +466,108 @@ export default function ProfileTab({ userId, userEmail, defaultCurrency: initial
         </div>
       </div>
 
-      {/* FIRE setup */}
+      {/* FIRE profile */}
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 10px" }}>FIRE setup</h3>
-        <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, margin: "0 0 14px" }}>
-          Keep your age, target, and FIRE personality tools in one place so simulations know what to use.
-        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+          <div>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 6px" }}>FIRE profile</h3>
+            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, margin: 0 }}>
+              These assumptions personalize your freedom date across the dashboard.
+            </p>
+          </div>
+          {fireProfileSaved && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>Saved ✓</span>}
+        </div>
+
+        <label style={labelStyle}>Current age</label>
+        <input
+          type="number"
+          min={18}
+          max={100}
+          value={fireAge || ""}
+          onChange={(e) => updateFireAge(Number(e.target.value))}
+          style={{ ...inputStyle, maxWidth: 140, marginBottom: 16 }}
+          placeholder="30"
+        />
+
+        <label style={labelStyle}>Retirement target city</label>
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <input
+            style={inputStyle}
+            value={retirementCitySearch}
+            onChange={(e) => {
+              setRetirementCitySearch(e.target.value);
+              setShowRetirementCityDropdown(true);
+            }}
+            onFocus={() => setShowRetirementCityDropdown(true)}
+            placeholder="Where should freedom be priced?"
+          />
+          {showRetirementCityDropdown && filteredRetirementCities.length > 0 && (
+            <div style={{
+              position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+              background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto",
+              marginTop: 4,
+            }}>
+              {filteredRetirementCities.map((c) => (
+                <div
+                  key={c.key}
+                  onMouseDown={() => updateRetirementCity(c.name, c.col)}
+                  style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid #f1f5f9" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                >
+                  {c.flag} {c.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <label style={labelStyle}>Lifestyle target</label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
+          {lifestyleTiers.map((tier) => (
+            <button
+              key={tier.label}
+              onClick={() => { onLifestyleChange(tier.multiplier); markFireProfileSaved(); }}
+              style={{
+                padding: "10px 8px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                border: lifestyleMultiplier === tier.multiplier ? "1.5px solid #059669" : "1px solid #E2E8F0",
+                background: lifestyleMultiplier === tier.multiplier ? "#F0FDF4" : "#fff",
+                color: lifestyleMultiplier === tier.multiplier ? "#047857" : "#374151",
+                fontWeight: 700,
+              }}
+            >
+              <span style={{ display: "block", fontSize: 18 }}>{tier.icon}</span>
+              <span style={{ fontSize: 12 }}>{tier.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}>Current target</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>
+            {retirementCityName ? `${retirementCityName} · ${selectedLifestyle.label}` : "Choose a city to price your freedom date"}
+          </div>
+          {targetFireNumber > 0 && (
+            <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>
+              Rough target: {formatMoney(targetAnnualSpend)}/yr × 25 = {formatMoney(targetFireNumber)}
+            </div>
+          )}
+        </div>
+
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <a
+            href={`/fire-type?source=dashboard-profile${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`}
+            style={{ ...btnStyle("primary"), textDecoration: "none", display: "inline-block" }}
+          >
+            {fireTypeResult ? `FIRE type: ${fireTypeResult.name} →` : "Find my FIRE type →"}
+          </a>
           <button
             onClick={() => onTabChange("fire-calculator")}
-            style={{ ...btnStyle("primary"), whiteSpace: "normal" }}
-          >
-            Set age & FIRE goal →
-          </button>
-          <button
-            onClick={() => onTabChange("goals")}
             style={{ padding: "9px 16px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "1px solid #BBF7D0", background: "#F0FDF4", color: "#047857", cursor: "pointer", fontFamily: "inherit" }}
           >
-            Retirement target →
+            View freedom date →
           </button>
-          <a
-            href="/fire-type?source=dashboard-profile"
-            style={{ padding: "9px 16px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "1px solid #E2E8F0", background: "#fff", color: "#374151", textDecoration: "none" }}
-          >
-            FIRE Type quiz →
-          </a>
         </div>
       </div>
 
