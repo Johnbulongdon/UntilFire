@@ -190,3 +190,64 @@ npm run lint         # eslint .
 ## Deployment
 
 Push to `main` triggers a Vercel deploy automatically.
+
+---
+
+## Recent Updates
+
+| PR | Date | Description |
+|---|---|---|
+| #21 | May 2026 | Two-pane cashflow layout; flat 7-item sidebar; Learning Hub tab |
+| #22 | May 2026 | Cashflow sub-tabs (Cashflow / Categories / Recurring / Budgets); new CategoriesTab analytics |
+| #23 | May 2026 | Multi-currency conversion in dashboard actuals KPIs and transaction day-net headers |
+| #24 | May 2026 | `FALLBACK_RATES` constant seeds FX rates so conversion never silently breaks on API failure |
+| #25 | May 2026 | Project/Event tag input in QuickAdd form — groups transactions across time periods |
+| #26 | May 2026 | Fixed crash on Cashflow tab (missing `existingTags` prop in mobile drawer); fixed FX fallback overwrite |
+| #27 | May 2026 | Custom expense categories + sub-categories (localStorage); removed "Work expense" checkbox |
+| #28 | May 2026 | Currency step in calculator wizard — CurrencyScreen with flag icons, per-currency confetti, FX conversion throughout |
+| #29 | May 2026 | Restore Design E reveal screen; replace line chart with stacked bar chart (`GrowthBarChart`) showing contributions vs. market returns |
+| #30 | May 2026 | Cashflow UX: TransactionList bounded to `calc(100vh - 48px)` matching QuickAddForm height; QuickAddForm category icons now show emoji instead of 2-letter codes |
+| #31 | May 2026 | Hero copy refresh ("The personal finance app built for FIRE"); Fraunces font import added; wizard CTAs standardised to "Continue →"; empty-state text fixed for mobile; dead "See a sample" CTA removed |
+
+---
+
+## Current State
+
+**What works end-to-end:**
+- `/dashboard` — full FIRE dashboard, login-gated, redirects to `/login` if no session
+- **Calculator wizard** — 6-step flow (city → currency → income → savings → portfolio → reveal); multi-currency with FX conversion; Design E reveal with GSAP animations and stacked bar growth chart
+- **Cashflow tab → Cashflow sub-tab** — two-pane QuickAdd + transaction list; AI categorisation; multi-currency; Project/Event tags; custom categories/sub-categories; edit/delete with undo toast
+- **Cashflow tab → Categories sub-tab** — monthly spend by category (expandable, sub-cat breakdown, project breakdown)
+- **Cashflow tab → Budgets sub-tab** — budget bars (budget vs actual per category)
+- **Assets/Liabilities/FIRE Calculator tabs** — input forms + projection chart + Monte Carlo simulation
+- **Multi-currency** — transactions stored in any currency; auto-converted to USD using live Frankfurter API; fallback hardcoded rates if API fails
+- **Custom categories** — stored in `localStorage` (`uf_custom_cats`, `uf_custom_subcats`); device-local only
+
+**Placeholder / incomplete:**
+- **Cashflow → Recurring sub-tab** — "coming soon" placeholder, no logic
+- **Reports tab** — "coming soon" placeholder, no logic
+- **Stripe / Pro tier** — schema exists but no paywall enforced in UI; webhook route at `app/api/stripe/webhook/route.ts`
+
+**Known technical debt:**
+- AI categorisation calls Anthropic API client-side with no key set — silently falls back to `"other"` for all descriptions
+- Custom categories are device-local (localStorage), not synced via Supabase
+- `is_work_related` field: checkbox removed from form but still written as `false` on every save; old transactions with `true` show a stale "work" pill
+- `RetirementTargetCard` uses hardcoded 25× FIRE multiplier — could diverge from `calcFIRE()` if withdrawal rate changes
+
+---
+
+## Pending Work
+
+**High priority:**
+- [ ] Stripe $9/mo Pro tier — checkout flow, paywall on AI features
+- [ ] Email onboarding sequence (Resend: Day 1 / Day 3 / Day 7)
+- [ ] Recurring transactions — auto-detect and display repeating expenses
+- [ ] Reports tab — monthly summaries, spending trends
+- [ ] Fix AI categorisation — wire `ANTHROPIC_API_KEY` env var or move to a server route
+- [ ] Migrate custom categories to Supabase for cross-device sync
+- [ ] Zero-savings warning in calculator wizard
+
+**Product improvements:**
+- [ ] Mobile UX audit — Cashflow QuickAdd form is hidden behind bottom drawer on mobile
+- [ ] Button hover/active states — CTA buttons have no visual feedback on hover (inline styles block pseudo-classes)
+- [ ] `RetirementTargetCard` — replace hardcoded 25× with shared constant from `calcFIRE`
