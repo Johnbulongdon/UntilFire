@@ -160,8 +160,12 @@ export default function CityScreen({
       {showCustom && (
         <div className="uf-custom-city">
           <label className="uf-label">
-            Your city isn&apos;t in our list - enter your estimated monthly expenses (USD)
+            About how much do you spend each month? (USD)
           </label>
+          <p className="uf-hint" style={{ marginTop: -4, marginBottom: 14, lineHeight: 1.6 }}>
+            Include housing, food, transport, bills, subscriptions, insurance, debt payments, and everyday spending.
+            Don&apos;t worry about being exact — a rough monthly average is fine.
+          </p>
           <div className="uf-custom-row">
             <div style={{ position: "relative", flex: 1 }}>
               <span className="uf-input-prefix">$</span>
