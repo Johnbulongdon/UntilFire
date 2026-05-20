@@ -5,12 +5,12 @@ const TOUR_SLIDES = [
   { tabKey: null,              emoji: "🔥", title: "Welcome to UntilFire",  description: "Let's take a 30-second look at what you can do. Use the arrows or click any dot to jump around." },
   { tabKey: "overview",        emoji: "🏠", title: "Overview",              description: "Your financial snapshot — net worth, FIRE progress, recent transactions, and a setup checklist." },
   { tabKey: "cashflow",        emoji: "💳", title: "Cashflow",              description: "Track income and expenses. Add transactions manually or sync your bank, set budgets, and manage recurring bills." },
-  { tabKey: "assets",          emoji: "📈", title: "Assets",                description: "All your accounts in one view. Connect via Plaid or enter manually. Track your emergency fund and savings APY." },
-  { tabKey: "liabilities",     emoji: "🏦", title: "Liabilities",           description: "Track debts — mortgages, car loans, student loans, credit cards. See the full picture of what you owe." },
+  { tabKey: "cashflow",        emoji: "📈", title: "Assets",                description: "All your accounts in one view. Connect via Plaid or enter manually. Track your emergency fund and savings APY." },
+  { tabKey: "cashflow",        emoji: "🏦", title: "Liabilities",           description: "Track debts — mortgages, car loans, student loans, credit cards. See the full picture of what you owe." },
   { tabKey: "fire-calculator", emoji: "🔢", title: "FIRE Calculator",       description: "Calculate your FI number, run Monte Carlo simulations, and compare investment portfolio strategies." },
-  { tabKey: "goals",           emoji: "🎯", title: "Goals",                 description: "Set your retirement age, choose your FIRE style (Lean, Fat, Barista, Coast), and plan your post-FIRE life." },
-  { tabKey: "reports",         emoji: "📊", title: "Reports",               description: "Visual breakdowns of spending, income trends, and category analysis. See exactly where your money goes." },
-  { tabKey: "learning-hub",    emoji: "📚", title: "Learning Hub",          description: "Guides on FIRE concepts — the 4% rule, withdrawal strategies, HYSA vs investing. Learn as you plan." },
+  { tabKey: "fire-calculator", emoji: "🎯", title: "Goals",                 description: "Set your retirement age, choose your FIRE style (Lean, Fat, Barista, Coast), and plan your post-FIRE life." },
+  { tabKey: "cashflow",        emoji: "📊", title: "Reports",               description: "Visual breakdowns of spending, income trends, and category analysis. See exactly where your money goes." },
+  { tabKey: "fire-calculator", emoji: "📚", title: "Learning Hub",          description: "Guides on FIRE concepts — the 4% rule, withdrawal strategies, HYSA vs investing. Learn as you plan." },
   { tabKey: "profile",         emoji: "⚙️", title: "Profile",               description: "Connect bank accounts, switch currencies, manage your subscription, and configure preferences." },
 ]
 
@@ -46,6 +46,14 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
     top: Math.max(8, Math.min(rect.top + rect.height / 2 - 120, window.innerHeight - 300)),
     width: 288,
   }) : null
+
+  const effectiveTooltipStyle: React.CSSProperties = tooltipStyle ?? {
+    position: 'fixed',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 300,
+  }
 
   const dots = (
     <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
@@ -131,9 +139,9 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
       )}
 
       {/* Spotlight tooltip for tab steps */}
-      {!isIntro && tooltipStyle && (
+      {!isIntro && (
         <div style={{
-          ...tooltipStyle,
+          ...effectiveTooltipStyle,
           zIndex: 300,
           background: '#fff',
           borderRadius: 14,
@@ -141,11 +149,11 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
           boxShadow: '0 8px 32px rgba(0,0,0,0.20)',
         }}>
           {/* Arrow pointing left toward the sidebar tab (desktop) */}
-          {!isMobileNav && (
+          {tooltipStyle && !isMobileNav && (
             <div style={{ position: 'absolute', left: -8, top: '38%', width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #fff' }} />
           )}
           {/* Arrow pointing down toward the bottom nav tab (mobile) */}
-          {isMobileNav && (
+          {tooltipStyle && isMobileNav && (
             <div style={{ position: 'absolute', bottom: -8, left: 28, width: 0, height: 0, borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: '8px solid #fff' }} />
           )}
 
