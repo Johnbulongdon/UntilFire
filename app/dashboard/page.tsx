@@ -2971,6 +2971,31 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   },
 ];
 
+type MobilePrimaryKey = "home" | "portfolio" | "freedom" | "profile";
+
+const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string }[] = [
+  {
+    key: "home",
+    label: "Home",
+    svg: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
+  },
+  {
+    key: "portfolio",
+    label: "Portfolio",
+    svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
+  },
+  {
+    key: "freedom",
+    label: "Freedom",
+    svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  },
+  {
+    key: "profile",
+    label: "Profile",
+    svg: '<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>',
+  },
+];
+
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
@@ -2978,6 +3003,7 @@ export default function Dashboard() {
   const [categoriesKey, setCategoriesKey] = useState(0);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [subscription, setSubscription] = useState<{ plan: "free" | "pro" } | null>(null);
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
@@ -3173,6 +3199,36 @@ export default function Dashboard() {
     setTourOpen(false);
     try { localStorage.setItem('uf_tour_done', '1') } catch {}
   }
+
+  const openDashboardTab = (nextTab: TabKey) => {
+    setTab(nextTab);
+    if (nextTab !== "fire-calculator") setFireCalcSubTab("menu");
+    setMobileMenuOpen(false);
+  };
+
+  const openMobilePrimary = (key: MobilePrimaryKey) => {
+    if (key === "home") openDashboardTab("overview");
+    if (key === "portfolio") openDashboardTab("cashflow");
+    if (key === "freedom") openDashboardTab("fire-calculator");
+    if (key === "profile") openDashboardTab("profile");
+  };
+
+  const isMobilePrimaryActive = (key: MobilePrimaryKey) => {
+    if (key === "home") return tab === "overview";
+    if (key === "portfolio") return tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports";
+    if (key === "freedom") return tab === "fire-calculator" || tab === "goals";
+    return tab === "profile";
+  };
+
+  const mobileDrawerItems = [
+    { label: "Cashflow", tab: "cashflow" as TabKey, helper: "Transactions, budgets, categories" },
+    { label: "Assets", tab: "assets" as TabKey, helper: "Portfolio and connected accounts" },
+    { label: "Liabilities", tab: "liabilities" as TabKey, helper: "Debt and mortgage details" },
+    { label: "Reports", tab: "reports" as TabKey, helper: "Monthly spending insights" },
+    { label: "Freedom Date", tab: "fire-calculator" as TabKey, helper: "Calculator, goals, simulations" },
+    { label: "Retirement Target", tab: "goals" as TabKey, helper: "City and lifestyle target" },
+    { label: "Learning Hub", tab: "learning-hub" as TabKey, helper: "FIRE guides by stage" },
+  ];
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -3432,20 +3488,39 @@ export default function Dashboard() {
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
         .uf-nav-label-mobile { display: none; }
+        .uf-mobile-topbar, .uf-mobile-bottom-nav, .uf-mobile-drawer-backdrop, .uf-mobile-drawer { display: none; }
 
         @media(max-width: 900px) {
-          .uf-shell { flex-direction: column; }
-          .uf-sidebar { width: 100%; min-height: 0; height: 56px; max-height: 56px; overflow: hidden; position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 100; flex-direction: row; border-right: none; border-top: 1px solid #E2E8F0; background: #fff; padding: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
-          .uf-sidebar-logo { display: none; }
-          .uf-sidebar-nav { flex-direction: row; padding: 4px 0; gap: 0; flex: 1; justify-content: space-around; }
-          .uf-sidebar-item { flex-direction: column; padding: 6px 4px; font-size: 9px; gap: 2px; flex: 1; justify-content: center; align-items: center; border-radius: 0; min-width: 0; width: auto; }
-          .uf-sidebar-bottom { display: none; }
+          .uf-shell { flex-direction: column; min-height: 100dvh; }
+          .uf-sidebar { display: none; }
+          .uf-mobile-topbar { display: flex; position: fixed; top: 0; left: 0; right: 0; z-index: 120; height: calc(56px + env(safe-area-inset-top, 0px)); padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px; background: rgba(255,255,255,0.96); border-bottom: 1px solid #E2E8F0; backdrop-filter: blur(14px); align-items: center; gap: 12px; }
+          .uf-mobile-menu-button { width: 40px; height: 40px; border: 1px solid #E2E8F0; background: #fff; color: #0F172A; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+          .uf-mobile-top-title { display: flex; flex-direction: column; min-width: 0; }
+          .uf-mobile-top-title strong { font-size: 15px; font-weight: 800; color: #064E3B; letter-spacing: -0.02em; }
+          .uf-mobile-top-title span { font-size: 11px; color: #64748B; font-weight: 600; }
+          .uf-mobile-bottom-nav { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; background: rgba(255,255,255,0.98); border-top: 1px solid #E2E8F0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 28px rgba(15,23,42,0.08); }
+          .uf-mobile-bottom-item { border: none; background: transparent; color: #64748B; border-radius: 14px; min-width: 0; padding: 7px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: 'Manrope', sans-serif; font-size: 10px; font-weight: 800; cursor: pointer; }
+          .uf-mobile-bottom-item.active { background: #ECFDF5; color: #047857; }
+          .uf-mobile-bottom-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
+          .uf-mobile-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 130; background: rgba(15,23,42,0.45); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+          .uf-mobile-drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+          .uf-mobile-drawer { display: flex; position: fixed; top: 0; bottom: 0; left: 0; z-index: 140; width: min(86vw, 340px); transform: translateX(-102%); transition: transform 220ms cubic-bezier(0.2,0,0,1); background: #fff; box-shadow: 20px 0 42px rgba(15,23,42,0.2); flex-direction: column; padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
+          .uf-mobile-drawer.open { transform: translateX(0); }
+          .uf-mobile-drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #E2E8F0; margin-bottom: 10px; }
+          .uf-mobile-drawer-close { border: none; background: #F1F5F9; color: #64748B; width: 36px; height: 36px; border-radius: 999px; cursor: pointer; font-size: 18px; }
+          .uf-mobile-drawer-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding: 4px 0; }
+          .uf-mobile-drawer-item { border: 1px solid transparent; background: transparent; color: #334155; text-align: left; border-radius: 12px; padding: 12px 12px; cursor: pointer; font-family: 'Manrope', sans-serif; display: flex; flex-direction: column; gap: 3px; }
+          .uf-mobile-drawer-item strong { font-size: 14px; }
+          .uf-mobile-drawer-item span { font-size: 12px; color: #64748B; line-height: 1.4; }
+          .uf-mobile-drawer-item.active { background: #ECFDF5; border-color: #BBF7D0; color: #047857; }
+          .uf-mobile-drawer-actions { margin-top: auto; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 8px; }
+          .uf-mobile-drawer-link { color: #334155; text-decoration: none; font-size: 13px; font-weight: 800; padding: 10px 12px; border-radius: 10px; background: #F8FAFC; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
-          .uf-content { padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
+          .uf-content { padding: calc(72px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
           .uf-hero-split { flex-direction: column; min-height: unset; }
           .uf-hero-left { flex: none !important; padding: 20px 18px !important; }
           .uf-hero-right { flex: none !important; padding: 20px 18px !important; }
-          .cf-mobile-bar { bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; }
+          .cf-mobile-bar { bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important; }
           .uf-nav-label-full { display: none; }
           .uf-nav-label-mobile { display: block; white-space: nowrap; overflow: hidden; max-width: 100%; }
           .uf-kpi-grid { display: flex !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory; grid-template-columns: none !important; }
@@ -3493,6 +3568,75 @@ export default function Dashboard() {
         <TourModal onClose={closeTour} />
       )}
 
+      <header className="uf-mobile-topbar" aria-label="Mobile dashboard header">
+        <button
+          className="uf-mobile-menu-button"
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
+        <div className="uf-mobile-top-title">
+          <strong>UntilFire</strong>
+          <span>{tab === "overview" ? "Home" : tab === "fire-calculator" || tab === "goals" ? "Freedom Date" : tab === "profile" ? "Profile" : "Portfolio"}</span>
+        </div>
+      </header>
+
+      <div
+        className={`uf-mobile-drawer-backdrop ${mobileMenuOpen ? "open" : ""}`}
+        onClick={() => setMobileMenuOpen(false)}
+        aria-hidden={!mobileMenuOpen}
+      />
+      <aside className={`uf-mobile-drawer ${mobileMenuOpen ? "open" : ""}`} aria-label="Mobile menu" aria-hidden={!mobileMenuOpen}>
+        <div className="uf-mobile-drawer-header">
+          <div className="uf-mobile-top-title">
+            <strong>UntilFire</strong>
+            <span>Menu</span>
+          </div>
+          <button className="uf-mobile-drawer-close" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">×</button>
+        </div>
+        <nav className="uf-mobile-drawer-list">
+          {mobileDrawerItems.map(item => (
+            <button
+              key={item.tab}
+              className={`uf-mobile-drawer-item ${tab === item.tab ? "active" : ""}`}
+              onClick={() => openDashboardTab(item.tab)}
+            >
+              <strong>{item.label}</strong>
+              <span>{item.helper}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="uf-mobile-drawer-actions">
+          <a className="uf-mobile-drawer-link" href="/fire-type?source=dashboard-mobile-menu">FIRE Type quiz →</a>
+          <button className="uf-mobile-drawer-item" onClick={() => { setMobileMenuOpen(false); setTourOpen(true); }}>
+            <strong>Take a tour</strong>
+            <span>Quick walkthrough of the dashboard</span>
+          </button>
+        </div>
+      </aside>
+
+      <nav className="uf-mobile-bottom-nav" aria-label="Primary mobile navigation">
+        {MOBILE_PRIMARY_ITEMS.map(item => {
+          const active = isMobilePrimaryActive(item.key);
+          return (
+            <button
+              key={item.key}
+              className={`uf-mobile-bottom-item ${active ? "active" : ""}`}
+              onClick={() => openMobilePrimary(item.key)}
+            >
+              <span className="uf-mobile-bottom-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
+              </span>
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
@@ -3504,7 +3648,7 @@ export default function Dashboard() {
                 key={item.key}
                 data-tour-item={item.key}
                 className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
-                onClick={() => { setTab(item.key); if (item.key !== "fire-calculator") setFireCalcSubTab("menu"); }}
+                onClick={() => openDashboardTab(item.key)}
               >
                 <span className="uf-sidebar-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
