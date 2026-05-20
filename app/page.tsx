@@ -243,8 +243,28 @@ const CONFETTI_POSITIONS = [
   { left: "69%", x: "300px", r: "170deg", delay: "0.13s" },
 ];
 
-function CurrencyScreen({ onNext, onBack }: { onNext: (currency: SupportedCurrency) => void; onBack: () => void }) {
-  const [selected, setSelected] = useState<SupportedCurrency>("USD");
+function stateToCurrency(stateKey?: string | null): SupportedCurrency {
+  if (!stateKey) return "USD";
+  if (stateKey.startsWith("ca_")) return "CAD";
+  const map: Record<string, SupportedCurrency> = {
+    jp: "JPY", cn: "CNY", kr: "KRW", tw: "TWD", hk: "HKD",
+    sg: "SGD", th: "THB", my: "MYR", vn: "VND", id_idn: "IDR",
+    ph: "PHP", in_ind: "INR", il_isr: "ILS", tr: "TRY",
+    ae: "AED", sa: "SAR", ng: "NGN", za: "ZAR",
+    uk: "GBP",
+    au: "AUD", nz: "NZD",
+    ch: "CHF", se: "SEK", dk: "DKK", no: "NOK",
+    mx: "MXN", br: "BRL",
+    fr: "EUR", de: "EUR", nl: "EUR", es: "EUR", pt: "EUR",
+    ie: "EUR", fi: "EUR", at: "EUR", be: "EUR", it: "EUR",
+    gr: "EUR", hr: "EUR", si: "EUR", ee: "EUR", lv: "EUR", lt: "EUR",
+    cz: "CZK", pl: "PLN", hu: "HUF",
+  };
+  return map[stateKey] ?? "USD";
+}
+
+function CurrencyScreen({ defaultCurrency = "USD", onNext, onBack }: { defaultCurrency?: SupportedCurrency; onNext: (currency: SupportedCurrency) => void; onBack: () => void }) {
+  const [selected, setSelected] = useState<SupportedCurrency>(defaultCurrency);
   const [confettiKey, setConfettiKey] = useState(0);
   const [burstCurrency, setBurstCurrency] = useState<SupportedCurrency>("USD");
 
@@ -2097,6 +2117,7 @@ export default function Home() {
         )}
         {screen === "currency" && (
           <CurrencyScreen
+            defaultCurrency={stateToCurrency(cityState?.stateKey)}
             onNext={nextCurrency => { setCurrency(nextCurrency); setScreen("income"); }}
             onBack={() => setScreen("city")}
           />
