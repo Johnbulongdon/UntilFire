@@ -568,6 +568,12 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
         </div>
       </div>
 
+      {savings === 0 && (
+        <div style={{ marginTop: 16, padding: "10px 14px", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, fontSize: 13, color: "#92400E", display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <span>⚠️</span>
+          <span>With <strong>$0 saved per month</strong> your FIRE date will be very far out. Make sure this is intentional — you can always update it in your dashboard.</span>
+        </div>
+      )}
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
         <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(isNonUSD ? Math.round(savings / fxRate) : savings)}>
@@ -1323,16 +1329,16 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren&apos;t stored · 7% real return, 25× / 4% FIRE rule</div>
                 </div>
                 <div className="uf-footer-btns">
-                  <button style={{ height: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }} onClick={() => setShowShare(true)}>
+                  <button className="uf-btn-outline" onClick={() => setShowShare(true)}>
                     <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
                     Share
                   </button>
-                  <button style={{ height: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "#fff", border: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }} onClick={onAdjust}>
+                  <button className="uf-btn-outline" onClick={onAdjust}>
                     Adjust inputs
                   </button>
                   <Link
                     href="/login"
-                    style={{ height: 44, padding: "0 20px", borderRadius: 10, background: "#003527", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    className="uf-btn-dark"
                     onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
                   >
                     Track this →
@@ -1554,6 +1560,10 @@ export default function Home() {
         .uf-btn-teal:hover { background: #4df5d6; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(98,250,227,0.35); }
         .uf-btn-full { width: 100%; }
         .uf-btn-lg { padding: 18px 36px; font-size: 17px; }
+        .uf-btn-outline { height: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer; background: #fff; border: 1px solid #E2E8F0; color: #0F172A; font-size: 13px; font-weight: 600; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s; text-decoration: none; justify-content: center; }
+        .uf-btn-outline:hover { background: #F8FAFC; border-color: #CBD5E1; }
+        .uf-btn-dark { height: 44px; padding: 0 20px; border-radius: 10px; background: #003527; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s, transform 0.15s; }
+        .uf-btn-dark:hover { background: #065F46; transform: translateY(-1px); }
         .uf-nav-row { margin-top: 32px; display: flex; gap: 12px; }
 
         /* -- INPUTS -- */
