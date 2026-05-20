@@ -290,6 +290,7 @@ function CurrencyScreen({ onNext, onBack }: { onNext: (currency: SupportedCurren
                 setConfettiKey((value) => value + 1);
               }}
               className={`uf-currency-btn${selected === currency ? " selected" : ""}`}
+              aria-pressed={selected === currency}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                 <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>{CURRENCY_FLAG[currency]}</span>
@@ -1537,7 +1538,9 @@ export default function Home() {
 
         /* -- CURRENCY -- */
         .uf-currency-btn { display: flex; flex-direction: column; align-items: flex-start; padding: 12px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; }
-        .uf-currency-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+        @media (hover: hover) and (pointer: fine) {
+          .uf-currency-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+        }
         .uf-currency-btn.selected { border-color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent); }
         @keyframes currencyConfettiFall {
           0% { opacity: 0; transform: translate3d(0, -24px, 0) rotate(0deg) scale(0.5); }

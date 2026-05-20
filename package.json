@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test:seo": "node scripts/verify-seo-config.mjs",
     "test:calm-startup": "node scripts/verify-calm-startup.mjs",
+    "test:currency-selection": "node scripts/verify-currency-selection.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
