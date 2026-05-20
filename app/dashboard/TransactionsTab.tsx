@@ -228,13 +228,9 @@ function QuickAddForm({
     setDraft((d) => ({ ...d, [k]: v }));
   }, [setDraft]);
 
-  const handleDescriptionBlur = async () => {
-    if (!draft.description || draft.category) return;
-    setCategorizing(true);
-    const result = await aiCategorize(draft.description, draft.transaction_type);
-    setDraft((d) => ({ ...d, category: result.category, tags: result.tags, aiSuggestion: result.category }));
-    setCategorizing(false);
-  };
+  // AI categorization paused — API key not configured; user selects category manually.
+  // Leaving the blur handler in place so the draft state flow is unchanged.
+  const handleDescriptionBlur = async () => { return; };
 
   const applyAiSuggestion = () => {
     if (draft.aiSuggestion) setField("category", draft.aiSuggestion);
@@ -427,7 +423,7 @@ function QuickAddForm({
                       cursor: "pointer", transition: "all 0.12s",
                     }}
                   >
-                    <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>{c.code}</div>
+                    <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "#64748B", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
                   </button>
                 );
@@ -612,7 +608,7 @@ function QuickAddForm({
                       cursor: "pointer",
                     }}
                   >
-                    <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff" }}>{c.code}</div>
+                    <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "#64748B", textAlign: "center" }}>{c.label}</span>
                   </button>
                 );
@@ -753,7 +749,7 @@ function TransactionList({
   }, [filtered]);
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", height: "calc(100vh - 48px)" }}>
       {/* List header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #E2E8F0", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
@@ -795,7 +791,7 @@ function TransactionList({
       </div>
 
       {/* Scrollable list */}
-      <div style={{ overflowY: "auto", flex: 1, minHeight: 200 }}>
+      <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
         {groups.length === 0 ? (
           <div style={{ padding: "60px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "#94A3B8", textAlign: "center" }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -805,7 +801,7 @@ function TransactionList({
             </div>
             <div style={{ fontWeight: 700, fontSize: 16, color: "#064E3B" }}>No transactions yet</div>
             <div style={{ fontSize: 13, maxWidth: 280 }}>
-              {search ? "Try a different search or clear filters." : "Add your first transaction with the form on the right."}
+              {search ? "Try a different search or clear filters." : "Use the + button to add your first transaction."}
             </div>
           </div>
         ) : (
@@ -1140,6 +1136,24 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   });
   useEffect(() => { localStorage.setItem("uf_custom_cats", JSON.stringify(customCats)); }, [customCats]);
   useEffect(() => { localStorage.setItem("uf_custom_subcats", JSON.stringify(customSubCats)); }, [customSubCats]);
+  // Sync custom cats to Supabase whenever they change (debounced 600ms)
+  useEffect(() => {
+    const id = setTimeout(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+          .then(({ data }) => {
+            const cur = (data?.expenses as Record<string, unknown>) || {};
+            supabase.from("user_budget").upsert({
+              user_id: session.user.id,
+              expenses: { ...cur, _custom_cats: customCats, _custom_subcats: customSubCats },
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
+          });
+      });
+    }, 600);
+    return () => clearTimeout(id);
+  }, [customCats, customSubCats]);
 
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
   const allSubCats = useMemo(() => {
@@ -1152,6 +1166,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleAddCategory = useCallback((cat: CustomCategory) => {
     setCustomCats((prev) => [...prev, cat]);
+  }, []);
+  const handleDeleteCategory = useCallback((key: string) => {
+    setCustomCats((prev) => prev.filter((c) => c.key !== key));
+    setCustomSubCats((prev) => { const n = { ...prev }; delete n[key]; return n; });
   }, []);
   const handleAddSubCategory = useCallback((catKey: string, sub: string) => {
     setCustomSubCats((prev) => ({ ...prev, [catKey]: [...(prev[catKey] || []), sub] }));
@@ -1201,8 +1219,16 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         .maybeSingle()
         .then(({ data }) => {
           if (data?.expenses) {
-            const { _fire_profile: _, ...budgetCats } = data.expenses as Record<string, unknown>;
+            const { _fire_profile: _, _custom_cats, _custom_subcats, ...budgetCats } = data.expenses as Record<string, unknown>;
             setBudgetExpenses(budgetCats as Record<string, number>);
+            if (Array.isArray(_custom_cats)) {
+              setCustomCats(_custom_cats as CustomCategory[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            }
+            if (_custom_subcats && typeof _custom_subcats === "object") {
+              setCustomSubCats(_custom_subcats as Record<string, string[]>);
+              localStorage.setItem("uf_custom_subcats", JSON.stringify(_custom_subcats));
+            }
           }
         });
       supabase

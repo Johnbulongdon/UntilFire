@@ -101,6 +101,8 @@ function CategoryRow({
   onCloseEdit,
   catCustomizations,
   setCatCustomizations,
+  isCustom = false,
+  onDelete,
 }: {
   cat: CatBreakdown;
   totalSpend: number;
@@ -112,6 +114,8 @@ function CategoryRow({
   onCloseEdit: () => void;
   catCustomizations: CatCustomizations;
   setCatCustomizations: React.Dispatch<React.SetStateAction<CatCustomizations>>;
+  isCustom?: boolean;
+  onDelete?: (key: string) => void;
 }) {
   const pct = totalSpend > 0 ? (cat.total / totalSpend) * 100 : 0;
 
@@ -200,13 +204,24 @@ function CategoryRow({
             ))}
           </div>
 
-          {/* Reset */}
-          <button
-            onClick={() => setCatCustomizations(prev => { const n = { ...prev }; delete n[cat.key]; return n; })}
-            style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
-          >
-            Reset to default
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4 }}>
+            {!isCustom && (
+              <button
+                onClick={() => setCatCustomizations(prev => { const n = { ...prev }; delete n[cat.key]; return n; })}
+                style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+              >
+                Reset to default
+              </button>
+            )}
+            {isCustom && onDelete && (
+              <button
+                onClick={() => { if (confirm(`Delete "${cat.label}"? Transactions using this category will keep their existing category key.`)) { onDelete(cat.key); onCloseEdit(); } }}
+                style={{ fontSize: 12, color: "#DC2626", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0 }}
+              >
+                🗑 Delete category
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -345,11 +360,30 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
 
   useEffect(() => { saveCatCustomizations(catCustomizations); }, [catCustomizations]);
 
-  // Merge built-in categories with any user-defined ones from localStorage
-  const [customCats] = useState<{ key: string; label: string; code: string; color: string; emoji?: string }[]>(() => {
+  // Merge built-in categories with any user-defined ones — seeded from localStorage, synced from Supabase
+  const [customCats, setCustomCats] = useState<{ key: string; label: string; code: string; color: string; emoji?: string }[]>(() => {
     try { return JSON.parse(localStorage.getItem("uf_custom_cats") || "[]"); } catch { return []; }
   });
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
+
+  const handleDeleteCustomCat = (key: string) => {
+    const updated = customCats.filter((c) => c.key !== key);
+    setCustomCats(updated);
+    localStorage.setItem("uf_custom_cats", JSON.stringify(updated));
+    // Sync deletion to Supabase
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+        .then(({ data }) => {
+          const cur = (data?.expenses as Record<string, unknown>) || {};
+          supabase.from("user_budget").upsert({
+            user_id: session.user.id,
+            expenses: { ...cur, _custom_cats: updated },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+        });
+    });
+  };
 
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
@@ -367,6 +401,16 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
         .then(({ data }) => {
           if (data) setTransactions(data as Transaction[]);
           setLoading(false);
+        });
+      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+        .then(({ data }) => {
+          if (data?.expenses) {
+            const { _custom_cats } = data.expenses as Record<string, unknown>;
+            if (Array.isArray(_custom_cats)) {
+              setCustomCats(_custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            }
+          }
         });
     });
   }, []);
@@ -517,6 +561,8 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
                 onCloseEdit={() => setEditingCat(null)}
                 catCustomizations={catCustomizations}
                 setCatCustomizations={setCatCustomizations}
+                isCustom={customCats.some((c) => c.key === cat.key)}
+                onDelete={handleDeleteCustomCat}
               />
             ))}
           </div>

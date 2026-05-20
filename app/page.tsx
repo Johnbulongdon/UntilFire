@@ -475,7 +475,7 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
         <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} disabled={!canContinue} onClick={() => onNext(incomeForFIRE)}>
-          Continue {"->"}
+          Continue →
         </button>
       </div>
     </div>
@@ -571,7 +571,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
         <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(isNonUSD ? Math.round(savings / fxRate) : savings)}>
-          Next {"->"}
+          Continue →
         </button>
       </div>
     </div>
