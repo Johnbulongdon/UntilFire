@@ -3488,7 +3488,7 @@ export default function Dashboard() {
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
         .uf-nav-label-mobile { display: none; }
-        .uf-mobile-topbar, .uf-mobile-bottom-nav, .uf-mobile-drawer-backdrop, .uf-mobile-drawer { display: none; }
+        .uf-mobile-topbar, .uf-mobile-bottom-nav, .uf-mobile-drawer-backdrop, .uf-mobile-drawer, .uf-mobile-group-switch { display: none; }
 
         @media(max-width: 900px) {
           .uf-shell { flex-direction: column; min-height: 100dvh; }
@@ -3515,6 +3515,10 @@ export default function Dashboard() {
           .uf-mobile-drawer-item.active { background: #ECFDF5; border-color: #BBF7D0; color: #047857; }
           .uf-mobile-drawer-actions { margin-top: auto; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 8px; }
           .uf-mobile-drawer-link { color: #334155; text-decoration: none; font-size: 13px; font-weight: 800; padding: 10px 12px; border-radius: 10px; background: #F8FAFC; }
+          .uf-mobile-group-switch { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: -2px -16px 18px; padding: 0 16px 2px; }
+          .uf-mobile-group-switch::-webkit-scrollbar { display: none; }
+          .uf-mobile-group-button { border: 1px solid #E2E8F0; background: #fff; color: #475569; border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Manrope', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
+          .uf-mobile-group-button.active { border-color: #047857; background: #ECFDF5; color: #047857; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
           .uf-content { padding: calc(72px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
           .uf-hero-split { flex-direction: column; min-height: unset; }
@@ -3691,6 +3695,43 @@ export default function Dashboard() {
                   style={{ background: "none", border: "none", cursor: "pointer", color: "#065F46", fontSize: 20, lineHeight: 1 }}
                 >×</button>
               </div>
+            )}
+            {(tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports") && (
+              <nav className="uf-mobile-group-switch" aria-label="Portfolio sections">
+                {([
+                  { label: "Cashflow", tab: "cashflow" as TabKey },
+                  { label: "Assets", tab: "assets" as TabKey },
+                  { label: "Liabilities", tab: "liabilities" as TabKey },
+                  { label: "Reports", tab: "reports" as TabKey },
+                ]).map(item => (
+                  <button
+                    key={item.tab}
+                    className={`uf-mobile-group-button ${tab === item.tab ? "active" : ""}`}
+                    onClick={() => openDashboardTab(item.tab)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+            )}
+            {(tab === "fire-calculator" || tab === "goals") && (
+              <nav className="uf-mobile-group-switch" aria-label="Freedom sections">
+                {([
+                  { label: "Calculator", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { setTab("fire-calculator"); setFireCalcSubTab("menu"); } },
+                  { label: "FIRE Goal", active: tab === "fire-calculator" && fireCalcSubTab === "goals", onClick: () => { setTab("fire-calculator"); setFireCalcSubTab("goals"); } },
+                  { label: "Monte Carlo", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { setTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
+                  { label: "Investing", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { setTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
+                  { label: "Target", active: tab === "goals", onClick: () => openDashboardTab("goals") },
+                ]).map(item => (
+                  <button
+                    key={item.label}
+                    className={`uf-mobile-group-button ${item.active ? "active" : ""}`}
+                    onClick={item.onClick}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
             )}
             {tab === "overview" && (
               <DashTab
