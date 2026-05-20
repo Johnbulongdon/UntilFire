@@ -15,6 +15,7 @@
     "test:expense-guidance": "node scripts/verify-expense-guidance-copy.mjs",
     "test:city-coverage": "node scripts/verify-city-coverage.mjs",
     "test:income-default": "node scripts/verify-income-default.mjs",
+    "test:achieved-fire-reveal": "node scripts/verify-achieved-fire-reveal.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {

@@ -846,7 +846,8 @@ function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear
   const padL = 56, padR = 32, padT = 28, padB = 40;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
-  const yMax = data.fireTarget * 1.08;
+  const allValues = [...data.basePts, ...data.boostedPts, { t: 0, value: data.fireTarget }].map((p) => p.value);
+  const yMax = Math.max(1, ...allValues) * 1.08;
   const xS = (t: number) => padL + (t / Math.max(data.maxYears, 0.1)) * innerW;
   const yS = (v: number) => padT + innerH - (Math.min(v, yMax) / yMax) * innerH;
   const toPathPts = (pts: {t:number;value:number}[]) =>
@@ -1081,10 +1082,12 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
       }
       return pts;
     };
-    const maxYears = Math.max(result.years, d4.years, 1);
+    const projectionYears = result.years > 0 ? result.years : 10;
+    const boostedProjectionYears = d4.years > 0 ? d4.years : projectionYears;
+    const maxYears = Math.max(projectionYears, boostedProjectionYears, 1);
     return {
-      basePts: buildPts(annualBase, result.years > 0 ? result.years : 20),
-      boostedPts: buildPts(annualBoosted, d4.years > 0 ? d4.years : 20),
+      basePts: buildPts(annualBase, projectionYears),
+      boostedPts: buildPts(annualBoosted, boostedProjectionYears),
       maxYears,
       fireTarget: result.fireTarget ?? 0,
     };
@@ -1213,7 +1216,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
           {revealed && (
             <div ref={belowRef}>
               <div data-gsap="chart-section" style={{ background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
-                <div className="uf-chart-move-grid">
+                <div className="uf-chart-move-grid" style={isAlreadyFire ? { gridTemplateColumns: "1fr" } : undefined}>
                   {/* Chart card */}
                   <div className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, paddingBottom: 16, boxShadow: "0 24px 40px -28px rgba(15,23,42,0.14)" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
