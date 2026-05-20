@@ -3698,8 +3698,7 @@ export default function Dashboard() {
             {(tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports") && (
               <nav className="uf-mobile-group-switch" aria-label="Money sections">
                 {([
-                  { label: "Cashflow", active: tab === "cashflow" && cashflowSubTab !== "budgets", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
-                  { label: "Budget", active: tab === "cashflow" && cashflowSubTab === "budgets", onClick: () => { setCashflowSubTab("budgets"); openDashboardTab("cashflow"); } },
+                  { label: "Cashflow", active: tab === "cashflow", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
                   { label: "Net Worth", active: tab === "assets" || tab === "liabilities", onClick: () => openDashboardTab("assets") },
                   { label: "Insights", active: tab === "reports", onClick: () => openDashboardTab("reports") },
                 ]).map(item => (
