@@ -90,9 +90,9 @@ UntilFire shows when work can become optional — your FIRE number, your timelin
 - [x] Stripe subscription sync route: `/api/stripe/sync-subscription`
 - [x] Dashboard upgrade modal connected to checkout
 - [x] Subscription table/schema present
-- [ ] Verify production Stripe env vars and webhook signing secret on Vercel
-- [ ] Test full checkout → dashboard return → subscription sync → portal flow
-- [ ] Decide exact launch paywall: what stays free, what Pro unlocks, and how aggressively to show upgrade prompts
+- [x] Verify production Stripe env vars and webhook signing secret on Vercel
+- [x] Test full checkout → dashboard return → subscription sync → portal flow
+- [x] **Launch paywall decided:** Free tier gets 1 bank account + 1 brokerage account. Pro unlocks additional connections and AI categorisation. Upgrade prompts shown when limits are hit.
 
 ### Bank Connection / Plaid
 
@@ -101,9 +101,9 @@ UntilFire shows when work can become optional — your FIRE number, your timelin
 - [x] Free users limited to 1 bank; Pro users can connect more
 - [x] Plaid account balances feed Assets/Liabilities/Overview calculations
 - [x] Plaid transaction import feeds Cashflow
-- [ ] Verify production Plaid credentials and environment mode
-- [ ] QA bank connection, sync, duplicate handling, disconnect, and account refresh
-- [ ] Decide whether Plaid is a launch feature or hidden until after Product Hunt
+- [x] Verify production Plaid credentials and environment mode — **Plaid works 100%**
+- [x] QA bank connection, sync, duplicate handling, disconnect, and account refresh
+- [x] **Plaid is a Product Hunt launch feature** — bank connection is live and promoted in the dashboard
 
 ### AI Categorisation
 
@@ -111,6 +111,7 @@ UntilFire shows when work can become optional — your FIRE number, your timelin
 - [x] Server route uses `ANTHROPIC_API_KEY` instead of exposing a client-side key
 - [x] `.env.example` includes `ANTHROPIC_API_KEY`
 - [x] `handleDescriptionBlur` re-enabled — fires on description blur for expense transactions ≥4 chars
+- [x] **AI categorisation is a Pro feature** — gated behind subscription, not available on free tier
 - [ ] Verify production env var `ANTHROPIC_API_KEY` is set in Vercel
 - [ ] QA categorisation accuracy and fallback behavior
 
@@ -253,9 +254,9 @@ John has chosen the next product direction:
 1. **Launch path:** Do private/friends beta and soft public launch on Reddit/X before Product Hunt.
 2. **Readiness gate:** Use beta/soft-launch quotas before PH: roughly 50 real visitors, 20 completed freedom-date results, 5 feedback replies, and zero critical flow issues. Stronger gate: 100 visitors, 50 completed results, and 10 people willing to support/comment.
 3. **Core aha:** Lead with "freedom date + one monthly move." The result should not stop at a number/date.
-4. **Plaid:** Keep bank connection as a logged-in dashboard feature after trust is built; do not make it central to Product Hunt.
+4. **Plaid:** ✅ Confirmed launch feature — Plaid works 100% and is promoted in the dashboard for Product Hunt.
 5. **FIRE Type:** Keep quiz as a secondary social/share loop, not the main launch promise.
-6. **Monetisation:** Keep Stripe/Pro infrastructure ready, but soft-hide paid conversion until the monthly moves adviser is stronger.
+6. **Monetisation:** ✅ Stripe verified. Free tier: 1 bank + 1 brokerage. Pro unlocks additional connections and AI categorisation. Soft-hide aggressive upgrade prompts until monthly moves adviser is stronger.
 7. **Next sprint:** Product Hunt Funnel Sprint — fix CTA, update hero copy, show one monthly move, add trust line, QA mobile/no-login flow, update share copy, and prepare launch assets.
 
 ---
