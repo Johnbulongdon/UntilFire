@@ -41,7 +41,7 @@ For AI agents: before changing product direction, UX IA, copy strategy, roadmap,
 - `app/fire-number/[city-slug]/` — city SEO landing pages
 - `app/learn/` — public learning hub and article routes
 - `app/calculators/` — standalone calculator hub
-- `app/api/` — API routes for waitlist, Stripe, Plaid, feedback, and related server work
+- `app/api/` — API routes for waitlist, Stripe, Plaid, feedback, AI categorisation (`/api/categorise`), and related server work
 - `lib/` — shared FIRE logic, Supabase helpers, Plaid helpers, journey/localStorage helpers, and positioning constants
 - `scripts/` — repo validation utilities
 

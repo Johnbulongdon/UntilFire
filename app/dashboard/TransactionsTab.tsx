@@ -228,9 +228,20 @@ function QuickAddForm({
     setDraft((d) => ({ ...d, [k]: v }));
   }, [setDraft]);
 
-  // AI categorization paused — API key not configured; user selects category manually.
-  // Leaving the blur handler in place so the draft state flow is unchanged.
-  const handleDescriptionBlur = async () => { return; };
+  const handleDescriptionBlur = async () => {
+    const desc = draft.description.trim();
+    if (desc.length < 4 || draft.transaction_type === "income") return;
+    setCategorizing(true);
+    try {
+      const { category, tags } = await aiCategorize(desc, "expense");
+      setField("aiSuggestion", category);
+      if (tags.length > 0) {
+        setField("tags", [...new Set([...draft.tags, ...tags])]);
+      }
+    } finally {
+      setCategorizing(false);
+    }
+  };
 
   const applyAiSuggestion = () => {
     if (draft.aiSuggestion) setField("category", draft.aiSuggestion);
