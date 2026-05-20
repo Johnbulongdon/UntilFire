@@ -1087,11 +1087,13 @@ function Toast({
 function MobileBar({ onOpen }: { onOpen: () => void }) {
   return (
     <div style={{ display: "none" }} className="cf-mobile-bar">
-      <button onClick={onOpen} style={{ flex: 1, color: "#94A3B8", fontSize: 14, border: "none", background: "transparent", textAlign: "left", padding: "6px 4px", cursor: "pointer", fontFamily: "inherit" }}>
-        + Add a transaction…
-      </button>
-      <button onClick={onOpen} style={{ width: 40, height: 40, background: "#047857", color: "#fff", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", flexShrink: 0 }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+      <button
+        onClick={onOpen}
+        aria-label="Add transaction"
+        style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: 999, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+        Add transaction
       </button>
     </div>
   );
@@ -1403,7 +1405,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         @media (max-width: 1024px) {
           .cf-split { grid-template-columns: 1fr !important; }
           .cf-form-col { display: none; }
-          .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 10px 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); align-items: center; gap: 10px; z-index: 30; }
+          .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: transparent; border-radius: 999px; padding: 0; align-items: center; z-index: 30; }
         }
       `}</style>
 
