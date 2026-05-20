@@ -233,22 +233,6 @@ export default function HeroScreen({ onStart, onSignIn }: { onStart: () => void;
                 }}>→</span>
               </button>
 
-              <button
-                style={{
-                  height: 56, padding: "0 22px",
-                  background: "transparent",
-                  color: "rgba(255,255,255,0.85)",
-                  border: "1.5px solid rgba(255,255,255,0.25)",
-                  borderRadius: 9999,
-                  fontWeight: 600,
-                  fontSize: 15,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  fontFamily: "inherit",
-                }}
-              >
-                See a sample
-              </button>
             </div>
 
             {/* Trust line */}
