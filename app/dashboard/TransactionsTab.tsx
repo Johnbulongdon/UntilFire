@@ -805,7 +805,7 @@ function TransactionList({
             </div>
             <div style={{ fontWeight: 700, fontSize: 16, color: "#064E3B" }}>No transactions yet</div>
             <div style={{ fontSize: 13, maxWidth: 280 }}>
-              {search ? "Try a different search or clear filters." : "Add your first transaction with the form on the right."}
+              {search ? "Try a different search or clear filters." : "Use the + button to add your first transaction."}
             </div>
           </div>
         ) : (
