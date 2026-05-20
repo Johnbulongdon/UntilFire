@@ -683,6 +683,7 @@ function QuickAddForm({
           .cf-mobile-drawer {
             max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px) !important;
             padding-bottom: env(safe-area-inset-bottom, 0px);
+            z-index: 220 !important;
           }
           .cf-quick-form {
             position: relative !important;
@@ -695,7 +696,7 @@ function QuickAddForm({
           }
           .cf-quick-form-body {
             overflow-y: visible !important;
-            padding-bottom: 18px !important;
+            padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
           }
           .cf-quick-form-footer {
             position: sticky;
