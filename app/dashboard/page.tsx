@@ -3192,9 +3192,7 @@ export default function Dashboard() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [surveyOpen,     setSurveyOpen]     = useState(false);
-  const [tourOpen,       setTourOpen]       = useState(() => {
-    try { return !localStorage.getItem('uf_tour_done') } catch { return false }
-  });
+  const [tourOpen,       setTourOpen]       = useState(false);
   function closeTour() {
     setTourOpen(false);
     try { localStorage.setItem('uf_tour_done', '1') } catch {}
@@ -3378,13 +3376,8 @@ export default function Dashboard() {
     }
   }, [profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Show survey once to engaged users (income > 0, never dismissed)
-  useEffect(() => {
-    if (!profileLoading && income > 0 && !localStorage.getItem('uf_survey_done')) {
-      const t = setTimeout(() => setSurveyOpen(true), 8000);
-      return () => clearTimeout(t);
-    }
-  }, [profileLoading, income]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Keep startup calm: do not auto-open the survey.
+  // The feedback widget remains available when users choose to send feedback.
 
   // Warn if user closes the tab while a save is in flight
   useEffect(() => {
