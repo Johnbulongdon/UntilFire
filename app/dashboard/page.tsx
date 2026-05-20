@@ -1072,15 +1072,15 @@ function SurveyModal({ onSubmit, onDismiss }: {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#059669", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>Quick survey</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Help us build what matters 🙏</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontFamily: "Inter, sans-serif" }}>5 questions · takes ~90 seconds</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#059669", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>Optional check-in</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Want to help us improve this?</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontFamily: "Inter, sans-serif" }}>A few optional questions · skip anytime</div>
           </div>
         </div>
 
         {/* Q1 — Satisfaction */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>1. Overall, how satisfied are you with UntilFire?</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>1. If you have a minute, how is UntilFire feeling so far?</div>
           <div style={{ display: "flex", gap: 8 }}>
             {[1, 2, 3, 4, 5].map(n => (
               <button
@@ -1116,7 +1116,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
 
         {/* Q3 — Missing */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>3. What&apos;s the #1 thing missing or frustrating?</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>3. Was anything confusing or missing?</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {SURVEY_MISSING.map(m => {
               const active = missing === m;
