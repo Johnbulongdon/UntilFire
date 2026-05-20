@@ -2925,49 +2925,24 @@ function LearningHubTab({ recommendedStageId }: { recommendedStageId: LearnStage
   );
 }
 
-// ─── Sidebar items (flat) ─────────────────────────────────────────────────────
-const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: string }[] = [
+// ─── Sidebar items ────────────────────────────────────────────────────────────
+const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: string; activeTabs?: TabKey[] }[] = [
   {
     key: "overview",
-    label: "Overview",
+    label: "Home",
     svg: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
   },
   {
     key: "cashflow",
-    label: "Cashflow",
-    svg: '<path d="M5 17 9 13l3 3 7-7"/><path d="M14 6h5v5"/>',
-  },
-  {
-    key: "assets",
-    label: "Assets",
-    svg: '<path d="M4 20h16"/><rect x="5" y="10" width="3" height="8"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="13" width="3" height="5"/>',
-  },
-  {
-    key: "liabilities",
-    label: "Liabilities",
-    svg: '<circle cx="12" cy="12" r="8"/><path d="M14 9.5c-.5-.6-1.5-1-2.5-1-1.5 0-2.5.8-2.5 2s1 1.6 2.5 1.9c1.5.3 2.5.9 2.5 2 0 1.3-1.1 2.1-2.5 2.1-1 0-2-.4-2.5-1M12 7v1M12 16.5v1"/>',
+    label: "Money",
+    activeTabs: ["cashflow", "assets", "liabilities", "reports"],
+    svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
   },
   {
     key: "fire-calculator",
-    label: "FIRE Calculator",
-    mobileLabel: "FIRE Calc",
-    svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3.5" rx="0.5"/><circle cx="9" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="9" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="16" r="0.6" fill="currentColor" stroke="none"/>',
-  },
-  {
-    key: "goals",
-    label: "Goals",
-    svg: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
-  },
-  {
-    key: "reports",
-    label: "Reports",
-    svg: '<path d="M7 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/><path d="M9 13l2 2 4-4"/>',
-  },
-  {
-    key: "learning-hub",
-    label: "Learning Hub",
-    mobileLabel: "Learn",
-    svg: '<path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12"/><path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2"/><path d="M9 10h6M9 14h4"/>',
+    label: "Freedom",
+    activeTabs: ["fire-calculator", "goals", "learning-hub"],
+    svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
 ];
 
@@ -3480,7 +3455,10 @@ export default function Dashboard() {
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
         .uf-nav-label-mobile { display: none; }
-        .uf-mobile-topbar, .uf-mobile-bottom-nav, .uf-mobile-drawer-backdrop, .uf-mobile-drawer, .uf-mobile-group-switch { display: none; }
+        .uf-mobile-topbar, .uf-mobile-bottom-nav, .uf-mobile-drawer-backdrop, .uf-mobile-drawer { display: none; }
+        .uf-section-switch { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 22px; }
+        .uf-section-button { border: 1px solid #E2E8F0; background: #fff; color: #475569; border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Manrope', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
+        .uf-section-button.active { border-color: #047857; background: #ECFDF5; color: #047857; }
 
         @media(max-width: 900px) {
           .uf-shell { flex-direction: column; min-height: 100dvh; }
@@ -3507,10 +3485,10 @@ export default function Dashboard() {
           .uf-mobile-drawer-item.active { background: #ECFDF5; border-color: #BBF7D0; color: #047857; }
           .uf-mobile-drawer-actions { margin-top: auto; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 8px; }
           .uf-mobile-drawer-link { color: #334155; text-decoration: none; font-size: 13px; font-weight: 800; padding: 10px 12px; border-radius: 10px; background: #F8FAFC; }
-          .uf-mobile-group-switch { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: -2px -16px 18px; padding: 0 16px 2px; }
-          .uf-mobile-group-switch::-webkit-scrollbar { display: none; }
-          .uf-mobile-group-button { border: 1px solid #E2E8F0; background: #fff; color: #475569; border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Manrope', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
-          .uf-mobile-group-button.active { border-color: #047857; background: #ECFDF5; color: #047857; }
+          .uf-section-switch { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; margin: -2px -16px 18px; padding: 0 16px 2px; }
+          .uf-section-switch::-webkit-scrollbar { display: none; }
+          .uf-section-button { border: 1px solid #E2E8F0; background: #fff; color: #475569; border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Manrope', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
+          .uf-section-button.active { border-color: #047857; background: #ECFDF5; color: #047857; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
           .uf-content { padding: calc(72px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
           .uf-hero-split { flex-direction: column; min-height: unset; }
@@ -3643,7 +3621,7 @@ export default function Dashboard() {
               <button
                 key={item.key}
                 data-tour-item={item.key}
-                className={`uf-sidebar-item ${tab === item.key ? "active" : ""}`}
+                className={`uf-sidebar-item ${(tab === item.key || item.activeTabs?.includes(tab)) ? "active" : ""}`}
                 onClick={() => openDashboardTab(item.key)}
               >
                 <span className="uf-sidebar-icon">
@@ -3689,15 +3667,16 @@ export default function Dashboard() {
               </div>
             )}
             {(tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports") && (
-              <nav className="uf-mobile-group-switch" aria-label="Money sections">
+              <nav className="uf-section-switch" aria-label="Money sections">
                 {([
                   { label: "Cashflow", active: tab === "cashflow", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
-                  { label: "Net Worth", active: tab === "assets" || tab === "liabilities", onClick: () => openDashboardTab("assets") },
+                  { label: "Net Worth", active: tab === "assets", onClick: () => openDashboardTab("assets") },
+                  { label: "Debts", active: tab === "liabilities", onClick: () => openDashboardTab("liabilities") },
                   { label: "Insights", active: tab === "reports", onClick: () => openDashboardTab("reports") },
                 ]).map(item => (
                   <button
                     key={item.label}
-                    className={`uf-mobile-group-button ${item.active ? "active" : ""}`}
+                    className={`uf-section-button ${item.active ? "active" : ""}`}
                     onClick={item.onClick}
                   >
                     {item.label}
@@ -3705,16 +3684,18 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
-            {tab === "fire-calculator" && (
-              <nav className="uf-mobile-group-switch" aria-label="Freedom sections">
+            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub") && (
+              <nav className="uf-section-switch" aria-label="Freedom sections">
                 {([
-                  { label: "Freedom Date", active: fireCalcSubTab === "menu", onClick: () => setFireCalcSubTab("menu") },
-                  { label: "Confidence", active: fireCalcSubTab === "simulation", onClick: () => setFireCalcSubTab("simulation") },
-                  { label: "Advanced", active: fireCalcSubTab === "invest-sim", onClick: () => setFireCalcSubTab("invest-sim") },
+                  { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
+                  { label: "Confidence", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
+                  { label: "Advanced", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
+                  { label: "Lifestyle", active: tab === "goals", onClick: () => openDashboardTab("goals") },
+                  { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
                 ]).map(item => (
                   <button
                     key={item.label}
-                    className={`uf-mobile-group-button ${item.active ? "active" : ""}`}
+                    className={`uf-section-button ${item.active ? "active" : ""}`}
                     onClick={item.onClick}
                   >
                     {item.label}
