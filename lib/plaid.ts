@@ -62,7 +62,6 @@ export function mapPlaidTx(tx: PlaidTransaction, userId: string) {
     category,
     tags: [] as string[],
     sub_category: null as string | null,
-    is_work_related: false,
     transaction_type: isIncome ? "income" : "expense",
     plaid_transaction_id: tx.transaction_id,
     source: "plaid",

@@ -229,13 +229,9 @@ function QuickAddForm({
     setDraft((d) => ({ ...d, [k]: v }));
   }, [setDraft]);
 
-  const handleDescriptionBlur = async () => {
-    if (!draft.description || draft.category) return;
-    setCategorizing(true);
-    const result = await aiCategorize(draft.description, draft.transaction_type);
-    setDraft((d) => ({ ...d, category: result.category, tags: result.tags, aiSuggestion: result.category }));
-    setCategorizing(false);
-  };
+  // AI categorization paused — API key not configured; user selects category manually.
+  // Leaving the blur handler in place so the draft state flow is unchanged.
+  const handleDescriptionBlur = async () => { return; };
 
   const applyAiSuggestion = () => {
     if (draft.aiSuggestion) setField("category", draft.aiSuggestion);
@@ -1116,6 +1112,24 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   });
   useEffect(() => { localStorage.setItem("uf_custom_cats", JSON.stringify(customCats)); }, [customCats]);
   useEffect(() => { localStorage.setItem("uf_custom_subcats", JSON.stringify(customSubCats)); }, [customSubCats]);
+  // Sync custom cats to Supabase whenever they change (debounced 600ms)
+  useEffect(() => {
+    const id = setTimeout(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+          .then(({ data }) => {
+            const cur = (data?.expenses as Record<string, unknown>) || {};
+            supabase.from("user_budget").upsert({
+              user_id: session.user.id,
+              expenses: { ...cur, _custom_cats: customCats, _custom_subcats: customSubCats },
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
+          });
+      });
+    }, 600);
+    return () => clearTimeout(id);
+  }, [customCats, customSubCats]);
 
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
   const allSubCats = useMemo(() => {
@@ -1128,6 +1142,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleAddCategory = useCallback((cat: CustomCategory) => {
     setCustomCats((prev) => [...prev, cat]);
+  }, []);
+  const handleDeleteCategory = useCallback((key: string) => {
+    setCustomCats((prev) => prev.filter((c) => c.key !== key));
+    setCustomSubCats((prev) => { const n = { ...prev }; delete n[key]; return n; });
   }, []);
   const handleAddSubCategory = useCallback((catKey: string, sub: string) => {
     setCustomSubCats((prev) => ({ ...prev, [catKey]: [...(prev[catKey] || []), sub] }));
@@ -1177,8 +1195,16 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         .maybeSingle()
         .then(({ data }) => {
           if (data?.expenses) {
-            const { _fire_profile: _, ...budgetCats } = data.expenses as Record<string, unknown>;
+            const { _fire_profile: _, _custom_cats, _custom_subcats, ...budgetCats } = data.expenses as Record<string, unknown>;
             setBudgetExpenses(budgetCats as Record<string, number>);
+            if (Array.isArray(_custom_cats)) {
+              setCustomCats(_custom_cats as CustomCategory[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            }
+            if (_custom_subcats && typeof _custom_subcats === "object") {
+              setCustomSubCats(_custom_subcats as Record<string, string[]>);
+              localStorage.setItem("uf_custom_subcats", JSON.stringify(_custom_subcats));
+            }
           }
         });
       supabase

@@ -1289,11 +1289,11 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
 
 // ─── Goals Tab ────────────────────────────────────────────────────────────────
 function GoalsPageTab({
-  retirementCityName, retirementCityCol, lifestyleMultiplier,
+  retirementCityName, retirementCityCol, lifestyleMultiplier, withdrawalRate,
   displayCurrency, displayRates,
   onCityChange, onLifestyleChange,
 }: {
-  retirementCityName: string; retirementCityCol: number; lifestyleMultiplier: number;
+  retirementCityName: string; retirementCityCol: number; lifestyleMultiplier: number; withdrawalRate: number;
   displayCurrency: string; displayRates: Record<string, number>;
   onCityChange: (name: string, col: number) => void;
   onLifestyleChange: (multiplier: number) => void;
@@ -1305,6 +1305,7 @@ function GoalsPageTab({
         retirementCityName={retirementCityName}
         retirementCityCol={retirementCityCol}
         lifestyleMultiplier={lifestyleMultiplier}
+        withdrawalRate={withdrawalRate}
         displayCurrency={displayCurrency}
         displayRates={displayRates}
         onCityChange={onCityChange}
@@ -1322,11 +1323,11 @@ const LIFESTYLE_TIERS = [
 ];
 
 function RetirementTargetCard({
-  retirementCityName, retirementCityCol, lifestyleMultiplier,
+  retirementCityName, retirementCityCol, lifestyleMultiplier, withdrawalRate,
   displayCurrency, displayRates,
   onCityChange, onLifestyleChange,
 }: {
-  retirementCityName: string; retirementCityCol: number; lifestyleMultiplier: number;
+  retirementCityName: string; retirementCityCol: number; lifestyleMultiplier: number; withdrawalRate: number;
   displayCurrency: string; displayRates: Record<string, number>;
   onCityChange: (name: string, col: number) => void;
   onLifestyleChange: (multiplier: number) => void;
@@ -1341,7 +1342,7 @@ function RetirementTargetCard({
 
   const currentTier = LIFESTYLE_TIERS.find(t => t.multiplier === lifestyleMultiplier) ?? LIFESTYLE_TIERS[1];
   const targetAnnualSpend = retirementCityCol > 0 ? retirementCityCol * lifestyleMultiplier : 0;
-  const targetFIRENumber  = targetAnnualSpend * 25;
+  const targetFIRENumber  = withdrawalRate > 0 ? targetAnnualSpend / withdrawalRate : 0;
 
   const handleSelect = (name: string, col: number) => {
     onCityChange(name, col);
@@ -3549,6 +3550,7 @@ export default function Dashboard() {
                 retirementCityName={retirementCityName}
                 retirementCityCol={retirementCityCol}
                 lifestyleMultiplier={lifestyleMultiplier}
+                withdrawalRate={withdrawalRate}
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
                 onCityChange={(name, col) => { setRetirementCityName(name); setRetirementCityCol(col); }}
