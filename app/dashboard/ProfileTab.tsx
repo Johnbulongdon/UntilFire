@@ -157,9 +157,12 @@ export default function ProfileTab({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const filteredCities = citySearch.length >= 2
-    ? CITIES.filter((c) => c.name.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 8)
+  const citySearchTrimmed = citySearch.trim();
+  const filteredCities = citySearchTrimmed.length >= 2
+    ? CITIES.filter((c) => c.name.toLowerCase().includes(citySearchTrimmed.toLowerCase())).slice(0, 8)
     : [];
+  const canUseTypedCity = citySearchTrimmed.length >= 2
+    && !filteredCities.some((c) => c.name.toLowerCase() === citySearchTrimmed.toLowerCase());
 
   const filteredRetirementCities = retirementCitySearch.length >= 2
     ? CITIES.filter((c) => c.name.toLowerCase().includes(retirementCitySearch.toLowerCase())).slice(0, 8)
@@ -221,16 +224,19 @@ export default function ProfileTab({
       { onConflict: "user_id" }
     );
 
-    // Keep user_budget _fire_profile.cityName in sync
-    const { data: ub } = await supabase.from("user_budget").select("expenses").eq("user_id", userId).single();
-    if (ub) {
-      const expenses = ub.expenses as Record<string, unknown> || {};
-      const fp = (expenses._fire_profile as Record<string, unknown>) || {};
-      await supabase.from("user_budget").update({
+    // Keep user_budget _fire_profile.cityName in sync. New users may not have a
+    // user_budget row yet, so upsert instead of update-only.
+    const { data: ub } = await supabase.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle();
+    const expenses = ub?.expenses as Record<string, unknown> || {};
+    const fp = (expenses._fire_profile as Record<string, unknown>) || {};
+    await supabase.from("user_budget").upsert(
+      {
+        user_id: userId,
         expenses: { ...expenses, _fire_profile: { ...fp, cityName: selectedCity.name } },
         updated_at: new Date().toISOString(),
-      }).eq("user_id", userId);
-    }
+      },
+      { onConflict: "user_id" }
+    );
 
     setSaving((s) => ({ ...s, city: false }));
     flash("city");
@@ -364,9 +370,9 @@ export default function ProfileTab({
               setShowCityDropdown(true);
             }}
             onFocus={() => setShowCityDropdown(true)}
-            placeholder="Search 263 cities…"
+            placeholder={`Search ${CITIES.length} cities, or type yours…`}
           />
-          {showCityDropdown && filteredCities.length > 0 && (
+          {showCityDropdown && citySearchTrimmed.length >= 2 && (filteredCities.length > 0 || canUseTypedCity) && (
             <div style={{
               position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
               background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
@@ -392,6 +398,26 @@ export default function ProfileTab({
                   {c.flag} {c.name}
                 </div>
               ))}
+              {canUseTypedCity && (
+                <div
+                  onMouseDown={() => {
+                    setSelectedCity({ name: citySearchTrimmed, key: "custom" });
+                    setCitySearch(citySearchTrimmed);
+                    setShowCityDropdown(false);
+                  }}
+                  style={{
+                    padding: "10px 14px", cursor: "pointer", fontSize: 14,
+                    color: "#047857", fontWeight: 700,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                >
+                  📍 Use “{citySearchTrimmed}”
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 500, marginTop: 2 }}>
+                    We’ll save the city name even if it is not in our estimate list yet.
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
