@@ -3638,7 +3638,9 @@ export default function Dashboard() {
             {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saving…</span>}
             {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Inter, sans-serif" }}>✓ Saved</span>}
             {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Save failed</span>}
-            <UserNav onProfileClick={() => setTab("profile")} isProfileActive={tab === "profile"} />
+            <div data-tour-item="profile">
+              <UserNav onProfileClick={() => setTab("profile")} isProfileActive={tab === "profile"} />
+            </div>
             <button
               onClick={() => setTourOpen(true)}
               style={{ background: "none", border: "none", color: "#94A3B8", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}
