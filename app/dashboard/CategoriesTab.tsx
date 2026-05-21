@@ -415,6 +415,27 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     });
   }, []);
 
+  // Re-fetch custom categories when the browser tab regains focus (cross-device sync)
+  useEffect(() => {
+    const refetch = () => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+          .then(({ data }) => {
+            if (!data?.expenses) return;
+            const { _custom_cats } = data.expenses as Record<string, unknown>;
+            if (Array.isArray(_custom_cats)) {
+              setCustomCats(_custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            }
+          });
+      });
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
   const [y, m] = viewMonth.split("-").map(Number);
   const monthLabel = new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const isCurrentMonth = viewMonth === currentMonth;
