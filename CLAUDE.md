@@ -113,6 +113,16 @@ npm run build    # production build
 npm run lint     # run ESLint
 ```
 
+## Onboarding UX SOP
+
+- Keep first-session onboarding calm: no surprise surveys, star ratings, feedback boxes, paywalls, or bank prompts before the user gets value.
+- The only required calculator inputs should be income, expenses or savings, and current savings / net worth.
+- Retirement location must be skippable; if skipped, infer the FIRE target from the user’s spending/expenses instead of blocking progress.
+- Income entry must support gross annual as well as monthly take-home.
+- Savings entry must support either monthly savings or monthly spending.
+- Age should be strongly encouraged for a more personal freedom date, but never required.
+
+
 ## gstack Design Doc Sync
 
 After any `/office-hours`, `/plan-ceo-review`, or `/design-shotgun` session that produces
