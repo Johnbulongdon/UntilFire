@@ -515,6 +515,7 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
 
 // income is now annual planner income from IncomeScreen
 type SavingsInputMode = "savings" | "spending";
+type SavingsPeriod = "monthly" | "yearly";
 
 function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   income: number;
@@ -529,17 +530,29 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   const monthlyLocal = isNonUSD ? monthly * fxRate : monthly;
   const defaultSavings = isNonUSD ? Math.round(1500 * fxRate) : 1500;
   const [mode, setMode] = useState<SavingsInputMode>("savings");
+  const [period, setPeriod] = useState<SavingsPeriod>("monthly");
   const [amount, setAmount] = useState(defaultSavings);
-  const savingsLocal = mode === "savings" ? amount : Math.max(0, monthlyLocal - amount);
-  const expensesLocal = mode === "spending" ? amount : Math.max(0, monthlyLocal - savingsLocal);
+  const monthlyAmount = period === "yearly" ? amount / 12 : amount;
+  const savingsLocal = mode === "savings" ? monthlyAmount : Math.max(0, monthlyLocal - monthlyAmount);
+  const expensesLocal = mode === "spending" ? monthlyAmount : Math.max(0, monthlyLocal - savingsLocal);
   const rate = monthlyLocal > 0 ? Math.round((savingsLocal / monthlyLocal) * 100) : 0;
   const sliderMax = Math.max(isNonUSD ? Math.round(10000 * fxRate) : 10000, Math.ceil(monthlyLocal / 100) * 100);
   const sliderStep = isNonUSD ? Math.max(1, Math.round(100 * fxRate)) : 100;
+  const inputMax = period === "yearly" ? sliderMax * 12 : sliderMax;
+  const inputStep = period === "yearly" ? sliderStep * 12 : sliderStep;
+
+  const handlePeriodChange = (nextPeriod: SavingsPeriod) => {
+    if (nextPeriod === period) return;
+    setAmount(nextPeriod === "yearly" ? Math.round(amount * 12) : Math.round(amount / 12));
+    setPeriod(nextPeriod);
+  };
 
   const rateColor = rate < 15 ? "var(--danger)" : rate < 30 ? "var(--accent)" : "var(--teal)";
   const rateLabel = rate < 10 ? "Very low" : rate < 20 ? "Below average" : rate < 30 ? "Average"
     : rate < 40 ? "Good" : rate < 50 ? "Strong" : "FIRE pace!";
-  const inputLabel = mode === "savings" ? "Monthly savings amount" : "Monthly spending amount";
+  const periodLabel = period === "yearly" ? "Yearly" : "Monthly";
+  const periodUnit = period === "yearly" ? "/year" : "/month";
+  const inputLabel = `${periodLabel} ${mode === "savings" ? "savings" : "spending"} amount`;
 
   return (
     <div className="uf-screen">
@@ -548,10 +561,10 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">How much do you <span className="uf-accent">save or spend?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
-        Use whichever number you know: monthly savings or monthly spending. We only need one to estimate your gap.
+        Use whichever number you know: monthly or yearly savings or spending. We only need one to estimate your gap.
       </p>
 
-      <div className="uf-mode-pills" style={{ marginBottom: 16 }}>
+      <div className="uf-mode-pills" style={{ marginBottom: 12 }}>
         <button
           type="button"
           className={`uf-mode-pill ${mode === "savings" ? "active" : ""}`}
@@ -568,6 +581,23 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
         </button>
       </div>
 
+      <div className="uf-mode-pills" style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          className={`uf-mode-pill ${period === "monthly" ? "active" : ""}`}
+          onClick={() => handlePeriodChange("monthly")}
+        >
+          Monthly
+        </button>
+        <button
+          type="button"
+          className={`uf-mode-pill ${period === "yearly" ? "active" : ""}`}
+          onClick={() => handlePeriodChange("yearly")}
+        >
+          Yearly
+        </button>
+      </div>
+
       <label className="uf-label">{inputLabel} ({currency})</label>
       <div className="uf-big-input-wrap">
         <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
@@ -580,7 +610,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
           onChange={e => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
           autoFocus
         />
-        <span className="uf-unit">/month</span>
+        <span className="uf-unit">{periodUnit}</span>
       </div>
       <p className="uf-hint">
         {mode === "spending"
@@ -590,13 +620,13 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
       <div className="uf-slider-wrap">
         <input
-          type="range" min={0} max={sliderMax} step={sliderStep}
-          value={Math.min(amount, sliderMax)}
+          type="range" min={0} max={inputMax} step={inputStep}
+          value={Math.min(amount, inputMax)}
           className="uf-range"
           onChange={e => setAmount(parseInt(e.target.value))}
         />
         <div className="uf-range-labels">
-          <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(sliderMax / 2).toLocaleString()}</span><span>{currencySymbol}{sliderMax.toLocaleString()}/mo</span>
+          <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(inputMax / 2).toLocaleString()}</span><span>{currencySymbol}{inputMax.toLocaleString()}{periodUnit}</span>
         </div>
       </div>
 
