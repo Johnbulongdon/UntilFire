@@ -19,6 +19,23 @@ UntilFire shows when work can become optional — your FIRE number, your timelin
 - Treat the dashboard and Pro tier as continuity after the first aha moment, not a replacement for the free calculator.
 - Do not hide the aha moment behind login, payment, or heavy setup.
 
+## Active Revenue Goal — $3k MRR
+
+UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap work should be prioritized by direct contribution to this goal.
+
+**Revenue path:**
+1. Get more new visitors to the no-login freedom-date result without friction.
+2. Show enough trust, clarity, and monthly value that users understand why saving or upgrading is useful.
+3. Convert activated users into Pro customers only after the free aha moment.
+4. Retain paying users through recurring monthly moves, progress tracking, and continuity.
+
+**Priority order while pursuing $3k MRR:**
+- Fix blockers in mobile and end-to-end no-login activation.
+- Verify Stripe checkout, return, subscription sync, and billing portal before depending on paid conversion.
+- Finalize free vs Pro packaging around "personal FIRE adviser" and monthly moves.
+- Add post-result save/email/share loops that do not expose sensitive finances.
+- Support founder-led beta and launch channels with work-optionality, freedom-date, and monthly-move messaging.
+
 ---
 
 ## Phase 0 — Foundation ✅ Complete

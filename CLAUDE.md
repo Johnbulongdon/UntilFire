@@ -12,6 +12,30 @@ This file is the always-loaded working context for Claude Code and other AI agen
 
 If instructions conflict, stop and call out the conflict instead of guessing.
 
+## Active Goal
+
+UntilFire's current active goal is to reach **$3k MRR**.
+
+Prioritize work that directly improves one of these revenue levers:
+
+- first-session activation: more visitors reach a useful freedom-date result
+- free-to-paid conversion: more activated users understand why Pro is worth paying for
+- retention: users have a clear reason to come back after the first result
+- trust: the product feels safe, clear, and credible with personal financial data
+- acquisition: founder-led beta, build-in-public, SEO, Product Hunt, and share loops
+
+Avoid work that is not clearly connected to reaching $3k MRR unless the user explicitly asks for it.
+
+## $3k MRR CEO Agent Loop
+
+When asked to act as CEO, operator, or chief-of-staff for UntilFire, use this bounded loop:
+
+1. Check the latest repo state, roadmap, and relevant Obsidian product/marketing notes.
+2. Identify the single smallest action most likely to move one revenue lever: activation, conversion, retention, trust, or acquisition.
+3. Prefer actions that help a new user reach the freedom-date result, understand one monthly move, trust the product, save/share the result, or see why Pro is worth it.
+4. Report only: found, why it matters for $3k MRR, and the next useful action.
+5. Do not start broad strategy rewrites, speculative features, or open-ended research unless the user asks.
+
 ## Core Working Rules
 
 - Use latest pushed `origin/main` as the baseline unless the user explicitly says otherwise.
@@ -56,6 +80,7 @@ For bug fixes, prefer a repro/test first when practical. For refactors, verify b
 If your agent environment supports skills, slash commands, or reusable workflows:
 
 - Load relevant skills before acting, especially for debugging, TDD, code review, UI work, git workflow, and browser QA.
+- For UntilFire product, strategy, QA, beta, launch, or revenue work, load the `untilfire-mrr-operator` skill if available.
 - Use gstack slash commands when they fit the task:
   - `/office-hours` — product interrogation before building.
   - `/plan-eng-review` — engineering review of a plan.
@@ -86,13 +111,16 @@ Important framing:
 
 ## Current Product Focus
 
-See `docs/ROADMAP.md` for the source of truth. As of the current roadmap, focus is Product Hunt readiness:
+UntilFire is in an early-revenue push. The active product objective is **$3k MRR**.
 
-- Mobile QA for the no-login calculator flow.
-- End-to-end no-login flow: homepage → calculator → result → adjust inputs → share/save path.
-- Shareable insights that do not expose sensitive finances.
-- Save/email capture only after the reveal.
-- Product Hunt copy/assets around freedom date and work optionality.
+Use `docs/ROADMAP.md` for the detailed task list, but choose work through the MRR lens:
+
+- Finish mobile and end-to-end QA for the no-login calculator so visitors reliably reach the aha moment.
+- Make the result screen explain the freedom date, monthly moves, and why saving the result or upgrading is useful.
+- Finalize free vs Pro packaging and keep upgrade prompts after the free value moment.
+- Verify Stripe checkout, return, subscription sync, and portal before relying on paid conversion.
+- Improve share/save/email capture after the reveal without exposing sensitive finances.
+- Support founder-led beta and launch channels with copy/assets centered on work optionality, freedom date, and monthly moves.
 
 Do not rebuild completed features just because old docs say they are pending. Check the code and `docs/ROADMAP.md` first.
 
