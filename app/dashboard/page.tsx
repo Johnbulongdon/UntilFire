@@ -1186,6 +1186,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
   onComplete: (income: number, spending: number, savings: number) => void;
   onDismiss: () => void;
 }) {
+  const [incomeMode, setIncomeMode] = useState<"monthly" | "annual">("monthly");
   const [inc, setInc] = useState("");
   const [spend, setSpend] = useState("");
   const [save, setSave] = useState("");
@@ -1196,8 +1197,10 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
     return isNaN(n) ? s : n.toLocaleString();
   };
 
+  const monthlyIncome = incomeMode === "annual" ? Math.round(toNum(inc) / 12) : toNum(inc);
+
   const handleSubmit = () => {
-    onComplete(toNum(inc), toNum(spend), toNum(save));
+    onComplete(monthlyIncome, toNum(spend), toNum(save));
   };
 
   const Field = ({ label, hint, value, onChange }: { label: string; hint: string; value: string; onChange: (v: string) => void }) => (
@@ -1230,15 +1233,36 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
             Let&apos;s find your FIRE number
           </div>
           <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>
-            Three numbers is all it takes. You can refine everything later.
+            Income, spending, and current savings are enough to get started. You can refine everything later.
           </div>
         </div>
 
         {/* Fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Field label="Monthly take-home pay" hint="After tax, per month" value={inc} onChange={setInc} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setIncomeMode("monthly")}
+              style={{ border: `1.5px solid ${incomeMode === "monthly" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "monthly" ? "#F0FDF4" : "#fff", color: incomeMode === "monthly" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+            >
+              Monthly take-home
+            </button>
+            <button
+              type="button"
+              onClick={() => setIncomeMode("annual")}
+              style={{ border: `1.5px solid ${incomeMode === "annual" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "annual" ? "#F0FDF4" : "#fff", color: incomeMode === "annual" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+            >
+              Gross annual
+            </button>
+          </div>
+          <Field
+            label={incomeMode === "annual" ? "Gross annual income" : "Monthly take-home pay"}
+            hint={incomeMode === "annual" ? "Before tax, per year — we’ll use a rough monthly estimate" : "After tax, per month"}
+            value={inc}
+            onChange={setInc}
+          />
           <Field label="Monthly spending" hint="Rent, food, everything — rough total is fine" value={spend} onChange={setSpend} />
-          <Field label="Current savings & investments" hint="Total across all accounts — 0 is okay" value={save} onChange={setSave} />
+          <Field label="Current savings / net worth" hint="Total across accounts and investments — 0 is okay" value={save} onChange={setSave} />
         </div>
 
         {/* Actions */}

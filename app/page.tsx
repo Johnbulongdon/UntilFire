@@ -363,7 +363,7 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
 }) {
   const isNonUSD = currency !== "USD";
   const isCustomJurisdiction = stateKey === "custom";
-  const forceTakeHome = isNonUSD || isCustomJurisdiction;
+  const canEstimateTax = !isNonUSD && !isCustomJurisdiction;
   const [mode, setMode] = useState<IncomeMode>("takehome");
   const [rawValue, setRawValue] = useState<string>("");
   const [takeHomeRaw, setTakeHomeRaw] = useState<string>("");
@@ -374,17 +374,18 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
   const annualGross = mode === "takehome" ? 0 : toAnnualGross(numVal, mode);
   const monthlyTakeHome = mode === "takehome" ? parseFloat(takeHomeRaw) || 0 : 0;
   const annualTakeHome = monthlyTakeHome * 12;
-  const tax = mode !== "takehome" ? calcTakeHome(annualGross, stateKey) : null;
+  const tax = mode !== "takehome" && canEstimateTax ? calcTakeHome(annualGross, stateKey) : null;
 
   const displayGross = mode === "takehome" ? null : annualGross;
-  const displayTakeHome = mode === "takehome" ? annualTakeHome : (tax?.takeHome ?? 0);
+  const displayTakeHome = mode === "takehome" ? annualTakeHome : (tax?.takeHome ?? annualGross);
   const displayMonthly = displayTakeHome / 12;
   const displayHourly = displayTakeHome / 2080;
-  const displayEffRate = mode === "takehome" ? null : (tax?.effectiveRate ?? 0);
+  const displayEffRate = tax?.effectiveRate ?? null;
 
-  const takeHomeForPlanner = mode === "takehome" ? annualTakeHome : (tax?.takeHome ?? 0);
+  const takeHomeForPlanner = mode === "takehome" ? annualTakeHome : (tax?.takeHome ?? annualGross);
   const incomeForFIRE = isNonUSD ? Math.round(takeHomeForPlanner / fxRate) : takeHomeForPlanner;
   const canContinue = mode === "takehome" ? monthlyTakeHome > 0 : annualGross > 0;
+  const localMoney = (n: number) => `${currencySymbol}${Math.round(n).toLocaleString()}`;
 
   return (
     <div className="uf-screen">
@@ -393,13 +394,10 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
       <div className="uf-eyebrow">Income</div>
       <h2 className="uf-h2">What do you <span className="uf-accent">earn?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
-        {forceTakeHome
-          ? "Start with the monthly amount that lands in your bank. A rough estimate is fine."
-          : "Start with the monthly amount that lands in your bank. If you prefer, switch to gross pay and we’ll estimate take-home."}
+        Start with the monthly amount that lands in your bank. If gross annual is easier, use that — we’ll keep it rough and you can refine later.
       </p>
 
-      {!forceTakeHome && (
-        <div className="uf-mode-pills">
+      <div className="uf-mode-pills">
           {INCOME_MODES.map((m) => (
             <button
               key={m.key}
@@ -414,20 +412,19 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
             </button>
           ))}
         </div>
-      )}
       <p className="uf-hint" style={{ marginBottom: 16 }}>
-        {isNonUSD
-          ? `Non-USD currency: enter your monthly take-home in ${currency}. We'll convert it to USD automatically.`
-          : isCustomJurisdiction
-            ? "Custom city: tax jurisdiction is unknown, so enter your monthly take-home directly."
-            : INCOME_MODES.find((m) => m.key === mode)?.hint}
+        {mode === "takehome"
+          ? `Enter your monthly take-home in ${currency}. We'll convert it automatically if needed.`
+          : canEstimateTax
+            ? INCOME_MODES.find((m) => m.key === mode)?.hint
+            : `Enter gross income in ${currency}. Tax is not estimated for this location yet, so this stays a rough starting point.`}
       </p>
 
       {mode !== "takehome" ? (
         <>
           <label className="uf-label">Gross income</label>
           <div className="uf-big-input-wrap">
-            <span className="uf-input-prefix uf-big-prefix">$</span>
+            <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
             <input
               key={mode}
               type="number"
@@ -467,25 +464,30 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
         {displayGross !== null ? (
           <div className="uf-card">
             <div className="uf-card-sub">Annual gross</div>
-            <div className="uf-card-main">{fmtUSD(displayGross)}</div>
+            <div className="uf-card-main">{isNonUSD ? localMoney(displayGross) : fmtUSD(displayGross)}</div>
           </div>
         ) : null}
         <div className="uf-card">
           <div className="uf-card-sub">Annual take-home</div>
           <div className="uf-card-main">
-            {isNonUSD ? `${currencySymbol}${Math.round(displayTakeHome).toLocaleString()}` : fmtUSD(displayTakeHome)}
+            {isNonUSD ? localMoney(displayTakeHome) : fmtUSD(displayTakeHome)}
           </div>
         </div>
         <div className="uf-card">
           <div className="uf-card-sub">Monthly take-home</div>
           <div className="uf-card-main">
-            {isNonUSD ? `${currencySymbol}${Math.round(displayMonthly).toLocaleString()}` : fmtUSD(displayMonthly)}
+            {isNonUSD ? localMoney(displayMonthly) : fmtUSD(displayMonthly)}
           </div>
         </div>
         {displayEffRate !== null ? (
           <div className="uf-card">
             <div className="uf-card-sub">Effective tax rate</div>
             <div className="uf-card-main">{displayEffRate.toFixed(1)}%</div>
+          </div>
+        ) : mode !== "takehome" ? (
+          <div className="uf-card">
+            <div className="uf-card-sub">Tax estimate</div>
+            <div className="uf-card-main">Not applied</div>
           </div>
         ) : null}
         {!isNonUSD && (
@@ -511,58 +513,87 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
 // SCREEN 3 -SAVINGS
 // -----------------------------------------------------------------------------
 
-// income is now always annual take-home (already post-tax) from IncomeScreen
+// income is now annual planner income from IncomeScreen
+type SavingsInputMode = "savings" | "spending";
+
 function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   income: number;
   currency?: SupportedCurrency;
-  onNext: (savings: number) => void;
+  onNext: (savings: number, monthlyExpenses: number) => void;
   onBack: () => void;
 }) {
   const isNonUSD = currency !== "USD";
   const currencySymbol = getCurrencySymbol(currency);
   const fxRate = FALLBACK_RATES[currency] ?? 1;
-  const sliderMax = isNonUSD ? Math.round(10000 * fxRate) : 10000;
-  const sliderStep = isNonUSD ? Math.max(1, Math.round(100 * fxRate)) : 100;
-  const [savings, setSavings] = useState(isNonUSD ? Math.round(1500 * fxRate) : 1500);
   const monthly = income / 12;
   const monthlyLocal = isNonUSD ? monthly * fxRate : monthly;
-  const rate = monthlyLocal > 0 ? Math.round((savings / monthlyLocal) * 100) : 0;
+  const defaultSavings = isNonUSD ? Math.round(1500 * fxRate) : 1500;
+  const [mode, setMode] = useState<SavingsInputMode>("savings");
+  const [amount, setAmount] = useState(defaultSavings);
+  const savingsLocal = mode === "savings" ? amount : Math.max(0, monthlyLocal - amount);
+  const expensesLocal = mode === "spending" ? amount : Math.max(0, monthlyLocal - savingsLocal);
+  const rate = monthlyLocal > 0 ? Math.round((savingsLocal / monthlyLocal) * 100) : 0;
+  const sliderMax = Math.max(isNonUSD ? Math.round(10000 * fxRate) : 10000, Math.ceil(monthlyLocal / 100) * 100);
+  const sliderStep = isNonUSD ? Math.max(1, Math.round(100 * fxRate)) : 100;
 
   const rateColor = rate < 15 ? "var(--danger)" : rate < 30 ? "var(--accent)" : "var(--teal)";
   const rateLabel = rate < 10 ? "Very low" : rate < 20 ? "Below average" : rate < 30 ? "Average"
     : rate < 40 ? "Good" : rate < 50 ? "Strong" : "FIRE pace!";
+  const inputLabel = mode === "savings" ? "Monthly savings amount" : "Monthly spending amount";
 
   return (
     <div className="uf-screen">
       <WizardProgress step={3} />
       <p className="uf-step-label">Step 4 of 5</p>
       <div className="uf-eyebrow">Finances</div>
-      <h2 className="uf-h2">How much are you <span className="uf-accent">saving?</span></h2>
-      <p className="uf-body" style={{ marginBottom: 32 }}>
-        Don&apos;t worry about being exact -we&apos;ll help you track real numbers after setup.
+      <h2 className="uf-h2">How much do you <span className="uf-accent">save or spend?</span></h2>
+      <p className="uf-body" style={{ marginBottom: 24 }}>
+        Use whichever number you know: monthly savings or monthly spending. We only need one to estimate your gap.
       </p>
 
-      <label className="uf-label">Monthly savings amount ({currency})</label>
+      <div className="uf-mode-pills" style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          className={`uf-mode-pill ${mode === "savings" ? "active" : ""}`}
+          onClick={() => setMode("savings")}
+        >
+          I know my savings
+        </button>
+        <button
+          type="button"
+          className={`uf-mode-pill ${mode === "spending" ? "active" : ""}`}
+          onClick={() => setMode("spending")}
+        >
+          I know my spending
+        </button>
+      </div>
+
+      <label className="uf-label">{inputLabel} ({currency})</label>
       <div className="uf-big-input-wrap">
         <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
         <input
           type="number"
           className="uf-input uf-input-mono uf-input-big"
           style={{ paddingLeft: 28 }}
-          value={savings || ""}
+          value={amount || ""}
           min={0}
-          onChange={e => setSavings(Math.max(0, parseInt(e.target.value) || 0))}
+          onChange={e => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
           autoFocus
         />
         <span className="uf-unit">/month</span>
       </div>
+      <p className="uf-hint">
+        {mode === "spending"
+          ? "We’ll estimate savings as income minus spending."
+          : "We’ll estimate spending as income minus savings."}
+      </p>
 
       <div className="uf-slider-wrap">
         <input
           type="range" min={0} max={sliderMax} step={sliderStep}
-          value={Math.min(savings, sliderMax)}
+          value={Math.min(amount, sliderMax)}
           className="uf-range"
-          onChange={e => setSavings(parseInt(e.target.value))}
+          onChange={e => setAmount(parseInt(e.target.value))}
         />
         <div className="uf-range-labels">
           <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(sliderMax / 2).toLocaleString()}</span><span>{currencySymbol}{sliderMax.toLocaleString()}/mo</span>
@@ -571,12 +602,16 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
       <div className="uf-stat-row">
         <div className="uf-stat-box">
-          <div className="uf-stat-val uf-accent">{currencySymbol}{Math.round(savings).toLocaleString()}/mo</div>
+          <div className="uf-stat-val uf-accent">{currencySymbol}{Math.round(savingsLocal).toLocaleString()}/mo</div>
           <div className="uf-stat-lab">Monthly savings</div>
         </div>
         <div className="uf-stat-box">
+          <div className="uf-stat-val">{currencySymbol}{Math.round(expensesLocal).toLocaleString()}/mo</div>
+          <div className="uf-stat-lab">Monthly spending</div>
+        </div>
+        <div className="uf-stat-box">
           <div className="uf-stat-val">{rate}%</div>
-          <div className="uf-stat-lab">Of take-home income</div>
+          <div className="uf-stat-lab">Of income saved</div>
         </div>
       </div>
 
@@ -593,15 +628,22 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
         </div>
       </div>
 
-      {savings === 0 && (
+      {savingsLocal === 0 && (
         <div style={{ marginTop: 16, padding: "10px 14px", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, fontSize: 13, color: "#92400E", display: "flex", gap: 8, alignItems: "flex-start" }}>
           <span>⚠️</span>
-          <span>With <strong>$0 saved per month</strong> your FIRE date will be very far out. Make sure this is intentional — you can always update it in your dashboard.</span>
+          <span>With <strong>$0 saved per month</strong> your FIRE date will be very far out. Make sure this is intentional — you can always update it later.</span>
         </div>
       )}
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(isNonUSD ? Math.round(savings / fxRate) : savings)}>
+        <button
+          className="uf-btn uf-btn-primary"
+          style={{ flex: 1 }}
+          onClick={() => onNext(
+            isNonUSD ? Math.round(savingsLocal / fxRate) : savingsLocal,
+            isNonUSD ? Math.round(expensesLocal / fxRate) : expensesLocal,
+          )}
+        >
           Continue →
         </button>
       </div>
@@ -640,13 +682,13 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
     <div className="uf-screen">
       <WizardProgress step={4} />
       <p className="uf-step-label">Step 5 of 5</p>
-      <div className="uf-eyebrow">Finances</div>
-      <h2 className="uf-h2">What&apos;s your <span className="uf-accent">current portfolio?</span></h2>
+      <div className="uf-eyebrow">Net worth</div>
+      <h2 className="uf-h2">What are your <span className="uf-accent">current savings?</span></h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
-        Include 401(k), IRA, brokerage, and other long-term savings. Estimate is fine. Zero is fine too.
+        Enter your current net worth or investable savings. Estimate is fine. Zero is fine too.
       </p>
 
-      <label className="uf-label">Total invested savings ({currency})</label>
+      <label className="uf-label">Current savings / net worth ({currency})</label>
       <div className="uf-big-input-wrap">
         <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
         <input
@@ -660,11 +702,11 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
           autoFocus
         />
       </div>
-      <p className="uf-hint">Leave at 0 if you&apos;re starting fresh. Every dollar here compounds and pulls your retirement date earlier.</p>
+      <p className="uf-hint">Leave at 0 if you&apos;re starting fresh. This is the third core number that makes your freedom date useful.</p>
 
       <div style={{ marginTop: 24 }}>
         <label className="uf-label" htmlFor="uf-current-age">
-          Your current age <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span>
+          Your current age <span style={{ color: 'var(--teal)', fontWeight: 700 }}>(recommended)</span>
         </label>
         <input
           id="uf-current-age"
@@ -677,7 +719,7 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
           onChange={e => setAgeRaw(e.target.value)}
           style={{ maxWidth: 160 }}
         />
-        <p className="uf-hint">We&apos;ll show you exactly which age freedom hits.</p>
+        <p className="uf-hint">Highly recommended: age lets us show when freedom hits for you. You can still continue without it.</p>
       </div>
 
       <div className="uf-nav-row">
@@ -2141,7 +2183,16 @@ export default function Home() {
           <SavingsScreen
             income={income}
             currency={currency}
-            onNext={sav => { setSavings(sav); setScreen("portfolio"); }}
+            onNext={(sav, monthlyExpenses) => {
+              setSavings(sav);
+              setCityState(prev => ({
+                name: prev?.name || "Your current lifestyle",
+                col: Math.max(0, monthlyExpenses * 12),
+                stateKey: prev?.stateKey || "custom",
+                isCustom: prev?.isCustom ?? true,
+              }));
+              setScreen("portfolio");
+            }}
             onBack={() => setScreen("income")}
           />
         )}

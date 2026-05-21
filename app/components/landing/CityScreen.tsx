@@ -65,6 +65,15 @@ export default function CityScreen({
     setShowCustom(false);
   }
 
+  function skipLocation() {
+    onNext({
+      name: "Your current lifestyle",
+      col: 0,
+      stateKey: "custom",
+      isCustom: true,
+    });
+  }
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -232,6 +241,9 @@ export default function CityScreen({
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>
           Back
+        </button>
+        <button className="uf-btn uf-btn-ghost" onClick={skipLocation}>
+          Skip for now
         </button>
         <button
           className="uf-btn uf-btn-primary"
