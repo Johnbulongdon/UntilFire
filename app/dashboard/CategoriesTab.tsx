@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
 import {
-  EXPENSE_CATEGORIES, CategoryDef,
+  EXPENSE_CATEGORIES,
   loadCatCustomizations, saveCatCustomizations,
   CatCustomizations, COLOR_PALETTE, EMOJI_PALETTE, resolveDisplay,
 } from "@/lib/categories";
@@ -99,10 +99,12 @@ function CategoryRow({
   isEditing,
   onEdit,
   onCloseEdit,
-  catCustomizations,
   setCatCustomizations,
   isCustom = false,
   onDelete,
+  deleteConfirmKey,
+  onRequestDelete,
+  onCancelDelete,
 }: {
   cat: CatBreakdown;
   totalSpend: number;
@@ -112,12 +114,15 @@ function CategoryRow({
   isEditing: boolean;
   onEdit: () => void;
   onCloseEdit: () => void;
-  catCustomizations: CatCustomizations;
   setCatCustomizations: React.Dispatch<React.SetStateAction<CatCustomizations>>;
   isCustom?: boolean;
   onDelete?: (key: string) => void;
+  deleteConfirmKey: string | null;
+  onRequestDelete: (key: string) => void;
+  onCancelDelete: () => void;
 }) {
   const pct = totalSpend > 0 ? (cat.total / totalSpend) * 100 : 0;
+  const isDeleteConfirming = deleteConfirmKey === cat.key;
 
   return (
     <div>
@@ -142,7 +147,11 @@ function CategoryRow({
             <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 1 }}>{cat.subBreakdown.length > 0 ? `${cat.subBreakdown.length} sub-categories` : "No sub-categories"}</div>
           </div>
           <button
-            onClick={e => { e.stopPropagation(); isEditing ? onCloseEdit() : onEdit(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing) onCloseEdit();
+              else onEdit();
+            }}
             title="Customize color & emoji"
             style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: isEditing ? "#059669" : "#CBD5E1", fontSize: 14, lineHeight: 1, flexShrink: 0 }}
           >
@@ -214,12 +223,35 @@ function CategoryRow({
               </button>
             )}
             {isCustom && onDelete && (
-              <button
-                onClick={() => { if (confirm(`Delete "${cat.label}"? Transactions using this category will keep their existing category key.`)) { onDelete(cat.key); onCloseEdit(); } }}
-                style={{ fontSize: 12, color: "#DC2626", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0 }}
-              >
-                🗑 Delete category
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
+                <button
+                  onClick={() => {
+                    if (!isDeleteConfirming) {
+                      onRequestDelete(cat.key);
+                      return;
+                    }
+                    onDelete(cat.key);
+                    onCloseEdit();
+                    onCancelDelete();
+                  }}
+                  style={{ fontSize: 12, color: "#DC2626", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}
+                >
+                  {isDeleteConfirming ? "Confirm delete category" : "🗑 Delete category"}
+                </button>
+                {isDeleteConfirming && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>
+                      This removes the custom category from your list. Existing transactions keep their category key.
+                    </span>
+                    <button
+                      onClick={onCancelDelete}
+                      style={{ fontSize: 12, color: "#64748B", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -355,6 +387,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [deleteConfirmKey, setDeleteConfirmKey] = useState<string | null>(null);
   const [catCustomizations, setCatCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
   const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 
@@ -369,6 +402,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   const handleDeleteCustomCat = (key: string) => {
     const updated = customCats.filter((c) => c.key !== key);
     setCustomCats(updated);
+    setDeleteConfirmKey(null);
     localStorage.setItem("uf_custom_cats", JSON.stringify(updated));
     // Sync deletion to Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -429,12 +463,13 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     [expTxns, rates]
   );
 
-  // Primary category groups with sub-category + tag breakdowns
+  // All category groups with sub-category + tag breakdowns. Keep zero-spend
+  // categories visible so the Categories page remains the management surface
+  // for custom categories, even before they are used by a transaction.
   const primaryGroups = useMemo(() => {
     return allExpenseCats
       .map((cat) => {
         const catTxns = expTxns.filter((t) => t.category === cat.key);
-        if (catTxns.length === 0) return null;
         const total = catTxns.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
 
         const subBreakdown = groupBySubCat(catTxns, rates);
@@ -463,7 +498,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
           tagBreakdown,
         };
       })
-      .filter(Boolean) as CatBreakdown[];
+      .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
   }, [expTxns, rates, allExpenseCats, catCustomizations]);
 
   // Project groups (by tag)
@@ -489,6 +524,8 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     const d = new Date(py, pm - 2, 1);
     setViewMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     setExpandedCat(null);
+    setEditingCat(null);
+    setDeleteConfirmKey(null);
     setExpandedProject(null);
   };
 
@@ -499,6 +536,8 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     if (next <= currentMonth) {
       setViewMonth(next);
       setExpandedCat(null);
+      setEditingCat(null);
+      setDeleteConfirmKey(null);
       setExpandedProject(null);
     }
   };
@@ -526,18 +565,17 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
         </div>
       </div>
 
-      {primaryGroups.length === 0 ? (
-        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "60px 24px", textAlign: "center", color: "#94A3B8" }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
-          <div style={{ fontWeight: 700, fontSize: 16, color: "#064E3B", marginBottom: 6 }}>No expenses this month</div>
-          <div style={{ fontSize: 13 }}>Add transactions in the Cashflow tab to see your category breakdown here.</div>
+      {totalSpend === 0 && (
+        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "18px 20px", marginBottom: 16, color: "#64748B" }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#064E3B", marginBottom: 4 }}>No expenses this month</div>
+          <div style={{ fontSize: 13 }}>Your full category list is still shown below so you can review, customize, or delete custom categories.</div>
         </div>
-      ) : (
-        <>
-          {/* By Category */}
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", marginBottom: 24 }}>
+      )}
+
+      {/* All Categories */}
+      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", marginBottom: 24 }}>
             <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B" }}>By Category</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B" }}>All Categories</span>
               <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600 }}>{primaryGroups.length} categories</span>
             </div>
             {/* Column headers */}
@@ -557,42 +595,42 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
                 onToggle={() => setExpandedCat(expandedCat === cat.key ? null : cat.key)}
                 formatAmount={fmtDisplay}
                 isEditing={editingCat === cat.key}
-                onEdit={() => setEditingCat(cat.key)}
-                onCloseEdit={() => setEditingCat(null)}
-                catCustomizations={catCustomizations}
+                onEdit={() => { setEditingCat(cat.key); setDeleteConfirmKey(null); }}
+                onCloseEdit={() => { setEditingCat(null); setDeleteConfirmKey(null); }}
                 setCatCustomizations={setCatCustomizations}
                 isCustom={customCats.some((c) => c.key === cat.key)}
                 onDelete={handleDeleteCustomCat}
+                deleteConfirmKey={deleteConfirmKey}
+                onRequestDelete={setDeleteConfirmKey}
+                onCancelDelete={() => setDeleteConfirmKey(null)}
               />
             ))}
           </div>
 
           {/* By Project / Event — only if any transactions have tags */}
-          {projectGroups.length > 0 && (
-            <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B" }}>By Project / Event</span>
-                <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600 }}>{projectGroups.length} projects</span>
-              </div>
-              <div style={{ padding: "8px 20px 4px", borderBottom: "1px solid #F1F5F9", display: "grid", gridTemplateColumns: "1fr 80px 24px", gap: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8" }}>Tag</div>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8", textAlign: "right" }}>Total</div>
-                <div />
-              </div>
-              {projectGroups.map((proj) => (
-                <ProjectRow
-                  key={proj.tag}
-                  tag={proj.tag}
-                  total={proj.total}
-                  catBreakdown={proj.catBreakdown}
-                  open={expandedProject === proj.tag}
-                  onToggle={() => setExpandedProject(expandedProject === proj.tag ? null : proj.tag)}
-                  formatAmount={fmtDisplay}
-                />
-              ))}
-            </div>
-          )}
-        </>
+      {projectGroups.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B" }}>By Project / Event</span>
+            <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600 }}>{projectGroups.length} projects</span>
+          </div>
+          <div style={{ padding: "8px 20px 4px", borderBottom: "1px solid #F1F5F9", display: "grid", gridTemplateColumns: "1fr 80px 24px", gap: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8" }}>Tag</div>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8", textAlign: "right" }}>Total</div>
+            <div />
+          </div>
+          {projectGroups.map((proj) => (
+            <ProjectRow
+              key={proj.tag}
+              tag={proj.tag}
+              total={proj.total}
+              catBreakdown={proj.catBreakdown}
+              open={expandedProject === proj.tag}
+              onToggle={() => setExpandedProject(expandedProject === proj.tag ? null : proj.tag)}
+              formatAmount={fmtDisplay}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
