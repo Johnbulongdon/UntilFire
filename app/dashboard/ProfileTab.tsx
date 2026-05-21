@@ -463,16 +463,43 @@ export default function ProfileTab({
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", maxWidth: "100%" }}>
           <a
             href={`/fire-type?source=dashboard-profile${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`}
-            style={{ ...btnStyle("primary"), textDecoration: "none", display: "inline-block" }}
+            style={{
+              ...btnStyle("primary"),
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flex: "1 1 260px",
+              minWidth: 0,
+              maxWidth: "100%",
+              boxSizing: "border-box",
+              textAlign: "center",
+              whiteSpace: "normal",
+              overflowWrap: "anywhere",
+            }}
           >
             {fireTypeResult ? `FIRE type: ${fireTypeResult.name} →` : "Find my FIRE type →"}
           </a>
           <button
             onClick={() => onTabChange("fire-calculator")}
-            style={{ padding: "9px 16px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "1px solid #BBF7D0", background: "#F0FDF4", color: "#047857", cursor: "pointer", fontFamily: "inherit" }}
+            style={{
+              padding: "9px 16px",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              border: "1px solid #BBF7D0",
+              background: "#F0FDF4",
+              color: "#047857",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              flex: "1 1 180px",
+              minWidth: 0,
+              maxWidth: "100%",
+              boxSizing: "border-box",
+            }}
           >
             View freedom date →
           </button>

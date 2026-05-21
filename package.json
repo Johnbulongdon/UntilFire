@@ -21,6 +21,7 @@
     "test:revenue-funnel": "node scripts/verify-revenue-funnel-instrumentation.mjs",
     "test:holdings-mobile-layout": "node scripts/verify-holdings-mobile-layout.mjs",
     "test:profile-single-location": "node scripts/verify-profile-single-location-card.mjs",
+    "test:profile-mobile-cta-layout": "node scripts/verify-profile-mobile-cta-layout.mjs",
     "test:categories-management": "node scripts/verify-categories-management.mjs",
     "test:manual-category-icons": "node scripts/verify-manual-category-icons.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build"
