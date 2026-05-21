@@ -364,7 +364,7 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
   const isNonUSD = currency !== "USD";
   const isCustomJurisdiction = stateKey === "custom";
   const forceTakeHome = isNonUSD || isCustomJurisdiction;
-  const [mode, setMode] = useState<IncomeMode>(forceTakeHome ? "takehome" : "annual");
+  const [mode, setMode] = useState<IncomeMode>(forceTakeHome ? "takehome" : "monthly");
   const [rawValue, setRawValue] = useState<string>("");
   const [takeHomeRaw, setTakeHomeRaw] = useState<string>("");
   const currencySymbol = getCurrencySymbol(currency);
@@ -519,55 +519,114 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   const fxRate = FALLBACK_RATES[currency] ?? 1;
   const sliderMax = isNonUSD ? Math.round(10000 * fxRate) : 10000;
   const sliderStep = isNonUSD ? Math.max(1, Math.round(100 * fxRate)) : 100;
+  const [inputMode, setInputMode] = useState<"savings" | "spending">("savings");
   const [savings, setSavings] = useState(isNonUSD ? Math.round(1500 * fxRate) : 1500);
+  const [spending, setSpending] = useState(isNonUSD ? Math.round(3000 * fxRate) : 3000);
   const monthly = income / 12;
   const monthlyLocal = isNonUSD ? monthly * fxRate : monthly;
-  const rate = monthlyLocal > 0 ? Math.round((savings / monthlyLocal) * 100) : 0;
+
+  const derivedSavings = inputMode === "savings"
+    ? savings
+    : Math.max(0, Math.round(monthlyLocal - spending));
+  const rate = monthlyLocal > 0 ? Math.round((derivedSavings / monthlyLocal) * 100) : 0;
 
   const rateColor = rate < 15 ? "var(--danger)" : rate < 30 ? "var(--accent)" : "var(--teal)";
   const rateLabel = rate < 10 ? "Very low" : rate < 20 ? "Below average" : rate < 30 ? "Average"
     : rate < 40 ? "Good" : rate < 50 ? "Strong" : "FIRE pace!";
+
+  const spendSliderMax = isNonUSD ? Math.round(15000 * fxRate) : 15000;
 
   return (
     <div className="uf-screen">
       <WizardProgress step={3} />
       <p className="uf-step-label">Step 4 of 5</p>
       <div className="uf-eyebrow">Finances</div>
-      <h2 className="uf-h2">How much are you <span className="uf-accent">saving?</span></h2>
-      <p className="uf-body" style={{ marginBottom: 32 }}>
-        Don&apos;t worry about being exact -we&apos;ll help you track real numbers after setup.
+      <h2 className="uf-h2">How much are you <span className="uf-accent">{inputMode === "savings" ? "saving?" : "spending?"}</span></h2>
+      <p className="uf-body" style={{ marginBottom: 20 }}>
+        Don&apos;t worry about being exact — we&apos;ll help you track real numbers after setup.
       </p>
 
-      <label className="uf-label">Monthly savings amount ({currency})</label>
-      <div className="uf-big-input-wrap">
-        <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
-        <input
-          type="number"
-          className="uf-input uf-input-mono uf-input-big"
-          style={{ paddingLeft: 28 }}
-          value={savings || ""}
-          min={0}
-          onChange={e => setSavings(Math.max(0, parseInt(e.target.value) || 0))}
-          autoFocus
-        />
-        <span className="uf-unit">/month</span>
+      <div style={{ display: "flex", gap: 6, marginBottom: 20, background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: 4 }}>
+        {(["savings", "spending"] as const).map(m => (
+          <button
+            key={m}
+            onClick={() => setInputMode(m)}
+            style={{
+              flex: 1, padding: "7px 0", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
+              background: inputMode === m ? "#22D3A5" : "transparent",
+              color: inputMode === m ? "#003527" : "rgba(255,255,255,0.55)",
+              transition: "background 0.15s, color 0.15s",
+            }}
+          >
+            {m === "savings" ? "I know my savings" : "I know my spending"}
+          </button>
+        ))}
       </div>
 
-      <div className="uf-slider-wrap">
-        <input
-          type="range" min={0} max={sliderMax} step={sliderStep}
-          value={Math.min(savings, sliderMax)}
-          className="uf-range"
-          onChange={e => setSavings(parseInt(e.target.value))}
-        />
-        <div className="uf-range-labels">
-          <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(sliderMax / 2).toLocaleString()}</span><span>{currencySymbol}{sliderMax.toLocaleString()}/mo</span>
-        </div>
-      </div>
+      {inputMode === "savings" ? (
+        <>
+          <label className="uf-label">Monthly savings amount ({currency})</label>
+          <div className="uf-big-input-wrap">
+            <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
+            <input
+              type="number"
+              className="uf-input uf-input-mono uf-input-big"
+              style={{ paddingLeft: 28 }}
+              value={savings || ""}
+              min={0}
+              onChange={e => setSavings(Math.max(0, parseInt(e.target.value) || 0))}
+              autoFocus
+            />
+            <span className="uf-unit">/month</span>
+          </div>
+          <div className="uf-slider-wrap">
+            <input
+              type="range" min={0} max={sliderMax} step={sliderStep}
+              value={Math.min(savings, sliderMax)}
+              className="uf-range"
+              onChange={e => setSavings(parseInt(e.target.value))}
+            />
+            <div className="uf-range-labels">
+              <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(sliderMax / 2).toLocaleString()}</span><span>{currencySymbol}{sliderMax.toLocaleString()}/mo</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <label className="uf-label">Monthly spending amount ({currency})</label>
+          <div className="uf-big-input-wrap">
+            <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
+            <input
+              type="number"
+              className="uf-input uf-input-mono uf-input-big"
+              style={{ paddingLeft: 28 }}
+              value={spending || ""}
+              min={0}
+              onChange={e => setSpending(Math.max(0, parseInt(e.target.value) || 0))}
+              autoFocus
+            />
+            <span className="uf-unit">/month</span>
+          </div>
+          <div className="uf-slider-wrap">
+            <input
+              type="range" min={0} max={spendSliderMax} step={sliderStep}
+              value={Math.min(spending, spendSliderMax)}
+              className="uf-range"
+              onChange={e => setSpending(parseInt(e.target.value))}
+            />
+            <div className="uf-range-labels">
+              <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(spendSliderMax / 2).toLocaleString()}</span><span>{currencySymbol}{spendSliderMax.toLocaleString()}/mo</span>
+            </div>
+          </div>
+          <p className="uf-hint" style={{ marginTop: 8 }}>
+            Savings = take-home − spending = {currencySymbol}{derivedSavings.toLocaleString()}/mo
+          </p>
+        </>
+      )}
 
       <div className="uf-stat-row">
         <div className="uf-stat-box">
-          <div className="uf-stat-val uf-accent">{currencySymbol}{Math.round(savings).toLocaleString()}/mo</div>
+          <div className="uf-stat-val uf-accent">{currencySymbol}{Math.round(derivedSavings).toLocaleString()}/mo</div>
           <div className="uf-stat-lab">Monthly savings</div>
         </div>
         <div className="uf-stat-box">
@@ -589,7 +648,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
         </div>
       </div>
 
-      {savings === 0 && (
+      {derivedSavings === 0 && (
         <div style={{ marginTop: 16, padding: "10px 14px", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, fontSize: 13, color: "#92400E", display: "flex", gap: 8, alignItems: "flex-start" }}>
           <span>⚠️</span>
           <span>With <strong>$0 saved per month</strong> your FIRE date will be very far out. Make sure this is intentional — you can always update it in your dashboard.</span>
@@ -597,7 +656,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
       )}
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(isNonUSD ? Math.round(savings / fxRate) : savings)}>
+        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(isNonUSD ? Math.round(derivedSavings / fxRate) : derivedSavings)}>
           Continue →
         </button>
       </div>
@@ -2122,6 +2181,10 @@ export default function Home() {
           <CityScreen
             onNext={c => { setCityState(c); setScreen("currency"); }}
             onBack={() => setScreen("hero")}
+            onSkip={() => {
+              setCityState({ name: "United States (avg)", col: 52000, stateKey: "custom", isCustom: true });
+              setScreen("currency");
+            }}
           />
         )}
         {screen === "currency" && (
