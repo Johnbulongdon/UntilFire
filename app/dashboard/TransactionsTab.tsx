@@ -27,7 +27,7 @@ type CustomCategory = { key: string; label: string; code: string; color: string;
 const ALL_CATEGORIES = ALL_CATEGORIES_BASE;
 const FALLBACK_RATES = LIB_FALLBACK_RATES;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────────────────────────
 const fmt = (n: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
 
@@ -47,7 +47,7 @@ function dayLabel(ymd: string, todayYmd: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────────────────
 type Transaction = {
   id: string;
   date: string;
@@ -86,7 +86,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   aiSuggestion: null,
 });
 
-// ─── AI Categorization ────────────────────────────────────────────────────────
+// ─── AI Categorization ────────────────────────────────────────────────────────────────────────────
 async function aiCategorize(
   description: string,
   type: "expense" | "income"
@@ -104,7 +104,7 @@ async function aiCategorize(
   }
 }
 
-// ─── ProjectInput ─────────────────────────────────────────────────────────────
+// ─── ProjectInput ─────────────────────────────────────────────────────────────────────────────
 function ProjectInput({
   existingTags,
   currentTags,
@@ -181,7 +181,7 @@ function ProjectInput({
   );
 }
 
-// ─── QuickAddForm ─────────────────────────────────────────────────────────────
+// ─── QuickAddForm ─────────────────────────────────────────────────────────────────────────────
 function QuickAddForm({
   draft,
   setDraft,
@@ -397,7 +397,7 @@ function QuickAddForm({
               fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start",
             }}
           >
-            <span style={{ color: "#20D4BF" }}>✦</span>
+            <span style={{ color: "#20D4BF" }}>✶</span>
             Looks like {aiSuggestedCat?.label} — use it?
           </button>
         )}
@@ -710,7 +710,7 @@ function QuickAddForm({
   );
 }
 
-// ─── Transaction List ─────────────────────────────────────────────────────────
+// ─── Transaction List ─────────────────────────────────────────────────────────────────────────────
 function TransactionList({
   transactions,
   editingId,
@@ -900,7 +900,7 @@ function TransactionList({
   );
 }
 
-// ─── Monthly Summary ──────────────────────────────────────────────────────────
+// ─── Monthly Summary ─────────────────────────────────────────────────────────────────────────────
 function MonthlySummary({
   transactions,
   viewMonth,
@@ -1050,7 +1050,7 @@ function MonthlySummary({
   );
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+// ─── Toast ───────────────────────────────────────────────────────────────────────────────────
 function Toast({
   toast,
   onUndo,
@@ -1083,15 +1083,17 @@ function Toast({
   );
 }
 
-// ─── Mobile components ────────────────────────────────────────────────────────
+// ─── Mobile components ────────────────────────────────────────────────────────────────────────────
 function MobileBar({ onOpen }: { onOpen: () => void }) {
   return (
     <div style={{ display: "none" }} className="cf-mobile-bar">
-      <button onClick={onOpen} style={{ flex: 1, color: "#94A3B8", fontSize: 14, border: "none", background: "transparent", textAlign: "left", padding: "6px 4px", cursor: "pointer", fontFamily: "inherit" }}>
-        + Add a transaction…
-      </button>
-      <button onClick={onOpen} style={{ width: 40, height: 40, background: "#047857", color: "#fff", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", flexShrink: 0 }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+      <button
+        onClick={onOpen}
+        aria-label="Add transaction"
+        style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: 999, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+        Add transaction
       </button>
     </div>
   );
@@ -1119,7 +1121,7 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
   );
 }
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
+// ─── Root ───────────────────────────────────────────────────────────────────────────────────
 export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [] }: {
   defaultCurrency?: string;
   displayCurrency?: string;
@@ -1403,7 +1405,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         @media (max-width: 1024px) {
           .cf-split { grid-template-columns: 1fr !important; }
           .cf-form-col { display: none; }
-          .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 10px 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); align-items: center; gap: 10px; z-index: 30; }
+          .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: transparent; border-radius: 999px; padding: 0; align-items: center; z-index: 30; }
         }
       `}</style>
 
