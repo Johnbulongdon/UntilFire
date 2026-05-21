@@ -18,9 +18,11 @@ function fmtUSD(n: number) {
 export default function CityScreen({
   onNext,
   onBack,
+  onSkip,
 }: {
   onNext: (c: CityState) => void;
   onBack: () => void;
+  onSkip?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -229,6 +231,15 @@ export default function CityScreen({
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>
           Back
         </button>
+        {onSkip && (
+          <button
+            className="uf-btn uf-btn-ghost"
+            style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}
+            onClick={onSkip}
+          >
+            Skip
+          </button>
+        )}
         <button
           className="uf-btn uf-btn-primary"
           style={{ flex: 1 }}
