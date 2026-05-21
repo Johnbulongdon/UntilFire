@@ -17,6 +17,7 @@
     "test:income-default": "node scripts/verify-income-default.mjs",
     "test:savings-period-input": "node scripts/verify-savings-period-input.mjs",
     "test:achieved-fire-reveal": "node scripts/verify-achieved-fire-reveal.mjs",
+    "test:fire-type-cta": "node scripts/verify-fire-type-cta-starts-onboarding.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {

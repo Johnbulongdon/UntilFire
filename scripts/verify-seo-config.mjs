@@ -24,7 +24,7 @@ const filesToCheck = [
   'app/learn/stages/[stage]/page.tsx',
   'app/fire-number/page.tsx',
   'app/fire-number/[slug]/page.tsx',
-  'app/fire-number/[city]/page.tsx',
+  'app/fire-number/CityCalcWidget.tsx',
   'lib/city-pages.ts',
 ];
 

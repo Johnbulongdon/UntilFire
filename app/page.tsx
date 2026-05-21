@@ -1477,16 +1477,18 @@ export default function Home() {
   const [landingSource, setLandingSourceState] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const sourceFromUrl = normaliseAcquisitionSource(
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("source")
-        : null,
-    );
+    const urlParams = typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
+    const sourceFromUrl = normaliseAcquisitionSource(urlParams?.get("source") ?? null);
     const nextSource = sourceFromUrl ?? getAcquisitionSource();
     if (sourceFromUrl) {
       setAcquisitionSource(sourceFromUrl);
     }
     setLandingSourceState(nextSource);
+    if (urlParams?.get("start") === "onboarding") {
+      setScreen("city");
+    }
   }, []);
 
   // Auth redirect -keep existing behaviour

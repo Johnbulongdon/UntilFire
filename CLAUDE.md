@@ -1,146 +1,180 @@
-# UntilFire — Claude Code Context
+# UntilFire Agent Context
 
-# CLAUDE.md
+This file is the always-loaded working context for Claude Code and other AI agents editing UntilFire. Keep it short, current, and actionable.
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+## Instruction Priority
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+1. User's latest request in chat.
+2. Repository rules in `AGENTS.md` and this `CLAUDE.md`.
+3. Task-specific docs the user points to.
+4. Existing code patterns in the repo.
+5. General framework knowledge.
 
-## 1. Think Before Coding
+If instructions conflict, stop and call out the conflict instead of guessing.
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+## Core Working Rules
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+- Use latest pushed `origin/main` as the baseline unless the user explicitly says otherwise.
+- Before changing files: fetch `origin/main`, compare local state, and preserve any local unpushed work.
+- Make surgical changes only. Every changed line should trace back to the user's request.
+- Do not refactor, reformat, rename, or clean up adjacent code unless asked.
+- Match existing style and patterns, even if you would design it differently.
+- Never commit secrets, `.env` files, API keys, tokens, or credentials.
+- For visual/UI work, verify against the live product or screenshots when possible and call out any drift from `origin/main`.
 
-## 2. Simplicity First
+## AI Agent Operating Style
 
-**Minimum code that solves the problem. Nothing speculative.**
+These guidelines come from Andrej Karpathy-style agent discipline: be careful, explicit, and simple.
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+### Think Before Coding
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+- State assumptions before implementing when they matter.
+- If multiple interpretations exist, present the options instead of silently choosing.
+- If the request is unclear enough to change the implementation, ask before editing.
+- If a simpler approach exists, say so and prefer it.
 
-## 3. Surgical Changes
+### Simplicity First
 
-**Touch only what you must. Clean up only your own mess.**
+- Build the minimum code that solves the requested problem.
+- Do not add speculative features, abstractions, configurability, or defensive code for impossible cases.
+- If a solution is getting large, pause and simplify before continuing.
 
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
+### Goal-Driven Execution
 
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
+For non-trivial tasks, use this loop:
 
-The test: Every changed line should trace directly to the user's request.
+1. Define the success criteria.
+2. Inspect the relevant existing files and patterns.
+3. Make the smallest safe change.
+4. Run the narrowest useful verification.
+5. Summarize what changed, what was verified, and any remaining risk.
 
-## 4. Goal-Driven Execution
+For bug fixes, prefer a repro/test first when practical. For refactors, verify before and after.
 
-**Define success criteria. Loop until verified.**
+## Skill / Workflow Usage
 
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
+If your agent environment supports skills, slash commands, or reusable workflows:
 
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
+- Load relevant skills before acting, especially for debugging, TDD, code review, UI work, git workflow, and browser QA.
+- Use gstack slash commands when they fit the task:
+  - `/office-hours` — product interrogation before building.
+  - `/plan-eng-review` — engineering review of a plan.
+  - `/review` — staff engineer code review.
+  - `/investigate` — deep codebase investigation.
+  - `/ship` — PR creation workflow.
+  - `/qa` — browser-based QA, if Playwright/browser tooling is available.
+- After any `/office-hours`, `/plan-ceo-review`, or `/design-shotgun` session that creates a design doc, copy it into `docs/design/` and commit it on the current branch.
+- gstack project source: `~/.gstack/projects/Johnbulongdon-UntilFire/`.
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+## Product Context
 
----
+UntilFire is a personal FIRE adviser web app: it shows when work can become optional, then gives clear monthly moves to bring that freedom date closer.
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+- Live site: https://untilfire.com
+- GitHub: `github.com/Johnbulongdon/UntilFire` private repo
+- Primary positioning: **Find your freedom date.**
+- North star: turn financial independence from an abstract calculator result into a clear, emotional, actionable path.
+- Free first value moment: full no-login calculator.
+- Pro direction: personal FIRE adviser, monthly action plan, budget tracking, and continuity after the aha moment.
 
-## What is this project?
+Important framing:
 
-UntilFire is a personal FIRE adviser web app. Free calculator (no login).
-Live at untilfire.com. See `docs/CONTEXT.md` for full product context.
+- Lead with work optionality, freedom date, and monthly moves — not generic “calculator” language.
+- Keep the first session calm and trustworthy.
+- Do not hide the aha moment behind login, payment, surveys, feedback prompts, bank prompts, or heavy setup.
+- Treat dashboard/Pro as continuation after value, not the first thing users must do.
+
+## Current Product Focus
+
+See `docs/ROADMAP.md` for the source of truth. As of the current roadmap, focus is Product Hunt readiness:
+
+- Mobile QA for the no-login calculator flow.
+- End-to-end no-login flow: homepage → calculator → result → adjust inputs → share/save path.
+- Shareable insights that do not expose sensitive finances.
+- Save/email capture only after the reveal.
+- Product Hunt copy/assets around freedom date and work optionality.
+
+Do not rebuild completed features just because old docs say they are pending. Check the code and `docs/ROADMAP.md` first.
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
-- **Auth + DB**: Supabase (Google OAuth)
-- **Styling**: Tailwind CSS v4
-- **Charts**: Recharts
-- **Hosting**: Vercel
+- Framework: Next.js 15 App Router
+- React: 19
+- Language: TypeScript
+- Auth/database: Supabase
+- Styling: Tailwind CSS v4
+- Charts: Recharts
+- Payments: Stripe
+- Bank connection: Plaid
+- Email: Resend
+- Analytics: Vercel Analytics, PostHog
+- Hosting: Vercel
 
-## Key Files
-
-| File | Purpose |
-|---|---|
-| `app/page.tsx` | Landing page + full 5-screen calculator wizard |
-| `lib/fire-data.ts` | 263 cities, tax logic, `calcFIRE()` |
-| `app/dashboard/page.tsx` | Logged-in dashboard (expense tracking, charts) |
-| `app/api/waitlist/route.ts` | Waitlist email signup endpoint |
-
-## Current Phase
-
-Phase 2 — Distribution & Monetisation (April–June 2026).
-See `docs/ROADMAP.md` for full task list.
-
-## gstack
-
-gstack is installed globally at `~/.claude/skills/gstack` and available as slash commands.
-Use these for structured development workflows:
-
-- `/office-hours` — product interrogation before building
-- `/plan-eng-review` — engineering review of a plan
-- `/review` — staff engineer code review
-- `/investigate` — deep codebase investigation
-- `/ship` — PR creation workflow
-- `/qa` — browser-based QA (requires Playwright, may not work in restricted envs)
-
-## Dev Commands
+## Common Commands
 
 ```bash
-npm run dev      # start dev server on localhost:3000
-npm run build    # production build
-npm run lint     # run ESLint
+npm run dev                         # start local dev server
+npm run build                       # production build
+npm run lint                        # ESLint
+npm run typecheck                   # next build + tsc --noEmit
+npm run validate                    # typecheck + lint + build
+npm run test:calm-startup
+npm run test:currency-selection
+npm run test:cashflow-mobile-save
+npm run test:expense-guidance
+npm run test:city-coverage
+npm run test:income-default
+npm run test:savings-period-input
+npm run test:achieved-fire-reveal
 ```
 
-## Onboarding UX SOP
+Use the narrowest verification that matches the change. For broad or risky changes, run `npm run validate`.
 
-- Keep first-session onboarding calm: no surprise surveys, star ratings, feedback boxes, paywalls, or bank prompts before the user gets value.
-- The only required calculator inputs should be income, expenses or savings, and current savings / net worth.
-- Retirement location must be skippable; if skipped, infer the FIRE target from the user’s spending/expenses instead of blocking progress.
-- Income entry must support gross annual as well as monthly take-home.
+## Key Files and Directories
+
+- `app/page.tsx` — main landing page and no-login calculator flow.
+- `app/dashboard/page.tsx` — logged-in dashboard shell and FIRE overview.
+- `app/api/*` — server routes for waitlist, Stripe, Plaid, AI categorisation, etc.
+- `lib/fire-data.ts` — city data, tax assumptions, FIRE calculation helpers.
+- `components/` — reusable UI and product components.
+- `docs/CONTEXT.md` — broader product and strategy context.
+- `docs/ROADMAP.md` — current product phase and task list.
+- `docs/design/` — design docs synced from gstack sessions.
+- `AGENTS.md` — repository-wide agent workflow and publishing rules.
+
+## Onboarding and First-Session UX Rules
+
+- No surprise surveys, ratings, feedback boxes, paywalls, or bank prompts before value.
+- Required calculator inputs should be limited to income, expenses or savings, and current savings/net worth.
+- Retirement location must be skippable; if skipped, infer target from spending/expenses rather than blocking progress.
+- Income entry must support gross annual income and monthly take-home alternatives.
 - Savings entry must support either monthly savings or monthly spending.
-- Age should be strongly encouraged for a more personal freedom date, but never required.
+- Age may be encouraged for a better freedom date, but must not be required.
+- Feedback should be user-initiated after value, not pushed early.
+- FIRE/personality test belongs in Profile or as a secondary flow, not as first-run friction.
 
-
-## gstack Design Doc Sync
-
-After any `/office-hours`, `/plan-ceo-review`, or `/design-shotgun` session that produces
-a design doc, always copy it into `docs/design/` and commit it to the current branch.
-
-The source is `~/.gstack/projects/Johnbulongdon-UntilFire/`.
-Use a short kebab-case filename that reflects the doc's topic (e.g. `distribution-demand-discovery.md`).
-If a doc for the same topic already exists in `docs/design/`, overwrite it (it's a living document).
-
-```bash
-# Example sync command
-cp ~/.gstack/projects/Johnbulongdon-UntilFire/<filename>.md docs/design/<topic>.md
-git add docs/design/ && git commit -m "docs: sync gstack design doc — <topic>"
-```
-
-## Design Tokens
+## Design System Notes
 
 - Background: `#08080e`
 - Accent orange: `#f97316`
 - Accent teal: `#22d3a5`
 - Fonts: Syne, DM Sans, DM Mono
+- Default tone: calm, confident, trustworthy, emotionally outcome-led.
+- Mobile-first matters for beta and launch traffic.
+
+## Documentation Rules
+
+- Keep repo docs code-adjacent and current.
+- Keep broader strategy/knowledge in the Obsidian vault, not duplicated in the repo.
+- If code behavior and docs disagree, inspect the code and update stale docs as part of the task only when in scope.
+- Design docs from gstack sessions go in `docs/design/` with short kebab-case filenames.
+
+## Before Finishing Any Task
+
+Report concisely:
+
+- What changed.
+- What verification ran.
+- Any issues, risks, or follow-up needed.
+
+Do not claim a task is complete unless you inspected the diff and ran the relevant verification or explicitly explain why verification was not run.

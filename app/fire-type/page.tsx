@@ -261,7 +261,7 @@ function FireTypeQuizInner() {
   if (!result) return null
 
   const code = result.code
-  const ctaHref = `/?source=fire-type-result&type=${code}`
+  const ctaHref = `/?source=fire-type-result&type=${code}&start=onboarding`
   // Derive 4 axis letters from the code for composable copy
   const letters = code.split('') as AxisLetter[]
 
