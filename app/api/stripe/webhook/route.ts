@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       await trackCheckoutSucceededServer({
         distinctId: userId,
         plan: "pro",
+        priceMonthly: 4.99,
         priceId,
         stripeSessionId: session.id,
         mode: session.mode ?? "subscription",

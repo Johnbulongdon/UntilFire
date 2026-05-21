@@ -14,6 +14,7 @@ event in PostHog. **This doc and that file must stay in sync.**
 ```
 funnel_landing_viewed
   → [primary] funnel_calculator_step_viewed (step_id=city)
+           → funnel_calculator_step_viewed (step_id=currency)
            → funnel_calculator_step_viewed (step_id=income)
            → funnel_calculator_step_viewed (step_id=savings)
            → funnel_calculator_step_viewed (step_id=portfolio)
@@ -21,8 +22,8 @@ funnel_landing_viewed
            → funnel_signup_started
            → funnel_signup_completed
            → funnel_dashboard_first_view
-           → funnel_paywall_viewed     (helper exposed; emit site lands with paywall UI)
-           → funnel_checkout_started   (helper exposed; emit site lands with paywall UI)
+           → funnel_paywall_viewed     (dashboard upgrade modal opens)
+           → funnel_checkout_started   (Stripe checkout URL returned)
            → funnel_checkout_succeeded (server, Stripe webhook)
 
   → [quiz branch] funnel_fire_type_started  (on first answer)
@@ -43,6 +44,8 @@ funnel_landing_viewed
   authenticated person.
 - `funnel_event_version` is attached to every event so we can evolve the
   contract without breaking historical queries.
+- Revenue funnel events include plan and current monthly price, but never raw
+  payment details.
 - `landing_source` is a coarse route/source label such as `learn-hub`,
   `calculator-savings-rate`, or `fire-number-austin-tx`. It is used for
   acquisition attribution, not personal identification.
@@ -59,10 +62,10 @@ funnel_landing_viewed
 ### `funnel_calculator_step_viewed`
 
 - **Where**: `app/page.tsx`, `Home` screen effect when the wizard transitions
-  to one of the four steps.
+  to one of the five steps.
 - **Properties**:
-  - `step_id` - `city` | `income` | `savings` | `portfolio`.
-  - `step_index` - `1..4`. Mirrors `step_id` for funnel ordering in PostHog.
+  - `step_id` - `city` | `currency` | `income` | `savings` | `portfolio`.
+  - `step_index` - `1..5`. Mirrors `step_id` for funnel ordering in PostHog.
   - `landing_source` - optional route/source label.
 
 ### `funnel_calculator_revealed`
@@ -107,19 +110,24 @@ funnel_landing_viewed
 
 ### `funnel_paywall_viewed`
 
-- **Status**: helper exposed (`trackPaywallViewed(surface)`), no emit site
-  yet. The paywall UI lands in a separate issue; that change is required to
-  call this helper.
+- **Where**: `app/dashboard/UpgradeModal.tsx`, fired when the modal opens.
 - **Properties**:
-  - `surface` - short label for where the paywall rendered (e.g.
-    `dashboard_upgrade_card`).
+  - `plan` - `pro`.
+  - `price_monthly` - `4.99`.
+  - `price_id` - optional Stripe price id when available.
+  - `source` - short label for where the paywall rendered (e.g. `profile`,
+    `plaid_limit`, `dashboard_upgrade_modal`).
 
 ### `funnel_checkout_started`
 
-- **Status**: helper exposed (`trackCheckoutStarted(surface)`), no emit site
-  yet. Wire this to whatever button POSTs to `/api/stripe/checkout`.
+- **Where**: `app/dashboard/UpgradeModal.tsx`, after `POST /api/stripe/checkout`
+  returns a Stripe Checkout URL and before browser redirect.
 - **Properties**:
-  - `surface` - short label for the click origin.
+  - `plan` - `pro`.
+  - `price_monthly` - `4.99`.
+  - `price_id` - Stripe price id returned by `/api/stripe/checkout`.
+  - `source` - short label for the click origin (e.g. `profile`,
+    `plaid_limit`, `dashboard_upgrade_modal`).
 
 ### `funnel_checkout_succeeded`
 
@@ -132,6 +140,7 @@ funnel_landing_viewed
   client identify call.
 - **Properties**:
   - `plan` - `pro`.
+  - `price_monthly` - `4.99`.
   - `price_id` - Stripe price id from the subscription (optional if Stripe
     omits it).
   - `stripe_session_id` - the Stripe Checkout Session id.

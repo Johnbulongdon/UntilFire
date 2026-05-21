@@ -18,6 +18,9 @@
     "test:savings-period-input": "node scripts/verify-savings-period-input.mjs",
     "test:achieved-fire-reveal": "node scripts/verify-achieved-fire-reveal.mjs",
     "test:fire-type-cta": "node scripts/verify-fire-type-cta-starts-onboarding.mjs",
+    "test:revenue-funnel": "node scripts/verify-revenue-funnel-instrumentation.mjs",
+    "test:holdings-mobile-layout": "node scripts/verify-holdings-mobile-layout.mjs",
+    "test:profile-single-location": "node scripts/verify-profile-single-location-card.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {

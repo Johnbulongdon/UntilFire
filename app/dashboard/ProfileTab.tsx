@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { CITIES } from "@/lib/fire-data";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
@@ -60,35 +60,29 @@ export default function ProfileTab({
   onLifestyleChange,
 }: Props) {
   const [displayName, setDisplayName] = useState("");
-  const [citySearch, setCitySearch] = useState("");
-  const [selectedCity, setSelectedCity] = useState<{ name: string; key: string } | null>(null);
-  const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [retirementCitySearch, setRetirementCitySearch] = useState(retirementCityName);
   const [showRetirementCityDropdown, setShowRetirementCityDropdown] = useState(false);
   const [fireProfileSaved, setFireProfileSaved] = useState(false);
   const [fireTypeResult, setFireTypeResult] = useState<{ code: string; name: string } | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState(initialDefaultCurrency || "USD");
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
-  const [saving, setSaving] = useState<Record<"name" | "city" | "currency", boolean>>({
+  const [saving, setSaving] = useState<Record<"name" | "currency", boolean>>({
     name: false,
-    city: false,
     currency: false,
   });
-  const [saved, setSaved] = useState<Record<"name" | "city" | "currency", boolean>>({
+  const [saved, setSaved] = useState<Record<"name" | "currency", boolean>>({
     name: false,
-    city: false,
     currency: false,
   });
   const [plaidItems, setPlaidItems] = useState<PlaidItem[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const cityDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
       const [profileRes, userRes] = await Promise.all([
-        supabase.from("profiles").select("display_name, jurisdiction, default_currency, preferred_currencies").eq("user_id", userId).single(),
+        supabase.from("profiles").select("display_name, default_currency, preferred_currencies").eq("user_id", userId).single(),
         supabase.auth.getUser(),
       ]);
 
@@ -99,14 +93,6 @@ export default function ProfileTab({
         setDisplayName(p.display_name);
       } else if (user?.user_metadata?.full_name) {
         setDisplayName(user.user_metadata.full_name as string);
-      }
-
-      if (p?.jurisdiction) {
-        const city = CITIES.find((c) => c.key === p.jurisdiction);
-        if (city) {
-          setSelectedCity({ name: city.name, key: city.key });
-          setCitySearch(city.name);
-        }
       }
 
       if (p?.default_currency) {
@@ -147,26 +133,12 @@ export default function ProfileTab({
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
-        setShowCityDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  const citySearchTrimmed = citySearch.trim();
-  const filteredCities = citySearchTrimmed.length >= 2
-    ? CITIES.filter((c) => c.name.toLowerCase().includes(citySearchTrimmed.toLowerCase())).slice(0, 8)
+  const retirementCitySearchTrimmed = retirementCitySearch.trim();
+  const filteredRetirementCities = retirementCitySearchTrimmed.length >= 2
+    ? CITIES.filter((c) => c.name.toLowerCase().includes(retirementCitySearchTrimmed.toLowerCase())).slice(0, 8)
     : [];
-  const canUseTypedCity = citySearchTrimmed.length >= 2
-    && !filteredCities.some((c) => c.name.toLowerCase() === citySearchTrimmed.toLowerCase());
-
-  const filteredRetirementCities = retirementCitySearch.length >= 2
-    ? CITIES.filter((c) => c.name.toLowerCase().includes(retirementCitySearch.toLowerCase())).slice(0, 8)
-    : [];
+  const canUseTypedRetirementCity = retirementCitySearchTrimmed.length >= 2
+    && !filteredRetirementCities.some((c) => c.name.toLowerCase() === retirementCitySearchTrimmed.toLowerCase());
 
   const lifestyleTiers = [
     { label: "Frugal", multiplier: 0.7, icon: "🌱" },
@@ -196,7 +168,7 @@ export default function ProfileTab({
     markFireProfileSaved();
   }
 
-  function flash(key: "name" | "city" | "currency") {
+  function flash(key: "name" | "currency") {
     setSaved((prev) => ({ ...prev, [key]: true }));
     setTimeout(() => setSaved((prev) => ({ ...prev, [key]: false })), 2000);
   }
@@ -215,32 +187,6 @@ export default function ProfileTab({
     flash("name");
   }
 
-  async function saveCity() {
-    if (!selectedCity) return;
-    setSaving((s) => ({ ...s, city: true }));
-
-    await supabase.from("profiles").upsert(
-      { user_id: userId, jurisdiction: selectedCity.key, updated_at: new Date().toISOString() },
-      { onConflict: "user_id" }
-    );
-
-    // Keep user_budget _fire_profile.cityName in sync. New users may not have a
-    // user_budget row yet, so upsert instead of update-only.
-    const { data: ub } = await supabase.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle();
-    const expenses = ub?.expenses as Record<string, unknown> || {};
-    const fp = (expenses._fire_profile as Record<string, unknown>) || {};
-    await supabase.from("user_budget").upsert(
-      {
-        user_id: userId,
-        expenses: { ...expenses, _fire_profile: { ...fp, cityName: selectedCity.name } },
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    );
-
-    setSaving((s) => ({ ...s, city: false }));
-    flash("city");
-  }
 
   async function saveCurrency() {
     setSaving((s) => ({ ...s, currency: true }));
@@ -356,83 +302,6 @@ export default function ProfileTab({
         </p>
       </div>
 
-      {/* Location */}
-      <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Location</h3>
-        <label style={labelStyle}>City</label>
-        <div ref={cityDropdownRef} style={{ position: "relative", marginBottom: 10 }}>
-          <input
-            style={inputStyle}
-            value={citySearch}
-            onChange={(e) => {
-              setCitySearch(e.target.value);
-              setSelectedCity(null);
-              setShowCityDropdown(true);
-            }}
-            onFocus={() => setShowCityDropdown(true)}
-            placeholder={`Search ${CITIES.length} cities, or type yours…`}
-          />
-          {showCityDropdown && citySearchTrimmed.length >= 2 && (filteredCities.length > 0 || canUseTypedCity) && (
-            <div style={{
-              position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
-              background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto",
-              marginTop: 4,
-            }}>
-              {filteredCities.map((c) => (
-                <div
-                  key={c.key}
-                  onMouseDown={() => {
-                    setSelectedCity({ name: c.name, key: c.key });
-                    setCitySearch(c.name);
-                    setShowCityDropdown(false);
-                  }}
-                  style={{
-                    padding: "10px 14px", cursor: "pointer", fontSize: 14,
-                    borderBottom: "1px solid #f1f5f9",
-                    background: selectedCity?.key === c.key ? "#f0fdf4" : undefined,
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = selectedCity?.key === c.key ? "#f0fdf4" : "")}
-                >
-                  {c.flag} {c.name}
-                </div>
-              ))}
-              {canUseTypedCity && (
-                <div
-                  onMouseDown={() => {
-                    setSelectedCity({ name: citySearchTrimmed, key: "custom" });
-                    setCitySearch(citySearchTrimmed);
-                    setShowCityDropdown(false);
-                  }}
-                  style={{
-                    padding: "10px 14px", cursor: "pointer", fontSize: 14,
-                    color: "#047857", fontWeight: 700,
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-                >
-                  📍 Use “{citySearchTrimmed}”
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 500, marginTop: 2 }}>
-                    We’ll save the city name even if it is not in our estimate list yet.
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <button
-          style={btnStyle(!selectedCity || saving.city ? "disabled" : "primary")}
-          onClick={saveCity}
-          disabled={!selectedCity || saving.city}
-        >
-          {saving.city ? "Saving…" : saved.city ? "Saved ✓" : "Save city"}
-        </button>
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8, marginBottom: 0 }}>
-          Used to set your cost-of-living baseline in FIRE calculations.
-        </p>
-      </div>
-
       {/* Preferences */}
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Preferences</h3>
@@ -527,7 +396,7 @@ export default function ProfileTab({
             onFocus={() => setShowRetirementCityDropdown(true)}
             placeholder="Where should freedom be priced?"
           />
-          {showRetirementCityDropdown && filteredRetirementCities.length > 0 && (
+          {showRetirementCityDropdown && retirementCitySearchTrimmed.length >= 2 && (filteredRetirementCities.length > 0 || canUseTypedRetirementCity) && (
             <div style={{
               position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
               background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
@@ -545,6 +414,19 @@ export default function ProfileTab({
                   {c.flag} {c.name}
                 </div>
               ))}
+              {canUseTypedRetirementCity && (
+                <div
+                  onMouseDown={() => updateRetirementCity(retirementCitySearchTrimmed, 0)}
+                  style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, color: "#047857", fontWeight: 700 }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                >
+                  📍 Use “{retirementCitySearchTrimmed}”
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 500, marginTop: 2 }}>
+                    We’ll save the city name even if it is not in our estimate list yet.
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -612,7 +494,7 @@ export default function ProfileTab({
             </span>
             <span style={{ fontSize: 13, color: "#6b7280" }}>
               {subscription?.plan === "pro"
-                ? "UntilFire Pro — $9/month"
+                ? "UntilFire Pro — $4.99/month"
                 : "Free plan — limited features"}
             </span>
           </div>

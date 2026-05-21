@@ -7,6 +7,11 @@
 
 export const FUNNEL_EVENT_VERSION = 1;
 
+export const PRO_PLAN_ANALYTICS = {
+  plan: 'pro',
+  priceMonthly: 4.99,
+} as const;
+
 export const FunnelEvents = {
   LANDING_VIEWED: 'funnel_landing_viewed',
   CALCULATOR_STEP_VIEWED: 'funnel_calculator_step_viewed',
@@ -88,15 +93,22 @@ export interface DashboardFirstViewProperties extends BaseFunnelProperties {
 }
 
 export interface PaywallProperties extends BaseFunnelProperties {
-  surface: string;
+  plan: string;
+  price_monthly: number;
+  price_id?: string;
+  source: string;
 }
 
 export interface CheckoutStartedProperties extends BaseFunnelProperties {
-  surface: string;
+  plan: string;
+  price_monthly: number;
+  price_id?: string;
+  source: string;
 }
 
 export interface CheckoutSucceededServerProperties extends BaseFunnelProperties {
   plan: string;
+  price_monthly: number;
   price_id?: string;
   stripe_session_id: string;
   mode: string;

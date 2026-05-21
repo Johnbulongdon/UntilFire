@@ -1,6 +1,20 @@
 # UntilFire Agent Context
 
-This file is the always-loaded working context for Claude Code and other AI agents editing UntilFire. Keep it short, current, and actionable.
+This is the always-loaded project context for Claude Code and other AI agents working in UntilFire. Keep it short, current, and actionable.
+
+## Start Here: Agent Startup Checklist
+
+Before acting on any task:
+
+1. Read the user's latest request first.
+2. Fetch and compare against latest pushed `origin/main`.
+3. Inspect the relevant existing files and patterns before editing.
+4. Load or follow the relevant workflow/skill guidance below.
+5. Make the smallest safe change that satisfies the request.
+6. Run the narrowest useful verification before claiming completion.
+7. If the user asks to push, commit only after verification and push to `main`.
+
+If any instruction conflicts, stop and call out the conflict instead of guessing.
 
 ## Instruction Priority
 
@@ -10,90 +24,23 @@ This file is the always-loaded working context for Claude Code and other AI agen
 4. Existing code patterns in the repo.
 5. General framework knowledge.
 
-If instructions conflict, stop and call out the conflict instead of guessing.
-
 ## Active Goal
 
 UntilFire's current active goal is to reach **$3k MRR**.
 
 Prioritize work that directly improves one of these revenue levers:
 
-- first-session activation: more visitors reach a useful freedom-date result
-- free-to-paid conversion: more activated users understand why Pro is worth paying for
-- retention: users have a clear reason to come back after the first result
-- trust: the product feels safe, clear, and credible with personal financial data
+- activation: visitors reach a useful freedom-date result
+- conversion: activated users understand why Pro is worth paying for
+- retention: users have a clear reason to return
+- trust: the product feels safe, clear, and credible with financial data
 - acquisition: founder-led beta, build-in-public, SEO, Product Hunt, and share loops
 
 Avoid work that is not clearly connected to reaching $3k MRR unless the user explicitly asks for it.
 
-## $3k MRR CEO Agent Loop
-
-When asked to act as CEO, operator, or chief-of-staff for UntilFire, use this bounded loop:
-
-1. Check the latest repo state, roadmap, and relevant Obsidian product/marketing notes.
-2. Identify the single smallest action most likely to move one revenue lever: activation, conversion, retention, trust, or acquisition.
-3. Prefer actions that help a new user reach the freedom-date result, understand one monthly move, trust the product, save/share the result, or see why Pro is worth it.
-4. Report only: found, why it matters for $3k MRR, and the next useful action.
-5. Do not start broad strategy rewrites, speculative features, or open-ended research unless the user asks.
-
-## Core Working Rules
-
-- Use latest pushed `origin/main` as the baseline unless the user explicitly says otherwise.
-- Before changing files: fetch `origin/main`, compare local state, and preserve any local unpushed work.
-- Make surgical changes only. Every changed line should trace back to the user's request.
-- Do not refactor, reformat, rename, or clean up adjacent code unless asked.
-- Match existing style and patterns, even if you would design it differently.
-- Never commit secrets, `.env` files, API keys, tokens, or credentials.
-- For visual/UI work, verify against the live product or screenshots when possible and call out any drift from `origin/main`.
-
-## AI Agent Operating Style
-
-These guidelines come from Andrej Karpathy-style agent discipline: be careful, explicit, and simple.
-
-### Think Before Coding
-
-- State assumptions before implementing when they matter.
-- If multiple interpretations exist, present the options instead of silently choosing.
-- If the request is unclear enough to change the implementation, ask before editing.
-- If a simpler approach exists, say so and prefer it.
-
-### Simplicity First
-
-- Build the minimum code that solves the requested problem.
-- Do not add speculative features, abstractions, configurability, or defensive code for impossible cases.
-- If a solution is getting large, pause and simplify before continuing.
-
-### Goal-Driven Execution
-
-For non-trivial tasks, use this loop:
-
-1. Define the success criteria.
-2. Inspect the relevant existing files and patterns.
-3. Make the smallest safe change.
-4. Run the narrowest useful verification.
-5. Summarize what changed, what was verified, and any remaining risk.
-
-For bug fixes, prefer a repro/test first when practical. For refactors, verify before and after.
-
-## Skill / Workflow Usage
-
-If your agent environment supports skills, slash commands, or reusable workflows:
-
-- Load relevant skills before acting, especially for debugging, TDD, code review, UI work, git workflow, and browser QA.
-- For UntilFire product, strategy, QA, beta, launch, or revenue work, load the `untilfire-mrr-operator` skill if available.
-- Use gstack slash commands when they fit the task:
-  - `/office-hours` — product interrogation before building.
-  - `/plan-eng-review` — engineering review of a plan.
-  - `/review` — staff engineer code review.
-  - `/investigate` — deep codebase investigation.
-  - `/ship` — PR creation workflow.
-  - `/qa` — browser-based QA, if Playwright/browser tooling is available.
-- After any `/office-hours`, `/plan-ceo-review`, or `/design-shotgun` session that creates a design doc, copy it into `docs/design/` and commit it on the current branch.
-- gstack project source: `~/.gstack/projects/Johnbulongdon-UntilFire/`.
-
 ## Product Context
 
-UntilFire is a personal FIRE adviser web app: it shows when work can become optional, then gives clear monthly moves to bring that freedom date closer.
+UntilFire is a personal FIRE adviser web app. It shows when work can become optional, then gives clear monthly moves to bring that freedom date closer.
 
 - Live site: https://untilfire.com
 - GitHub: `github.com/Johnbulongdon/UntilFire` private repo
@@ -109,20 +56,84 @@ Important framing:
 - Do not hide the aha moment behind login, payment, surveys, feedback prompts, bank prompts, or heavy setup.
 - Treat dashboard/Pro as continuation after value, not the first thing users must do.
 
-## Current Product Focus
+## Andrej Karpathy-Style Agent Discipline
 
-UntilFire is in an early-revenue push. The active product objective is **$3k MRR**.
+Use this as the default operating style for all coding, product, and documentation tasks.
 
-Use `docs/ROADMAP.md` for the detailed task list, but choose work through the MRR lens:
+### Be explicit before coding
 
-- Finish mobile and end-to-end QA for the no-login calculator so visitors reliably reach the aha moment.
-- Make the result screen explain the freedom date, monthly moves, and why saving the result or upgrading is useful.
-- Finalize free vs Pro packaging and keep upgrade prompts after the free value moment.
-- Verify Stripe checkout, return, subscription sync, and portal before relying on paid conversion.
-- Improve share/save/email capture after the reveal without exposing sensitive finances.
-- Support founder-led beta and launch channels with copy/assets centered on work optionality, freedom date, and monthly moves.
+- State assumptions when they materially affect implementation.
+- If multiple interpretations exist, present the options instead of silently choosing.
+- If the request is unclear enough to change what files or behavior you would touch, ask before editing.
+- Prefer a simple approach and explain when it is enough.
 
-Do not rebuild completed features just because old docs say they are pending. Check the code and `docs/ROADMAP.md` first.
+### Keep changes small
+
+- Build the minimum code or doc change that solves the requested problem.
+- Do not add speculative features, abstractions, configurability, or broad refactors.
+- Do not reformat, rename, or clean up adjacent code unless asked.
+- If the solution is getting large, pause and simplify before continuing.
+
+### Work in a tight loop
+
+For non-trivial tasks:
+
+1. Define success criteria.
+2. Inspect relevant files and one existing pattern.
+3. Make the smallest safe change.
+4. Verify with the narrowest useful command.
+5. Inspect the diff.
+6. Report what changed, verification, and remaining risk.
+
+For bug fixes, prefer a repro or regression check first when practical. For refactors, verify before and after.
+
+## Skill / Workflow Loading Guide
+
+If the agent environment supports skills, slash commands, or reusable workflows, load the relevant workflow before acting. Use the most specific available skill; do not rely only on general knowledge.
+
+Common mappings:
+
+- Product, strategy, beta, launch, revenue, or MRR work: `untilfire-mrr-operator` if available.
+- UI or frontend changes: frontend/UI skill, then browser or screenshot QA when practical.
+- Bugs, failing tests, or unexpected behavior: systematic debugging skill.
+- New features or behavior changes: planning/TDD skill when practical.
+- Code review or pre-merge checks: code review / requesting-review skill.
+- Git, commits, PRs, or pushes: git workflow skill.
+- Docs or agent-context changes: context-engineering / documentation skill.
+- Browser QA: browser-testing or QA skill if Playwright/browser tooling is available.
+
+Use gstack slash commands when they fit the task:
+
+- `/office-hours` — product interrogation before building.
+- `/plan-eng-review` — engineering review of a plan.
+- `/review` — staff engineer code review.
+- `/investigate` — deep codebase investigation.
+- `/ship` — PR creation workflow.
+- `/qa` — browser-based QA, if Playwright/browser tooling is available.
+
+After any `/office-hours`, `/plan-ceo-review`, or `/design-shotgun` session that creates a design doc, copy it into `docs/design/` and commit it on the current branch.
+
+gstack project source: `~/.gstack/projects/Johnbulongdon-UntilFire/`.
+
+## $3k MRR CEO Agent Loop
+
+When asked to act as CEO, operator, or chief-of-staff for UntilFire:
+
+1. Check the latest repo state, roadmap, and relevant Obsidian product/marketing notes.
+2. Identify the single smallest action most likely to move activation, conversion, retention, trust, or acquisition.
+3. Prefer actions that help a new user reach the freedom-date result, understand one monthly move, trust the product, save/share the result, or see why Pro is worth it.
+4. Report only: found, why it matters for $3k MRR, and the next useful action.
+5. Do not start broad strategy rewrites, speculative features, or open-ended research unless the user asks.
+
+## Repository Working Rules
+
+- Use latest pushed `origin/main` as the baseline unless the user explicitly says otherwise.
+- Before changing files: fetch `origin/main`, compare local state, and preserve any local unpushed work.
+- Make surgical changes only. Every changed line should trace back to the user's request.
+- Match existing style and patterns, even if you would design it differently.
+- Never commit secrets, `.env` files, API keys, tokens, or credentials.
+- For visual/UI work, verify against the live product or screenshots when possible and call out any drift from `origin/main`.
+- Do not rebuild completed features just because old docs say they are pending. Check code and `docs/ROADMAP.md` first.
 
 ## Tech Stack
 
@@ -154,6 +165,10 @@ npm run test:city-coverage
 npm run test:income-default
 npm run test:savings-period-input
 npm run test:achieved-fire-reveal
+npm run test:fire-type-cta
+npm run test:revenue-funnel
+npm run test:holdings-mobile-layout
+npm run test:profile-single-location
 ```
 
 Use the narrowest verification that matches the change. For broad or risky changes, run `npm run validate`.
@@ -162,8 +177,11 @@ Use the narrowest verification that matches the change. For broad or risky chang
 
 - `app/page.tsx` — main landing page and no-login calculator flow.
 - `app/dashboard/page.tsx` — logged-in dashboard shell and FIRE overview.
+- `app/dashboard/ProfileTab.tsx` — logged-in profile, FIRE profile, billing/account controls.
+- `app/dashboard/UpgradeModal.tsx` — Pro upgrade modal and checkout start.
 - `app/api/*` — server routes for waitlist, Stripe, Plaid, AI categorisation, etc.
 - `lib/fire-data.ts` — city data, tax assumptions, FIRE calculation helpers.
+- `lib/analytics*.ts` and `docs/analytics/EVENTS.md` — analytics event names and payload contracts.
 - `components/` — reusable UI and product components.
 - `docs/CONTEXT.md` — broader product and strategy context.
 - `docs/ROADMAP.md` — current product phase and task list.
@@ -199,10 +217,15 @@ Use the narrowest verification that matches the change. For broad or risky chang
 
 ## Before Finishing Any Task
 
+Before saying work is done:
+
+1. Inspect the diff.
+2. Run relevant verification.
+3. Check for secrets in the staged diff before committing.
+4. If pushing, confirm the branch is `main` and push only after verification passes.
+
 Report concisely:
 
 - What changed.
 - What verification ran.
 - Any issues, risks, or follow-up needed.
-
-Do not claim a task is complete unless you inspected the diff and ran the relevant verification or explicitly explain why verification was not run.

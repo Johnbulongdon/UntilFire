@@ -93,7 +93,7 @@ See [PERSONAS.md](./PERSONAS.md) for full profiles. In brief:
 - [ ] Auth redirect: logged-in users skip wizard and go to dashboard
 
 ### P1 — High priority (next sprint)
-- [ ] Stripe integration — $9/mo Pro tier
+- [ ] Stripe integration — $4.99/mo Pro tier
 - [ ] Email onboarding sequence for new signups (Resend)
 - [ ] Share my FIRE number — native share / clipboard copy card
 - [ ] Google Search Console + analytics setup

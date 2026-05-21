@@ -1934,17 +1934,17 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             </div>
           ) : (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 80px 90px 100px", gap: 8, fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" }}>
-                <span>Ticker</span><span>Security</span><span style={{ textAlign: "right" }}>Qty</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Value</span>
+              <div className="uf-holdings-grid" style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" }}>
+                <span>Ticker</span><span className="uf-holdings-security">Security</span><span style={{ textAlign: "right" }}>Qty</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Value</span>
               </div>
               {[...plaidHoldings]
                 .sort((a, b) => (b.institution_value ?? 0) - (a.institution_value ?? 0))
                 .map((h, i) => {
                   const sec = plaidSecurities[h.security_id];
                   return (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "80px 1fr 80px 90px 100px", gap: 8, fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
+                    <div key={i} className="uf-holdings-grid" style={{ fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
                       <span style={{ fontWeight: 700, color: "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
-                      <span style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
+                      <span className="uf-holdings-security" style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
                       <span style={{ textAlign: "right", color: "#64748B" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
                       <span style={{ textAlign: "right", color: "#64748B" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
                       <span style={{ textAlign: "right", fontWeight: 600, color: "#0F172A" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
@@ -3003,6 +3003,7 @@ export default function Dashboard() {
   const [categoriesKey, setCategoriesKey] = useState(0);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [subscription, setSubscription] = useState<{ plan: "free" | "pro" } | null>(null);
@@ -3484,6 +3485,8 @@ export default function Dashboard() {
         .uf-section-switch { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 22px; }
         .uf-section-button { border: 1px solid #E2E8F0; background: #fff; color: #475569; border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Manrope', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
         .uf-section-button.active { border-color: #047857; background: #ECFDF5; color: #047857; }
+        .uf-holdings-grid { display: grid; grid-template-columns: 80px minmax(0, 1fr) 80px 90px 100px; gap: 8px; min-width: 0; }
+        .uf-holdings-grid > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         @media(max-width: 900px) {
           .uf-shell { flex-direction: column; min-height: 100dvh; }
@@ -3525,6 +3528,11 @@ export default function Dashboard() {
           .uf-kpi-grid { display: flex !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory; grid-template-columns: none !important; }
           .uf-kpi-grid::-webkit-scrollbar { display: none; }
           .uf-kpi-grid > * { flex-shrink: 0 !important; min-width: 130px !important; scroll-snap-align: start; }
+          .uf-holdings-grid { grid-template-columns: minmax(56px, 0.9fr) minmax(58px, 0.9fr) minmax(66px, 1fr) minmax(72px, 1fr); gap: 6px; }
+          .uf-holdings-security { display: none; }
+        }
+        @media(max-width: 420px) {
+          .uf-card { padding-left: 18px; padding-right: 18px; }
         }
       `}</style>
 
@@ -3813,7 +3821,7 @@ export default function Dashboard() {
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
                   onRefreshAccounts={refreshPlaidAccounts}
-                  onUpgradeClick={() => setUpgradeOpen(true)}
+                  onUpgradeClick={() => { setUpgradeSource("plaid_limit"); setUpgradeOpen(true); }}
                   monthlyExpenses={monthlyExpenses}
                   plaidHoldings={plaidHoldings}
                   plaidSecurities={plaidSecurities}
@@ -3896,14 +3904,14 @@ export default function Dashboard() {
                 onPreferredCurrenciesChange={setPreferredCurrencies}
                 onTabChange={(t) => setTab(t as TabKey)}
                 subscription={subscription}
-                onUpgradeClick={() => setUpgradeOpen(true)}
+                onUpgradeClick={() => { setUpgradeSource("profile"); setUpgradeOpen(true); }}
                 onManageBilling={handleManageBilling}
                 fireAge={fireAge}
                 onFireAgeChange={setFireAge}
                 retirementCityName={retirementCityName}
                 retirementCityCol={retirementCityCol}
                 lifestyleMultiplier={lifestyleMultiplier}
-                onRetirementCityChange={(name, col) => { setRetirementCityName(name); setRetirementCityCol(col); }}
+                onRetirementCityChange={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
                 onLifestyleChange={setLifestyleMultiplier}
               />
             )}
@@ -3911,7 +3919,7 @@ export default function Dashboard() {
         </main>
       </div>
       <FeedbackWidget />
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} source={upgradeSource} />
     </>
   );
 }

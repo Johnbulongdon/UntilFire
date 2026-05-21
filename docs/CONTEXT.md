@@ -13,7 +13,7 @@ In 60 seconds with no login, you find out whether early retirement is achievable
 The market is split between tools that are too simple to trust (FIRECalc, cFIREsim) and tools that are too complex to give you clear next steps (ProjectionLab, Boldin). Both leave you alone after giving you a number or a model. UntilFire doesn't. It stays with you, tracks what's actually happening, and gives you one clear action at a time.
 
 Free tier: full FIRE calculator, no login, 263 cities worldwide.  
-Pro ($9/mo): your personal FIRE adviser — monthly action plan based on your actual spending, not generic tips.
+Pro ($4.99/mo): your personal FIRE adviser — monthly action plan based on your actual spending, not generic tips.
 
 **One-line pitch:** Know if you can FIRE and where you stand — then let your adviser tell you what to do next.
 
@@ -79,7 +79,7 @@ Pro ($9/mo): your personal FIRE adviser — monthly action plan based on your ac
 - **SEO**: robots.ts, sitemap.ts configured
 
 ### What is NOT built yet
-- AI roadmap feature (waitlisted, planned at $9/mo)
+- AI roadmap feature (waitlisted, planned at $4.99/mo)
 - Stripe / payment integration
 - Mobile app (web only)
 - Social sharing card (share my FIRE number)
@@ -104,7 +104,7 @@ Pro ($9/mo): your personal FIRE adviser — monthly action plan based on your ac
 | Tier | Price | Access |
 |---|---|---|
 | Free | $0 | Full FIRE calculator, no login required 鈥?city, income, savings 鈫?FIRE number + retirement date |
-| Pro | $9/mo | Personal FIRE adviser: monthly action plan, budget tracker, real-time FIRE date, personalised next steps |
+| Pro | $4.99/mo | Personal FIRE adviser: monthly action plan, budget tracker, real-time FIRE date, personalised next steps |
 
 ---
 

@@ -8,6 +8,7 @@
 import posthog from 'posthog-js';
 import {
   FunnelEvents,
+  PRO_PLAN_ANALYTICS,
   CALCULATOR_STEP_INDEX,
   bucketUSD,
   bucketYears,
@@ -129,13 +130,23 @@ export function trackDashboardFirstView(input: {
   capture(FunnelEvents.DASHBOARD_FIRST_VIEW, props);
 }
 
-export function trackPaywallViewed(surface: string) {
-  const props: PaywallProperties = withVersion({ surface });
+export function trackPaywallViewed(input: { source: string; priceId?: string }) {
+  const props: PaywallProperties = withVersion({
+    plan: PRO_PLAN_ANALYTICS.plan,
+    price_monthly: PRO_PLAN_ANALYTICS.priceMonthly,
+    ...(input.priceId ? { price_id: input.priceId } : {}),
+    source: input.source,
+  });
   capture(FunnelEvents.PAYWALL_VIEWED, props);
 }
 
-export function trackCheckoutStarted(surface: string) {
-  const props: CheckoutStartedProperties = withVersion({ surface });
+export function trackCheckoutStarted(input: { source: string; priceId?: string }) {
+  const props: CheckoutStartedProperties = withVersion({
+    plan: PRO_PLAN_ANALYTICS.plan,
+    price_monthly: PRO_PLAN_ANALYTICS.priceMonthly,
+    ...(input.priceId ? { price_id: input.priceId } : {}),
+    source: input.source,
+  });
   capture(FunnelEvents.CHECKOUT_STARTED, props);
 }
 

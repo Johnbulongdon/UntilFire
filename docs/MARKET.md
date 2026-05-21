@@ -114,7 +114,7 @@ Free tools as top-of-funnel for paid AUM advisory ($100K minimum). Powerful but 
 
 | Competitor | Free Tier | Paid Entry | Annual |
 |---|---|---|---|
-| **UntilFire** | ✅ Full calculator | $9/mo | $108/yr |
+| **UntilFire** | ✅ Full calculator | $4.99/mo | $59.88/yr |
 | ProjectionLab | ✅ (no save) | ~$9/mo | $109/yr |
 | FIRECalc | ✅ Full | Free | Free |
 | cFIREsim | ✅ Full | Free | Free |
@@ -164,7 +164,7 @@ UntilFire's bet is that the 25–40 age group pursuing FIRE doesn't need a wealt
 | Tells you what to do next | **Yes (Pro)** | No | No | No |
 | FIRE-specific | **Yes** | Yes | Yes | Partial |
 | Budgeting/tracking | Yes (dashboard) | No | No | Yes |
-| Price (paid) | **$9/mo** | $9/mo | Free | $14.99/mo |
+| Price (paid) | **$4.99/mo** | $9/mo | Free | $14.99/mo |
 | Mobile app | No | No | No | Yes |
 
 ---

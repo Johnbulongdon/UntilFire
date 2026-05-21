@@ -205,7 +205,7 @@ The calculator journey is the acquisition funnel. The tracker journey is retenti
 
 ### Paid Conversion Point
 
-1. User sees "AI Roadmap" feature locked behind Pro ($9/mo)
+1. User sees "AI Roadmap" feature locked behind Pro ($4.99/mo)
 2. Prompt: "Get a personalised monthly plan to retire faster"
 3. User enters payment details → unlocks AI advisor
 

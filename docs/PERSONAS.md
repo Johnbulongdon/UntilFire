@@ -107,7 +107,7 @@ Sarah has been tracking her finances for 2 years using a spreadsheet. She knows 
 - Runs the calculator 2-3 times — once for SF, once for Austin, once for Denver
 - Signs up for the dashboard immediately after seeing the reveal
 - Connects her expense log and checks back weekly
-- Very likely to pay $9/mo if the dashboard updates her FIRE date in real time
+- Very likely to pay $4.99/mo if the dashboard updates her FIRE date in real time
 
 ### Quote
 > "The California tax math was right. That's what made me trust it. Every other calculator ignores state taxes and gives me a number that's $300k off."
