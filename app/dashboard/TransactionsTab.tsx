@@ -1149,24 +1149,69 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   });
   useEffect(() => { localStorage.setItem("uf_custom_cats", JSON.stringify(customCats)); }, [customCats]);
   useEffect(() => { localStorage.setItem("uf_custom_subcats", JSON.stringify(customSubCats)); }, [customSubCats]);
+
+  // Stable Supabase write — called by the debounce and by the flush-on-unmount effect
+  const syncCatsToSupabase = useCallback((cats: CustomCategory[], subCats: Record<string, string[]>) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+        .then(({ data }) => {
+          const cur = (data?.expenses as Record<string, unknown>) || {};
+          supabase.from("user_budget").upsert({
+            user_id: session.user.id,
+            expenses: { ...cur, _custom_cats: cats, _custom_subcats: subCats },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+        });
+    });
+  }, []);
+
+  // Track whether a sync is pending so we can flush it on unmount
+  const pendingSyncRef = useRef<{ cats: CustomCategory[]; subCats: Record<string, string[]> } | null>(null);
+
   // Sync custom cats to Supabase whenever they change (debounced 600ms)
   useEffect(() => {
+    pendingSyncRef.current = { cats: customCats, subCats: customSubCats };
     const id = setTimeout(() => {
+      syncCatsToSupabase(customCats, customSubCats);
+      pendingSyncRef.current = null;
+    }, 600);
+    return () => clearTimeout(id); // cancels the debounce timer only; unmount flush handled below
+  }, [customCats, customSubCats, syncCatsToSupabase]);
+
+  // Flush any pending sync immediately when this tab unmounts (prevents clearTimeout from swallowing it)
+  useEffect(() => {
+    return () => {
+      if (pendingSyncRef.current) {
+        syncCatsToSupabase(pendingSyncRef.current.cats, pendingSyncRef.current.subCats);
+      }
+    };
+  }, [syncCatsToSupabase]);
+
+  // Re-fetch custom categories when the browser tab regains focus (cross-device sync)
+  useEffect(() => {
+    const refetch = () => {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
           .then(({ data }) => {
-            const cur = (data?.expenses as Record<string, unknown>) || {};
-            supabase.from("user_budget").upsert({
-              user_id: session.user.id,
-              expenses: { ...cur, _custom_cats: customCats, _custom_subcats: customSubCats },
-              updated_at: new Date().toISOString(),
-            }, { onConflict: "user_id" });
+            if (!data?.expenses) return;
+            const { _custom_cats, _custom_subcats } = data.expenses as Record<string, unknown>;
+            if (Array.isArray(_custom_cats)) {
+              setCustomCats(_custom_cats as CustomCategory[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            }
+            if (_custom_subcats && typeof _custom_subcats === "object") {
+              setCustomSubCats(_custom_subcats as Record<string, string[]>);
+              localStorage.setItem("uf_custom_subcats", JSON.stringify(_custom_subcats));
+            }
           });
       });
-    }, 600);
-    return () => clearTimeout(id);
-  }, [customCats, customSubCats]);
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
   const allSubCats = useMemo(() => {
