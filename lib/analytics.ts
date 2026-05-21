@@ -16,6 +16,7 @@ import {
   type CalculatorStepProperties,
   type CalculatorRevealedProperties,
   type SignupStartedProperties,
+  type SignupCompletedProperties,
   type DashboardFirstViewProperties,
   type PaywallProperties,
   type CheckoutStartedProperties,
@@ -109,11 +110,14 @@ export function trackSignupStarted(input: {
   capture(FunnelEvents.SIGNUP_STARTED, props);
 }
 
-export function trackSignupCompleted() {
-  // send_instantly: this fires right before a hard navigation in the OAuth
-  // callback path; queued events would otherwise be dropped when the page
-  // unloads.
-  capture(FunnelEvents.SIGNUP_COMPLETED, withVersion({}), { sendInstantly: true });
+export function trackSignupCompleted(input: { isNewUser: boolean; authProvider: string }) {
+  const props: SignupCompletedProperties = withVersion({
+    is_new_user: input.isNewUser,
+    auth_provider: input.authProvider,
+  });
+  // send_instantly: fires right before a hard navigation in the OAuth
+  // callback; queued events would otherwise be dropped on page unload.
+  capture(FunnelEvents.SIGNUP_COMPLETED, props, { sendInstantly: true });
 }
 
 export function trackDashboardFirstView(input: {
