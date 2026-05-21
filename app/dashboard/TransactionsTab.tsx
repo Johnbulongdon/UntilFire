@@ -27,7 +27,7 @@ type CustomCategory = { key: string; label: string; code: string; color: string;
 const ALL_CATEGORIES = ALL_CATEGORIES_BASE;
 const FALLBACK_RATES = LIB_FALLBACK_RATES;
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
 
@@ -47,7 +47,7 @@ function dayLabel(ymd: string, todayYmd: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// ─── Types ───────────────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Transaction = {
   id: string;
   date: string;
@@ -86,7 +86,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   aiSuggestion: null,
 });
 
-// ─── AI Categorization ────────────────────────────────────────────────────────────────────────────
+// ─── AI Categorization ────────────────────────────────────────────────────────
 async function aiCategorize(
   description: string,
   type: "expense" | "income"
@@ -104,7 +104,7 @@ async function aiCategorize(
   }
 }
 
-// ─── ProjectInput ─────────────────────────────────────────────────────────────────────────────
+// ─── ProjectInput ─────────────────────────────────────────────────────────────
 function ProjectInput({
   existingTags,
   currentTags,
@@ -181,7 +181,7 @@ function ProjectInput({
   );
 }
 
-// ─── QuickAddForm ─────────────────────────────────────────────────────────────────────────────
+// ─── QuickAddForm ─────────────────────────────────────────────────────────────
 function QuickAddForm({
   draft,
   setDraft,
@@ -397,7 +397,7 @@ function QuickAddForm({
               fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start",
             }}
           >
-            <span style={{ color: "#20D4BF" }}>✶</span>
+            <span style={{ color: "#20D4BF" }}>✦</span>
             Looks like {aiSuggestedCat?.label} — use it?
           </button>
         )}
@@ -710,7 +710,7 @@ function QuickAddForm({
   );
 }
 
-// ─── Transaction List ─────────────────────────────────────────────────────────────────────────────
+// ─── Transaction List ─────────────────────────────────────────────────────────
 function TransactionList({
   transactions,
   editingId,
@@ -900,7 +900,7 @@ function TransactionList({
   );
 }
 
-// ─── Monthly Summary ─────────────────────────────────────────────────────────────────────────────
+// ─── Monthly Summary ──────────────────────────────────────────────────────────
 function MonthlySummary({
   transactions,
   viewMonth,
@@ -1050,7 +1050,7 @@ function MonthlySummary({
   );
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────────────────────
+// ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({
   toast,
   onUndo,
@@ -1083,7 +1083,7 @@ function Toast({
   );
 }
 
-// ─── Mobile components ────────────────────────────────────────────────────────────────────────────
+// ─── Mobile components ────────────────────────────────────────────────────────
 function MobileBar({ onOpen }: { onOpen: () => void }) {
   return (
     <div style={{ display: "none" }} className="cf-mobile-bar">
@@ -1121,7 +1121,7 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
   );
 }
 
-// ─── Root ───────────────────────────────────────────────────────────────────────────────────
+// ─── Root ─────────────────────────────────────────────────────────────────────
 export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [] }: {
   defaultCurrency?: string;
   displayCurrency?: string;
