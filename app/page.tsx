@@ -1279,6 +1279,15 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                       </div>
                     ))}
                   </div>
+                  <Link
+                    data-gsap="milestone"
+                    href="/login"
+                    className="uf-automate-btn"
+                    style={{ display: "block", marginTop: 18, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none", opacity: 0 }}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                  >
+                    Save my plan →
+                  </Link>
                 </div>
               </div>
             </div>
@@ -1354,7 +1363,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                           style={{ display: "block", marginTop: 22, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none" }}
                           onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
                         >
-                          Automate this →
+                          Save my plan →
                         </Link>
                       </div>
                     </div>
@@ -1441,7 +1450,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     className="uf-btn-dark"
                     onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
                   >
-                    Track this →
+                    Save my plan →
                   </Link>
                 </div>
               </div>
