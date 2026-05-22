@@ -21,7 +21,7 @@ import {
 } from "@/lib/acquisition";
 import Nav from "@/app/components/landing/Nav";
 import WizardProgress from "@/app/components/landing/WizardProgress";
-import HeroScreen from "@/app/components/landing/HeroScreen";
+import LandingPage from "@/app/components/landing/LandingPage";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
 import {
   CURRENCY_NAMES,
@@ -553,6 +553,8 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   const periodLabel = period === "yearly" ? "Yearly" : "Monthly";
   const periodUnit = period === "yearly" ? "/year" : "/month";
   const inputLabel = `${periodLabel} ${mode === "savings" ? "savings" : "spending"} amount`;
+
+  const spendSliderMax = isNonUSD ? Math.round(15000 * fxRate) : 15000;
 
   return (
     <div className="uf-screen">
@@ -2183,6 +2185,10 @@ export default function Home() {
         /* -- FOOTER DIVIDER -- */
       `}</style>
 
+      {screen === "hero" ? (
+        <LandingPage onStart={() => setScreen("city")} />
+      ) : (
+      <>
       <Nav
         step={STEP_MAP[screen]}
         totalSteps={totalDots}
@@ -2196,13 +2202,14 @@ export default function Home() {
           <div className="uf-atm-orb uf-atm-orb-2" />
           <div className="uf-atm-orb uf-atm-orb-3" />
         </div>
-        {screen === "hero" && (
-          <HeroScreen onStart={() => setScreen("city")} />
-        )}
         {screen === "city" && (
           <CityScreen
             onNext={c => { setCityState(c); setScreen("currency"); }}
             onBack={() => setScreen("hero")}
+            onSkip={() => {
+              setCityState({ name: "United States (avg)", col: 52000, stateKey: "custom", isCustom: true });
+              setScreen("currency");
+            }}
           />
         )}
         {screen === "currency" && (
@@ -2261,6 +2268,8 @@ export default function Home() {
         )}
 
       </div>
+      </>
+      )}
     </>
   );
 }

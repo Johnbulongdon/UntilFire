@@ -1101,11 +1101,13 @@ function Toast({
 function MobileBar({ onOpen }: { onOpen: () => void }) {
   return (
     <div style={{ display: "none" }} className="cf-mobile-bar">
-      <button onClick={onOpen} style={{ flex: 1, color: "#94A3B8", fontSize: 14, border: "none", background: "transparent", textAlign: "left", padding: "6px 4px", cursor: "pointer", fontFamily: "inherit" }}>
-        + Add a transaction…
-      </button>
-      <button onClick={onOpen} style={{ width: 40, height: 40, background: "#047857", color: "#fff", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", flexShrink: 0 }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+      <button
+        onClick={onOpen}
+        aria-label="Add transaction"
+        style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: 999, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+        Add transaction
       </button>
     </div>
   );
@@ -1161,24 +1163,69 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   });
   useEffect(() => { localStorage.setItem("uf_custom_cats", JSON.stringify(customCats)); }, [customCats]);
   useEffect(() => { localStorage.setItem("uf_custom_subcats", JSON.stringify(customSubCats)); }, [customSubCats]);
+
+  // Stable Supabase write — called by the debounce and by the flush-on-unmount effect
+  const syncCatsToSupabase = useCallback((cats: CustomCategory[], subCats: Record<string, string[]>) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+        .then(({ data }) => {
+          const cur = (data?.expenses as Record<string, unknown>) || {};
+          supabase.from("user_budget").upsert({
+            user_id: session.user.id,
+            expenses: { ...cur, _custom_cats: cats, _custom_subcats: subCats },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+        });
+    });
+  }, []);
+
+  // Track whether a sync is pending so we can flush it on unmount
+  const pendingSyncRef = useRef<{ cats: CustomCategory[]; subCats: Record<string, string[]> } | null>(null);
+
   // Sync custom cats to Supabase whenever they change (debounced 600ms)
   useEffect(() => {
+    pendingSyncRef.current = { cats: customCats, subCats: customSubCats };
     const id = setTimeout(() => {
+      syncCatsToSupabase(customCats, customSubCats);
+      pendingSyncRef.current = null;
+    }, 600);
+    return () => clearTimeout(id); // cancels the debounce timer only; unmount flush handled below
+  }, [customCats, customSubCats, syncCatsToSupabase]);
+
+  // Flush any pending sync immediately when this tab unmounts (prevents clearTimeout from swallowing it)
+  useEffect(() => {
+    return () => {
+      if (pendingSyncRef.current) {
+        syncCatsToSupabase(pendingSyncRef.current.cats, pendingSyncRef.current.subCats);
+      }
+    };
+  }, [syncCatsToSupabase]);
+
+  // Re-fetch custom categories when the browser tab regains focus (cross-device sync)
+  useEffect(() => {
+    const refetch = () => {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
           .then(({ data }) => {
-            const cur = (data?.expenses as Record<string, unknown>) || {};
-            supabase.from("user_budget").upsert({
-              user_id: session.user.id,
-              expenses: { ...cur, _custom_cats: customCats, _custom_subcats: customSubCats },
-              updated_at: new Date().toISOString(),
-            }, { onConflict: "user_id" });
+            if (!data?.expenses) return;
+            const { _custom_cats, _custom_subcats } = data.expenses as Record<string, unknown>;
+            if (Array.isArray(_custom_cats)) {
+              setCustomCats(_custom_cats as CustomCategory[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            }
+            if (_custom_subcats && typeof _custom_subcats === "object") {
+              setCustomSubCats(_custom_subcats as Record<string, string[]>);
+              localStorage.setItem("uf_custom_subcats", JSON.stringify(_custom_subcats));
+            }
           });
       });
-    }, 600);
-    return () => clearTimeout(id);
-  }, [customCats, customSubCats]);
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
   const allSubCats = useMemo(() => {
@@ -1417,7 +1464,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         @media (max-width: 1024px) {
           .cf-split { grid-template-columns: 1fr !important; }
           .cf-form-col { display: none; }
-          .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 10px 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); align-items: center; gap: 10px; z-index: 30; }
+          .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: transparent; border-radius: 999px; padding: 0; align-items: center; z-index: 30; }
         }
       `}</style>
 
