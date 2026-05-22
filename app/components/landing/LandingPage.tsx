@@ -162,7 +162,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           borderRadius: 9999, fontSize: 13, fontWeight: 700, letterSpacing: "-0.005em",
           boxShadow: "0 6px 16px rgba(98,250,227,0.35)", whiteSpace: "nowrap",
         }}>
-          FIRE-first personal finance app
+          Find your freedom date
           <span style={{ fontSize: 13 }}>»</span>
         </div>
 
