@@ -372,16 +372,15 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             max-width: 360px !important;
             box-sizing: border-box !important;
             flex-direction: column !important;
-            border-radius: 28px !important;
-            padding: 10px !important;
-            gap: 10px !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            gap: 0 !important;
           }
           .uf-date-placeholder {
-            width: 100% !important;
-            box-sizing: border-box !important;
-            justify-content: center !important;
-            padding: 6px 8px 2px !important;
-            gap: 6px !important;
+            display: none !important;
           }
           .uf-date-helper {
             display: none !important;
