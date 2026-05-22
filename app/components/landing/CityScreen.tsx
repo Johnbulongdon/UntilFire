@@ -18,9 +18,11 @@ function fmtUSD(n: number) {
 export default function CityScreen({
   onNext,
   onBack,
+  onSkip,
 }: {
   onNext: (c: CityState) => void;
   onBack: () => void;
+  onSkip?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
