@@ -2,12 +2,26 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing — UntilFire",
-  description: "Simple, transparent pricing. Free forever or upgrade to Pro for $4.99/mo.",
+  title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
+  description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo to unlock unlimited bank connections and AI FIRE adviser.",
+  keywords: "untilfire pricing, fire planner cost, financial independence app price, fire calculator free",
+  alternates: { canonical: "https://untilfire.com/pricing" },
+  openGraph: {
+    title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
+    description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo.",
+    url: "https://untilfire.com/pricing",
+    siteName: "UntilFire",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
+    description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo.",
+  },
 };
 
 const FREE_FEATURES = [
-  "FIRE number calculator (263 cities)",
+  "FIRE number calculator (300+ cities worldwide)",
   "Full dashboard — cashflow, assets & liabilities",
   "Expense & budget tracking",
   "Investment portfolio simulator",
@@ -24,6 +38,35 @@ const PRO_FEATURES = [
 
 export default function PricingPage() {
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: "UntilFire Pro",
+            description: "AI-powered FIRE planning with unlimited bank connections and personalized retirement advice.",
+            url: "https://untilfire.com/pricing",
+            brand: { "@type": "Brand", name: "UntilFire" },
+            offers: [
+              {
+                "@type": "Offer",
+                name: "Pro Monthly",
+                price: "4.99",
+                priceCurrency: "USD",
+                availability: "https://schema.org/InStock",
+                priceSpecification: {
+                  "@type": "RecurringCharge",
+                  price: "4.99",
+                  priceCurrency: "USD",
+                  billingDuration: "P1M",
+                },
+              },
+            ],
+          }),
+        }}
+      />
     <main
       style={{
         minHeight: "100vh",
@@ -210,5 +253,6 @@ export default function PricingPage() {
         </a>
       </p>
     </main>
+    </>
   );
 }
