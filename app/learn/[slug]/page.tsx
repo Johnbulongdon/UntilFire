@@ -29,6 +29,7 @@ export async function generateMetadata({ params }: Props) {
   return {
     title: `${article.title} | UntilFire`,
     description: article.description,
+    keywords: article.category + ', financial independence, FIRE, retire early',
     alternates: {
       canonical: `https://www.untilfire.com/learn/${article.slug}`,
     },
@@ -37,6 +38,15 @@ export async function generateMetadata({ params }: Props) {
       description: article.description,
       type: 'article',
       publishedTime: article.publishedAt,
+      url: `https://www.untilfire.com/learn/${article.slug}`,
+      siteName: 'UntilFire',
+      images: [{ url: 'https://www.untilfire.com/og-default.png', width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.description,
+      images: ['https://www.untilfire.com/og-default.png'],
     },
   }
 }
@@ -54,6 +64,32 @@ export default async function LearnArticlePage({ params }: Props) {
   const relatedArticles = getRelatedArticles(article.slug, 3)
 
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Article',
+            headline: article.title,
+            description: article.description,
+            datePublished: article.publishedAt,
+            dateModified: article.publishedAt,
+            author: { '@type': 'Organization', name: 'UntilFire', url: 'https://www.untilfire.com' },
+            publisher: { '@type': 'Organization', name: 'UntilFire', url: 'https://www.untilfire.com' },
+            url: `https://www.untilfire.com/learn/${article.slug}`,
+            image: 'https://www.untilfire.com/og-default.png',
+            breadcrumb: {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com' },
+                { '@type': 'ListItem', position: 2, name: 'Learn', item: 'https://www.untilfire.com/learn' },
+                { '@type': 'ListItem', position: 3, name: article.title, item: `https://www.untilfire.com/learn/${article.slug}` },
+              ],
+            },
+          }),
+        }}
+      />
     <main className="uf-article-page">
       <article className="uf-article-shell">
         <Link href={`/learn/stages/${primaryStage.id}`} className="uf-article-back">← Back to {primaryStage.label}</Link>
@@ -226,5 +262,6 @@ export default async function LearnArticlePage({ params }: Props) {
         </div>
       </article>
     </main>
+    </>
   )
 }

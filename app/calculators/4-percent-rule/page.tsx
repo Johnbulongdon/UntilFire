@@ -72,6 +72,33 @@ export default function FourPercentRulePage() {
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'Is the 25x rule the same as the 4% rule?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Yes. The 25x rule says you need about 25 times annual expenses invested. That is the inverse of a 4% withdrawal rate.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Should early retirees use less than 4%?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Many early retirees model 3% to 3.5% because their retirement horizon can be much longer. Taxes, healthcare, market timing, flexibility, and part-time income all matter.',
+                },
+              },
+            ],
+          }),
+        }}
+      />
     </>
   )
 }

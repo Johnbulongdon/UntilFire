@@ -86,6 +86,11 @@ export interface SignupStartedProperties extends BaseFunnelProperties {
   landing_source?: string;
 }
 
+export interface SignupCompletedProperties extends BaseFunnelProperties {
+  is_new_user: boolean;
+  auth_provider: string;
+}
+
 export interface DashboardFirstViewProperties extends BaseFunnelProperties {
   had_calculator_prefill: boolean;
   via_upgrade: boolean;

@@ -29,11 +29,13 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: 'UntilFire',
     type: 'website',
+    images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630, alt: 'UntilFire — FIRE Calculator & Financial Independence Planner' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'UntilFire | Know When You Can Stop Working',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
+    images: [`${SITE_URL}/og-default.png`],
   },
   metadataBase: new URL(SITE_URL),
 }

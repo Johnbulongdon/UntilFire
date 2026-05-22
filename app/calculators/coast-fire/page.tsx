@@ -72,6 +72,33 @@ export default function CoastFirePage() {
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'Is Coast FIRE the same as Barista FIRE?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'No. Coast FIRE means existing investments can grow enough for retirement later. Barista FIRE usually means you still work part time to cover current expenses before full retirement.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'What inputs matter most for Coast FIRE?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Current portfolio, target retirement age, expected return, inflation, future annual spending, and withdrawal rate drive the estimate. Small assumption changes can move the Coast FIRE number materially.',
+                },
+              },
+            ],
+          }),
+        }}
+      />
     </>
   )
 }
