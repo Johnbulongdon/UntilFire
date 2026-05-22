@@ -1,5 +1,5 @@
 # UntilFire — Product Requirements Document (PRD)
-Last updated: March 2026
+Last updated: May 2026
 
 ---
 
@@ -10,15 +10,15 @@ Most people have no idea when they can retire or what "financial independence" a
 - Too simple and generic (online calculators) — use national averages, ignore taxes, ignore real cost of living
 - Too expensive ($99–$144/yr) — creating friction before users see any value
 
-**The core insight**: your FIRE number is not universal. A person retiring in Austin, TX needs a completely different number than someone in San Francisco, London, or Bangkok. No free tool shows you this clearly.
+**The core insight**: people do not need another calculator that leaves them alone with a number. They need a clear path: what their freedom date is, what to do next, and how each monthly move brings work optionality closer. City and tax assumptions make the answer more credible, but the core product promise is guidance.
 
 ---
 
 ## Product Vision
 
-> "The fastest way for anyone in the world to understand their FIRE number — personalised to their city, their income, and their taxes — with zero friction."
+> "The fastest way to find your freedom date and get a plan that helps you bring it closer."
 
-UntilFire is the **entry point** to FIRE planning: simple enough that someone can get their number in 60 seconds, credible enough that they trust it, and compelling enough that they want to go deeper.
+UntilFire is the **guided entry point** to FIRE planning: simple enough that someone can get their number in 60 seconds, credible enough that they trust it, and useful enough that they know what to do next. City-level cost and tax assumptions support trust, but the product should be remembered as the adviser that does the journey with you.
 
 ---
 
@@ -27,8 +27,8 @@ UntilFire is the **entry point** to FIRE planning: simple enough that someone ca
 See [PERSONAS.md](./PERSONAS.md) for full profiles. In brief:
 
 - **Primary**: 25–38 year old knowledge workers (tech, finance, healthcare) who earn $70k–$200k, have heard of FIRE, and want to know if it's achievable for them
-- **Secondary**: International users — particularly China, India, Southeast Asia, Middle East — who have no FIRE tools built for their cost of living
-- **Tertiary**: Digital nomads evaluating geo-arbitrage scenarios
+- **Secondary**: Users who have tried calculators or spreadsheets and still do not know what to do next
+- **Tertiary**: International users and digital nomads who benefit from city/cost/tax assumptions as trust and localisation features
 
 ---
 
@@ -38,8 +38,8 @@ See [PERSONAS.md](./PERSONAS.md) for full profiles. In brief:
 **5-screen flow: Hero → City → Income → Savings → Reveal**
 
 #### Screen 0: Hero / Landing
-- Headline: "Your spending is costing you years of freedom"
-- Single CTA: "Calculate my FIRE number"
+- Headline direction: freedom date + guided path, e.g. "Find your freedom date — then bring it closer"
+- Single CTA: "Find my freedom date"
 - Social proof: user count, market stats
 - No login required, no email required
 
@@ -64,10 +64,11 @@ See [PERSONAS.md](./PERSONAS.md) for full profiles. In brief:
 #### Screen 4: FIRE Number Reveal
 - Phase 1 (Calculating): 4 calculation steps light up sequentially (620ms each), progress bar fills to 100%, 800ms pause
 - Phase 2 (Reveal): number slams in with spring animation, count-up over 2.2s, orange glow effect
-- Shows: FIRE target ($), retirement year, retirement age, city name
-- "Your spending is costing you X years" statement
-- 4 delta cards: cut dining, save $500/mo more, 10% pay cut, invest bonus
-- CTA: "Make this more accurate — it's free" → dashboard signup
+- Shows: FIRE target ($), freedom date/year, optional age, and city/methodology context
+- "Your spending is costing you X years" or equivalent freedom-impact statement
+- Guided next move: one clear monthly action that shows how the date moves closer
+- Supporting delta cards: cut dining, save more, earn more, invest bonus
+- CTA: save or continue the plan after the no-login aha moment
 
 ### 2. Dashboard (Logged-in)
 - Supabase auth (Google OAuth)
@@ -100,7 +101,7 @@ See [PERSONAS.md](./PERSONAS.md) for full profiles. In brief:
 
 ### P2 — Medium priority (next quarter)
 - [ ] AI roadmap feature (personalized monthly FIRE plan)
-- [ ] City-specific SEO landing pages (`/fire-number/austin-tx`, `/fire-number/london`)
+- [ ] City-specific SEO landing pages (`/fire-number/austin-tx`, `/fire-number/london`) framed as acquisition/trust pages, not the core product promise
 - [ ] Mobile-optimized experience audit
 - [ ] Scenario simulator (cut expenses / boost income sliders on reveal screen)
 

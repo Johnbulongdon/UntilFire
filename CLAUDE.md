@@ -45,13 +45,15 @@ UntilFire is a personal FIRE adviser web app. It turns personal finance into a g
 - Live site: https://untilfire.com
 - GitHub: `github.com/Johnbulongdon/UntilFire` private repo
 - Primary positioning: **Personal finance that sets you free.**
+- Core differentiator: **UntilFire does it with you** — not just a FIRE number, but a path, next move, and continuity toward work optionality.
 - North star: turn financial independence from an abstract calculator result into a clear, emotional, actionable path.
 - Free first value moment: full no-login calculator.
 - Pro direction: personal FIRE adviser, plan, budget tracking, and continuity after the aha moment.
 
 Important framing:
 
-- Lead with freedom, work optionality, freedom date, and the plan — not generic “calculator” language.
+- Lead with freedom, work optionality, freedom date, and the guided plan — not generic “calculator” language.
+- Do not lead with city-specific cost of living or city taxes. Treat those as supporting trust details, not the main differentiator.
 - Keep the first session calm and trustworthy.
 - Do not hide the aha moment behind login, payment, surveys, feedback prompts, bank prompts, or heavy setup.
 - Treat dashboard/Pro as continuation after value, not the first thing users must do.

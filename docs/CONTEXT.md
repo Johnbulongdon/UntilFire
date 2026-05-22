@@ -1,6 +1,6 @@
 # UntilFire 鈥?AI Context File
 > Paste this file at the start of any AI conversation to get it fully up to speed.  
-> Last updated: April 2026
+Last updated: May 2026
 
 ---
 
@@ -12,8 +12,10 @@ In 60 seconds with no login, you find your freedom date. Then UntilFire turns th
 
 The market is split between tools that are too simple to trust (FIRECalc, cFIREsim) and tools that are too complex to give you clear next steps (ProjectionLab, Boldin). Both leave you alone after giving you a number or a model. UntilFire doesn't. It does it with you: tracks what's actually happening, shows which choices move the date, and gives you a plan to follow.
 
-Free tier: freedom date + FIRE number, no login, with city/tax assumptions where useful.
-Pro ($4.99/mo): your personal FIRE adviser — plan based on your actual spending, not generic tips.
+Free tier: freedom date + FIRE number, no login, with city/tax assumptions where useful as trust proof.
+Pro ($4.99/mo): your personal FIRE adviser — a guided path based on your actual spending, not generic tips.
+
+**Positioning guardrail:** City-specific cost of living and tax assumptions are useful credibility features, but they are not the core story. The core story is that UntilFire does it with you: it shows the path, next move, and progress toward work optionality.
 
 **One-line pitch:** Personal finance that sets you free — start with your freedom date, then follow a plan to bring it closer.
 

@@ -1,5 +1,5 @@
 # UntilFire — User & Buyer Personas
-Last updated: March 2026
+Last updated: May 2026
 
 ---
 
@@ -7,11 +7,13 @@ Last updated: March 2026
 
 UntilFire has three primary personas and two secondary personas. The product must nail the primary personas before optimising for secondary ones.
 
+**Positioning guardrail:** Location, cost-of-living, and tax detail help these personas trust the answer. They are not the core promise. The core promise is that UntilFire does the journey with them: freedom date, next move, and ongoing progress.
+
 | Persona | Name | Age | Income | Key motivation |
 |---|---|---|---|---|
 | P1 — The Curious Calculator | Alex | 28 | $95k | "Am I even on track?" |
-| P2 — The Serious Planner | Sarah | 34 | $160k | "Give me the real numbers" |
-| P3 — The Global Worker | Wei | 31 | $120k | "What does FIRE look like for me?" |
+| P2 — The Serious Planner | Sarah | 34 | $160k | "Show me the real plan" |
+| P3 — The Global Worker | Wei | 31 | $120k | "What path works for my life?" |
 | S1 — The Nomad Optimizer | Diego | 29 | $85k | "Which city makes FIRE fastest?" |
 | S2 — The Late Starter | Mark | 42 | $110k | "Is it too late for me?" |
 
@@ -38,9 +40,9 @@ Alex heard about FIRE on a podcast and Googled it. Has a vague sense that retiri
 
 ### Frustrations with existing tools
 - ProjectionLab has too many inputs — gives up before seeing results
-- Generic calculators give a national average, not adjusted for Austin
+- Generic calculators give a number but no path
 - Most tools require account signup before showing anything useful
-- Math is opaque — they don't know if the answer is realistic
+- Math is opaque — they don't know if the answer is realistic or what to do next
 
 ### How they find UntilFire
 - Reddit post in r/financialindependence: "just ran my FIRE number, it's $1.4M, here's the tool I used"
@@ -50,7 +52,7 @@ Alex heard about FIRE on a podcast and Googled it. Has a vague sense that retiri
 - A result in under 60 seconds without signing up
 - Their actual FIRE number, not a range
 - Some context on what that means ("you could retire in 2043 — age 45")
-- A reason to come back and track progress
+- One obvious next move and a reason to come back and track progress
 
 ### Behaviour in the product
 - Comes via referral link, starts wizard immediately
@@ -218,14 +220,14 @@ Mark discovered FIRE after a health scare made him reconsider his work-life bala
 
 | Feature | Alex (P1) | Sarah (P2) | Wei (P3) | Diego (S1) | Mark (S2) |
 |---|---|---|---|---|---|
-| 263 city coverage | ★★ | ★★★ | ★★★ | ★★★ | ★ |
-| Custom city fallback | ★ | ★ | ★★★ | ★★★ | ★ |
-| US tax calculation | ★★ | ★★★ | ★ | ★ | ★★★ |
-| Intl tax calculation | ★ | ★ | ★★★ | ★★★ | ★ |
+| Freedom date | ★★★ | ★★★ | ★★★ | ★★★ | ★★★ |
+| Guided next move / monthly plan | ★★★ | ★★★ | ★★★ | ★★ | ★★★ |
+| Dashboard / tracking | ★★ | ★★★ | ★★ | ★★ | ★★★ |
 | FIRE reveal drama | ★★★ | ★★ | ★★★ | ★★ | ★★★ |
 | Delta cards | ★★ | ★★★ | ★★ | ★★ | ★★★ |
-| Dashboard / tracking | ★★ | ★★★ | ★★ | ★★ | ★★★ |
-| AI roadmap | ★ | ★★★ | ★★ | ★ | ★★★ |
-| Multi-city comparison | ★ | ★★★ | ★★★ | ★★★ | ★ |
+| 263 city coverage | ★★ | ★★ | ★★★ | ★★★ | ★ |
+| Custom city fallback | ★ | ★ | ★★★ | ★★★ | ★ |
+| Tax assumptions | ★★ | ★★★ | ★★ | ★ | ★★ |
+| Multi-city comparison | ★ | ★★ | ★★★ | ★★★ | ★ |
 
 ★★★ = Critical  ★★ = Important  ★ = Nice to have
