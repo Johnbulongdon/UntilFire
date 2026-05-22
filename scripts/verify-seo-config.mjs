@@ -79,6 +79,10 @@ assert.match(fireCalculatorSource, /canonical:\s*siteUrl\(['"]\/fire-calculator[
 const sitemapSource = fs.readFileSync(path.join(repoRoot, 'app/sitemap.ts'), 'utf8');
 assert.match(sitemapSource, /siteUrl\(/, 'sitemap should use siteUrl helper');
 assert.match(sitemapSource, /siteUrl\(['"]\/fire-calculator['"]\)/, 'sitemap should include /fire-calculator');
+assert.match(sitemapSource, /CITIES,\s*isUS/, 'sitemap should import CITIES and isUS so generated city pages are discoverable');
+assert.match(sitemapSource, /isUS\(city\.state\)/, 'sitemap should include all indexable US city FIRE number pages');
+assert.match(sitemapSource, /curatedCitySlugs/, 'sitemap should de-duplicate curated city landing pages from generic city routes');
+assert.match(sitemapSource, /\/fire-number\/\$\{city\.key\}/, 'sitemap should generate /fire-number/{city} URLs for city keys');
 
 const robotsSource = fs.readFileSync(path.join(repoRoot, 'app/robots.ts'), 'utf8');
 assert.match(robotsSource, /siteUrl\(['"]\/sitemap\.xml['"]\)/, 'robots sitemap should use canonical siteUrl helper');
