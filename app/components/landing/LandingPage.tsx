@@ -87,7 +87,7 @@ function LandingNav({ onStart }: { onStart: () => void }) {
   }, []);
 
   return (
-    <header style={{
+    <header className="uf-nav" style={{
       position: "fixed", top: 0, left: 0, right: 0, height: 68,
       display: "flex", alignItems: "center", padding: "0 40px",
       background: scrolled ? "rgba(250,253,251,0.9)" : "transparent",
@@ -99,7 +99,7 @@ function LandingNav({ onStart }: { onStart: () => void }) {
       <Logo variant="light" size={30} />
 
       {/* Nav links */}
-      <nav style={{ display: "flex", gap: 30, marginLeft: 44 }}>
+      <nav className="uf-nav-links" style={{ display: "flex", gap: 30, marginLeft: 44 }}>
         {[
           ["How it works", "#how"],
           ["FIRE 101", "/fire-type"],
@@ -114,7 +114,7 @@ function LandingNav({ onStart }: { onStart: () => void }) {
 
       <div style={{ flex: 1 }} />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="uf-nav-actions" style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <Link href="/login" style={{ fontFamily: F, fontWeight: 600, fontSize: 14, color: C.muted, textDecoration: "none" }}>
           Log in
         </Link>
@@ -148,13 +148,13 @@ function HeroSection({ onStart }: { onStart: () => void }) {
       }} />
 
       {/* Content */}
-      <div style={{
+      <div className="uf-hero-content" style={{
         position: "relative", top: 0, left: 0, right: 0,
         display: "flex", flexDirection: "column", alignItems: "center",
         textAlign: "center", padding: "140px 40px 0", zIndex: 4,
       }}>
         {/* Badge */}
-        <div style={{
+        <div className="uf-hero-badge" style={{
           opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
           transition: "opacity 0.45s ease 0.05s, transform 0.45s cubic-bezier(0.22,1,0.36,1) 0.05s",
           display: "inline-flex", alignItems: "center", gap: 8,
@@ -167,7 +167,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
         </div>
 
         {/* Headline */}
-        <h1 style={{
+        <h1 className="uf-hero-title" style={{
           margin: "20px 0 0", fontFamily: F, fontWeight: 800,
           fontSize: "clamp(56px, 9vw, 104px)", lineHeight: 0.92,
           letterSpacing: "-0.045em", color: C.green900,
@@ -189,7 +189,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
         </h1>
 
         {/* Sub */}
-        <p style={{
+        <p className="uf-hero-subtitle" style={{
           margin: "28px 0 0", maxWidth: 620, fontSize: 18, lineHeight: 1.55,
           color: C.body, fontWeight: 500, fontFamily: F,
           opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
@@ -200,7 +200,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
         </p>
 
         {/* CTA pill */}
-        <div style={{
+        <div className="uf-hero-cta" style={{
           marginTop: 32, display: "inline-flex", alignItems: "center", gap: 10,
           padding: 8, background: "#fff", border: `1px solid ${C.borderSoft}`,
           borderRadius: 9999, boxShadow: "0 14px 40px rgba(0,53,39,0.10)",
@@ -208,7 +208,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           transition: "opacity 0.5s ease 0.55s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.55s",
         }}>
           {/* Month/Year placeholder */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 16px" }}>
+          <div className="uf-date-placeholder" style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 16px" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <div style={{ display: "flex", alignItems: "flex-end", height: 22, gap: 3 }}>
                 <span style={{ width: 2, height: 16, background: C.green700, borderRadius: 1, animation: "ufBlink 1.1s steps(1) infinite" }} />
@@ -223,11 +223,12 @@ function HeroSection({ onStart }: { onStart: () => void }) {
               </div>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.muted }}>Year</span>
             </div>
-            <span style={{ marginLeft: 14, fontSize: 13, fontWeight: 500, color: C.faint, whiteSpace: "nowrap" }}>
+            <span className="uf-date-helper" style={{ marginLeft: 14, fontSize: 13, fontWeight: 500, color: C.faint, whiteSpace: "nowrap" }}>
               Your FIRE date will appear here
             </span>
           </div>
           <button
+            className="uf-hero-cta-button"
             onClick={onStart}
             style={{ height: 52, padding: "0 26px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 16, cursor: "pointer", whiteSpace: "nowrap" }}
           >
@@ -236,7 +237,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
         </div>
 
         {/* Trust line */}
-        <div style={{
+        <div className="uf-hero-trust" style={{
           marginTop: 18, display: "flex", alignItems: "center", gap: 12,
           fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted,
           opacity: mounted ? 1 : 0, transition: "opacity 0.5s ease 0.7s",
@@ -252,7 +253,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
       </div>
 
       {/* Tilted product preview */}
-      <div aria-hidden style={{
+      <div aria-hidden className="uf-product-preview" style={{
         position: "relative", margin: "56px auto 0", width: "min(1040px, 90vw)",
         opacity: mounted ? 1 : 0, transform: mounted ? "perspective(1200px) rotateX(8deg)" : "perspective(1200px) rotateX(18deg) translateY(40px)",
         transition: "opacity 0.7s ease 0.5s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.5s",
@@ -260,13 +261,13 @@ function HeroSection({ onStart }: { onStart: () => void }) {
         background: "#0f1614", borderRadius: 20, padding: 10,
         boxShadow: "0 50px 80px rgba(0,30,20,0.3), 0 16px 30px rgba(0,30,20,0.2)",
       }}>
-        <div style={{ background: C.paperWarm, borderRadius: 13, padding: 20, display: "grid", gridTemplateRows: "auto 1fr", gap: 14 }}>
+        <div className="uf-product-preview-inner" style={{ background: C.paperWarm, borderRadius: 13, padding: 20, display: "grid", gridTemplateRows: "auto 1fr", gap: 14 }}>
           {/* Mock tab bar */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 22, height: 22, borderRadius: 5, background: C.green800 }} />
               <span style={{ fontFamily: F, fontWeight: 700, fontSize: 14, color: C.green900 }}>UntilFire</span>
-              <div style={{ display: "flex", gap: 4, marginLeft: 14 }}>
+              <div className="uf-product-tabs" style={{ display: "flex", gap: 4, marginLeft: 14 }}>
                 {["Dashboard", "Calculator", "Insights"].map((t, i) => (
                   <div key={t} style={{ padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: i === 0 ? "rgba(209,250,229,0.6)" : "transparent", color: i === 0 ? C.green700 : C.muted }}>
                     {t}
@@ -274,14 +275,14 @@ function HeroSection({ onStart }: { onStart: () => void }) {
                 ))}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 6 }}>
+            <div className="uf-product-controls" style={{ display: "flex", gap: 6 }}>
               {["#F1F5F9", "#F1F5F9", C.green700].map((bg, i) => (
                 <div key={i} style={{ width: 24, height: 24, borderRadius: 999, background: bg }} />
               ))}
             </div>
           </div>
           {/* Mock dashboard cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr", gap: 12 }}>
+          <div className="uf-product-cards" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr", gap: 12 }}>
             <div style={{ background: C.green900, borderRadius: 10, padding: 18, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.teal }}>Your freedom date</div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 16, marginTop: 10 }}>
@@ -334,6 +335,92 @@ function HeroSection({ onStart }: { onStart: () => void }) {
 
       <style>{`
         @keyframes ufBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+        @media (max-width: 760px) {
+          .uf-nav {
+            height: 72px !important;
+            padding: 0 18px !important;
+            background: rgba(250,253,251,0.96) !important;
+            border-bottom: 1px solid rgba(0,53,39,0.10) !important;
+            backdrop-filter: blur(16px) !important;
+          }
+          .uf-nav-links { display: none !important; }
+          .uf-nav-actions { display: none !important; }
+          .uf-hero-content { padding: 112px 18px 0 !important; }
+          .uf-hero-badge {
+            max-width: 100% !important;
+            white-space: normal !important;
+            justify-content: center !important;
+            text-align: center !important;
+            line-height: 1.25 !important;
+            padding: 7px 12px !important;
+            font-size: 12px !important;
+          }
+          .uf-hero-title {
+            margin-top: 18px !important;
+            font-size: clamp(42px, 13.5vw, 58px) !important;
+            line-height: 0.98 !important;
+            letter-spacing: -0.05em !important;
+          }
+          .uf-hero-subtitle {
+            margin-top: 22px !important;
+            max-width: 340px !important;
+            font-size: 17px !important;
+            line-height: 1.5 !important;
+          }
+          .uf-hero-cta {
+            width: calc(100vw - 32px) !important;
+            max-width: 360px !important;
+            box-sizing: border-box !important;
+            flex-direction: column !important;
+            border-radius: 28px !important;
+            padding: 10px !important;
+            gap: 10px !important;
+          }
+          .uf-date-placeholder {
+            width: 100% !important;
+            box-sizing: border-box !important;
+            justify-content: center !important;
+            padding: 6px 8px 2px !important;
+            gap: 6px !important;
+          }
+          .uf-date-helper {
+            display: none !important;
+          }
+          .uf-hero-cta-button {
+            width: 100% !important;
+            height: 50px !important;
+          }
+          .uf-hero-trust {
+            max-width: 340px !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+            row-gap: 10px !important;
+            column-gap: 12px !important;
+            font-size: 11px !important;
+            letter-spacing: 0.13em !important;
+          }
+          .uf-product-preview {
+            width: calc(100vw - 32px) !important;
+            margin-top: 44px !important;
+            padding: 8px !important;
+            border-radius: 18px !important;
+            transform: none !important;
+          }
+          .uf-product-preview-inner {
+            padding: 14px !important;
+            overflow: hidden !important;
+          }
+          .uf-product-tabs > div:not(:first-child),
+          .uf-product-controls {
+            display: none !important;
+          }
+          .uf-product-cards {
+            grid-template-columns: 1fr !important;
+          }
+          .uf-product-cards > div:nth-child(n+2) {
+            display: none !important;
+          }
+        }
       `}</style>
     </section>
   );
