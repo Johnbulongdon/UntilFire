@@ -395,7 +395,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
         <div style={{ marginBottom: 40 }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>{data.flag}</div>
           <h1 style={{ fontSize: 36, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.8px", margin: "0 0 12px", lineHeight: 1.1 }}>
-            FIRE Number Calculator<br />for {data.name}
+            FIRE Number Calculator{' '}<br />for {data.name}
           </h1>
           <p style={{ fontSize: 17, color: "#475569", margin: 0, lineHeight: 1.6, maxWidth: 580 }}>
             How much do you need to retire in {data.name}? Based on a local cost of living of{" "}

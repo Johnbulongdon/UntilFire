@@ -14,6 +14,7 @@
     "test:cashflow-mobile-save": "node scripts/verify-cashflow-mobile-save-reachable.mjs",
     "test:expense-guidance": "node scripts/verify-expense-guidance-copy.mjs",
     "test:city-coverage": "node scripts/verify-city-coverage.mjs",
+    "test:city-page-seo": "node scripts/verify-city-page-seo.mjs",
     "test:income-default": "node scripts/verify-income-default.mjs",
     "test:savings-period-input": "node scripts/verify-savings-period-input.mjs",
     "test:achieved-fire-reveal": "node scripts/verify-achieved-fire-reveal.mjs",
