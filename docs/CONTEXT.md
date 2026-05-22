@@ -8,14 +8,14 @@
 
 UntilFire is a **personal FIRE adviser** — the app that answers the question most people don't know how to ask: *"Can I actually FIRE? Where do I stand right now? And what should I do about it?"*
 
-In 60 seconds with no login, you find out whether early retirement is achievable for you — personalised to your city, income, and taxes, not a national average. Then the dashboard keeps score and the adviser tells you exactly what to do each month to move your date earlier.
+In 60 seconds with no login, you find your freedom date. Then UntilFire turns the number into a guided plan: what matters, what to do next, and how much closer it can bring work optionality.
 
-The market is split between tools that are too simple to trust (FIRECalc, cFIREsim) and tools that are too complex to give you clear next steps (ProjectionLab, Boldin). Both leave you alone after giving you a number or a model. UntilFire doesn't. It stays with you, tracks what's actually happening, and gives you one clear action at a time.
+The market is split between tools that are too simple to trust (FIRECalc, cFIREsim) and tools that are too complex to give you clear next steps (ProjectionLab, Boldin). Both leave you alone after giving you a number or a model. UntilFire doesn't. It does it with you: tracks what's actually happening, shows which choices move the date, and gives you a plan to follow.
 
-Free tier: full FIRE calculator, no login, 263 cities worldwide.  
-Pro ($4.99/mo): your personal FIRE adviser — monthly action plan based on your actual spending, not generic tips.
+Free tier: freedom date + FIRE number, no login, with city/tax assumptions where useful.
+Pro ($4.99/mo): your personal FIRE adviser — plan based on your actual spending, not generic tips.
 
-**One-line pitch:** Know if you can FIRE and where you stand — then let your adviser tell you what to do next.
+**One-line pitch:** Personal finance that sets you free — start with your freedom date, then follow a plan to bring it closer.
 
 **Live at:** https://untilfire.com  
 **X/Twitter:** @GetUntilFire  
@@ -104,7 +104,7 @@ Pro ($4.99/mo): your personal FIRE adviser — monthly action plan based on your
 | Tier | Price | Access |
 |---|---|---|
 | Free | $0 | Full FIRE calculator, no login required 鈥?city, income, savings 鈫?FIRE number + retirement date |
-| Pro | $4.99/mo | Personal FIRE adviser: monthly action plan, budget tracker, real-time FIRE date, personalised next steps |
+| Pro | $4.99/mo | Personal FIRE adviser: plan, budget tracker, real-time FIRE date, personalised next steps |
 
 ---
 

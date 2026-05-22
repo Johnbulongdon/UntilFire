@@ -192,14 +192,14 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
             transition: "opacity 0.5s ease 0.15s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s",
           }}>
-            Find your
+            Personal finance
           </span>
           <span style={{
             display: "block",
             opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
             transition: "opacity 0.5s ease 0.28s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.28s",
           }}>
-            freedom date.
+            that sets you free.
           </span>
         </h1>
 
@@ -210,8 +210,8 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
           transition: "opacity 0.5s ease 0.42s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.42s",
         }}>
-          Know if you can FIRE and where you stand — city- and tax-accurate, in 60 seconds.
-          Then upgrade for the AI adviser that tells you exactly what to do next.
+          Start with your freedom date in 60 seconds. Then UntilFire gives you a
+          plan to move it closer.
         </p>
 
         {/* CTA pill */}
@@ -256,7 +256,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted,
           opacity: mounted ? 1 : 0, transition: "opacity 0.5s ease 0.7s",
         }}>
-          {["Free forever", "No login", "263 cities"].map((s, i) => (
+          {["Free forever", "No login", "Your plan"].map((s, i) => (
             <span key={s} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               {i > 0 && <span style={{ opacity: 0.35, marginRight: 2 }}>·</span>}
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green600 }} />
@@ -377,18 +377,18 @@ function HowSection() {
 
         <Reveal delay={0.16}>
           <p style={{ margin: "18px auto 0", maxWidth: 520, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500, fontFamily: F }}>
-            City, income, savings rate. UntilFire runs the FIRE math on your actual
-            tax bracket and cost of living — not a national average — and shows you
-            exactly where you stand.
+            Income, spending, savings. UntilFire gives you the date first, then turns
+            it into a path: what to change, why it matters, and how much
+            freedom time it can buy back.
           </p>
         </Reveal>
 
         {/* Three steps */}
         <div style={{ marginTop: 72, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 36, textAlign: "left" }}>
           {[
-            { n: "01", t: "Tell us where you are.", s: "Your city, your take-home, what you save. 263 cities with real federal, state, and FICA rates — not a US average pretending to fit Singapore or Dubai." },
-            { n: "02", t: "See your FIRE date.", s: "Your FIRE number, your projected date, your current pace. Free, no login. The 60-second answer everyone else makes you sign up for." },
-            { n: "03", t: "Move the date.", s: "The Decision Impact Engine shows every choice as a cost in years of freedom. Upgrade for the AI adviser that picks one move per month." },
+            { n: "01", t: "Get your starting line.", s: "Answer a few plain questions. City and tax assumptions support the math, but the point is simple: when does work become optional for you?" },
+            { n: "02", t: "See what moves the date.", s: "Your FIRE number, projected date, and biggest levers. Free, no login. The 60-second answer everyone else makes you sign up for." },
+            { n: "03", t: "Follow the plan with us.", s: "UntilFire turns the math into a calm plan — save more, cut a category, redirect income, or protect momentum." },
           ].map((s, i) => (
             <Reveal key={s.n} delay={i * 0.1}>
               <div style={{ padding: "24px 24px 28px", background: C.paperWarm, borderRadius: 16, border: `1px solid ${C.border}` }}>
@@ -400,19 +400,19 @@ function HowSection() {
           ))}
         </div>
 
-        {/* City comparison callout */}
+        {/* Path callout */}
         <Reveal delay={0.1} style={{ marginTop: 56 }}>
           <div style={{ background: C.green900, borderRadius: 16, padding: "28px 32px", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>Same $90k salary · 20% savings:</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>Example plan:</span>
             {[
-              ["🇺🇸 San Francisco", "28 yrs"],
-              ["🇺🇸 Austin", "21 yrs"],
-              ["🇹🇭 Bangkok", "11 yrs"],
-              ["🇮🇳 Bangalore", "8 yrs"],
-            ].map(([city, yrs]) => (
-              <div key={city} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "10px 16px" }}>
-                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>{city}</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: C.teal }}>{yrs}</span>
+              ["Find the date", "today"],
+              ["Pick one move", "next"],
+              ["Track the shift", "every update"],
+              ["Keep going", "until work is optional"],
+            ].map(([step, timing]) => (
+              <div key={step} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "10px 16px" }}>
+                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>{step}</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: C.teal }}>{timing}</span>
               </div>
             ))}
           </div>
@@ -455,10 +455,10 @@ function WhySection() {
             },
             {
               icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" /><path d="M4 11h14M11 4c2.5 3 2.5 11 0 14M11 4c-2.5 3-2.5 11 0 14" stroke="currentColor" strokeWidth="1.3" /></svg>,
-              title: "City + tax accurate",
-              copy: "263 cities, real US federal + state + FICA brackets, international effective rates. Austin, London, Singapore, Dubai — your number, not a national average.",
+              title: "A path, not homework",
+              copy: "Like a coach for financial independence: UntilFire does not just mark your answer right or wrong. It gives you the next practice move.",
               badge: <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {["🇺🇸 Austin", "🇬🇧 London", "🇸🇬 Singapore", "+ 260"].map((c, i) => (
+                {["Start", "Next move", "Progress", "Repeat"].map((c, i) => (
                   <div key={c} style={{ padding: "5px 12px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 12, fontWeight: 700, color: i === 3 ? C.muted : C.green900 }}>{c}</div>
                 ))}
               </div>,
@@ -522,9 +522,9 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 The 60-second answer. No account required.
               </p>
               {[
-                "Full FIRE calculator (city + tax accurate)",
-                "263 cities, US + international tax math",
-                "Interactive Decision Impact sliders",
+                "Freedom date + FIRE number in 60 seconds",
+                "City and tax assumptions where useful",
+                "Decision Impact sliders that show years gained",
                 "Cinematic FIRE reveal + shareable card",
                 "FIRE Type quiz + Learning Hub",
               ].map(f => (
@@ -587,7 +587,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
 /* ── Stories ─────────────────────────────────────────────────────────── */
 function StoriesSection() {
   const testimonials = [
-    { initials: "MK", name: "Maya K.", role: "Started 2024", quote: "My freedom date was 2047. A year later it's 2042. The monthly move alone shifted it five years." },
+    { initials: "MK", name: "Maya K.", role: "Started 2024", quote: "My freedom date was 2047. A year later it's 2042. The plan made it feel possible." },
     { initials: "JB", name: "Jordan B.", role: "UntilFire user · 2 yrs", quote: "Best part isn't the date — it's the one move. I stopped checking 8 spreadsheets a week. Now I just do the move." },
     { initials: "AS", name: "Alex S.", role: "Started 2023", quote: "UntilFire didn't promise me anything. It just showed me the date. That was enough to change how I live." },
   ];

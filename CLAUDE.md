@@ -40,18 +40,18 @@ Avoid work that is not clearly connected to reaching $3k MRR unless the user exp
 
 ## Product Context
 
-UntilFire is a personal FIRE adviser web app. It shows when work can become optional, then gives clear monthly moves to bring that freedom date closer.
+UntilFire is a personal FIRE adviser web app. It turns personal finance into a guided plan toward work optionality, then shows how to bring that freedom date closer.
 
 - Live site: https://untilfire.com
 - GitHub: `github.com/Johnbulongdon/UntilFire` private repo
-- Primary positioning: **Find your freedom date.**
+- Primary positioning: **Personal finance that sets you free.**
 - North star: turn financial independence from an abstract calculator result into a clear, emotional, actionable path.
 - Free first value moment: full no-login calculator.
-- Pro direction: personal FIRE adviser, monthly action plan, budget tracking, and continuity after the aha moment.
+- Pro direction: personal FIRE adviser, plan, budget tracking, and continuity after the aha moment.
 
 Important framing:
 
-- Lead with work optionality, freedom date, and monthly moves — not generic “calculator” language.
+- Lead with freedom, work optionality, freedom date, and the plan — not generic “calculator” language.
 - Keep the first session calm and trustworthy.
 - Do not hide the aha moment behind login, payment, surveys, feedback prompts, bank prompts, or heavy setup.
 - Treat dashboard/Pro as continuation after value, not the first thing users must do.

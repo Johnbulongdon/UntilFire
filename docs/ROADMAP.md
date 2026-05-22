@@ -5,16 +5,16 @@ Last updated: May 2026
 
 ## Product Direction
 
-**Positioning:** Find your freedom date.
+**Positioning:** Personal finance that sets you free.
 
-UntilFire shows when work can become optional — your FIRE number, your timeline, and the monthly moves that can bring freedom closer. Free, no login.
+UntilFire starts with your freedom date, then gives you a plan to bring work optionality closer. Free, no login.
 
-**North star:** Turn financial independence from an abstract calculator result into a clear, emotional, actionable path: *when can work become optional, and what can I do this month to bring that date closer?*
+**North star:** Turn financial independence from an abstract calculator result into a clear, emotional, actionable path: *when can work become optional, and what can I do next to bring that date closer?*
 
 **Product principles:**
 - Lead with the emotional outcome: freedom date, work optional, escape the grind.
 - Keep the first value moment free, fast, and no-login.
-- Show specific monthly moves, not generic FIRE advice.
+- Show a specific plan, not generic FIRE advice.
 - Make calculations feel trustworthy with transparent assumptions, privacy reassurance, and clear methodology.
 - Treat the dashboard and Pro tier as continuity after the first aha moment, not a replacement for the free calculator.
 - Do not hide the aha moment behind login, payment, or heavy setup.
@@ -27,14 +27,14 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 1. Get more new visitors to the no-login freedom-date result without friction.
 2. Show enough trust, clarity, and monthly value that users understand why saving or upgrading is useful.
 3. Convert activated users into Pro customers only after the free aha moment.
-4. Retain paying users through recurring monthly moves, progress tracking, and continuity.
+4. Retain paying users through a plan, progress tracking, and continuity.
 
 **Priority order while pursuing $3k MRR:**
 - Fix blockers in mobile and end-to-end no-login activation.
 - Verify Stripe checkout, return, subscription sync, and billing portal before depending on paid conversion.
-- Finalize free vs Pro packaging around "personal FIRE adviser" and monthly moves.
+- Finalize free vs Pro packaging around "personal FIRE adviser" and the plan.
 - Add post-result save/email/share loops that do not expose sensitive finances.
-- Support founder-led beta and launch channels with work-optionality, freedom-date, and monthly-move messaging.
+- Support founder-led beta and launch channels with freedom-led, work-optionality, and plan messaging.
 
 ---
 
@@ -152,10 +152,10 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 ### Must Fix Before Launch
 
 - [x] **Fix main CTA path:** clicking the primary homepage CTA must immediately open or scroll to the first calculator step. No dead-feeling click, hidden flow, or repeated CTA.
-- [x] **Align live homepage copy:** hero should use "Find your freedom date" / "work can become optional" / "monthly moves that bring freedom closer."
+- [x] **Align live homepage copy:** hero should use freedom-led positioning / "work can become optional" / "plan that brings freedom closer."
 - [x] **Rename primary CTA:** prefer "Find my freedom date" over "Calculate my FIRE number."
 - [x] **Make first calculator step obvious:** show a clear "Step 1" prompt, input, progress, and continue button above the fold after CTA click.
-- [x] **Show the differentiator visually:** above the fold or on the result screen, show example monthly moves like "Invest +$300/mo → freedom 1.8 years sooner."
+- [x] **Show the differentiator visually:** above the fold or on the result screen, show example plan impact like "Invest +$300/mo → freedom 1.8 years sooner."
 - [x] **Add trust line near hero/result:** privacy + transparent assumptions + city/tax methodology, e.g. "Private by default. No account required. Built with city-level cost and tax assumptions."
 - [x] **Update retirement-heavy copy:** replace "retire by" where it weakens the broader freedom/work-optional positioning.
 - [ ] **Mobile QA:** complete full no-login calculator flow on mobile viewport and fix layout/CTA issues.
@@ -163,11 +163,11 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 ### Product Hunt Launch Assets
 
-- [ ] Product Hunt tagline: "Find your freedom date in 60 seconds."
-- [ ] Product Hunt short description: "UntilFire shows when work can become optional — your FIRE number, timeline, and the monthly moves that can bring freedom closer. Free, no login."
+- [ ] Product Hunt tagline: "Personal finance that sets you free."
+- [ ] Product Hunt short description: "UntilFire starts with your freedom date, then gives you a plan to bring work optionality closer. Free, no login."
 - [ ] Maker first comment: personal story + why FIRE tools need to show what to do next, not just a number.
-- [ ] 20–40 second demo GIF/video: enter inputs → get freedom date → see monthly moves.
-- [ ] 3–5 screenshots: hero, calculator step, result, monthly moves, dashboard continuity.
+- [ ] 20–40 second demo GIF/video: enter inputs → get freedom date → see plan.
+- [ ] 3–5 screenshots: hero, calculator step, result, plan, dashboard continuity.
 - [ ] Simple FAQ answers: calculation assumptions, privacy, who it is for, why it is free.
 
 ### Shareability & Conversion
@@ -183,7 +183,7 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [ ] A new visitor can understand the product in 5 seconds.
 - [ ] A new visitor can start the calculator in 1 click.
 - [ ] A new visitor can reach a useful result in about 60 seconds.
-- [ ] The result explains the FIRE number, timeline, and at least one concrete monthly move.
+- [ ] The result explains the FIRE number, timeline, and a concrete plan.
 - [ ] The page answers "can I trust this?" before users ask.
 - [ ] The launch page has no obvious broken CTA, console error, or mobile layout blocker.
 
@@ -196,19 +196,19 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 ### Growth
 
 - [ ] Product Hunt launch and follow-up engagement
-- [ ] Reddit launch post in relevant weekly promo/community threads
+- [ ] Reddit launch post in relevant promo/community threads
 - [ ] Hacker News Show HN post
 - [ ] X launch thread from @GetUntilFire
 - [ ] City SEO expansion from first pages to 50+ pages
 - [ ] FIRE topic pages linked from calculator/result flows
-- [ ] Lightweight founder-led content cadence around freedom date, work optionality, and monthly moves
+- [ ] Lightweight founder-led content cadence around freedom date, work optionality, and the plan
 
 ### Product
 
 - [ ] Improve "adjust inputs" flow from result screen
 - [ ] Scenario simulator on reveal screen: save more, earn more, reduce expenses, change city
 - [ ] Better result explanation for beginners: FIRE number, withdrawal rate, assumptions, timeline
-- [ ] Email result summary with top monthly move
+- [ ] Email result summary with top plan step
 - [ ] Dashboard handoff that preserves calculator result and next action
 - [ ] Sync custom categories/sub-categories to Supabase so they work across devices
 - [ ] Persist active dashboard tab in URL query param, e.g. `?tab=reports`
@@ -218,7 +218,7 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [ ] Finalize free vs Pro packaging
 - [ ] Enforce Pro unlocks only after free value is delivered
 - [ ] Email onboarding sequence: result saved, top move, dashboard reminder, Pro upgrade
-- [ ] Pricing page copy aligned with "monthly moves adviser," not generic dashboard access
+- [ ] Pricing page copy aligned with "plan adviser," not generic dashboard access
 
 ---
 
@@ -237,10 +237,10 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 ### Supporting Features
 
 - [ ] Spending reports connected to freedom-date impact
-- [ ] Recurring income/bill insights connected to monthly moves
+- [ ] Recurring income/bill insights connected to the plan
 - [ ] Coast FIRE and Barista FIRE scenario modelling
 - [ ] Better projection confidence and scenario comparison
-- [ ] Optional bank/Plaid deepening only if it improves monthly moves, not as a budgeting-app detour
+- [ ] Optional bank/Plaid deepening only if it improves the plan, not as a budgeting-app detour
 
 ---
 
@@ -270,11 +270,11 @@ John has chosen the next product direction:
 
 1. **Launch path:** Do private/friends beta and soft public launch on Reddit/X before Product Hunt.
 2. **Readiness gate:** Use beta/soft-launch quotas before PH: roughly 50 real visitors, 20 completed freedom-date results, 5 feedback replies, and zero critical flow issues. Stronger gate: 100 visitors, 50 completed results, and 10 people willing to support/comment.
-3. **Core aha:** Lead with “freedom date + one monthly move.” The result should not stop at a number/date.
+3. **Core aha:** Lead with “freedom date + plan.” The result should not stop at a number/date.
 4. **Plaid:** ✅ Confirmed launch feature — Plaid works 100% and is promoted in the dashboard for Product Hunt.
 5. **FIRE Type:** Keep quiz as a secondary social/share loop, not the main launch promise.
-6. **Monetisation:** ✅ Stripe verified. Free tier: 1 bank + 1 brokerage. Pro unlocks additional connections and AI categorisation. Soft-hide aggressive upgrade prompts until monthly moves adviser is stronger.
-7. **Next sprint:** Product Hunt Funnel Sprint — fix CTA, update hero copy, show one monthly move, add trust line, QA mobile/no-login flow, update share copy, and prepare launch assets.
+6. **Monetisation:** ✅ Stripe verified. Free tier: 1 bank + 1 brokerage. Pro unlocks additional connections and AI categorisation. Soft-hide aggressive upgrade prompts until plan adviser is stronger.
+7. **Next sprint:** Product Hunt Funnel Sprint — fix CTA, update hero copy, show the plan, add trust line, QA mobile/no-login flow, update share copy, and prepare launch assets.
 
 ---
 
