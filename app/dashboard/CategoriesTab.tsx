@@ -399,6 +399,16 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   });
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
 
+  // ── Category manager state ──────────────────────────────────────────────────
+  const [manageCatKey, setManageCatKey] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm]   = useState(false);
+  const [newCatLabel, setNewCatLabel]   = useState("");
+  const [newCatColor, setNewCatColor]   = useState(COLOR_PALETTE[0]);
+  const [newCatEmoji, setNewCatEmoji]   = useState("");
+  const [editLabel, setEditLabel]       = useState("");
+  const [editColor, setEditColor]       = useState(COLOR_PALETTE[0]);
+  const [editEmoji, setEditEmoji]       = useState("");
+
   const handleDeleteCustomCat = (key: string) => {
     const updated = customCats.filter((c) => c.key !== key);
     setCustomCats(updated);
@@ -417,6 +427,57 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
           }, { onConflict: "user_id" });
         });
     });
+  };
+
+  const syncCustomCats = (updated: typeof customCats) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+        .then(({ data }) => {
+          const cur = (data?.expenses as Record<string, unknown>) || {};
+          supabase.from("user_budget").upsert({
+            user_id: session.user.id,
+            expenses: { ...cur, _custom_cats: updated },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+        });
+    });
+  };
+
+  const handleAddCustomCat = () => {
+    const label = newCatLabel.trim();
+    if (!label) return;
+    const key = label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    if (allExpenseCats.some((c) => c.key === key)) return;
+    const code = label.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "CU";
+    const cat = { key, label, code, color: newCatColor, ...(newCatEmoji ? { emoji: newCatEmoji } : {}) };
+    const updated = [...customCats, cat];
+    setCustomCats(updated);
+    localStorage.setItem("uf_custom_cats", JSON.stringify(updated));
+    syncCustomCats(updated);
+    setNewCatLabel(""); setNewCatColor(COLOR_PALETTE[0]); setNewCatEmoji("");
+    setShowAddForm(false);
+  };
+
+  const handleUpdateCustomCat = (key: string) => {
+    const label = editLabel.trim();
+    if (!label) return;
+    const code = label.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "CU";
+    const updated = customCats.map((c) =>
+      c.key === key ? { ...c, label, code, color: editColor, ...(editEmoji ? { emoji: editEmoji } : { emoji: undefined }) } : c
+    );
+    setCustomCats(updated);
+    localStorage.setItem("uf_custom_cats", JSON.stringify(updated));
+    syncCustomCats(updated);
+    setManageCatKey(null);
+  };
+
+  const openManageEdit = (cat: typeof allExpenseCats[0]) => {
+    const { color, emoji } = resolveDisplay({ ...cat, emoji: cat.emoji ?? "" }, catCustomizations, cat.key);
+    setEditLabel(cat.label);
+    setEditColor(color);
+    setEditEmoji(emoji);
+    setManageCatKey(manageCatKey === cat.key ? null : cat.key);
   };
 
   useEffect(() => {
@@ -447,6 +508,27 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
           }
         });
     });
+  }, []);
+
+  // Re-fetch custom categories when the browser tab regains focus (cross-device sync)
+  useEffect(() => {
+    const refetch = () => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+          .then(({ data }) => {
+            if (!data?.expenses) return;
+            const { _custom_cats } = data.expenses as Record<string, unknown>;
+            if (Array.isArray(_custom_cats)) {
+              setCustomCats(_custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            }
+          });
+      });
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
   const [y, m] = viewMonth.split("-").map(Number);
@@ -548,6 +630,217 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
 
   return (
     <div>
+      {/* ── All Categories Manager ──────────────────────────────────────── */}
+      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", marginBottom: 24 }}>
+        {/* Header */}
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B" }}>All Categories</span>
+          <button
+            onClick={() => { setShowAddForm((v) => !v); setManageCatKey(null); }}
+            style={{ display: "flex", alignItems: "center", gap: 5, background: showAddForm ? "#F1F5F9" : "#064E3B", color: showAddForm ? "#64748B" : "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
+            {showAddForm ? "✕ Cancel" : "+ Add"}
+          </button>
+        </div>
+
+        {/* Add form */}
+        {showAddForm && (
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", background: "#F8FAFC" }}>
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 4 }}>Category name</label>
+              <input
+                type="text"
+                autoFocus
+                placeholder="e.g. Hobbies"
+                value={newCatLabel}
+                onChange={(e) => setNewCatLabel(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddCustomCat(); if (e.key === "Escape") setShowAddForm(false); }}
+                style={{ width: "100%", padding: "8px 10px", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 14, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Color</label>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {COLOR_PALETTE.map((c) => (
+                  <button key={c} onClick={() => setNewCatColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: newCatColor === c ? "2px solid #0F172A" : "2px solid transparent", cursor: "pointer", outline: newCatColor === c ? "2px solid #fff" : "none", outlineOffset: "-3px" }} />
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Emoji <span style={{ fontWeight: 400, color: "#94A3B8" }}>(optional)</span></label>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {EMOJI_PALETTE.map((em) => (
+                  <button key={em} onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: newCatEmoji === em ? "2px solid #064E3B" : "1px solid #E2E8F0", background: newCatEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {em}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={handleAddCustomCat}
+                disabled={!newCatLabel.trim()}
+                style={{ flex: 1, padding: "8px 0", background: newCatLabel.trim() ? "#064E3B" : "#E2E8F0", color: newCatLabel.trim() ? "#fff" : "#94A3B8", border: "none", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: newCatLabel.trim() ? "pointer" : "not-allowed" }}
+              >
+                Add Category
+              </button>
+              <button onClick={() => setShowAddForm(false)} style={{ padding: "8px 16px", background: "transparent", color: "#64748B", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 14, cursor: "pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Category list */}
+        <div>
+          {/* Built-in */}
+          {EXPENSE_CATEGORIES.map((cat) => {
+            const { color, emoji } = resolveDisplay(cat, catCustomizations, cat.key);
+            const isEditing = manageCatKey === cat.key;
+            return (
+              <div key={cat.key}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: color, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: emoji ? 16 : 11, color: "#fff", fontWeight: 700 }}>
+                    {emoji || cat.code}
+                  </div>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#0F172A" }}>{cat.label}</span>
+                  <span style={{ fontSize: 11, padding: "2px 6px", background: "#F1F5F9", borderRadius: 4, color: "#64748B", fontWeight: 600, marginRight: 4 }}>{cat.code}</span>
+                  <button
+                    onClick={() => openManageEdit(cat)}
+                    title="Edit appearance"
+                    style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: isEditing ? "#F0FDF4" : "transparent", border: isEditing ? "1px solid #BBF7D0" : "1px solid transparent", borderRadius: 6, cursor: "pointer", color: isEditing ? "#064E3B" : "#94A3B8" }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                  </button>
+                </div>
+                {isEditing && (
+                  <div style={{ padding: "12px 20px 16px", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC" }}>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Color</label>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {COLOR_PALETTE.map((c) => (
+                          <button key={c} onClick={() => setEditColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: editColor === c ? "2px solid #0F172A" : "2px solid transparent", cursor: "pointer", outline: editColor === c ? "2px solid #fff" : "none", outlineOffset: "-3px" }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Emoji</label>
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {EMOJI_PALETTE.map((em) => (
+                          <button key={em} onClick={() => setEditEmoji(editEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: editEmoji === em ? "2px solid #064E3B" : "1px solid #E2E8F0", background: editEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {em}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <button
+                        onClick={() => {
+                          setCatCustomizations((prev) => ({ ...prev, [cat.key]: { color: editColor, emoji: editEmoji || undefined } }));
+                          setManageCatKey(null);
+                        }}
+                        style={{ padding: "7px 16px", background: "#064E3B", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => { setCatCustomizations((prev) => { const n = { ...prev }; delete n[cat.key]; return n; }); setManageCatKey(null); }}
+                        style={{ padding: "7px 12px", background: "transparent", color: "#94A3B8", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}
+                      >
+                        Reset
+                      </button>
+                      <button onClick={() => setManageCatKey(null)} style={{ marginLeft: "auto", padding: "7px 12px", background: "transparent", color: "#64748B", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Custom categories divider + rows */}
+          {customCats.length > 0 && (
+            <div style={{ padding: "6px 20px 2px", background: "#F8FAFC", borderBottom: "1px solid #F1F5F9" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8" }}>Custom</span>
+            </div>
+          )}
+          {customCats.map((cat) => {
+            const { color, emoji } = resolveDisplay({ ...cat, emoji: cat.emoji ?? "" }, catCustomizations, cat.key);
+            const isEditing = manageCatKey === cat.key;
+            return (
+              <div key={cat.key}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: color, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: emoji ? 16 : 11, color: "#fff", fontWeight: 700 }}>
+                    {emoji || cat.code}
+                  </div>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#0F172A" }}>{cat.label}</span>
+                  <span style={{ fontSize: 11, padding: "2px 6px", background: "#F1F5F9", borderRadius: 4, color: "#64748B", fontWeight: 600, marginRight: 4 }}>{cat.code}</span>
+                  <button
+                    onClick={() => openManageEdit(cat)}
+                    title="Edit"
+                    style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: isEditing ? "#F0FDF4" : "transparent", border: isEditing ? "1px solid #BBF7D0" : "1px solid transparent", borderRadius: 6, cursor: "pointer", color: isEditing ? "#064E3B" : "#94A3B8" }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCustomCat(cat.key)}
+                    title="Delete"
+                    style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "1px solid transparent", borderRadius: 6, cursor: "pointer", color: "#FDA4AF" }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                  </button>
+                </div>
+                {isEditing && (
+                  <div style={{ padding: "12px 20px 16px", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC" }}>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 4 }}>Name</label>
+                      <input
+                        type="text"
+                        value={editLabel}
+                        onChange={(e) => setEditLabel(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleUpdateCustomCat(cat.key); if (e.key === "Escape") setManageCatKey(null); }}
+                        style={{ width: "100%", padding: "7px 10px", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 14, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box" }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Color</label>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {COLOR_PALETTE.map((c) => (
+                          <button key={c} onClick={() => setEditColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: editColor === c ? "2px solid #0F172A" : "2px solid transparent", cursor: "pointer", outline: editColor === c ? "2px solid #fff" : "none", outlineOffset: "-3px" }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Emoji <span style={{ fontWeight: 400, color: "#94A3B8" }}>(optional)</span></label>
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {EMOJI_PALETTE.map((em) => (
+                          <button key={em} onClick={() => setEditEmoji(editEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: editEmoji === em ? "2px solid #064E3B" : "1px solid #E2E8F0", background: editEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {em}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => handleUpdateCustomCat(cat.key)}
+                        disabled={!editLabel.trim()}
+                        style={{ flex: 1, padding: "7px 0", background: editLabel.trim() ? "#064E3B" : "#E2E8F0", color: editLabel.trim() ? "#fff" : "#94A3B8", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: editLabel.trim() ? "pointer" : "not-allowed" }}
+                      >
+                        Save
+                      </button>
+                      <button onClick={() => setManageCatKey(null)} style={{ padding: "7px 12px", background: "transparent", color: "#64748B", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Month nav */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
