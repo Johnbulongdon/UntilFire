@@ -104,6 +104,7 @@ function LandingNav({ onStart }: { onStart: () => void }) {
           ["How it works", "#how"],
           ["FIRE 101", "/fire-type"],
           ["Pricing", "#pricing"],
+          ["FAQ", "#faq"],
         ].map(([label, href]) => (
           <a key={label} href={href} style={{ fontFamily: F, fontWeight: 500, fontSize: 14, color: C.muted, textDecoration: "none", whiteSpace: "nowrap" }}>
             {label}
@@ -625,6 +626,73 @@ function StoriesSection() {
   );
 }
 
+/* ── FAQ ─────────────────────────────────────────────────────────────── */
+function FAQSection() {
+  const faqs = [
+    {
+      q: "What is a freedom date?",
+      a: "Your freedom date is the point where work can become optional based on your current income, spending, savings, and FIRE assumptions. It is not a promise. It is a starting line you can move closer with better choices.",
+    },
+    {
+      q: "How is UntilFire different from a FIRE calculator?",
+      a: "Most calculators stop after giving you a number. UntilFire starts there, then turns the result into a plan: what matters, what to change next, and how that could move your date.",
+    },
+    {
+      q: "Do I need to connect my bank or create an account?",
+      a: "No. The first value moment is free and no-login. You can get a freedom date before connecting accounts, saving anything, or upgrading.",
+    },
+    {
+      q: "Why do city and tax assumptions matter?",
+      a: "They make the math more realistic because income, taxes, and living costs vary a lot by place. But they support the answer — the core value is the plan that helps you bring work optionality closer.",
+    },
+    {
+      q: "Is this financial advice?",
+      a: "No. UntilFire is planning software, not a licensed financial adviser. It helps you understand scenarios and tradeoffs so you can make clearer decisions or discuss them with a professional.",
+    },
+    {
+      q: "What does Pro add?",
+      a: "Pro is for continuity after the free result: a personal FIRE adviser, live plan, budget tracking, connected-account sync, and deeper recommendations based on your real numbers.",
+    },
+  ];
+
+  return (
+    <section id="faq" style={{ background: C.paperWarm, padding: "100px 40px", borderTop: `1px solid ${C.border}` }}>
+      <div style={{ maxWidth: 980, margin: "0 auto" }}>
+        <Reveal>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", border: `1.5px solid ${C.borderSoft}`, background: "#fff", borderRadius: 9999, fontSize: 13, fontWeight: 700, color: C.green900 }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 12.5a5.5 5.5 0 100-11 5.5 5.5 0 000 11zM5.6 5.4a1.5 1.5 0 112.4 1.2c-.7.5-1 .8-1 1.5M7 10h.01" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              FAQ
+            </div>
+            <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 5.5vw, 70px)", lineHeight: 0.98, letterSpacing: "-0.04em", color: C.green900 }}>
+              Clear answers before<br />you share real numbers.
+            </h2>
+            <p style={{ margin: "18px auto 0", maxWidth: 560, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
+              The quick version: get the date first, understand the assumptions,
+              then use the plan to move work optionality closer.
+            </p>
+          </div>
+        </Reveal>
+
+        <div style={{ marginTop: 52, display: "grid", gap: 12 }}>
+          {faqs.map((faq, i) => (
+            <Reveal key={faq.q} delay={i * 0.04}>
+              <details style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "22px 24px", boxShadow: "0 8px 22px rgba(0,53,39,0.05)" }}>
+                <summary style={{ cursor: "pointer", fontFamily: F, fontSize: 18, fontWeight: 800, color: C.green900, letterSpacing: "-0.01em" }}>
+                  {faq.q}
+                </summary>
+                <p style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.65, color: C.body }}>
+                  {faq.a}
+                </p>
+              </details>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ── Closing CTA ─────────────────────────────────────────────────────── */
 function ClosingSection({ onStart }: { onStart: () => void }) {
   return (
@@ -667,8 +735,16 @@ function FooterSection() {
     <footer style={{ background: C.mint, padding: "56px 40px 0", overflow: "hidden" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 28, paddingBottom: 20, flexWrap: "wrap" }}>
-          {["How it works", "FIRE 101", "Pricing", "Stories", "Privacy", "Terms"].map(l => (
-            <span key={l} style={{ fontSize: 14, fontWeight: 600, color: C.green900, cursor: "pointer" }}>{l}</span>
+          {[
+            ["How it works", "#how"],
+            ["FIRE 101", "/fire-type"],
+            ["Pricing", "#pricing"],
+            ["Stories", "#stories"],
+            ["FAQ", "#faq"],
+            ["Privacy", "#"],
+            ["Terms", "#"],
+          ].map(([label, href]) => (
+            <a key={label} href={href} style={{ fontSize: 14, fontWeight: 600, color: C.green900, cursor: "pointer", textDecoration: "none" }}>{label}</a>
           ))}
         </div>
 
@@ -703,6 +779,7 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
       <WhySection />
       <PricingSection onStart={onStart} />
       <StoriesSection />
+      <FAQSection />
       <ClosingSection onStart={onStart} />
       <FooterSection />
     </div>
