@@ -576,7 +576,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
         </Reveal>
         <Reveal delay={0.16}>
           <p style={{ margin: "18px auto 0", maxWidth: 480, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-            Start with a FIRE-first plan. Upgrade when you want deeper guidance, connected progress, and faster decisions.
+            Start with a FIRE-first plan. Upgrade when you want deeper guidance, connected progress, and automatic bank and brokerage sync.
           </p>
         </Reveal>
 
@@ -629,7 +629,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 ["Fast-forward moves ranked by time saved", false],
                 ["Action plan from your actual spending", false],
                 ["Monte Carlo simulation · multi-currency tracking", false],
-                ["Plaid-connected real-time sync", true],
+                ["Plaid sync with 12,000+ financial institutions", false],
                 ["FIRE progress report by email", false],
               ].map(([f, soon]) => (
                 <div key={f as string} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "7px 0", fontSize: 14, color: soon ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.9)" }}>
@@ -647,7 +647,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
 
         <Reveal delay={0.1}>
           <div style={{ marginTop: 18, fontSize: 12, color: C.muted, fontWeight: 600, letterSpacing: "0.06em" }}>
-            Pro adds deeper guidance, connected progress, and Stripe billing you can cancel from your dashboard
+            Pro adds deeper guidance, Plaid-connected progress, and Stripe billing you can cancel from your dashboard
           </div>
         </Reveal>
       </div>
@@ -737,7 +737,7 @@ function FAQSection() {
     },
     {
       q: "What does Pro add?",
-      a: "Pro helps you fast-forward your FIRE with ranked next moves, connected progress, deeper scenarios, and recommendations based on your real numbers.",
+      a: "Pro helps you fast-forward your FIRE with ranked next moves, connected progress, deeper scenarios, and Plaid sync across 12,000+ financial institutions.",
     },
   ];
 
