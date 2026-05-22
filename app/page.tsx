@@ -21,7 +21,7 @@ import {
 } from "@/lib/acquisition";
 import Nav from "@/app/components/landing/Nav";
 import WizardProgress from "@/app/components/landing/WizardProgress";
-import HeroScreen from "@/app/components/landing/HeroScreen";
+import LandingPage from "@/app/components/landing/LandingPage";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
 import {
   CURRENCY_NAMES,
@@ -2161,6 +2161,10 @@ export default function Home() {
         /* -- FOOTER DIVIDER -- */
       `}</style>
 
+      {screen === "hero" ? (
+        <LandingPage onStart={() => setScreen("city")} />
+      ) : (
+      <>
       <Nav
         step={STEP_MAP[screen]}
         totalSteps={totalDots}
@@ -2174,9 +2178,6 @@ export default function Home() {
           <div className="uf-atm-orb uf-atm-orb-2" />
           <div className="uf-atm-orb uf-atm-orb-3" />
         </div>
-        {screen === "hero" && (
-          <HeroScreen onStart={() => setScreen("city")} />
-        )}
         {screen === "city" && (
           <CityScreen
             onNext={c => { setCityState(c); setScreen("currency"); }}
@@ -2234,6 +2235,8 @@ export default function Home() {
         )}
 
       </div>
+      </>
+      )}
     </>
   );
 }
