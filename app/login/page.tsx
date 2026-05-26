@@ -1,6 +1,7 @@
 'use client'
 import Logo from '@/app/components/Logo'
 import { supabase } from '@/lib/supabase'
+import { siteUrl } from '@/lib/site'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -10,6 +11,15 @@ import { peekCalculatorPrefill } from '@/lib/journey'
 
 export default function LoginPage() {
   const router = useRouter()
+
+  const getOAuthRedirectTo = () => {
+    if (typeof window === 'undefined') return siteUrl('/auth/callback')
+
+    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    if (isLocalHost) return `${window.location.origin}/auth/callback`
+
+    return siteUrl('/auth/callback')
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -28,14 +38,17 @@ export default function LoginPage() {
       stateKey: prefill?.stateKey,
       landingSource: prefill?.landingSource ?? getAcquisitionSource(),
     })
-    await supabase.auth.signInWithOAuth({
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: typeof window !== 'undefined'
-          ? `${window.location.origin}/auth/callback`
-          : 'https://www.untilfire.com/auth/callback',
+        redirectTo: getOAuthRedirectTo(),
+        skipBrowserRedirect: true,
       },
     })
+
+    if (error) throw error
+    if (data?.url) window.location.assign(data.url)
   }
 
   return (

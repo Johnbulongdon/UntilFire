@@ -49,8 +49,8 @@ Without the public Supabase vars, `lib/env.getOptionalSupabaseEnv()` returns `nu
 2. **Enable Google OAuth.** Authentication → Providers → Google. Add the OAuth client and set:
    - **Authorized redirect URI:** `https://<project-ref>.supabase.co/auth/v1/callback` (the Supabase value, not your app URL).
 3. **Configure auth URLs.** Authentication → URL Configuration:
-   - **Site URL:** your deployed origin (e.g. `https://untilfire.com`). For local-only setup use `http://localhost:3000`.
-   - **Redirect URLs:** add every origin you sign in from, including local dev. The app sends users back to `${window.location.origin}/auth/callback` (see `app/login/page.tsx`).
+   - **Site URL:** your deployed canonical UntilFire origin (e.g. `https://untilfire.com` or `https://www.untilfire.com`, whichever you actually use live). This is the URL Google should show to users on the consent screen instead of the raw `*.supabase.co` project URL.
+   - **Redirect URLs:** add every origin you sign in from, including local dev. The app sends users back to `/auth/callback` on the local origin for localhost and to the canonical production URL in `lib/site.ts` for live sign-ins.
 4. **Run the schema.** SQL Editor → paste `supabase-setup.sql` → Run. It is idempotent and uses `IF NOT EXISTS` plus `DROP POLICY IF EXISTS` so re-running is safe.
 5. **Set environment variables.** In `.env.local` for local dev or in the Vercel project settings for production. The anon key and URL are visible in Supabase → Project Settings → API.
 6. **Run the app.**

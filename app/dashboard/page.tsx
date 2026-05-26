@@ -1805,19 +1805,21 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
   // ── Emergency fund logic ─────────────────────────────────────────────────
   const HYSA_THRESHOLD = 3.5;
-  const savingsAccts = bankAssets.filter(a =>
+  const savingsAccts = bankAssets.filter(a => (
+    a.type === "depository" &&
     ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "))
-  );
+  ));
   const hasPlaidSavings = savingsAccts.length > 0;
   const hasHysa = savingsAccts.some(a => (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD);
-  const savingsBalance = hasPlaidSavings
+  const emergencyFundBalance = hasPlaidSavings
     ? savingsAccts.reduce((s, a) => s + (a.balance_current ?? 0), 0)
     : cashSavings;
+  const brokerageCashExcluded = connectedBreakdown.brokerageCash > 0;
   const efMin = monthlyExpenses * 3;
   const efMax = monthlyExpenses * 6;
-  const efPct = efMin > 0 ? Math.min(100, (savingsBalance / efMin) * 100) : 0;
-  const efStatus = savingsBalance >= efMax ? "full" : savingsBalance >= efMin ? "ok" : savingsBalance > 0 ? "partial" : "empty";
-  const monthsCovered = monthlyExpenses > 0 ? savingsBalance / monthlyExpenses : 0;
+  const efPct = efMin > 0 ? Math.min(100, (emergencyFundBalance / efMin) * 100) : 0;
+  const efStatus = emergencyFundBalance >= efMax ? "full" : emergencyFundBalance >= efMin ? "ok" : emergencyFundBalance > 0 ? "partial" : "empty";
+  const monthsCovered = monthlyExpenses > 0 ? emergencyFundBalance / monthlyExpenses : 0;
   const avgApy = savingsAccts.length > 0
     ? savingsAccts.filter(a => effectiveApy(a) != null).reduce((s, a) => s + (effectiveApy(a) ?? 0), 0) /
       Math.max(1, savingsAccts.filter(a => effectiveApy(a) != null).length)
@@ -1893,7 +1895,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           {/* Three-stat row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 14 }}>
             {[
-              { label: "Current Savings", value: fmtMoney(savingsBalance), color: efStatus === "full" || efStatus === "ok" ? "#059669" : "#19181E" },
+              { label: "Current Savings", value: fmtMoney(emergencyFundBalance), color: efStatus === "full" || efStatus === "ok" ? "#059669" : "#19181E" },
               { label: "Min · 3 months", value: fmtMoney(efMin) },
               { label: "Target · 6 months", value: fmtMoney(efMax) },
             ].map(s => (
@@ -1921,7 +1923,12 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             {efStatus === "partial" && <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Partially funded ({monthsCovered.toFixed(1)} months)</span>}
             {efStatus === "empty" && <span style={{ background: "#FEE2E2", color: "#991B1B", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Not started</span>}
             {hasHysa && avgApy > 0 && (
-              <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(savingsBalance * avgApy / 100 / 12))}/mo interest</span>
+              <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(emergencyFundBalance * avgApy / 100 / 12))}/mo interest</span>
+            )}
+            {brokerageCashExcluded && (
+              <span style={{ fontSize: 12, color: "#64748B", fontWeight: 500 }}>
+                · excludes {fmtMoney(connectedBreakdown.brokerageCash)} in brokerage cash reserved for investing
+              </span>
             )}
           </div>
 

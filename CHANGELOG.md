@@ -2,6 +2,16 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-05-26
+
+### Changed
+- Dashboard emergency-fund logic now excludes brokerage cash reserved for investing from the emergency-fund "Current Savings" figure, while still counting that money in total cash/assets.
+- Google login now resolves the production OAuth callback through `lib/site.ts`, keeps localhost callbacks local in dev, and manually follows the returned OAuth URL so the app stays explicit about the real UntilFire destination.
+- `AUTH_SETUP.md` now documents that the Supabase **Site URL** should be the canonical UntilFire domain so Google shows the UntilFire URL instead of the raw `*.supabase.co` project URL on the consent screen.
+
+### Verification
+- `npm run build` passed after the dashboard emergency-fund update and Google-login callback cleanup.
+
 ## [Unreleased] - 2026-05-02
 
 ### Changed
