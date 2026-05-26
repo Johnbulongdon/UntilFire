@@ -730,12 +730,12 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
       <WizardProgress step={3} />
       <p className="uf-step-label">Step 4 of 4</p>
       <div className="uf-eyebrow">Net worth</div>
-      <h2 className="uf-h2">What are your <span className="uf-accent">current savings?</span></h2>
+      <h2 className="uf-h2">What is your <span className="uf-accent">net worth?</span></h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
-        Enter your current net worth or investable savings. Estimate is fine. Zero is fine too.
+        Enter your current net worth. Estimate is fine. Zero is fine too.
       </p>
 
-      <label className="uf-label">Current savings / net worth ({currency})</label>
+      <label className="uf-label">Net worth ({currency})</label>
       <div className="uf-big-input-wrap">
         <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
         <input
