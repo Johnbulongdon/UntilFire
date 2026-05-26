@@ -355,9 +355,10 @@ function CurrencyScreen({ defaultCurrency = "USD", onNext, onBack }: { defaultCu
   );
 }
 
-function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
+function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, onBack }: {
   stateKey: string;
   currency?: SupportedCurrency;
+  onCurrencyChange?: (c: SupportedCurrency) => void;
   onNext: (income: number) => void;
   onBack: () => void;
 }) {
@@ -389,8 +390,22 @@ function IncomeScreen({ stateKey, currency = "USD", onNext, onBack }: {
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={2} />
-      <p className="uf-step-label">Step 3 of 5</p>
+      <WizardProgress step={1} />
+      <p className="uf-step-label">Step 2 of 4</p>
+      {onCurrencyChange && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Currency:</span>
+          <select
+            value={currency}
+            onChange={e => onCurrencyChange(e.target.value as SupportedCurrency)}
+            style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1.5px solid var(--accent)", borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", appearance: "none", WebkitAppearance: "none" }}
+          >
+            {SUPPORTED_CURRENCIES.map(c => (
+              <option key={c} value={c}>{c} — {CURRENCY_NAMES[c] ?? c}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="uf-eyebrow">Income</div>
       <h2 className="uf-h2">What do you <span className="uf-accent">earn?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
@@ -558,8 +573,8 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={3} />
-      <p className="uf-step-label">Step 4 of 5</p>
+      <WizardProgress step={2} />
+      <p className="uf-step-label">Step 3 of 4</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">How much do you <span className="uf-accent">save or spend?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
@@ -712,8 +727,8 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={4} />
-      <p className="uf-step-label">Step 5 of 5</p>
+      <WizardProgress step={3} />
+      <p className="uf-step-label">Step 4 of 4</p>
       <div className="uf-eyebrow">Net worth</div>
       <h2 className="uf-h2">What are your <span className="uf-accent">current savings?</span></h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
@@ -1268,6 +1283,17 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.5)", maxWidth: 260, lineHeight: 1.45 }}>
                     25× annual expenses at the 4% safe withdrawal rate.
                   </div>
+                  {portfolioBalance > 0 && result.fireTarget > 0 && (
+                    <div style={{ marginTop: 14, maxWidth: 280 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 11, fontWeight: 600 }}>
+                        <span style={{ color: "rgba(255,255,255,0.55)" }}>Progress toward FIRE</span>
+                        <span style={{ color: "#22D3A5", fontVariantNumeric: "tabular-nums" }}>{Math.min(100, Math.round(portfolioBalance / result.fireTarget * 100))}%</span>
+                      </div>
+                      <div style={{ height: 5, borderRadius: 99, background: "rgba(255,255,255,0.10)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 99, background: "#22D3A5", width: `${Math.min(100, portfolioBalance / result.fireTarget * 100)}%`, transition: "width 0.8s ease" }} />
+                      </div>
+                    </div>
+                  )}
                   <div style={{ marginTop: 22, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {milestones.map((m) => (
                       <div data-gsap="milestone" key={m.label} style={{ flex: "1 1 auto", minWidth: 100, padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8, opacity: 0 }}>
@@ -1290,6 +1316,9 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   >
                     Save my plan →
                   </Link>
+                  <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.5 }}>
+                    Free account · Your numbers stay private · Track monthly progress
+                  </div>
                 </div>
               </div>
             </div>
@@ -1367,6 +1396,9 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                         >
                           Save my plan →
                         </Link>
+                        <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.5 }}>
+                          Free account · Your numbers stay private · Track monthly progress
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1384,77 +1416,45 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     <div style={{ marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.45, maxWidth: 320 }}>{fireIdentity.headline}</div>
                   </div>
                 </div>
-                {/* Savings benchmark — light */}
-                <div data-gsap="identity-card" className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Savings rate benchmark</div>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                      <div style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsMultiple}×</div>
-                      <div style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>ahead of the U.S. average</div>
-                    </div>
-                    <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
-                      You save <b style={{ color: "#0F172A" }}>{savingsRatePct}%</b> of take-home, vs. <b style={{ color: "#0F172A" }}>{PUBLIC_SAVINGS_RATE_BASELINE}%</b> nationally.
+                {/* Savings benchmark — USD users only (baseline is U.S. BEA rate) */}
+                {currency === "USD" ? (
+                  <div data-gsap="identity-card" className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Savings rate benchmark</div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                        <div style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsMultiple}×</div>
+                        <div style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>ahead of the U.S. average</div>
+                      </div>
+                      <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
+                        You save <b style={{ color: "#0F172A" }}>{savingsRatePct}%</b> of take-home, vs. <b style={{ color: "#0F172A" }}>{PUBLIC_SAVINGS_RATE_BASELINE}%</b> U.S. avg.
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div data-gsap="identity-card" className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Your savings rate</div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                        <div style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsRatePct}%</div>
+                        <div style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>of take-home</div>
+                      </div>
+                      <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
+                        {savingsRatePct >= 20 ? "Strong savings rate — compounding is doing real work for you." : savingsRatePct >= 10 ? "Solid foundation. Pushing toward 20% accelerates your timeline significantly." : "Every percentage point here moves your freedom date closer."}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* ── DECISION IMPACT ── */}
-              {!isAlreadyFire && (
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
-                    <div>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Decision impact</div>
-                      <div style={{ fontSize: 18, color: "#0F172A", marginTop: 4, fontWeight: 600, letterSpacing: "-0.01em" }}>What each lever buys you</div>
-                    </div>
-                    <span style={{ fontSize: 12, color: "#6B7280" }}>vs. today&apos;s plan</span>
-                  </div>
-                  <div className="uf-decision-grid">
-                    {[
-                      { label: "Cut dining out by 20%", delta: result.years - d1.years, detail: "~$" + Math.round(city.col * 0.2 / 12) + "/mo redirected" },
-                      { label: "Save $250/mo more", delta: result.years - calcFIRE(savings + 250, city.col, currentAge, portfolioBalance).years, detail: "Auto-transfer to brokerage" },
-                      { label: "Earn 10% more", delta: result.years - d3.years, detail: "Invest the raise" },
-                      { label: "Invest annual bonus", delta: result.years - d2.years, detail: "Lump-sum, fully invested" },
-                    ].map((m, i) => {
-                      const isNeg = m.delta < 0;
-                      const abs = Math.abs(m.delta);
-                      const y = Math.floor(abs), mo = Math.round((abs - y) * 12);
-                      const label = y > 0 ? (mo > 0 ? `${y}y ${mo}mo` : `${y}y`) : `${mo}mo`;
-                      const sign = isNeg ? "+" : "−";
-                      return (
-                        <div data-gsap="decision-card" key={i} className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, display: "flex", flexDirection: "column", gap: 8, minHeight: 100 }}>
-                          <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: isNeg ? "#B45309" : "#003527", fontVariantNumeric: "tabular-nums" }}>{sign}{label}</div>
-                          <div style={{ fontSize: 13, color: "#0F172A", fontWeight: 600, lineHeight: 1.3 }}>{m.label}</div>
-                          <div style={{ fontSize: 11, color: "#6B7280", marginTop: "auto" }}>{m.detail}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ── FOOTER CTA ── */}
-              <div data-gsap="footer-cta" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.005em" }}>Lock this trajectory in your dashboard.</div>
-                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>No login required · Financial details aren&apos;t stored · 7% real return, 25× / 4% FIRE rule</div>
-                </div>
-                <div className="uf-footer-btns">
-                  <button className="uf-btn-outline" onClick={() => setShowShare(true)}>
-                    <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
-                    Share
-                  </button>
-                  <button className="uf-btn-outline" onClick={onAdjust}>
-                    Adjust inputs
-                  </button>
-                  <Link
-                    href="/login"
-                    className="uf-btn-dark"
-                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
-                  >
-                    Save my plan →
-                  </Link>
-                </div>
+              {/* ── FOOTER ACTIONS ── */}
+              <div data-gsap="footer-cta" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center" }}>
+                <button className="uf-btn-outline" onClick={() => setShowShare(true)}>
+                  <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
+                  Share result
+                </button>
+                <button className="uf-btn-outline" onClick={onAdjust}>
+                  Adjust inputs
+                </button>
               </div>
               <p className="uf-disclaimer">
                 Estimate only. Not financial advice. Based on 7% real return (historical S&P500 average after inflation).
@@ -1539,8 +1539,8 @@ export default function Home() {
     router.push('/login');
   }
 
-  const STEP_MAP: Record<Screen, number> = { hero: 0, city: 1, currency: 2, income: 3, savings: 4, portfolio: 5, reveal: 6 };
-  const totalDots = 7;
+  const STEP_MAP: Record<Screen, number> = { hero: 0, city: 1, currency: 1, income: 2, savings: 3, portfolio: 4, reveal: 5 };
+  const totalDots = 6;
 
   return (
     <>
@@ -2204,27 +2204,22 @@ export default function Home() {
         </div>
         {screen === "city" && (
           <CityScreen
-            onNext={c => { setCityState(c); setScreen("currency"); }}
+            onNext={c => { setCityState(c); setCurrency(stateToCurrency(c.stateKey)); setScreen("income"); }}
             onBack={() => setScreen("hero")}
             onSkip={() => {
               setCityState({ name: "United States (avg)", col: 52000, stateKey: "custom", isCustom: true });
-              setScreen("currency");
+              setCurrency("USD");
+              setScreen("income");
             }}
-          />
-        )}
-        {screen === "currency" && (
-          <CurrencyScreen
-            defaultCurrency={stateToCurrency(cityState?.stateKey)}
-            onNext={nextCurrency => { setCurrency(nextCurrency); setScreen("income"); }}
-            onBack={() => setScreen("city")}
           />
         )}
         {screen === "income" && (
           <IncomeScreen
             stateKey={cityState?.stateKey ?? "custom"}
             currency={currency}
+            onCurrencyChange={setCurrency}
             onNext={inc => { setIncome(inc); setScreen("savings"); }}
-            onBack={() => setScreen("currency")}
+            onBack={() => setScreen("city")}
           />
         )}
         {screen === "savings" && (
@@ -2242,6 +2237,15 @@ export default function Home() {
               setScreen("portfolio");
             }}
             onBack={() => setScreen("income")}
+          />
+        )}
+        {screen === "currency" && (
+          <IncomeScreen
+            stateKey={cityState?.stateKey ?? "custom"}
+            currency={currency}
+            onCurrencyChange={setCurrency}
+            onNext={inc => { setIncome(inc); setScreen("savings"); }}
+            onBack={() => setScreen("city")}
           />
         )}
         {screen === "portfolio" && (
