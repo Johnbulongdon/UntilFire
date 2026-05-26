@@ -770,6 +770,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
         </div>
 
+        <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+        <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both" }}>
         <ResponsiveContainer width="100%" height={268}>
           <ComposedChart data={periodData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
@@ -790,6 +792,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             />
             <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={56} />
             <Tooltip
+              animationDuration={150}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
                 const portfolio = (payload.find(p => p.dataKey === "Investable")?.value as number) ?? 0;
@@ -797,7 +800,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 const crossed = portfolio >= fireTarget;
                 const header = fireAge > 0 ? `Age ${fireAge + (label as number)}` : `Year ${label}`;
                 return (
-                  <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+                  <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", transition: "opacity 0.15s ease" }}>
                     <div style={{ fontWeight: 700, marginBottom: 6, color: "#F8FAFC" }}>{header}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22d3a5" }}>
                       <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22d3a5", display: "inline-block" }} />
@@ -818,12 +821,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <ReferenceLine y={fireTarget} stroke="#059669" strokeDasharray="5 3" strokeWidth={1.5} label={{ value: "FIRE target", position: "insideTopRight", fontSize: 10, fill: "#059669", fontWeight: 700, fontFamily: "Inter" }} />
             {/* Vertical FIRE year line */}
             {fireYear && <ReferenceLine x={fireYear} stroke="#22d3a5" strokeDasharray="4 3" strokeWidth={1.5} />}
-            {/* User portfolio area */}
-            <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#22d3a5" }} />
-            {/* S&P 500 benchmark */}
-            <Line type="monotone" dataKey="S&P 500" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#f97316" }} />
+            {/* User portfolio area — draws up from baseline, then S&P line follows */}
+            <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#22d3a5" }} isAnimationActive animationBegin={0} animationDuration={1300} animationEasing="ease-out" />
+            {/* S&P 500 benchmark — staggered 350 ms after the area */}
+            <Line type="monotone" dataKey="S&P 500" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#f97316" }} isAnimationActive animationBegin={350} animationDuration={950} animationEasing="ease-out" />
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
 
         <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
