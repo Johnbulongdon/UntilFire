@@ -56,82 +56,6 @@ type PlaidSecurity = {
   ticker_symbol: string | null;
   type: string | null;
 };
-
-const isCashLikeSecurity = (security?: PlaidSecurity) => {
-  if (!security) return false;
-  const ticker = (security.ticker_symbol ?? "").toUpperCase();
-  const name = (security.name ?? "").toLowerCase();
-  const type = (security.type ?? "").toLowerCase();
-
-  return (
-    ticker.startsWith("CUR:") ||
-    type.includes("cash") ||
-    type.includes("money market") ||
-    name.includes("cash") ||
-    name.includes("u s dollar") ||
-    name.includes("us dollar")
-  );
-};
-
-const getConnectedAssetBreakdown = ({
-  plaidAccounts,
-  plaidHoldings,
-  plaidSecurities,
-}: {
-  plaidAccounts: PlaidAccount[];
-  plaidHoldings: PlaidHolding[];
-  plaidSecurities: Record<string, PlaidSecurity>;
-}) => {
-  const depositoryCash = plaidAccounts
-    .filter(a => a.type === "depository")
-    .reduce((sum, a) => sum + (a.balance_current ?? 0), 0);
-
-  const holdingsByAccount = new Map<string, PlaidHolding[]>();
-  for (const holding of plaidHoldings) {
-    const list = holdingsByAccount.get(holding.account_id) ?? [];
-    list.push(holding);
-    holdingsByAccount.set(holding.account_id, list);
-  }
-
-  let brokerageInvestments = 0;
-  let brokerageCash = 0;
-  let fallbackInvestmentBalances = 0;
-
-  for (const account of plaidAccounts.filter(a => a.type === "investment")) {
-    const accountBalance = account.balance_current ?? 0;
-    const accountHoldings = holdingsByAccount.get(account.plaid_account_id) ?? [];
-
-    if (accountHoldings.length === 0) {
-      fallbackInvestmentBalances += accountBalance;
-      continue;
-    }
-
-    let accountHoldingsTotal = 0;
-    for (const holding of accountHoldings) {
-      const value = holding.institution_value ?? 0;
-      accountHoldingsTotal += value;
-      if (isCashLikeSecurity(plaidSecurities[holding.security_id])) {
-        brokerageCash += value;
-      } else {
-        brokerageInvestments += value;
-      }
-    }
-
-    const residualCash = Math.max(0, accountBalance - accountHoldingsTotal);
-    brokerageCash += residualCash;
-  }
-
-  return {
-    depositoryCash,
-    brokerageCash,
-    brokerageInvestments,
-    fallbackInvestmentBalances,
-    totalCash: depositoryCash + brokerageCash,
-    totalInvestments: brokerageInvestments + fallbackInvestmentBalances,
-    totalAssets: depositoryCash + brokerageCash + brokerageInvestments + fallbackInvestmentBalances,
-  };
-};
-
 type TabKey =
   | "overview"
   | "cashflow"
@@ -707,7 +631,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#FFFFFF" }}>{fmtMoney(fireTarget, true)}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginBottom: 4, fontWeight: 700 }}>Portfolio Value</div>
+                <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginBottom: 4, fontWeight: 700 }}>Investable Assets</div>
                 <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#62FAE3" }}>{fmtMoney(investable, true)}</div>
               </div>
             </div>
@@ -846,35 +770,44 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
         </div>
 
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={268}>
           <ComposedChart data={periodData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#20D4BF" stopOpacity={0.22} />
-                <stop offset="95%" stopColor="#20D4BF" stopOpacity={0.02} />
+                <stop offset="0%"   stopColor="#22d3a5" stopOpacity={0.38} />
+                <stop offset="55%"  stopColor="#22d3a5" stopOpacity={0.10} />
+                <stop offset="100%" stopColor="#22d3a5" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-            <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={52} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
+            <XAxis
+              dataKey="year"
+              tickFormatter={v => fireAge > 0 ? `${fireAge + (v as number)}` : `Yr ${v as number}`}
+              tick={{ fill: "#94A3B8", fontSize: 11, fontFamily: "Inter" }}
+              axisLine={false}
+              tickLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={56} />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
                 const portfolio = (payload.find(p => p.dataKey === "Investable")?.value as number) ?? 0;
                 const sp = (payload.find(p => p.dataKey === "S&P 500")?.value as number) ?? 0;
                 const crossed = portfolio >= fireTarget;
+                const header = fireAge > 0 ? `Age ${fireAge + (label as number)}` : `Year ${label}`;
                 return (
-                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                    <div style={{ fontWeight: 700, marginBottom: 6, color: "#0F172A" }}>Year {label}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#064E3B" }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#20D4BF", display: "inline-block" }} />
+                  <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+                    <div style={{ fontWeight: 700, marginBottom: 6, color: "#F8FAFC" }}>{header}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22d3a5" }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22d3a5", display: "inline-block" }} />
                       Your portfolio: {fmtMoney(portfolio, true)}{crossed ? " ✓" : ""}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#92400E", marginTop: 4 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#F97316", display: "inline-block" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#f97316", marginTop: 4 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f97316", display: "inline-block" }} />
                       S&amp;P 500: {fmtMoney(sp, true)}
                     </div>
-                    <div style={{ color: "#94A3B8", marginTop: 6, borderTop: "1px solid #E2E8F0", paddingTop: 6 }}>
+                    <div style={{ color: "#64748B", marginTop: 6, borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 6 }}>
                       FIRE target: {fmtMoney(fireTarget, true)}
                     </div>
                   </div>
@@ -884,21 +817,21 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             {/* Horizontal FIRE target line */}
             <ReferenceLine y={fireTarget} stroke="#059669" strokeDasharray="5 3" strokeWidth={1.5} label={{ value: "FIRE target", position: "insideTopRight", fontSize: 10, fill: "#059669", fontWeight: 700, fontFamily: "Inter" }} />
             {/* Vertical FIRE year line */}
-            {fireYear && <ReferenceLine x={fireYear} stroke="#20D4BF" strokeDasharray="4 3" strokeWidth={1.5} />}
+            {fireYear && <ReferenceLine x={fireYear} stroke="#22d3a5" strokeDasharray="4 3" strokeWidth={1.5} />}
             {/* User portfolio area */}
-            <Area type="monotone" dataKey="Investable" stroke="#064E3B" strokeWidth={2} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 4, fill: "#20D4BF" }} />
+            <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#22d3a5" }} />
             {/* S&P 500 benchmark */}
-            <Line type="monotone" dataKey="S&P 500" stroke="#F97316" strokeWidth={1.5} strokeDasharray="5 3" dot={false} activeDot={{ r: 4, fill: "#F97316" }} />
+            <Line type="monotone" dataKey="S&P 500" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#f97316" }} />
           </ComposedChart>
         </ResponsiveContainer>
 
         <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-              <span style={{ width: 20, height: 3, borderRadius: 2, background: "#064E3B", display: "inline-block", flexShrink: 0 }} /> Your portfolio (7% real)
+              <span style={{ width: 20, height: 3, borderRadius: 2, background: "#22d3a5", display: "inline-block", flexShrink: 0 }} /> Your portfolio (7% real)
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-              <span style={{ width: 20, height: 2, borderRadius: 1, background: "#F97316", display: "inline-block", flexShrink: 0, opacity: 0.7 }} /> S&amp;P 500 (10% nominal)
+              <span style={{ width: 20, height: 2, borderRadius: 1, background: "#f97316", display: "inline-block", flexShrink: 0, opacity: 0.7 }} /> S&amp;P 500 (10% nominal)
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
               <span style={{ width: 20, height: 2, borderRadius: 1, background: "#059669", display: "inline-block", flexShrink: 0, opacity: 0.7 }} /> FIRE target
@@ -906,8 +839,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
           {retireYear && (
             <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif", textAlign: "right" }}>
-              Projected freedom: <span style={{ color: "#064E3B", fontWeight: 600 }}>{retireYear}</span>
-              {fireYear && <span style={{ color: "#94A3B8" }}> · yr {fireYear}</span>}
+              Projected freedom: <span style={{ color: "#22d3a5", fontWeight: 600 }}>{retireYear}</span>
+              {fireYear && <span style={{ color: "#94A3B8" }}> · {fireAge > 0 ? `age ${fireAge + fireYear}` : `yr ${fireYear}`}</span>}
             </div>
           )}
         </div>
@@ -1635,14 +1568,12 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [], plaidHoldings = [], plaidSecurities = {} }: {
+function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [] }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
-  plaidHoldings?: PlaidHolding[];
-  plaidSecurities?: Record<string, PlaidSecurity>;
 }) {
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const monthlyExpenses = Object.entries(expenses)
@@ -1655,39 +1586,11 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
     growthRate, withdrawalRate,
   }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
 
+  const plaidAssets       = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const plaidLiabilities  = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan").reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const connectedBreakdown = getConnectedAssetBreakdown({ plaidAccounts, plaidHoldings, plaidSecurities });
-  const totalInvestments = k401 + rothIRA + taxable + connectedBreakdown.totalInvestments;
-  const totalCash = cashSavings + connectedBreakdown.totalCash;
-  const totalAssets = totalInvestments + totalCash;
-  const totalLiabilities = totalDebt + mortgageBalance + plaidLiabilities;
-  const netWorth   = totalAssets - totalLiabilities;
-  const progress   = fireTarget > 0 ? Math.min(100, (totalAssets / fireTarget) * 100) : 0;
-  const manualSnapshotRows: Array<{ label: string; val: number; color: string; bold?: boolean } | null> = [
-    { label: "Cash & Savings",   val: cashSavings,       color: "#0EA5E9" },
-    null,
-    { label: "401(k)",            val: k401,             color: "#059669" },
-    { label: "Roth IRA",          val: rothIRA,          color: "#20D4BF" },
-    { label: "Taxable Brokerage", val: taxable,          color: "#047857" },
-    null,
-    { label: "Consumer Debt",     val: -totalDebt,       color: "#DC2626" },
-    { label: "Mortgage Balance",  val: -mortgageBalance, color: "#DC2626" },
-    null,
-    { label: "Net Worth",         val: netWorth, bold: true, color: netWorth >= 0 ? "#059669" : "#DC2626" },
-  ];
-  const manualSnapshotIsZero = [cashSavings, k401, rothIRA, taxable, totalDebt, mortgageBalance].every(v => Math.abs(v) < 0.005);
-  const [snapshotCollapsed, setSnapshotCollapsed] = useState(manualSnapshotIsZero);
-
-  useEffect(() => {
-    if (!manualSnapshotIsZero) setSnapshotCollapsed(false);
-  }, [manualSnapshotIsZero]);
-
-  const kpiCards = [
-    { label: "Investments", val: fmtMoney(totalInvestments, true), color: "#059669", sub: "ETFs, stocks, retirement" },
-    { label: "Cash", val: fmtMoney(totalCash, true), color: "#0EA5E9", sub: "Savings + brokerage cash" },
-    ...(totalLiabilities > 0 ? [{ label: "Total Debt", val: fmtMoney(totalLiabilities, true), color: "#DC2626", sub: plaidLiabilities > 0 ? "Manual + connected" : "Consumer + mortgage" }] : []),
-    { label: "FIRE Progress", val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
-  ];
+  const investable = k401 + rothIRA + taxable + cashSavings + plaidAssets;
+  const netWorth   = investable - totalDebt - mortgageBalance - plaidLiabilities;
+  const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1698,12 +1601,11 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
           {fmtMoney(netWorth)}
         </div>
         <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmtMoney(totalInvestments, true)} invested · {fmtMoney(totalCash, true)} cash
-          {totalLiabilities > 0 ? ` · ${fmtMoney(totalLiabilities, true)} total debt` : ""}
+          {fmtMoney(investable, true)} investable assets · {fmtMoney(totalDebt + mortgageBalance, true)} total debt
         </div>
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
-            <span>{fmtMoney(totalAssets, true)} total assets</span>
+            <span>{fmtMoney(investable, true)} saved</span>
             <span style={{ color: "#62FAE3", fontWeight: 700 }}>{progress.toFixed(1)}% to FIRE</span>
             <span>{fmtMoney(fireTarget, true)} target</span>
           </div>
@@ -1714,49 +1616,44 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
       </div>
 
       {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-        {kpiCards.map(k => (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        {[
+          { label: "Investable Assets",  val: fmtMoney(investable, true),   color: "#059669",  sub: "All accounts" },
+          { label: "Net Worth",          val: fmtMoney(netWorth, true),      color: netWorth >= 0 ? "#059669" : "#DC2626", sub: "Assets − debt" },
+          { label: "Total Debt",         val: fmtMoney(totalDebt + mortgageBalance, true), color: "#DC2626", sub: "Consumer + mortgage" },
+          { label: "FIRE Progress",      val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
+        ].map(k => (
           <KpiCard key={k.label} label={k.label} value={k.val} sub={k.sub} color={k.color} />
         ))}
       </div>
 
       {/* Account breakdown table */}
       <div className="uf-card">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: snapshotCollapsed ? 0 : 16, flexWrap: "wrap" }}>
-          <div style={{ marginBottom: 0 }}>
-            <SectionLabel icon="🏦" text="Account Snapshot" color="#064E3B" />
-          </div>
-          {manualSnapshotIsZero && (
-            <button
-              onClick={() => setSnapshotCollapsed(v => !v)}
-              aria-expanded={!snapshotCollapsed}
-              style={{ background: "none", border: "none", color: "#047857", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "Inter, sans-serif" }}
-            >
-              {snapshotCollapsed ? "Show details" : "Hide details"}
-            </button>
-          )}
-        </div>
-        {snapshotCollapsed ? (
-          <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "14px 16px", fontSize: 13, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-            No balances added here yet. Add manual balances in Assets or Liabilities when you want a fuller snapshot.
-          </div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <tbody>
-              {manualSnapshotRows.map((row, i) => {
-                if (!row) return <tr key={`d${i}`}><td colSpan={2} style={{ borderTop: "1px solid #E2E8F0", padding: "4px 0" }} /></tr>;
-                return (
-                  <tr key={row.label}>
-                    <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
-                    <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Inter, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
-                      {row.val >= 0 ? fmtMoney(row.val) : `−${fmtMoney(Math.abs(row.val))}`}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+        <SectionLabel icon="🏦" text="Account Snapshot" color="#064E3B" />
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <tbody>
+            {[
+              { label: "401(k)",            val: k401,              color: "#059669" },
+              { label: "Roth IRA",          val: rothIRA,           color: "#20D4BF" },
+              { label: "Taxable Brokerage", val: taxable,           color: "#047857" },
+              null,
+              { label: "Consumer Debt",     val: -totalDebt,        color: "#DC2626" },
+              { label: "Mortgage Balance",  val: -mortgageBalance,  color: "#DC2626" },
+              null,
+              { label: "Net Worth",         val: netWorth, bold: true, color: netWorth >= 0 ? "#059669" : "#DC2626" },
+            ].map((row, i) => {
+              if (!row) return <tr key={`d${i}`}><td colSpan={2} style={{ borderTop: "1px solid #E2E8F0", padding: "4px 0" }} /></tr>;
+              return (
+                <tr key={row.label}>
+                  <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
+                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Inter, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
+                    {row.val >= 0 ? fmtMoney(row.val) : `−${fmtMoney(Math.abs(row.val))}`}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -1787,7 +1684,6 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
   const bankAssets = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment");
   const bankAssetsTotal = bankAssets.reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const connectedBreakdown = getConnectedAssetBreakdown({ plaidAccounts, plaidHoldings, plaidSecurities });
   const [hideZeroAssets, setHideZeroAssets] = useState(true);
   const visibleAssets = hideZeroAssets ? bankAssets.filter(a => (a.balance_current ?? 0) !== 0) : bankAssets;
   const hiddenAssetCount = bankAssets.length - visibleAssets.length;
@@ -2088,35 +1984,19 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 .sort((a, b) => (b.institution_value ?? 0) - (a.institution_value ?? 0))
                 .map((h, i) => {
                   const sec = plaidSecurities[h.security_id];
-                  const cashLike = isCashLikeSecurity(sec);
                   return (
                     <div key={i} className="uf-holdings-grid" style={{ fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
-                      <span style={{ fontWeight: 700, color: cashLike ? "#0EA5E9" : "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
-                      <span className="uf-holdings-security" style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
-                        {cashLike && (
-                          <span style={{ flexShrink: 0, background: "#E0F2FE", color: "#0369A1", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
-                            Cash
-                          </span>
-                        )}
-                      </span>
+                      <span style={{ fontWeight: 700, color: "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
+                      <span className="uf-holdings-security" style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
                       <span style={{ textAlign: "right", color: "#64748B" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
                       <span style={{ textAlign: "right", color: "#64748B" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
                       <span style={{ textAlign: "right", fontWeight: 600, color: "#0F172A" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
                     </div>
                   );
                 })}
-              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "2px solid #E2E8F0", display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 700 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "#64748B" }}>Investments total</span>
-                  <span style={{ color: "#059669" }}>{fmtMoney(connectedBreakdown.brokerageInvestments)}</span>
-                </div>
-                {connectedBreakdown.brokerageCash > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ color: "#64748B" }}>Brokerage cash</span>
-                    <span style={{ color: "#0EA5E9" }}>{fmtMoney(connectedBreakdown.brokerageCash)}</span>
-                  </div>
-                )}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "2px solid #E2E8F0", fontSize: 14, fontWeight: 700 }}>
+                <span style={{ color: "#64748B" }}>Total portfolio value</span>
+                <span style={{ color: "#059669" }}>${Math.round(plaidHoldings.reduce((s, h) => s + (h.institution_value ?? 0), 0)).toLocaleString()}</span>
               </div>
             </>
           )}
@@ -3972,8 +3852,6 @@ export default function Dashboard() {
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
-                  plaidHoldings={plaidHoldings}
-                  plaidSecurities={plaidSecurities}
                 />
                 <div style={{ borderTop: "1px solid #E2E8F0" }} />
                 <AssetsTab
