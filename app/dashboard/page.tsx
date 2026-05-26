@@ -631,7 +631,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#FFFFFF" }}>{fmtMoney(fireTarget, true)}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginBottom: 4, fontWeight: 700 }}>Investable Assets</div>
+                <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginBottom: 4, fontWeight: 700 }}>Portfolio Value</div>
                 <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#62FAE3" }}>{fmtMoney(investable, true)}</div>
               </div>
             </div>
@@ -1601,7 +1601,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
   }, [manualSnapshotIsZero]);
 
   const kpiCards = [
-    { label: "Investable Assets", val: fmtMoney(investable, true), color: "#059669", sub: "All accounts" },
+    { label: "Portfolio Value", val: fmtMoney(investable, true), color: "#059669", sub: "All accounts" },
     ...(totalLiabilities > 0 ? [{ label: "Total Debt", val: fmtMoney(totalLiabilities, true), color: "#DC2626", sub: plaidLiabilities > 0 ? "Manual + connected" : "Consumer + mortgage" }] : []),
     { label: "FIRE Progress", val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
   ];
@@ -1615,7 +1615,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
           {fmtMoney(netWorth)}
         </div>
         <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmtMoney(investable, true)} investable assets
+          {fmtMoney(investable, true)} portfolio value
           {totalLiabilities > 0 ? ` · ${fmtMoney(totalLiabilities, true)} total debt` : ""}
         </div>
         <div style={{ marginTop: 24 }}>
