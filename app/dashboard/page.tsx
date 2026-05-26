@@ -56,6 +56,82 @@ type PlaidSecurity = {
   ticker_symbol: string | null;
   type: string | null;
 };
+
+const isCashLikeSecurity = (security?: PlaidSecurity) => {
+  if (!security) return false;
+  const ticker = (security.ticker_symbol ?? "").toUpperCase();
+  const name = (security.name ?? "").toLowerCase();
+  const type = (security.type ?? "").toLowerCase();
+
+  return (
+    ticker.startsWith("CUR:") ||
+    type.includes("cash") ||
+    type.includes("money market") ||
+    name.includes("cash") ||
+    name.includes("u s dollar") ||
+    name.includes("us dollar")
+  );
+};
+
+const getConnectedAssetBreakdown = ({
+  plaidAccounts,
+  plaidHoldings,
+  plaidSecurities,
+}: {
+  plaidAccounts: PlaidAccount[];
+  plaidHoldings: PlaidHolding[];
+  plaidSecurities: Record<string, PlaidSecurity>;
+}) => {
+  const depositoryCash = plaidAccounts
+    .filter(a => a.type === "depository")
+    .reduce((sum, a) => sum + (a.balance_current ?? 0), 0);
+
+  const holdingsByAccount = new Map<string, PlaidHolding[]>();
+  for (const holding of plaidHoldings) {
+    const list = holdingsByAccount.get(holding.account_id) ?? [];
+    list.push(holding);
+    holdingsByAccount.set(holding.account_id, list);
+  }
+
+  let brokerageInvestments = 0;
+  let brokerageCash = 0;
+  let fallbackInvestmentBalances = 0;
+
+  for (const account of plaidAccounts.filter(a => a.type === "investment")) {
+    const accountBalance = account.balance_current ?? 0;
+    const accountHoldings = holdingsByAccount.get(account.plaid_account_id) ?? [];
+
+    if (accountHoldings.length === 0) {
+      fallbackInvestmentBalances += accountBalance;
+      continue;
+    }
+
+    let accountHoldingsTotal = 0;
+    for (const holding of accountHoldings) {
+      const value = holding.institution_value ?? 0;
+      accountHoldingsTotal += value;
+      if (isCashLikeSecurity(plaidSecurities[holding.security_id])) {
+        brokerageCash += value;
+      } else {
+        brokerageInvestments += value;
+      }
+    }
+
+    const residualCash = Math.max(0, accountBalance - accountHoldingsTotal);
+    brokerageCash += residualCash;
+  }
+
+  return {
+    depositoryCash,
+    brokerageCash,
+    brokerageInvestments,
+    fallbackInvestmentBalances,
+    totalCash: depositoryCash + brokerageCash,
+    totalInvestments: brokerageInvestments + fallbackInvestmentBalances,
+    totalAssets: depositoryCash + brokerageCash + brokerageInvestments + fallbackInvestmentBalances,
+  };
+};
+
 type TabKey =
   | "overview"
   | "cashflow"
@@ -1559,12 +1635,14 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [] }: {
+function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [], plaidHoldings = [], plaidSecurities = {} }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
+  plaidHoldings?: PlaidHolding[];
+  plaidSecurities?: Record<string, PlaidSecurity>;
 }) {
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const monthlyExpenses = Object.entries(expenses)
@@ -1577,13 +1655,17 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
     growthRate, withdrawalRate,
   }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
 
-  const plaidAssets       = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const plaidLiabilities  = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan").reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const investable = k401 + rothIRA + taxable + cashSavings + plaidAssets;
+  const connectedBreakdown = getConnectedAssetBreakdown({ plaidAccounts, plaidHoldings, plaidSecurities });
+  const totalInvestments = k401 + rothIRA + taxable + connectedBreakdown.totalInvestments;
+  const totalCash = cashSavings + connectedBreakdown.totalCash;
+  const totalAssets = totalInvestments + totalCash;
   const totalLiabilities = totalDebt + mortgageBalance + plaidLiabilities;
-  const netWorth   = investable - totalLiabilities;
-  const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
+  const netWorth   = totalAssets - totalLiabilities;
+  const progress   = fireTarget > 0 ? Math.min(100, (totalAssets / fireTarget) * 100) : 0;
   const manualSnapshotRows: Array<{ label: string; val: number; color: string; bold?: boolean } | null> = [
+    { label: "Cash & Savings",   val: cashSavings,       color: "#0EA5E9" },
+    null,
     { label: "401(k)",            val: k401,             color: "#059669" },
     { label: "Roth IRA",          val: rothIRA,          color: "#20D4BF" },
     { label: "Taxable Brokerage", val: taxable,          color: "#047857" },
@@ -1593,7 +1675,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
     null,
     { label: "Net Worth",         val: netWorth, bold: true, color: netWorth >= 0 ? "#059669" : "#DC2626" },
   ];
-  const manualSnapshotIsZero = [k401, rothIRA, taxable, totalDebt, mortgageBalance].every(v => Math.abs(v) < 0.005);
+  const manualSnapshotIsZero = [cashSavings, k401, rothIRA, taxable, totalDebt, mortgageBalance].every(v => Math.abs(v) < 0.005);
   const [snapshotCollapsed, setSnapshotCollapsed] = useState(manualSnapshotIsZero);
 
   useEffect(() => {
@@ -1601,7 +1683,8 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
   }, [manualSnapshotIsZero]);
 
   const kpiCards = [
-    { label: "Portfolio Value", val: fmtMoney(investable, true), color: "#059669", sub: "All accounts" },
+    { label: "Investments", val: fmtMoney(totalInvestments, true), color: "#059669", sub: "ETFs, stocks, retirement" },
+    { label: "Cash", val: fmtMoney(totalCash, true), color: "#0EA5E9", sub: "Savings + brokerage cash" },
     ...(totalLiabilities > 0 ? [{ label: "Total Debt", val: fmtMoney(totalLiabilities, true), color: "#DC2626", sub: plaidLiabilities > 0 ? "Manual + connected" : "Consumer + mortgage" }] : []),
     { label: "FIRE Progress", val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
   ];
@@ -1615,12 +1698,12 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
           {fmtMoney(netWorth)}
         </div>
         <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmtMoney(investable, true)} portfolio value
+          {fmtMoney(totalInvestments, true)} invested · {fmtMoney(totalCash, true)} cash
           {totalLiabilities > 0 ? ` · ${fmtMoney(totalLiabilities, true)} total debt` : ""}
         </div>
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
-            <span>{fmtMoney(investable, true)} saved</span>
+            <span>{fmtMoney(totalAssets, true)} total assets</span>
             <span style={{ color: "#62FAE3", fontWeight: 700 }}>{progress.toFixed(1)}% to FIRE</span>
             <span>{fmtMoney(fireTarget, true)} target</span>
           </div>
@@ -1704,6 +1787,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
   const bankAssets = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment");
   const bankAssetsTotal = bankAssets.reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const connectedBreakdown = getConnectedAssetBreakdown({ plaidAccounts, plaidHoldings, plaidSecurities });
   const [hideZeroAssets, setHideZeroAssets] = useState(true);
   const visibleAssets = hideZeroAssets ? bankAssets.filter(a => (a.balance_current ?? 0) !== 0) : bankAssets;
   const hiddenAssetCount = bankAssets.length - visibleAssets.length;
@@ -2004,19 +2088,35 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 .sort((a, b) => (b.institution_value ?? 0) - (a.institution_value ?? 0))
                 .map((h, i) => {
                   const sec = plaidSecurities[h.security_id];
+                  const cashLike = isCashLikeSecurity(sec);
                   return (
                     <div key={i} className="uf-holdings-grid" style={{ fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
-                      <span style={{ fontWeight: 700, color: "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
-                      <span className="uf-holdings-security" style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
+                      <span style={{ fontWeight: 700, color: cashLike ? "#0EA5E9" : "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
+                      <span className="uf-holdings-security" style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
+                        {cashLike && (
+                          <span style={{ flexShrink: 0, background: "#E0F2FE", color: "#0369A1", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
+                            Cash
+                          </span>
+                        )}
+                      </span>
                       <span style={{ textAlign: "right", color: "#64748B" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
                       <span style={{ textAlign: "right", color: "#64748B" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
                       <span style={{ textAlign: "right", fontWeight: 600, color: "#0F172A" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
                     </div>
                   );
                 })}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "2px solid #E2E8F0", fontSize: 14, fontWeight: 700 }}>
-                <span style={{ color: "#64748B" }}>Total portfolio value</span>
-                <span style={{ color: "#059669" }}>${Math.round(plaidHoldings.reduce((s, h) => s + (h.institution_value ?? 0), 0)).toLocaleString()}</span>
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "2px solid #E2E8F0", display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 700 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#64748B" }}>Investments total</span>
+                  <span style={{ color: "#059669" }}>{fmtMoney(connectedBreakdown.brokerageInvestments)}</span>
+                </div>
+                {connectedBreakdown.brokerageCash > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ color: "#64748B" }}>Brokerage cash</span>
+                    <span style={{ color: "#0EA5E9" }}>{fmtMoney(connectedBreakdown.brokerageCash)}</span>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -3872,6 +3972,8 @@ export default function Dashboard() {
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
+                  plaidHoldings={plaidHoldings}
+                  plaidSecurities={plaidSecurities}
                 />
                 <div style={{ borderTop: "1px solid #E2E8F0" }} />
                 <AssetsTab
