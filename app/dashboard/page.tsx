@@ -1580,8 +1580,31 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
   const plaidAssets       = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const plaidLiabilities  = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan").reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const investable = k401 + rothIRA + taxable + cashSavings + plaidAssets;
-  const netWorth   = investable - totalDebt - mortgageBalance - plaidLiabilities;
+  const totalLiabilities = totalDebt + mortgageBalance + plaidLiabilities;
+  const netWorth   = investable - totalLiabilities;
   const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
+  const manualSnapshotRows: Array<{ label: string; val: number; color: string; bold?: boolean } | null> = [
+    { label: "401(k)",            val: k401,             color: "#059669" },
+    { label: "Roth IRA",          val: rothIRA,          color: "#20D4BF" },
+    { label: "Taxable Brokerage", val: taxable,          color: "#047857" },
+    null,
+    { label: "Consumer Debt",     val: -totalDebt,       color: "#DC2626" },
+    { label: "Mortgage Balance",  val: -mortgageBalance, color: "#DC2626" },
+    null,
+    { label: "Net Worth",         val: netWorth, bold: true, color: netWorth >= 0 ? "#059669" : "#DC2626" },
+  ];
+  const manualSnapshotIsZero = [k401, rothIRA, taxable, totalDebt, mortgageBalance].every(v => Math.abs(v) < 0.005);
+  const [snapshotCollapsed, setSnapshotCollapsed] = useState(manualSnapshotIsZero);
+
+  useEffect(() => {
+    if (!manualSnapshotIsZero) setSnapshotCollapsed(false);
+  }, [manualSnapshotIsZero]);
+
+  const kpiCards = [
+    { label: "Investable Assets", val: fmtMoney(investable, true), color: "#059669", sub: "All accounts" },
+    ...(totalLiabilities > 0 ? [{ label: "Total Debt", val: fmtMoney(totalLiabilities, true), color: "#DC2626", sub: plaidLiabilities > 0 ? "Manual + connected" : "Consumer + mortgage" }] : []),
+    { label: "FIRE Progress", val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
+  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1592,7 +1615,8 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
           {fmtMoney(netWorth)}
         </div>
         <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmtMoney(investable, true)} investable assets · {fmtMoney(totalDebt + mortgageBalance, true)} total debt
+          {fmtMoney(investable, true)} investable assets
+          {totalLiabilities > 0 ? ` · ${fmtMoney(totalLiabilities, true)} total debt` : ""}
         </div>
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
@@ -1607,44 +1631,49 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
       </div>
 
       {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-        {[
-          { label: "Investable Assets",  val: fmtMoney(investable, true),   color: "#059669",  sub: "All accounts" },
-          { label: "Net Worth",          val: fmtMoney(netWorth, true),      color: netWorth >= 0 ? "#059669" : "#DC2626", sub: "Assets − debt" },
-          { label: "Total Debt",         val: fmtMoney(totalDebt + mortgageBalance, true), color: "#DC2626", sub: "Consumer + mortgage" },
-          { label: "FIRE Progress",      val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
-        ].map(k => (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+        {kpiCards.map(k => (
           <KpiCard key={k.label} label={k.label} value={k.val} sub={k.sub} color={k.color} />
         ))}
       </div>
 
       {/* Account breakdown table */}
       <div className="uf-card">
-        <SectionLabel icon="🏦" text="Account Snapshot" color="#064E3B" />
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <tbody>
-            {[
-              { label: "401(k)",            val: k401,              color: "#059669" },
-              { label: "Roth IRA",          val: rothIRA,           color: "#20D4BF" },
-              { label: "Taxable Brokerage", val: taxable,           color: "#047857" },
-              null,
-              { label: "Consumer Debt",     val: -totalDebt,        color: "#DC2626" },
-              { label: "Mortgage Balance",  val: -mortgageBalance,  color: "#DC2626" },
-              null,
-              { label: "Net Worth",         val: netWorth, bold: true, color: netWorth >= 0 ? "#059669" : "#DC2626" },
-            ].map((row, i) => {
-              if (!row) return <tr key={`d${i}`}><td colSpan={2} style={{ borderTop: "1px solid #E2E8F0", padding: "4px 0" }} /></tr>;
-              return (
-                <tr key={row.label}>
-                  <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
-                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Inter, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
-                    {row.val >= 0 ? fmtMoney(row.val) : `−${fmtMoney(Math.abs(row.val))}`}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: snapshotCollapsed ? 0 : 16, flexWrap: "wrap" }}>
+          <div style={{ marginBottom: 0 }}>
+            <SectionLabel icon="🏦" text="Account Snapshot" color="#064E3B" />
+          </div>
+          {manualSnapshotIsZero && (
+            <button
+              onClick={() => setSnapshotCollapsed(v => !v)}
+              aria-expanded={!snapshotCollapsed}
+              style={{ background: "none", border: "none", color: "#047857", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "Inter, sans-serif" }}
+            >
+              {snapshotCollapsed ? "Show details" : "Hide details"}
+            </button>
+          )}
+        </div>
+        {snapshotCollapsed ? (
+          <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "14px 16px", fontSize: 13, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
+            No balances added here yet. Add manual balances in Assets or Liabilities when you want a fuller snapshot.
+          </div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <tbody>
+              {manualSnapshotRows.map((row, i) => {
+                if (!row) return <tr key={`d${i}`}><td colSpan={2} style={{ borderTop: "1px solid #E2E8F0", padding: "4px 0" }} /></tr>;
+                return (
+                  <tr key={row.label}>
+                    <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
+                    <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Inter, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
+                      {row.val >= 0 ? fmtMoney(row.val) : `−${fmtMoney(Math.abs(row.val))}`}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
