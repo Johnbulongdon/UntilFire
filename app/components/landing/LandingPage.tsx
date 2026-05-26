@@ -159,7 +159,7 @@ function InlineWidget({ onStart }: { onStart: () => void }) {
 
       {/* Result */}
       {canShow && result ? (
-        <div style={{
+        <div className="uf-result-card" style={{
           marginTop: 18, background: C.green900, borderRadius: 14, padding: "16px 20px",
           display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 14,
         }}>
@@ -337,7 +337,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
         </p>
 
         {/* Inline widget */}
-        <div style={{
+        <div className="uf-widget-wrap" style={{
           marginTop: 36, width: "min(580px, 100%)",
           opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(10px)",
           transition: "opacity 0.5s ease 0.55s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.55s",
@@ -476,8 +476,26 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             font-size: 17px !important;
             line-height: 1.5 !important;
           }
+          .uf-widget-wrap {
+            padding: 0 12px !important;
+          }
           .uf-widget-inputs {
             grid-template-columns: 1fr !important;
+          }
+          .uf-result-card {
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+          }
+          .uf-result-card > div:first-child {
+            width: 100% !important;
+            text-align: center !important;
+          }
+          .uf-result-card > div:last-child {
+            width: 100% !important;
+          }
+          .uf-result-card > div:last-child > button {
+            width: 100% !important;
           }
           .uf-hero-trust {
             max-width: 340px !important;
