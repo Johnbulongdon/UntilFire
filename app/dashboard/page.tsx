@@ -420,7 +420,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -430,6 +430,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   plaidAccounts?: PlaidAccount[];
   retirementCityName?: string; retirementCityCol?: number; lifestyleMultiplier?: number;
   fireAge?: number;
+  nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -482,16 +483,33 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
   const rawChartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
-  // S&P 500 benchmark: same starting balance + same annual contributions at 10% nominal
+  // S&P 500 benchmark + actual portfolio history blended with projection
   const chartData = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+
+    // Group snapshots by calendar year (relative to today), keep last value per year
+    const snapByRelYear: Record<number, number> = {};
+    for (const snap of nwSnapshots) {
+      const relYear = new Date(snap.captured_at).getFullYear() - currentYear;
+      if (relYear < 0) snapByRelYear[relYear] = snap.portfolio_value;
+    }
+    const pastEntries = Object.entries(snapByRelYear)
+      .map(([yr, val]) => ({ year: Number(yr), Actual: val } as Record<string, number>))
+      .sort((a, b) => a.year - b.year);
+
+    // Future projection (year 0 onward) with S&P 500 benchmark
     let sp = investable;
     const annualSav = Math.max(annualSavings, 0);
-    return rawChartData.map(d => {
+    const futureEntries = rawChartData.map((d, i) => {
       const spVal = Math.round(sp);
       sp = sp * 1.10 + annualSav;
-      return { ...d, "S&P 500": spVal } as Record<string, number>;
+      const entry: Record<string, number> = { ...d, "S&P 500": spVal };
+      if (i === 0) entry.Actual = investable; // "you are here" marker at year 0
+      return entry;
     });
-  }, [rawChartData, investable, annualSavings]);
+
+    return [...pastEntries, ...futureEntries];
+  }, [rawChartData, investable, annualSavings, nwSnapshots]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -784,7 +802,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
             <XAxis
               dataKey="year"
-              tickFormatter={v => fireAge > 0 ? `${fireAge + (v as number)}` : `Yr ${v as number}`}
+              tickFormatter={v => String(new Date().getFullYear() + (v as number))}
               tick={{ fill: "#94A3B8", fontSize: 11, fontFamily: "Inter" }}
               axisLine={false}
               tickLine={false}
@@ -795,21 +813,32 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               animationDuration={150}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
+                const actual    = payload.find(p => p.dataKey === "Actual")?.value as number | undefined;
                 const portfolio = (payload.find(p => p.dataKey === "Investable")?.value as number) ?? 0;
-                const sp = (payload.find(p => p.dataKey === "S&P 500")?.value as number) ?? 0;
-                const crossed = portfolio >= fireTarget;
-                const header = fireAge > 0 ? `Age ${fireAge + (label as number)}` : `Year ${label}`;
+                const sp        = (payload.find(p => p.dataKey === "S&P 500")?.value as number) ?? 0;
+                const crossed   = (actual ?? portfolio) >= fireTarget;
+                const calYear   = new Date().getFullYear() + (label as number);
                 return (
                   <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", transition: "opacity 0.15s ease" }}>
-                    <div style={{ fontWeight: 700, marginBottom: 6, color: "#F8FAFC" }}>{header}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22d3a5" }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22d3a5", display: "inline-block" }} />
-                      Your portfolio: {fmtMoney(portfolio, true)}{crossed ? " ✓" : ""}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#f97316", marginTop: 4 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f97316", display: "inline-block" }} />
-                      S&amp;P 500: {fmtMoney(sp, true)}
-                    </div>
+                    <div style={{ fontWeight: 700, marginBottom: 6, color: "#F8FAFC" }}>{calYear}</div>
+                    {actual !== undefined && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.85)", marginBottom: 4 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.85)", display: "inline-block" }} />
+                        Actual: {fmtMoney(actual, true)}{crossed ? " ✓" : ""}
+                      </div>
+                    )}
+                    {portfolio > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22d3a5" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22d3a5", display: "inline-block" }} />
+                        Projected: {fmtMoney(portfolio, true)}{!actual && crossed ? " ✓" : ""}
+                      </div>
+                    )}
+                    {sp > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#f97316", marginTop: 4 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f97316", display: "inline-block" }} />
+                        S&amp;P 500: {fmtMoney(sp, true)}
+                      </div>
+                    )}
                     <div style={{ color: "#64748B", marginTop: 6, borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 6 }}>
                       FIRE target: {fmtMoney(fireTarget, true)}
                     </div>
@@ -821,10 +850,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <ReferenceLine y={fireTarget} stroke="#059669" strokeDasharray="5 3" strokeWidth={1.5} label={{ value: "FIRE target", position: "insideTopRight", fontSize: 10, fill: "#059669", fontWeight: 700, fontFamily: "Inter" }} />
             {/* Vertical FIRE year line */}
             {fireYear && <ReferenceLine x={fireYear} stroke="#22d3a5" strokeDasharray="4 3" strokeWidth={1.5} />}
-            {/* User portfolio area — draws up from baseline, then S&P line follows */}
-            <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#22d3a5" }} isAnimationActive animationBegin={0} animationDuration={1300} animationEasing="ease-out" />
-            {/* S&P 500 benchmark — staggered 350 ms after the area */}
-            <Line type="monotone" dataKey="S&P 500" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#f97316" }} isAnimationActive animationBegin={350} animationDuration={950} animationEasing="ease-out" />
+            {/* Actual portfolio history — solid white line up to today */}
+            <Line type="monotone" dataKey="Actual" stroke="rgba(255,255,255,0.85)" strokeWidth={2} connectNulls={false} dot={{ r: 4, fill: "#22d3a5", stroke: "rgba(255,255,255,0.85)", strokeWidth: 1.5 }} activeDot={{ r: 5, fill: "#22d3a5" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
+            {/* Projected portfolio area — teal gradient into the future */}
+            <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#22d3a5" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
+            {/* S&P 500 benchmark — staggered after the area */}
+            <Line type="monotone" dataKey="S&P 500" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#f97316" }} isAnimationActive animationBegin={500} animationDuration={950} animationEasing="ease-out" />
           </ComposedChart>
         </ResponsiveContainer>
         </div>
@@ -832,7 +863,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-              <span style={{ width: 20, height: 3, borderRadius: 2, background: "#22d3a5", display: "inline-block", flexShrink: 0 }} /> Your portfolio (7% real)
+              <span style={{ width: 20, height: 2, borderRadius: 1, background: "rgba(255,255,255,0.75)", display: "inline-block", flexShrink: 0 }} /> Actual
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
+              <span style={{ width: 20, height: 3, borderRadius: 2, background: "#22d3a5", display: "inline-block", flexShrink: 0 }} /> Projected (7% real)
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
               <span style={{ width: 20, height: 2, borderRadius: 1, background: "#f97316", display: "inline-block", flexShrink: 0, opacity: 0.7 }} /> S&amp;P 500 (10% nominal)
@@ -3141,6 +3175,8 @@ export default function Dashboard() {
   const [retirementCityCol,   setRetirementCityCol]   = useState(0);
   const [lifestyleMultiplier, setLifestyleMultiplier] = useState(1.0);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [nwSnapshots, setNwSnapshots] = useState<{ portfolio_value: number; captured_at: string }[]>([]);
+  const lastSnapshotRef = useRef<number | null>(null);
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -3414,6 +3450,12 @@ export default function Dashboard() {
         isLoaded.current = true;
         setProfileLoading(false);
       });
+      // Load net worth snapshot history for the "actual progress" chart line
+      supabase.from("net_worth_snapshots")
+        .select("portfolio_value, captured_at")
+        .order("captured_at", { ascending: true })
+        .limit(120)
+        .then(({ data: snaps }) => { if (snaps) setNwSnapshots(snaps); });
     });
   }, []);
 
@@ -3461,6 +3503,21 @@ export default function Dashboard() {
       } else {
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
+        // Capture net worth snapshot when portfolio value changes
+        const currentInvestable = k401 + rothIRA + taxable + cashSavings;
+        if (currentInvestable !== lastSnapshotRef.current) {
+          lastSnapshotRef.current = currentInvestable;
+          supabase.from("net_worth_snapshots").insert({
+            user_id: session.user.id,
+            portfolio_value: currentInvestable,
+          }).then(({ error }) => {
+            if (!error) setNwSnapshots(prev => {
+              const today = new Date().toISOString().slice(0, 10);
+              const filtered = prev.filter(s => s.captured_at.slice(0, 10) !== today);
+              return [...filtered, { portfolio_value: currentInvestable, captured_at: new Date().toISOString() }];
+            });
+          });
+        }
       }
     }, 1000);
   }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier]);
@@ -3806,6 +3863,7 @@ export default function Dashboard() {
                 retirementCityCol={retirementCityCol}
                 lifestyleMultiplier={lifestyleMultiplier}
                 fireAge={fireAge}
+                nwSnapshots={nwSnapshots}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
