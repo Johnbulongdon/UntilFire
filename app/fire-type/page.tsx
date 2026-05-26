@@ -8,6 +8,7 @@ import {
   QUIZ_QUESTIONS,
   scoreQuiz,
   getTypeMeta,
+  isValidFireTypeCode,
   AXIS_STRENGTHS,
   AXIS_WATCH_OUTS,
   type AxisLetter,
@@ -37,19 +38,33 @@ const C = {
 function FireTypeQuizInner() {
   const searchParams = useSearchParams()
   const source = searchParams.get('source') ?? undefined
+  const sharedType = (searchParams.get('type') ?? '').toUpperCase()
 
   type Stage = 'intro' | 'quiz' | 'result'
+  type ResultOrigin = 'quiz' | 'shared'
   const [stage, setStage] = useState<Stage>('intro')
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState<QuizAnswer[]>([])
   const [result, setResult] = useState<{ code: string; name: string; tagline: string } | null>(null)
+  const [resultOrigin, setResultOrigin] = useState<ResultOrigin>('quiz')
   const [copied, setCopied] = useState(false)
   const [pendingAnswer, setPendingAnswer] = useState<QuizAnswer | null>(null)
   const startedRef = useRef(false)
 
-  // Fire completed event once when result mounts
   useEffect(() => {
-    if (stage === 'result' && result) {
+    if (!isValidFireTypeCode(sharedType)) return
+    const meta = getTypeMeta(sharedType)
+    setResult({ code: sharedType, ...meta })
+    setResultOrigin('shared')
+    setStage('result')
+    setAnswers([])
+    setCurrentQ(0)
+    setPendingAnswer(null)
+  }, [sharedType])
+
+  // Fire completed event once when result mounts from a real quiz completion.
+  useEffect(() => {
+    if (stage === 'result' && result && resultOrigin === 'quiz') {
       trackFireTypeCompleted({ fireTypeCode: result.code, source })
       try {
         localStorage.setItem(
@@ -60,8 +75,7 @@ function FireTypeQuizInner() {
         // localStorage may be unavailable
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, result])
+  }, [stage, result, resultOrigin, source])
 
   function handleAnswer(position: QuizAnswer) {
     if (pendingAnswer !== null) return
@@ -81,6 +95,7 @@ function FireTypeQuizInner() {
         const meta = getTypeMeta(code)
         setAnswers(next)
         setResult({ code, ...meta })
+        setResultOrigin('quiz')
         setStage('result')
       }
     }, 280)
@@ -262,6 +277,7 @@ function FireTypeQuizInner() {
 
   const code = result.code
   const ctaHref = `/?source=fire-type-result&type=${code}&start=onboarding`
+  const isSharedResult = resultOrigin === 'shared'
   // Derive 4 axis letters from the code for composable copy
   const letters = code.split('') as AxisLetter[]
 
@@ -272,14 +288,19 @@ function FireTypeQuizInner() {
           <Logo variant="light" size={22} />
         </Link>
         <button
-          onClick={() => { setStage('intro'); setAnswers([]); setCurrentQ(0); setResult(null); startedRef.current = false }}
+          onClick={() => { setStage('quiz'); setAnswers([]); setCurrentQ(0); setResult(null); setResultOrigin('quiz'); startedRef.current = false }}
           style={{ background: 'none', border: 'none', color: C.muted, fontSize: 13, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}
         >
-          Retake quiz
+          {isSharedResult ? 'Take the quiz' : 'Retake quiz'}
         </button>
       </nav>
 
       <div className="ft-result-pad" style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px 80px' }}>
+        {isSharedResult ? (
+          <div style={{ background: '#ECFDF5', border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', marginBottom: 18, color: C.text, textAlign: 'center', lineHeight: 1.6 }}>
+            Think this sounds like you? Take the quiz to find your own FIRE Type, or go straight to your FIRE number.
+          </div>
+        ) : null}
         {/* Code badge */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ display: 'inline-block', background: C.darkGreen, color: C.teal, fontSize: 'clamp(28px, 8vw, 42px)', fontWeight: 800, letterSpacing: 'clamp(2px, 1.5vw, 6px)', padding: '14px clamp(16px, 6vw, 32px)', borderRadius: 14, fontFamily: 'DM Mono, monospace', marginBottom: 16 }}>
@@ -325,6 +346,14 @@ function FireTypeQuizInner() {
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: '0 0 20px', lineHeight: 1.6 }}>
             Calculate your actual FIRE number and see which lever gets you there fastest.
           </p>
+          {isSharedResult ? (
+            <button
+              onClick={() => { setStage('quiz'); setAnswers([]); setCurrentQ(0); setResult(null); setResultOrigin('quiz'); startedRef.current = false }}
+              style={{ display: 'inline-block', background: 'rgba(255,255,255,0.12)', color: '#ffffff', textDecoration: 'none', borderRadius: 10, padding: '14px 28px', fontSize: 15, fontWeight: 700, width: '100%', boxSizing: 'border-box', border: '1px solid rgba(255,255,255,0.18)', marginBottom: 12, fontFamily: "'Manrope', sans-serif", cursor: 'pointer' }}
+            >
+              Take the quiz to find my type
+            </button>
+          ) : null}
           <Link
             href={ctaHref}
             onClick={() => trackFireTypeCtaClicked({ fireTypeCode: code, source })}

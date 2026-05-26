@@ -30,6 +30,8 @@ funnel_landing_viewed
                → funnel_fire_type_completed (on result mount)
                → funnel_fire_type_shared    (optional, on share action)
                → funnel_fire_type_cta_clicked → rejoins primary funnel
+
+  → [dashboard experiment] funnel_hysa_empty_state_cta_clicked (cta=learn_more|connect_account)
 ```
 
 ## PII rules
@@ -163,6 +165,7 @@ client-side experience without double-counting conversions.
 - **Where**: `app/fire-type/page.tsx`, `useEffect` on `stage === 'result'` mount.
 - **Properties**:
   - `fire_type_code` — the 4-letter result code (e.g. `PSGB`). Not PII — it is a preference category, not a financial number.
+  - `fire_type_axes` — same 4-letter axis code, kept explicit for downstream querying.
   - `source` — optional.
 
 ### `funnel_fire_type_shared`
@@ -170,6 +173,7 @@ client-side experience without double-counting conversions.
 - **Where**: `app/fire-type/page.tsx`, share button handler after successful share or clipboard copy.
 - **Properties**:
   - `fire_type_code` — 4-letter result code.
+  - `fire_type_axes` — same 4-letter axis code.
   - `share_method` — `native` | `clipboard`.
 
 ### `funnel_fire_type_cta_clicked`
@@ -177,7 +181,16 @@ client-side experience without double-counting conversions.
 - **Where**: `app/fire-type/page.tsx`, onClick on the "Calculate my actual FIRE number" CTA link.
 - **Properties**:
   - `fire_type_code` — 4-letter result code.
+  - `fire_type_axes` — same 4-letter axis code.
   - `source` — optional.
+
+### `funnel_hysa_empty_state_cta_clicked`
+
+- **Where**: `app/dashboard/PlaidConnect.tsx`, only in the Assets empty state card when no bank is connected yet.
+- **Properties**:
+  - `cta` — `learn_more` | `connect_account`.
+  - `destination` — `apy_calculator` | `plaid_connect`.
+  - `placement` — `assets_empty_state`.
 
 ## Adding a new event
 

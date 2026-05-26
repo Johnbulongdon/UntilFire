@@ -26,6 +26,7 @@ export const FunnelEvents = {
   FIRE_TYPE_COMPLETED: 'funnel_fire_type_completed',
   FIRE_TYPE_SHARED: 'funnel_fire_type_shared',
   FIRE_TYPE_CTA_CLICKED: 'funnel_fire_type_cta_clicked',
+  HYSA_EMPTY_STATE_CTA_CLICKED: 'funnel_hysa_empty_state_cta_clicked',
 } as const;
 
 export type FunnelEventName =
@@ -126,17 +127,26 @@ export interface FireTypeStartedProperties extends BaseFunnelProperties {
 
 export interface FireTypeCompletedProperties extends BaseFunnelProperties {
   fire_type_code: string;
+  fire_type_axes?: string;
   source?: string;
 }
 
 export interface FireTypeSharedProperties extends BaseFunnelProperties {
   fire_type_code: string;
+  fire_type_axes?: string;
   share_method: 'native' | 'clipboard';
 }
 
 export interface FireTypeCtaClickedProperties extends BaseFunnelProperties {
   fire_type_code: string;
+  fire_type_axes?: string;
   source?: string;
+}
+
+export interface HysaEmptyStateCtaClickedProperties extends BaseFunnelProperties {
+  cta: 'learn_more' | 'connect_account';
+  destination: 'apy_calculator' | 'plaid_connect';
+  placement: 'assets_empty_state';
 }
 
 export function withVersion<P extends Record<string, unknown>>(

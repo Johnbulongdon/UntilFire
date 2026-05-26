@@ -144,6 +144,10 @@ const TYPE_NAMES: Record<string, { name: string; tagline: string }> = {
   AEGF: { name: "The Open Adventurer",      tagline: "Expansion, freedom, and adaptability define you. Your FIRE future is wide open — and that's exactly how you want it." },
 };
 
+export function isValidFireTypeCode(code: string): boolean {
+  return Boolean(TYPE_NAMES[code]);
+}
+
 export function getTypeMeta(code: string): { name: string; tagline: string } {
   return TYPE_NAMES[code] ?? { name: "The FIRE Seeker", tagline: "Your FIRE path is uniquely yours." };
 }

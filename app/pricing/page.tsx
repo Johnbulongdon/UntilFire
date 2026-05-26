@@ -1,15 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { siteUrl } from "@/lib/site";
+
+const pricingUrl = siteUrl('/pricing');
 
 export const metadata: Metadata = {
   title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
   description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo to unlock unlimited bank connections and AI FIRE adviser.",
   keywords: "untilfire pricing, fire planner cost, financial independence app price, fire calculator free",
-  alternates: { canonical: "https://untilfire.com/pricing" },
+  alternates: { canonical: pricingUrl },
   openGraph: {
     title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
     description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo.",
-    url: "https://untilfire.com/pricing",
+    url: pricingUrl,
     siteName: "UntilFire",
     type: "website",
   },
@@ -47,7 +50,7 @@ export default function PricingPage() {
             "@type": "Product",
             name: "UntilFire Pro",
             description: "AI-powered FIRE planning with unlimited bank connections and personalized retirement advice.",
-            url: "https://untilfire.com/pricing",
+            url: pricingUrl,
             brand: { "@type": "Brand", name: "UntilFire" },
             offers: [
               {
