@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Logo from "@/app/components/Logo";
+import { calcFIRE } from "@/lib/fire";
+import { saveCalculatorPrefill } from "@/lib/journey";
 
 const C = {
   green900: "#003527",
@@ -73,6 +75,141 @@ function Reveal({
       }}
     >
       {children}
+    </div>
+  );
+}
+
+/* ── Inline calculator widget ────────────────────────────────────────── */
+function InlineWidget({ onStart }: { onStart: () => void }) {
+  const [income, setIncome] = useState("");
+  const [savings, setSavings] = useState("");
+  const [netWorth, setNetWorth] = useState("");
+
+  const toNum = (v: string) => parseFloat(v.replace(/[^0-9.]/g, "")) || 0;
+  const inc = toNum(income);
+  const sav = toNum(savings);
+  const nw = toNum(netWorth);
+  const canShow = inc > 0 && sav > 0 && sav < inc;
+
+  const result = useMemo(() => {
+    if (!canShow) return null;
+    return calcFIRE(sav, Math.max(0, (inc - sav) * 12), undefined, nw);
+  }, [canShow, inc, sav, nw]);
+
+  const fmtMoney = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
+
+  function handleSave() {
+    if (!result) return;
+    saveCalculatorPrefill({
+      monthlyIncome: inc,
+      monthlySavings: sav,
+      monthlySpendEstimate: Math.max(0, inc - sav),
+      annualCost: Math.max(0, (inc - sav) * 12),
+      cityName: "United States (avg)",
+      stateKey: "custom",
+      fireTarget: result.fireTarget,
+      retireYear: result.retireYear,
+      generatedAt: new Date().toISOString(),
+      portfolioBalance: nw,
+      defaultCurrency: "USD",
+    });
+    window.location.href = "/login";
+  }
+
+  const inputs = [
+    { label: "Monthly take-home", value: income, onChange: setIncome, placeholder: "5,000" },
+    { label: "Monthly savings", value: savings, onChange: setSavings, placeholder: "1,200" },
+    { label: "Net worth (optional)", value: netWorth, onChange: setNetWorth, placeholder: "0" },
+  ];
+
+  return (
+    <div style={{
+      background: "#fff", border: `1px solid rgba(0,53,39,0.12)`,
+      borderRadius: 20, padding: "22px 24px",
+      boxShadow: "0 14px 40px rgba(0,53,39,0.10)", width: "100%",
+    }}>
+      {/* Inputs */}
+      <div className="uf-widget-inputs" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        {inputs.map(({ label, value, onChange, placeholder }) => (
+          <div key={label}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted, marginBottom: 6 }}>
+              {label}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: C.green700 }}>$</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                placeholder={placeholder}
+                style={{
+                  width: "100%", border: "none", borderBottom: `2px solid ${C.border}`,
+                  borderRadius: 0, outline: "none", fontSize: 17, fontWeight: 700,
+                  fontFamily: F, color: C.green900, background: "transparent", paddingBottom: 3,
+                  transition: "border-color 0.15s",
+                }}
+                onFocus={e => (e.currentTarget.style.borderBottomColor = C.green700)}
+                onBlur={e => (e.currentTarget.style.borderBottomColor = C.border)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Result */}
+      {canShow && result ? (
+        <div style={{
+          marginTop: 18, background: C.green900, borderRadius: 14, padding: "16px 20px",
+          display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 14,
+        }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.teal }}>
+              Your freedom date
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 5 }}>
+              <span style={{ fontSize: 38, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>
+                {result.retireYear}
+              </span>
+              {result.years !== undefined && (
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
+                  {result.years === 0 ? "already there" : `${Math.round(result.years)} yrs away`}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
+              FIRE number: {fmtMoney(result.fireTarget)}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button
+              onClick={handleSave}
+              style={{
+                height: 40, padding: "0 22px", background: C.teal, color: C.green900,
+                border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700,
+                fontSize: 13, cursor: "pointer", whiteSpace: "nowrap",
+              }}
+            >
+              Save my plan →
+            </button>
+            <button
+              onClick={onStart}
+              style={{
+                height: 34, padding: "0 14px", background: "rgba(255,255,255,0.07)",
+                color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 9999, fontFamily: F, fontWeight: 600, fontSize: 12,
+                cursor: "pointer", whiteSpace: "nowrap",
+              }}
+            >
+              Add city for accuracy →
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ marginTop: 14, fontSize: 13, color: C.faint, textAlign: "center", fontStyle: "italic" }}>
+          Enter income and savings above — your freedom date appears instantly.
+        </div>
+      )}
     </div>
   );
 }
@@ -177,14 +314,14 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
             transition: "opacity 0.5s ease 0.15s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s",
           }}>
-            The FIRE-first
+            Let your money
           </span>
           <span style={{
             display: "block",
             opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
             transition: "opacity 0.5s ease 0.28s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.28s",
           }}>
-            personal finance app.
+            work for you.
           </span>
         </h1>
 
@@ -195,45 +332,17 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
           transition: "opacity 0.5s ease 0.42s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.42s",
         }}>
-          UntilFire helps you find your freedom date, build a plan to move it
-          closer, and track the money decisions that make work optional.
+          Find the date your money can make work optional — and the one move
+          to get there sooner.
         </p>
 
-        {/* CTA pill */}
-        <div className="uf-hero-cta" style={{
-          marginTop: 32, display: "inline-flex", alignItems: "center", gap: 10,
-          padding: 8, background: "#fff", border: `1px solid ${C.borderSoft}`,
-          borderRadius: 9999, boxShadow: "0 14px 40px rgba(0,53,39,0.10)",
+        {/* Inline widget */}
+        <div style={{
+          marginTop: 36, width: "min(580px, 100%)",
           opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(10px)",
           transition: "opacity 0.5s ease 0.55s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.55s",
         }}>
-          {/* Month/Year placeholder */}
-          <div className="uf-date-placeholder" style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 16px" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ display: "flex", alignItems: "flex-end", height: 22, gap: 3 }}>
-                <span style={{ width: 2, height: 16, background: C.green700, borderRadius: 1, animation: "ufBlink 1.1s steps(1) infinite" }} />
-                <div style={{ width: 56, height: 2, background: C.green900, borderRadius: 1 }} />
-              </div>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.muted }}>Month</span>
-            </div>
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: C.green900, marginBottom: 14 }} />
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ display: "flex", alignItems: "flex-end", height: 22 }}>
-                <div style={{ width: 72, height: 2, background: C.green900, borderRadius: 1 }} />
-              </div>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.muted }}>Year</span>
-            </div>
-            <span className="uf-date-helper" style={{ marginLeft: 14, fontSize: 13, fontWeight: 500, color: C.faint, whiteSpace: "nowrap" }}>
-              Your plan starts with your freedom date
-            </span>
-          </div>
-          <button
-            className="uf-hero-cta-button"
-            onClick={onStart}
-            style={{ height: 52, padding: "0 26px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 16, cursor: "pointer", whiteSpace: "nowrap" }}
-          >
-            Start building my plan
-          </button>
+          <InlineWidget onStart={onStart} />
         </div>
 
         {/* Trust line */}
@@ -242,7 +351,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted,
           opacity: mounted ? 1 : 0, transition: "opacity 0.5s ease 0.7s",
         }}>
-          {["Freedom date", "Guided plan", "Progress tracking"].map((s, i) => (
+          {["No account needed", "Numbers stay private", "Free to start"].map((s, i) => (
             <span key={s} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               {i > 0 && <span style={{ opacity: 0.35, marginRight: 2 }}>·</span>}
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green600 }} />
@@ -367,27 +476,8 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             font-size: 17px !important;
             line-height: 1.5 !important;
           }
-          .uf-hero-cta {
-            width: calc(100vw - 32px) !important;
-            max-width: 360px !important;
-            box-sizing: border-box !important;
-            flex-direction: column !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            padding: 0 !important;
-            gap: 0 !important;
-          }
-          .uf-date-placeholder {
-            display: none !important;
-          }
-          .uf-date-helper {
-            display: none !important;
-          }
-          .uf-hero-cta-button {
-            width: 100% !important;
-            height: 50px !important;
+          .uf-widget-inputs {
+            grid-template-columns: 1fr !important;
           }
           .uf-hero-trust {
             max-width: 340px !important;
@@ -456,9 +546,9 @@ function HowSection() {
         {/* Three steps */}
         <div style={{ marginTop: 72, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 36, textAlign: "left" }}>
           {[
-            { n: "01", t: "Find your freedom date.", s: "Start with the number that matters: when your money can make work optional." },
-            { n: "02", t: "See what moves it.", s: "UntilFire shows the levers behind the date — saving, spending, investing, income, and the assumptions that matter." },
-            { n: "03", t: "Follow the plan.", s: "Turn the math into next actions, track progress, and keep adjusting as your life changes." },
+            { n: "01", t: "No more guessing.", s: "See the one number that matters: when your money can make work optional. No spreadsheet, no finance degree needed." },
+            { n: "02", t: "See what moves it.", s: "UntilFire shows the levers behind the date — saving, spending, investing, income — and exactly how each one shifts your timeline." },
+            { n: "03", t: "One move at a time.", s: "Turn the math into a next action. Track progress, keep adjusting, and know your money is working — not just sitting there." },
           ].map((s, i) => (
             <Reveal key={s.n} delay={i * 0.1}>
               <div style={{ padding: "24px 24px 28px", background: C.paperWarm, borderRadius: 16, border: `1px solid ${C.border}` }}>
@@ -656,10 +746,22 @@ function PricingSection({ onStart }: { onStart: () => void }) {
 
 /* ── Stories ─────────────────────────────────────────────────────────── */
 function StoriesSection() {
-  const testimonials = [
-    { initials: "MK", name: "Maya K.", role: "Started 2024", quote: "My freedom date was 2047. A year later it's 2042. The plan made it feel possible." },
-    { initials: "JB", name: "Jordan B.", role: "UntilFire user · 2 yrs", quote: "Best part isn't the date — it's the one move. I stopped checking 8 spreadsheets a week. Now I just do the move." },
-    { initials: "AS", name: "Alex S.", role: "Started 2023", quote: "UntilFire didn't promise me anything. It just showed me the date. That was enough to change how I live." },
+  const insights = [
+    {
+      quote: "Haven't found a uniform app to centrally manage money.",
+      context: "Beta survey · what's missing",
+      icon: "💬",
+    },
+    {
+      quote: "I use 3 apps and a spreadsheet. None of them tell me if I'm actually on track.",
+      context: "Beta survey · biggest frustration",
+      icon: "💬",
+    },
+    {
+      quote: "Seeing the date change when I adjusted my savings — that was the moment it clicked.",
+      context: "Beta user · first session",
+      icon: "💬",
+    },
   ];
 
   return (
@@ -668,44 +770,35 @@ function StoriesSection() {
         <Reveal>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", border: `1.5px solid ${C.borderSoft}`, background: "#fff", borderRadius: 9999, fontSize: 13, fontWeight: 700, color: C.green900 }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.8 3.6 4 .6-2.9 2.8.7 4L7 10.1 3.4 12l.7-4L1.2 5.2l4-.6L7 1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
-            From the community
+            What we&apos;re hearing
           </div>
         </Reveal>
         <Reveal delay={0.08}>
           <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 5.5vw, 72px)", lineHeight: 0.96, letterSpacing: "-0.04em", color: C.green900 }}>
-            Stories from the<br />FIRE-walk.
+            This is why<br />UntilFire exists.
           </h2>
         </Reveal>
         <Reveal delay={0.14}>
-          <p style={{ margin: "18px auto 0", maxWidth: 480, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-            Notes from people using UntilFire to turn money decisions into work optionality.
+          <p style={{ margin: "18px auto 0", maxWidth: 520, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
+            The same frustrations come up in every beta conversation. One place, one plan, one next move.
           </p>
         </Reveal>
 
         <div style={{ marginTop: 60, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-          {testimonials.map((t, i) => (
-            <Reveal key={t.name} delay={i * 0.1}>
-              <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 20, padding: 28, boxShadow: "0 8px 24px rgba(0,53,39,0.07)", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                <div style={{ width: 64, height: 64, borderRadius: 99, background: C.green50, display: "grid", placeItems: "center", color: C.green700, fontWeight: 800, fontSize: 20 }}>
-                  {t.initials}
-                </div>
-                <div style={{ marginTop: 14, fontFamily: F, fontWeight: 800, fontSize: 18, color: C.green900 }}>{t.name}</div>
-                <div style={{ marginTop: 2, fontSize: 12, color: C.muted }}>{t.role}</div>
-                <div style={{ display: "flex", gap: 3, marginTop: 12 }}>
-                  {[0, 1, 2, 3, 4].map(i => <span key={i} style={{ color: "#F4B400", fontSize: 13 }}>★</span>)}
-                </div>
-                <p style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.55, color: C.body, fontStyle: "italic" }}>
+          {insights.map((t, i) => (
+            <Reveal key={i} delay={i * 0.1}>
+              <div style={{ background: C.paperWarm, border: `1px solid ${C.border}`, borderRadius: 20, padding: 28, boxShadow: "0 8px 24px rgba(0,53,39,0.05)", display: "flex", flexDirection: "column", textAlign: "left" }}>
+                <div style={{ fontSize: 28 }}>{t.icon}</div>
+                <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.55, color: C.green900, fontWeight: 600, fontStyle: "italic" }}>
                   &ldquo;{t.quote}&rdquo;
                 </p>
+                <div style={{ marginTop: "auto", paddingTop: 18, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted }}>
+                  {t.context}
+                </div>
               </div>
             </Reveal>
           ))}
         </div>
-        <Reveal delay={0.2}>
-          <div style={{ marginTop: 28, fontSize: 11, color: C.faint, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 600 }}>
-            Sample testimonials — replace at launch with real beta users
-          </div>
-        </Reveal>
       </div>
     </section>
   );
@@ -788,9 +881,9 @@ function ClosingSection({ onStart }: { onStart: () => void }) {
         </Reveal>
         <Reveal delay={0.08}>
           <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 6vw, 68px)", lineHeight: 0.98, letterSpacing: "-0.04em", color: C.green900 }}>
-            Build your FIRE plan.<br />
+            Let your money work.<br />
             <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 400, fontStyle: "italic", color: C.green700 }}>
-              Then fast-forward it.
+              Start today.
             </span>
           </h2>
         </Reveal>
