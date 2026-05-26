@@ -13,22 +13,24 @@ event in PostHog. **This doc and that file must stay in sync.**
 
 ```
 funnel_landing_viewed
-  → [primary] funnel_calculator_step_viewed (step_id=city)
-           → funnel_calculator_step_viewed (step_id=income)
-           → funnel_calculator_step_viewed (step_id=savings)
-           → funnel_calculator_step_viewed (step_id=portfolio)
+  → [primary] funnel_calculator_step_viewed (step_id=city,     step_index=1)
+           → funnel_calculator_step_viewed (step_id=income,   step_index=2)
+           → funnel_calculator_step_viewed (step_id=savings,  step_index=3)
+           → funnel_calculator_step_viewed (step_id=portfolio, step_index=4)
            → funnel_calculator_revealed
            → funnel_signup_started
            → funnel_signup_completed
            → funnel_dashboard_first_view
-           → funnel_paywall_viewed     (helper exposed; emit site lands with paywall UI)
-           → funnel_checkout_started   (helper exposed; emit site lands with paywall UI)
+           → funnel_paywall_viewed     (dashboard upgrade modal opens)
+           → funnel_checkout_started   (Stripe checkout URL returned)
            → funnel_checkout_succeeded (server, Stripe webhook)
 
   → [quiz branch] funnel_fire_type_started  (on first answer)
                → funnel_fire_type_completed (on result mount)
                → funnel_fire_type_shared    (optional, on share action)
                → funnel_fire_type_cta_clicked → rejoins primary funnel
+
+  → [dashboard experiment] funnel_hysa_empty_state_cta_clicked (cta=learn_more|connect_account)
 ```
 
 ## PII rules
@@ -43,6 +45,8 @@ funnel_landing_viewed
   authenticated person.
 - `funnel_event_version` is attached to every event so we can evolve the
   contract without breaking historical queries.
+- Revenue funnel events include plan and current monthly price, but never raw
+  payment details.
 - `landing_source` is a coarse route/source label such as `learn-hub`,
   `calculator-savings-rate`, or `fire-number-austin-tx`. It is used for
   acquisition attribution, not personal identification.
@@ -59,9 +63,9 @@ funnel_landing_viewed
 ### `funnel_calculator_step_viewed`
 
 - **Where**: `app/page.tsx`, `Home` screen effect when the wizard transitions
-  to one of the four steps.
+  to one of the five steps.
 - **Properties**:
-  - `step_id` - `city` | `income` | `savings` | `portfolio`.
+  - `step_id` - `city` | `income` | `savings` | `portfolio`. (`currency` is removed from normal flow — now an inline selector on the income screen.)
   - `step_index` - `1..4`. Mirrors `step_id` for funnel ordering in PostHog.
   - `landing_source` - optional route/source label.
 
@@ -97,8 +101,8 @@ funnel_landing_viewed
 
 ### `funnel_dashboard_first_view`
 
-- **Where**: `app/dashboard/page.tsx`, the session-load `useEffect` after
-  `loadDefaultScenario` resolves. Fires once per dashboard mount.
+- **Where**: `app/dashboard/page.tsx`, inside the `user_budget` query callback
+  after profile data loads (`setProfileLoading(false)`). Fires once per dashboard mount.
 - **Properties**:
   - `had_calculator_prefill` - boolean.
   - `via_upgrade` - boolean. `true` when the URL carries `?upgraded=true`
@@ -107,19 +111,24 @@ funnel_landing_viewed
 
 ### `funnel_paywall_viewed`
 
-- **Status**: helper exposed (`trackPaywallViewed(surface)`), no emit site
-  yet. The paywall UI lands in a separate issue; that change is required to
-  call this helper.
+- **Where**: `app/dashboard/UpgradeModal.tsx`, fired when the modal opens.
 - **Properties**:
-  - `surface` - short label for where the paywall rendered (e.g.
-    `dashboard_upgrade_card`).
+  - `plan` - `pro`.
+  - `price_monthly` - `4.99`.
+  - `price_id` - optional Stripe price id when available.
+  - `source` - short label for where the paywall rendered (e.g. `profile`,
+    `plaid_limit`, `dashboard_upgrade_modal`).
 
 ### `funnel_checkout_started`
 
-- **Status**: helper exposed (`trackCheckoutStarted(surface)`), no emit site
-  yet. Wire this to whatever button POSTs to `/api/stripe/checkout`.
+- **Where**: `app/dashboard/UpgradeModal.tsx`, after `POST /api/stripe/checkout`
+  returns a Stripe Checkout URL and before browser redirect.
 - **Properties**:
-  - `surface` - short label for the click origin.
+  - `plan` - `pro`.
+  - `price_monthly` - `4.99`.
+  - `price_id` - Stripe price id returned by `/api/stripe/checkout`.
+  - `source` - short label for the click origin (e.g. `profile`,
+    `plaid_limit`, `dashboard_upgrade_modal`).
 
 ### `funnel_checkout_succeeded`
 
@@ -132,6 +141,7 @@ funnel_landing_viewed
   client identify call.
 - **Properties**:
   - `plan` - `pro`.
+  - `price_monthly` - `4.99`.
   - `price_id` - Stripe price id from the subscription (optional if Stripe
     omits it).
   - `stripe_session_id` - the Stripe Checkout Session id.
@@ -154,6 +164,7 @@ client-side experience without double-counting conversions.
 - **Where**: `app/fire-type/page.tsx`, `useEffect` on `stage === 'result'` mount.
 - **Properties**:
   - `fire_type_code` — the 4-letter result code (e.g. `PSGB`). Not PII — it is a preference category, not a financial number.
+  - `fire_type_axes` — same 4-letter axis code, kept explicit for downstream querying.
   - `source` — optional.
 
 ### `funnel_fire_type_shared`
@@ -161,6 +172,7 @@ client-side experience without double-counting conversions.
 - **Where**: `app/fire-type/page.tsx`, share button handler after successful share or clipboard copy.
 - **Properties**:
   - `fire_type_code` — 4-letter result code.
+  - `fire_type_axes` — same 4-letter axis code.
   - `share_method` — `native` | `clipboard`.
 
 ### `funnel_fire_type_cta_clicked`
@@ -168,7 +180,16 @@ client-side experience without double-counting conversions.
 - **Where**: `app/fire-type/page.tsx`, onClick on the "Calculate my actual FIRE number" CTA link.
 - **Properties**:
   - `fire_type_code` — 4-letter result code.
+  - `fire_type_axes` — same 4-letter axis code.
   - `source` — optional.
+
+### `funnel_hysa_empty_state_cta_clicked`
+
+- **Where**: `app/dashboard/PlaidConnect.tsx`, only in the Assets empty state card when no bank is connected yet.
+- **Properties**:
+  - `cta` — `learn_more` | `connect_account`.
+  - `destination` — `apy_calculator` | `plaid_connect`.
+  - `placement` — `assets_empty_state`.
 
 ## Adding a new event
 

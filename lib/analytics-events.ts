@@ -7,6 +7,11 @@
 
 export const FUNNEL_EVENT_VERSION = 1;
 
+export const PRO_PLAN_ANALYTICS = {
+  plan: 'pro',
+  priceMonthly: 4.99,
+} as const;
+
 export const FunnelEvents = {
   LANDING_VIEWED: 'funnel_landing_viewed',
   CALCULATOR_STEP_VIEWED: 'funnel_calculator_step_viewed',
@@ -21,6 +26,7 @@ export const FunnelEvents = {
   FIRE_TYPE_COMPLETED: 'funnel_fire_type_completed',
   FIRE_TYPE_SHARED: 'funnel_fire_type_shared',
   FIRE_TYPE_CTA_CLICKED: 'funnel_fire_type_cta_clicked',
+  HYSA_EMPTY_STATE_CTA_CLICKED: 'funnel_hysa_empty_state_cta_clicked',
 } as const;
 
 export type FunnelEventName =
@@ -30,10 +36,10 @@ export type CalculatorStepId = 'city' | 'currency' | 'income' | 'savings' | 'por
 
 export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   city: 1,
-  currency: 2,
-  income: 3,
-  savings: 4,
-  portfolio: 5,
+  currency: 2, // currency screen removed from normal flow; index preserved for historical data
+  income: 2,
+  savings: 3,
+  portfolio: 4,
 };
 
 // Coarse buckets keep individual users from being re-identified by their
@@ -93,15 +99,22 @@ export interface DashboardFirstViewProperties extends BaseFunnelProperties {
 }
 
 export interface PaywallProperties extends BaseFunnelProperties {
-  surface: string;
+  plan: string;
+  price_monthly: number;
+  price_id?: string;
+  source: string;
 }
 
 export interface CheckoutStartedProperties extends BaseFunnelProperties {
-  surface: string;
+  plan: string;
+  price_monthly: number;
+  price_id?: string;
+  source: string;
 }
 
 export interface CheckoutSucceededServerProperties extends BaseFunnelProperties {
   plan: string;
+  price_monthly: number;
   price_id?: string;
   stripe_session_id: string;
   mode: string;
@@ -114,17 +127,26 @@ export interface FireTypeStartedProperties extends BaseFunnelProperties {
 
 export interface FireTypeCompletedProperties extends BaseFunnelProperties {
   fire_type_code: string;
+  fire_type_axes?: string;
   source?: string;
 }
 
 export interface FireTypeSharedProperties extends BaseFunnelProperties {
   fire_type_code: string;
+  fire_type_axes?: string;
   share_method: 'native' | 'clipboard';
 }
 
 export interface FireTypeCtaClickedProperties extends BaseFunnelProperties {
   fire_type_code: string;
+  fire_type_axes?: string;
   source?: string;
+}
+
+export interface HysaEmptyStateCtaClickedProperties extends BaseFunnelProperties {
+  cta: 'learn_more' | 'connect_account';
+  destination: 'apy_calculator' | 'plaid_connect';
+  placement: 'assets_empty_state';
 }
 
 export function withVersion<P extends Record<string, unknown>>(
