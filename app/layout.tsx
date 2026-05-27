@@ -30,11 +30,13 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: 'UntilFire',
     type: 'website',
+    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'UntilFire — Know When You Can Stop Working' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'UntilFire | Know When You Can Stop Working',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
+    images: [`${SITE_URL}/opengraph-image`],
   },
   metadataBase: new URL(SITE_URL),
 }

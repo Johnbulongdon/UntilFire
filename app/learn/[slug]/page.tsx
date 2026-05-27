@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cityLandingPages } from '@/lib/city-pages'
+import { SITE_URL } from '@/lib/site'
 import {
   getLearnArticle,
   getLearnArticleMeta,
@@ -40,11 +41,13 @@ export async function generateMetadata({ params }: Props) {
       publishedTime: article.publishedAt,
       url: `https://www.untilfire.com/learn/${article.slug}`,
       siteName: 'UntilFire',
+      images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
       title: article.title,
       description: article.description,
+      images: [`${SITE_URL}/opengraph-image`],
     },
   }
 }
@@ -76,7 +79,7 @@ export default async function LearnArticlePage({ params }: Props) {
             author: { '@type': 'Organization', name: 'UntilFire', url: 'https://www.untilfire.com' },
             publisher: { '@type': 'Organization', name: 'UntilFire', url: 'https://www.untilfire.com' },
             url: `https://www.untilfire.com/learn/${article.slug}`,
-            image: `https://www.untilfire.com/learn/${article.slug}/opengraph-image`,
+            image: `${SITE_URL}/opengraph-image`,
             breadcrumb: {
               '@type': 'BreadcrumbList',
               itemListElement: [
