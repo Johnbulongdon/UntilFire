@@ -513,9 +513,9 @@ export default function ProfileTab({
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{
               display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-              background: subscription?.plan === "pro" ? "#f0fdf4" : "#fff7ed",
-              color: subscription?.plan === "pro" ? "#059669" : "#f97316",
-              border: `1px solid ${subscription?.plan === "pro" ? "#bbf7d0" : "#fed7aa"}`,
+              background: subscription?.plan === "pro" ? "#f0fdf4" : "#f1f5f9",
+              color: subscription?.plan === "pro" ? "#059669" : "#64748b",
+              border: `1px solid ${subscription?.plan === "pro" ? "#bbf7d0" : "#e2e8f0"}`,
             }}>
               {subscription?.plan === "pro" ? "Pro" : "Free"}
             </span>
@@ -535,7 +535,7 @@ export default function ProfileTab({
           ) : (
             <button
               onClick={onUpgradeClick}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#f97316", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+              style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
             >
               Upgrade to Pro
             </button>
