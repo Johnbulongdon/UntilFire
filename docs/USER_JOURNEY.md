@@ -1,5 +1,5 @@
 # UntilFire — User Journey Map
-Last updated: March 2026
+Last updated: May 2026
 
 ---
 
@@ -7,10 +7,10 @@ Last updated: March 2026
 
 UntilFire has two distinct user journeys:
 
-1. **The Calculator Journey** — anonymous user discovers FIRE number (5 screens, ~60 seconds)
-2. **The Tracker Journey** — signed-in user tracks real progress toward FIRE (ongoing)
+1. **The Freedom-Date Journey** — anonymous user discovers their FIRE number/freedom date and one next move (about 60 seconds)
+2. **The Guided Plan Journey** — signed-in or Pro user keeps following monthly moves toward work optionality
 
-The calculator journey is the acquisition funnel. The tracker journey is retention and monetisation.
+The first journey is the acquisition funnel. The second journey is retention and monetisation. The product should feel like it does the journey with the user, not like it simply hands over a number.
 
 ---
 
@@ -34,8 +34,8 @@ The calculator journey is the acquisition funnel. The tracker journey is retenti
 ### Stage 1 — Hero Screen
 
 **What user sees:**
-- "Your spending is costing you years of freedom"
-- Single button: "Calculate my FIRE number"
+- Freedom-led headline: "Find your freedom date — then bring it closer"
+- Single button: "Find my freedom date"
 - Social proof: "2,400+ FIRE seekers this month"
 - Market stats: $5.8B market, 2.2M Reddit members, 25% Gen Z targeting early retirement
 
@@ -85,7 +85,7 @@ The calculator journey is the acquisition funnel. The tracker journey is retenti
 
 **User thought:** "Oh interesting — I actually only take home $68k of my $90k. And my real hourly rate is only $32? That's lower than I thought."
 
-**Emotional beat:** A small insight moment — seeing effective taxes clearly for the first time creates engagement and a sense of "this tool gets it."
+**Emotional beat:** A small trust moment — income and tax context makes the result feel credible, but it should not distract from the main promise: “this app will show me the path.”
 
 **Friction points:**
 - User earns over $500k — slider maxes out visually but number input accepts any value
@@ -122,7 +122,7 @@ The calculator journey is the acquisition funnel. The tracker journey is retenti
 **Phase 1 — Calculating (~3 seconds):**
 - "Running your projection…"
 - 4 calculation steps light up one by one (620ms each):
-  - City cost-of-living → After-tax income → Compound growth at 7% → 25× withdrawal rule
+  - Your inputs → Trustworthy assumptions → Compound growth → Guided monthly move
 - Progress bar fills to 100%
 - 800ms pause at 100% (anticipation beat)
 
@@ -130,13 +130,14 @@ The calculator journey is the acquisition funnel. The tracker journey is retenti
 - Number slams in from 55% scale with spring animation
 - Count-up over 2.2 seconds from $0 to FIRE target
 - Orange glow effect pulses on the number
-- Below the number: "You could retire in [year] — age [age]"
-- Small caption: "Calculated for [city]"
+- Below the number: "Work could become optional in [year]" with optional age if known
+- Small caption: transparent assumptions, with city/tax shown as trust detail only
 
 **After reveal (once count-up completes):**
-- "Your spending is costing you X years of freedom" statement
-- 4 delta cards: cut dining / save $500 more / 10% pay cut / invest bonus
-- CTA: "Make this more accurate — it's free →" (→ dashboard signup)
+- "Your spending is costing you X years of freedom" or equivalent impact statement
+- One highlighted next monthly move: what to do and how much closer it brings freedom
+- Supporting delta cards: cut dining / save more / earn more / invest bonus
+- CTA after value: save the result or continue the plan
 - Secondary: "← Adjust inputs"
 
 **User emotional arc:**
@@ -205,7 +206,7 @@ The calculator journey is the acquisition funnel. The tracker journey is retenti
 
 ### Paid Conversion Point
 
-1. User sees "AI Roadmap" feature locked behind Pro ($9/mo)
+1. User sees "AI Roadmap" feature locked behind Pro ($4.99/mo)
 2. Prompt: "Get a personalised monthly plan to retire faster"
 3. User enters payment details → unlocks AI advisor
 

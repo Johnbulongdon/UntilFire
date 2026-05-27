@@ -1,5 +1,5 @@
 # UntilFire — Market Research & Competitive Analysis
-Last updated: March 2026
+Last updated: May 2026
 
 ---
 
@@ -114,7 +114,7 @@ Free tools as top-of-funnel for paid AUM advisory ($100K minimum). Powerful but 
 
 | Competitor | Free Tier | Paid Entry | Annual |
 |---|---|---|---|
-| **UntilFire** | ✅ Full calculator | $9/mo | $108/yr |
+| **UntilFire** | ✅ Full calculator | $4.99/mo | $59.88/yr |
 | ProjectionLab | ✅ (no save) | ~$9/mo | $109/yr |
 | FIRECalc | ✅ Full | Free | Free |
 | cFIREsim | ✅ Full | Free | Free |
@@ -128,7 +128,7 @@ Free tools as top-of-funnel for paid AUM advisory ($100K minimum). Powerful but 
 
 ## UntilFire's Competitive Position
 
-### The Whitespace: "The Adviser Gap"
+### The Whitespace: "The Guided Path Gap"
 
 Every tool in the market does one of two things:
 - **Gives you a number** and leaves you alone (FIRECalc, cFIREsim, generic calculators)
@@ -136,12 +136,12 @@ Every tool in the market does one of two things:
 
 Neither tells you: *"Based on your actual situation, here's the one thing to do this month."*
 
-That's the gap UntilFire is building into. The market has calculators and modellers. Nobody has built an adviser — something that understands your situation, tracks it over time, and gives you clear, personalised next steps.
+That's the gap UntilFire is building into. The market has calculators and modellers. Nobody has built the Duolingo-style path for FIRE — something that starts with your situation, shows the next move, tracks progress, and keeps helping you bring the freedom date closer.
 
 ### UntilFire's Positioning Statement
-> For anyone on the path to FIRE — whether you're just starting or already tracking — UntilFire is the personal FIRE adviser that meets you where you are: start with your number in 60 seconds, then get guidance that actually tells you what to do next.
+> For anyone who wants work to become optional, UntilFire is the personal FIRE adviser that starts with your freedom date and then does the journey with you: a clear path, a next move, and progress you can keep following.
 
-**The category UntilFire is creating:** Personal FIRE adviser — not a calculator, not a budgeting app, not a wealth manager. An app that grows with you and gives real answers, not just projections.
+**The category UntilFire is creating:** Personal FIRE adviser — not a calculator, not a budgeting app, not a city-tax comparison tool, not a wealth manager. An app that grows with you and gives real answers, not just projections.
 
 ### Why this positioning is defensible
 
@@ -151,7 +151,7 @@ That's the gap UntilFire is building into. The market has calculators and modell
 - **Boldin**: Comprehensive but built for 50+ pre-retirees. Overwhelming for accumulation-phase users.
 - **Human financial advisers**: $2,800–$5,000+ per engagement. Not accessible for the FIRE community.
 
-UntilFire's bet is that the 25–40 age group pursuing FIRE doesn't need a wealth manager — they need a knowledgeable friend who knows their numbers and checks in monthly.
+UntilFire's bet is that the 25–40 age group pursuing FIRE doesn't need a wealth manager — they need a knowledgeable friend/coach who knows their numbers, shows the path, and checks in monthly.
 
 ### Differentiation by Dimension
 
@@ -159,12 +159,13 @@ UntilFire's bet is that the 25–40 age group pursuing FIRE doesn't need a wealt
 |---|---|---|---|---|
 | Time to first value | **60 sec** | 20+ min | 3 min | 20+ min |
 | Login required | **No** | No (no save) | No | Yes ($) |
-| City-level COL | **263 cities** | No | No | No |
-| Real tax calculation | **Yes** | Yes | No | Yes |
-| Tells you what to do next | **Yes (Pro)** | No | No | No |
+| Guided path / monthly moves | **Core promise** | Partial/self-serve | No | No |
+| Tells you what to do next | **Yes** | No | No | No |
+| City-level COL | Supporting proof | No | No | No |
+| Real tax calculation | Supporting proof | Yes | No | Yes |
 | FIRE-specific | **Yes** | Yes | Yes | Partial |
 | Budgeting/tracking | Yes (dashboard) | No | No | Yes |
-| Price (paid) | **$9/mo** | $9/mo | Free | $14.99/mo |
+| Price (paid) | **$4.99/mo** | $9/mo | Free | $14.99/mo |
 | Mobile app | No | No | No | Yes |
 
 ---
@@ -172,8 +173,8 @@ UntilFire's bet is that the 25–40 age group pursuing FIRE doesn't need a wealt
 ## Growth Channels (Priority Order)
 
 1. **Reddit** — r/financialindependence (2.2M), r/personalfinance (20M+), r/FIRE, r/leanfire, r/fatFIRE. High-intent audience, shares tools organically. Do not spam — contribute first.
-2. **SEO — city landing pages** — `/fire-number/austin-tx`, `/fire-number/london`, `/fire-number/singapore`. High intent, long-tail, low competition.
-3. **X/Twitter** — @GetUntilFire. FIRE Twitter community is active. Share numbers, insights, city comparisons.
+2. **SEO — city landing pages** — `/fire-number/austin-tx`, `/fire-number/london`, `/fire-number/singapore`. High intent, long-tail, low competition; frame them as local trust pages that lead into the guided plan.
+3. **X/Twitter** — @GetUntilFire. FIRE Twitter community is active. Share freedom-date, monthly-move, and path-to-work-optionality insights; avoid over-indexing on tax trivia.
 4. **Product Hunt** — launch for initial spike and backlink
 5. **YouTube / Podcasts** — ChooseFI, Afford Anything, BiggerPockets Money. Outreach once product is polished.
 6. **Indie Hackers / Hacker News** — builder audience, potential early adopters and feedback
@@ -184,7 +185,7 @@ UntilFire's bet is that the 25–40 age group pursuing FIRE doesn't need a wealt
 
 | Risk | Mitigation |
 |---|---|
-| ProjectionLab builds a simple onboarding flow | UntilFire stays ahead on global city coverage and simplicity |
-| Monarch Money FIRE features exit beta | UntilFire positions as entry-point, Monarch as advanced layer (not competitors) |
-| Free tools (FIRECalc, cFIREsim) have strong brand loyalty | UI/UX and city coverage are hard to replicate quickly |
+| ProjectionLab builds a simple onboarding flow | UntilFire stays ahead on guided monthly moves, emotional freedom-date UX, and low-friction continuity |
+| Monarch Money FIRE features exit beta | UntilFire positions as the FIRE adviser/path, Monarch as budgeting infrastructure |
+| Free tools (FIRECalc, cFIREsim) have strong brand loyalty | UntilFire wins by helping users know what to do next, not by only producing a number |
 | Market saturation post-Mint shutdown fades | FIRE community is durable — tied to lifestyle movement, not a news cycle |

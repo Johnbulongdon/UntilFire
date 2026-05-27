@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
-  BarChart, Bar,
+  BarChart, Bar, ComposedChart, Area,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import PlaidConnect from "./PlaidConnect";
@@ -421,7 +421,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -431,6 +431,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   plaidAccounts?: PlaidAccount[];
   retirementCityName?: string; retirementCityCol?: number; lifestyleMultiplier?: number;
   fireAge?: number;
+  nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -445,11 +446,16 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     ? (retirementCityCol * lifestyleMultiplier) / 12
     : undefined;
 
+  const plaidAssets = plaidAccounts
+    .filter(a => a.type === "depository" || a.type === "investment")
+    .reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const totalCash = cashSavings + plaidAssets;
+
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => calcProjection({
     annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
+    k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+  }), [income, monthlyExpenses, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
 
   const nextMoveScenarios = useMemo(() => {
     if (!(income > 0 && fireYear !== null)) return null;
@@ -457,17 +463,17 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       {
         label: "Save $500/mo more",
         detail: "Redirect $500/month from spending to investments",
-        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: Math.max(0, monthlyExpenses - 500), k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: Math.max(0, monthlyExpenses - 500), k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
       },
       {
         label: "Cut expenses 10%",
         detail: `Reduce monthly spending from spending to ${Math.round(monthlyExpenses * 0.9).toLocaleString()}`,
-        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: monthlyExpenses * 0.9, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: monthlyExpenses * 0.9, k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
       },
       {
         label: "Grow income 10%",
         detail: "Raise, side income, or freelance — all goes straight to your FIRE date",
-        result: calcProjection({ annualIncome: income * 1.1 * 12, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        result: calcProjection({ annualIncome: income * 1.1 * 12, monthlyExpenses, k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
       },
     ]
       .map(s => ({
@@ -477,12 +483,39 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         newRetireYear: s.result.fireYear !== null ? new Date().getFullYear() + s.result.fireYear : null,
       }))
       .sort((a, b) => b.deltaYears - a.deltaYears);
-  }, [income, monthlyExpenses, fireYear, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+  }, [income, monthlyExpenses, fireYear, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
 
-  const investable  = k401 + rothIRA + taxable + cashSavings;
+  const investable  = k401 + rothIRA + taxable + totalCash;
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
-  const chartData   = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
+  const rawChartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
+  // S&P 500 benchmark + actual portfolio history blended with projection
+  const chartData = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+
+    // Group snapshots by calendar year (relative to today), keep last value per year
+    const snapByRelYear: Record<number, number> = {};
+    for (const snap of nwSnapshots) {
+      const relYear = new Date(snap.captured_at).getFullYear() - currentYear;
+      if (relYear < 0) snapByRelYear[relYear] = snap.portfolio_value;
+    }
+    const pastEntries = Object.entries(snapByRelYear)
+      .map(([yr, val]) => ({ year: Number(yr), Actual: val } as Record<string, number>))
+      .sort((a, b) => a.year - b.year);
+
+    // Future projection (year 0 onward) with S&P 500 benchmark
+    let sp = investable;
+    const annualSav = Math.max(annualSavings, 0);
+    const futureEntries = rawChartData.map((d, i) => {
+      const spVal = Math.round(sp);
+      sp = sp * 1.10 + annualSav;
+      const entry: Record<string, number> = { ...d, "S&P 500": spVal };
+      if (i === 0) entry.Actual = investable; // "you are here" marker at year 0
+      return entry;
+    });
+
+    return [...pastEntries, ...futureEntries];
+  }, [rawChartData, investable, annualSavings, nwSnapshots]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -761,44 +794,97 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
         </div>
 
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={periodData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barSize={14}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-            <XAxis dataKey="year" tickFormatter={v => `Yr ${v}`} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={52} />
+        <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+        <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both" }}>
+        <ResponsiveContainer width="100%" height={268}>
+          <ComposedChart data={periodData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor="#22d3a5" stopOpacity={0.38} />
+                <stop offset="55%"  stopColor="#22d3a5" stopOpacity={0.10} />
+                <stop offset="100%" stopColor="#22d3a5" stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
+            <XAxis
+              dataKey="year"
+              tickFormatter={v => String(new Date().getFullYear() + (v as number))}
+              tick={{ fill: "#94A3B8", fontSize: 11, fontFamily: "Inter" }}
+              axisLine={false}
+              tickLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#94A3B8", fontSize: 10, fontFamily: "Inter" }} axisLine={false} tickLine={false} width={56} />
             <Tooltip
+              animationDuration={150}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
-                const contrib = (payload.find(p => p.dataKey === "Contributions")?.value as number) ?? 0;
-                const mkt = (payload.find(p => p.dataKey === "Market Growth")?.value as number) ?? 0;
+                const actual    = payload.find(p => p.dataKey === "Actual")?.value as number | undefined;
+                const portfolio = (payload.find(p => p.dataKey === "Investable")?.value as number) ?? 0;
+                const sp        = (payload.find(p => p.dataKey === "S&P 500")?.value as number) ?? 0;
+                const crossed   = (actual ?? portfolio) >= fireTarget;
+                const calYear   = new Date().getFullYear() + (label as number);
                 return (
-                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                    <div style={{ fontWeight: 700, marginBottom: 6, color: "#0F172A" }}>Year {label}</div>
-                    <div style={{ color: "#064E3B" }}>You contribute: {fmtMoney(contrib, true)}</div>
-                    <div style={{ color: "#20D4BF" }}>Market grows: {fmtMoney(mkt, true)}</div>
-                    <div style={{ color: "#64748B", marginTop: 6, borderTop: "1px solid #E2E8F0", paddingTop: 6 }}>Total: {fmtMoney(contrib + mkt, true)}</div>
+                  <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", transition: "opacity 0.15s ease" }}>
+                    <div style={{ fontWeight: 700, marginBottom: 6, color: "#F8FAFC" }}>{calYear}</div>
+                    {actual !== undefined && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.85)", marginBottom: 4 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.85)", display: "inline-block" }} />
+                        Actual: {fmtMoney(actual, true)}{crossed ? " ✓" : ""}
+                      </div>
+                    )}
+                    {portfolio > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22d3a5" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22d3a5", display: "inline-block" }} />
+                        Projected: {fmtMoney(portfolio, true)}{!actual && crossed ? " ✓" : ""}
+                      </div>
+                    )}
+                    {sp > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#f97316", marginTop: 4 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f97316", display: "inline-block" }} />
+                        S&amp;P 500: {fmtMoney(sp, true)}
+                      </div>
+                    )}
+                    <div style={{ color: "#64748B", marginTop: 6, borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 6 }}>
+                      FIRE target: {fmtMoney(fireTarget, true)}
+                    </div>
                   </div>
                 );
               }}
             />
-            {fireYear && <ReferenceLine x={fireYear} stroke="#20D4BF" strokeDasharray="4 3" strokeWidth={1.5} />}
-            <Bar dataKey="Contributions" stackId="a" fill="#064E3B" radius={[0, 0, 3, 3]} />
-            <Bar dataKey="Market Growth" stackId="a" fill="#20D4BF" radius={[3, 3, 0, 0]} />
-          </BarChart>
+            {/* Horizontal FIRE target line */}
+            <ReferenceLine y={fireTarget} stroke="#059669" strokeDasharray="5 3" strokeWidth={1.5} label={{ value: "FIRE target", position: "insideTopRight", fontSize: 10, fill: "#059669", fontWeight: 700, fontFamily: "Inter" }} />
+            {/* Vertical FIRE year line */}
+            {fireYear && <ReferenceLine x={fireYear} stroke="#22d3a5" strokeDasharray="4 3" strokeWidth={1.5} />}
+            {/* Actual portfolio history — solid white line up to today */}
+            <Line type="monotone" dataKey="Actual" stroke="rgba(255,255,255,0.85)" strokeWidth={2} connectNulls={false} dot={{ r: 4, fill: "#22d3a5", stroke: "rgba(255,255,255,0.85)", strokeWidth: 1.5 }} activeDot={{ r: 5, fill: "#22d3a5" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
+            {/* Projected portfolio area — teal gradient into the future */}
+            <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#22d3a5" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
+            {/* S&P 500 benchmark — staggered after the area */}
+            <Line type="monotone" dataKey="S&P 500" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#f97316" }} isAnimationActive animationBegin={500} animationDuration={950} animationEasing="ease-out" />
+          </ComposedChart>
         </ResponsiveContainer>
+        </div>
 
         <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ display: "flex", gap: 16 }}>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: "#064E3B", display: "inline-block", flexShrink: 0 }} /> You contribute
+              <span style={{ width: 20, height: 2, borderRadius: 1, background: "rgba(255,255,255,0.75)", display: "inline-block", flexShrink: 0 }} /> Actual
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: "#20D4BF", display: "inline-block", flexShrink: 0 }} /> Market grows
+              <span style={{ width: 20, height: 3, borderRadius: 2, background: "#22d3a5", display: "inline-block", flexShrink: 0 }} /> Projected (7% real)
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
+              <span style={{ width: 20, height: 2, borderRadius: 1, background: "#f97316", display: "inline-block", flexShrink: 0, opacity: 0.7 }} /> S&amp;P 500 (10% nominal)
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
+              <span style={{ width: 20, height: 2, borderRadius: 1, background: "#059669", display: "inline-block", flexShrink: 0, opacity: 0.7 }} /> FIRE target
             </span>
           </div>
-          {(contribAtFire > 0 || marketAtFire > 0) && (
+          {retireYear && (
             <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Inter, sans-serif", textAlign: "right" }}>
-              By {retireYear ?? "target"}: <span style={{ color: "#064E3B", fontWeight: 600 }}>{fmtMoney(contribAtFire, true)}</span> from you · <span style={{ color: "#20D4BF", fontWeight: 600 }}>{fmtMoney(marketAtFire, true)}</span> from compounding
+              Projected freedom: <span style={{ color: "#22d3a5", fontWeight: 600 }}>{retireYear}</span>
+              {fireYear && <span style={{ color: "#94A3B8" }}> · {fireAge > 0 ? `age ${fireAge + fireYear}` : `yr ${fireYear}`}</span>}
             </div>
           )}
         </div>
@@ -1187,6 +1273,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
   onComplete: (income: number, spending: number, savings: number) => void;
   onDismiss: () => void;
 }) {
+  const [incomeMode, setIncomeMode] = useState<"monthly" | "annual">("monthly");
   const [inc, setInc] = useState("");
   const [spend, setSpend] = useState("");
   const [save, setSave] = useState("");
@@ -1197,8 +1284,10 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
     return isNaN(n) ? s : n.toLocaleString();
   };
 
+  const monthlyIncome = incomeMode === "annual" ? Math.round(toNum(inc) / 12) : toNum(inc);
+
   const handleSubmit = () => {
-    onComplete(toNum(inc), toNum(spend), toNum(save));
+    onComplete(monthlyIncome, toNum(spend), toNum(save));
   };
 
   const Field = ({ label, hint, value, onChange }: { label: string; hint: string; value: string; onChange: (v: string) => void }) => (
@@ -1231,15 +1320,36 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
             Let&apos;s find your FIRE number
           </div>
           <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>
-            Three numbers is all it takes. You can refine everything later.
+            Income, spending, and current savings are enough to get started. You can refine everything later.
           </div>
         </div>
 
         {/* Fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Field label="Monthly take-home pay" hint="After tax, per month" value={inc} onChange={setInc} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setIncomeMode("monthly")}
+              style={{ border: `1.5px solid ${incomeMode === "monthly" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "monthly" ? "#F0FDF4" : "#fff", color: incomeMode === "monthly" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+            >
+              Monthly take-home
+            </button>
+            <button
+              type="button"
+              onClick={() => setIncomeMode("annual")}
+              style={{ border: `1.5px solid ${incomeMode === "annual" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "annual" ? "#F0FDF4" : "#fff", color: incomeMode === "annual" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+            >
+              Gross annual
+            </button>
+          </div>
+          <Field
+            label={incomeMode === "annual" ? "Gross annual income" : "Monthly take-home pay"}
+            hint={incomeMode === "annual" ? "Before tax, per year — we’ll use a rough monthly estimate" : "After tax, per month"}
+            value={inc}
+            onChange={setInc}
+          />
           <Field label="Monthly spending" hint="Rent, food, everything — rough total is fine" value={spend} onChange={setSpend} />
-          <Field label="Current savings & investments" hint="Total across all accounts — 0 is okay" value={save} onChange={setSave} />
+          <Field label="Current savings / net worth" hint="Total across accounts and investments — 0 is okay" value={save} onChange={setSave} />
         </div>
 
         {/* Actions */}
@@ -1696,19 +1806,21 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
   // ── Emergency fund logic ─────────────────────────────────────────────────
   const HYSA_THRESHOLD = 3.5;
-  const savingsAccts = bankAssets.filter(a =>
+  const savingsAccts = bankAssets.filter(a => (
+    a.type === "depository" &&
     ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "))
-  );
+  ));
   const hasPlaidSavings = savingsAccts.length > 0;
   const hasHysa = savingsAccts.some(a => (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD);
-  const savingsBalance = hasPlaidSavings
+  const emergencyFundBalance = hasPlaidSavings
     ? savingsAccts.reduce((s, a) => s + (a.balance_current ?? 0), 0)
     : cashSavings;
+  const brokerageCashExcluded = connectedBreakdown.brokerageCash > 0;
   const efMin = monthlyExpenses * 3;
   const efMax = monthlyExpenses * 6;
-  const efPct = efMin > 0 ? Math.min(100, (savingsBalance / efMin) * 100) : 0;
-  const efStatus = savingsBalance >= efMax ? "full" : savingsBalance >= efMin ? "ok" : savingsBalance > 0 ? "partial" : "empty";
-  const monthsCovered = monthlyExpenses > 0 ? savingsBalance / monthlyExpenses : 0;
+  const efPct = efMin > 0 ? Math.min(100, (emergencyFundBalance / efMin) * 100) : 0;
+  const efStatus = emergencyFundBalance >= efMax ? "full" : emergencyFundBalance >= efMin ? "ok" : emergencyFundBalance > 0 ? "partial" : "empty";
+  const monthsCovered = monthlyExpenses > 0 ? emergencyFundBalance / monthlyExpenses : 0;
   const avgApy = savingsAccts.length > 0
     ? savingsAccts.filter(a => effectiveApy(a) != null).reduce((s, a) => s + (effectiveApy(a) ?? 0), 0) /
       Math.max(1, savingsAccts.filter(a => effectiveApy(a) != null).length)
@@ -1784,7 +1896,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           {/* Three-stat row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 14 }}>
             {[
-              { label: "Current Savings", value: fmtMoney(savingsBalance), color: efStatus === "full" || efStatus === "ok" ? "#059669" : "#19181E" },
+              { label: "Current Savings", value: fmtMoney(emergencyFundBalance), color: efStatus === "full" || efStatus === "ok" ? "#059669" : "#19181E" },
               { label: "Min · 3 months", value: fmtMoney(efMin) },
               { label: "Target · 6 months", value: fmtMoney(efMax) },
             ].map(s => (
@@ -1812,7 +1924,12 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             {efStatus === "partial" && <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Partially funded ({monthsCovered.toFixed(1)} months)</span>}
             {efStatus === "empty" && <span style={{ background: "#FEE2E2", color: "#991B1B", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Not started</span>}
             {hasHysa && avgApy > 0 && (
-              <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(savingsBalance * avgApy / 100 / 12))}/mo interest</span>
+              <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(emergencyFundBalance * avgApy / 100 / 12))}/mo interest</span>
+            )}
+            {brokerageCashExcluded && (
+              <span style={{ fontSize: 12, color: "#64748B", fontWeight: 500 }}>
+                · excludes {fmtMoney(connectedBreakdown.brokerageCash)} in brokerage cash reserved for investing
+              </span>
             )}
           </div>
 
@@ -1911,17 +2028,17 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             </div>
           ) : (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 80px 90px 100px", gap: 8, fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" }}>
-                <span>Ticker</span><span>Security</span><span style={{ textAlign: "right" }}>Qty</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Value</span>
+              <div className="uf-holdings-grid" style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" }}>
+                <span>Ticker</span><span className="uf-holdings-security">Security</span><span style={{ textAlign: "right" }}>Qty</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Value</span>
               </div>
               {[...plaidHoldings]
                 .sort((a, b) => (b.institution_value ?? 0) - (a.institution_value ?? 0))
                 .map((h, i) => {
                   const sec = plaidSecurities[h.security_id];
                   return (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "80px 1fr 80px 90px 100px", gap: 8, fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
+                    <div key={i} className="uf-holdings-grid" style={{ fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
                       <span style={{ fontWeight: 700, color: "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
-                      <span style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
+                      <span className="uf-holdings-security" style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
                       <span style={{ textAlign: "right", color: "#64748B" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
                       <span style={{ textAlign: "right", color: "#64748B" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
                       <span style={{ textAlign: "right", fontWeight: 600, color: "#0F172A" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
@@ -2980,6 +3097,7 @@ export default function Dashboard() {
   const [categoriesKey, setCategoriesKey] = useState(0);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const wasUpgradedRef = useRef(false);
@@ -3072,6 +3190,8 @@ export default function Dashboard() {
   const [retirementCityCol,   setRetirementCityCol]   = useState(0);
   const [lifestyleMultiplier, setLifestyleMultiplier] = useState(1.0);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [nwSnapshots, setNwSnapshots] = useState<{ portfolio_value: number; captured_at: string }[]>([]);
+  const lastSnapshotRef = useRef<number | null>(null);
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -3347,6 +3467,12 @@ export default function Dashboard() {
         setProfileLoading(false);
         trackDashboardFirstView({ hadCalculatorPrefill: hadPrefill, viaUpgrade: wasUpgradedRef.current });
       });
+      // Load net worth snapshot history for the "actual progress" chart line
+      supabase.from("net_worth_snapshots")
+        .select("portfolio_value, captured_at")
+        .order("captured_at", { ascending: true })
+        .limit(120)
+        .then(({ data: snaps }) => { if (snaps) setNwSnapshots(snaps); });
     });
   }, []);
 
@@ -3394,6 +3520,21 @@ export default function Dashboard() {
       } else {
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
+        // Capture net worth snapshot when portfolio value changes
+        const currentInvestable = k401 + rothIRA + taxable + cashSavings;
+        if (currentInvestable !== lastSnapshotRef.current) {
+          lastSnapshotRef.current = currentInvestable;
+          supabase.from("net_worth_snapshots").insert({
+            user_id: session.user.id,
+            portfolio_value: currentInvestable,
+          }).then(({ error }) => {
+            if (!error) setNwSnapshots(prev => {
+              const today = new Date().toISOString().slice(0, 10);
+              const filtered = prev.filter(s => s.captured_at.slice(0, 10) !== today);
+              return [...filtered, { portfolio_value: currentInvestable, captured_at: new Date().toISOString() }];
+            });
+          });
+        }
       }
     }, 1000);
   }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier]);
@@ -3465,6 +3606,8 @@ export default function Dashboard() {
         .uf-section-switch { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 22px; }
         .uf-section-button { border: 1px solid #E2E8F0; background: #fff; color: #475569; border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Manrope', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
         .uf-section-button.active { border-color: #047857; background: #ECFDF5; color: #047857; }
+        .uf-holdings-grid { display: grid; grid-template-columns: 80px minmax(0, 1fr) 80px 90px 100px; gap: 8px; min-width: 0; }
+        .uf-holdings-grid > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         @media(max-width: 900px) {
           .uf-shell { flex-direction: column; min-height: 100dvh; }
@@ -3506,6 +3649,11 @@ export default function Dashboard() {
           .uf-kpi-grid { display: flex !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory; grid-template-columns: none !important; }
           .uf-kpi-grid::-webkit-scrollbar { display: none; }
           .uf-kpi-grid > * { flex-shrink: 0 !important; min-width: 130px !important; scroll-snap-align: start; }
+          .uf-holdings-grid { grid-template-columns: minmax(56px, 0.9fr) minmax(58px, 0.9fr) minmax(66px, 1fr) minmax(72px, 1fr); gap: 6px; }
+          .uf-holdings-security { display: none; }
+        }
+        @media(max-width: 420px) {
+          .uf-card { padding-left: 18px; padding-right: 18px; }
         }
       `}</style>
 
@@ -3732,6 +3880,7 @@ export default function Dashboard() {
                 retirementCityCol={retirementCityCol}
                 lifestyleMultiplier={lifestyleMultiplier}
                 fireAge={fireAge}
+                nwSnapshots={nwSnapshots}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
@@ -3796,7 +3945,7 @@ export default function Dashboard() {
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
                   onRefreshAccounts={refreshPlaidAccounts}
-                  onUpgradeClick={() => setUpgradeOpen(true)}
+                  onUpgradeClick={() => { setUpgradeSource("plaid_limit"); setUpgradeOpen(true); }}
                   monthlyExpenses={monthlyExpenses}
                   plaidHoldings={plaidHoldings}
                   plaidSecurities={plaidSecurities}
@@ -3879,14 +4028,14 @@ export default function Dashboard() {
                 onPreferredCurrenciesChange={setPreferredCurrencies}
                 onTabChange={(t) => setTab(t as TabKey)}
                 subscription={subscription}
-                onUpgradeClick={() => setUpgradeOpen(true)}
+                onUpgradeClick={() => { setUpgradeSource("profile"); setUpgradeOpen(true); }}
                 onManageBilling={handleManageBilling}
                 fireAge={fireAge}
                 onFireAgeChange={setFireAge}
                 retirementCityName={retirementCityName}
                 retirementCityCol={retirementCityCol}
                 lifestyleMultiplier={lifestyleMultiplier}
-                onRetirementCityChange={(name, col) => { setRetirementCityName(name); setRetirementCityCol(col); }}
+                onRetirementCityChange={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
                 onLifestyleChange={setLifestyleMultiplier}
               />
             )}
@@ -3894,7 +4043,7 @@ export default function Dashboard() {
         </main>
       </div>
       <FeedbackWidget />
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} source={upgradeSource} />
     </>
   );
 }

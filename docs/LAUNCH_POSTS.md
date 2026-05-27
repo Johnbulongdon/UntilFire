@@ -16,21 +16,21 @@ Last updated: May 2026
 
 Hey everyone - I've been building **UntilFire** and wanted to share it here for feedback from people who actually care about FIRE math.
 
-The gap I kept seeing is that most tools either give you a basic number you cannot fully trust, or a very deep model that still does not tell you what to change next.
+The gap I kept seeing is that most tools either give you a basic number and leave you alone, or a very deep model that still makes you figure out what to change next.
 
-UntilFire is my attempt to make that first answer faster and more believable.
+UntilFire is my attempt to make FIRE feel more like a guided path: find your freedom date, see the next move, and keep bringing the date closer over time.
 
 **What is live today:**
-- A free no-login calculator that asks for city, income, monthly savings, and your current invested balance, then gives you a FIRE number and estimated retirement year in about a minute
-- 263 cities worldwide with cost-of-living estimates instead of one national average
-- Tax-aware calculations for US states plus effective-rate handling for international cities
-- New city pages for places like Austin, London, Singapore, Shanghai, and Dubai so people can compare FIRE math by location
+- A free no-login calculator that asks for city, income, monthly savings, and current invested balance, then gives you a FIRE number and freedom date in about a minute
+- A result designed to point toward next actions, not just a number
+- 263 cities worldwide and tax-aware calculations as credibility/trust details
+- New city pages for places like Austin, London, Singapore, Shanghai, and Dubai as local entry points into the same guided plan
 - A dashboard after signup if you want to keep tracking and improve the estimate with real numbers later
 
 I would especially love feedback if:
-- the cost-of-living estimate for your city feels off
-- the tax math looks wrong for your situation
-- the result feels directionally useful but still misses something important
+- the result gives you a clear enough next move
+- the freedom-date framing feels motivating rather than gimmicky
+- the cost-of-living or tax assumptions feel off for your situation
 
 https://untilfire.com
 
@@ -51,7 +51,7 @@ https://untilfire.com
 ### Title
 
 ```text
-Show HN: UntilFire - a city-aware FIRE calculator and planning dashboard
+Show HN: UntilFire - a FIRE calculator that gives you a plan
 ```
 
 ### Post Body
@@ -64,12 +64,12 @@ That first question is usually some version of:
 What is live right now:
 
 1. A no-login FIRE calculator that uses city, income, monthly savings, and current invested balance before showing the result.
-2. Cost-of-living coverage across 263 cities, plus custom-city fallback.
-3. Tax-aware math for US states and international effective-rate handling.
-4. Individual calculator pages for high-intent finance searches like FIRE number, Coast FIRE, APY, savings rate, and compound interest.
-5. New city-specific landing pages for Austin, London, Singapore, Shanghai, and Dubai.
+2. A freedom-date result that is meant to lead into next actions, not stop at the number.
+3. Cost-of-living coverage across 263 cities, plus custom-city fallback, as a trust layer.
+4. Tax-aware math for US states and international effective-rate handling.
+5. Individual calculator and city pages that bring people into the same guided plan.
 
-The product direction is to turn that first answer into a real ongoing dashboard: track cashflow, update your timeline, and eventually surface the single highest-impact thing to change each month.
+The product direction is to turn that first answer into a real ongoing adviser: track what changed, update your timeline, and surface the single highest-impact thing to do each month. The goal is that UntilFire does the FIRE journey with you instead of only showing the destination.
 
 Stack: Next.js 15, Supabase, Vercel, PostHog.
 
@@ -86,7 +86,7 @@ https://untilfire.com
 
 - Stay around to answer every early comment.
 - If someone challenges a number, treat that as a gift and go deep on it.
-- Lead with "no login" and "city-aware" because those are the clearest product differentiators.
+- Lead with "freedom date + guided plan." Mention "no login" as friction relief and "city-aware" as trust proof.
 
 ---
 
@@ -97,4 +97,4 @@ https://untilfire.com
 
 ### Tagline draft
 
-> Find out exactly when you can retire - adjusted for your city, taxes, savings pace, and current portfolio.
+> Find your freedom date — then get a plan to bring it closer.

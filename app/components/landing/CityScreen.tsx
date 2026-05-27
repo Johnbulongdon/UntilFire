@@ -67,6 +67,15 @@ export default function CityScreen({
     setShowCustom(false);
   }
 
+  function skipLocation() {
+    onNext({
+      name: "Your current lifestyle",
+      col: 0,
+      stateKey: "custom",
+      isCustom: true,
+    });
+  }
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -87,7 +96,7 @@ export default function CityScreen({
   return (
     <div className="uf-screen">
       <WizardProgress step={0} />
-      <p className="uf-step-label">Step 1 of 5</p>
+      <p className="uf-step-label">Step 1 of 4</p>
       <div className="uf-eyebrow">Location</div>
       <h2 className="uf-h2">
         Where do you want
@@ -162,8 +171,12 @@ export default function CityScreen({
       {showCustom && (
         <div className="uf-custom-city">
           <label className="uf-label">
-            Your city isn&apos;t in our list - enter your estimated monthly expenses (USD)
+            About how much do you spend each month? (USD)
           </label>
+          <p className="uf-hint" style={{ marginTop: -4, marginBottom: 14, lineHeight: 1.6 }}>
+            Include housing, food, transport, bills, subscriptions, insurance, debt payments, and everyday spending.
+            Don&apos;t worry about being exact — a rough monthly average is fine.
+          </p>
           <div className="uf-custom-row">
             <div style={{ position: "relative", flex: 1 }}>
               <span className="uf-input-prefix">$</span>
@@ -231,15 +244,9 @@ export default function CityScreen({
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>
           Back
         </button>
-        {onSkip && (
-          <button
-            className="uf-btn uf-btn-ghost"
-            style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}
-            onClick={onSkip}
-          >
-            Skip
-          </button>
-        )}
+        <button className="uf-btn uf-btn-ghost" onClick={skipLocation}>
+          Skip for now
+        </button>
         <button
           className="uf-btn uf-btn-primary"
           style={{ flex: 1 }}

@@ -13,10 +13,11 @@ event in PostHog. **This doc and that file must stay in sync.**
 
 ```
 funnel_landing_viewed
-  → [primary] funnel_calculator_step_viewed (step_id=city,     step_index=1)
-           → funnel_calculator_step_viewed (step_id=income,   step_index=2)
-           → funnel_calculator_step_viewed (step_id=savings,  step_index=3)
-           → funnel_calculator_step_viewed (step_id=portfolio, step_index=4)
+  → [primary] funnel_calculator_step_viewed (step_id=city)
+           → funnel_calculator_step_viewed (step_id=currency)
+           → funnel_calculator_step_viewed (step_id=income)
+           → funnel_calculator_step_viewed (step_id=savings)
+           → funnel_calculator_step_viewed (step_id=portfolio)
            → funnel_calculator_revealed
            → funnel_signup_started
            → funnel_signup_completed
@@ -65,8 +66,8 @@ funnel_landing_viewed
 - **Where**: `app/page.tsx`, `Home` screen effect when the wizard transitions
   to one of the five steps.
 - **Properties**:
-  - `step_id` - `city` | `income` | `savings` | `portfolio`. (`currency` is removed from normal flow — now an inline selector on the income screen.)
-  - `step_index` - `1..4`. Mirrors `step_id` for funnel ordering in PostHog.
+  - `step_id` - `city` | `currency` | `income` | `savings` | `portfolio`.
+  - `step_index` - `1..5`. Mirrors `step_id` for funnel ordering in PostHog.
   - `landing_source` - optional route/source label.
 
 ### `funnel_calculator_revealed`

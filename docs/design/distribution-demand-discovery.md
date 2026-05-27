@@ -38,7 +38,7 @@ Key gaps in existing tools: health insurance modeling, Roth conversion ladders, 
 - Product is already live — no new features needed before first distribution test
 - `calcFIRE()` in `lib/fire-data.ts` handles the core projection logic — don't rewrite it
 - Shareable OG image/result card already exists (from prior commit)
-- $9/mo Stripe tier exists but has no paying users
+- $4.99/mo Stripe tier exists but has no paying users
 
 ## Premises
 

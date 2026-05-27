@@ -7,7 +7,7 @@
 
 ## Problem
 
-UntilFire gives users their FIRE number but doesn't help them act on it. "You need $1.2M" is informative but not actionable. An AI adviser that knows your numbers, city, savings rate, and timeline can give specific, personalised guidance — which is the core $9/mo value proposition.
+UntilFire gives users their FIRE number but doesn't help them act on it. "You need $1.2M" is informative but not actionable. An AI adviser that knows your numbers, city, savings rate, and timeline can give specific, personalised guidance — which is the core $4.99/mo value proposition.
 
 ## User story
 

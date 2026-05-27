@@ -1,8 +1,8 @@
 export const UNTILFIRE_ANCHOR_HEADLINE =
-  "Find out the exact age you can stop working.";
+  "Personal finance that sets you free.";
 
 export const UNTILFIRE_ANCHOR_DESCRIPTION =
-  "Enter your income, city, and savings. In 60 seconds, get your FIRE number, your exact retirement age, and the monthly moves that get you there faster.";
+  "Start with your freedom date in 60 seconds. Then UntilFire gives you a plan to move it closer.";
 
 export const UNTILFIRE_ANCHOR_PROOF = "Free, no login.";
 

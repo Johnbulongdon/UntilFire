@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { trackCheckoutStarted, trackPaywallViewed } from "@/lib/analytics";
 
 const PRO_FEATURES = [
   "Unlimited bank connections via Plaid",
@@ -11,9 +12,14 @@ const PRO_FEATURES = [
   "Learning Hub & calculators",
 ];
 
-export default function UpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function UpgradeModal({ open, onClose, source = "dashboard_upgrade_modal" }: { open: boolean; onClose: () => void; source?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    trackPaywallViewed({ source });
+  }, [open, source]);
 
   if (!open) return null;
 
@@ -35,6 +41,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
         setError(data.error ?? "Failed to start checkout — please try again");
         return;
       }
+      trackCheckoutStarted({ source, priceId: data.priceId });
       window.location.href = data.url;
     } catch {
       setError("Failed to start checkout — please try again");
@@ -66,7 +73,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
           <div style={{ fontSize: 36, marginBottom: 8 }}>🔓</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Upgrade to Pro</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#047857", marginTop: 8 }}>
-            $9
+            $4.99
             <span style={{ fontSize: 16, fontWeight: 600, color: "#64748B" }}>/month</span>
           </div>
           <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 4 }}>Cancel anytime</div>

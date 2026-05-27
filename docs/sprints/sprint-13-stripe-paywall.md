@@ -3,7 +3,7 @@
 **Date:** —  
 **Status:** 🔲 Planned  
 **Module:** AI Adviser → v1.1  
-**Destination:** Free users see an upgrade card on the Adviser tab. Paying $9/mo unlocks full access. The subscription is tracked in Supabase and survives page refreshes.
+**Destination:** Free users see an upgrade card on the Adviser tab. Paying $4.99/mo unlocks full access. The subscription is tracked in Supabase and survives page refreshes.
 
 ## Problem
 
@@ -17,7 +17,7 @@ As a free user, I want to understand what the paid tier offers and be able to up
 
 - [ ] Supabase `profiles` table has a `subscribed` boolean column (migration applied)
 - [ ] Dashboard load reads `profiles.subscribed` for the current user
-- [ ] Free users on Adviser tab see an upgrade card: *"Unlock your AI FIRE adviser — $9/mo"* + "Upgrade →" button
+- [ ] Free users on Adviser tab see an upgrade card: *"Unlock your AI FIRE adviser — $4.99/mo"* + "Upgrade →" button
 - [ ] "Upgrade →" hits `POST /api/stripe/checkout` → redirects to Stripe Checkout
 - [ ] Stripe webhook (`/api/stripe/webhook`) marks `profiles.subscribed = true` on `checkout.session.completed`
 - [ ] Subscribed users land back on dashboard with Adviser tab fully unlocked

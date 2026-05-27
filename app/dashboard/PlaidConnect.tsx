@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
+import { trackHysaEmptyStateCtaClicked } from "@/lib/analytics";
 import { isPro, supabase } from "@/lib/supabase";
 
 type PlaidItem = {
@@ -37,6 +39,7 @@ function fmtSynced(ts: string | null): string {
 
 export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }: Props) {
   const [items, setItems] = useState<PlaidItem[]>([]);
+  const [itemsLoaded, setItemsLoaded] = useState(false);
   const [isProUser, setIsProUser] = useState<boolean | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loadingLink, setLoadingLink] = useState(false);
@@ -51,7 +54,10 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     (async () => {
       setIsProUser(await isPro());
       const session = await getSession();
-      if (!session) return;
+      if (!session) {
+        setItemsLoaded(true);
+        return;
+      }
       const res = await fetch("/api/plaid/items", {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -59,10 +65,17 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
         const data = await res.json();
         setItems(data.items ?? []);
       }
+      setItemsLoaded(true);
     })();
   }, []);
 
   const handleConnectClick = async () => {
+    if (items.length === 0) {
+      trackHysaEmptyStateCtaClicked({
+        cta: 'connect_account',
+        destination: 'plaid_connect',
+      });
+    }
     setLoadingLink(true);
     setError(null);
     setConnectResult(null);
@@ -220,6 +233,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
   });
 
   const atFreeLimit = isProUser === false && items.length >= 1;
+  const showEmptyStateCard = itemsLoaded && items.length === 0;
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -329,9 +343,13 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
           </span>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E" }}>
-              {items.length === 0 ? "Connect your bank account" : "Connected accounts"}
+              {!itemsLoaded
+                ? "Checking connected accounts"
+                : items.length === 0
+                  ? "Connect your bank account"
+                  : "Connected accounts"}
             </div>
-            {items.length === 0 && (
+            {showEmptyStateCard && (
               <div style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}>
                 Auto-import transactions via Plaid
               </div>
@@ -363,16 +381,116 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
             />
             Importing transactions...
           </div>
-        ) : atFreeLimit ? (
+        ) : showEmptyStateCard ? null : atFreeLimit ? (
           <button onClick={onUpgradeClick} style={btnStyle("primary")}>
             Upgrade for more -&gt;
           </button>
         ) : (
           <button onClick={handleConnectClick} disabled={loadingLink} style={btnStyle("primary")}>
-            {loadingLink ? "Opening..." : items.length === 0 ? "Connect bank ->" : "+ Add account"}
+            {loadingLink ? "Opening..." : "+ Add account"}
           </button>
         )}
       </div>
+
+      {showEmptyStateCard && (
+        <div
+          style={{
+            marginTop: 12,
+            padding: "18px 18px 16px",
+            borderRadius: 12,
+            border: "1px solid #CCFBF1",
+            background: "linear-gradient(180deg, #F0FDFA 0%, #FFFFFF 100%)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <div
+              aria-hidden="true"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: "#CCFBF1",
+                color: "#0F766E",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 18,
+                flexShrink: 0,
+              }}
+            >
+              💧
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>
+                Park your emergency fund where it can quietly earn more.
+              </div>
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: "#475569", margin: "6px 0 0" }}>
+                A high-yield savings account can help idle cash earn interest while staying easy to reach for true emergencies.
+                We are not recommending any bank here yet — first we want to learn whether people want education or account connection.
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 10,
+            }}
+          >
+            <div style={{ background: "#FFFFFF", border: "1px solid #D1FAE5", borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#0F766E", marginBottom: 4 }}>Why it matters</div>
+              <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.55 }}>
+                If your emergency fund is sitting in low-yield cash, even a modest APY can add a little progress without changing your risk.
+              </div>
+            </div>
+            <div style={{ background: "#FFFFFF", border: "1px solid #D1FAE5", borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#0F766E", marginBottom: 4 }}>What to check</div>
+              <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.55 }}>
+                Compare APY, any minimum balance rules, transfer speed, and whether the account still feels simple enough for emergencies.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+            <Link
+              href="/calculators/apy?source=dashboard-hysa-card"
+              onClick={() =>
+                trackHysaEmptyStateCtaClicked({
+                  cta: 'learn_more',
+                  destination: 'apy_calculator',
+                })
+              }
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "10px 14px",
+                borderRadius: 8,
+                border: "1px solid #99F6E4",
+                background: "#FFFFFF",
+                color: "#0F766E",
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: "none",
+                minWidth: 0,
+              }}
+            >
+              Learn more
+            </Link>
+            <button
+              onClick={handleConnectClick}
+              disabled={loadingLink}
+              style={btnStyle("primary")}
+            >
+              {loadingLink ? "Opening..." : "Connect account"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {items.map((item) => {
         const result = syncResults[item.id];

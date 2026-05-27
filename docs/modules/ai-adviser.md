@@ -3,11 +3,11 @@
 **Current version:** v0.0  
 **Status:** Planned (Sprint 12–13)  
 **Primary routes:** `/dashboard` (Adviser tab), `/api/adviser`  
-**User:** Logged-in · Paid ($9/mo)
+**User:** Logged-in · Paid ($4.99/mo)
 
 ## What it does
 
-A FIRE-aware AI chat interface powered by Claude. Pre-seeded with the user's actual data (FIRE target, years, savings rate, city, income) so advice is personalised and specific — not generic. Gated behind the $9/mo subscription tier.
+A FIRE-aware AI chat interface powered by Claude. Pre-seeded with the user's actual data (FIRE target, years, savings rate, city, income) so advice is personalised and specific — not generic. Gated behind the $4.99/mo subscription tier.
 
 ## Planned version history
 
@@ -25,7 +25,7 @@ A FIRE-aware AI chat interface powered by Claude. Pre-seeded with the user's act
                        savings rate, city, income, net worth
 Dashboard
 └── Adviser tab     ← Chat UI (message list + input + streaming)
-                       Free users: upgrade card ("$9/mo")
+                       Free users: upgrade card ("$4.99/mo")
                        Paid users: full chat
 ```
 

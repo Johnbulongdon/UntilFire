@@ -2,16 +2,16 @@ import type { Metadata } from 'next'
 import { SITE_URL } from '@/lib/site'
 
 export const metadata: Metadata = {
-  title: 'What FIRE Type Are You? — Lean, Fat, Barista, Coast | UntilFire',
+  title: 'What FIRE Type Are You? — FIRE personality quiz | UntilFire',
   description:
-    'Take the 2-minute quiz to discover your FIRE personality. Find out whether Lean FIRE, Fat FIRE, Barista FIRE, or Coast FIRE fits your lifestyle and retirement goals.',
+    'Take the 2-minute quiz to discover how you naturally think about financial independence, then calculate your real FIRE number.',
   keywords:
-    'fire type quiz, lean fire vs fat fire, barista fire, coast fire, what type of fire am i, financial independence personality',
+    'fire type quiz, financial independence personality, fire personality test, retirement personality quiz, work optionality quiz',
   alternates: { canonical: `${SITE_URL}/fire-type` },
   openGraph: {
     title: 'What FIRE Type Are You? — UntilFire',
     description:
-      'Take the 2-minute quiz to discover whether Lean, Fat, Barista, or Coast FIRE fits your life.',
+      'Take the 2-minute quiz to discover how you naturally think about financial independence, then calculate your real FIRE number.',
     url: `${SITE_URL}/fire-type`,
     siteName: 'UntilFire',
     type: 'website',
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'What FIRE Type Are You? — UntilFire',
     description:
-      'Take the 2-minute quiz to discover whether Lean, Fat, Barista, or Coast FIRE fits your life.',
+      'Take the 2-minute quiz to discover how you naturally think about financial independence, then calculate your real FIRE number.',
   },
 }
 

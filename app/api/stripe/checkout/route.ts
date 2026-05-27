@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       allow_promotion_codes: true,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url, priceId: STRIPE_PRO_PRICE_ID });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Stripe error";
     console.error("[stripe/checkout]", err);

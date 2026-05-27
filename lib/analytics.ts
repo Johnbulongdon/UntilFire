@@ -8,6 +8,7 @@
 import posthog from 'posthog-js';
 import {
   FunnelEvents,
+  PRO_PLAN_ANALYTICS,
   CALCULATOR_STEP_INDEX,
   bucketUSD,
   bucketYears,
@@ -24,6 +25,7 @@ import {
   type FireTypeCompletedProperties,
   type FireTypeSharedProperties,
   type FireTypeCtaClickedProperties,
+  type HysaEmptyStateCtaClickedProperties,
 } from './analytics-events';
 
 function isClient(): boolean {
@@ -133,13 +135,23 @@ export function trackDashboardFirstView(input: {
   capture(FunnelEvents.DASHBOARD_FIRST_VIEW, props);
 }
 
-export function trackPaywallViewed(input: { surface: string; plan: string; price_monthly: number; price_id?: string; source: string }) {
-  const props: PaywallProperties = withVersion(input);
+export function trackPaywallViewed(input: { source: string; priceId?: string }) {
+  const props: PaywallProperties = withVersion({
+    plan: PRO_PLAN_ANALYTICS.plan,
+    price_monthly: PRO_PLAN_ANALYTICS.priceMonthly,
+    ...(input.priceId ? { price_id: input.priceId } : {}),
+    source: input.source,
+  });
   capture(FunnelEvents.PAYWALL_VIEWED, props);
 }
 
-export function trackCheckoutStarted(input: { surface: string; plan: string; price_monthly: number; price_id?: string; source: string }) {
-  const props: CheckoutStartedProperties = withVersion(input);
+export function trackCheckoutStarted(input: { source: string; priceId?: string }) {
+  const props: CheckoutStartedProperties = withVersion({
+    plan: PRO_PLAN_ANALYTICS.plan,
+    price_monthly: PRO_PLAN_ANALYTICS.priceMonthly,
+    ...(input.priceId ? { price_id: input.priceId } : {}),
+    source: input.source,
+  });
   capture(FunnelEvents.CHECKOUT_STARTED, props);
 }
 
@@ -153,6 +165,7 @@ export function trackFireTypeStarted(input: { source?: string }) {
 export function trackFireTypeCompleted(input: { fireTypeCode: string; source?: string }) {
   const props: FireTypeCompletedProperties = withVersion({
     fire_type_code: input.fireTypeCode,
+    fire_type_axes: input.fireTypeCode,
     ...(input.source ? { source: input.source } : {}),
   });
   capture(FunnelEvents.FIRE_TYPE_COMPLETED, props);
@@ -161,6 +174,7 @@ export function trackFireTypeCompleted(input: { fireTypeCode: string; source?: s
 export function trackFireTypeShared(input: { fireTypeCode: string; shareMethod: 'native' | 'clipboard' }) {
   const props: FireTypeSharedProperties = withVersion({
     fire_type_code: input.fireTypeCode,
+    fire_type_axes: input.fireTypeCode,
     share_method: input.shareMethod,
   });
   capture(FunnelEvents.FIRE_TYPE_SHARED, props);
@@ -169,7 +183,21 @@ export function trackFireTypeShared(input: { fireTypeCode: string; shareMethod: 
 export function trackFireTypeCtaClicked(input: { fireTypeCode: string; source?: string }) {
   const props: FireTypeCtaClickedProperties = withVersion({
     fire_type_code: input.fireTypeCode,
+    fire_type_axes: input.fireTypeCode,
     ...(input.source ? { source: input.source } : {}),
   });
   capture(FunnelEvents.FIRE_TYPE_CTA_CLICKED, props);
+}
+
+export function trackHysaEmptyStateCtaClicked(input: {
+  cta: 'learn_more' | 'connect_account';
+  destination: 'apy_calculator' | 'plaid_connect';
+  placement?: 'assets_empty_state';
+}) {
+  const props: HysaEmptyStateCtaClickedProperties = withVersion({
+    cta: input.cta,
+    destination: input.destination,
+    placement: input.placement ?? 'assets_empty_state',
+  });
+  capture(FunnelEvents.HYSA_EMPTY_STATE_CTA_CLICKED, props);
 }

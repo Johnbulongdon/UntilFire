@@ -1,20 +1,20 @@
 # UntilFire — X/Twitter Content Calendar
 Account: @GetUntilFire  
-Last updated: March 2026
+Last updated: May 2026
 
 ---
 
 ## Strategy
 
-**Goal for first 4 weeks**: Build an audience of FIRE-interested people before asking for anything. Post genuinely useful content — city comparisons, tax facts, savings rate data — that people want to screenshot and share. The calculator link appears naturally, not as a hard sell.
+**Goal for first 4 weeks**: Build an audience of FIRE-interested people before asking for anything. Post genuinely useful content about freedom dates, monthly moves, and the path to work optionality. City comparisons and tax facts can support credibility, but they should not dominate the brand.
 
 **Content mix**:
-- 40% City/COL comparisons (most shareable — people tag friends)
-- 25% FIRE math facts and insights
-- 20% Savings rate / income content
+- 40% Freedom-date and monthly-move content: “what to do next” and how it changes the timeline
+- 25% FIRE math facts and beginner-friendly explainers
+- 20% Trust proof: city/COL/tax assumptions, methodology, privacy, transparent calculations
 - 15% Behind-the-build / founder story
 
-**Voice**: Direct, data-driven, slightly contrarian. Not a finance bro. Not a hype account. The person who actually ran the numbers and is building the tool they wish existed — something that tells you what to *do*, not just what your number is.
+**Voice**: Direct, practical, encouraging, slightly contrarian. Not a finance bro. Not a hype account. The person building the tool they wish existed — something that does the FIRE journey with you instead of only telling you the answer.
 
 **Posting schedule**: 1 post/day, 5 days/week (skip weekends early on — lower FIRE audience engagement)
 
@@ -33,7 +33,7 @@ Use **Buffer** (free tier: 3 channels, 10 scheduled posts) or **Typefully** (fre
 
 ---
 
-## Week 1 — City Comparisons (March 25–28)
+## Week 1 — Freedom Date + Guided Path (March 25–28)
 
 ### Day 1 — Wednesday March 26 (post Reddit thread day for extra momentum)
 
@@ -49,9 +49,9 @@ $90k/yr gross income, 20% savings rate:
 🇮🇳 Bangalore → FIRE in 8 years
 
 Most calculators give you a number.
-None of them tell you what to do with it.
+UntilFire gives you the next move to bring it closer.
 
-Building the one that does → untilfire.com
+Building the FIRE path that does it with you → untilfire.com
 ```
 
 ---
@@ -66,7 +66,8 @@ The US national average is $52,000/yr.
 San Francisco is $110,000/yr.
 That's a $1.45M difference in your FIRE number.
 
-Generic calculators are lying to you (accidentally).
+That is why the number needs context.
+But the real product is the plan that tells you what to do next.
 ```
 
 ---
@@ -89,7 +90,7 @@ Moving retirement location can do 10x that.
 
 ---
 
-## Week 2 — Tax Math Nobody Talks About (March 31–April 4)
+## Week 2 — Trust Proof, Not The Main Story (March 31–April 4)
 
 ### Day 4 — Monday March 31
 
@@ -106,7 +107,8 @@ Take-home: $71,309
 
 Your real hourly rate: $34.28/hr
 
-That's the number that matters for FIRE — not the $100k.
+That is useful context.
+The next question is: what monthly move gets your freedom date closer?
 ```
 
 ---
@@ -149,7 +151,8 @@ vs same salary in Germany: take-home ~$93,600
 
 If you can earn remotely and live in Dubai for 5 years, you retire 4–6 years earlier than someone in Western Europe.
 
-The tax map is the FIRE map.
+Tax matters.
+But a plan matters more: what you keep, what you invest, and what you do next month.
 ```
 
 ---

@@ -7,7 +7,7 @@
 
 ## Problem
 
-The reveal screen has three competing CTAs: "Make this more accurate", "See full wealth projection", and a waitlist form that says "Launching at $9/mo" — even though the product is already live. There's no explanation of what the FIRE number means. First-time visitors are confused; the most important action (sign up) doesn't stand out.
+The reveal screen has three competing CTAs: "Make this more accurate", "See full wealth projection", and a waitlist form that says "Launching at $4.99/mo" — even though the product is already live. There's no explanation of what the FIRE number means. First-time visitors are confused; the most important action (sign up) doesn't stand out.
 
 ## User story
 

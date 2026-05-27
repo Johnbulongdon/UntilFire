@@ -3,15 +3,10 @@ import { useState, useEffect } from 'react'
 
 const TOUR_SLIDES = [
   { tabKey: null,              emoji: "🔥", title: "Welcome to UntilFire",  description: "Let's take a 30-second look at what you can do. Use the arrows or click any dot to jump around." },
-  { tabKey: "overview",        emoji: "🏠", title: "Overview",              description: "Your financial snapshot — net worth, FIRE progress, recent transactions, and a setup checklist." },
-  { tabKey: "cashflow",        emoji: "💳", title: "Cashflow",              description: "Track income and expenses. Add transactions manually or sync your bank, set budgets, and manage recurring bills." },
-  { tabKey: "cashflow",        emoji: "📈", title: "Assets",                description: "All your accounts in one view. Connect via Plaid or enter manually. Track your emergency fund and savings APY." },
-  { tabKey: "cashflow",        emoji: "🏦", title: "Liabilities",           description: "Track debts — mortgages, car loans, student loans, credit cards. See the full picture of what you owe." },
-  { tabKey: "fire-calculator", emoji: "🔢", title: "FIRE Calculator",       description: "Calculate your FI number, run Monte Carlo simulations, and compare investment portfolio strategies." },
-  { tabKey: "fire-calculator", emoji: "🎯", title: "Goals",                 description: "Set your retirement age, choose your FIRE style (Lean, Fat, Barista, Coast), and plan your post-FIRE life." },
-  { tabKey: "cashflow",        emoji: "📊", title: "Reports",               description: "Visual breakdowns of spending, income trends, and category analysis. See exactly where your money goes." },
-  { tabKey: "fire-calculator", emoji: "📚", title: "Learning Hub",          description: "Guides on FIRE concepts — the 4% rule, withdrawal strategies, HYSA vs investing. Learn as you plan." },
-  { tabKey: "profile",         emoji: "⚙️", title: "Profile",               description: "Connect bank accounts, switch currencies, manage your subscription, and configure preferences." },
+  { tabKey: "overview",        emoji: "🏠", title: "Home",                  description: "Your financial snapshot — net worth, FIRE progress bar, recent transactions, and a personalised setup checklist to get you started." },
+  { tabKey: "cashflow",        emoji: "💳", title: "Money",                 description: "Everything about your cash flow: income, expenses, and budgets on the Cashflow tab; all your accounts and net worth on Assets; debts on Liabilities; and spending trends on Reports." },
+  { tabKey: "fire-calculator", emoji: "📅", title: "Freedom",               description: "Your freedom date lives here. Run your FIRE calculation, stress-test with Monte Carlo, set your goals and FIRE style, and explore the Learning Hub for guides on the 4% rule, withdrawal strategies, and more." },
+  { tabKey: "profile",         emoji: "⚙️", title: "Profile",               description: "Connect bank accounts via Plaid, switch currencies, manage your Pro subscription, and configure your FIRE assumptions." },
 ]
 
 export default function TourModal({ onClose }: { onClose: () => void }) {

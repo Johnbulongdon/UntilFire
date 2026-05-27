@@ -683,6 +683,7 @@ function QuickAddForm({
           .cf-mobile-drawer {
             max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px) !important;
             padding-bottom: env(safe-area-inset-bottom, 0px);
+            z-index: 220 !important;
           }
           .cf-quick-form {
             position: relative !important;
@@ -695,7 +696,7 @@ function QuickAddForm({
           }
           .cf-quick-form-body {
             overflow-y: visible !important;
-            padding-bottom: 18px !important;
+            padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
           }
           .cf-quick-form-footer {
             position: sticky;
@@ -720,6 +721,7 @@ function TransactionList({
   rates,
   formatAmount,
   catCustomizations,
+  expenseCategories,
 }: {
   transactions: Transaction[];
   editingId: string | null;
@@ -729,17 +731,19 @@ function TransactionList({
   rates: Record<string, number>;
   formatAmount: (value: number) => string;
   catCustomizations: CatCustomizations;
+  expenseCategories: CustomCategory[];
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income">("all");
   const todayYmd = new Date().toISOString().split("T")[0];
+  const allCategories = useMemo(() => [...expenseCategories, ...INCOME_CATEGORIES], [expenseCategories]);
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
       if (search) {
         const s = search.toLowerCase();
-        const cat = ALL_CATEGORIES.find((c) => c.key === t.category);
+        const cat = allCategories.find((c) => c.key === t.category);
         return (
           t.description.toLowerCase().includes(s) ||
           (cat?.label || "").toLowerCase().includes(s) ||
@@ -748,7 +752,7 @@ function TransactionList({
       }
       return true;
     });
-  }, [transactions, search, filter]);
+  }, [transactions, search, filter, allCategories]);
 
   const groups = useMemo(() => {
     const byDate: Record<string, Transaction[]> = {};
@@ -830,7 +834,7 @@ function TransactionList({
                   .sort((a, b) => b.date.localeCompare(a.date))
                   .map((tx) => {
                     const isIncome = tx.transaction_type === "income";
-                    const cat = ALL_CATEGORIES.find((c) => c.key === tx.category);
+                    const cat = allCategories.find((c) => c.key === tx.category);
                     const isEditing = editingId === tx.id;
                     const wasJustAdded = justAddedId === tx.id;
                     const baseDisplay = { color: cat?.color || "#6b7280", emoji: (cat as {emoji?: string})?.emoji || "📦" };
@@ -911,6 +915,8 @@ function MonthlySummary({
   ratesFallback,
   formatAmount,
   displayCurrency,
+  expenseCategories,
+  catCustomizations,
 }: {
   transactions: Transaction[];
   viewMonth: string;
@@ -921,6 +927,8 @@ function MonthlySummary({
   ratesFallback: boolean;
   formatAmount: (value: number) => string;
   displayCurrency: string;
+  expenseCategories: CustomCategory[];
+  catCustomizations: CatCustomizations;
 }) {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -935,10 +943,16 @@ function MonthlySummary({
   const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const expenseTotal = monthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const net = incomeTotal - expenseTotal;
-  const byCat = EXPENSE_CATEGORIES.map((cat) => ({
-    ...cat,
-    total: monthTxns.filter((t) => t.transaction_type !== "income" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
-  }))
+  const byCat = expenseCategories.map((cat) => {
+    const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
+    const { color, emoji } = resolveDisplay(base, catCustomizations, cat.key);
+    return {
+      ...cat,
+      color,
+      emoji,
+      total: monthTxns.filter((t) => t.transaction_type !== "income" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+    };
+  })
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
@@ -1464,6 +1478,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         ratesFallback={ratesFallback}
         formatAmount={fmtDisplay}
         displayCurrency={displayCurrency}
+        expenseCategories={allExpenseCats}
+        catCustomizations={catCustomizations}
       />
 
       <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "stretch" }}>
@@ -1476,6 +1492,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           rates={rates}
           formatAmount={fmtDisplay}
           catCustomizations={catCustomizations}
+          expenseCategories={allExpenseCats}
         />
         <div className="cf-form-col">
           <QuickAddForm
