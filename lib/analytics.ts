@@ -133,13 +133,13 @@ export function trackDashboardFirstView(input: {
   capture(FunnelEvents.DASHBOARD_FIRST_VIEW, props);
 }
 
-export function trackPaywallViewed(surface: string) {
-  const props: PaywallProperties = withVersion({ surface });
+export function trackPaywallViewed(input: { surface: string; plan: string; price_monthly: number; price_id?: string; source: string }) {
+  const props: PaywallProperties = withVersion(input);
   capture(FunnelEvents.PAYWALL_VIEWED, props);
 }
 
-export function trackCheckoutStarted(surface: string) {
-  const props: CheckoutStartedProperties = withVersion({ surface });
+export function trackCheckoutStarted(input: { surface: string; plan: string; price_monthly: number; price_id?: string; source: string }) {
+  const props: CheckoutStartedProperties = withVersion(input);
   capture(FunnelEvents.CHECKOUT_STARTED, props);
 }
 
