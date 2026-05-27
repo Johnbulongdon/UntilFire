@@ -37,6 +37,7 @@
   ],
   "exclude": [
     "node_modules",
-    "components/EnhancedFIRECalculator.tsx"
+    "components/EnhancedFIRECalculator.tsx",
+    "remotion-teaser"
   ]
 }
