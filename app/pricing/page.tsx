@@ -5,21 +5,21 @@ import { siteUrl } from "@/lib/site";
 const pricingUrl = siteUrl('/pricing');
 
 export const metadata: Metadata = {
-  title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
-  description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo to unlock unlimited bank connections and AI FIRE adviser.",
+  title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
+  description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo to unlock unlimited bank connections and priority access to the AI adviser.",
   keywords: "untilfire pricing, fire planner cost, financial independence app price, fire calculator free",
   alternates: { canonical: pricingUrl },
   openGraph: {
-    title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
-    description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo.",
+    title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
+    description: "Free forever for the full calculator and dashboard. Upgrade to Pro for $4.99/mo.",
     url: pricingUrl,
     siteName: "UntilFire",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
-    description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo.",
+    title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
+    description: "Free forever for the full calculator and dashboard. Upgrade to Pro for $4.99/mo.",
   },
 };
 
@@ -36,7 +36,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   "Everything in Free",
   "Unlimited bank connections (Plaid)",
-  "AI FIRE adviser (coming soon)",
+  "AI FIRE adviser (priority access)",
 ];
 
 export default function PricingPage() {

@@ -543,7 +543,7 @@ export default function ProfileTab({
         </div>
         {subscription?.plan !== "pro" && (
           <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10, marginBottom: 0 }}>
-            Unlock AI adviser, unlimited scenarios, and priority support.
+            Unlock unlimited bank connections and priority access to the AI adviser.
           </p>
         )}
       </div>
