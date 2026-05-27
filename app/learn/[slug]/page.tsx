@@ -40,13 +40,11 @@ export async function generateMetadata({ params }: Props) {
       publishedTime: article.publishedAt,
       url: `https://www.untilfire.com/learn/${article.slug}`,
       siteName: 'UntilFire',
-      images: [{ url: 'https://www.untilfire.com/og-default.png', width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
       title: article.title,
       description: article.description,
-      images: ['https://www.untilfire.com/og-default.png'],
     },
   }
 }
@@ -78,7 +76,7 @@ export default async function LearnArticlePage({ params }: Props) {
             author: { '@type': 'Organization', name: 'UntilFire', url: 'https://www.untilfire.com' },
             publisher: { '@type': 'Organization', name: 'UntilFire', url: 'https://www.untilfire.com' },
             url: `https://www.untilfire.com/learn/${article.slug}`,
-            image: 'https://www.untilfire.com/og-default.png',
+            image: `https://www.untilfire.com/learn/${article.slug}/opengraph-image`,
             breadcrumb: {
               '@type': 'BreadcrumbList',
               itemListElement: [
