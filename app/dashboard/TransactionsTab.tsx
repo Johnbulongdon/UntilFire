@@ -9,6 +9,7 @@ import {
   COLOR_PALETTE, EMOJI_PALETTE,
   loadCatCustomizations, saveCatCustomizations, CatCustomizations, resolveDisplay,
 } from "@/lib/categories";
+import CsvImportModal from "./CsvImportModal";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   travel:        ["Hotels", "Flights", "Food & Drink", "Transport", "Activities", "Shopping", "Other"],
@@ -27,7 +28,7 @@ type CustomCategory = { key: string; label: string; code: string; color: string;
 const ALL_CATEGORIES = ALL_CATEGORIES_BASE;
 const FALLBACK_RATES = LIB_FALLBACK_RATES;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────────────────────────
 const fmt = (n: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
 
@@ -47,7 +48,7 @@ function dayLabel(ymd: string, todayYmd: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────────────────
 type Transaction = {
   id: string;
   date: string;
@@ -86,7 +87,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   aiSuggestion: null,
 });
 
-// ─── AI Categorization ────────────────────────────────────────────────────────
+// ─── AI Categorization ────────────────────────────────────────────────────────────────────
 async function aiCategorize(
   description: string,
   type: "expense" | "income"
@@ -104,7 +105,7 @@ async function aiCategorize(
   }
 }
 
-// ─── ProjectInput ─────────────────────────────────────────────────────────────
+// ─── ProjectInput ────────────────────────────────────────────────────────────────────────────────
 function ProjectInput({
   existingTags,
   currentTags,
@@ -181,7 +182,7 @@ function ProjectInput({
   );
 }
 
-// ─── QuickAddForm ─────────────────────────────────────────────────────────────
+// ─── QuickAddForm ─────────────────────────────────────────────────────────────────────────────────
 function QuickAddForm({
   draft,
   setDraft,
@@ -397,7 +398,7 @@ function QuickAddForm({
               fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start",
             }}
           >
-            <span style={{ color: "#20D4BF" }}>✦</span>
+            <span style={{ color: "#20D4BF" }}>❆</span>
             Looks like {aiSuggestedCat?.label} — use it?
           </button>
         )}
@@ -683,7 +684,6 @@ function QuickAddForm({
           .cf-mobile-drawer {
             max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px) !important;
             padding-bottom: env(safe-area-inset-bottom, 0px);
-            z-index: 220 !important;
           }
           .cf-quick-form {
             position: relative !important;
@@ -696,7 +696,7 @@ function QuickAddForm({
           }
           .cf-quick-form-body {
             overflow-y: visible !important;
-            padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+            padding-bottom: 18px !important;
           }
           .cf-quick-form-footer {
             position: sticky;
@@ -711,7 +711,7 @@ function QuickAddForm({
   );
 }
 
-// ─── Transaction List ─────────────────────────────────────────────────────────
+// ─── Transaction List ─────────────────────────────────────────────────────────────────────────────
 function TransactionList({
   transactions,
   editingId,
@@ -721,7 +721,6 @@ function TransactionList({
   rates,
   formatAmount,
   catCustomizations,
-  expenseCategories,
 }: {
   transactions: Transaction[];
   editingId: string | null;
@@ -731,19 +730,17 @@ function TransactionList({
   rates: Record<string, number>;
   formatAmount: (value: number) => string;
   catCustomizations: CatCustomizations;
-  expenseCategories: CustomCategory[];
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income">("all");
   const todayYmd = new Date().toISOString().split("T")[0];
-  const allCategories = useMemo(() => [...expenseCategories, ...INCOME_CATEGORIES], [expenseCategories]);
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
       if (search) {
         const s = search.toLowerCase();
-        const cat = allCategories.find((c) => c.key === t.category);
+        const cat = ALL_CATEGORIES.find((c) => c.key === t.category);
         return (
           t.description.toLowerCase().includes(s) ||
           (cat?.label || "").toLowerCase().includes(s) ||
@@ -752,7 +749,7 @@ function TransactionList({
       }
       return true;
     });
-  }, [transactions, search, filter, allCategories]);
+  }, [transactions, search, filter]);
 
   const groups = useMemo(() => {
     const byDate: Record<string, Transaction[]> = {};
@@ -834,7 +831,7 @@ function TransactionList({
                   .sort((a, b) => b.date.localeCompare(a.date))
                   .map((tx) => {
                     const isIncome = tx.transaction_type === "income";
-                    const cat = allCategories.find((c) => c.key === tx.category);
+                    const cat = ALL_CATEGORIES.find((c) => c.key === tx.category);
                     const isEditing = editingId === tx.id;
                     const wasJustAdded = justAddedId === tx.id;
                     const baseDisplay = { color: cat?.color || "#6b7280", emoji: (cat as {emoji?: string})?.emoji || "📦" };
@@ -904,31 +901,29 @@ function TransactionList({
   );
 }
 
-// ─── Monthly Summary ──────────────────────────────────────────────────────────
+// ─── Monthly Summary ────────────────────────────────────────────────────────────────────────────
 function MonthlySummary({
   transactions,
   viewMonth,
   onPrevMonth,
   onNextMonth,
+  onImportClick,
   budgetExpenses,
   rates,
   ratesFallback,
   formatAmount,
   displayCurrency,
-  expenseCategories,
-  catCustomizations,
 }: {
   transactions: Transaction[];
   viewMonth: string;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  onImportClick: () => void;
   budgetExpenses: Record<string, number> | null;
   rates: Record<string, number>;
   ratesFallback: boolean;
   formatAmount: (value: number) => string;
   displayCurrency: string;
-  expenseCategories: CustomCategory[];
-  catCustomizations: CatCustomizations;
 }) {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -943,16 +938,10 @@ function MonthlySummary({
   const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const expenseTotal = monthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const net = incomeTotal - expenseTotal;
-  const byCat = expenseCategories.map((cat) => {
-    const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
-    const { color, emoji } = resolveDisplay(base, catCustomizations, cat.key);
-    return {
-      ...cat,
-      color,
-      emoji,
-      total: monthTxns.filter((t) => t.transaction_type !== "income" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
-    };
-  })
+  const byCat = EXPENSE_CATEGORIES.map((cat) => ({
+    ...cat,
+    total: monthTxns.filter((t) => t.transaction_type !== "income" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+  }))
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
@@ -987,14 +976,30 @@ function MonthlySummary({
             </div>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m14 6-6 6 6 6" /></svg>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={onImportClick}
+            style={{
+              fontSize: 13, fontWeight: 600, color: "#047857",
+              background: "#F0FDF4", border: "1px solid #BBF7D0",
+              borderRadius: 8, padding: "8px 14px", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Import CSV
           </button>
-          <div style={{ padding: "0 8px", fontSize: 14, fontWeight: 700, color: "#064E3B", minWidth: 130, textAlign: "center", letterSpacing: "-0.2px" }}>{monthLabel}</div>
-          <button onClick={onNextMonth} disabled={isCurrentMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: isCurrentMonth ? "#CBD5E1" : "#64748B", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6 6 6-6 6" /></svg>
-          </button>
+          <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m14 6-6 6 6 6" /></svg>
+            </button>
+            <div style={{ padding: "0 8px", fontSize: 14, fontWeight: 700, color: "#064E3B", minWidth: 130, textAlign: "center", letterSpacing: "-0.2px" }}>{monthLabel}</div>
+            <button onClick={onNextMonth} disabled={isCurrentMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: isCurrentMonth ? "#CBD5E1" : "#64748B", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6 6 6-6 6" /></svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1064,7 +1069,7 @@ function MonthlySummary({
   );
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+// ─── Toast ───────────────────────────────────────────────────────────────────────────────────
 function Toast({
   toast,
   onUndo,
@@ -1097,7 +1102,7 @@ function Toast({
   );
 }
 
-// ─── Mobile components ────────────────────────────────────────────────────────
+// ─── Mobile components ──────────────────────────────────────────────────────────────────────────────
 function MobileBar({ onOpen }: { onOpen: () => void }) {
   return (
     <div style={{ display: "none" }} className="cf-mobile-bar">
@@ -1135,7 +1140,7 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
   );
 }
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
+// ─── Root ──────────────────────────────────────────────────────────────────────────────────────────
 export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [] }: {
   defaultCurrency?: string;
   displayCurrency?: string;
@@ -1253,6 +1258,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fmtDisplay = useCallback(
     (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates),
@@ -1473,13 +1479,12 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         viewMonth={viewMonth}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
+        onImportClick={() => setCsvImportOpen(true)}
         budgetExpenses={budgetExpenses}
         rates={rates}
         ratesFallback={ratesFallback}
         formatAmount={fmtDisplay}
         displayCurrency={displayCurrency}
-        expenseCategories={allExpenseCats}
-        catCustomizations={catCustomizations}
       />
 
       <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "stretch" }}>
@@ -1492,7 +1497,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           rates={rates}
           formatAmount={fmtDisplay}
           catCustomizations={catCustomizations}
-          expenseCategories={allExpenseCats}
         />
         <div className="cf-form-col">
           <QuickAddForm
@@ -1533,6 +1537,12 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       </MobileDrawer>
 
       <Toast toast={toast} onUndo={handleUndo} />
+
+      <CsvImportModal
+        open={csvImportOpen}
+        onClose={() => setCsvImportOpen(false)}
+        onImported={() => setRefreshKey(k => k + 1)}
+      />
     </>
   );
 }
