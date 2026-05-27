@@ -48,7 +48,7 @@ function dayLabel(ymd: string, todayYmd: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// ─── Types ──────────────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────────────────
 type Transaction = {
   id: string;
   date: string;
@@ -87,7 +87,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   aiSuggestion: null,
 });
 
-// ─── AI Categorization ────────────────────────────────────────────────────────────────────
+// ─── AI Categorization ──────────────────────────────────────────────────────────────
 async function aiCategorize(
   description: string,
   type: "expense" | "income"
@@ -105,7 +105,7 @@ async function aiCategorize(
   }
 }
 
-// ─── ProjectInput ────────────────────────────────────────────────────────────────────────────────
+// ─── ProjectInput ─────────────────────────────────────────────────────────────────────────────
 function ProjectInput({
   existingTags,
   currentTags,
@@ -182,7 +182,7 @@ function ProjectInput({
   );
 }
 
-// ─── QuickAddForm ─────────────────────────────────────────────────────────────────────────────────
+// ─── QuickAddForm ─────────────────────────────────────────────────────────────────────────────
 function QuickAddForm({
   draft,
   setDraft,
@@ -349,7 +349,7 @@ function QuickAddForm({
             placeholder="0.00"
             value={draft.amount}
             onChange={(e) => {
-              const v = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*?)\./g, "$1");
+              const v = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..+?)\./g, "$1");
               setField("amount", v);
             }}
             autoFocus
@@ -901,7 +901,7 @@ function TransactionList({
   );
 }
 
-// ─── Monthly Summary ────────────────────────────────────────────────────────────────────────────
+// ─── Monthly Summary ─────────────────────────────────────────────────────────────────────────────
 function MonthlySummary({
   transactions,
   viewMonth,
@@ -977,29 +977,29 @@ function MonthlySummary({
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button
-            onClick={onImportClick}
-            style={{
-              fontSize: 13, fontWeight: 600, color: "#047857",
-              background: "#F0FDF4", border: "1px solid #BBF7D0",
-              borderRadius: 8, padding: "8px 14px", cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 6,
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            Import CSV
+        <button
+          onClick={onImportClick}
+          style={{
+            fontSize: 13, fontWeight: 600, color: "#047857",
+            background: "#F0FDF4", border: "1px solid #BBF7D0",
+            borderRadius: 8, padding: "8px 14px", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Import CSV
+        </button>
+        <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m14 6-6 6 6 6" /></svg>
           </button>
-          <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-            <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m14 6-6 6 6 6" /></svg>
-            </button>
-            <div style={{ padding: "0 8px", fontSize: 14, fontWeight: 700, color: "#064E3B", minWidth: 130, textAlign: "center", letterSpacing: "-0.2px" }}>{monthLabel}</div>
-            <button onClick={onNextMonth} disabled={isCurrentMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: isCurrentMonth ? "#CBD5E1" : "#64748B", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6 6 6-6 6" /></svg>
-            </button>
-          </div>
+          <div style={{ padding: "0 8px", fontSize: 14, fontWeight: 700, color: "#064E3B", minWidth: 130, textAlign: "center", letterSpacing: "-0.2px" }}>{monthLabel}</div>
+          <button onClick={onNextMonth} disabled={isCurrentMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: isCurrentMonth ? "#CBD5E1" : "#64748B", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6 6 6-6 6" /></svg>
+          </button>
+        </div>
         </div>
       </div>
 
@@ -1063,13 +1063,12 @@ function MonthlySummary({
               );
             })}
           </div>
-        </div>
-      )}
+        </div>)}
     </div>
   );
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────────────────────
+// ─── Toast ─────────────────────────────────────────────────────────────────────────────────────
 function Toast({
   toast,
   onUndo,
@@ -1102,7 +1101,7 @@ function Toast({
   );
 }
 
-// ─── Mobile components ──────────────────────────────────────────────────────────────────────────────
+// ─── Mobile components ────────────────────────────────────────────────────────────────────────────
 function MobileBar({ onOpen }: { onOpen: () => void }) {
   return (
     <div style={{ display: "none" }} className="cf-mobile-bar">
@@ -1140,7 +1139,7 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
   );
 }
 
-// ─── Root ──────────────────────────────────────────────────────────────────────────────────────────
+// ─── Root ───────────────────────────────────────────────────────────────────────────────────────
 export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [] }: {
   defaultCurrency?: string;
   displayCurrency?: string;
