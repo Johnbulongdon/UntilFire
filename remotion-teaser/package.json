@@ -19,8 +19,7 @@
     "@remotion/cli": "^4.0.290",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "remotion": "^4.0.290",
-    "simple-icons": "^16.21.0"
+    "remotion": "^4.0.290"
   },
   "devDependencies": {
     "@types/node": "^20",

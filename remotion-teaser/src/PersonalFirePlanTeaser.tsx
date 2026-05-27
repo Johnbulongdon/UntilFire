@@ -2,20 +2,13 @@ import React from 'react';
 import {
   AbsoluteFill,
   Easing,
+  Img,
   Sequence,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
 } from 'remotion';
-import {
-  siBankofamerica,
-  siCashapp,
-  siChase,
-  siPaypal,
-  siRobinhood,
-  siWellsfargo,
-  type SimpleIcon,
-} from 'simple-icons';
 
 type SpendingInsight = {
   label: string;
@@ -26,9 +19,7 @@ type SpendingInsight = {
 
 type InstitutionTile = {
   name: string;
-  icon?: SimpleIcon;
-  iconColor?: string;
-  wordmark?: 'capital-one' | 'ibkr' | 'fidelity' | 'schwab';
+  iconFile: string;
 };
 
 export type PersonalFirePlanTeaserProps = {
@@ -45,19 +36,19 @@ export type PersonalFirePlanTeaserProps = {
 };
 
 const bankInstitutions: InstitutionTile[] = [
-  {name: 'Capital One', wordmark: 'capital-one'},
-  {name: 'Chase', icon: siChase, iconColor: '#117aca'},
-  {name: 'Bank of America', icon: siBankofamerica, iconColor: '#d71920'},
-  {name: 'Wells Fargo', icon: siWellsfargo, iconColor: '#b31b1b'},
-  {name: 'PayPal', icon: siPaypal, iconColor: '#003087'},
-  {name: 'Cash App', icon: siCashapp, iconColor: '#00d632'},
+  {name: 'Capital One', iconFile: 'capital-one.jpg'},
+  {name: 'Chase', iconFile: 'chase.jpg'},
+  {name: 'Bank of America', iconFile: 'bank-of-america.jpg'},
+  {name: 'Wells Fargo', iconFile: 'wells-fargo.jpg'},
+  {name: 'PayPal', iconFile: 'paypal.jpg'},
+  {name: 'Cash App', iconFile: 'cash-app.jpg'},
 ];
 
 const brokerageInstitutions: InstitutionTile[] = [
-  {name: 'IBKR', wordmark: 'ibkr'},
-  {name: 'Robinhood', icon: siRobinhood, iconColor: '#00c805'},
-  {name: 'Fidelity', wordmark: 'fidelity'},
-  {name: 'Schwab', wordmark: 'schwab'},
+  {name: 'IBKR', iconFile: 'ibkr.jpg'},
+  {name: 'Robinhood', iconFile: 'robinhood.jpg'},
+  {name: 'Fidelity', iconFile: 'fidelity.jpg'},
+  {name: 'Schwab', iconFile: 'schwab.jpg'},
 ];
 
 export const teaserData: PersonalFirePlanTeaserProps = {
@@ -226,59 +217,19 @@ function HeaderBadge({compact = false}: {compact?: boolean}) {
   );
 }
 
-function CustomWordmark({variant}: {variant: NonNullable<InstitutionTile['wordmark']>}) {
-  if (variant === 'capital-one') {
-    return (
-      <svg viewBox="0 0 220 56" width="154" height="40" aria-label="Capital One logo">
-        <path d="M116 7C139 1 164 2 188 9C166 8 144 12 126 22C108 32 94 46 89 54C92 35 99 18 116 7Z" fill="#d71920" />
-        <text x="4" y="36" fontFamily="Arial, Helvetica, sans-serif" fontSize="26" fontWeight="800" fill="#063f8f">Capital</text>
-        <text x="106" y="36" fontFamily="Arial, Helvetica, sans-serif" fontSize="26" fontWeight="800" fill="#c31932">One</text>
-      </svg>
-    );
-  }
-
-  if (variant === 'ibkr') {
-    return (
-      <svg viewBox="0 0 180 56" width="126" height="40" aria-label="IBKR logo">
-        <text x="0" y="39" fontFamily="Arial Black, Arial, sans-serif" fontSize="40" fontWeight="900" fill="#111827">IB</text>
-        <text x="58" y="39" fontFamily="Arial Black, Arial, sans-serif" fontSize="40" fontWeight="900" fill="#d71920">KR</text>
-        <path d="M6 48H160" stroke="#0b3b75" strokeWidth="5" strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  if (variant === 'fidelity') {
-    return (
-      <svg viewBox="0 0 200 56" width="144" height="40" aria-label="Fidelity logo">
-        <circle cx="24" cy="28" r="20" fill="#167a3a" />
-        <path d="M24 10L39 39H9L24 10Z" fill="#f5c542" />
-        <text x="54" y="38" fontFamily="Arial, Helvetica, sans-serif" fontSize="28" fontWeight="900" fill="#167a3a">Fidelity</text>
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 190 56" width="136" height="40" aria-label="Schwab logo">
-      <rect x="0" y="4" width="52" height="48" rx="6" fill="#0073cf" />
-      <text x="10" y="35" fontFamily="Arial, Helvetica, sans-serif" fontSize="22" fontWeight="900" fill="#ffffff">CS</text>
-      <text x="62" y="37" fontFamily="Arial, Helvetica, sans-serif" fontSize="30" fontWeight="900" fill="#0073cf">Schwab</text>
-    </svg>
-  );
-}
-
 function LogoMark({item}: {item: InstitutionTile}) {
-  if (item.wordmark) {
-    return <CustomWordmark variant={item.wordmark} />;
-  }
-
-  if (!item.icon) {
-    return null;
-  }
-
   return (
-    <svg viewBox="0 0 24 24" width="42" height="42" aria-label={`${item.name} logo`}>
-      <path d={item.icon.path} fill={item.iconColor ?? `#${item.icon.hex}`} />
-    </svg>
+    <Img
+      src={staticFile(`app-icons/${item.iconFile}`)}
+      alt={`${item.name} app icon`}
+      style={{
+        width: 58,
+        height: 58,
+        borderRadius: 16,
+        objectFit: 'cover',
+        boxShadow: '0 8px 20px rgba(6, 63, 49, 0.12)',
+      }}
+    />
   );
 }
 
@@ -310,11 +261,9 @@ function InstitutionGrid({items, frame, start = 22}: {items: InstitutionTile[]; 
             <LogoMark item={item} />
             <div style={{
               color: colors.ink,
-              fontSize: item.wordmark ? 0 : 24,
+              fontSize: 24,
               lineHeight: 1.05,
               fontWeight: 900,
-              width: item.wordmark ? 0 : 'auto',
-              overflow: 'hidden',
             }}>
               {item.name}
             </div>
