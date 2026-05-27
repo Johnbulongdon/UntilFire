@@ -9,6 +9,8 @@ The composition is a 16 second, 9:16 social vertical spot for UntilFire. It pres
 ## What It Shows
 
 - Bank connection and spending import as a live product capability.
+- Popular bank support shown with logo-style institution tiles for Capital One, Chase, Bank of America, Wells Fargo, PayPal, and Cash App.
+- Brokerage connection and investment analysis shown with IBKR, Robinhood, Fidelity, and Schwab tiles.
 - City-aware expense benchmarks for rent, food, and subscriptions.
 - Personal insights that are specific, not generic advice.
 - Investment support as planning and projection, not trade execution.

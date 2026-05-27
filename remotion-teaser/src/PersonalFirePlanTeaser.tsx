@@ -15,6 +15,13 @@ type SpendingInsight = {
   tone: 'warning' | 'positive' | 'action';
 };
 
+type InstitutionTile = {
+  name: string;
+  short: string;
+  color: string;
+  bg: string;
+};
+
 export type PersonalFirePlanTeaserProps = {
   city: string;
   income: string;
@@ -27,6 +34,22 @@ export type PersonalFirePlanTeaserProps = {
   ctaText: string;
   insights: SpendingInsight[];
 };
+
+const bankInstitutions: InstitutionTile[] = [
+  {name: 'Capital One', short: 'CO', color: '#ffffff', bg: '#c31932'},
+  {name: 'Chase', short: 'C', color: '#ffffff', bg: '#0b5cab'},
+  {name: 'Bank of America', short: 'BA', color: '#ffffff', bg: '#d71920'},
+  {name: 'Wells Fargo', short: 'WF', color: '#ffd457', bg: '#b31b1b'},
+  {name: 'PayPal', short: 'PP', color: '#ffffff', bg: '#003087'},
+  {name: 'Cash App', short: '$', color: '#ffffff', bg: '#00d632'},
+];
+
+const brokerageInstitutions: InstitutionTile[] = [
+  {name: 'IBKR', short: 'IB', color: '#ffffff', bg: '#0b3b75'},
+  {name: 'Robinhood', short: 'RH', color: '#06281f', bg: '#00c805'},
+  {name: 'Fidelity', short: 'FI', color: '#ffffff', bg: '#167a3a'},
+  {name: 'Schwab', short: 'SC', color: '#ffffff', bg: '#0073cf'},
+];
 
 export const teaserData: PersonalFirePlanTeaserProps = {
   city: 'Austin',
@@ -194,6 +217,60 @@ function HeaderBadge({compact = false}: {compact?: boolean}) {
   );
 }
 
+function InstitutionGrid({items, frame, start = 22}: {items: InstitutionTile[]; frame: number; start?: number}) {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: 18,
+    }}>
+      {items.map((item, index) => {
+        const entry = slideUp(frame, start + index * 4, 24);
+        const float = Math.sin((frame + index * 9) / 18) * 7;
+
+        return (
+          <div key={item.name} style={{
+            ...entry,
+            transform: `${entry.transform} translateY(${float}px)`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            padding: '18px 20px',
+            minHeight: 88,
+            borderRadius: 24,
+            background: colors.surface,
+            border: `2px solid ${colors.border}`,
+            boxShadow: '0 16px 44px rgba(6, 63, 49, 0.10)',
+          }}>
+            <div style={{
+              width: 54,
+              height: 54,
+              borderRadius: 18,
+              display: 'grid',
+              placeItems: 'center',
+              background: item.bg,
+              color: item.color,
+              fontSize: 22,
+              fontWeight: 950,
+              letterSpacing: 0,
+            }}>
+              {item.short}
+            </div>
+            <div style={{
+              color: colors.ink,
+              fontSize: 24,
+              lineHeight: 1.05,
+              fontWeight: 900,
+            }}>
+              {item.name}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function SceneShell({children, dark = false}: {children: React.ReactNode; dark?: boolean}) {
   const frame = useCurrentFrame();
   const borderPulse = interpolate(Math.sin(frame / 30), [-1, 1], [0.72, 1]);
@@ -271,35 +348,30 @@ function BankScene(props: PersonalFirePlanTeaserProps) {
   const frame = useCurrentFrame();
   const check = enter(frame, 34, 12);
   const cardFloat = Math.sin(frame / 28) * 10;
-  const rows = [
-    ['Rent', props.rentSpend],
-    ['Groceries + dining', props.foodSpend],
-    ['Monthly income', props.income],
-  ];
 
   return (
     <SceneShell>
       <div style={slideUp(frame, 0)}>
         <HeaderBadge compact />
       </div>
-      <div style={{marginTop: 110}}>
+      <div style={{marginTop: 92}}>
         <div style={{...slideUp(frame, 4), fontSize: 34, color: colors.green, fontWeight: 850}}>
-          Connect your bank
+          Connect popular accounts
         </div>
-        <h2 style={{...slideUp(frame, 8), margin: '18px 0 36px', fontSize: 82, lineHeight: 0.98, letterSpacing: 0}}>
-          UntilFire learns your real spending.
+        <h2 style={{...slideUp(frame, 8), margin: '18px 0 28px', fontSize: 78, lineHeight: 0.98, letterSpacing: 0}}>
+          Your banks already work with your FIRE plan.
         </h2>
         <div style={{
           ...slideUp(frame, 18),
           background: colors.surface,
           border: `2px solid ${colors.border}`,
           borderRadius: 36,
-          padding: 34,
+          padding: 28,
           boxShadow: '0 28px 80px rgba(6, 63, 49, 0.12)',
           transform: `${slideUp(frame, 18).transform} translateY(${cardFloat}px)`,
         }}>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26}}>
-            <div style={{fontSize: 30, fontWeight: 850}}>Bank connected</div>
+            <div style={{fontSize: 30, fontWeight: 850}}>Bank connection supported</div>
             <div style={{
               width: 58,
               height: 58,
@@ -308,25 +380,80 @@ function BankScene(props: PersonalFirePlanTeaserProps) {
               color: '#fff',
               display: 'grid',
               placeItems: 'center',
-              fontSize: 36,
+              fontSize: 22,
               fontWeight: 900,
               transform: `scale(${interpolate(check, [0, 1], [0.4, 1])})`,
-            }}>✓</div>
+            }}>OK</div>
           </div>
-          {rows.map((row, index) => (
-            <div key={row[0]} style={{
-              ...slideUp(frame, 28 + index * 7, 24),
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '22px 0',
-              borderTop: index === 0 ? 'none' : `2px solid ${colors.border}`,
-              fontSize: 30,
-            }}>
-              <span style={{color: colors.muted, fontWeight: 700}}>{row[0]}</span>
-              <span style={{fontWeight: 900, color: colors.ink}}>{row[1]}</span>
+          <InstitutionGrid items={bankInstitutions} frame={frame} start={26} />
+        </div>
+        <div style={{...slideUp(frame, 54), marginTop: 24, color: colors.muted, fontSize: 26, fontWeight: 750}}>
+          Pull real spending from rent, food, subscriptions, and cash flow.
+        </div>
+      </div>
+    </SceneShell>
+  );
+}
+
+function InvestmentsScene(props: PersonalFirePlanTeaserProps) {
+  const frame = useCurrentFrame();
+  const progress = enter(frame, 28, 36);
+  const pulse = interpolate(Math.sin(frame / 16), [-1, 1], [0.94, 1.05]);
+
+  return (
+    <SceneShell>
+      <div style={slideUp(frame, 0)}>
+        <HeaderBadge compact />
+      </div>
+      <div style={{marginTop: 86}}>
+        <div style={{...slideUp(frame, 4), fontSize: 34, color: colors.green, fontWeight: 900}}>
+          Connect brokerage accounts
+        </div>
+        <h2 style={{...slideUp(frame, 8), margin: '18px 0 28px', fontSize: 76, lineHeight: 0.98, letterSpacing: 0}}>
+          Analyze investments beside your spending.
+        </h2>
+        <InstitutionGrid items={brokerageInstitutions} frame={frame} start={18} />
+        <div style={{
+          ...slideUp(frame, 42),
+          marginTop: 28,
+          borderRadius: 32,
+          padding: 30,
+          background: colors.greenDark,
+          color: '#f4fff8',
+          boxShadow: '0 24px 70px rgba(6, 63, 49, 0.22)',
+        }}>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22}}>
+            <div>
+              <div style={{fontSize: 24, color: '#b8ead0', fontWeight: 800}}>Portfolio path</div>
+              <div style={{fontSize: 44, fontWeight: 950}}>Model compounding</div>
             </div>
-          ))}
+            <div style={{
+              width: 116,
+              height: 116,
+              borderRadius: 999,
+              background: colors.teal,
+              color: colors.greenDark,
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 32,
+              fontWeight: 950,
+              transform: `scale(${pulse})`,
+            }}>
+              +7%
+            </div>
+          </div>
+          <div style={{height: 20, borderRadius: 999, background: 'rgba(255,255,255,0.18)', overflow: 'hidden'}}>
+            <div style={{
+              width: `${interpolate(progress, [0, 1], [12, 76])}%`,
+              height: '100%',
+              borderRadius: 999,
+              background: `linear-gradient(90deg, ${colors.teal}, #d4f6df)`,
+            }} />
+          </div>
+          <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 18, fontSize: 23, fontWeight: 800, color: '#d9f7e5'}}>
+            <span>Plan {props.monthlyInvestmentPlan}</span>
+            <span>Move FIRE {props.timelineImpact}</span>
+          </div>
         </div>
       </div>
     </SceneShell>
@@ -584,22 +711,25 @@ function CtaScene(props: PersonalFirePlanTeaserProps) {
 export const PersonalFirePlanTeaser = (props: PersonalFirePlanTeaserProps) => {
   return (
     <AbsoluteFill style={{background: colors.page}}>
-      <CrossfadeScene from={0} duration={60}>
+      <CrossfadeScene from={0} duration={54}>
         <HookScene />
       </CrossfadeScene>
-      <CrossfadeScene from={42} duration={90}>
+      <CrossfadeScene from={36} duration={96}>
         <BankScene {...props} />
       </CrossfadeScene>
-      <CrossfadeScene from={114} duration={108}>
+      <CrossfadeScene from={114} duration={90}>
+        <InvestmentsScene {...props} />
+      </CrossfadeScene>
+      <CrossfadeScene from={186} duration={90}>
         <BenchmarksScene {...props} />
       </CrossfadeScene>
-      <CrossfadeScene from={204} duration={126}>
+      <CrossfadeScene from={258} duration={96}>
         <InsightsScene {...props} />
       </CrossfadeScene>
-      <CrossfadeScene from={312} duration={108}>
+      <CrossfadeScene from={336} duration={90}>
         <TimelineScene {...props} />
       </CrossfadeScene>
-      <CrossfadeScene from={402} duration={78}>
+      <CrossfadeScene from={408} duration={72}>
         <CtaScene {...props} />
       </CrossfadeScene>
     </AbsoluteFill>
