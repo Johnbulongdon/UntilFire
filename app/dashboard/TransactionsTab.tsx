@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import CsvImportModal from "./CsvImportModal";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
 import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import {
@@ -1145,6 +1146,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showImport, setShowImport] = useState(false);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
@@ -1468,6 +1470,19 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         }
       `}</style>
 
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <button
+          onClick={() => setShowImport(true)}
+          style={{
+            padding: "7px 14px", borderRadius: 8, border: "1px solid #23232d",
+            background: "transparent", color: "#94a3b8", fontSize: 12, fontWeight: 600,
+            cursor: "pointer", fontFamily: "DM Sans, sans-serif", display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          ↑ Import CSV
+        </button>
+      </div>
+
       <MonthlySummary
         transactions={transactions}
         viewMonth={viewMonth}
@@ -1533,6 +1548,17 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       </MobileDrawer>
 
       <Toast toast={toast} onUndo={handleUndo} />
+
+      {showImport && (
+        <CsvImportModal
+          onClose={() => setShowImport(false)}
+          onImported={(count) => {
+            setShowImport(false);
+            setRefreshKey((k) => k + 1);
+          }}
+          defaultCurrency={defaultCurrency}
+        />
+      )}
     </>
   );
 }
