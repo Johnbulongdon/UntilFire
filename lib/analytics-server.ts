@@ -52,12 +52,14 @@ async function captureServer(
 export async function trackCheckoutSucceededServer(input: {
   distinctId: string;
   plan: string;
+  priceMonthly: number;
   priceId?: string;
   stripeSessionId: string;
   mode: string;
 }): Promise<void> {
   const props: CheckoutSucceededServerProperties = withVersion({
     plan: input.plan,
+    price_monthly: input.priceMonthly,
     price_id: input.priceId,
     stripe_session_id: input.stripeSessionId,
     mode: input.mode,

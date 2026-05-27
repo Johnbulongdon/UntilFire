@@ -52,9 +52,11 @@ export async function POST(req: NextRequest) {
       // user id so this stitches to the client funnel (identify is called on
       // signup and dashboard first view).
       const priceId = sub.items.data[0]?.price?.id;
+      const priceMonthly = (sub.items.data[0]?.price?.unit_amount ?? 0) / 100;
       await trackCheckoutSucceededServer({
         distinctId: userId,
         plan: "pro",
+        priceMonthly,
         priceId,
         stripeSessionId: session.id,
         mode: session.mode ?? "subscription",
