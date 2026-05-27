@@ -40,8 +40,16 @@ const bankInstitutions: InstitutionTile[] = [
   {name: 'Chase', iconFile: 'chase.jpg'},
   {name: 'Bank of America', iconFile: 'bank-of-america.jpg'},
   {name: 'Wells Fargo', iconFile: 'wells-fargo.jpg'},
+  {name: 'Citi', iconFile: 'citi.jpg'},
+  {name: 'U.S. Bank', iconFile: 'us-bank.jpg'},
+  {name: 'Discover', iconFile: 'discover.jpg'},
+  {name: 'Amex', iconFile: 'amex.jpg'},
   {name: 'PayPal', iconFile: 'paypal.jpg'},
   {name: 'Cash App', iconFile: 'cash-app.jpg'},
+  {name: 'Venmo', iconFile: 'venmo.jpg'},
+  {name: 'Chime', iconFile: 'chime.jpg'},
+  {name: 'SoFi', iconFile: 'sofi.jpg'},
+  {name: 'Navy Federal', iconFile: 'navy-federal.jpg'},
 ];
 
 const brokerageInstitutions: InstitutionTile[] = [
@@ -49,7 +57,17 @@ const brokerageInstitutions: InstitutionTile[] = [
   {name: 'Robinhood', iconFile: 'robinhood.jpg'},
   {name: 'Fidelity', iconFile: 'fidelity.jpg'},
   {name: 'Schwab', iconFile: 'schwab.jpg'},
+  {name: 'Vanguard', iconFile: 'vanguard.jpg'},
+  {name: 'Coinbase', iconFile: 'coinbase.jpg'},
+  {name: 'Webull', iconFile: 'webull.jpg'},
+  {name: 'E*TRADE', iconFile: 'etrade.jpg'},
+  {name: 'Acorns', iconFile: 'acorns.jpg'},
+  {name: 'M1', iconFile: 'm1.jpg'},
+  {name: 'Public', iconFile: 'public.jpg'},
+  {name: 'Betterment', iconFile: 'betterment.jpg'},
 ];
+
+const allInstitutions = [...bankInstitutions, ...brokerageInstitutions];
 
 export const teaserData: PersonalFirePlanTeaserProps = {
   city: 'Austin',
@@ -131,6 +149,22 @@ function sceneOpacity(globalFrame: number, from: number, duration: number, fade 
   return Math.min(fadeIn, fadeOut);
 }
 
+function sceneProgress(globalFrame: number, from: number, duration: number, fade = 24) {
+  const end = from + duration;
+  const inProgress = from === 0 ? 1 : interpolate(globalFrame, [from, from + fade], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: ease,
+  });
+  const outProgress = end >= 540 ? 1 : interpolate(globalFrame, [end - fade, end], [1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: ease,
+  });
+
+  return Math.min(inProgress, outProgress);
+}
+
 function MovingBackdrop({dark = false}: {dark?: boolean}) {
   const frame = useCurrentFrame();
   const sweep = interpolate(frame % 150, [0, 150], [-55, 135]);
@@ -175,11 +209,22 @@ function MovingBackdrop({dark = false}: {dark?: boolean}) {
 
 function CrossfadeScene({from, duration, children}: {from: number; duration: number; children: React.ReactNode}) {
   const globalFrame = useCurrentFrame();
-  const opacity = sceneOpacity(globalFrame, from, duration);
+  const opacity = sceneOpacity(globalFrame, from, duration, 24);
+  const progress = sceneProgress(globalFrame, from, duration, 24);
+  const y = interpolate(progress, [0, 1], [28, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: ease,
+  });
+  const scale = interpolate(progress, [0, 1], [0.985, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: ease,
+  });
 
   return (
     <Sequence from={from} durationInFrames={duration}>
-      <AbsoluteFill style={{opacity}}>
+      <AbsoluteFill style={{opacity, transform: `translateY(${y}px) scale(${scale})`}}>
         {children}
       </AbsoluteFill>
     </Sequence>
@@ -274,6 +319,120 @@ function InstitutionGrid({items, frame, start = 22}: {items: InstitutionTile[]; 
   );
 }
 
+function LogoCloud({frame}: {frame: number}) {
+  const rows = [
+    [...allInstitutions, ...allInstitutions.slice(0, 8)],
+    [...allInstitutions.slice(8), ...allInstitutions.slice(0, 12)],
+    [...allInstitutions.slice(14), ...allInstitutions.slice(0, 18)],
+  ];
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: -90,
+      right: -90,
+      top: 470,
+      height: 980,
+      opacity: 0.32,
+      overflow: 'hidden',
+      maskImage: 'linear-gradient(90deg, transparent, black 12%, black 88%, transparent)',
+    }}>
+      {rows.map((row, rowIndex) => {
+        const direction = rowIndex % 2 === 0 ? -1 : 1;
+        const x = direction * ((frame * (0.42 + rowIndex * 0.08)) % 360);
+
+        return (
+          <div key={rowIndex} style={{
+            display: 'flex',
+            gap: 22,
+            marginBottom: 24,
+            transform: `translateX(${x}px) rotate(${rowIndex === 1 ? -1.2 : 1.1}deg)`,
+          }}>
+            {row.map((item, index) => (
+              <div key={`${rowIndex}-${item.name}-${index}`} style={{
+                width: 126,
+                height: 126,
+                flex: '0 0 auto',
+                borderRadius: 30,
+                background: colors.surface,
+                border: `2px solid ${colors.border}`,
+                display: 'grid',
+                placeItems: 'center',
+                boxShadow: '0 18px 46px rgba(6, 63, 49, 0.10)',
+              }}>
+                <Img
+                  src={staticFile(`app-icons/${item.iconFile}`)}
+                  alt={`${item.name} app icon`}
+                  style={{
+                    width: 74,
+                    height: 74,
+                    borderRadius: 20,
+                    objectFit: 'cover',
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CompactLogoGrid({items, frame, start = 22}: {items: InstitutionTile[]; frame: number; start?: number}) {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(5, 1fr)',
+      gap: 12,
+    }}>
+      {items.map((item, index) => {
+        const entry = slideUp(frame, start + index * 2, 22);
+        const float = Math.sin((frame + index * 7) / 20) * 5;
+
+        return (
+          <div key={item.name} style={{
+            ...entry,
+            transform: `${entry.transform} translateY(${float}px)`,
+            minHeight: 106,
+            padding: '12px 8px 10px',
+            borderRadius: 22,
+            background: colors.surface,
+            border: `2px solid ${colors.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            boxShadow: '0 16px 42px rgba(6, 63, 49, 0.10)',
+          }}>
+            <Img
+              src={staticFile(`app-icons/${item.iconFile}`)}
+              alt={`${item.name} app icon`}
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: 14,
+                objectFit: 'cover',
+                boxShadow: '0 8px 20px rgba(6, 63, 49, 0.12)',
+              }}
+            />
+            <div style={{
+              color: colors.ink,
+              fontSize: 13,
+              lineHeight: 1.05,
+              fontWeight: 900,
+              textAlign: 'center',
+            }}>
+              {item.name}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function SceneShell({children, dark = false}: {children: React.ReactNode; dark?: boolean}) {
   const frame = useCurrentFrame();
   const borderPulse = interpolate(Math.sin(frame / 30), [-1, 1], [0.72, 1]);
@@ -347,116 +506,110 @@ function HookScene() {
   );
 }
 
-function BankScene(props: PersonalFirePlanTeaserProps) {
+function ConnectAccountsScene(props: PersonalFirePlanTeaserProps) {
   const frame = useCurrentFrame();
-  const check = enter(frame, 34, 12);
-  const cardFloat = Math.sin(frame / 28) * 10;
+  const check = enter(frame, 48, 14);
+  const cardFloat = Math.sin(frame / 30) * 9;
+  const countPulse = interpolate(Math.sin(frame / 17), [-1, 1], [0.985, 1.025]);
 
   return (
     <SceneShell>
+      <LogoCloud frame={frame} />
       <div style={slideUp(frame, 0)}>
         <HeaderBadge compact />
       </div>
-      <div style={{marginTop: 92}}>
+      <div style={{marginTop: 78, position: 'relative'}}>
         <div style={{...slideUp(frame, 4), fontSize: 34, color: colors.green, fontWeight: 850}}>
-          Connect popular accounts
+          Connect banks, wallets, and brokerages
         </div>
-        <h2 style={{...slideUp(frame, 8), margin: '18px 0 28px', fontSize: 78, lineHeight: 0.98, letterSpacing: 0}}>
-          Your banks already work with your FIRE plan.
+        <h2 style={{...slideUp(frame, 8), margin: '18px 0 22px', fontSize: 74, lineHeight: 0.98, letterSpacing: 0}}>
+          Bring your whole money picture into one FIRE plan.
         </h2>
         <div style={{
           ...slideUp(frame, 18),
+          display: 'grid',
+          gridTemplateColumns: '0.9fr 1.45fr',
+          gap: 24,
           background: colors.surface,
           border: `2px solid ${colors.border}`,
           borderRadius: 36,
-          padding: 28,
+          padding: 26,
           boxShadow: '0 28px 80px rgba(6, 63, 49, 0.12)',
           transform: `${slideUp(frame, 18).transform} translateY(${cardFloat}px)`,
         }}>
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26}}>
-            <div style={{fontSize: 30, fontWeight: 850}}>Bank connection supported</div>
+          <div style={{
+            borderRadius: 30,
+            background: colors.greenDark,
+            color: '#f4fff8',
+            padding: 30,
+            minHeight: 444,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
             <div style={{
-              width: 58,
-              height: 58,
-              borderRadius: 999,
-              background: colors.green,
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 22,
-              fontWeight: 900,
-              transform: `scale(${interpolate(check, [0, 1], [0.4, 1])})`,
-            }}>OK</div>
-          </div>
-          <InstitutionGrid items={bankInstitutions} frame={frame} start={26} />
-        </div>
-        <div style={{...slideUp(frame, 54), marginTop: 24, color: colors.muted, fontSize: 26, fontWeight: 750}}>
-          Pull real spending from rent, food, subscriptions, and cash flow.
-        </div>
-      </div>
-    </SceneShell>
-  );
-}
-
-function InvestmentsScene(props: PersonalFirePlanTeaserProps) {
-  const frame = useCurrentFrame();
-  const progress = enter(frame, 28, 36);
-  const pulse = interpolate(Math.sin(frame / 16), [-1, 1], [0.94, 1.05]);
-
-  return (
-    <SceneShell>
-      <div style={slideUp(frame, 0)}>
-        <HeaderBadge compact />
-      </div>
-      <div style={{marginTop: 86}}>
-        <div style={{...slideUp(frame, 4), fontSize: 34, color: colors.green, fontWeight: 900}}>
-          Connect brokerage accounts
-        </div>
-        <h2 style={{...slideUp(frame, 8), margin: '18px 0 28px', fontSize: 76, lineHeight: 0.98, letterSpacing: 0}}>
-          Analyze investments beside your spending.
-        </h2>
-        <InstitutionGrid items={brokerageInstitutions} frame={frame} start={18} />
-        <div style={{
-          ...slideUp(frame, 42),
-          marginTop: 28,
-          borderRadius: 32,
-          padding: 30,
-          background: colors.greenDark,
-          color: '#f4fff8',
-          boxShadow: '0 24px 70px rgba(6, 63, 49, 0.22)',
-        }}>
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22}}>
-            <div>
-              <div style={{fontSize: 24, color: '#b8ead0', fontWeight: 800}}>Portfolio path</div>
-              <div style={{fontSize: 44, fontWeight: 950}}>Model compounding</div>
-            </div>
-            <div style={{
-              width: 116,
-              height: 116,
-              borderRadius: 999,
-              background: colors.teal,
-              color: colors.greenDark,
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 32,
-              fontWeight: 950,
-              transform: `scale(${pulse})`,
-            }}>
-              +7%
-            </div>
-          </div>
-          <div style={{height: 20, borderRadius: 999, background: 'rgba(255,255,255,0.18)', overflow: 'hidden'}}>
-            <div style={{
-              width: `${interpolate(progress, [0, 1], [12, 76])}%`,
-              height: '100%',
-              borderRadius: 999,
-              background: `linear-gradient(90deg, ${colors.teal}, #d4f6df)`,
+              position: 'absolute',
+              inset: -60,
+              opacity: 0.16,
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.22) 2px, transparent 2px), linear-gradient(90deg, rgba(255,255,255,0.18) 2px, transparent 2px)',
+              backgroundSize: '58px 58px',
+              transform: `translateY(${(frame % 80) * -0.4}px)`,
             }} />
+            <div style={{position: 'relative'}}>
+              <div style={{fontSize: 27, color: '#b8ead0', fontWeight: 850}}>Supported connections</div>
+              <div style={{
+                marginTop: 14,
+                fontSize: 80,
+                lineHeight: 0.88,
+                fontWeight: 950,
+                color: colors.teal,
+                transform: `scale(${countPulse})`,
+                transformOrigin: 'left center',
+              }}>
+                14,000+
+              </div>
+              <div style={{marginTop: 18, fontSize: 29, lineHeight: 1.24, fontWeight: 850}}>
+                Banks, cards, wallets, and investment accounts.
+              </div>
+            </div>
+            <div style={{
+              position: 'relative',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 14,
+              color: '#d9f7e5',
+              fontSize: 23,
+              fontWeight: 850,
+            }}>
+              <span>Real spending</span>
+              <span>Holdings</span>
+              <span>Cash flow</span>
+              <span>Net worth</span>
+            </div>
           </div>
-          <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 18, fontSize: 23, fontWeight: 800, color: '#d9f7e5'}}>
-            <span>Plan {props.monthlyInvestmentPlan}</span>
-            <span>Move FIRE {props.timelineImpact}</span>
+          <div>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20}}>
+              <div style={{fontSize: 28, fontWeight: 900}}>Featured supported apps</div>
+              <div style={{
+                width: 58,
+                height: 58,
+                borderRadius: 999,
+                background: colors.green,
+                color: '#fff',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: 22,
+                fontWeight: 900,
+                transform: `scale(${interpolate(check, [0, 1], [0.4, 1])})`,
+              }}>OK</div>
+            </div>
+            <CompactLogoGrid items={allInstitutions.slice(0, 20)} frame={frame} start={24} />
           </div>
+        </div>
+        <div style={{...slideUp(frame, 66), marginTop: 22, color: colors.muted, fontSize: 25, fontWeight: 750}}>
+          UntilFire can analyze spending and investments together, then tie every change to your Financial Independence timeline.
         </div>
       </div>
     </SceneShell>
@@ -469,7 +622,7 @@ function BenchmarksScene(props: PersonalFirePlanTeaserProps) {
   const marker = interpolate(Math.sin(frame / 20), [-1, 1], [0.96, 1.04]);
 
   return (
-    <SceneShell dark>
+    <SceneShell>
       <div style={slideUp(frame, 0)}>
         <HeaderBadge compact />
       </div>
@@ -482,10 +635,12 @@ function BenchmarksScene(props: PersonalFirePlanTeaserProps) {
         </h2>
         <div style={{
           ...slideUp(frame, 18),
-          background: 'rgba(255,255,255,0.08)',
-          border: '2px solid rgba(255,255,255,0.18)',
+          background: colors.greenDark,
+          color: '#f4fff8',
+          border: '2px solid rgba(6,63,49,0.12)',
           borderRadius: 38,
           padding: 34,
+          boxShadow: '0 28px 80px rgba(6, 63, 49, 0.18)',
         }}>
           <div style={{display: 'flex', justifyContent: 'space-between', fontSize: 30, fontWeight: 850}}>
             <span>Rent ratio</span>
@@ -593,7 +748,7 @@ function TimelineScene(props: PersonalFirePlanTeaserProps) {
   const markerPulse = interpolate(Math.sin(frame / 15), [-1, 1], [0.95, 1.06]);
 
   return (
-    <SceneShell dark>
+    <SceneShell>
       <div style={slideUp(frame, 0)}>
         <HeaderBadge compact />
       </div>
@@ -608,11 +763,13 @@ function TimelineScene(props: PersonalFirePlanTeaserProps) {
           ...slideUp(frame, 18),
           height: 470,
           borderRadius: 38,
-          background: 'rgba(255,255,255,0.08)',
-          border: '2px solid rgba(255,255,255,0.18)',
+          background: colors.greenDark,
+          color: '#f4fff8',
+          border: '2px solid rgba(6,63,49,0.12)',
           padding: 38,
           position: 'relative',
           overflow: 'hidden',
+          boxShadow: '0 28px 80px rgba(6, 63, 49, 0.18)',
         }}>
           <svg viewBox="0 0 840 300" width="100%" height="300" style={{overflow: 'visible'}}>
             <path d="M20 250 C 190 238, 320 208, 455 150 C 585 94, 700 54, 820 34" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="12" strokeLinecap="round" />
@@ -714,25 +871,22 @@ function CtaScene(props: PersonalFirePlanTeaserProps) {
 export const PersonalFirePlanTeaser = (props: PersonalFirePlanTeaserProps) => {
   return (
     <AbsoluteFill style={{background: colors.page}}>
-      <CrossfadeScene from={0} duration={54}>
+      <CrossfadeScene from={0} duration={96}>
         <HookScene />
       </CrossfadeScene>
-      <CrossfadeScene from={36} duration={96}>
-        <BankScene {...props} />
+      <CrossfadeScene from={72} duration={126}>
+        <ConnectAccountsScene {...props} />
       </CrossfadeScene>
-      <CrossfadeScene from={114} duration={90}>
-        <InvestmentsScene {...props} />
-      </CrossfadeScene>
-      <CrossfadeScene from={186} duration={90}>
+      <CrossfadeScene from={174} duration={90}>
         <BenchmarksScene {...props} />
       </CrossfadeScene>
-      <CrossfadeScene from={258} duration={96}>
+      <CrossfadeScene from={246} duration={108}>
         <InsightsScene {...props} />
       </CrossfadeScene>
-      <CrossfadeScene from={336} duration={90}>
+      <CrossfadeScene from={336} duration={108}>
         <TimelineScene {...props} />
       </CrossfadeScene>
-      <CrossfadeScene from={408} duration={72}>
+      <CrossfadeScene from={432} duration={108}>
         <CtaScene {...props} />
       </CrossfadeScene>
     </AbsoluteFill>
