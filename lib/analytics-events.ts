@@ -36,10 +36,10 @@ export type CalculatorStepId = 'city' | 'currency' | 'income' | 'savings' | 'por
 
 export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   city: 1,
-  currency: 2,
-  income: 3,
-  savings: 4,
-  portfolio: 5,
+  currency: 2, // currency screen removed from normal flow; index preserved for historical data
+  income: 2,
+  savings: 3,
+  portfolio: 4,
 };
 
 // Coarse buckets keep individual users from being re-identified by their

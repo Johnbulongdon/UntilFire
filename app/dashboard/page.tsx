@@ -21,6 +21,7 @@ import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
 import { CITIES } from "@/lib/fire-data";
+import { trackDashboardFirstView } from "@/lib/analytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -3099,6 +3100,7 @@ export default function Dashboard() {
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
+  const wasUpgradedRef = useRef(false);
   const [subscription, setSubscription] = useState<{ plan: "free" | "pro" } | null>(null);
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [plaidHoldings, setPlaidHoldings] = useState<PlaidHolding[]>([]);
@@ -3117,6 +3119,7 @@ export default function Dashboard() {
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
       const sessionId = params.get("session_id");
+      wasUpgradedRef.current = true;
       setUpgradedBanner(true);
       const url = new URL(window.location.href);
       url.searchParams.delete("upgraded");
@@ -3414,9 +3417,10 @@ export default function Dashboard() {
       supabase.from("user_budget").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
         // Consume calculator wizard prefill (written by landing page before login redirect)
         let prefill: import("@/lib/journey").CalculatorPrefill = {};
+        let hadPrefill = false;
         try {
           const raw = localStorage.getItem("uf_calc_prefill");
-          if (raw) { prefill = JSON.parse(raw); localStorage.removeItem("uf_calc_prefill"); }
+          if (raw) { hadPrefill = true; prefill = JSON.parse(raw); localStorage.removeItem("uf_calc_prefill"); }
         } catch {}
         const prefillIncome = prefill.monthlyIncome ?? prefill.income;
         if (prefill.defaultCurrency) {
@@ -3461,6 +3465,7 @@ export default function Dashboard() {
         }
         isLoaded.current = true;
         setProfileLoading(false);
+        trackDashboardFirstView({ hadCalculatorPrefill: hadPrefill, viaUpgrade: wasUpgradedRef.current });
       });
       // Load net worth snapshot history for the "actual progress" chart line
       supabase.from("net_worth_snapshots")

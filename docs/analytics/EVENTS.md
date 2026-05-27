@@ -102,8 +102,8 @@ funnel_landing_viewed
 
 ### `funnel_dashboard_first_view`
 
-- **Where**: `app/dashboard/page.tsx`, the session-load `useEffect` after
-  `loadDefaultScenario` resolves. Fires once per dashboard mount.
+- **Where**: `app/dashboard/page.tsx`, inside the `user_budget` query callback
+  after profile data loads (`setProfileLoading(false)`). Fires once per dashboard mount.
 - **Properties**:
   - `had_calculator_prefill` - boolean.
   - `via_upgrade` - boolean. `true` when the URL carries `?upgraded=true`

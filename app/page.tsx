@@ -571,6 +571,8 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
   const spendSliderMax = isNonUSD ? Math.round(15000 * fxRate) : 15000;
 
+  const spendSliderMax = isNonUSD ? Math.round(15000 * fxRate) : 15000;
+
   return (
     <div className="uf-screen">
       <WizardProgress step={2} />
