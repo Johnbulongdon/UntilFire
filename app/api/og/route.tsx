@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
             </span>
           </div>
           <span style={{ color: '#059669', fontSize: 20, fontWeight: 600 }}>
-            untilfire.com 鈫?
+            untilfire.com →
           </span>
         </div>
       </div>
