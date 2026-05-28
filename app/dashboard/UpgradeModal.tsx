@@ -4,12 +4,22 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { trackCheckoutStarted, trackPaywallViewed } from "@/lib/analytics";
 
-const PRO_FEATURES = [
-  "Unlimited bank connections via Plaid",
-  "Auto-import & sync transactions",
-  "Full cashflow tracking & charts",
-  "FIRE calculator with city data",
-  "Learning Hub & calculators",
+const PRO_BENEFITS = [
+  {
+    icon: "📅",
+    title: "Monthly plan that moves your date closer",
+    detail: "Each month you get a specific action — how much to invest, what to cut, why it matters — based on your real numbers.",
+  },
+  {
+    icon: "📊",
+    title: "Track progress against your plan",
+    detail: "See whether this month is on track, compare to your target, and watch your freedom date respond.",
+  },
+  {
+    icon: "🔗",
+    title: "Auto-sync bank & brokerage accounts",
+    detail: "Connect your accounts so your plan always reflects real spending and portfolio values — no manual entry.",
+  },
 ];
 
 export default function UpgradeModal({ open, onClose, source = "dashboard_upgrade_modal" }: { open: boolean; onClose: () => void; source?: string }) {
@@ -69,22 +79,28 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
         }}
       >
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>🔓</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Upgrade to Pro</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#047857", marginTop: 8 }}>
-            $4.99
-            <span style={{ fontSize: 16, fontWeight: 600, color: "#64748B" }}>/month</span>
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 32, marginBottom: 6 }}>🗓️</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Your personal FIRE adviser</div>
+          <div style={{ fontSize: 13, color: "#64748B", marginTop: 6, lineHeight: 1.5, maxWidth: 300, margin: "6px auto 0" }}>
+            UntilFire does it with you — a monthly plan, real progress, and a path that keeps moving.
           </div>
-          <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 4 }}>Cancel anytime</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: "#047857", marginTop: 14 }}>
+            $4.99
+            <span style={{ fontSize: 15, fontWeight: 600, color: "#64748B" }}>/month</span>
+          </div>
+          <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 3 }}>Cancel anytime · less than one coffee</div>
         </div>
 
-        {/* Features */}
-        <div style={{ marginBottom: 24 }}>
-          {PRO_FEATURES.map((f) => (
-            <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0" }}>
-              <span style={{ color: "#059669", fontWeight: 700, flexShrink: 0 }}>✓</span>
-              <span style={{ fontSize: 14, color: "#374151" }}>{f}</span>
+        {/* Benefits */}
+        <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+          {PRO_BENEFITS.map((b) => (
+            <div key={b.title} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 12px", background: "#F0FDF4", borderRadius: 10, border: "1px solid #D1FAE5" }}>
+              <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{b.icon}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", marginBottom: 2 }}>{b.title}</div>
+                <div style={{ fontSize: 12, color: "#4B7D5C", lineHeight: 1.5 }}>{b.detail}</div>
+              </div>
             </div>
           ))}
         </div>
@@ -110,7 +126,7 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
             cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "Opening Stripe…" : "Subscribe now →"}
+          {loading ? "Opening Stripe…" : "Start my adviser plan →"}
         </button>
         <button
           onClick={onClose}
