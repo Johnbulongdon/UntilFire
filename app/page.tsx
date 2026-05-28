@@ -1119,6 +1119,9 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const d2 = calcFIRE(savings + 416, city.col, currentAge, portfolioBalance);
   const d3 = calcFIRE(savings + income * 0.1 / 12, city.col, currentAge, portfolioBalance);
   const d4 = calcFIRE(savings + extraSavings, city.col, currentAge, portfolioBalance);
+  const cSave200 = calcFIRE(savings + 200, city.col, currentAge, portfolioBalance);
+  const cSave500 = calcFIRE(savings + 500, city.col, currentAge, portfolioBalance);
+  const cSpendLess = calcFIRE(savings + Math.round(city.col * 0.1 / 12), city.col * 0.9, currentAge, portfolioBalance);
   const monthlyTakeHome = takeHome / 12;
   const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
   const fireIdentity = deriveFireIdentity(savingsBenchmark.savingsRate, portfolioBalance, result.years);
@@ -1151,6 +1154,42 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const monthlyTakeHomeForBenchmark = takeHome / 12;
   const savingsRatePct = Math.round((savings / (monthlyTakeHomeForBenchmark || 1)) * 100);
   const savingsMultiple = ((savingsRatePct / PUBLIC_SAVINGS_RATE_BASELINE) || 0).toFixed(1);
+  const topMove = (() => {
+    if (isAlreadyFire) {
+      return {
+        action: "Design your withdrawal sequence",
+        why: "Sequence-of-returns risk is your main lever now. A 2-year cash buffer keeps you from being forced to sell investments at the wrong time.",
+      };
+    }
+    if (portfolioBalance === 0 && savingsRatePct < 5) {
+      return {
+        action: "Open an investment account and automate any amount monthly",
+        why: "Starting with any amount builds the habit and starts compounding. Time in the market beats timing the market.",
+      };
+    }
+    if (savingsRatePct < 10) {
+      return {
+        action: "Build a 3-month emergency fund, then invest the surplus",
+        why: "An emergency fund keeps you invested through market dips. Without it, one unexpected expense becomes a forced sell.",
+      };
+    }
+    if (savingsRatePct < 20) {
+      return {
+        action: "Capture your full employer match before anything else",
+        why: "A 50% match is an instant 50% return on every dollar — no investment beats that. After the match, push your savings rate toward 20%.",
+      };
+    }
+    if (savingsRatePct < 30) {
+      return {
+        action: "Increase your savings rate by 5 percentage points this year",
+        why: "Each extra percent you save now moves your freedom date by more than you'd expect. The gap between income and lifestyle is your most powerful lever.",
+      };
+    }
+    return {
+      action: "Stay consistent — let compounding do the work",
+      why: "You're saving well. The biggest risk at this stage is behavioural: reacting to market noise. Automating investments removes that temptation.",
+    };
+  })();
   const milestones = [
     { label: "FIRE number found", done: true },
     { label: "Freedom date mapped", done: true },
@@ -1441,6 +1480,56 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                       <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
                         {savingsRatePct >= 20 ? "Strong savings rate — compounding is doing real work for you." : savingsRatePct >= 10 ? "Solid foundation. Pushing toward 20% accelerates your timeline significantly." : "Every percentage point here moves your freedom date closer."}
                       </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── NEXT MOVE + COMPARE ── */}
+              <div style={{ marginBottom: 16 }}>
+                {/* Top next move card */}
+                <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 16, padding: "clamp(16px,2.5vw,24px)", marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#EA580C" }}>Your next move</div>
+                  <div style={{ marginTop: 10, fontSize: "clamp(15px,2vw,18px)", fontWeight: 700, color: "#1C1917", letterSpacing: "-0.015em", lineHeight: 1.3 }}>
+                    {topMove.action}
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 13, color: "#78716C", lineHeight: 1.55 }}>
+                    {topMove.why}
+                  </div>
+                  {!isAlreadyFire && (
+                    <Link
+                      href="/login"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 12, fontWeight: 700, color: "#EA580C", textDecoration: "none" }}
+                      onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                    >
+                      Track my progress →
+                    </Link>
+                  )}
+                </div>
+
+                {/* Compare grid */}
+                {!isAlreadyFire && (
+                  <div style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 16, padding: "clamp(16px,2.5vw,24px)" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#6B7280", marginBottom: 14 }}>What moves your date fastest?</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                      {([
+                        { label: "Save $200 more/mo", savedYears: Math.max(0, result.years - cSave200.years) },
+                        { label: "Save $500 more/mo", savedYears: Math.max(0, result.years - cSave500.years) },
+                        { label: "Spend 10% less", savedYears: Math.max(0, result.years - cSpendLess.years) },
+                        { label: "Earn 10% more", savedYears: Math.max(0, result.years - d3.years) },
+                      ] as const).map(s => {
+                        const sy = Math.floor(s.savedYears);
+                        const sm = Math.round((s.savedYears - sy) * 12);
+                        const impact = s.savedYears < 0.08 ? "< 1 month" : sy > 0 && sm > 0 ? `${sy}y ${sm}mo sooner` : sy > 0 ? `${sy}y sooner` : `${sm}mo sooner`;
+                        return (
+                          <div key={s.label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "12px 14px" }}>
+                            <div style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600, marginBottom: 5 }}>{s.label}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: s.savedYears >= 0.08 ? "#059669" : "#9CA3AF", letterSpacing: "-0.01em" }}>
+                              {impact}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
