@@ -222,6 +222,90 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             No account needed · Numbers stay private · Takes 60 seconds
           </p>
         </div>
+
+        {/* Trust band with financial institution logos */}
+        <div style={{
+          marginTop: 40,
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? "none" : "translateY(10px)",
+          transition: "opacity 0.7s ease 0.75s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.75s",
+          width: "100%",
+          maxWidth: 720,
+        }}>
+          <p style={{
+            margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: C.muted, textAlign: "center",
+          }}>
+            Securely connects to 14,000+ banks & brokerages
+          </p>
+
+          {/* Animated logo strip */}
+          <div style={{
+            marginTop: 18,
+            position: "relative",
+            overflow: "hidden",
+            width: "100%",
+          }}>
+            {/* Fade masks */}
+            <div style={{
+              position: "absolute", left: 0, top: 0, bottom: 0, width: 40,
+              background: `linear-gradient(90deg, ${C.paper} 0%, transparent 100%)`,
+              zIndex: 2, pointerEvents: "none",
+            }} />
+            <div style={{
+              position: "absolute", right: 0, top: 0, bottom: 0, width: 40,
+              background: `linear-gradient(-90deg, ${C.paper} 0%, transparent 100%)`,
+              zIndex: 2, pointerEvents: "none",
+            }} />
+
+            {/* Scrolling logos */}
+            <div className="uf-trust-logos" style={{
+              display: "flex", gap: 40, alignItems: "center",
+              animation: "trustScroll 30s linear infinite",
+              width: "max-content",
+            }}>
+              {["Chase", "Fidelity", "Vanguard", "Schwab", "Bank of America", "Wells Fargo", "SoFi", "Robinhood", "Amex", "Citi", "US Bank", "Discover"].map((name) => (
+                <span key={name} style={{
+                  fontSize: 14, fontWeight: 600, color: C.muted,
+                  whiteSpace: "nowrap", opacity: 0.55,
+                  letterSpacing: "0.01em",
+                }}>
+                  {name}
+                </span>
+              ))}
+              {/* Duplicate for seamless loop */}
+              {["Chase", "Fidelity", "Vanguard", "Schwab", "Bank of America", "Wells Fargo", "SoFi", "Robinhood", "Amex", "Citi", "US Bank", "Discover"].map((name) => (
+                <span key={name + "-dup"} style={{
+                  fontSize: 14, fontWeight: 600, color: C.muted,
+                  whiteSpace: "nowrap", opacity: 0.55,
+                  letterSpacing: "0.01em",
+                }}>
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Subtle trust cues */}
+          <div style={{
+            marginTop: 20, display: "flex", justifyContent: "center", gap: 24,
+            flexWrap: "wrap",
+          }}>
+            {[
+              { icon: "🔒", text: "Bank-level encryption" },
+              { icon: "👁", text: "Read-only access" },
+              { icon: "🔐", text: "Your data stays yours" },
+            ].map(({ icon, text }) => (
+              <span key={text} style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                fontSize: 11, color: C.muted, fontWeight: 500,
+              }}>
+                <span style={{ fontSize: 12, opacity: 0.6 }}>{icon}</span>
+                {text}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Animated freedom date preview */}
@@ -294,6 +378,10 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           0% { opacity: 0; transform: translateX(-20px); }
           100% { opacity: 1; transform: translateX(0); }
         }
+        @keyframes trustScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
         @media (max-width: 760px) {
           .uf-nav {
             height: 72px !important;
@@ -319,6 +407,12 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             height: 54px !important;
             font-size: 16px !important;
             padding: 0 28px !important;
+          }
+          .uf-trust-logos {
+            gap: 28px !important;
+          }
+          .uf-trust-logos span {
+            font-size: 12px !important;
           }
         }
       `}</style>
