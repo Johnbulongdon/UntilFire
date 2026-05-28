@@ -239,7 +239,7 @@ function LandingNav({ onStart }: { onStart: () => void }) {
       <nav className="uf-nav-links" style={{ display: "flex", gap: 30, marginLeft: 44 }}>
         {[
           ["How it works", "#how"],
-          ["FIRE 101", "/fire-type"],
+          ["Learn", "/learn"],
           ["Pricing", "#pricing"],
           ["FAQ", "#faq"],
         ].map(([label, href]) => (
@@ -299,7 +299,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           borderRadius: 9999, fontSize: 13, fontWeight: 700, letterSpacing: "-0.005em",
           boxShadow: "0 6px 16px rgba(98,250,227,0.35)", whiteSpace: "nowrap",
         }}>
-          Find your freedom date
+          Personal finance that sets you free
           <span style={{ fontSize: 13 }}>»</span>
         </div>
 
@@ -314,14 +314,14 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
             transition: "opacity 0.5s ease 0.15s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s",
           }}>
-            Let your money
+            Personal finance
           </span>
           <span style={{
             display: "block",
             opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
             transition: "opacity 0.5s ease 0.28s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.28s",
           }}>
-            work for you.
+            that sets you free.
           </span>
         </h1>
 
@@ -332,8 +332,8 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
           transition: "opacity 0.5s ease 0.42s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.42s",
         }}>
-          Find the date your money can make work optional — and the one move
-          to get there sooner.
+          See your freedom date, understand what matters most, and get a clear
+          first step to bring that date closer.
         </p>
 
         {/* Inline widget */}
@@ -557,16 +557,16 @@ function HowSection() {
         <Reveal delay={0.16}>
           <p style={{ margin: "18px auto 0", maxWidth: 520, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500, fontFamily: F }}>
             Most finance apps show where your money went. UntilFire shows where
-            your money can take you — and what to do next.
+            you stand, what matters now, and what to do next.
           </p>
         </Reveal>
 
         {/* Three steps */}
         <div style={{ marginTop: 72, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 36, textAlign: "left" }}>
           {[
-            { n: "01", t: "No more guessing.", s: "See the one number that matters: when your money can make work optional. No spreadsheet, no finance degree needed." },
-            { n: "02", t: "See what moves it.", s: "UntilFire shows the levers behind the date — saving, spending, investing, income — and exactly how each one shifts your timeline." },
-            { n: "03", t: "One move at a time.", s: "Turn the math into a next action. Track progress, keep adjusting, and know your money is working — not just sitting there." },
+            { n: "01", t: "See where you stand.", s: "Get a freedom date from a few simple numbers. No spreadsheet, no finance degree, no account required." },
+            { n: "02", t: "Know what to do next.", s: "UntilFire turns the result into a clear next move so you can focus on the lever that matters most right now." },
+            { n: "03", t: "Keep freedom getting closer.", s: "Track progress, adjust with life, and stay consistent without having to piece your plan together across apps." },
           ].map((s, i) => (
             <Reveal key={s.n} delay={i * 0.1}>
               <div style={{ padding: "24px 24px 28px", background: C.paperWarm, borderRadius: 16, border: `1px solid ${C.border}` }}>
@@ -608,18 +608,18 @@ function WhySection() {
         <Reveal>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", border: `1.5px solid ${C.borderSoft}`, background: "#fff", borderRadius: 9999, fontSize: 13, fontWeight: 700, color: C.green900 }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.8 3.6 4 .6-2.9 2.8.7 4L7 10.1 3.4 12l.7-4L1.2 5.2l4-.6L7 1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
-            Built for work optionality
+            Built for clarity
           </div>
         </Reveal>
         <Reveal delay={0.08}>
           <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(38px, 6vw, 78px)", lineHeight: 0.96, letterSpacing: "-0.04em", color: C.green900 }}>
-            Not a calculator.<br />A FIRE plan.
+            Not just a calculator.<br />A clearer path.
           </h2>
         </Reveal>
         <Reveal delay={0.16}>
           <p style={{ margin: "18px auto 0", maxWidth: 560, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-            UntilFire is a FIRE-first personal finance app: your freedom date,
-            your plan, and your next money decisions in one place.
+            UntilFire is a financial freedom app: your freedom date, your next
+            move, and your progress in one calm place.
           </p>
         </Reveal>
 
@@ -627,14 +627,14 @@ function WhySection() {
           {[
             {
               icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 18l4-5 3 3 6-8 3 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><circle cx="7" cy="13" r="1.3" fill="currentColor" /><circle cx="10" cy="16" r="1.3" fill="currentColor" /><circle cx="16" cy="8" r="1.3" fill="currentColor" /></svg>,
-              title: "FIRE-first by design",
-              copy: "Budget apps organize transactions. UntilFire organizes decisions around one outcome: making work optional sooner.",
+              title: "Guidance first",
+              copy: "Budget apps organize transactions. UntilFire organizes decisions around one outcome: helping money feel clearer and freedom feel closer.",
               badge: <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 13, fontWeight: 700, color: C.green900 }}><span style={{ color: C.green600 }}>↑</span> Save +$500/mo <span style={{ color: C.green700, fontWeight: 800 }}>− 2.1 yrs</span></div>,
             },
             {
               icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" /><path d="M4 11h14M11 4c2.5 3 2.5 11 0 14M11 4c-2.5 3-2.5 11 0 14" stroke="currentColor" strokeWidth="1.3" /></svg>,
               title: "A living plan",
-              copy: "Your date changes when your life changes. UntilFire keeps the plan moving with next steps, progress, and scenario impact.",
+              copy: "Your date changes when your life changes. UntilFire keeps the path moving with next steps, progress, and tradeoff context.",
               badge: <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {["Start", "Next move", "Progress", "Repeat"].map((c, i) => (
                   <div key={c} style={{ padding: "5px 12px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 12, fontWeight: 700, color: i === 3 ? C.muted : C.green900 }}>{c}</div>
@@ -643,7 +643,7 @@ function WhySection() {
             },
             {
               icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" /><path d="M11 6v5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>,
-              title: "Fast-forward your FIRE",
+              title: "Move it closer",
               copy: "Pro surfaces the moves that can save the most time — ranked from your real numbers, not generic finance advice.",
               badge: <div style={{ padding: "10px 14px", background: C.green900, color: "#fff", borderRadius: 12, display: "inline-flex", alignItems: "center", gap: 12, fontSize: 13, fontWeight: 700 }}><span style={{ width: 7, height: 7, background: C.teal, borderRadius: 99 }} />Boost 401(k) by $180 <span style={{ color: C.teal, fontSize: 12 }}>− 4 mo</span></div>,
             },
@@ -678,12 +678,12 @@ function PricingSection({ onStart }: { onStart: () => void }) {
         </Reveal>
         <Reveal delay={0.08}>
           <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(38px, 6vw, 74px)", lineHeight: 0.96, letterSpacing: "-0.04em", color: C.green900 }}>
-            Start your plan.<br />Fast-forward your FIRE.
+            Start with clarity.<br />Go deeper when you want more help.
           </h2>
         </Reveal>
         <Reveal delay={0.16}>
           <p style={{ margin: "18px auto 0", maxWidth: 480, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-            Start with a FIRE-first plan. Upgrade when you want deeper guidance, connected progress, and automatic bank and brokerage sync.
+            Start with your freedom date and first next move. Upgrade when you want deeper guidance, connected progress, and automatic bank and brokerage sync.
           </p>
         </Reveal>
 
@@ -697,14 +697,14 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 <span style={{ fontSize: 14, color: C.muted, marginLeft: 3 }}>to start</span>
               </div>
               <p style={{ margin: "6px 0 20px", fontSize: 15, color: C.body, lineHeight: 1.5 }}>
-                Start your FIRE plan and see what moves your freedom date.
+                Start with your freedom date and see what moves it.
               </p>
               {[
-                "Freedom date and FIRE plan starting point",
+                "Freedom date and starting plan",
                 "Realistic assumptions where useful",
                 "Decision sliders that show time gained",
                 "Work optionality timeline and shareable card",
-                "FIRE Type quiz + Learning Hub",
+                "Learning Hub and practical explainers",
               ].map(f => (
                 <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "7px 0", fontSize: 14, color: C.body }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" style={{ marginTop: 2, flexShrink: 0 }}><path d="M3 8l3 3 7-7" stroke={C.green700} strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>
@@ -712,7 +712,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 </div>
               ))}
               <button onClick={onStart} style={{ marginTop: 22, width: "100%", height: 46, background: "#fff", color: C.green900, border: `1.5px solid ${C.green900}`, borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
-                Start building my plan
+                See my freedom date
               </button>
             </div>
           </Reveal>
@@ -721,7 +721,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
           <Reveal delay={0.16}>
             <div style={{ position: "relative", background: C.green900, color: "#fff", border: `1px solid ${C.green900}`, borderRadius: 20, padding: 32, boxShadow: "0 24px 50px rgba(0,53,39,0.2)" }}>
               <div style={{ position: "absolute", top: -12, right: 24, background: C.teal, color: C.green900, padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-                Fast-forward your FIRE
+                Keep your plan moving
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: C.teal }}>Pro</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 8 }}>
@@ -729,7 +729,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 <span style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", marginLeft: 3 }}>/ month · cancel anytime</span>
               </div>
               <p style={{ margin: "6px 0 20px", fontSize: 15, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>
-                Deeper guidance to move your date closer and keep your FIRE plan alive.
+                Deeper guidance to move your date closer and keep your plan alive.
               </p>
               {[
                 ["Everything in Starter", false],
@@ -746,7 +746,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 </div>
               ))}
               <Link href="/login" style={{ display: "block", marginTop: 22, width: "100%", height: 46, lineHeight: "46px", background: C.teal, color: C.green900, border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 800, fontSize: 15, cursor: "pointer", textAlign: "center", textDecoration: "none" }}>
-                Fast-forward your FIRE
+                Open my dashboard
               </Link>
             </div>
           </Reveal>
@@ -754,7 +754,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
 
         <Reveal delay={0.1}>
           <div style={{ marginTop: 18, fontSize: 12, color: C.muted, fontWeight: 600, letterSpacing: "0.06em" }}>
-            Pro adds deeper guidance, Plaid-connected progress, and Stripe billing you can cancel from your dashboard
+            Pro adds deeper guidance, connected progress, and Stripe billing you can cancel from your dashboard
           </div>
         </Reveal>
       </div>
@@ -830,7 +830,7 @@ function FAQSection() {
       a: "Your freedom date is the point where work can become optional based on your current income, spending, savings, and FIRE assumptions. It is not a promise. It is a starting line you can move closer with better choices.",
     },
     {
-      q: "How is UntilFire different from a FIRE calculator?",
+      q: "How is UntilFire different from a calculator?",
       a: "Most calculators stop after giving you a number. UntilFire starts there, then turns the result into a plan: what matters, what to change next, and how that could move your date.",
     },
     {
@@ -847,7 +847,7 @@ function FAQSection() {
     },
     {
       q: "What does Pro add?",
-      a: "Pro helps you fast-forward your FIRE with ranked next moves, connected progress, deeper scenarios, and Plaid sync across 12,000+ financial institutions.",
+      a: "Pro helps you move your freedom date closer with ranked next moves, connected progress, deeper scenarios, and Plaid sync across 12,000+ financial institutions.",
     },
   ];
 
@@ -864,8 +864,8 @@ function FAQSection() {
               Clear answers before<br />you build your plan.
             </h2>
             <p style={{ margin: "18px auto 0", maxWidth: 560, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-              The quick version: UntilFire is a FIRE-first app. The freedom date
-              starts the plan; Pro helps you keep moving it closer.
+              The quick version: UntilFire starts with your freedom date, then
+              helps you understand the path and keep moving it closer.
             </p>
           </div>
         </Reveal>
@@ -899,25 +899,25 @@ function ClosingSection({ onStart }: { onStart: () => void }) {
         </Reveal>
         <Reveal delay={0.08}>
           <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 6vw, 68px)", lineHeight: 0.98, letterSpacing: "-0.04em", color: C.green900 }}>
-            Let your money work.<br />
+            Less money stress.<br />
             <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 400, fontStyle: "italic", color: C.green700 }}>
-              Start today.
+              Start with one clear answer.
             </span>
           </h2>
         </Reveal>
         <Reveal delay={0.18}>
           <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 36, flexWrap: "wrap" }}>
             <button onClick={onStart} style={{ height: 58, padding: "0 30px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 17, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 14px 36px rgba(0,53,39,0.25)" }}>
-              Start building my plan →
+              See my freedom date →
             </button>
             <Link href="/login" style={{ display: "inline-flex", alignItems: "center", height: 58, padding: "0 24px", background: "transparent", color: C.green900, border: `1.5px solid ${C.green900}`, borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 16, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
-              Fast-forward your FIRE
+              Open my dashboard
             </Link>
           </div>
         </Reveal>
         <Reveal delay={0.26}>
           <div style={{ marginTop: 16, fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: C.muted }}>
-            FIRE-first app · Guided plan · Work optionality
+            Financial freedom app · Guided plan · Work optionality
           </div>
         </Reveal>
       </div>
@@ -933,7 +933,7 @@ function FooterSection() {
         <div style={{ display: "flex", justifyContent: "center", gap: 28, paddingBottom: 20, flexWrap: "wrap" }}>
           {[
             ["How it works", "#how"],
-            ["FIRE 101", "/fire-type"],
+            ["Learn", "/learn"],
             ["Pricing", "#pricing"],
             ["Stories", "#stories"],
             ["FAQ", "#faq"],
@@ -957,7 +957,7 @@ function FooterSection() {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 0 28px", fontSize: 12, color: C.green700, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", flexWrap: "wrap", gap: 10 }}>
           <span>© 2026 UntilFire</span>
-          <span>Know if you can FIRE — then know what to do.</span>
+          <span>See where you stand — then know what to do.</span>
           <span>Privacy · Terms</span>
         </div>
       </div>

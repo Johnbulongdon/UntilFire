@@ -1933,7 +1933,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             )}
             {brokerageCashExcluded && (
               <span style={{ fontSize: 12, color: "#64748B", fontWeight: 500 }}>
-                · excludes {fmtMoney(connectedBreakdown.brokerageCash)} in brokerage cash reserved for investing
+                · excludes {fmtMoney(connectedBreakdown.brokerageCash)} in connected brokerage / investment accounts
               </span>
             )}
           </div>
@@ -3470,7 +3470,10 @@ export default function Dashboard() {
         }
         isLoaded.current = true;
         setProfileLoading(false);
-        trackDashboardFirstView({ hadCalculatorPrefill: hadPrefill, viaUpgrade: wasUpgradedRef.current });
+        if (!sessionStorage.getItem('uf_dv')) {
+          sessionStorage.setItem('uf_dv', '1');
+          trackDashboardFirstView({ hadCalculatorPrefill: hadPrefill, viaUpgrade: wasUpgradedRef.current });
+        }
       });
       // Load net worth snapshot history for the "actual progress" chart line
       supabase.from("net_worth_snapshots")

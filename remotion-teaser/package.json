@@ -1,0 +1,30 @@
+{
+  "name": "untilfire-teaser",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render:vertical": "remotion render src/index.ts PersonalFirePlanTeaser out/untilfire-personal-fire-plan.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p",
+    "still:hook": "remotion still src/index.ts PersonalFirePlanTeaser out/still-000-hook.png --frame=0",
+    "still:bank": "remotion still src/index.ts PersonalFirePlanTeaser out/still-120-connections.png --frame=120",
+    "still:investments": "remotion still src/index.ts PersonalFirePlanTeaser out/still-170-connections.png --frame=170",
+    "still:benchmarks": "remotion still src/index.ts PersonalFirePlanTeaser out/still-220-benchmarks.png --frame=220",
+    "still:insights": "remotion still src/index.ts PersonalFirePlanTeaser out/still-300-insights.png --frame=300",
+    "still:timeline": "remotion still src/index.ts PersonalFirePlanTeaser out/still-390-timeline.png --frame=390",
+    "still:cta": "remotion still src/index.ts PersonalFirePlanTeaser out/still-500-cta.png --frame=500",
+    "stills": "npm run still:hook && npm run still:bank && npm run still:investments && npm run still:benchmarks && npm run still:insights && npm run still:timeline && npm run still:cta",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.290",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "^4.0.290"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

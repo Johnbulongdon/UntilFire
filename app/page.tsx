@@ -671,14 +671,14 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
           <div className="uf-progress-fill" style={{ width: `${Math.min(rate * 2, 100)}%`, background: rateColor }} />
         </div>
         <div className="uf-range-labels" style={{ marginTop: 4 }}>
-          <span>0%</span><span>20% (Good)</span><span>50%+ (FIRE)</span>
+          <span>0%</span><span>20% (Good)</span><span>50%+ (Fast track)</span>
         </div>
       </div>
 
       {savingsLocal === 0 && (
         <div style={{ marginTop: 16, padding: "10px 14px", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, fontSize: 13, color: "#92400E", display: "flex", gap: 8, alignItems: "flex-start" }}>
           <span>⚠️</span>
-          <span>With <strong>$0 saved per month</strong> your FIRE date will be very far out. Make sure this is intentional — you can always update it later.</span>
+          <span>With <strong>$0 saved per month</strong> your freedom date will be very far out. Make sure this is intentional — you can always update it later.</span>
         </div>
       )}
       <div className="uf-nav-row">
@@ -772,7 +772,7 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
         <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(portfolio, parsedAge)}>
-          Show my FIRE number
+          Show my freedom date
         </button>
       </div>
     </div>

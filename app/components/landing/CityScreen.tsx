@@ -99,13 +99,12 @@ export default function CityScreen({
       <p className="uf-step-label">Step 1 of 4</p>
       <div className="uf-eyebrow">Location</div>
       <h2 className="uf-h2">
-        Where do you want
+        Where do you live
         <br />
-        to <span className="uf-accent">retire?</span>
+        or plan to <span className="uf-accent">live?</span>
       </h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
-        Your FIRE number changes significantly by city. We use real cost-of-living data, not
-        national averages.
+        Cost of living and taxes change your freedom date. Pick a city if you know it, or use a rough expense estimate.
       </p>
 
       <label className="uf-label">Start typing your city or country</label>
@@ -148,7 +147,7 @@ export default function CityScreen({
                 <div>
                   <div className="uf-dropdown-name">{c.name}</div>
                   <div className="uf-dropdown-sub">
-                    Est. {fmtUSD(c.col)}/yr · FIRE target {fmtUSD(c.col * 25)}
+                    Est. {fmtUSD(c.col)}/yr · Freedom target {fmtUSD(c.col * 25)}
                   </div>
                 </div>
               </button>
@@ -201,7 +200,7 @@ export default function CityScreen({
             </button>
           </div>
           <p className="uf-hint">
-            We&apos;ll calculate your FIRE number using the 25x rule on your annual expenses.
+            We&apos;ll estimate your freedom target using the 25x rule on your annual expenses.
           </p>
         </div>
       )}

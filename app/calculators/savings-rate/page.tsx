@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import SavingsRateCalculator from './SavingsRateCalculator'
 
 export const metadata: Metadata = {
-  title: 'Savings Rate Calculator -How Savings Rate Affects Your FIRE Date | UntilFire',
+  title: 'Savings Rate Calculator — How Savings Rate Affects Your FIRE Date | UntilFire',
   description:
     'Calculate your savings rate and see exactly how it shifts your FIRE retirement date. The savings rate is the single most powerful lever in FIRE planning -find yours in seconds.',
   keywords:

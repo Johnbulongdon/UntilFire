@@ -5,21 +5,21 @@ import { siteUrl } from "@/lib/site";
 const pricingUrl = siteUrl('/pricing');
 
 export const metadata: Metadata = {
-  title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
-  description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo to unlock unlimited bank connections and AI FIRE adviser.",
+  title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
+  description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo to unlock unlimited bank connections and priority access to the AI adviser.",
   keywords: "untilfire pricing, fire planner cost, financial independence app price, fire calculator free",
   alternates: { canonical: pricingUrl },
   openGraph: {
-    title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
-    description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo.",
+    title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
+    description: "Free forever for the full calculator and dashboard. Upgrade to Pro for $4.99/mo.",
     url: pricingUrl,
     siteName: "UntilFire",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "UntilFire Pricing — Free FIRE Planner & Pro AI Adviser",
-    description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo.",
+    title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
+    description: "Free forever for the full calculator and dashboard. Upgrade to Pro for $4.99/mo.",
   },
 };
 
@@ -36,7 +36,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   "Everything in Free",
   "Unlimited bank connections (Plaid)",
-  "AI FIRE adviser (coming soon)",
+  "AI FIRE adviser (priority access)",
 ];
 
 export default function PricingPage() {
@@ -182,7 +182,7 @@ export default function PricingPage() {
             flex: 1,
             minWidth: 300,
             background: "#111118",
-            border: "1.5px solid #f97316",
+            border: "1.5px solid #059669",
             borderRadius: 20,
             padding: "36px 32px",
             display: "flex",
@@ -196,7 +196,7 @@ export default function PricingPage() {
               top: -13,
               left: "50%",
               transform: "translateX(-50%)",
-              background: "#f97316",
+              background: "#059669",
               color: "#fff",
               fontSize: 11,
               fontWeight: 800,
@@ -210,7 +210,7 @@ export default function PricingPage() {
             Most popular
           </span>
 
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#f97316", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
             Pro
           </div>
           <div style={{ marginBottom: 8 }}>
@@ -222,7 +222,7 @@ export default function PricingPage() {
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
             {PRO_FEATURES.map((f) => (
               <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#d1d5db" }}>
-                <span style={{ color: "#f97316", fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
+                <span style={{ color: "#059669", fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
                 {f}
               </li>
             ))}
@@ -236,7 +236,7 @@ export default function PricingPage() {
               padding: "12px 24px",
               borderRadius: 10,
               border: "none",
-              background: "#f97316",
+              background: "#059669",
               color: "#fff",
               fontSize: 14,
               fontWeight: 700,

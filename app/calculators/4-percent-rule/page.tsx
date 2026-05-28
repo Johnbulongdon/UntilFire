@@ -3,14 +3,14 @@ import Link from 'next/link'
 import FourPercentRuleCalculator from './FourPercentRuleCalculator'
 
 export const metadata: Metadata = {
-  title: 'FIRE Number Calculator -How Much Do You Need to Retire? | UntilFire',
+  title: 'FIRE Number Calculator — How Much Do You Need to Retire? | UntilFire',
   description:
     'Free FIRE number calculator. Enter your annual retirement expenses and see exactly how much you need to retire. Compare withdrawal rates from 3% to 5% using the 4% rule.',
   keywords:
     'FIRE number calculator, 4 percent rule calculator, safe withdrawal rate calculator, how much do I need to retire, retirement number calculator, 25x rule calculator, SWR calculator',
   alternates: { canonical: 'https://www.untilfire.com/calculators/4-percent-rule' },
   openGraph: {
-    title: '4% Rule Calculator -How Much Do You Need to Retire? | UntilFire',
+    title: '4% Rule Calculator — How Much Do You Need to Retire? | UntilFire',
     description: 'Calculate your FIRE number using the safe withdrawal rate. Adjust the rate and see the impact.',
     url: 'https://www.untilfire.com/calculators/4-percent-rule',
     siteName: 'UntilFire',
