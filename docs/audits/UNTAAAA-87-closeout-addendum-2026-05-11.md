@@ -1,4 +1,4 @@
-﻿# UNTAAAA-87 Closeout Addendum — 2026-05-11
+# UNTAAAA-87 Closeout Addendum — 2026-05-11
 
 Reference comment: `58be1ef3-6784-4d2a-b430-6a32519285e5`
 

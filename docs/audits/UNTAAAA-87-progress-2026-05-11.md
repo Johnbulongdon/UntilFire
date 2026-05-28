@@ -1,4 +1,4 @@
-﻿# UNTAAAA-87 Progress — 2026-05-11
+# UNTAAAA-87 Progress — 2026-05-11
 
 Owner: CTO Backup (Codex)
 

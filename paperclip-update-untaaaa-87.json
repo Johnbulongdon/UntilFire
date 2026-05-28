@@ -1,4 +1,4 @@
-﻿{
+{
   "status": "in_progress",
   "comment": "## UNTAAAA-87 update (2026-05-11)\n\nImplemented the remaining wizard remediation slice by extracting `CityScreen` from `app/page.tsx` into `app/components/landing/CityScreen.tsx` and reusing exported `CityState` type in the route file.\n\n### Verification\n- `npx eslint app/components/landing/CityScreen.tsx app/page.tsx` -> no errors; only pre-existing warnings in `app/page.tsx` (`useCallback`, `customEffectiveRate`, `stateKey`, `WaitlistInline`).\n- `node scripts/check-mojibake.mjs` -> `No mojibake patterns detected.`\n- `npx tsc --noEmit` -> pre-existing blocker persists: `app/page.tsx(818,23) TS2353` (`annualCost` not in `CalculatorPrefill`).\n\n### Publish-ready handoff\nThis slice is reviewable and isolated. Full compile-clean publish gate remains blocked by a separate pre-existing type-contract mismatch unrelated to CityScreen extraction.\n\n- Unblock owner: prefill contract owner (`saveCalculatorPrefill` payload vs `CalculatorPrefill` type).\n- Next action: align `annualCost` field contract and rerun `npx tsc --noEmit`.\n\nDurable artifact: `docs/audits/UNTAAAA-87-progress-2026-05-11.md`."
 }
