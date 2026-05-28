@@ -420,6 +420,177 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
   );
 }
 
+// ─── Monthly Plan & Check-in Card ────────────────────────────────────────────
+function MonthlyPlanCard({
+  income, annualSavings, savingsRate, fmtMoney, netSurplus, hasActuals,
+}: {
+  income: number; annualSavings: number; savingsRate: number;
+  fmtMoney: (n: number, compact?: boolean) => string;
+  netSurplus: number; hasActuals: boolean;
+}) {
+  const now = new Date();
+  const thisMonthKey = `uf_checkin_${now.getFullYear()}_${now.getMonth()}`;
+  const streakKey = "uf_checkin_streak";
+  const monthName = now.toLocaleString("en-US", { month: "long" });
+
+  type Phase = "plan" | "asking" | "done" | "partial" | "recovery";
+  const [phase, setPhase] = useState<Phase>("plan");
+  const [streak, setStreak] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(thisMonthKey);
+    if (saved) {
+      const { status } = JSON.parse(saved) as { status: string };
+      setPhase((status === "missed" ? "recovery" : status) as Phase);
+    }
+    const sd = localStorage.getItem(streakKey);
+    if (sd) setStreak((JSON.parse(sd) as { count: number }).count || 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const targetContrib = Math.max(0, Math.round(annualSavings / 12));
+
+  const moves: string[] = (() => {
+    if (income === 0) return [];
+    if (savingsRate < 10) return [
+      "Set up an automatic savings transfer — even a small one builds the habit",
+      "Track your biggest expense this month in the Money tab",
+    ];
+    if (savingsRate < 20) return [
+      "Confirm your employer 401k match is being fully captured",
+      targetContrib > 0 ? `Transfer ${fmtMoney(targetContrib)} toward your freedom number` : "Push your savings rate toward 20%",
+    ];
+    return [
+      targetContrib > 0 ? `Invest ${fmtMoney(targetContrib)} as planned this month` : "Keep your investments on schedule",
+      "Review your expense categories for any easy cuts",
+    ];
+  })();
+
+  const handleCheckin = (status: "done" | "partial" | "missed") => {
+    localStorage.setItem(thisMonthKey, JSON.stringify({ status, savedAt: new Date().toISOString() }));
+    if (status !== "missed") {
+      const next = streak + 1;
+      setStreak(next);
+      localStorage.setItem(streakKey, JSON.stringify({ count: next, lastKey: thisMonthKey }));
+    }
+    setPhase(status === "missed" ? "recovery" : status);
+  };
+
+  if (income === 0) return null;
+
+  return (
+    <div className="uf-card" style={{ border: "1.5px solid #E2E8F0" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#064E3B", marginBottom: 12, fontFamily: "Manrope, sans-serif" }}>
+        {monthName}&apos;s plan
+      </div>
+
+      {phase === "plan" && (
+        <>
+          {targetContrib > 0 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, padding: "12px 14px", background: "rgba(5,150,105,0.05)", border: "1px solid rgba(5,150,105,0.15)", borderRadius: 10 }}>
+              <div>
+                <div style={{ fontSize: 11, color: "#64748B", fontFamily: "Inter, sans-serif", marginBottom: 2 }}>Target contribution</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#064E3B", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px" }}>{fmtMoney(targetContrib)}</div>
+              </div>
+              {hasActuals && (
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 11, color: "#64748B", fontFamily: "Inter, sans-serif", marginBottom: 2 }}>Surplus so far</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", color: netSurplus >= targetContrib ? "#059669" : netSurplus > 0 ? "#F59E0B" : "#DC2626" }}>
+                    {fmtMoney(Math.max(0, netSurplus))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+            {moves.map((move, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <div style={{ width: 20, height: 20, borderRadius: 99, background: "rgba(5,150,105,0.10)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: "#064E3B", fontFamily: "Manrope, sans-serif" }}>{i + 1}</span>
+                </div>
+                <div style={{ fontSize: 13, color: "#334155", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>{move}</div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setPhase("asking")}
+            style={{ width: "100%", padding: "10px 0", background: "#064E3B", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+          >
+            Check in for {monthName} →
+          </button>
+        </>
+      )}
+
+      {phase === "asking" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>
+            Did you hit your plan this month?
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {([
+              ["done",    "Yes, fully ✓",     "#059669", "#F0FDF4", "#059669"] as const,
+              ["partial", "Mostly ~",          "#B45309", "#FFFBEB", "#F59E0B"] as const,
+              ["missed",  "Not this month",    "#64748B", "#F8FAFC", "#E2E8F0"] as const,
+            ]).map(([status, label, color, bg, border]) => (
+              <button
+                key={status}
+                onClick={() => handleCheckin(status)}
+                style={{ flex: 1, padding: "10px 4px", background: bg, border: `1.5px solid ${border}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {phase === "done" && (
+        <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>🎉</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.3px" }}>
+            {monthName} — complete
+          </div>
+          <div style={{ fontSize: 13, color: "#64748B", marginTop: 6, fontFamily: "Inter, sans-serif" }}>
+            {streak > 1 ? `${streak}-month streak` : "First month checked in"} · consistency compounds
+          </div>
+        </div>
+      )}
+
+      {phase === "partial" && (
+        <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>✓</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#F59E0B", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.3px" }}>
+            Progress counts
+          </div>
+          <div style={{ fontSize: 13, color: "#64748B", marginTop: 6, fontFamily: "Inter, sans-serif" }}>
+            Partial months still move your date closer. The habit is what matters.
+          </div>
+        </div>
+      )}
+
+      {phase === "recovery" && (
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
+            That&apos;s okay — what would half look like?
+          </div>
+          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Inter, sans-serif", lineHeight: 1.5, marginBottom: 12 }}>
+            Missing one month doesn&apos;t set you back much. Even {targetContrib > 0 ? fmtMoney(Math.round(targetContrib / 2)) : "a smaller contribution"} this month keeps the habit alive.
+          </div>
+          <button
+            onClick={() => setPhase("plan")}
+            style={{ fontSize: 13, color: "#059669", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 600, padding: 0 }}
+          >
+            Show me this month&apos;s plan →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
 function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
@@ -741,6 +912,16 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </button>
         )}
       </div>
+
+      {/* ── Monthly Plan & Check-in ──────────────────────────────────────── */}
+      <MonthlyPlanCard
+        income={income}
+        annualSavings={annualSavings}
+        savingsRate={savingsRate}
+        fmtMoney={fmtMoney}
+        netSurplus={netSurplus}
+        hasActuals={hasActuals}
+      />
 
       {/* ── Next Move: Highest-Impact Acceleration Card ──────────────────── */}
       {nextMoveScenarios && nextMoveScenarios.length > 0 && (() => {
