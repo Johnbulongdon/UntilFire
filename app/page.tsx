@@ -1119,6 +1119,53 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const d2 = calcFIRE(savings + 416, city.col, currentAge, portfolioBalance);
   const d3 = calcFIRE(savings + income * 0.1 / 12, city.col, currentAge, portfolioBalance);
   const d4 = calcFIRE(savings + extraSavings, city.col, currentAge, portfolioBalance);
+
+  // Next-move guidance helpers
+  const getNextMoveGuidance = () => {
+    const moves: { label: string; impact: string; amount: number; description: string }[] = [];
+
+    // Suggested move based on income ceiling (10% of income)
+    const incomeBasedMove = Math.round(income * 0.1 / 12);
+    const d3Years = result.years - d3.years;
+    if (d3Years > 0 && incomeBasedMove > 0) {
+      moves.push({
+        label: "10% raise toward savings",
+        impact: `-${Math.round(d3Years)}y to FIRE`,
+        amount: incomeBasedMove,
+        description: "Redirect 10% of your annual income to investments"
+      });
+    }
+
+    // COL optimization move
+    const colMove = Math.round(city.col * 0.05 / 12);
+    const dCol = calcFIRE(savings + colMove, city.col, currentAge, portfolioBalance);
+    const colYears = result.years - dCol.years;
+    if (colYears > 0.5 && colMove > 50) {
+      moves.push({
+        label: "5% cost reduction",
+        impact: `-${Math.round(colYears)}y to FIRE`,
+        amount: colMove,
+        description: "Optimize one expense category"
+      });
+    }
+
+    // Small consistent win
+    const smallWin = 250;
+    const dSmall = calcFIRE(savings + smallWin, city.col, currentAge, portfolioBalance);
+    const smallYears = result.years - dSmall.years;
+    if (smallYears > 0.25) {
+      moves.push({
+        label: "Quick win: $250/mo boost",
+        impact: `-${smallYears > 1 ? Math.floor(smallYears) + "y" : Math.round(smallYears * 12) + "mo"}`,
+        amount: smallWin,
+        description: "A recurring subscription audit or side income"
+      });
+    }
+
+    return moves.slice(0, 2); // Top 2 most impactful
+  };
+
+  const nextMoves = getNextMoveGuidance();
   const monthlyTakeHome = takeHome / 12;
   const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
   const fireIdentity = deriveFireIdentity(savingsBenchmark.savingsRate, portfolioBalance, result.years);
@@ -1364,7 +1411,39 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                           Invest <span style={{ color: "#22D3A5", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>${extraSavings}</span> more / month and your freedom date moves{" "}
                           <span style={{ color: "#22D3A5", fontWeight: 700 }}>{savedYears > 0 ? monthlyMoveLabel : "closer"}</span> sooner.
                         </div>
+                        {/* Quick action cards */}
+                        {nextMoves.length > 0 && (
+                          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                            {nextMoves.map((move, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setExtraSavings(move.amount)}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  padding: "10px 12px",
+                                  background: extraSavings === move.amount ? "rgba(34,211,165,0.18)" : "rgba(255,255,255,0.06)",
+                                  border: extraSavings === move.amount ? "1px solid rgba(34,211,165,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                                  borderRadius: 8,
+                                  cursor: "pointer",
+                                  transition: "all 0.15s",
+                                  width: "100%",
+                                  textAlign: "left",
+                                  color: "#fff",
+                                }}
+                              >
+                                <div>
+                                  <div style={{ fontSize: 12, fontWeight: 600 }}>{move.label}</div>
+                                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{move.description}</div>
+                                </div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#22D3A5", whiteSpace: "nowrap", marginLeft: 12 }}>{move.impact}</div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <div style={{ marginTop: 22 }}>
+                          <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>Or set a custom amount</div>
                           <input
                             type="range" min="0" max="2000" step="50" value={extraSavings}
                             onChange={e => setExtraSavings(Number(e.target.value))}
@@ -1445,6 +1524,34 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   </div>
                 )}
               </div>
+
+              {/* ── STAGE-SPECIFIC NEXT STEPS ── */}
+              {!isAlreadyFire && (
+                <div data-gsap="decision-card" className="uf-reveal-card" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, padding: "clamp(16px, 2vw, 24px)", marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669", marginBottom: 12 }}>
+                    {fireStage === "ignition" && "Your first priority"}
+                    {fireStage === "momentum" && "Your acceleration focus"}
+                    {fireStage === "final-stretch" && "Your protection priority"}
+                  </div>
+                  <div style={{ fontSize: 15, lineHeight: 1.55, color: "#374151" }}>
+                    {fireStage === "ignition" && (
+                      <>
+                        <strong style={{ color: "#0F172A" }}>Build the habit first.</strong> The most powerful move right now is consistency, not complexity. Set up an automatic transfer for the same day each month — even if it starts small. Compound growth rewards showing up more than timing the market perfectly.
+                      </>
+                    )}
+                    {fireStage === "momentum" && (
+                      <>
+                        <strong style={{ color: "#0F172A" }}>Widen the gap.</strong> You've proven you can save. The fastest accelerator now is catching lifestyle inflation before it catches you. Consider directing any raise or bonus straight to investments before it absorbs into your spending baseline.
+                      </>
+                    )}
+                    {fireStage === "final-stretch" && (
+                      <>
+                        <strong style={{ color: "#0F172A" }}>Protect your runway.</strong> At this stage, capital preservation matters more than chasing extra return. Avoid concentrated bets or lifestyle upgrades that reset your timeline. Your discipline has built momentum — trust it.
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* ── FOOTER ACTIONS ── */}
               <div data-gsap="footer-cta" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center" }}>
