@@ -17,24 +17,24 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'UntilFire | Know When You Can Stop Working',
+  title: 'UntilFire | Personal Finance That Sets You Free',
   description: UNTILFIRE_ANCHOR_COPY,
   keywords:
-    'FIRE planner, financial independence, retire early, FIRE number, retirement timeline, savings rate calculator, how much to retire, 4% rule calculator',
+    'financial freedom app, freedom date calculator, personal finance planning, work optionality planner, savings rate calculator, retirement timeline, financial independence',
   alternates: {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: 'UntilFire | Know When You Can Stop Working',
+    title: 'UntilFire | Personal Finance That Sets You Free',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
     url: SITE_URL,
     siteName: 'UntilFire',
     type: 'website',
-    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'UntilFire — Know When You Can Stop Working' }],
+    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'UntilFire — personal finance that sets you free' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'UntilFire | Know When You Can Stop Working',
+    title: 'UntilFire | Personal Finance That Sets You Free',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
     images: [`${SITE_URL}/opengraph-image`],
   },
