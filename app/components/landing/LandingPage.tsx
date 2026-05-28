@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Logo from "@/app/components/Logo";
-import { calcFIRE } from "@/lib/fire";
-import { saveCalculatorPrefill } from "@/lib/journey";
 
 const C = {
   green900: "#003527",
@@ -79,189 +77,41 @@ function Reveal({
   );
 }
 
-/* ── Inline calculator widget ────────────────────────────────────────── */
-function InlineWidget({ onStart }: { onStart: () => void }) {
-  const [income, setIncome] = useState("");
-  const [savings, setSavings] = useState("");
-  const [netWorth, setNetWorth] = useState("");
-
-  const toNum = (v: string) => parseFloat(v.replace(/[^0-9.]/g, "")) || 0;
-  const inc = toNum(income);
-  const sav = toNum(savings);
-  const nw = toNum(netWorth);
-  const canShow = inc > 0 && sav > 0 && sav < inc;
-
-  const result = useMemo(() => {
-    if (!canShow) return null;
-    return calcFIRE(sav, Math.max(0, (inc - sav) * 12), undefined, nw);
-  }, [canShow, inc, sav, nw]);
-
-  const fmtMoney = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
-
-  function handleSave() {
-    if (!result) return;
-    saveCalculatorPrefill({
-      monthlyIncome: inc,
-      monthlySavings: sav,
-      monthlySpendEstimate: Math.max(0, inc - sav),
-      annualCost: Math.max(0, (inc - sav) * 12),
-      cityName: "United States (avg)",
-      stateKey: "custom",
-      fireTarget: result.fireTarget,
-      retireYear: result.retireYear,
-      generatedAt: new Date().toISOString(),
-      portfolioBalance: nw,
-      defaultCurrency: "USD",
-    });
-    window.location.href = "/login";
-  }
-
-  const inputs = [
-    { label: "Monthly take-home", value: income, onChange: setIncome, placeholder: "5,000" },
-    { label: "Monthly savings", value: savings, onChange: setSavings, placeholder: "1,200" },
-    { label: "Net worth (optional)", value: netWorth, onChange: setNetWorth, placeholder: "0" },
-  ];
-
-  return (
-    <div style={{
-      background: "#fff", border: `1px solid rgba(0,53,39,0.12)`,
-      borderRadius: 20, padding: "22px 24px",
-      boxShadow: "0 14px 40px rgba(0,53,39,0.10)", width: "100%",
-    }}>
-      {/* Inputs */}
-      <div className="uf-widget-inputs" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-        {inputs.map(({ label, value, onChange, placeholder }) => (
-          <div key={label}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted, marginBottom: 6 }}>
-              {label}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: C.green700 }}>$</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={value}
-                onChange={e => onChange(e.target.value)}
-                placeholder={placeholder}
-                style={{
-                  width: "100%", border: "none", borderBottom: `2px solid ${C.border}`,
-                  borderRadius: 0, outline: "none", fontSize: 17, fontWeight: 700,
-                  fontFamily: F, color: C.green900, background: "transparent", paddingBottom: 3,
-                  transition: "border-color 0.15s",
-                }}
-                onFocus={e => (e.currentTarget.style.borderBottomColor = C.green700)}
-                onBlur={e => (e.currentTarget.style.borderBottomColor = C.border)}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Result */}
-      {canShow && result ? (
-        <div className="uf-result-card" style={{
-          marginTop: 18, background: C.green900, borderRadius: 14, padding: "16px 20px",
-          display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 14,
-        }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.teal }}>
-              Your freedom date
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 5 }}>
-              <span style={{ fontSize: 38, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>
-                {result.retireYear}
-              </span>
-              {result.years !== undefined && (
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-                  {result.years === 0 ? "already there" : `${Math.round(result.years)} yrs away`}
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
-              FIRE number: {fmtMoney(result.fireTarget)}
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <button
-              onClick={handleSave}
-              style={{
-                height: 40, padding: "0 22px", background: C.teal, color: C.green900,
-                border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700,
-                fontSize: 13, cursor: "pointer", whiteSpace: "nowrap",
-              }}
-            >
-              Save my plan →
-            </button>
-            <button
-              onClick={onStart}
-              style={{
-                height: 34, padding: "0 14px", background: "rgba(255,255,255,0.07)",
-                color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 9999, fontFamily: F, fontWeight: 600, fontSize: 12,
-                cursor: "pointer", whiteSpace: "nowrap",
-              }}
-            >
-              Add city for accuracy →
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div style={{ marginTop: 14, fontSize: 13, color: C.faint, textAlign: "center", fontStyle: "italic" }}>
-          Enter income and savings above — your freedom date appears instantly.
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── Nav ─────────────────────────────────────────────────────────────── */
 function LandingNav({ onStart }: { onStart: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 32);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <header className="uf-nav" style={{
-      position: "fixed", top: 0, left: 0, right: 0, height: 68,
-      display: "flex", alignItems: "center", padding: "0 40px",
-      background: scrolled ? "rgba(250,253,251,0.9)" : "transparent",
-      backdropFilter: scrolled ? "blur(16px)" : "none",
-      borderBottom: scrolled ? `1px solid ${C.borderSoft}` : "1px solid transparent",
-      zIndex: 50, transition: "background 0.25s, border-color 0.25s, backdrop-filter 0.25s",
+    <header style={{
+      position: "fixed", top: 0, left: 0, right: 0, height: 64,
+      display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px",
+      background: scrolled ? "rgba(250,253,251,0.92)" : "transparent",
+      backdropFilter: scrolled ? "blur(12px)" : "none",
+      borderBottom: scrolled ? `1px solid ${C.borderSoft}` : "none",
+      zIndex: 50, transition: "background 0.3s, border-color 0.3s",
     }}>
-      {/* Logo */}
-      <Logo variant="light" size={30} />
+      <Logo variant="light" size={26} />
 
-      {/* Nav links */}
-      <nav className="uf-nav-links" style={{ display: "flex", gap: 30, marginLeft: 44 }}>
-        {[
-          ["How it works", "#how"],
-          ["Learn", "/learn"],
-          ["Pricing", "#pricing"],
-          ["FAQ", "#faq"],
-        ].map(([label, href]) => (
-          <a key={label} href={href} style={{ fontFamily: F, fontWeight: 500, fontSize: 14, color: C.muted, textDecoration: "none", whiteSpace: "nowrap" }}>
-            {label}
-          </a>
-        ))}
+      <nav style={{ display: "flex", gap: 24 }}>
+        <a href="#how" style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: scrolled ? C.muted : C.green900, textDecoration: "none" }}>
+          How it works
+        </a>
+        <a href="#pricing" style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: scrolled ? C.muted : C.green900, textDecoration: "none" }}>
+          Pricing
+        </a>
       </nav>
 
-      <div style={{ flex: 1 }} />
-
-      <div className="uf-nav-actions" style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/login" style={{ fontFamily: F, fontWeight: 600, fontSize: 14, color: C.muted, textDecoration: "none" }}>
-          Log in
-        </Link>
-        <button
-          onClick={onStart}
-          style={{ height: 40, padding: "0 20px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 14, cursor: "pointer", whiteSpace: "nowrap" }}
-        >
-          Get started
-        </button>
-      </div>
+      <button
+        onClick={onStart}
+        style={{ height: 36, padding: "0 18px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+      >
+        Get started
+      </button>
     </header>
   );
 }
@@ -269,167 +119,160 @@ function LandingNav({ onStart }: { onStart: () => void }) {
 /* ── Hero section ────────────────────────────────────────────────────── */
 function HeroSection({ onStart }: { onStart: () => void }) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 60); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
   return (
     <section style={{
-      position: "relative", minHeight: 920, overflow: "hidden",
-      background: `linear-gradient(180deg, ${C.paper} 0%, ${C.cream} 38%, ${C.mint} 78%, ${C.mintDeep} 100%)`,
+      position: "relative", minHeight: "100vh", overflow: "hidden",
+      background: `linear-gradient(180deg, ${C.paper} 0%, ${C.cream} 45%, ${C.mint} 85%, ${C.mintDeep} 100%)`,
     }}>
-      {/* Animated radial glow */}
+      {/* Subtle animated background elements */}
       <div aria-hidden style={{
-        position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)",
-        width: 700, height: 400, borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(98,250,227,0.18) 0%, transparent 68%)",
+        position: "absolute", top: "15%", left: "50%", transform: "translateX(-50%)",
+        width: 900, height: 500, borderRadius: "50%",
+        background: "radial-gradient(ellipse, rgba(98,250,227,0.12) 0%, transparent 65%)",
         pointerEvents: "none",
+        opacity: mounted ? 1 : 0,
+        transition: "opacity 1.2s ease 0.3s",
+      }} />
+      <div aria-hidden style={{
+        position: "absolute", top: "28%", right: "8%",
+        width: 180, height: 180, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(6,78,59,0.06) 0%, transparent 70%)",
+        pointerEvents: "none",
+        animation: mounted ? "heroOrbFloat 8s ease-in-out infinite" : "none",
+      }} />
+      <div aria-hidden style={{
+        position: "absolute", top: "45%", left: "5%",
+        width: 120, height: 120, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(32,212,191,0.08) 0%, transparent 70%)",
+        pointerEvents: "none",
+        animation: mounted ? "heroOrbFloat 12s ease-in-out 2s infinite" : "none",
       }} />
 
       {/* Content */}
       <div className="uf-hero-content" style={{
         position: "relative", top: 0, left: 0, right: 0,
         display: "flex", flexDirection: "column", alignItems: "center",
-        textAlign: "center", padding: "140px 40px 0", zIndex: 4,
+        textAlign: "center", padding: "120px 24px 80px", zIndex: 4,
+        maxWidth: 900, margin: "0 auto",
       }}>
-        {/* Badge */}
-        <div className="uf-hero-badge" style={{
-          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
-          transition: "opacity 0.45s ease 0.05s, transform 0.45s cubic-bezier(0.22,1,0.36,1) 0.05s",
-          display: "inline-flex", alignItems: "center", gap: 8,
-          padding: "8px 16px", background: C.teal, color: C.green900,
-          borderRadius: 9999, fontSize: 13, fontWeight: 700, letterSpacing: "-0.005em",
-          boxShadow: "0 6px 16px rgba(98,250,227,0.35)", whiteSpace: "nowrap",
+        {/* Single clear headline */}
+        <h1 style={{
+          margin: 0, fontFamily: F, fontWeight: 800,
+          fontSize: "clamp(48px, 10vw, 96px)", lineHeight: 1,
+          letterSpacing: "-0.05em", color: C.green900,
+          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(24px)",
+          transition: "opacity 0.7s ease 0.12s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.12s",
         }}>
-          Personal finance that sets you free
-          <span style={{ fontSize: 13 }}>»</span>
-        </div>
-
-        {/* Headline */}
-        <h1 className="uf-hero-title" style={{
-          margin: "20px 0 0", fontFamily: F, fontWeight: 800,
-          fontSize: "clamp(56px, 9vw, 104px)", lineHeight: 0.92,
-          letterSpacing: "-0.045em", color: C.green900,
-        }}>
+          Make work
+          <br />
           <span style={{
             display: "block",
-            opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
-            transition: "opacity 0.5s ease 0.15s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s",
+            marginTop: 8,
+            opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(20px)",
+            transition: "opacity 0.7s ease 0.28s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.28s",
           }}>
-            Personal finance
-          </span>
-          <span style={{
-            display: "block",
-            opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
-            transition: "opacity 0.5s ease 0.28s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.28s",
-          }}>
-            that sets you free.
+            <span style={{ color: C.green700 }}>optional</span>.
           </span>
         </h1>
 
-        {/* Sub */}
-        <p className="uf-hero-subtitle" style={{
-          margin: "28px 0 0", maxWidth: 620, fontSize: 18, lineHeight: 1.55,
+        {/* Supporting copy */}
+        <p style={{
+          margin: "40px 0 0", maxWidth: 520, fontSize: 19, lineHeight: 1.6,
           color: C.body, fontWeight: 500, fontFamily: F,
-          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
-          transition: "opacity 0.5s ease 0.42s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.42s",
+          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
+          transition: "opacity 0.7s ease 0.48s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.48s",
         }}>
-          See your freedom date, understand what matters most, and get a clear
-          first step to bring that date closer.
+          See the date when work can become optional, understand what moves it
+          closer, and take your first step with confidence.
         </p>
 
-        {/* Inline widget */}
-        <div className="uf-widget-wrap" style={{
-          marginTop: 36, width: "min(580px, 100%)",
-          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(10px)",
-          transition: "opacity 0.5s ease 0.55s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.55s",
+        {/* Single primary CTA */}
+        <div style={{
+          marginTop: 44,
+          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
+          transition: "opacity 0.7s ease 0.62s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.62s",
         }}>
-          <InlineWidget onStart={onStart} />
-        </div>
-
-        {/* Trust line */}
-        <div className="uf-hero-trust" style={{
-          marginTop: 18, display: "flex", alignItems: "center", gap: 12,
-          fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted,
-          opacity: mounted ? 1 : 0, transition: "opacity 0.5s ease 0.7s",
-        }}>
-          {["No account needed", "Numbers stay private", "Free to start"].map((s, i) => (
-            <span key={s} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              {i > 0 && <span style={{ opacity: 0.35, marginRight: 2 }}>·</span>}
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green600 }} />
-              {s}
-            </span>
-          ))}
+          <button
+            onClick={onStart}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 10,
+              height: 62, padding: "0 36px",
+              background: C.green900, color: "#fff",
+              border: "none", borderRadius: 9999,
+              fontFamily: F, fontWeight: 700, fontSize: 18,
+              cursor: "pointer", whiteSpace: "nowrap",
+              boxShadow: "0 12px 36px rgba(0,53,39,0.25)",
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 18px 48px rgba(0,53,39,0.32)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 12px 36px rgba(0,53,39,0.25)"; }}
+          >
+            See my freedom date
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M6 13.5L11 9L6 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <p style={{
+            marginTop: 16, fontSize: 13, color: C.muted, fontWeight: 500,
+            opacity: mounted ? 1 : 0,
+            transition: "opacity 0.6s ease 0.82s",
+          }}>
+            No account needed · Numbers stay private · Takes 60 seconds
+          </p>
         </div>
       </div>
 
-      {/* Tilted product preview */}
-      <div aria-hidden className="uf-product-preview" style={{
-        position: "relative", margin: "56px auto 0", width: "min(1040px, 90vw)",
-        opacity: mounted ? 1 : 0, transform: mounted ? "perspective(1200px) rotateX(8deg)" : "perspective(1200px) rotateX(18deg) translateY(40px)",
-        transition: "opacity 0.7s ease 0.5s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.5s",
-        transformOrigin: "50% 100%",
-        background: "#0f1614", borderRadius: 20, padding: 10,
-        boxShadow: "0 50px 80px rgba(0,30,20,0.3), 0 16px 30px rgba(0,30,20,0.2)",
+      {/* Animated freedom date preview */}
+      <div aria-hidden style={{
+        position: "relative", margin: "60px auto 0", width: "min(680px, 85vw)",
+        opacity: mounted ? 1 : 0, transform: mounted ? "translateY(0)" : "translateY(30px)",
+        transition: "opacity 0.9s ease 0.55s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.55s",
       }}>
-        <div className="uf-product-preview-inner" style={{ background: C.paperWarm, borderRadius: 13, padding: 20, display: "grid", gridTemplateRows: "auto 1fr", gap: 14 }}>
-          {/* Mock tab bar */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 22, height: 22, borderRadius: 5, background: C.green800 }} />
-              <span style={{ fontFamily: F, fontWeight: 700, fontSize: 14, color: C.green900 }}>UntilFire</span>
-              <div className="uf-product-tabs" style={{ display: "flex", gap: 4, marginLeft: 14 }}>
-                {["Dashboard", "Plan", "Progress"].map((t, i) => (
-                  <div key={t} style={{ padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: i === 0 ? "rgba(209,250,229,0.6)" : "transparent", color: i === 0 ? C.green700 : C.muted }}>
-                    {t}
-                  </div>
-                ))}
+        <div style={{
+          background: C.green900, borderRadius: 20, padding: "28px 32px 32px",
+          boxShadow: "0 32px 64px rgba(0,53,39,0.22), 0 8px 20px rgba(0,53,39,0.12)",
+          position: "relative", overflow: "hidden",
+        }}>
+          {/* Subtle gradient overlay */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+            background: "linear-gradient(135deg, rgba(98,250,227,0.08) 0%, transparent 60%)",
+            pointerEvents: "none",
+          }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.teal }}>
+              Your freedom date
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 16 }}>
+              <div style={{
+                display: "flex", alignItems: "baseline", gap: 4,
+                animation: "heroDateReveal 0.8s ease-out 1.2s both",
+              }}>
+                <span style={{ fontSize: 58, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
+                  March
+                </span>
               </div>
+              <span style={{ fontSize: 58, fontWeight: 800, color: C.teal, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                2037
+              </span>
             </div>
-            <div className="uf-product-controls" style={{ display: "flex", gap: 6 }}>
-              {["#F1F5F9", "#F1F5F9", C.green700].map((bg, i) => (
-                <div key={i} style={{ width: 24, height: 24, borderRadius: 999, background: bg }} />
-              ))}
-            </div>
-          </div>
-          {/* Mock dashboard cards */}
-          <div className="uf-product-cards" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr", gap: 12 }}>
-            <div style={{ background: C.green900, borderRadius: 10, padding: 18, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.teal }}>Your freedom date</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 16, marginTop: 10 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <div style={{ display: "flex", alignItems: "flex-end", height: 36 }}>
-                    <span style={{ width: 2, height: 22, background: C.teal, borderRadius: 1, animation: "ufBlink 1.1s steps(1) infinite" }} />
-                  </div>
-                  <div style={{ width: 64, height: 2.5, background: "rgba(255,255,255,0.9)", borderRadius: 1 }} />
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(98,250,227,0.75)" }}>Month</span>
-                </div>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.teal, marginBottom: 22 }} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <div style={{ height: 36 }} />
-                  <div style={{ width: 88, height: 2.5, background: "rgba(255,255,255,0.9)", borderRadius: 1 }} />
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(98,250,227,0.75)" }}>Year</span>
-                </div>
-              </div>
-              <div style={{ marginTop: 12, fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>When work becomes optional.</div>
-            </div>
-            <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: 18 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.muted }}>Plan progress</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 10 }}>
-                <span style={{ fontSize: 26, fontWeight: 800, color: C.faint }}>$</span>
-                <div style={{ width: 110, height: 3.5, background: C.green900, borderRadius: 2 }} />
-              </div>
-              <div style={{ marginTop: 10, height: 5, borderRadius: 99, background: "#F1F5F9" }} />
-              <div style={{ fontSize: 11, color: C.faint, marginTop: 7 }}>— % of the way there</div>
-            </div>
-            <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: 18 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.muted }}>Highest-impact move</div>
-              <div style={{ marginTop: 10, fontSize: 14, fontWeight: 800, color: C.green900, lineHeight: 1.3 }}>Boost 401(k) by $180</div>
-              <div style={{ marginTop: 6, fontSize: 11, color: C.muted }}>Saves 4 months · ~$0 take-home impact</div>
-              {[0, 1].map(i => (
-                <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", padding: "6px 0", borderTop: i === 0 ? "none" : `1px solid ${C.border}`, marginTop: i === 0 ? 10 : 0 }}>
-                  <div style={{ width: 12, height: 12, borderRadius: 3, border: "1.5px dashed #CBD5E1" }} />
-                  <div style={{ flex: 1, height: 5, background: "#F1F5F9", borderRadius: 99 }} />
-                </div>
-              ))}
+            <p style={{ marginTop: 14, fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, maxWidth: 320 }}>
+              When work becomes optional based on your current plan.
+            </p>
+            <div style={{
+              marginTop: 20, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.1)",
+              display: "flex", alignItems: "center", gap: 14,
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>Top move</span>
+              <span style={{
+                fontSize: 14, fontWeight: 700, color: "#fff",
+                padding: "6px 14px", background: "rgba(98,250,227,0.15)",
+                borderRadius: 999, border: "1px solid rgba(98,250,227,0.25)",
+              }}>
+                Increase 401(k) contribution — saves 2 years
+              </span>
             </div>
           </div>
         </div>
@@ -437,13 +280,20 @@ function HeroSection({ onStart }: { onStart: () => void }) {
 
       {/* Bottom fade */}
       <div aria-hidden style={{
-        position: "absolute", left: 0, right: 0, bottom: 0, height: 130,
+        position: "absolute", left: 0, right: 0, bottom: 0, height: 140,
         background: `linear-gradient(to bottom, rgba(185,227,208,0) 0%, ${C.mintDeep} 100%)`,
         zIndex: 3, pointerEvents: "none",
       }} />
 
       <style>{`
-        @keyframes ufBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+        @keyframes heroOrbFloat {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-20px) scale(1.05); }
+        }
+        @keyframes heroDateReveal {
+          0% { opacity: 0; transform: translateX(-20px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
         @media (max-width: 760px) {
           .uf-nav {
             height: 72px !important;
@@ -454,78 +304,21 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           }
           .uf-nav-links { display: none !important; }
           .uf-nav-actions { display: none !important; }
-          .uf-hero-content { padding: 112px 18px 0 !important; }
-          .uf-hero-badge {
-            max-width: 100% !important;
-            white-space: normal !important;
-            justify-content: center !important;
-            text-align: center !important;
-            line-height: 1.25 !important;
-            padding: 7px 12px !important;
-            font-size: 12px !important;
+          .uf-hero-content {
+            padding: 100px 20px 48px !important;
           }
-          .uf-hero-title {
-            margin-top: 18px !important;
-            font-size: clamp(42px, 13.5vw, 58px) !important;
-            line-height: 0.98 !important;
-            letter-spacing: -0.05em !important;
+          .uf-hero-content h1 {
+            font-size: clamp(40px, 14vw, 64px) !important;
           }
-          .uf-hero-subtitle {
-            margin-top: 22px !important;
-            max-width: 340px !important;
-            font-size: 17px !important;
-            line-height: 1.5 !important;
+          .uf-hero-content > p {
+            font-size: 16px !important;
+            max-width: 300px !important;
+            margin-top: 28px !important;
           }
-          .uf-widget-wrap {
-            padding: 0 12px !important;
-          }
-          .uf-widget-inputs {
-            grid-template-columns: 1fr !important;
-          }
-          .uf-result-card {
-            flex-direction: column !important;
-            align-items: center !important;
-            text-align: center !important;
-          }
-          .uf-result-card > div:first-child {
-            width: 100% !important;
-            text-align: center !important;
-          }
-          .uf-result-card > div:last-child {
-            width: 100% !important;
-          }
-          .uf-result-card > div:last-child > button {
-            width: 100% !important;
-          }
-          .uf-hero-trust {
-            max-width: 340px !important;
-            flex-wrap: wrap !important;
-            justify-content: center !important;
-            row-gap: 10px !important;
-            column-gap: 12px !important;
-            font-size: 11px !important;
-            letter-spacing: 0.13em !important;
-          }
-          .uf-product-preview {
-            width: calc(100vw - 32px) !important;
-            margin-top: 44px !important;
-            padding: 8px !important;
-            border-radius: 18px !important;
-            transform: none !important;
-          }
-          .uf-product-preview-inner {
-            padding: 14px !important;
-            overflow: hidden !important;
-          }
-          .uf-product-tabs > div:not(:first-child),
-          .uf-product-controls {
-            display: none !important;
-          }
-          .uf-product-cards {
-            grid-template-columns: 1fr !important;
-          }
-          .uf-product-cards > div:nth-child(n+2) {
-            display: none !important;
+          .uf-hero-content > div > button {
+            height: 54px !important;
+            font-size: 16px !important;
+            padding: 0 28px !important;
           }
         }
       `}</style>
@@ -537,64 +330,58 @@ function HeroSection({ onStart }: { onStart: () => void }) {
 function HowSection() {
   return (
     <section id="how" style={{
-      position: "relative", background: "#fff", padding: "120px 40px 100px",
+      position: "relative", background: "#fff", padding: "100px 24px 80px",
       borderRadius: "28px 28px 0 0", marginTop: -28, zIndex: 3,
     }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", textAlign: "center" }}>
-        <Reveal>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", border: `1.5px solid ${C.borderSoft}`, background: "#fff", borderRadius: 9999, fontSize: 13, fontWeight: 700, color: C.green900 }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M2 7h10M2 10h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-            How it works
-          </div>
-        </Reveal>
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" }}>
+          <Reveal>
+            <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 6vw, 68px)", lineHeight: 1, letterSpacing: "-0.04em", color: C.green900 }}>
+              From today&apos;s numbers<br />to a clear next step.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.12}>
+            <p style={{ margin: "20px auto 0", maxWidth: 480, fontSize: 17, lineHeight: 1.6, color: C.body, fontWeight: 500 }}>
+              UntilFire shows where you stand, what matters now, and what to do
+              next — so you can move toward work optionality with confidence.
+            </p>
+          </Reveal>
+        </div>
 
-        <Reveal delay={0.08}>
-          <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(40px, 6vw, 80px)", lineHeight: 0.96, letterSpacing: "-0.04em", color: C.green900 }}>
-            From today’s money to<br />work optionality.
-          </h2>
-        </Reveal>
-
-        <Reveal delay={0.16}>
-          <p style={{ margin: "18px auto 0", maxWidth: 520, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500, fontFamily: F }}>
-            Most finance apps show where your money went. UntilFire shows where
-            you stand, what matters now, and what to do next.
-          </p>
-        </Reveal>
-
-        {/* Three steps */}
-        <div style={{ marginTop: 72, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 36, textAlign: "left" }}>
+        {/* Three steps - horizontal on desktop */}
+        <div style={{ marginTop: 64, display: "flex", flexDirection: "column", gap: 32 }}>
           {[
-            { n: "01", t: "See where you stand.", s: "Get a freedom date from a few simple numbers. No spreadsheet, no finance degree, no account required." },
-            { n: "02", t: "Know what to do next.", s: "UntilFire turns the result into a clear next move so you can focus on the lever that matters most right now." },
-            { n: "03", t: "Keep freedom getting closer.", s: "Track progress, adjust with life, and stay consistent without having to piece your plan together across apps." },
+            { n: "1", t: "See your freedom date", s: "Enter a few numbers. Get the date when work becomes optional.", accent: false },
+            { n: "2", t: "Understand what moves it", s: "See which changes shorten your timeline the most.", accent: true },
+            { n: "3", t: "Take your first step", s: "Get one clear action you can act on today.", accent: false },
           ].map((s, i) => (
-            <Reveal key={s.n} delay={i * 0.1}>
-              <div style={{ padding: "24px 24px 28px", background: C.paperWarm, borderRadius: 16, border: `1px solid ${C.border}` }}>
-                <div style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.green700, letterSpacing: "0.16em" }}>{s.n}</div>
-                <div style={{ marginTop: 10, fontSize: 20, fontWeight: 700, letterSpacing: "-0.015em", color: C.green900 }}>{s.t}</div>
-                <div style={{ marginTop: 8, fontSize: 15, lineHeight: 1.55, color: C.body }}>{s.s}</div>
+            <Reveal key={s.n} delay={i * 0.12}>
+              <div style={{
+                display: "grid", gridTemplateColumns: "auto 1fr", gap: 24,
+                padding: "24px 28px",
+                background: s.accent ? C.green900 : C.paperWarm,
+                borderRadius: 16, border: `1px solid ${s.accent ? C.green900 : C.border}`,
+                alignItems: "center",
+              }}>
+                <div style={{
+                  fontFamily: F, fontSize: 48, fontWeight: 800,
+                  color: s.accent ? C.teal : C.green700,
+                  letterSpacing: "-0.02em", lineHeight: 1,
+                }}>
+                  {s.n}
+                </div>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", color: s.accent ? "#fff" : C.green900 }}>
+                    {s.t}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 15, lineHeight: 1.55, color: s.accent ? "rgba(255,255,255,0.75)" : C.body }}>
+                    {s.s}
+                  </div>
+                </div>
               </div>
             </Reveal>
           ))}
         </div>
-
-        {/* Path callout */}
-        <Reveal delay={0.1} style={{ marginTop: 56 }}>
-          <div style={{ background: C.green900, borderRadius: 16, padding: "28px 32px", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>Example plan:</span>
-            {[
-              ["Find the date", "today"],
-              ["Pick one move", "next"],
-              ["Track the shift", "every update"],
-              ["Keep going", "until work is optional"],
-            ].map(([step, timing]) => (
-              <div key={step} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "10px 16px" }}>
-                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>{step}</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: C.teal }}>{timing}</span>
-              </div>
-            ))}
-          </div>
-        </Reveal>
       </div>
     </section>
   );
@@ -603,59 +390,54 @@ function HowSection() {
 /* ── Why UntilFire ───────────────────────────────────────────────────── */
 function WhySection() {
   return (
-    <section id="why" style={{ background: C.paperWarm, padding: "100px 40px 100px", borderTop: `1px solid ${C.border}` }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", textAlign: "center" }}>
-        <Reveal>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", border: `1.5px solid ${C.borderSoft}`, background: "#fff", borderRadius: 9999, fontSize: 13, fontWeight: 700, color: C.green900 }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.8 3.6 4 .6-2.9 2.8.7 4L7 10.1 3.4 12l.7-4L1.2 5.2l4-.6L7 1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
-            Built for clarity
-          </div>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(38px, 6vw, 78px)", lineHeight: 0.96, letterSpacing: "-0.04em", color: C.green900 }}>
-            Not just a calculator.<br />A clearer path.
-          </h2>
-        </Reveal>
-        <Reveal delay={0.16}>
-          <p style={{ margin: "18px auto 0", maxWidth: 560, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-            UntilFire is a financial freedom app: your freedom date, your next
-            move, and your progress in one calm place.
-          </p>
-        </Reveal>
+    <section id="why" style={{ background: C.paperWarm, padding: "80px 24px 80px", borderTop: `1px solid ${C.border}` }}>
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" }}>
+          <Reveal>
+            <h2 style={{ margin: 0, fontFamily: F, fontWeight: 700, fontSize: "clamp(32px, 5vw, 52px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: C.green900 }}>
+              Not just a calculator.<br />
+              <span style={{ fontWeight: 800 }}>A clearer path.</span>
+            </h2>
+          </Reveal>
+          <Reveal delay={0.12}>
+            <p style={{ margin: "16px auto 0", maxWidth: 440, fontSize: 16, lineHeight: 1.6, color: C.body, fontWeight: 500 }}>
+              UntilFire helps you understand where you stand, what to change,
+              and how to keep moving forward.
+            </p>
+          </Reveal>
+        </div>
 
-        <div style={{ marginTop: 70, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 40, textAlign: "left" }}>
+        {/* Two column benefit cards */}
+        <div style={{ marginTop: 56, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
           {[
             {
-              icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 18l4-5 3 3 6-8 3 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><circle cx="7" cy="13" r="1.3" fill="currentColor" /><circle cx="10" cy="16" r="1.3" fill="currentColor" /><circle cx="16" cy="8" r="1.3" fill="currentColor" /></svg>,
-              title: "Guidance first",
-              copy: "Budget apps organize transactions. UntilFire organizes decisions around one outcome: helping money feel clearer and freedom feel closer.",
-              badge: <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 13, fontWeight: 700, color: C.green900 }}><span style={{ color: C.green600 }}>↑</span> Save +$500/mo <span style={{ color: C.green700, fontWeight: 800 }}>− 2.1 yrs</span></div>,
+              t: "Designed for one outcome",
+              s: "Every feature is built to help you reach work optionality — from your first calculation to monthly progress.",
             },
             {
-              icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" /><path d="M4 11h14M11 4c2.5 3 2.5 11 0 14M11 4c-2.5 3-2.5 11 0 14" stroke="currentColor" strokeWidth="1.3" /></svg>,
-              title: "A living plan",
-              copy: "Your date changes when your life changes. UntilFire keeps the path moving with next steps, progress, and tradeoff context.",
-              badge: <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {["Start", "Next move", "Progress", "Repeat"].map((c, i) => (
-                  <div key={c} style={{ padding: "5px 12px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 12, fontWeight: 700, color: i === 3 ? C.muted : C.green900 }}>{c}</div>
-                ))}
-              </div>,
+              t: "Start before you commit",
+              s: "See your freedom date and first next move without creating an account. Upgrade when you want ongoing tracking.",
             },
             {
-              icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" /><path d="M11 6v5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>,
-              title: "Move it closer",
-              copy: "Pro surfaces the moves that can save the most time — ranked from your real numbers, not generic finance advice.",
-              badge: <div style={{ padding: "10px 14px", background: C.green900, color: "#fff", borderRadius: 12, display: "inline-flex", alignItems: "center", gap: 12, fontSize: 13, fontWeight: 700 }}><span style={{ width: 7, height: 7, background: C.teal, borderRadius: 99 }} />Boost 401(k) by $180 <span style={{ color: C.teal, fontSize: 12 }}>− 4 mo</span></div>,
+              t: "Focus on what matters",
+              s: "Skip the noise. UntilFire surfaces the moves that move your date the most — based on your numbers.",
+            },
+            {
+              t: "A living plan",
+              s: "Life changes. Your plan adapts. UntilFire keeps the path clear as your situation evolves.",
             },
           ].map((card, i) => (
-            <Reveal key={card.title} delay={i * 0.1}>
-              <div>
-                <div style={{ width: 52, height: 52, borderRadius: 13, background: "#fff", border: `1px solid ${C.border}`, display: "grid", placeItems: "center", color: C.green700, boxShadow: "0 4px 12px rgba(0,53,39,0.06)" }}>
-                  {card.icon}
+            <Reveal key={card.t} delay={i * 0.08}>
+              <div style={{
+                padding: "22px 24px",
+                background: "#fff", borderRadius: 14, border: `1px solid ${C.border}`,
+              }}>
+                <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.01em", color: C.green900, marginBottom: 8 }}>
+                  {card.t}
                 </div>
-                <h3 style={{ margin: "18px 0 8px", fontFamily: F, fontSize: 22, fontWeight: 800, letterSpacing: "-0.015em", color: C.green900 }}>{card.title}</h3>
-                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: C.muted }}>{card.copy}</p>
-                <div style={{ marginTop: 22 }}>{card.badge}</div>
+                <div style={{ fontSize: 14, lineHeight: 1.6, color: C.body }}>
+                  {card.s}
+                </div>
               </div>
             </Reveal>
           ))}
@@ -668,50 +450,44 @@ function WhySection() {
 /* ── Pricing ─────────────────────────────────────────────────────────── */
 function PricingSection({ onStart }: { onStart: () => void }) {
   return (
-    <section id="pricing" style={{ background: "#fff", padding: "100px 40px", borderTop: `1px solid ${C.border}` }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", textAlign: "center" }}>
-        <Reveal>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", border: `1.5px solid ${C.borderSoft}`, background: "#fff", borderRadius: 9999, fontSize: 13, fontWeight: 700, color: C.green900 }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M3 4h7a2 2 0 010 4H4a2 2 0 000 4h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
-            Pricing
-          </div>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(38px, 6vw, 74px)", lineHeight: 0.96, letterSpacing: "-0.04em", color: C.green900 }}>
-            Start with clarity.<br />Go deeper when you want more help.
-          </h2>
-        </Reveal>
-        <Reveal delay={0.16}>
-          <p style={{ margin: "18px auto 0", maxWidth: 480, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-            Start with your freedom date and first next move. Upgrade when you want deeper guidance, connected progress, and automatic bank and brokerage sync.
-          </p>
-        </Reveal>
+    <section id="pricing" style={{ background: "#fff", padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+      <div style={{ maxWidth: 880, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" }}>
+          <Reveal>
+            <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(34px, 5vw, 56px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: C.green900 }}>
+              Start free.<br />Upgrade for more depth.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <p style={{ margin: "16px auto 0", maxWidth: 420, fontSize: 16, lineHeight: 1.6, color: C.body, fontWeight: 500 }}>
+              See your freedom date and first move without an account. Go Pro when you want deeper guidance and ongoing tracking.
+            </p>
+          </Reveal>
+        </div>
 
-        <div style={{ marginTop: 52, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 480px))", gap: 22, justifyContent: "center", textAlign: "left" }}>
+        <div style={{ marginTop: 48, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
           {/* Free */}
-          <Reveal delay={0.05}>
-            <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 20, padding: 32 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: C.muted }}>Starter</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 8 }}>
-                <span style={{ fontSize: 52, fontWeight: 800, color: C.green900, letterSpacing: "-0.03em" }}>$0</span>
-                <span style={{ fontSize: 14, color: C.muted, marginLeft: 3 }}>to start</span>
+          <Reveal delay={0.08}>
+            <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 18, padding: 28 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.muted }}>Free</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
+                <span style={{ fontSize: 42, fontWeight: 800, color: C.green900, letterSpacing: "-0.02em" }}>$0</span>
               </div>
-              <p style={{ margin: "6px 0 20px", fontSize: 15, color: C.body, lineHeight: 1.5 }}>
-                Start with your freedom date and see what moves it.
+              <p style={{ margin: "8px 0 18px", fontSize: 14, color: C.body, lineHeight: 1.5 }}>
+                Your freedom date and first next move.
               </p>
               {[
-                "Freedom date and starting plan",
-                "Realistic assumptions where useful",
-                "Decision sliders that show time gained",
-                "Work optionality timeline and shareable card",
-                "Learning Hub and practical explainers",
+                "Freedom date calculation",
+                "One clear next move",
+                "Decision sliders",
+                "Shareable result card",
               ].map(f => (
-                <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "7px 0", fontSize: 14, color: C.body }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" style={{ marginTop: 2, flexShrink: 0 }}><path d="M3 8l3 3 7-7" stroke={C.green700} strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>
+                <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", fontSize: 13, color: C.body }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" style={{ marginTop: 1, flexShrink: 0 }}><path d="M2.5 7l2.5 2.5 6-6" stroke={C.green700} strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>
                   {f}
                 </div>
               ))}
-              <button onClick={onStart} style={{ marginTop: 22, width: "100%", height: 46, background: "#fff", color: C.green900, border: `1.5px solid ${C.green900}`, borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+              <button onClick={onStart} style={{ marginTop: 20, width: "100%", height: 44, background: "#fff", color: C.green900, border: `1.5px solid ${C.green900}`, borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                 See my freedom date
               </button>
             </div>
@@ -719,43 +495,41 @@ function PricingSection({ onStart }: { onStart: () => void }) {
 
           {/* Pro */}
           <Reveal delay={0.16}>
-            <div style={{ position: "relative", background: C.green900, color: "#fff", border: `1px solid ${C.green900}`, borderRadius: 20, padding: 32, boxShadow: "0 24px 50px rgba(0,53,39,0.2)" }}>
-              <div style={{ position: "absolute", top: -12, right: 24, background: C.teal, color: C.green900, padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-                Keep your plan moving
+            <div style={{ position: "relative", background: C.green900, color: "#fff", borderRadius: 18, padding: 28, boxShadow: "0 20px 48px rgba(0,53,39,0.22)" }}>
+              <div style={{ position: "absolute", top: -10, right: 20, background: C.teal, color: C.green900, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                Most helpful
               </div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: C.teal }}>Pro</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 8 }}>
-                <span style={{ fontSize: 52, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>$4.99</span>
-                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", marginLeft: 3 }}>/ month · cancel anytime</span>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.teal }}>Pro</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
+                <span style={{ fontSize: 42, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>$4.99</span>
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>/mo</span>
               </div>
-              <p style={{ margin: "6px 0 20px", fontSize: 15, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>
-                Deeper guidance to move your date closer and keep your plan alive.
+              <p style={{ margin: "8px 0 18px", fontSize: 14, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>
+                Deeper guidance and connected progress.
               </p>
               {[
-                ["Everything in Starter", false],
-                ["Fast-forward moves ranked by time saved", false],
-                ["Action plan from your actual spending", false],
-                ["Monte Carlo simulation · multi-currency tracking", false],
-                ["Plaid sync with 12,000+ financial institutions", false],
-                ["FIRE progress report by email", false],
-              ].map(([f, soon]) => (
-                <div key={f as string} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "7px 0", fontSize: 14, color: soon ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.9)" }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" style={{ marginTop: 2, flexShrink: 0 }}><path d="M3 8l3 3 7-7" stroke={C.teal} strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>
+                "Everything in Free",
+                "Ranked next moves by time saved",
+                "Action plan from your spending",
+                "Plaid bank & brokerage sync",
+                "Progress tracking & reports",
+              ].map(f => (
+                <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", fontSize: 13, color: "rgba(255,255,255,0.9)" }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" style={{ marginTop: 1, flexShrink: 0 }}><path d="M2.5 7l2.5 2.5 6-6" stroke={C.teal} strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>
                   {f}
-                  {soon && <span style={{ marginLeft: 4, padding: "1px 6px", border: "1px solid rgba(98,250,227,0.35)", borderRadius: 999, fontSize: 9, fontWeight: 700, color: C.teal, letterSpacing: "0.1em", textTransform: "uppercase", flexShrink: 0, alignSelf: "center" }}>soon</span>}
                 </div>
               ))}
-              <Link href="/login" style={{ display: "block", marginTop: 22, width: "100%", height: 46, lineHeight: "46px", background: C.teal, color: C.green900, border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 800, fontSize: 15, cursor: "pointer", textAlign: "center", textDecoration: "none" }}>
-                Open my dashboard
+              <Link href="/login" style={{ display: "block", marginTop: 20, width: "100%", height: 44, lineHeight: "44px", background: C.teal, color: C.green900, border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "center", textDecoration: "none" }}>
+                Start Pro trial
               </Link>
             </div>
           </Reveal>
         </div>
 
-        <Reveal delay={0.1}>
-          <div style={{ marginTop: 18, fontSize: 12, color: C.muted, fontWeight: 600, letterSpacing: "0.06em" }}>
-            Pro adds deeper guidance, connected progress, and Stripe billing you can cancel from your dashboard
-          </div>
+        <Reveal delay={0.2}>
+          <p style={{ margin: "20px auto 0", maxWidth: 480, textAlign: "center", fontSize: 12, color: C.muted }}>
+            Pro includes Stripe billing. Cancel anytime from your dashboard.
+          </p>
         </Reveal>
       </div>
     </section>
@@ -766,52 +540,40 @@ function PricingSection({ onStart }: { onStart: () => void }) {
 function StoriesSection() {
   const insights = [
     {
-      quote: "Haven't found a uniform app to centrally manage money.",
-      context: "Beta survey · what's missing",
-      icon: "💬",
+      quote: "Seeing the date change when I adjusted my savings — that was the moment it clicked.",
+      context: "Beta user",
     },
     {
       quote: "I use 3 apps and a spreadsheet. None of them tell me if I'm actually on track.",
-      context: "Beta survey · biggest frustration",
-      icon: "💬",
+      context: "Beta survey",
     },
     {
-      quote: "Seeing the date change when I adjusted my savings — that was the moment it clicked.",
-      context: "Beta user · first session",
-      icon: "💬",
+      quote: "Finally an app that tells me what to do, not just where my money went.",
+      context: "Beta user",
     },
   ];
 
   return (
-    <section id="stories" style={{ background: "#fff", padding: "100px 40px 120px", borderTop: `1px solid ${C.border}` }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", textAlign: "center" }}>
+    <section id="stories" style={{ background: "#fff", padding: "80px 24px 80px", borderTop: `1px solid ${C.border}` }}>
+      <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <Reveal>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", border: `1.5px solid ${C.borderSoft}`, background: "#fff", borderRadius: 9999, fontSize: 13, fontWeight: 700, color: C.green900 }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.8 3.6 4 .6-2.9 2.8.7 4L7 10.1 3.4 12l.7-4L1.2 5.2l4-.6L7 1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
-            What we&apos;re hearing
-          </div>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 5.5vw, 72px)", lineHeight: 0.96, letterSpacing: "-0.04em", color: C.green900 }}>
-            This is why<br />UntilFire exists.
+          <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(32px, 5vw, 52px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: C.green900, textAlign: "center" }}>
+            What early users say
           </h2>
         </Reveal>
-        <Reveal delay={0.14}>
-          <p style={{ margin: "18px auto 0", maxWidth: 520, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-            The same frustrations come up in every beta conversation. One place, one plan, one next move.
-          </p>
-        </Reveal>
 
-        <div style={{ marginTop: 60, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+        <div style={{ marginTop: 48, display: "grid", gap: 20 }}>
           {insights.map((t, i) => (
             <Reveal key={i} delay={i * 0.1}>
-              <div style={{ background: C.paperWarm, border: `1px solid ${C.border}`, borderRadius: 20, padding: 28, boxShadow: "0 8px 24px rgba(0,53,39,0.05)", display: "flex", flexDirection: "column", textAlign: "left" }}>
-                <div style={{ fontSize: 28 }}>{t.icon}</div>
-                <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.55, color: C.green900, fontWeight: 600, fontStyle: "italic" }}>
+              <div style={{
+                background: C.paperWarm, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24,
+                display: "flex", flexDirection: "column",
+              }}>
+                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: C.green900, fontWeight: 500, fontStyle: "italic" }}>
                   &ldquo;{t.quote}&rdquo;
                 </p>
-                <div style={{ marginTop: "auto", paddingTop: 18, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted }}>
-                  {t.context}
+                <div style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: C.muted }}>
+                  — {t.context}
                 </div>
               </div>
             </Reveal>
@@ -827,57 +589,39 @@ function FAQSection() {
   const faqs = [
     {
       q: "What is a freedom date?",
-      a: "Your freedom date is the point where work can become optional based on your current income, spending, savings, and FIRE assumptions. It is not a promise. It is a starting line you can move closer with better choices.",
+      a: "The date when work can become optional based on your current income, spending, and savings. It's a starting line you can move closer with better choices.",
     },
     {
-      q: "How is UntilFire different from a calculator?",
-      a: "Most calculators stop after giving you a number. UntilFire starts there, then turns the result into a plan: what matters, what to change next, and how that could move your date.",
+      q: "How is this different from a calculator?",
+      a: "Most calculators stop at a number. UntilFire starts there and turns it into a plan: what matters, what to change next, and how to move forward.",
     },
     {
-      q: "Can I try UntilFire before creating an account?",
-      a: "Yes. You can start with your freedom date before committing to an account. The product is built to help you turn that date into a plan.",
-    },
-    {
-      q: "Why do city and tax assumptions matter?",
-      a: "They make the math more realistic because income, taxes, and living costs vary a lot by place. But they support the answer — the core value is the plan that helps you bring work optionality closer.",
+      q: "Do I need an account?",
+      a: "No. You can see your freedom date and first move without creating an account. Create one when you want to save your plan and track progress.",
     },
     {
       q: "Is this financial advice?",
-      a: "No. UntilFire is planning software, not a licensed financial adviser. It helps you understand scenarios and tradeoffs so you can make clearer decisions or discuss them with a professional.",
-    },
-    {
-      q: "What does Pro add?",
-      a: "Pro helps you move your freedom date closer with ranked next moves, connected progress, deeper scenarios, and Plaid sync across 12,000+ financial institutions.",
+      a: "No. UntilFire is planning software that helps you understand scenarios and tradeoffs. It does not replace a licensed financial adviser.",
     },
   ];
 
   return (
-    <section id="faq" style={{ background: C.paperWarm, padding: "100px 40px", borderTop: `1px solid ${C.border}` }}>
-      <div style={{ maxWidth: 980, margin: "0 auto" }}>
+    <section id="faq" style={{ background: C.paperWarm, padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <Reveal>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", border: `1.5px solid ${C.borderSoft}`, background: "#fff", borderRadius: 9999, fontSize: 13, fontWeight: 700, color: C.green900 }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 12.5a5.5 5.5 0 100-11 5.5 5.5 0 000 11zM5.6 5.4a1.5 1.5 0 112.4 1.2c-.7.5-1 .8-1 1.5M7 10h.01" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              FAQ
-            </div>
-            <h2 style={{ margin: "18px 0 0", fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 5.5vw, 70px)", lineHeight: 0.98, letterSpacing: "-0.04em", color: C.green900 }}>
-              Clear answers before<br />you build your plan.
-            </h2>
-            <p style={{ margin: "18px auto 0", maxWidth: 560, fontSize: 17, lineHeight: 1.55, color: C.body, fontWeight: 500 }}>
-              The quick version: UntilFire starts with your freedom date, then
-              helps you understand the path and keep moving it closer.
-            </p>
-          </div>
+          <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(32px, 5vw, 48px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: C.green900, textAlign: "center" }}>
+            Common questions
+          </h2>
         </Reveal>
 
-        <div style={{ marginTop: 52, display: "grid", gap: 12 }}>
+        <div style={{ marginTop: 40, display: "grid", gap: 12 }}>
           {faqs.map((faq, i) => (
-            <Reveal key={faq.q} delay={i * 0.04}>
-              <details style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "22px 24px", boxShadow: "0 8px 22px rgba(0,53,39,0.05)" }}>
-                <summary style={{ cursor: "pointer", fontFamily: F, fontSize: 18, fontWeight: 800, color: C.green900, letterSpacing: "-0.01em" }}>
+            <Reveal key={faq.q} delay={i * 0.06}>
+              <details style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 22px" }}>
+                <summary style={{ cursor: "pointer", fontFamily: F, fontSize: 16, fontWeight: 700, color: C.green900, letterSpacing: "-0.01em" }}>
                   {faq.q}
                 </summary>
-                <p style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.65, color: C.body }}>
+                <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.65, color: C.body }}>
                   {faq.a}
                 </p>
               </details>
@@ -892,32 +636,23 @@ function FAQSection() {
 /* ── Closing CTA ─────────────────────────────────────────────────────── */
 function ClosingSection({ onStart }: { onStart: () => void }) {
   return (
-    <section style={{ background: `linear-gradient(180deg, #fff 0%, ${C.mint} 100%)`, padding: "120px 40px 140px", overflow: "hidden" }}>
-      <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
+    <section style={{ background: `linear-gradient(180deg, #fff 0%, ${C.mint} 100%)`, padding: "100px 24px 120px", overflow: "hidden" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center" }}>
         <Reveal>
-          <img src="/logo/horizon-color.svg" width={68} height={68} alt="" style={{ borderRadius: 16, boxShadow: "0 16px 40px rgba(0,53,39,0.25)", marginBottom: 24, display: "block" }} />
-        </Reveal>
-        <Reveal delay={0.08}>
-          <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 6vw, 68px)", lineHeight: 0.98, letterSpacing: "-0.04em", color: C.green900 }}>
-            Less money stress.<br />
-            <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 400, fontStyle: "italic", color: C.green700 }}>
-              Start with one clear answer.
-            </span>
+          <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(34px, 6vw, 56px)", lineHeight: 1.06, letterSpacing: "-0.03em", color: C.green900 }}>
+            One step toward<br />work optionality.
           </h2>
         </Reveal>
-        <Reveal delay={0.18}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 36, flexWrap: "wrap" }}>
-            <button onClick={onStart} style={{ height: 58, padding: "0 30px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 17, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 14px 36px rgba(0,53,39,0.25)" }}>
+        <Reveal delay={0.12}>
+          <p style={{ margin: "16px 0 0", maxWidth: 360, fontSize: 16, lineHeight: 1.6, color: C.body, fontWeight: 500, marginLeft: "auto", marginRight: "auto" }}>
+            See your freedom date today. No account required.
+          </p>
+        </Reveal>
+        <Reveal delay={0.22}>
+          <div style={{ marginTop: 36 }}>
+            <button onClick={onStart} style={{ height: 56, padding: "0 32px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 17, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 12px 32px rgba(0,53,39,0.22)" }}>
               See my freedom date →
             </button>
-            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", height: 58, padding: "0 24px", background: "transparent", color: C.green900, border: `1.5px solid ${C.green900}`, borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 16, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
-              Open my dashboard
-            </Link>
-          </div>
-        </Reveal>
-        <Reveal delay={0.26}>
-          <div style={{ marginTop: 16, fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: C.muted }}>
-            Financial freedom app · Guided plan · Work optionality
           </div>
         </Reveal>
       </div>
@@ -928,37 +663,33 @@ function ClosingSection({ onStart }: { onStart: () => void }) {
 /* ── Footer ──────────────────────────────────────────────────────────── */
 function FooterSection() {
   return (
-    <footer style={{ background: C.mint, padding: "56px 40px 0", overflow: "hidden" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "center", gap: 28, paddingBottom: 20, flexWrap: "wrap" }}>
+    <footer style={{ background: C.mint, padding: "48px 24px 32px" }}>
+      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+        {/* Links */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 28, flexWrap: "wrap", marginBottom: 32 }}>
           {[
             ["How it works", "#how"],
             ["Learn", "/learn"],
             ["Pricing", "#pricing"],
-            ["Stories", "#stories"],
             ["FAQ", "#faq"],
-            ["Privacy", "#"],
-            ["Terms", "#"],
           ].map(([label, href]) => (
-            <a key={label} href={href} style={{ fontSize: 14, fontWeight: 600, color: C.green900, cursor: "pointer", textDecoration: "none" }}>{label}</a>
+            <a key={label} href={href} style={{ fontSize: 14, fontWeight: 600, color: C.green900, textDecoration: "none" }}>{label}</a>
           ))}
         </div>
 
-        {/* Big wordmark */}
+        {/* Wordmark */}
         <div style={{
-          fontFamily: F, fontWeight: 800, fontSize: "clamp(80px, 18vw, 240px)", lineHeight: 0.85,
-          letterSpacing: "-0.06em", textAlign: "center", color: C.green900,
-          background: `linear-gradient(180deg, rgba(0,53,39,0.9) 0%, rgba(0,53,39,0.4) 60%, rgba(0,53,39,0.14) 100%)`,
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          backgroundClip: "text", paddingTop: 16, userSelect: "none",
+          fontFamily: F, fontWeight: 800, fontSize: "clamp(56px, 14vw, 140px)", lineHeight: 0.85,
+          letterSpacing: "-0.05em", textAlign: "center", color: C.green900,
+          opacity: 0.25,
         }}>
           untilfire
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 0 28px", fontSize: 12, color: C.green700, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", flexWrap: "wrap", gap: 10 }}>
+        {/* Bottom */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 12, color: C.green700, fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
           <span>© 2026 UntilFire</span>
-          <span>See where you stand — then know what to do.</span>
-          <span>Privacy · Terms</span>
+          <span>Make work optional</span>
         </div>
       </div>
     </footer>

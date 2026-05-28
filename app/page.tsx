@@ -1541,7 +1541,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     )}
                     {fireStage === "momentum" && (
                       <>
-                        <strong style={{ color: "#0F172A" }}>Widen the gap.</strong> You've proven you can save. The fastest accelerator now is catching lifestyle inflation before it catches you. Consider directing any raise or bonus straight to investments before it absorbs into your spending baseline.
+                        <strong style={{ color: "#0F172A" }}>Widen the gap.</strong> You&apos;ve proven you can save. The fastest accelerator now is catching lifestyle inflation before it catches you. Consider directing any raise or bonus straight to investments before it absorbs into your spending baseline.
                       </>
                     )}
                     {fireStage === "final-stretch" && (
