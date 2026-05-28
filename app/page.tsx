@@ -1025,6 +1025,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const [counting, setCounting] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [emailPhase, setEmailPhase] = useState<"idle" | "submitting" | "done" | "dismissed">("idle");
+  const [emailValue, setEmailValue] = useState("");
   const numRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const belowRef = useRef<HTMLDivElement>(null);
@@ -1548,6 +1550,73 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               <p className="uf-disclaimer">
                 Estimate only. Not financial advice. Based on 7% real return (historical S&P500 average after inflation).
               </p>
+
+              {/* ── Email capture ──────────────────────────────────────────── */}
+              {emailPhase !== "dismissed" && (
+                <div style={{ marginTop: 16, padding: "22px 24px", background: "#F0FDF4", border: "1px solid #A7F3D0", borderRadius: 16, textAlign: "center" }}>
+                  {emailPhase === "done" ? (
+                    <>
+                      <div style={{ fontSize: 20, marginBottom: 8, color: "#059669" }}>✓</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#059669", fontFamily: "Syne, sans-serif" }}>
+                        Your plan is on its way
+                      </div>
+                      <div style={{ marginTop: 6, fontSize: 12, color: "#6B7280", fontFamily: "DM Sans, sans-serif" }}>
+                        Freedom date and next move sent to {emailValue}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#064E3B", marginBottom: 4, fontFamily: "Syne, sans-serif" }}>
+                        Get this plan in your inbox
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 14, lineHeight: 1.5, fontFamily: "DM Sans, sans-serif" }}>
+                        Your freedom date and next move — no financial details shared. No spam.
+                      </div>
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const trimmed = emailValue.trim();
+                          if (!trimmed) return;
+                          setEmailPhase("submitting");
+                          try {
+                            const res = await fetch("/api/waitlist", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ email: trimmed }),
+                            });
+                            setEmailPhase(res.ok ? "done" : "idle");
+                          } catch {
+                            setEmailPhase("idle");
+                          }
+                        }}
+                        style={{ display: "flex", gap: 8, maxWidth: 380, margin: "0 auto" }}
+                      >
+                        <input
+                          type="email"
+                          required
+                          value={emailValue}
+                          onChange={e => setEmailValue(e.target.value)}
+                          placeholder="your@email.com"
+                          style={{ flex: 1, padding: "10px 14px", border: "1.5px solid #A7F3D0", borderRadius: 8, fontSize: 13, fontFamily: "DM Sans, sans-serif", outline: "none", background: "#fff", color: "#0F172A" }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={emailPhase === "submitting"}
+                          style={{ padding: "10px 18px", background: "#059669", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Syne, sans-serif", whiteSpace: "nowrap", opacity: emailPhase === "submitting" ? 0.7 : 1 }}
+                        >
+                          {emailPhase === "submitting" ? "…" : "Send my plan"}
+                        </button>
+                      </form>
+                      <button
+                        onClick={() => setEmailPhase("dismissed")}
+                        style={{ marginTop: 10, fontSize: 11, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
+                      >
+                        No thanks
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
