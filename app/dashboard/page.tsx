@@ -1815,6 +1815,11 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const emergencyFundBalance = hasPlaidSavings
     ? savingsAccts.reduce((s, a) => s + (a.balance_current ?? 0), 0)
     : cashSavings;
+  const connectedBreakdown = {
+    brokerageCash: bankAssets
+      .filter(a => a.type === "investment")
+      .reduce((s, a) => s + (a.balance_current ?? 0), 0),
+  };
   const brokerageCashExcluded = connectedBreakdown.brokerageCash > 0;
   const efMin = monthlyExpenses * 3;
   const efMax = monthlyExpenses * 6;
