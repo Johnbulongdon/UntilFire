@@ -80,6 +80,22 @@ function Reveal({
 /* ── Nav ─────────────────────────────────────────────────────────────── */
 function LandingNav({ onStart }: { onStart: () => void }) {
   const [scrolled, setScrolled] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    const syncCompact = () => setIsCompact(media.matches);
+    syncCompact();
+
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", syncCompact);
+      return () => media.removeEventListener("change", syncCompact);
+    }
+
+    media.addListener(syncCompact);
+    return () => media.removeListener(syncCompact);
+  }, []);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -88,27 +104,45 @@ function LandingNav({ onStart }: { onStart: () => void }) {
 
   return (
     <header style={{
-      position: "fixed", top: 0, left: 0, right: 0, height: 64,
-      display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px",
+      position: "fixed", top: 0, left: 0, right: 0, height: isCompact ? 60 : 64,
+      display: "flex", alignItems: "center", justifyContent: "space-between", padding: isCompact ? "0 16px" : "0 24px",
       background: scrolled ? "rgba(250,253,251,0.92)" : "transparent",
       backdropFilter: scrolled ? "blur(12px)" : "none",
       borderBottom: scrolled ? `1px solid ${C.borderSoft}` : "none",
       zIndex: 50, transition: "background 0.3s, border-color 0.3s",
+      gap: isCompact ? 12 : 24,
     }}>
-      <Logo variant="light" size={26} />
+      <div style={{ flex: "0 1 auto", minWidth: 0 }}>
+        <Logo variant="light" size={isCompact ? 24 : 26} />
+      </div>
 
-      <nav style={{ display: "flex", gap: 24 }}>
-        <a href="#how" style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: scrolled ? C.muted : C.green900, textDecoration: "none" }}>
-          How it works
-        </a>
-        <a href="#pricing" style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: scrolled ? C.muted : C.green900, textDecoration: "none" }}>
-          Pricing
-        </a>
-      </nav>
+      {!isCompact ? (
+        <nav style={{ display: "flex", gap: 24, flex: "0 0 auto" }}>
+          <a href="#how" style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: scrolled ? C.muted : C.green900, textDecoration: "none" }}>
+            How it works
+          </a>
+          <a href="#pricing" style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: scrolled ? C.muted : C.green900, textDecoration: "none" }}>
+            Pricing
+          </a>
+        </nav>
+      ) : null}
 
       <button
         onClick={onStart}
-        style={{ height: 36, padding: "0 18px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+        style={{
+          height: isCompact ? 34 : 36,
+          padding: isCompact ? "0 16px" : "0 18px",
+          background: C.green900,
+          color: "#fff",
+          border: "none",
+          borderRadius: 9999,
+          fontFamily: F,
+          fontWeight: 700,
+          fontSize: isCompact ? 12 : 13,
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+        }}
       >
         Get started
       </button>
