@@ -14,12 +14,71 @@ type Props = {
 }
 
 const US_CITIES = CITIES.filter((city) => isUS(city.state))
+const SORTED_US_CITIES_BY_COST = [...US_CITIES].sort((a, b) => b.col - a.col)
+const US_CITY_COUNT = US_CITIES.length
+const US_MEDIAN_COL = [...US_CITIES].sort((a, b) => a.col - b.col)[Math.floor(US_CITIES.length / 2)]?.col ?? 52_000
 
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
 
 function usd(amount: number) {
   return `$${Math.round(amount).toLocaleString()}`
+}
+
+function ordinal(value: number) {
+  const mod10 = value % 10
+  const mod100 = value % 100
+
+  if (mod10 === 1 && mod100 !== 11) return `${value}st`
+  if (mod10 === 2 && mod100 !== 12) return `${value}nd`
+  if (mod10 === 3 && mod100 !== 13) return `${value}rd`
+  return `${value}th`
+}
+
+function getNationalCostRank(city: City) {
+  const rank = SORTED_US_CITIES_BY_COST.findIndex((entry) => entry.key === city.key) + 1
+  return {
+    rank,
+    total: US_CITY_COUNT,
+  }
+}
+
+function getCostBand(city: City) {
+  if (city.col >= 80_000) return 'very-high'
+  if (city.col >= 62_000) return 'high'
+  if (city.col >= 48_000) return 'mid'
+  return 'lower'
+}
+
+function getSuggestedCalculator(city: City, taxRate: number) {
+  if (city.col >= 70_000) {
+    return {
+      href: '/calculators/savings-rate',
+      label: 'Savings Rate Calculator',
+      reason: `In ${city.name}, small spending changes move the target quickly, so your savings rate matters more than almost anything else.`,
+    }
+  }
+
+  if (taxRate === 0) {
+    return {
+      href: '/calculators/coast-fire',
+      label: 'Coast FIRE Calculator',
+      reason: `Lower tax drag can turn more income into invested cash, which makes Coast FIRE scenarios especially worth testing in ${city.name}.`,
+    }
+  }
+
+  return {
+    href: '/calculators/4-percent-rule',
+    label: 'FIRE Number Calculator',
+    reason: `The quickest next step after a city baseline is pressure-testing your withdrawal-rate assumptions for ${city.name}.`,
+  }
+}
+
+function getRelatedArticleSlug(city: City, taxRate: number) {
+  if (city.col >= 70_000) return 'how-fire-assumptions-change-your-retirement-date'
+  if (taxRate === 0) return 'why-savings-rate-matters-more-than-income'
+  if (city.col <= 46_000) return 'coast-fire-vs-full-fire'
+  return 'how-much-money-do-i-need-to-retire'
 }
 
 export async function generateStaticParams() {
@@ -42,6 +101,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: page.title,
       description: page.description,
       keywords: `${page.keyword}, FIRE calculator, retirement calculator, financial independence calculator, ${page.city.name}`,
+      robots: {
+        index: true,
+        follow: true,
+      },
       alternates: {
         canonical: page.canonicalUrl,
       },
@@ -63,13 +126,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = US_CITIES.find((city) => city.key === slug)
   if (!data) return {}
 
+  const rank = getNationalCostRank(data)
+
   return {
     title: `${data.name} FIRE Number Calculator | UntilFire`,
-    description: `How much do you need to retire in ${data.name}? Based on a local cost of living of ${fmt(data.col)}/year. Calculate your personal FIRE number in seconds.`,
+    description: `How much do you need to retire in ${data.name}? Based on a local cost of living of ${fmt(data.col)}/year. Compare local tax context, see how ${data.name} ranks among US city baselines, and model your timeline.`,
+    keywords: `${data.name} FIRE number, ${data.name} FIRE calculator, retire in ${data.name}, ${data.name} cost of living, financial independence ${data.name}`,
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: { canonical: `https://www.untilfire.com/fire-number/${data.key}` },
     openGraph: {
-      title: `${data.name} FIRE Number Calculator`,
-      description: `Retire in ${data.name} — find your number based on local costs of ${fmt(data.col)}/yr.`,
+      title: `${data.name} FIRE Number Calculator and Cost Guide`,
+      description: `${data.name} ranks ${ordinal(rank.rank)} out of ${rank.total} US city baselines in UntilFire. Use local cost and tax context to estimate your target and timeline.`,
+      url: `https://www.untilfire.com/fire-number/${data.key}`,
       type: 'website',
     },
   }
@@ -354,6 +425,38 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
     .filter((c) => c.state === data.state && c.key !== data.key)
     .slice(0, 5);
 
+  const nationalRank = getNationalCostRank(data)
+  const costBand = getCostBand(data)
+  const spendDelta = data.col - US_MEDIAN_COL
+  const suggestedCalculator = getSuggestedCalculator(data, taxRate)
+  const relatedArticle = getLearnArticle(getRelatedArticleSlug(data, taxRate))
+  const nearestHigherCostCity = SORTED_US_CITIES_BY_COST
+    .filter((city) => city.col > data.col)
+    .sort((a, b) => a.col - b.col)[0]
+  const nearestLowerCostCity = SORTED_US_CITIES_BY_COST
+    .filter((city) => city.col < data.col)
+    .sort((a, b) => b.col - a.col)[0]
+  const cityFaqs = [
+    {
+      question: `What FIRE number should I use for ${data.name}?`,
+      answer: `A simple baseline for ${data.name} is ${fmt(fireTarget)}, which comes from multiplying the local annual spending estimate of ${fmt(data.col)} by 25. That is a starting point, not a final answer: your housing, taxes, and personal spending rhythm still matter.`,
+    },
+    {
+      question: `Is ${data.name} expensive for FIRE planning?`,
+      answer:
+        spendDelta >= 0
+          ? `${data.name} sits about ${fmt(spendDelta)} above the current UntilFire median US city baseline of ${fmt(US_MEDIAN_COL)} per year, so spending control matters more than average here.`
+          : `${data.name} sits about ${fmt(Math.abs(spendDelta))} below the current UntilFire median US city baseline of ${fmt(US_MEDIAN_COL)} per year, which can make the target easier to reach if income holds up.`,
+    },
+    {
+      question: `How do taxes affect FIRE in ${data.name}?`,
+      answer:
+        taxRate === 0
+          ? `${data.name} benefits from a state with no income tax, so more of each raise can turn into invested savings. That does not remove lifestyle risk, but it can shorten the path to FIRE if spending stays disciplined.`
+          : `${data.name} uses ${taxLabel}, so pre-tax contributions and realistic take-home assumptions matter. Taxes do not change the 25x rule directly, but they do change how quickly you can fund it.`,
+    },
+  ]
+
   const heading: React.CSSProperties = {
     fontSize: 13,
     fontWeight: 700,
@@ -469,14 +572,98 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               sustain a 30+ year retirement.
             </p>
             <p style={{ margin: 0 }}>
-              {taxRate === 0
-                ? `${data.name} is in a state with no income tax, which significantly boosts your take-home pay and accelerates your path to FIRE compared to high-tax states.`
-                : `${data.name} residents pay approximately ${(taxRate * 100).toFixed(1)}% in effective state income tax. Maximising pre-tax contributions to a 401(k) or IRA is especially impactful here.`}
+              {costBand === 'very-high'
+                ? `${data.name} is one of the most expensive FIRE baselines in UntilFire, ranking ${ordinal(nationalRank.rank)} out of ${nationalRank.total} US cities. In places like this, housing and recurring lifestyle costs usually matter more than trying to optimise tiny line items.`
+                : costBand === 'high'
+                  ? `${data.name} sits in the higher-cost group of US city baselines. You usually need both a healthy income and a disciplined savings rate to keep the target from drifting upward.`
+                  : costBand === 'mid'
+                    ? `${data.name} sits near the middle of UntilFire's US city range. That makes it useful for testing whether the real lever is spending discipline, tax efficiency, or simply earning more.`
+                    : `${data.name} lands in the lower-cost end of UntilFire's US city range, which can make FIRE more reachable if income remains stable and lifestyle creep stays under control.`}
             </p>
             <p style={{ margin: 0 }}>
-              The biggest levers: your savings rate and when you start. Saving 20% of take-home versus 10% can cut
-              your time to retirement nearly in half. Starting at 25 instead of 35 can mean retiring a decade earlier.
+              {taxRate === 0
+                ? `${data.name} is in a no-state-income-tax environment, so more of each raise can become invested cash. That advantage compounds only if spending does not rise just as fast.`
+                : `${data.name} residents face ${taxLabel}, so pre-tax contributions and a realistic take-home estimate matter. FIRE math breaks when people plan from gross salary instead of the amount they can actually invest.`}
             </p>
+            <p style={{ margin: 0 }}>
+              The biggest levers are still your savings rate and your timeline. Saving 20% of take-home instead of 10% can cut years off the journey, and starting earlier lowers the amount your portfolio has to do later.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 40 }}>
+          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={heading}>National context</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", marginBottom: 8 }}>
+              {ordinal(nationalRank.rank)} of {nationalRank.total}
+            </div>
+            <p style={{ margin: 0, fontSize: 14, color: "#475569", lineHeight: 1.7 }}>
+              {data.name} ranks by annual spending baseline among UntilFire&apos;s US cities, which helps explain whether your target is being pushed mostly by local costs or by your own spending choices.
+            </p>
+          </div>
+
+          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={heading}>Compared with the US median</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", marginBottom: 8 }}>
+              {spendDelta >= 0 ? `${fmt(spendDelta)} higher` : `${fmt(Math.abs(spendDelta))} lower`}
+            </div>
+            <p style={{ margin: 0, fontSize: 14, color: "#475569", lineHeight: 1.7 }}>
+              The current UntilFire median US city baseline is {fmt(US_MEDIAN_COL)}/year. Every {fmt(1_000)} of annual spending changes the 25× target by {fmt(25_000)}.
+            </p>
+          </div>
+
+          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={heading}>Closest cost comparisons</div>
+            <p style={{ margin: 0, fontSize: 14, color: "#475569", lineHeight: 1.8 }}>
+              {nearestHigherCostCity ? `Nearest higher baseline: ${nearestHigherCostCity.name} at ${fmt(nearestHigherCostCity.col)}/year.` : 'This is already among the highest baselines in the current data set.'}
+            </p>
+            <p style={{ margin: "10px 0 0", fontSize: 14, color: "#475569", lineHeight: 1.8 }}>
+              {nearestLowerCostCity ? `Nearest lower baseline: ${nearestLowerCostCity.name} at ${fmt(nearestLowerCostCity.col)}/year.` : 'This is already among the lowest baselines in the current data set.'}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 40 }}>
+          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={heading}>Next calculator</div>
+            <h2 style={{ fontSize: 20, lineHeight: 1.25, margin: "0 0 10px", color: "#19181E" }}>
+              {suggestedCalculator.label}
+            </h2>
+            <p style={{ margin: "0 0 14px", fontSize: 14, color: "#475569", lineHeight: 1.8 }}>
+              {suggestedCalculator.reason}
+            </p>
+            <Link href={suggestedCalculator.href} style={{ color: "#059669", fontWeight: 700, textDecoration: "none", fontSize: 14 }}>
+              Open {suggestedCalculator.label}
+            </Link>
+          </div>
+
+          {relatedArticle ? (
+            <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "22px 20px" }}>
+              <div style={heading}>Related reading</div>
+              <h2 style={{ fontSize: 20, lineHeight: 1.25, margin: "0 0 10px", color: "#19181E" }}>
+                {relatedArticle.title}
+              </h2>
+              <p style={{ margin: "0 0 14px", fontSize: 14, color: "#475569", lineHeight: 1.8 }}>
+                {relatedArticle.description}
+              </p>
+              <Link href={`/learn/${relatedArticle.slug}`} style={{ color: "#059669", fontWeight: 700, textDecoration: "none", fontSize: 14 }}>
+                Read the guide
+              </Link>
+            </div>
+          ) : null}
+        </div>
+
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "24px 22px", marginBottom: 40 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#064E3B", margin: "0 0 16px" }}>
+            Questions people ask about FIRE in {data.name}
+          </h2>
+          <div style={{ display: "grid", gap: 14 }}>
+            {cityFaqs.map((faq) => (
+              <div key={faq.question} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 14, padding: "16px 16px 14px" }}>
+                <h3 style={{ margin: "0 0 8px", fontSize: 16, color: "#19181E" }}>{faq.question}</h3>
+                <p style={{ margin: 0, fontSize: 14, color: "#475569", lineHeight: 1.8 }}>{faq.answer}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -543,6 +730,46 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           </Link>
         </div>
       </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+                { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },
+                { '@type': 'ListItem', position: 3, name: data.name, item: `https://www.untilfire.com/fire-number/${data.key}` },
+              ],
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'WebPage',
+              name: `${data.name} FIRE Number Calculator and Cost Guide`,
+              description: `Estimate a realistic FIRE number for ${data.name} using local annual spending of ${fmt(data.col)}, state tax context, and retirement math.`,
+              url: `https://www.untilfire.com/fire-number/${data.key}`,
+              about: {
+                '@type': 'Thing',
+                name: `FIRE planning in ${data.name}`,
+              },
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: cityFaqs.map((faq) => ({
+                '@type': 'Question',
+                name: faq.question,
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: faq.answer,
+                },
+              })),
+            },
+          ]),
+        }}
+      />
     </>
   );
 }

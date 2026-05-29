@@ -2,22 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CITIES, STATE_TAX, isUS } from "@/lib/fire-data";
 
-export const metadata: Metadata = {
-  title: "FIRE Number by City — How Much to Retire Anywhere in the US | UntilFire",
-  description:
-    "Find out exactly how much you need to retire in any US city. Browse 97 cities with local cost-of-living data, state tax rates, and interactive FIRE calculators.",
-  alternates: { canonical: "https://www.untilfire.com/fire-number" },
-  openGraph: {
-    title: "FIRE Number by City | UntilFire",
-    description: "How much do you need to retire in your city? 97 US cities with local cost-of-living data.",
-    type: "website",
-  },
-};
-
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
+
+export const metadata: Metadata = {
+  title: "FIRE Number by City — How Much to Retire in US Cities | UntilFire",
+  description:
+    `Compare ${US_CITIES.length} US city FIRE baselines with local cost-of-living data, state tax context, and retirement math. Find a realistic FIRE number for your city and model your next step.`,
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: { canonical: "https://www.untilfire.com/fire-number" },
+  openGraph: {
+    title: "FIRE Number by City | UntilFire",
+    description: `Compare ${US_CITIES.length} US city FIRE baselines and see how local costs change your retirement target.`,
+    type: "website",
+  },
+};
 
 const STATE_NAMES: Record<string, string> = {
   ca: "California", ny: "New York", nyc: "New York", tx: "Texas", fl: "Florida",
