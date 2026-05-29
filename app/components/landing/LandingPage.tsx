@@ -343,12 +343,12 @@ function HeroSection({ onStart }: { onStart: () => void }) {
       </div>
 
       {/* Animated freedom date preview */}
-      <div aria-hidden style={{
-        position: "relative", margin: "60px auto 0", width: "min(680px, 85vw)",
+      <div aria-hidden className="uf-hero-preview" style={{
+        position: "relative", margin: "60px auto 0", width: "min(680px, calc(100vw - 48px))",
         opacity: mounted ? 1 : 0, transform: mounted ? "translateY(0)" : "translateY(30px)",
         transition: "opacity 0.9s ease 0.55s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.55s",
       }}>
-        <div style={{
+        <div className="uf-hero-preview-card" style={{
           background: C.green900, borderRadius: 20, padding: "28px 32px 32px",
           boxShadow: "0 32px 64px rgba(0,53,39,0.22), 0 8px 20px rgba(0,53,39,0.12)",
           position: "relative", overflow: "hidden",
@@ -363,28 +363,28 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.teal }}>
               Your freedom date
             </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 16 }}>
-              <div style={{
+            <div className="uf-hero-preview-date" style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 16 }}>
+              <div className="uf-hero-preview-month-wrap" style={{
                 display: "flex", alignItems: "baseline", gap: 4,
                 animation: "heroDateReveal 0.8s ease-out 1.2s both",
               }}>
-                <span style={{ fontSize: 58, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
+                <span className="uf-hero-preview-month" style={{ fontSize: 58, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
                   March
                 </span>
               </div>
-              <span style={{ fontSize: 58, fontWeight: 800, color: C.teal, letterSpacing: "-0.02em", lineHeight: 1 }}>
+              <span className="uf-hero-preview-year" style={{ fontSize: 58, fontWeight: 800, color: C.teal, letterSpacing: "-0.02em", lineHeight: 1 }}>
                 2037
               </span>
             </div>
             <p style={{ marginTop: 14, fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, maxWidth: 320 }}>
               When work becomes optional based on your current plan.
             </p>
-            <div style={{
+            <div className="uf-hero-preview-move" style={{
               marginTop: 20, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.1)",
               display: "flex", alignItems: "center", gap: 14,
             }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>Top move</span>
-              <span style={{
+              <span className="uf-hero-preview-move-label" style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>Top move</span>
+              <span className="uf-hero-preview-move-badge" style={{
                 fontSize: 14, fontWeight: 700, color: "#fff",
                 padding: "6px 14px", background: "rgba(98,250,227,0.15)",
                 borderRadius: 999, border: "1px solid rgba(98,250,227,0.25)",
@@ -447,6 +447,39 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           }
           .uf-trust-logos span {
             font-size: 12px !important;
+          }
+          .uf-hero-preview {
+            width: calc(100vw - 32px) !important;
+            margin-top: 44px !important;
+          }
+          .uf-hero-preview-card {
+            padding: 24px 20px 24px !important;
+            border-radius: 18px !important;
+          }
+          .uf-hero-preview-date {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 6px !important;
+          }
+          .uf-hero-preview-month,
+          .uf-hero-preview-year {
+            font-size: 44px !important;
+          }
+          .uf-hero-preview-move {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+          }
+          .uf-hero-preview-move-label {
+            font-size: 12px !important;
+          }
+          .uf-hero-preview-move-badge {
+            width: 100% !important;
+            box-sizing: border-box !important;
+            border-radius: 18px !important;
+            white-space: normal !important;
+            line-height: 1.45 !important;
+            padding: 10px 14px !important;
           }
         }
       `}</style>
