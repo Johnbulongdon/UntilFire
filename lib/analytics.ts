@@ -26,6 +26,15 @@ import {
   type FireTypeSharedProperties,
   type FireTypeCtaClickedProperties,
   type HysaEmptyStateCtaClickedProperties,
+  type ResultShareOpenedProperties,
+  type ResultShareCompletedProperties,
+  type ResultSaveClickedProperties,
+  type ResultEmailCapturedProperties,
+  type FeedbackOpenedProperties,
+  type FeedbackSubmittedProperties,
+  type FeedbackDismissedProperties,
+  type SharePlatform,
+  type ShareCardKind,
 } from './analytics-events';
 
 function isClient(): boolean {
@@ -200,4 +209,52 @@ export function trackHysaEmptyStateCtaClicked(input: {
     placement: input.placement ?? 'assets_empty_state',
   });
   capture(FunnelEvents.HYSA_EMPTY_STATE_CTA_CLICKED, props);
+}
+
+export function trackResultShareOpened(input?: { landingSource?: string }) {
+  const props: ResultShareOpenedProperties = withVersion({
+    ...(input?.landingSource ? { landing_source: input.landingSource } : {}),
+  });
+  capture(FunnelEvents.RESULT_SHARE_OPENED, props);
+}
+
+export function trackResultShareCompleted(input: { platform: SharePlatform; cardKind: ShareCardKind }) {
+  const props: ResultShareCompletedProperties = withVersion({
+    platform: input.platform,
+    card_kind: input.cardKind,
+  });
+  capture(FunnelEvents.RESULT_SHARE_COMPLETED, props);
+}
+
+export function trackResultSaveClicked(input: { placement: 'hero' | 'monthly_move' | 'next_move'; landingSource?: string }) {
+  const props: ResultSaveClickedProperties = withVersion({
+    placement: input.placement,
+    ...(input.landingSource ? { landing_source: input.landingSource } : {}),
+  });
+  capture(FunnelEvents.RESULT_SAVE_CLICKED, props);
+}
+
+export function trackResultEmailCaptured(input?: { landingSource?: string }) {
+  const props: ResultEmailCapturedProperties = withVersion({
+    ...(input?.landingSource ? { landing_source: input.landingSource } : {}),
+  });
+  capture(FunnelEvents.RESULT_EMAIL_CAPTURED, props);
+}
+
+export function trackFeedbackOpened() {
+  const props: FeedbackOpenedProperties = withVersion({ source: 'dashboard_widget' as const });
+  capture(FunnelEvents.FEEDBACK_OPENED, props);
+}
+
+export function trackFeedbackSubmitted(input: { feedbackType: string }) {
+  const props: FeedbackSubmittedProperties = withVersion({
+    feedback_type: input.feedbackType,
+    source: 'dashboard_widget' as const,
+  });
+  capture(FunnelEvents.FEEDBACK_SUBMITTED, props);
+}
+
+export function trackFeedbackDismissed() {
+  const props: FeedbackDismissedProperties = withVersion({ source: 'dashboard_widget' as const });
+  capture(FunnelEvents.FEEDBACK_DISMISSED, props);
 }

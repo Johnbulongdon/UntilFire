@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { trackFeedbackOpened, trackFeedbackSubmitted, trackFeedbackDismissed } from "@/lib/analytics";
 
 type FeedbackType = "bug" | "feature" | "general";
 type Status = "idle" | "sending" | "sent" | "error";
@@ -35,6 +36,7 @@ export default function FeedbackWidget() {
   }, [open]);
 
   function handleClose() {
+    if (status !== "sent") trackFeedbackDismissed();
     setOpen(false);
     if (status === "sent") {
       setTimeout(() => {
@@ -63,6 +65,7 @@ export default function FeedbackWidget() {
 
     if (res.ok) {
       setStatus("sent");
+      trackFeedbackSubmitted({ feedbackType: type });
     } else {
       setStatus("error");
     }
@@ -90,7 +93,7 @@ export default function FeedbackWidget() {
       {/* Floating button */}
       <button
         className="uf-feedback-btn"
-        onClick={() => setOpen(true)}
+        onClick={() => { setOpen(true); trackFeedbackOpened(); }}
         aria-label="Send feedback"
         style={{
           position: "fixed",

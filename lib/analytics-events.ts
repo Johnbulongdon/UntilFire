@@ -27,6 +27,14 @@ export const FunnelEvents = {
   FIRE_TYPE_SHARED: 'funnel_fire_type_shared',
   FIRE_TYPE_CTA_CLICKED: 'funnel_fire_type_cta_clicked',
   HYSA_EMPTY_STATE_CTA_CLICKED: 'funnel_hysa_empty_state_cta_clicked',
+  // Post-result actions (sprint 22)
+  RESULT_SHARE_OPENED: 'result_share_opened',
+  RESULT_SHARE_COMPLETED: 'result_share_completed',
+  RESULT_SAVE_CLICKED: 'result_save_clicked',
+  RESULT_EMAIL_CAPTURED: 'result_email_captured',
+  FEEDBACK_OPENED: 'feedback_opened',
+  FEEDBACK_SUBMITTED: 'feedback_submitted',
+  FEEDBACK_DISMISSED: 'feedback_dismissed',
 } as const;
 
 export type FunnelEventName =
@@ -147,6 +155,40 @@ export interface HysaEmptyStateCtaClickedProperties extends BaseFunnelProperties
   cta: 'learn_more' | 'connect_account';
   destination: 'apy_calculator' | 'plaid_connect';
   placement: 'assets_empty_state';
+}
+
+export interface ResultShareOpenedProperties extends BaseFunnelProperties {
+  landing_source?: string;
+}
+
+export type SharePlatform = 'x' | 'facebook' | 'reddit' | 'copy';
+export type ShareCardKind = 'identity' | 'benchmark' | 'date';
+
+export interface ResultShareCompletedProperties extends BaseFunnelProperties {
+  platform: SharePlatform;
+  card_kind: ShareCardKind;
+}
+
+export interface ResultSaveClickedProperties extends BaseFunnelProperties {
+  placement: 'hero' | 'monthly_move' | 'next_move';
+  landing_source?: string;
+}
+
+export interface ResultEmailCapturedProperties extends BaseFunnelProperties {
+  landing_source?: string;
+}
+
+export interface FeedbackOpenedProperties extends BaseFunnelProperties {
+  source: 'dashboard_widget';
+}
+
+export interface FeedbackSubmittedProperties extends BaseFunnelProperties {
+  feedback_type: string;
+  source: 'dashboard_widget';
+}
+
+export interface FeedbackDismissedProperties extends BaseFunnelProperties {
+  source: 'dashboard_widget';
 }
 
 export function withVersion<P extends Record<string, unknown>>(
