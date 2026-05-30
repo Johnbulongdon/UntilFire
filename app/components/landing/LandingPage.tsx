@@ -150,6 +150,21 @@ function LandingNav({ onStart }: { onStart: () => void }) {
   );
 }
 
+const TRUST_LOGOS = [
+  { name: "Chase", file: "chase.jpg" },
+  { name: "Fidelity", file: "fidelity.jpg" },
+  { name: "Vanguard", file: "vanguard.jpg" },
+  { name: "Schwab", file: "schwab.jpg" },
+  { name: "Bank of America", file: "bank-of-america.jpg" },
+  { name: "Wells Fargo", file: "wells-fargo.jpg" },
+  { name: "SoFi", file: "sofi.jpg" },
+  { name: "Robinhood", file: "robinhood.jpg" },
+  { name: "Amex", file: "amex.jpg" },
+  { name: "Citi", file: "citi.jpg" },
+  { name: "US Bank", file: "us-bank.jpg" },
+  { name: "Discover", file: "discover.jpg" },
+];
+
 /* ── Hero section ────────────────────────────────────────────────────── */
 function HeroSection({ onStart }: { onStart: () => void }) {
   const [mounted, setMounted] = useState(false);
@@ -294,28 +309,33 @@ function HeroSection({ onStart }: { onStart: () => void }) {
 
             {/* Scrolling logos */}
             <div className="uf-trust-logos" style={{
-              display: "flex", gap: 40, alignItems: "center",
+              display: "flex", gap: 16, alignItems: "center",
               animation: "trustScroll 30s linear infinite",
               width: "max-content",
             }}>
-              {["Chase", "Fidelity", "Vanguard", "Schwab", "Bank of America", "Wells Fargo", "SoFi", "Robinhood", "Amex", "Citi", "US Bank", "Discover"].map((name) => (
-                <span key={name} style={{
-                  fontSize: 14, fontWeight: 600, color: C.muted,
-                  whiteSpace: "nowrap", opacity: 0.55,
-                  letterSpacing: "0.01em",
-                }}>
-                  {name}
-                </span>
+              {TRUST_LOGOS.map((logo) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={logo.name}
+                  src={`/app-icons/${logo.file}`}
+                  alt={logo.name}
+                  width={36}
+                  height={36}
+                  style={{ borderRadius: 8, objectFit: "cover", opacity: 0.8, flexShrink: 0 }}
+                />
               ))}
               {/* Duplicate for seamless loop */}
-              {["Chase", "Fidelity", "Vanguard", "Schwab", "Bank of America", "Wells Fargo", "SoFi", "Robinhood", "Amex", "Citi", "US Bank", "Discover"].map((name) => (
-                <span key={name + "-dup"} style={{
-                  fontSize: 14, fontWeight: 600, color: C.muted,
-                  whiteSpace: "nowrap", opacity: 0.55,
-                  letterSpacing: "0.01em",
-                }}>
-                  {name}
-                </span>
+              {TRUST_LOGOS.map((logo) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={logo.name + "-dup"}
+                  src={`/app-icons/${logo.file}`}
+                  alt=""
+                  aria-hidden
+                  width={36}
+                  height={36}
+                  style={{ borderRadius: 8, objectFit: "cover", opacity: 0.8, flexShrink: 0 }}
+                />
               ))}
             </div>
           </div>
