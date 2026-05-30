@@ -662,6 +662,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 "One clear next move",
                 "Decision sliders",
                 "Shareable result card",
+                "1 bank + 1 brokerage sync",
               ].map(f => (
                 <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", fontSize: 13, color: C.body }}>
                   <svg width="14" height="14" viewBox="0 0 14 14" style={{ marginTop: 1, flexShrink: 0 }}><path d="M2.5 7l2.5 2.5 6-6" stroke={C.green700} strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>
@@ -692,7 +693,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 "Everything in Free",
                 "Ranked next moves by time saved",
                 "Action plan from your spending",
-                "Plaid bank & brokerage sync",
+                "Unlimited bank & brokerage sync",
                 "Progress tracking & reports",
               ].map(f => (
                 <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", fontSize: 13, color: "rgba(255,255,255,0.9)" }}>
