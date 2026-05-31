@@ -557,421 +557,399 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
   // Status pill
   const statusLabel = savingsRate >= 50 ? "Ahead of schedule" : savingsRate >= 25 ? "On track" : income > 0 ? "Behind schedule" : "No data yet";
-  const statusColor = savingsRate >= 50 ? "#059669" : savingsRate >= 25 ? "#20D4BF" : income > 0 ? "#F59E0B" : "#94A3B8";
-  const TrendBadge = ({ pct, pp, inverse = false }: { pct?: number | null; pp?: number | null; inverse?: boolean }) => {
-    const val = pp ?? pct;
-    if (val === null || val === undefined) return null;
-    const isPositive = inverse ? val < 0 : val > 0;
-    const color = isPositive ? "#059669" : "#DC2626";
-    const label = pp !== undefined && pp !== null
-      ? `${Math.abs(pp).toFixed(1)} pp vs ${prevMonthName}`
-      : `${Math.abs(pct!).toFixed(1)}% vs ${prevMonthName}`;
+  const statusColor = savingsRate >= 50 ? "#22d3a5" : savingsRate >= 25 ? "#22d3a5" : income > 0 ? "#f97316" : "#6b7280";
+  const _srDelta = srDelta; // kept for reference, not rendered
+  const TrendBadge = ({ pct, inverse = false }: { pct?: number | null; inverse?: boolean }) => {
+    if (pct === null || pct === undefined) return null;
+    const isPositive = inverse ? pct < 0 : pct > 0;
     return (
-      <span style={{ fontSize: 11, color, fontWeight: 600, fontFamily: "Inter, sans-serif" }}>
-        {val > 0 ? "▲" : "▼"} {label}
+      <span style={{ fontSize: 11, fontWeight: 600, color: isPositive ? "#22d3a5" : "#ef4444", fontFamily: "DM Sans, sans-serif" }}>
+        {pct > 0 ? "↑" : "↓"} {Math.abs(pct).toFixed(1)}%
       </span>
     );
   };
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+  // Net worth (investable minus liabilities)
+  const netWorth = investable - totalDebt - mortgageBalance;
 
-      {/* ── Setup checklist ─────────────────────────────────────────────── */}
-      <SetupChecklist
-        income={income} expenses={expenses}
-        k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
-        cityName={cityName}
-        plaidAccounts={plaidAccounts}
-        onTabChange={onTabChange}
-        onOpenOnboarding={onOpenOnboarding}
-      />
+  // YTD change from last year's snapshot
+  const ytdChangePct = useMemo(() => {
+    const thisYear = new Date().getFullYear();
+    const prevYearSnap = [...nwSnapshots]
+      .filter(s => new Date(s.captured_at).getFullYear() < thisYear)
+      .sort((a, b) => new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime())[0];
+    if (!prevYearSnap || prevYearSnap.portfolio_value === 0) return null;
+    return ((investable - prevYearSnap.portfolio_value) / prevYearSnap.portfolio_value) * 100;
+  }, [nwSnapshots, investable]);
+
+  // Streak: consecutive months of portfolio growth from nwSnapshots
+  const streak = useMemo(() => {
+    if (nwSnapshots.length < 2) return 0;
+    const sorted = [...nwSnapshots].sort((a, b) =>
+      new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime()
+    );
+    let count = 0;
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if (sorted[i].portfolio_value > sorted[i + 1].portfolio_value) count++;
+      else break;
+    }
+    return count;
+  }, [nwSnapshots]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif" }}>
-            Good {timeOfDay}{firstName ? `, ${firstName}` : ""}
-          </div>
-          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3, fontFamily: "DM Sans, sans-serif" }}>
+          <div style={{ fontSize: 13, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
             {formattedDate}{cityName ? ` · 📍 ${cityName}` : ""}
           </div>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 99, background: `${statusColor}20`, color: statusColor, fontFamily: "DM Sans, sans-serif", border: `1px solid ${statusColor}40` }}>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 99, background: `${statusColor}18`, color: statusColor, fontFamily: "DM Sans, sans-serif", border: `1px solid ${statusColor}35` }}>
           {statusLabel}
         </span>
       </div>
 
-      {/* ── KPI row: Freedom Date + Net Worth + Savings Rate ───────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+      {/* ── Row 1: Growth Over Time (left) + Freedom Date / Streak (right) ─ */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 16, alignItems: "stretch" }}>
 
-        {/* Freedom Date */}
-        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 14, padding: "20px 22px" }}>
-          <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 700, marginBottom: 10, fontFamily: "DM Sans, sans-serif" }}>Freedom Date</div>
+        {/* Growth Over Time — large dark green card */}
+        <div style={{ background: "linear-gradient(160deg, #0a2419 0%, #0d1f1a 100%)", border: "1px solid #1a3028", borderRadius: 16, padding: "24px 24px 20px", display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#6ee7b7", fontFamily: "DM Sans, sans-serif", letterSpacing: "0.3px", marginBottom: 4 }}>Growth Over Time</div>
+          <div style={{ fontSize: "clamp(28px, 4.5vw, 44px)", fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif", letterSpacing: "-2px", lineHeight: 1 }}>
+            {fmtMoney(netWorth)}
+          </div>
+          {ytdChangePct !== null && (
+            <div style={{ fontSize: 12, color: "#22d3a5", fontFamily: "DM Sans, sans-serif", marginTop: 6, fontWeight: 600 }}>
+              ↗ Net Worth {ytdChangePct >= 0 ? "+" : ""}{ytdChangePct.toFixed(1)}% YTD
+            </div>
+          )}
+
+          {/* Chart */}
+          <div style={{ flex: 1, marginTop: 16 }}>
+            <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+            <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both" }}>
+              <ResponsiveContainer width="100%" height={200}>
+                <ComposedChart data={periodData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor="#22d3a5" stopOpacity={0.45} />
+                      <stop offset="100%" stopColor="#22d3a5" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                  <XAxis dataKey="year" tickFormatter={v => String(new Date().getFullYear() + (v as number))} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} width={50} />
+                  <Tooltip animationDuration={150} content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    const val = (payload.find(p => p.dataKey === "Investable")?.value ?? payload.find(p => p.dataKey === "Actual")?.value) as number | undefined;
+                    const yr = new Date().getFullYear() + (label as number);
+                    return (
+                      <div style={{ background: "#0a1f17", border: "1px solid #1a3028", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontFamily: "DM Sans" }}>
+                        <div style={{ color: "#ffffff", fontWeight: 700 }}>{yr}</div>
+                        {val != null && <div style={{ color: "#22d3a5", marginTop: 2 }}>{fmtMoney(val, true)}</div>}
+                      </div>
+                    );
+                  }} />
+                  {fireYear !== null && <ReferenceLine x={fireYear} stroke="rgba(34,211,165,0.5)" strokeDasharray="4 3" strokeWidth={1.5} />}
+                  <Line type="monotone" dataKey="Actual" stroke="rgba(255,255,255,0.6)" strokeWidth={2} connectNulls={false} dot={{ r: 3, fill: "#22d3a5" }} activeDot={{ r: 4 }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
+                  <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 4, fill: "#22d3a5" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Period tabs + bottom stats */}
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ display: "flex", gap: 4 }}>
+              {(["5Y", "15Y", "All"] as const).map(p => (
+                <button key={p} onClick={() => setChartPeriod(p)} style={{ padding: "3px 9px", borderRadius: 5, border: "1px solid", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans", background: chartPeriod === p ? "#22d3a5" : "transparent", color: chartPeriod === p ? "#0a2419" : "rgba(255,255,255,0.4)", borderColor: chartPeriod === p ? "#22d3a5" : "rgba(255,255,255,0.15)" }}>
+                  {p}
+                </button>
+              ))}
+            </div>
+            {retireYear && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "DM Sans" }}>Freedom: <span style={{ color: "#22d3a5", fontWeight: 600 }}>{retireYear}</span></div>}
+          </div>
+
+          <div style={{ display: "flex", gap: 28, marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+            <div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Monthly Savings</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#ffffff", fontFamily: "Syne", marginTop: 3 }}>
+                {annualSavings > 0 ? `${fmtMoney(annualSavings / 12, true)} ↑` : "—"}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Investment Return</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#ffffff", fontFamily: "Syne", marginTop: 3 }}>
+                {(growthRate * 100).toFixed(1)}% ↑
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right column: Freedom Date + Streak */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* Freedom Date */}
+          <div style={{ background: "linear-gradient(160deg, #0a2419 0%, #0d1f1a 100%)", border: "1px solid #1a3028", borderRadius: 16, padding: "22px 22px" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#6ee7b7", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Freedom Date</div>
           {retireYear ? (
             <>
-              <div style={{ fontSize: "clamp(32px, 5vw, 44px)", fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif", letterSpacing: "-2px", lineHeight: 1 }}>
+              <div style={{ fontSize: "clamp(28px, 4vw, 38px)", fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif", letterSpacing: "-1.5px", lineHeight: 1 }}>
                 {retireYear}
               </div>
-              {retirementCityName && (
-                <div style={{ fontSize: 11, color: "#22d3a5", fontWeight: 600, fontFamily: "DM Sans, sans-serif", marginTop: 6 }}>
-                  🎯 {retirementCityName}
+              <div style={{ fontSize: 12, color: "#6ee7b7", fontFamily: "DM Sans, sans-serif", marginTop: 6, fontWeight: 600 }}>
+                {fireYear} years away{retirementCityName ? ` · ${retirementCityName}` : ""}
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>PROGRESS</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#22d3a5", fontFamily: "DM Sans" }}>{progress.toFixed(1)}%</span>
                 </div>
-              )}
-              <div style={{ marginTop: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>{fireYear}yr away{fireAge > 0 ? ` · age ${fireAge + (fireYear ?? 0)}` : ""}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#22d3a5", fontFamily: "DM Sans, sans-serif" }}>{progress.toFixed(0)}%</span>
+                <div style={{ height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 99, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #22d3a5, #059669)", borderRadius: 99 }} />
                 </div>
-                <div style={{ height: 4, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #22d3a5, #059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
+                <div style={{ marginTop: 5, fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "DM Sans" }}>
+                  {fmtMoney(investable, true)} of {fmtMoney(fireTarget, true)}
                 </div>
               </div>
             </>
           ) : (
             <>
-              <div style={{ fontSize: 36, fontWeight: 700, color: "#374151", fontFamily: "Syne, sans-serif" }}>—</div>
-              <button
-                onClick={() => onOpenOnboarding?.()}
-                style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif" }}
-              >
+              <div style={{ fontSize: 32, fontWeight: 700, color: "rgba(255,255,255,0.15)", fontFamily: "Syne, sans-serif" }}>—</div>
+              <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans" }}>
                 Get my FIRE date →
               </button>
             </>
           )}
-        </div>
+          </div>
 
-        {/* Investable Assets */}
-        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 14, padding: "20px 22px" }}>
-          <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 700, marginBottom: 10, fontFamily: "DM Sans, sans-serif" }}>Investable Assets</div>
-          <div style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 700, color: "#22d3a5", fontFamily: "Syne, sans-serif", letterSpacing: "-0.8px" }}>
-            {fmtMoney(investable, true)}
-          </div>
-          <div style={{ marginTop: 6, fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-            target {fmtMoney(fireTarget, true)}
-          </div>
-          {investable > 0 && (
-            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
-              {[
-                { label: "401k", value: k401, color: "#22d3a5" },
-                { label: "Roth IRA", value: rothIRA, color: "#818cf8" },
-                { label: "Taxable", value: taxable, color: "#0ea5e9" },
-                { label: "Cash", value: totalCash, color: "#f97316" },
-              ].filter(a => a.value > 0).slice(0, 3).map(({ label, value, color }) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: "#9ca3af", fontFamily: "DM Sans, sans-serif", flex: 1 }}>{label}</span>
-                  <span style={{ fontSize: 11, color: "#e2e8f0", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>{fmtMoney(value, true)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Savings Rate */}
-        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 14, padding: "20px 22px" }}>
-          <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 700, marginBottom: 10, fontFamily: "DM Sans, sans-serif" }}>Savings Rate</div>
-          <div style={{ fontSize: "clamp(28px, 4vw, 38px)", fontWeight: 700, color: savingsRate >= 25 ? "#22d3a5" : savingsRate > 0 ? "#f97316" : "#374151", fontFamily: "Syne, sans-serif" }}>
-            {income > 0 ? `${savingsRate.toFixed(1)}%` : "—"}
-          </div>
-          <div style={{ marginTop: 6, fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-            {annualSavings > 0 ? `${fmtMoney(annualSavings / 12, true)}/mo invested` : "Add income to calculate"}
-          </div>
-          {income > 0 && (
-            <div style={{ marginTop: 10 }}>
-              <div style={{ height: 4, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, savingsRate)}%`, background: savingsRate >= 25 ? "#22d3a5" : "#f97316", borderRadius: 99 }} />
-              </div>
-              <div style={{ marginTop: 4, fontSize: 10, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-                {savingsRate >= 50 ? "Excellent — ahead of schedule" : savingsRate >= 25 ? "On track toward FIRE" : "Aim for 25%+ to accelerate"}
+          {/* Current Streak */}
+          <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 16, padding: "20px 22px", flex: 1 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Current Streak</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <span style={{ fontSize: 20 }}>🔥</span>
+              <div style={{ fontSize: "clamp(20px, 3vw, 30px)", fontWeight: 700, color: "#ffffff", fontFamily: "Syne", letterSpacing: "-0.5px" }}>
+                {streak > 0 ? `${streak * 30} Days` : hasActuals && netSurplus > 0 ? "Active" : "—"}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Net This Month */}
-        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 14, padding: "20px 22px" }}>
-          <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 700, marginBottom: 10, fontFamily: "DM Sans, sans-serif" }}>
-            {hasActuals ? "Net This Month" : "Monthly Budget"}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Time Left</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", fontFamily: "Syne", marginTop: 4 }}>
+                  {fireYear ? `${fireYear} Years` : "—"}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Momentum</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: (ytdChangePct ?? savingsRate) > 0 ? "#22d3a5" : "#6b7280", fontFamily: "Syne", marginTop: 4 }}>
+                  {ytdChangePct !== null ? `${ytdChangePct >= 0 ? "+" : ""}${ytdChangePct.toFixed(1)}%` : savingsRate > 0 ? `+${savingsRate.toFixed(1)}%` : "—"}
+                </div>
+              </div>
+            </div>
           </div>
-          {hasActuals ? (
-            <>
-              <div style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 700, color: netSurplus >= 0 ? "#22d3a5" : "#ef4444", fontFamily: "Syne, sans-serif" }}>
-                {netSurplus < 0 ? "−" : "+"}{fmtMoney(Math.abs(netSurplus), true)}
-              </div>
-              <div style={{ marginTop: 6, fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-                {monthName} 1–{now.getDate()}
-              </div>
-              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>Income</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#22d3a5", fontFamily: "DM Sans, sans-serif" }}>{fmtMoney(actualIncome, true)}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>Expenses</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#ef4444", fontFamily: "DM Sans, sans-serif" }}>{fmtMoney(actualExpenses, true)}</span>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 700, color: "#374151", fontFamily: "Syne, sans-serif" }}>
-                {income > 0 ? fmtMoney(income - monthlyExpenses, true) : "—"}
-              </div>
-              <div style={{ marginTop: 6, fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>planned surplus</div>
-              <button
-                onClick={() => onTabChange?.("cashflow")}
-                style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif" }}
-              >
-                Log transactions →
-              </button>
-            </>
-          )}
         </div>
       </div>
 
-      {/* ── Growth Over Time chart ──────────────────────────────────────── */}
-      <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 14, padding: "22px 24px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif" }}>Growth Over Time</div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2, fontFamily: "DM Sans, sans-serif" }}>Net worth trajectory toward freedom</div>
-          </div>
-          <div style={{ display: "flex", gap: 4 }}>
-            {(["5Y", "15Y", "All"] as const).map(p => (
-              <button key={p} onClick={() => setChartPeriod(p)} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans, sans-serif", background: chartPeriod === p ? "#22d3a5" : "transparent", color: chartPeriod === p ? "#08080e" : "#6b7280", borderColor: chartPeriod === p ? "#22d3a5" : "#23232d" }}>
-                {p}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* ── Row 2: Budget This Month + Asset Allocation + Next Steps ─────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
 
-        <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-        <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both" }}>
-        <ResponsiveContainer width="100%" height={260}>
-          <ComposedChart data={periodData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor="#22d3a5" stopOpacity={0.32} />
-                <stop offset="100%" stopColor="#22d3a5" stopOpacity={0.0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-            <XAxis
-              dataKey="year"
-              tickFormatter={v => String(new Date().getFullYear() + (v as number))}
-              tick={{ fill: "#6b7280", fontSize: 11, fontFamily: "DM Sans" }}
-              axisLine={false}
-              tickLine={false}
-              interval="preserveStartEnd"
-            />
-            <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "#6b7280", fontSize: 10, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} width={56} />
-            <Tooltip
-              animationDuration={150}
-              content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null;
-                const actual    = payload.find(p => p.dataKey === "Actual")?.value as number | undefined;
-                const portfolio = (payload.find(p => p.dataKey === "Investable")?.value as number) ?? 0;
-                const sp        = (payload.find(p => p.dataKey === "S&P 500")?.value as number) ?? 0;
-                const crossed   = (actual ?? portfolio) >= fireTarget;
-                const calYear   = new Date().getFullYear() + (label as number);
-                return (
-                  <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: "10px 14px", fontSize: 12, fontFamily: "Inter, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", transition: "opacity 0.15s ease" }}>
-                    <div style={{ fontWeight: 700, marginBottom: 6, color: "#F8FAFC" }}>{calYear}</div>
-                    {actual !== undefined && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.85)", marginBottom: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.85)", display: "inline-block" }} />
-                        Actual: {fmtMoney(actual, true)}{crossed ? " ✓" : ""}
+        {/* Budget This Month */}
+        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 16, padding: "20px 22px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif" }}>Budget this month</div>
+            <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>{monthName}</div>
+          </div>
+          {(() => {
+            const planned = monthlyExpenses > 0 ? monthlyExpenses : income > 0 ? income : 0;
+            const actual = hasActuals ? actualExpenses : 0;
+            const remaining = planned - actual;
+            const pct = planned > 0 ? Math.min(110, (actual / planned) * 100) : 0;
+            const R = 50, C = 2 * Math.PI * R;
+            const arcFill = Math.min(pct / 100, 1) * C;
+            if (planned === 0) return (
+              <button onClick={() => onTabChange?.("cashflow")} style={{ width: "100%", padding: "14px", background: "rgba(34,211,165,0.04)", border: "1px dashed rgba(34,211,165,0.2)", borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#22d3a5", fontFamily: "DM Sans" }}>Set up your budget →</div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4, fontFamily: "DM Sans" }}>Track planned vs actual spending.</div>
+              </button>
+            );
+            return (
+              <>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+                  <div style={{ position: "relative", width: 120, height: 120 }}>
+                    <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
+                      <circle cx="60" cy="60" r={R} fill="none" stroke="#23232d" strokeWidth="10" />
+                      <circle cx="60" cy="60" r={R} fill="none"
+                        stroke={pct > 100 ? "#ef4444" : "#22d3a5"} strokeWidth="10"
+                        strokeDasharray={`${arcFill} ${C}`} strokeLinecap="round" />
+                    </svg>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", fontFamily: "DM Sans", letterSpacing: "0.5px" }}>
+                        {hasActuals ? "ACTUAL" : "PLANNED"}
                       </div>
-                    )}
-                    {portfolio > 0 && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22d3a5" }}>
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22d3a5", display: "inline-block" }} />
-                        Projected: {fmtMoney(portfolio, true)}{!actual && crossed ? " ✓" : ""}
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", fontFamily: "Syne", marginTop: 2 }}>
+                        {fmtMoney(hasActuals ? actual : planned, true)}
                       </div>
-                    )}
-                    {sp > 0 && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#f97316", marginTop: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f97316", display: "inline-block" }} />
-                        S&amp;P 500: {fmtMoney(sp, true)}
-                      </div>
-                    )}
-                    <div style={{ color: "#64748B", marginTop: 6, borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 6 }}>
-                      FIRE target: {fmtMoney(fireTarget, true)}
                     </div>
                   </div>
-                );
-              }}
-            />
-            {/* Horizontal FIRE target line */}
-            <ReferenceLine y={fireTarget} stroke="#059669" strokeDasharray="5 3" strokeWidth={1.5} label={{ value: "FIRE target", position: "insideTopRight", fontSize: 10, fill: "#059669", fontWeight: 700, fontFamily: "Inter" }} />
-            {/* Vertical FIRE year line */}
-            {fireYear && <ReferenceLine x={fireYear} stroke="#22d3a5" strokeDasharray="4 3" strokeWidth={1.5} />}
-            {/* Actual portfolio history — solid white line up to today */}
-            <Line type="monotone" dataKey="Actual" stroke="rgba(255,255,255,0.85)" strokeWidth={2} connectNulls={false} dot={{ r: 4, fill: "#22d3a5", stroke: "rgba(255,255,255,0.85)", strokeWidth: 1.5 }} activeDot={{ r: 5, fill: "#22d3a5" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
-            {/* Projected portfolio area — teal gradient into the future */}
-            <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#22d3a5" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
-            {/* S&P 500 benchmark — staggered after the area */}
-            <Line type="monotone" dataKey="S&P 500" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#f97316" }} isAnimationActive animationBegin={500} animationDuration={950} animationEasing="ease-out" />
-          </ComposedChart>
-        </ResponsiveContainer>
-        </div>
-
-        <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-              <span style={{ width: 16, height: 2, borderRadius: 1, background: "rgba(255,255,255,0.75)", display: "inline-block", flexShrink: 0 }} /> Actual
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-              <span style={{ width: 16, height: 3, borderRadius: 2, background: "#22d3a5", display: "inline-block", flexShrink: 0 }} /> Projected
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-              <span style={{ width: 16, height: 2, borderRadius: 1, background: "#f97316", display: "inline-block", flexShrink: 0 }} /> S&amp;P 500
-            </span>
-          </div>
-          {retireYear && (
-            <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-              Freedom: <span style={{ color: "#22d3a5", fontWeight: 700 }}>{retireYear}</span>
-              {fireAge > 0 && <span style={{ color: "#6b7280" }}> · age {fireAge + (fireYear ?? 0)}</span>}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── 2-col: Cash Flow + Asset Allocation ────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
-
-        {/* Cash Flow */}
-        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 14, padding: "20px 22px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif" }}>Cash Flow</div>
-            {hasActuals && (
-              <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 11, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>
-                View all →
-              </button>
-            )}
-          </div>
-          {hasActuals ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                { label: "Income", value: actualIncome, trend: incomeTrend, inverse: false, color: "#22d3a5" },
-                { label: "Expenses", value: actualExpenses, trend: expenseTrend, inverse: true, color: "#ef4444" },
-                { label: "Net surplus", value: netSurplus, trend: netTrend, inverse: false, color: netSurplus >= 0 ? "#22d3a5" : "#ef4444" },
-              ].map(({ label, value, trend, inverse, color }) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, textAlign: "center" }}>
                   <div>
-                    <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif", marginBottom: 2 }}>{label}</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color, fontFamily: "Syne, sans-serif" }}>
-                      {value < 0 ? "−" : ""}{fmtMoney(Math.abs(value))}
-                    </div>
+                    <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: "DM Sans", fontWeight: 700 }}>Planned</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", fontFamily: "Syne", marginTop: 3 }}>{fmtMoney(planned, true)}</div>
                   </div>
-                  {trend !== null && trend !== undefined && (
-                    <span style={{ fontSize: 11, fontWeight: 600, color: (inverse ? trend < 0 : trend > 0) ? "#22d3a5" : "#ef4444", fontFamily: "DM Sans, sans-serif" }}>
-                      {trend > 0 ? "▲" : "▼"} {Math.abs(trend).toFixed(1)}%
-                    </span>
-                  )}
+                  <div>
+                    <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: "DM Sans", fontWeight: 700 }}>Remaining</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: remaining >= 0 ? "#22d3a5" : "#ef4444", fontFamily: "Syne", marginTop: 3 }}>{fmtMoney(Math.abs(remaining), true)}</div>
+                  </div>
                 </div>
-              ))}
-              <div style={{ marginTop: 4 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>Savings rate</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: actualSavingsRate >= 25 ? "#22d3a5" : "#f97316", fontFamily: "DM Sans, sans-serif" }}>{actualSavingsRate.toFixed(1)}%</span>
-                </div>
-                <div style={{ height: 4, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(100, Math.max(0, actualSavingsRate))}%`, background: actualSavingsRate >= 25 ? "#22d3a5" : "#f97316", borderRadius: 99 }} />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => onTabChange?.("cashflow")}
-              style={{ width: "100%", padding: "16px", background: "rgba(34,211,165,0.04)", border: "1px dashed rgba(34,211,165,0.25)", borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#22d3a5", marginBottom: 4, fontFamily: "DM Sans, sans-serif" }}>Log your first transaction →</div>
-              <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>Track income and expenses to see your real savings rate.</div>
-            </button>
-          )}
+                {hasActuals && actual > planned && (
+                  <div style={{ marginTop: 10, padding: "7px 10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 8, fontSize: 11, color: "#f87171", fontFamily: "DM Sans" }}>
+                    ⚠ {fmtMoney(actual - planned, true)} over plan — trim to stay on track
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Asset Allocation */}
-        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 14, padding: "20px 22px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 16, padding: "20px 22px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif" }}>Asset Allocation</div>
-            <button onClick={() => onTabChange?.("assets")} style={{ fontSize: 11, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>
-              Manage →
-            </button>
+            <button onClick={() => onTabChange?.("assets")} style={{ fontSize: 11, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>···</button>
           </div>
           {investable > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
-                { label: "401k / 403b", value: k401, color: "#22d3a5" },
-                { label: "Roth IRA", value: rothIRA, color: "#818cf8" },
-                { label: "Taxable / Brokerage", value: taxable, color: "#0ea5e9" },
-                { label: "Cash & Savings", value: totalCash, color: "#f97316" },
+                { label: "Tax-Advantaged", value: k401 + rothIRA, color: "#22d3a5" },
+                { label: "Taxable Brokerage", value: taxable, color: "#6ee7b7" },
+                { label: "Liquid Cash", value: totalCash, color: "#9ca3af" },
               ].filter(a => a.value > 0).map(({ label, value, color }) => {
                 const pct = (value / investable) * 100;
                 return (
-                  <div key={label}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, color: "#e2e8f0", fontFamily: "DM Sans, sans-serif" }}>{label}</span>
-                      <span style={{ fontSize: 12, fontFamily: "DM Sans, sans-serif" }}>
-                        <span style={{ fontWeight: 700, color: "#e2e8f0" }}>{fmtMoney(value, true)}</span>
-                        <span style={{ color: "#6b7280" }}> · {pct.toFixed(0)}%</span>
-                      </span>
-                    </div>
-                    <div style={{ height: 5, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99 }} />
-                    </div>
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: "#e2e8f0", fontFamily: "DM Sans, sans-serif", flex: 1 }}>{label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", fontFamily: "DM Sans, sans-serif" }}>{fmtMoney(value, true)}</span>
+                    <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif", minWidth: 28, textAlign: "right" }}>{pct.toFixed(0)}%</span>
                   </div>
                 );
               })}
-              <div style={{ marginTop: 4, fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
-                Total investable: <span style={{ color: "#22d3a5", fontWeight: 700 }}>{fmtMoney(investable, true)}</span>
+              {(() => {
+                const taxAdvPct = (k401 + rothIRA) / investable * 100;
+                if (totalCash > investable * 0.3 && investable > 10000) return (
+                  <div style={{ marginTop: 4, display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid #23232d" }}>
+                    <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans" }}>REBALANCING NEEDED</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#f97316", fontFamily: "DM Sans" }}>HIGH</span>
+                  </div>
+                );
+                if (taxAdvPct > 0 && taxAdvPct < 20) return (
+                  <div style={{ marginTop: 4, display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid #23232d" }}>
+                    <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans" }}>REBALANCING NEEDED</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#f97316", fontFamily: "DM Sans" }}>REVIEW</span>
+                  </div>
+                );
+                return null;
+              })()}
+            </div>
+          ) : (
+            <button onClick={() => onTabChange?.("assets")} style={{ width: "100%", padding: "14px", background: "rgba(34,211,165,0.04)", border: "1px dashed rgba(34,211,165,0.2)", borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#22d3a5", fontFamily: "DM Sans" }}>Add your investments →</div>
+              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4, fontFamily: "DM Sans" }}>Connect accounts or enter balances manually.</div>
+            </button>
+          )}
+        </div>
+
+        {/* Next Steps */}
+        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 16, padding: "20px 22px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif", marginBottom: 14 }}>Next Steps</div>
+          {(() => {
+            const hasExpenses = Object.values(expenses).some(v => (v ?? 0) > 0);
+            const hasBankConnected = plaidAccounts.length > 0;
+            type StepItem = { label: string; sub?: string; done: boolean; action?: () => void };
+            const items: StepItem[] = [];
+            if (!income) items.push({ label: "Set your income", sub: "Required for FIRE calculation", done: false, action: () => onOpenOnboarding?.() });
+            if (!hasExpenses) items.push({ label: "Add your expenses", sub: "Track monthly spending", done: false, action: () => onTabChange?.("cashflow") });
+            if (!hasBankConnected) items.push({ label: "Connect your bank", sub: "Automatic transaction sync", done: false, action: () => onTabChange?.("assets") });
+            if (!cityName) items.push({ label: "Set retirement city", sub: "Personalise FIRE target", done: false, action: () => onTabChange?.("profile") });
+            if (items.length === 0 && nextMoveScenarios && nextMoveScenarios.length > 0) {
+              const [best] = nextMoveScenarios;
+              if (best.deltaYears > 0) {
+                const fmtA = (y: number) => y >= 2 ? `${y.toFixed(1)}yr sooner` : `${Math.round(y * 12)}mo sooner`;
+                items.push({ label: best.label, sub: fmtA(best.deltaYears), done: false, action: () => onTabChange?.("fire-calculator") });
+              }
+            }
+            if (items.length === 0) return (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 100, gap: 6 }}>
+                <div style={{ fontSize: 22 }}>✅</div>
+                <div style={{ fontSize: 12, color: "#22d3a5", fontFamily: "DM Sans", fontWeight: 600 }}>All set!</div>
+              </div>
+            );
+            return (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {items.map((item, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", borderBottom: i < items.length - 1 ? "1px solid #23232d" : "none" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 4, border: "1.5px solid #374151", background: "transparent", flexShrink: 0, marginTop: 1 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, color: "#e2e8f0", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>{item.label}</div>
+                      {item.sub && <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans, sans-serif", marginTop: 2 }}>{item.sub}</div>}
+                    </div>
+                    {item.action && (
+                      <button onClick={item.action} style={{ fontSize: 11, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans", fontWeight: 600, flexShrink: 0 }}>→</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* ── Row 3: Cash Flow ─────────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+        <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 16, padding: "20px 22px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif" }}>Cash Flow</div>
+            {hasActuals && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: netSurplus >= 0 ? "#22d3a5" : "#ef4444", fontFamily: "Syne, sans-serif" }}>
+                  {netSurplus >= 0 ? "+" : "−"}{fmtMoney(Math.abs(netSurplus), true)}
+                </div>
+                <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 11, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans", fontWeight: 600 }}>View →</button>
+              </div>
+            )}
+          </div>
+          {hasActuals ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{ background: "#0d1117", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700, marginBottom: 6 }}>Income</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#ffffff", fontFamily: "Syne" }}>{fmtMoney(actualIncome, true)}</div>
+                {incomeTrend !== null && (
+                  <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: incomeTrend > 0 ? "#22d3a5" : "#ef4444", fontFamily: "DM Sans" }}>
+                    {incomeTrend > 0 ? "↑" : "↓"} {Math.abs(incomeTrend).toFixed(1)}%
+                  </div>
+                )}
+              </div>
+              <div style={{ background: "#0d1117", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700, marginBottom: 6 }}>Expenses</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#ffffff", fontFamily: "Syne" }}>{fmtMoney(actualExpenses, true)}</div>
+                {expenseTrend !== null && (
+                  <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: expenseTrend < 0 ? "#22d3a5" : "#ef4444", fontFamily: "DM Sans" }}>
+                    {expenseTrend > 0 ? "↑" : "↓"} {Math.abs(expenseTrend).toFixed(1)}%
+                  </div>
+                )}
               </div>
             </div>
           ) : (
-            <button onClick={() => onTabChange?.("assets")} style={{ width: "100%", padding: "16px", background: "rgba(34,211,165,0.04)", border: "1px dashed rgba(34,211,165,0.25)", borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#22d3a5", marginBottom: 4, fontFamily: "DM Sans, sans-serif" }}>Add your investments →</div>
-              <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>Connect accounts or enter balances manually.</div>
+            <button onClick={() => onTabChange?.("cashflow")} style={{ width: "100%", padding: "18px 14px", background: "rgba(34,211,165,0.04)", border: "1px dashed rgba(34,211,165,0.2)", borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#22d3a5", fontFamily: "DM Sans", marginBottom: 4 }}>Log your first transaction →</div>
+              <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "DM Sans" }}>Track income and expenses to see your real savings rate.</div>
             </button>
           )}
         </div>
       </div>
-
-      {/* ── Next Move: Highest-Impact Acceleration Card ──────────────────── */}
-      {nextMoveScenarios && nextMoveScenarios.length > 0 && (() => {
-        const [best, ...rest] = nextMoveScenarios;
-        const fmtAccel = (yrs: number) =>
-          yrs >= 2 ? `${yrs.toFixed(1)} years sooner` : `${Math.round(yrs * 12)} months sooner`;
-        return (
-          <div style={{ background: "#111118", border: "1px solid rgba(34,211,165,0.2)", borderRadius: 14, padding: "20px 22px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#22d3a5", marginBottom: 12, fontFamily: "DM Sans, sans-serif" }}>
-              Highest-Impact Move
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif", marginBottom: 4 }}>{best.label}</div>
-                <div style={{ fontSize: 13, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>{best.detail}</div>
-              </div>
-              {best.deltaYears > 0 && (
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#22d3a5", fontFamily: "Syne, sans-serif" }}>{fmtAccel(best.deltaYears)}</div>
-                  {best.newRetireYear && retireYear && (
-                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, fontFamily: "DM Sans, sans-serif" }}>freedom in {best.newRetireYear} vs {retireYear}</div>
-                  )}
-                </div>
-              )}
-            </div>
-            {rest.filter(s => s.deltaYears > 0).slice(0, 2).map((s, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #23232d", paddingTop: 10, marginTop: 10 }}>
-                <span style={{ fontSize: 13, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>{s.label}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#22d3a5", background: "rgba(34,211,165,0.1)", borderRadius: 20, padding: "3px 10px", fontFamily: "DM Sans, sans-serif" }}>
-                  {fmtAccel(s.deltaYears)}
-                </span>
-              </div>
-            ))}
-          </div>
-        );
-      })()}
 
     </div>
   );
