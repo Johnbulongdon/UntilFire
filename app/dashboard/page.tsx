@@ -435,8 +435,9 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
-  const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("15Y");
+  const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
+  const chartDateFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }), []);
 
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -489,33 +490,56 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
   const rawChartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
-  // S&P 500 benchmark + actual portfolio history blended with projection
   const chartData = useMemo(() => {
-    const currentYear = new Date().getFullYear();
+    const now = new Date();
+    const historyStart = new Date(now);
+    historyStart.setMonth(historyStart.getMonth() - 3);
 
-    // Group snapshots by calendar year (relative to today), keep last value per year
-    const snapByRelYear: Record<number, number> = {};
-    for (const snap of nwSnapshots) {
-      const relYear = new Date(snap.captured_at).getFullYear() - currentYear;
-      if (relYear < 0) snapByRelYear[relYear] = snap.portfolio_value;
-    }
-    const pastEntries = Object.entries(snapByRelYear)
-      .map(([yr, val]) => ({ year: Number(yr), Actual: val } as Record<string, number>))
-      .sort((a, b) => a.year - b.year);
+    const recentSnapshots = [...nwSnapshots]
+      .filter(snap => {
+        const capturedAt = new Date(snap.captured_at);
+        return !Number.isNaN(capturedAt.getTime()) && capturedAt >= historyStart;
+      })
+      .sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime());
 
-    // Future projection (year 0 onward) with S&P 500 benchmark
-    let sp = investable;
-    const annualSav = Math.max(annualSavings, 0);
-    const futureEntries = rawChartData.map((d, i) => {
-      const spVal = Math.round(sp);
-      sp = sp * 1.10 + annualSav;
-      const entry: Record<string, number> = { ...d, "S&P 500": spVal };
-      if (i === 0) entry.Actual = investable; // "you are here" marker at year 0
-      return entry;
-    });
+    const historyEntries = recentSnapshots.map((snap, index) => ({
+      key: `history-${index}`,
+      label: chartDateFormatter.format(new Date(snap.captured_at)),
+      shortLabel: chartDateFormatter.format(new Date(snap.captured_at)),
+      actual: snap.portfolio_value,
+      projected: null,
+      yearsOut: null,
+      phase: "history",
+    }));
 
-    return [...pastEntries, ...futureEntries];
-  }, [rawChartData, investable, annualSavings, nwSnapshots]);
+    const todayEntry = {
+      key: "today",
+      label: "Today",
+      shortLabel: "Today",
+      actual: investable,
+      projected: investable,
+      yearsOut: 0,
+      phase: "today",
+      Contributions: rawChartData[0]?.["Contributions"] ?? 0,
+      "Market Growth": rawChartData[0]?.["Market Growth"] ?? 0,
+    };
+
+    const futureEntries = rawChartData
+      .filter((_, index) => index > 0)
+      .map((entry, index) => ({
+        key: `future-${index + 1}`,
+        label: `${entry.year} year${entry.year === 1 ? "" : "s"}`,
+        shortLabel: `${entry.year}Y`,
+        actual: null,
+        projected: entry["Investable"],
+        yearsOut: entry.year,
+        phase: "projection",
+        Contributions: entry["Contributions"],
+        "Market Growth": entry["Market Growth"],
+      }));
+
+    return [...historyEntries, todayEntry, ...futureEntries];
+  }, [rawChartData, investable, nwSnapshots, chartDateFormatter]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -531,14 +555,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
   // Chart period filter
   const periodData = useMemo(() => {
-    const limit = chartPeriod === "5Y" ? 5 : chartPeriod === "15Y" ? 15 : chartData.length - 1;
-    return chartData.filter(d => d.year <= limit);
+    const limit = chartPeriod === "5Y" ? 5 : chartPeriod === "15Y" ? 15 : Number.POSITIVE_INFINITY;
+    return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
   }, [chartData, chartPeriod]);
 
   // Chart summary at FIRE year
   const firePoint = fireYear
-    ? (chartData[Math.min(fireYear, chartData.length - 1)] ?? chartData[chartData.length - 1])
-    : chartData[chartData.length - 1];
+    ? (rawChartData[Math.min(fireYear, rawChartData.length - 1)] ?? rawChartData[rawChartData.length - 1])
+    : rawChartData[rawChartData.length - 1];
   const contribAtFire = firePoint?.["Contributions"] ?? 0;
   const marketAtFire  = firePoint?.["Market Growth"] ?? 0;
 
@@ -605,7 +629,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         {/* Growth Over Time — large dark green card */}
         <div className="uf-overview-primary-card" style={{ background: "linear-gradient(160deg, #0a2419 0%, #0d1f1a 100%)", border: "1px solid #1a3028", borderRadius: 16, padding: "24px 24px 20px", display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#6ee7b7", fontFamily: "DM Sans, sans-serif", letterSpacing: "0.3px", marginBottom: 4 }}>Growth Over Time</div>
-          <div style={{ fontSize: "clamp(28px, 4.5vw, 44px)", fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif", letterSpacing: "-2px", lineHeight: 1 }}>
+          <div style={{ fontSize: "clamp(28px, 4.5vw, 44px)", fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.02 }}>
             {fmtMoney(netWorth)}
           </div>
           {ytdChangePct !== null && (
@@ -618,31 +642,32 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           <div style={{ flex: 1, marginTop: 16 }}>
             <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
             <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both" }}>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={periodData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                   <defs>
                     <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%"   stopColor="#22d3a5" stopOpacity={0.45} />
-                      <stop offset="100%" stopColor="#22d3a5" stopOpacity={0.0} />
+                      <stop offset="0%" stopColor="#22d3a5" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#22d3a5" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="year" tickFormatter={v => String(new Date().getFullYear() + (v as number))} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                  <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} width={50} />
+                  <XAxis dataKey="shortLabel" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
+                  <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} width={56} />
                   <Tooltip animationDuration={150} content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
-                    const val = (payload.find(p => p.dataKey === "Investable")?.value ?? payload.find(p => p.dataKey === "Actual")?.value) as number | undefined;
-                    const yr = new Date().getFullYear() + (label as number);
+                    const actualVal = payload.find(p => p.dataKey === "actual")?.value as number | undefined;
+                    const projectedVal = payload.find(p => p.dataKey === "projected")?.value as number | undefined;
                     return (
                       <div style={{ background: "#0a1f17", border: "1px solid #1a3028", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontFamily: "DM Sans" }}>
-                        <div style={{ color: "#ffffff", fontWeight: 700 }}>{yr}</div>
-                        {val != null && <div style={{ color: "#22d3a5", marginTop: 2 }}>{fmtMoney(val, true)}</div>}
+                        <div style={{ color: "#ffffff", fontWeight: 700 }}>{String(label)}</div>
+                        {actualVal != null && <div style={{ color: "rgba(255,255,255,0.85)", marginTop: 2 }}>History: {fmtMoney(actualVal, true)}</div>}
+                        {projectedVal != null && <div style={{ color: "#22d3a5", marginTop: 2 }}>Projection: {fmtMoney(projectedVal, true)}</div>}
                       </div>
                     );
                   }} />
-                  {fireYear !== null && <ReferenceLine x={fireYear} stroke="rgba(34,211,165,0.5)" strokeDasharray="4 3" strokeWidth={1.5} />}
-                  <Line type="monotone" dataKey="Actual" stroke="rgba(255,255,255,0.6)" strokeWidth={2} connectNulls={false} dot={{ r: 3, fill: "#22d3a5" }} activeDot={{ r: 4 }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
-                  <Area type="monotone" dataKey="Investable" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 4, fill: "#22d3a5" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
+                  <ReferenceLine x="Today" stroke="rgba(255,255,255,0.18)" strokeDasharray="4 3" strokeWidth={1.25} />
+                  <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.82)" strokeWidth={2.25} connectNulls={false} dot={false} activeDot={{ r: 4, fill: "#ffffff" }} isAnimationActive animationBegin={0} animationDuration={700} animationEasing="ease-out" />
+                  <Area type="monotone" dataKey="projected" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 4, fill: "#22d3a5" }} isAnimationActive animationBegin={150} animationDuration={1000} animationEasing="ease-out" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -657,19 +682,21 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 </button>
               ))}
             </div>
-            {retireYear && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "DM Sans" }}>Freedom: <span style={{ color: "#22d3a5", fontWeight: 600 }}>{retireYear}</span></div>}
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "DM Sans" }}>
+              Past 3 months actual · future projection
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 28, marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
             <div>
               <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Monthly Savings</div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: "#ffffff", fontFamily: "Syne", marginTop: 3 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", marginTop: 3 }}>
                 {annualSavings > 0 ? `${fmtMoney(annualSavings / 12, true)} ↑` : "—"}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Investment Return</div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: "#ffffff", fontFamily: "Syne", marginTop: 3 }}>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Assumed Return</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", marginTop: 3 }}>
                 {(growthRate * 100).toFixed(1)}% ↑
               </div>
             </div>
@@ -684,7 +711,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Your freedom date</div>
           {retireYear ? (
             <>
-              <div style={{ fontSize: "clamp(28px, 4vw, 38px)", fontWeight: 700, color: "#0F172A", fontFamily: "Syne, sans-serif", letterSpacing: "-1.5px", lineHeight: 1 }}>
+              <div style={{ fontSize: "clamp(28px, 4vw, 38px)", fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-1.5px", lineHeight: 1 }}>
                 {retireYear}
               </div>
               <div style={{ fontSize: 12, color: "#047857", fontFamily: "DM Sans, sans-serif", marginTop: 6, fontWeight: 600 }}>
@@ -708,7 +735,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </>
           ) : (
             <>
-              <div style={{ fontSize: 32, fontWeight: 700, color: "#CBD5E1", fontFamily: "Syne, sans-serif" }}>—</div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: "#CBD5E1", fontFamily: "Manrope, sans-serif" }}>—</div>
               <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.45 }}>
                 Add your income, spending, and savings to calculate a realistic freedom date.
               </div>
@@ -770,7 +797,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         {/* This Month's Spending */}
         <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Syne, sans-serif" }}>This month’s spending</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>This month’s spending</div>
             <div style={{ fontSize: 11, color: "#64748B", fontFamily: "DM Sans, sans-serif" }}>{monthName}</div>
           </div>
           {(() => {
@@ -824,7 +851,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         {/* Where your money is */}
         <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Syne, sans-serif" }}>Where your money is</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>Where your money is</div>
             <button onClick={() => onTabChange?.("assets")} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>View all →</button>
           </div>
           {investable > 0 ? (
@@ -862,7 +889,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
         {/* What to do next */}
         <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Syne, sans-serif", marginBottom: 14 }}>What to do next</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif", marginBottom: 14 }}>What to do next</div>
           {(() => {
             const hasExpenses = Object.values(expenses).some(v => (v ?? 0) > 0);
             const hasBankConnected = plaidAccounts.length > 0;
@@ -906,12 +933,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       <div className="uf-overview-tertiary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
         <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Syne, sans-serif" }}>Income vs spending</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>Income vs spending</div>
             <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans", fontWeight: 600 }}>Open cash flow →</button>
           </div>
           {hasActuals ? (
             <>
-              <div style={{ fontSize: 24, fontWeight: 700, color: netSurplus >= 0 ? "#047857" : "#B91C1C", fontFamily: "Syne, sans-serif", letterSpacing: "-0.6px" }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: netSurplus >= 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.6px" }}>
                 {netSurplus >= 0 ? `You saved ${fmtMoney(netSurplus, true)}` : `You overspent by ${fmtMoney(Math.abs(netSurplus), true)}`}
               </div>
               <div style={{ marginTop: 6, fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.5 }}>
@@ -1455,7 +1482,7 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif" }}>Get started</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Manrope, sans-serif" }}>Get started</div>
           <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "DM Sans, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3a5", fontFamily: "DM Sans, sans-serif" }}>{Math.round(pct)}%</div>
