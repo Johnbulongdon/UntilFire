@@ -921,12 +921,34 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     ? `${fmtMoney(Math.abs(consistencyMonths[0].savings))} ${consistencyMonths[0].savings >= 0 ? "saved" : "net short"} in ${consistencyMonths[0].date.toLocaleString("en-US", { month: "short" })}`
     : "We’ll start tracking this once your monthly history fills in.";
   const topTasks = (() => {
-    const tasks: Array<{ label: string; detail: string; impactYears: number; priority: number }> = [];
+    const tasks: Array<{
+      label: string;
+      detail: string;
+      impactYears: number;
+      priority: number;
+      progressPct?: number;
+      progressText?: string;
+      progressAria?: string;
+    }> = [];
     const seen = new Set<string>();
-    const addTask = (label: string, detail: string, impactYears = 0, priority = 0) => {
+    const addTask = (
+      label: string,
+      detail: string,
+      impactYears = 0,
+      priority = 0,
+      progress?: { progressPct: number; progressText: string; progressAria: string },
+    ) => {
       if (seen.has(label)) return;
       seen.add(label);
-      tasks.push({ label, detail, impactYears: Math.max(0, impactYears), priority });
+      tasks.push({
+        label,
+        detail,
+        impactYears: Math.max(0, impactYears),
+        priority,
+        progressPct: progress ? Math.max(0, Math.min(progress.progressPct, 100)) : undefined,
+        progressText: progress?.progressText,
+        progressAria: progress?.progressAria,
+      });
     };
 
     if (monthlyExpenses > 0 && emergencyFundPlan.priorityMode === "protect") {
@@ -936,6 +958,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         `${emergencyFundPlan.coverageMonths.toFixed(1)} months covered now. Get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor before pushing harder on growth.`,
         0,
         100,
+        {
+          progressPct: emergencyFundPlan.floorAmount > 0 ? (availableCash / emergencyFundPlan.floorAmount) * 100 : 0,
+          progressText: `${emergencyFundPlan.coverageMonths.toFixed(1)} / ${EMERGENCY_FUND_FLOOR_MONTHS.toFixed(1)} mo`,
+          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_FLOOR_MONTHS.toFixed(1)} months covered`,
+        },
       );
     }
 
@@ -945,6 +972,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         `${emergencyFundPlan.coverageMonths.toFixed(1)} months covered now. Keep some money moving into safety while continuing steady investing.`,
         0,
         70,
+        {
+          progressPct: emergencyFundPlan.targetAmount > 0 ? (availableCash / emergencyFundPlan.targetAmount) * 100 : 0,
+          progressText: `${emergencyFundPlan.coverageMonths.toFixed(1)} / ${EMERGENCY_FUND_TARGET_MONTHS.toFixed(1)} mo`,
+          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_TARGET_MONTHS.toFixed(1)} months covered`,
+        },
       );
     }
 
@@ -954,6 +986,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         `Reduce spending by about ${fmtMoney(correction, true)} this month`,
         "Your spending pace is currently above plan.",
         spendingImpactYears > 0 ? spendingImpactYears : 0,
+        0,
+        {
+          progressPct: spendingProgressPct > 0 ? (Math.min(spendingExpectedPct, 100) / Math.max(spendingProgressPct, spendingExpectedPct, 1)) * 100 : 0,
+          progressText: `${Math.round(Math.min(spendingExpectedPct, 100))}% pace`,
+          progressAria: `Spending pace progress: currently ${Math.round((Math.min(spendingExpectedPct, 100) / Math.max(spendingProgressPct, spendingExpectedPct, 1)) * 100)} percent on pace for the month`,
+        },
       );
     }
 
@@ -1000,6 +1038,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         `Add about ${fmtMoney(plannedContributionGap, true)} to stay on this month's target`,
         "Closing the gap keeps your savings plan on pace.",
         deltaYears,
+        0,
+        {
+          progressPct: goalContribution > 0 ? (Math.max(actualOrPlannedSavings, 0) / goalContribution) * 100 : 0,
+          progressText: `${fmtMoney(Math.max(actualOrPlannedSavings, 0), true)} / ${fmtMoney(goalContribution, true)}`,
+          progressAria: `Monthly savings progress: ${fmtMoney(Math.max(actualOrPlannedSavings, 0), true)} saved toward ${fmtMoney(goalContribution, true)}`,
+        },
       );
     }
 
@@ -1250,9 +1294,54 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {topTasks.map((task, index) => (
                 <div key={task.label} style={{ display: "flex", gap: 12, alignItems: "flex-start", paddingTop: index === 0 ? 0 : 10, borderTop: index === 0 ? "none" : "1px solid #F1F5F9" }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 999, background: "#ECFDF5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>
-                    {index + 1}
-                  </div>
+                  {index < 2 && typeof task.progressPct === "number" ? (
+                    <div
+                      aria-label={task.progressAria || `Task ${index + 1} progress`}
+                      role="img"
+                      style={{
+                        width: 40,
+                        height: 40,
+                        position: "relative",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {(() => {
+                        const size = 40;
+                        const stroke = 4;
+                        const radius = (size - stroke) / 2;
+                        const circumference = 2 * Math.PI * radius;
+                        const dashOffset = circumference * (1 - task.progressPct / 100);
+                        return (
+                          <>
+                            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
+                              <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#DCFCE7" strokeWidth={stroke} />
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius}
+                                fill="none"
+                                stroke="#10B981"
+                                strokeWidth={stroke}
+                                strokeLinecap="round"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={dashOffset}
+                              />
+                            </svg>
+                            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#047857", fontFamily: "Manrope, sans-serif" }}>
+                              {Math.round(task.progressPct)}%
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <div style={{ width: 24, height: 24, borderRadius: 999, background: "#ECFDF5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>
+                      {index + 1}
+                    </div>
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                       <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.4 }}>
@@ -1264,6 +1353,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                         </div>
                       )}
                     </div>
+                    {index < 2 && task.progressText && (
+                      <div style={{ fontSize: 12, color: "#047857", fontFamily: "Manrope, sans-serif", fontWeight: 700, marginTop: 4 }}>
+                        Progress: {task.progressText}
+                      </div>
+                    )}
                     <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.5, marginTop: 4 }}>
                       {task.detail}
                     </div>
