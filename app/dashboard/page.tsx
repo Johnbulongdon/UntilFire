@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
-  BarChart, Bar, ComposedChart, Area,
+  ComposedChart, Area,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import PlaidConnect from "./PlaidConnect";
@@ -421,7 +421,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -429,7 +429,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   prevIncome?: number; prevExpenses?: number; userName?: string;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
-  retirementCityName?: string; retirementCityCol?: number; lifestyleMultiplier?: number;
+  retirementCityCol?: number; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   recentTransactions?: { date: string; amount: number; currency: string; transaction_type?: string }[];
@@ -629,7 +629,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const formattedDate = `${DAY_NAMES[now.getDay()]} · ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-  const monthName = MONTH_NAMES[now.getMonth()];
   const prevMonthName = MONTH_NAMES[(now.getMonth() + 11) % 12];
 
   // Chart period filter
@@ -638,13 +637,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
   }, [chartData, chartPeriod]);
 
-  // Chart summary at FIRE year
-  const firePoint = fireYear
-    ? (rawChartData[Math.min(fireYear, rawChartData.length - 1)] ?? rawChartData[rawChartData.length - 1])
-    : rawChartData[rawChartData.length - 1];
-  const contribAtFire = firePoint?.["Contributions"] ?? 0;
-  const marketAtFire  = firePoint?.["Market Growth"] ?? 0;
-
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
   const hasPrev          = prevIncome > 0 || prevExpenses > 0;
@@ -652,49 +644,111 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const prevNet          = prevIncome - prevExpenses;
   const actualSavingsRate = actualIncome > 0 ? (netSurplus / actualIncome) * 100 : 0;
   const prevSavingsRate   = prevIncome > 0 ? (prevNet / prevIncome) * 100 : 0;
-  const trendPct = (cur: number, prev: number) => prev === 0 ? null : ((cur - prev) / Math.abs(prev)) * 100;
-  const incomeTrend  = hasPrev ? trendPct(actualIncome, prevIncome) : null;
-  const expenseTrend = hasPrev ? trendPct(actualExpenses, prevExpenses) : null;
-  const netTrend     = hasPrev ? trendPct(netSurplus, prevNet) : null;
   const srDelta      = (hasPrev && prevIncome > 0) ? actualSavingsRate - prevSavingsRate : null;
 
   // Status pill
-  const statusLabel = savingsRate >= 50 ? "Ahead of schedule" : savingsRate >= 25 ? "On track" : income > 0 ? "Behind schedule" : "No data yet";
-  const statusColor = savingsRate >= 50 ? "#22d3a5" : savingsRate >= 25 ? "#22d3a5" : income > 0 ? "#f97316" : "#6b7280";
-  const _srDelta = srDelta; // kept for reference, not rendered
-  const TrendBadge = ({ pct, inverse = false }: { pct?: number | null; inverse?: boolean }) => {
-    if (pct === null || pct === undefined) return null;
-    const isPositive = inverse ? pct < 0 : pct > 0;
+  const statusLabel = savingsRate >= 50 ? "Ahead of schedule" : savingsRate >= 25 ? "On track" : income > 0 ? "Needs attention" : "No data yet";
+  const statusColor = savingsRate >= 50 ? "#059669" : savingsRate >= 25 ? "#20D4BF" : income > 0 ? "#F59E0B" : "#94A3B8";
+  const TrendBadge = ({ pct, pp, inverse = false }: { pct?: number | null; pp?: number | null; inverse?: boolean }) => {
+    const val = pp ?? pct;
+    if (val === null || val === undefined) return null;
+    const isPositive = inverse ? val < 0 : val > 0;
+    const color = isPositive ? "#059669" : "#DC2626";
+    const label = pp !== undefined && pp !== null
+      ? `${Math.abs(pp).toFixed(1)} pp vs ${prevMonthName}`
+      : `${Math.abs(pct!).toFixed(1)}% vs ${prevMonthName}`;
     return (
-      <span style={{ fontSize: 11, fontWeight: 600, color: isPositive ? "#22d3a5" : "#ef4444", fontFamily: "Manrope, sans-serif" }}>
-        {pct > 0 ? "↑" : "↓"} {Math.abs(pct).toFixed(1)}%
+      <span style={{ fontSize: 11, color, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
+        {val > 0 ? "▲" : "▼"} {label}
       </span>
     );
   };
 
-  // Net worth (investable minus liabilities)
-  const netWorth = investable - totalDebt - mortgageBalance;
-
-  // YTD change from last year's snapshot
-  const ytdChangePct = useMemo(() => {
-    const thisYear = new Date().getFullYear();
-    const prevYearSnap = [...nwSnapshots]
-      .filter(s => new Date(s.captured_at).getFullYear() < thisYear)
-      .sort((a, b) => new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime())[0];
-    if (!prevYearSnap || prevYearSnap.portfolio_value === 0) return null;
-    return ((investable - prevYearSnap.portfolio_value) / prevYearSnap.portfolio_value) * 100;
-  }, [nwSnapshots, investable]);
-
-  const bestMove = nextMoveScenarios?.find(move => move.deltaYears > 0) ?? null;
+  const bestMove = nextMoveScenarios?.[0] ?? null;
+  const extraMoves = nextMoveScenarios?.filter((scenario, index) => index > 0 && scenario.deltaYears > 0).slice(0, 2) ?? [];
+  const actualOrPlannedIncome = hasActuals ? actualIncome : income;
+  const actualOrPlannedExpenses = hasActuals ? actualExpenses : monthlyExpenses;
+  const actualOrPlannedSavings = actualOrPlannedIncome - actualOrPlannedExpenses;
+  const actualOrPlannedSavingsRate = actualOrPlannedIncome > 0 ? (actualOrPlannedSavings / actualOrPlannedIncome) * 100 : 0;
+  const goalContribution = Math.max(annualSavings / 12, 0);
+  const planProgress = goalContribution > 0 ? Math.max(0, Math.min(100, (Math.max(actualOrPlannedSavings, 0) / goalContribution) * 100)) : 0;
+  const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const elapsedFraction = Math.min(1, Math.max(now.getDate() / monthDays, 0.05));
+  const expectedSpendToDate = monthlyExpenses * elapsedFraction;
+  const spendingDeltaToDate = hasActuals ? actualExpenses - expectedSpendToDate : 0;
+  const projectedMonthSpend = hasActuals && elapsedFraction > 0 ? actualExpenses / elapsedFraction : monthlyExpenses;
+  const projectedSpendStatus = hasActuals
+    ? spendingDeltaToDate > monthlyExpenses * 0.05
+      ? "Running above plan"
+      : spendingDeltaToDate < -monthlyExpenses * 0.05
+        ? "Running below plan"
+        : "Close to plan"
+    : "Add transactions to compare against plan";
+  const overspendProjection = useMemo(() => {
+    if (!hasActuals || income <= 0 || fireYear === null) return null;
+    return calcProjection({
+      annualIncome: income * 12,
+      monthlyExpenses: Math.max(projectedMonthSpend, 0),
+      k401,
+      rothIRA,
+      taxable,
+      cashSavings: totalCash,
+      totalDebt,
+      mortgageBalance,
+      mortgageMonthly,
+      growthRate,
+      withdrawalRate,
+      targetMonthlyExpenses,
+    });
+  }, [hasActuals, income, fireYear, projectedMonthSpend, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+  const spendingImpactYears = overspendProjection && fireYear !== null && overspendProjection.fireYear !== null
+    ? overspendProjection.fireYear - fireYear
+    : 0;
+  const spendingImpactLabel = spendingImpactYears > 0.15
+    ? `Could push freedom back about ${spendingImpactYears >= 1.5 ? `${spendingImpactYears.toFixed(1)} years` : `${Math.round(spendingImpactYears * 12)} months`}`
+    : spendingImpactYears < -0.15
+      ? `Could bring freedom forward about ${Math.abs(spendingImpactYears) >= 1.5 ? `${Math.abs(spendingImpactYears).toFixed(1)} years` : `${Math.round(Math.abs(spendingImpactYears) * 12)} months`}`
+      : "No meaningful change to your freedom date yet";
+  const retirementAccounts = k401 + rothIRA;
+  const brokerageAssets = taxable;
+  const positiveMoneyTotal = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0) + Math.max(totalCash, 0);
+  const retirementPct = positiveMoneyTotal > 0 ? (Math.max(retirementAccounts, 0) / positiveMoneyTotal) * 100 : 0;
+  const brokeragePct = positiveMoneyTotal > 0 ? (Math.max(brokerageAssets, 0) / positiveMoneyTotal) * 100 : 0;
+  const cashPct = positiveMoneyTotal > 0 ? (Math.max(totalCash, 0) / positiveMoneyTotal) * 100 : 0;
+  const moneyMixGradient = positiveMoneyTotal > 0
+    ? `conic-gradient(#064E3B 0% ${retirementPct}%, #10B981 ${retirementPct}% ${retirementPct + brokeragePct}%, #CFFAEF ${retirementPct + brokeragePct}% 100%)`
+    : "conic-gradient(#E2E8F0 0% 100%)";
+  const currentNetWorth = investable - totalDebt - mortgageBalance;
+  const growthSummary = retireYear
+    ? statusLabel === "Ahead of schedule"
+      ? `At this pace, you’re tracking a little ahead of ${retireYear}.`
+      : statusLabel === "On track"
+        ? `Your current path still points to ${retireYear}.`
+        : `Your current path needs a nudge to protect ${retireYear}.`
+    : "Finish your setup to see your projected freedom date.";
+  const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "#DC2626" : projectedSpendStatus === "Running below plan" ? "#059669" : "#64748B";
+  const thisMonthHeadline = hasActuals
+    ? actualOrPlannedSavings >= 0
+      ? `You’ve saved ${fmtMoney(actualOrPlannedSavings)} so far this month.`
+      : `You’re currently ${fmtMoney(Math.abs(actualOrPlannedSavings))} negative this month.`
+    : `Aim to save ${fmtMoney(goalContribution)} this month.`;
+  const actionItems = [
+    bestMove?.label ? bestMove.label : null,
+    projectedSpendStatus === "Running above plan" ? `Trim spending pace by about ${fmtMoney(Math.max(spendingDeltaToDate / Math.max(elapsedFraction, 0.05), 0), true)} this month` : null,
+    hasActuals ? "Review your transaction feed and category drift" : "Connect accounts or log transactions to track your month",
+  ].filter(Boolean) as string[];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 13, color: "#6b7280", fontFamily: "Manrope, sans-serif" }}>
-            {formattedDate}{cityName ? ` · 📍 ${cityName}` : ""}
+          <div style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>
+            Good {timeOfDay}{firstName ? `, ${firstName}` : ""}
+          </div>
+          <div style={{ fontSize: 13, color: "#64748B", marginTop: 3, fontFamily: "Manrope, sans-serif" }}>
+            {formattedDate}{cityName ? ` · ${cityName}` : ""}
           </div>
         </div>
         <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 99, background: `${statusColor}18`, color: statusColor, fontFamily: "Manrope, sans-serif", border: `1px solid ${statusColor}35` }}>
@@ -702,437 +756,303 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </span>
       </div>
 
-      {/* ── Row 1: Growth Over Time (left) + Freedom Date / Streak (right) ─ */}
-      <div className="uf-overview-top-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 16, alignItems: "stretch" }}>
-
-        {/* Growth Over Time — large dark green card */}
-        <div className="uf-overview-primary-card" style={{ background: "linear-gradient(160deg, #0a2419 0%, #0d1f1a 100%)", border: "1px solid #1a3028", borderRadius: 16, padding: "24px 24px 20px", display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#6ee7b7", fontFamily: "Manrope, sans-serif", letterSpacing: "0.3px", marginBottom: 4 }}>Growth Over Time</div>
-          <div style={{ fontSize: "clamp(28px, 4.5vw, 44px)", fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.02 }}>
-            {fmtMoney(netWorth)}
-          </div>
-          {ytdChangePct !== null && (
-            <div style={{ fontSize: 12, color: "#22d3a5", fontFamily: "Manrope, sans-serif", marginTop: 6, fontWeight: 600 }}>
-              ↗ Net Worth {ytdChangePct >= 0 ? "+" : ""}{ytdChangePct.toFixed(1)}% YTD
+      {/* ── Hero: chart-led progress card ───────────────────────────────── */}
+      <div className="uf-card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(180deg, #064E3B 0%, #022C22 100%)", borderColor: "transparent" }}>
+        <div style={{ padding: "22px 22px 0", position: "relative" }}>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top right, rgba(98,250,227,0.14), transparent 38%)", pointerEvents: "none" }} />
+          <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#A7F3D0", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+                Your progress
+              </div>
+              <div style={{ fontSize: 15, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
+                Recent history and projected path to freedom.
+              </div>
             </div>
-          )}
-
-          {/* Chart */}
-          <div style={{ flex: 1, marginTop: 16 }}>
-            <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-            <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both" }}>
-              <ResponsiveContainer width="100%" height={220}>
-                <ComposedChart data={periodData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                  <defs>
-                    <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22d3a5" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#22d3a5" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="shortLabel" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10, fontFamily: "Manrope" }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
-                  <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "Manrope" }} axisLine={false} tickLine={false} width={56} />
-                  <Tooltip animationDuration={150} content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const entry = payload[0]?.payload as { label?: string; actual?: number | null; projected?: number | null; phase?: string } | undefined;
-                    const actualVal = payload.find(p => p.dataKey === "actual")?.value as number | undefined;
-                    const projectedVal = payload.find(p => p.dataKey === "projected")?.value as number | undefined;
-                    return (
-                      <div style={{ background: "#0a1f17", border: "1px solid #1a3028", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontFamily: "Manrope" }}>
-                        <div style={{ color: "#ffffff", fontWeight: 700 }}>{entry?.label ?? ""}</div>
-                        {actualVal != null && <div style={{ color: "rgba(255,255,255,0.85)", marginTop: 2 }}>{entry?.phase === "today" ? "Current: " : "History: "}{fmtMoney(actualVal, true)}</div>}
-                        {projectedVal != null && <div style={{ color: "#22d3a5", marginTop: 2 }}>{entry?.phase === "today" ? "Starting point: " : "Projection: "}{fmtMoney(projectedVal, true)}</div>}
-                      </div>
-                    );
-                  }} />
-                  <ReferenceLine x={periodData.find(entry => entry.phase === "today")?.shortLabel} stroke="rgba(255,255,255,0.18)" strokeDasharray="4 3" strokeWidth={1.25} />
-                  <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.82)" strokeWidth={2.25} connectNulls={false} dot={false} activeDot={{ r: 4, fill: "#ffffff" }} isAnimationActive animationBegin={0} animationDuration={700} animationEasing="ease-out" />
-                  <Area type="monotone" dataKey="projected" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 4, fill: "#22d3a5" }} isAnimationActive animationBegin={150} animationDuration={1000} animationEasing="ease-out" />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Period tabs + bottom stats */}
-          <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-            <div style={{ display: "flex", gap: 4 }}>
-              {(["5Y", "15Y", "All"] as const).map(p => (
-                <button key={p} onClick={() => setChartPeriod(p)} style={{ padding: "3px 9px", borderRadius: 5, border: "1px solid", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope", background: chartPeriod === p ? "#22d3a5" : "transparent", color: chartPeriod === p ? "#0a2419" : "rgba(255,255,255,0.4)", borderColor: chartPeriod === p ? "#22d3a5" : "rgba(255,255,255,0.15)" }}>
-                  {p}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {(["5Y", "15Y", "All"] as const).map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setChartPeriod(period)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    border: chartPeriod === period ? "1px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.14)",
+                    background: chartPeriod === period ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.06)",
+                    color: "#FFFFFF",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    fontFamily: "Manrope, sans-serif",
+                  }}
+                >
+                  {period}
                 </button>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "Manrope" }}>
-              Past 3 months by month · monthly projection
-            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 28, marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-            <div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700 }}>Monthly Savings</div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", marginTop: 3 }}>
-                {annualSavings > 0 ? `${fmtMoney(annualSavings / 12, true)} ↑` : "—"}
+          <div className="uf-progress-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14, position: "relative" }}>
+            {[
+              { label: "Net worth", value: fmtMoney(currentNetWorth, true), tone: "#FFFFFF" },
+              { label: "This month", value: hasActuals ? fmtMoney(actualOrPlannedSavings, true) : fmtMoney(goalContribution, true), tone: actualOrPlannedSavings >= 0 ? "#62FAE3" : "#FCA5A5" },
+              { label: "Status", value: statusLabel, tone: "#A7F3D0" },
+            ].map((item) => (
+              <div key={item.label} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 14, padding: "12px 14px" }}>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.58)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>{item.label}</div>
+                <div style={{ fontSize: item.label === "Status" ? 16 : 22, fontWeight: 800, color: item.tone, fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.1 }}>{item.value}</div>
               </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700 }}>Assumed Return</div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", marginTop: 3 }}>
-                {(growthRate * 100).toFixed(1)}% ↑
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Right column: Freedom Date + Best Next Move */}
-        <div className="uf-overview-top-stack" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-          {/* Freedom Date */}
-          <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "22px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "Manrope", marginBottom: 10 }}>Your freedom date</div>
-          {retireYear ? (
-            <>
-              <div style={{ fontSize: "clamp(28px, 4vw, 38px)", fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-1.5px", lineHeight: 1 }}>
-                {retireYear}
-              </div>
-              <div style={{ fontSize: 12, color: "#047857", fontFamily: "Manrope, sans-serif", marginTop: 6, fontWeight: 600 }}>
-                {fireYear} years away at your current pace{retirementCityName ? ` · ${retirementCityName}` : ""}
-              </div>
-              <div style={{ marginTop: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700 }}>PROGRESS</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#047857", fontFamily: "Manrope" }}>{progress.toFixed(1)}%</span>
-                </div>
-                <div style={{ height: 6, background: "#E5E7EB", borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #22d3a5, #059669)", borderRadius: 99 }} />
-                </div>
-                <div style={{ marginTop: 5, fontSize: 11, color: "#64748B", fontFamily: "Manrope" }}>
-                  {fmtMoney(investable, true)} saved of {fmtMoney(fireTarget, true)} needed
-                </div>
-              </div>
-              <div style={{ marginTop: 12, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.45 }}>
-                Move it closer by saving more, spending less, or growing income.
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 32, fontWeight: 700, color: "#CBD5E1", fontFamily: "Manrope, sans-serif" }}>—</div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.45 }}>
-                Add your income, spending, and savings to calculate a realistic freedom date.
-              </div>
-              <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope" }}>
-                Get my freedom date →
-              </button>
-            </>
-          )}
-          </div>
-
-          {/* Best Next Move */}
-          <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", flex: 1, boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "Manrope", marginBottom: 10 }}>Best way to move your date</div>
-            {bestMove ? (
-              <>
-                <div style={{ fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, color: "#0F172A", fontFamily: "Manrope", letterSpacing: "-0.5px", lineHeight: 1.15 }}>
-                  {bestMove.label}
-                </div>
-                <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
-                  {bestMove.detail}
-                </div>
-                <div style={{ marginTop: 14, padding: "10px 12px", borderRadius: 12, background: "#ECFDF5", border: "1px solid #BBF7D0" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#047857", fontFamily: "Manrope", textTransform: "uppercase", letterSpacing: "0.7px" }}>
-                    Impact on your plan
-                  </div>
-                  <div style={{ marginTop: 4, fontSize: 13, color: "#0F172A", fontFamily: "Manrope", fontWeight: 600 }}>
-                    Could bring freedom forward by {bestMove.deltaYears >= 2 ? `${bestMove.deltaYears.toFixed(1)} years` : `${Math.round(bestMove.deltaYears * 12)} months`}
-                  </div>
-                  {bestMove.newRetireYear && (
-                    <div style={{ marginTop: 3, fontSize: 11, color: "#64748B", fontFamily: "Manrope" }}>
-                      New freedom date: {bestMove.newRetireYear}
+        <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+        <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both", padding: "0 10px" }}>
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={periodData} margin={{ top: 4, right: 14, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#62FAE3" stopOpacity={0.48} />
+                  <stop offset="55%" stopColor="#62FAE3" stopOpacity={0.10} />
+                  <stop offset="100%" stopColor="#62FAE3" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" vertical={false} />
+              <XAxis
+                dataKey="shortLabel"
+                tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 11, fontFamily: "Manrope" }}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+                minTickGap={18}
+              />
+              <YAxis
+                tickFormatter={(value) => fmtMoney(value, true)}
+                tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 10, fontFamily: "Manrope" }}
+                axisLine={false}
+                tickLine={false}
+                width={58}
+              />
+              <Tooltip
+                animationDuration={150}
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const entry = payload[0]?.payload as { label?: string; actual?: number | null; projected?: number | null; phase?: string } | undefined;
+                  const actual = payload.find((series) => series.dataKey === "actual")?.value as number | undefined;
+                  const projected = payload.find((series) => series.dataKey === "projected")?.value as number | undefined;
+                  return (
+                    <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12, padding: "10px 12px", fontSize: 12, fontFamily: "Manrope, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
+                      <div style={{ fontWeight: 800, marginBottom: 6, color: "#F8FAFC" }}>{entry?.label ?? ""}</div>
+                      {actual !== undefined && <div style={{ color: "rgba(255,255,255,0.86)", marginBottom: 4 }}>{entry?.phase === "today" ? "Current" : "History"}: {fmtMoney(actual, true)}</div>}
+                      {projected !== undefined && <div style={{ color: "#62FAE3", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
+                      <div style={{ color: "rgba(255,255,255,0.6)" }}>Target: {fmtMoney(fireTarget, true)}</div>
                     </div>
-                  )}
+                  );
+                }}
+              />
+              <ReferenceLine y={fireTarget} stroke="rgba(167,243,208,0.95)" strokeDasharray="5 4" strokeWidth={1.3} />
+              <ReferenceLine x={periodData.find((entry) => entry.phase === "today")?.shortLabel} stroke="rgba(255,255,255,0.26)" strokeDasharray="4 4" strokeWidth={1.2} />
+              <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.88)" strokeWidth={2} connectNulls={false} dot={false} activeDot={{ r: 5, fill: "#FFFFFF" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
+              <Area type="monotone" dataKey="projected" stroke="#62FAE3" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#62FAE3" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div style={{ padding: "0 22px 22px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+            {[
+              ["rgba(255,255,255,0.88)", "History"],
+              ["#62FAE3", "Projection"],
+              ["#FDBA74", "S&P 500"],
+              ["#A7F3D0", "FIRE target"],
+            ].map(([color, label]) => (
+              <span key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "rgba(255,255,255,0.72)", fontFamily: "Manrope, sans-serif" }}>
+                <span style={{ width: 20, height: 3, borderRadius: 999, background: color, display: "inline-block" }} />
+                {label}
+              </span>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", maxWidth: 300 }}>
+            {growthSummary}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Freedom date + best move ─────────────────────────────────────── */}
+      <div className="uf-overview-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 }}>
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+              Your freedom date
+            </div>
+            {retireYear ? (
+              <>
+                <div style={{ fontSize: "clamp(32px, 6vw, 44px)", fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.04em", lineHeight: 1 }}>{retireYear}</div>
+                <div style={{ fontSize: 14, color: "#475569", fontFamily: "Manrope, sans-serif", marginTop: 6 }}>
+                  {fireYear ? `${fireYear} years away` : "Projected from your current plan"}
+                  {fireAge > 0 && fireYear ? ` · around age ${fireAge + fireYear}` : ""}
                 </div>
-                <button onClick={() => onTabChange?.("fire-calculator")} style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope" }}>
-                  Try this move in your plan →
-                </button>
               </>
             ) : (
-              <>
-                <div style={{ fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 700, color: "#0F172A", fontFamily: "Manrope", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
-                  Finish your basics first
-                </div>
-                <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
-                  Once your income, spending, and savings are filled in, UntilFire can show the fastest way to pull your freedom date closer.
-                </div>
-                <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope" }}>
-                  Finish setup →
-                </button>
-              </>
+              <div style={{ fontSize: 16, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>Finish your setup to unlock your freedom date.</div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* ── Row 2: Spending + Allocation + Setup ─────── */}
-      <div className="uf-overview-secondary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-
-        {/* This Month's Spending */}
-        <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>This month’s spending</div>
-            <div style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{monthName}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Progress</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: progress >= 50 ? "#059669" : "#0F172A", fontFamily: "Manrope, sans-serif" }}>{progress.toFixed(0)}%</div>
+            </div>
+            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Target</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(fireTarget, true)}</div>
+            </div>
           </div>
-          {(() => {
-            const planned = monthlyExpenses > 0 ? monthlyExpenses : income > 0 ? income : 0;
-            const actual = hasActuals ? actualExpenses : 0;
-            const remaining = planned - actual;
-            const spendPct = planned > 0 ? Math.min(100, (actual / planned) * 100) : 0;
-            if (planned === 0) return (
-              <button onClick={() => onTabChange?.("cashflow")} style={{ width: "100%", padding: "14px", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#047857", fontFamily: "Manrope" }}>Set up your spending plan →</div>
-                <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontFamily: "Manrope" }}>Add a monthly target so UntilFire can tell you whether you are on track.</div>
-              </button>
-            );
-            return (
-              <>
-                <div style={{ fontSize: 26, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope", letterSpacing: "-0.8px" }}>
-                  {fmtMoney(hasActuals ? actual : planned, true)}
-                </div>
-                <div style={{ marginTop: 6, fontSize: 12, color: remaining >= 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope", fontWeight: 600 }}>
-                  {hasActuals
-                    ? (remaining >= 0
-                      ? `${fmtMoney(Math.abs(remaining), true)} left in your monthly plan`
-                      : `${fmtMoney(Math.abs(remaining), true)} over your monthly plan`)
-                    : `Your plan is ${fmtMoney(planned, true)} for the month`}
-                </div>
-                <div style={{ marginTop: 14, height: 8, background: "#E5E7EB", borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${spendPct}%`, background: remaining >= 0 ? "linear-gradient(90deg, #22d3a5, #059669)" : "linear-gradient(90deg, #fb7185, #dc2626)", borderRadius: 99 }} />
-                </div>
-                <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <div style={{ padding: "10px 12px", borderRadius: 12, background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                    <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: "Manrope", fontWeight: 700 }}>Planned</div>
-                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope" }}>{fmtMoney(planned, true)}</div>
-                  </div>
-                  <div style={{ padding: "10px 12px", borderRadius: 12, background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                    <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: "Manrope", fontWeight: 700 }}>{hasActuals ? "Left to spend" : "Status"}</div>
-                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 700, color: remaining >= 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope" }}>
-                      {hasActuals ? fmtMoney(Math.abs(remaining), true) : "Waiting on actuals"}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ marginTop: 12, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
-                  {hasActuals
-                    ? (remaining >= 0 ? "You are on track this month." : "You are spending faster than planned this month.")
-                    : "Log spending to see if you are on track this month."}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-
-        {/* Where your money is */}
-        <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px 18px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>Where your money is</div>
-            <button
-              aria-label="Open assets"
-              onClick={() => onTabChange?.("assets")}
-              style={{
-                fontSize: 18,
-                lineHeight: 1,
-                color: "#64748B",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                fontFamily: "Manrope, sans-serif",
-                fontWeight: 700,
-              }}
-            >
-              …
-            </button>
+          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
+            Your date moves most with your savings pace, spending, and invested growth.
           </div>
-          {investable > 0 ? (() => {
-            const allocations = [
-              { label: "Tax-Adv.", value: k401 + rothIRA, color: "#062F24" },
-              { label: "Brokerage", value: taxable, color: "#2EDCCB" },
-              { label: "Liquid", value: totalCash, color: "#E5E7EB" },
-            ].filter(item => item.value > 0);
-            const segments = allocations.length ? allocations.map((item, index) => {
-              const start = index === 0 ? 0 : allocations.slice(0, index).reduce((sum, prev) => sum + ((prev.value / investable) * 100), 0);
-              const end = allocations.slice(0, index + 1).reduce((sum, prev) => sum + ((prev.value / investable) * 100), 0);
-              return `${item.color} ${start}% ${end}%`;
-            }).join(", ") : "#E5E7EB 0 100%";
-            const liquidPct = investable > 0 ? (totalCash / investable) * 100 : 0;
-            const taxAdvPct = investable > 0 ? ((k401 + rothIRA) / investable) * 100 : 0;
-            const brokeragePct = investable > 0 ? (taxable / investable) * 100 : 0;
-            const rebalance = liquidPct >= 30 || brokeragePct >= 70
-              ? { label: "High", color: "#B91C1C", note: "A big chunk is sitting outside your long-term mix." }
-              : taxAdvPct < 20
-                ? { label: "Medium", color: "#D97706", note: "You may have room to improve tax-advantaged allocation." }
-                : { label: "Low", color: "#047857", note: "Your current mix looks reasonably balanced." };
-
-            return (
-              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 128px) minmax(0, 1fr)", gap: 18, alignItems: "center" }}>
-                  <div style={{ display: "flex", justifyContent: "center" }}>
-                    <div
-                      style={{
-                        width: 124,
-                        height: 124,
-                        borderRadius: "50%",
-                        background: `conic-gradient(${segments})`,
-                        position: "relative",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: 18,
-                          borderRadius: "50%",
-                          background: "#ffffff",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          textAlign: "center",
-                        }}
-                      >
-                        <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94A3B8", fontFamily: "Manrope, sans-serif", fontWeight: 700 }}>
-                          Total
-                        </div>
-                        <div style={{ marginTop: 2, fontSize: 24, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.04em" }}>
-                          {fmtMoney(investable, true)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {allocations.map(({ label, value, color }) => {
-                      const pct = (value / investable) * 100;
-                      return (
-                        <div key={label} style={{ display: "grid", gridTemplateColumns: "12px minmax(0, 1fr) auto", columnGap: 10, rowGap: 2, alignItems: "start" }}>
-                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, marginTop: 6 }} />
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 14, color: "#0F172A", fontFamily: "Manrope, sans-serif", fontWeight: 700, lineHeight: 1.2 }}>{label}</div>
-                            <div style={{ marginTop: 4, fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.2 }}>{pct.toFixed(0)}% of total</div>
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap", lineHeight: 1.2 }}>{fmtMoney(value, true)}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94A3B8", fontFamily: "Manrope, sans-serif", fontWeight: 700 }}>
-                      Rebalancing needed
-                    </div>
-                    <div style={{ marginTop: 4, fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.35 }}>
-                      {rebalance.note}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: rebalance.color, fontFamily: "Manrope, sans-serif", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                    {rebalance.label}
-                  </div>
-                </div>
-              </div>
-            );
-          })() : (
-            <button onClick={() => onTabChange?.("assets")} style={{ width: "100%", padding: "14px", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#047857", fontFamily: "Manrope" }}>Add your savings and investments →</div>
-              <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontFamily: "Manrope" }}>Connect accounts or enter balances so UntilFire can build your real plan.</div>
-            </button>
-          )}
         </div>
 
-        {/* What to do next */}
-        <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif", marginBottom: 14 }}>What to do next</div>
-          {(() => {
-            const hasExpenses = Object.values(expenses).some(v => (v ?? 0) > 0);
-            const hasBankConnected = plaidAccounts.length > 0;
-            type StepItem = { label: string; sub?: string; action?: () => void };
-            const items: StepItem[] = [];
-            if (!income) items.push({ label: "Add your income", sub: "So your freedom date is based on your real monthly pay", action: () => onOpenOnboarding?.() });
-            if (!hasExpenses) items.push({ label: "Add your spending", sub: "So UntilFire can tell if you are on track", action: () => onTabChange?.("cashflow") });
-            if (!hasBankConnected) items.push({ label: "Connect your accounts", sub: "To track actual transactions and balances automatically", action: () => onTabChange?.("assets") });
-            if (!cityName) items.push({ label: "Set your retirement city", sub: "To make your target cost of living more realistic", action: () => onTabChange?.("profile") });
-            if (items.length === 0 && bestMove) {
-              items.push({ label: bestMove.label, sub: `This is the clearest move right now because it could bring your date forward by ${bestMove.deltaYears >= 2 ? `${bestMove.deltaYears.toFixed(1)} years` : `${Math.round(bestMove.deltaYears * 12)} months`}.`, action: () => onTabChange?.("fire-calculator") });
-            }
-            if (items.length === 0) return (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 8 }}>
-                <div style={{ fontSize: 22 }}>✅</div>
-                <div style={{ fontSize: 13, color: "#0F172A", fontFamily: "Manrope", fontWeight: 700 }}>Your plan is set up.</div>
-                <div style={{ fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>Keep logging real activity so UntilFire can keep your freedom date honest.</div>
-              </div>
-            );
-            return (
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {items.slice(0, 3).map((item, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", borderBottom: i < Math.min(items.length, 3) - 1 ? "1px solid #E2E8F0" : "none" }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E", flexShrink: 0, marginTop: 6 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, color: "#0F172A", fontFamily: "Manrope, sans-serif", fontWeight: 600 }}>{item.label}</div>
-                      {item.sub && <div style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 2, lineHeight: 1.45 }}>{item.sub}</div>}
-                    </div>
-                    {item.action && (
-                      <button onClick={item.action} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope", fontWeight: 600, flexShrink: 0 }}>Open →</button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-        </div>
-      </div>
-
-      {/* ── Row 3: Income vs spending ─────────────────────────────────────────────── */}
-      <div className="uf-overview-tertiary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-        <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>Income vs spending</div>
-            <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope", fontWeight: 600 }}>Open cash flow →</button>
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+              Best way to move your date
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
+              {bestMove?.label ?? "Finish your setup to see your best next move"}
+            </div>
+            {bestMove?.detail && <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>{bestMove.detail}</div>}
           </div>
-          {hasActuals ? (
-            <>
-              <div style={{ fontSize: 24, fontWeight: 700, color: netSurplus >= 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.6px" }}>
-                {netSurplus >= 0 ? `You saved ${fmtMoney(netSurplus, true)}` : `You overspent by ${fmtMoney(Math.abs(netSurplus), true)}`}
+          {bestMove && bestMove.deltaYears > 0 ? (
+            <div style={{ background: "linear-gradient(135deg, rgba(5,150,105,0.08) 0%, rgba(5,150,105,0.02) 100%)", border: "1px solid rgba(5,150,105,0.18)", borderRadius: 14, padding: "14px 16px" }}>
+              <div style={{ fontSize: 11, color: "#047857", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 800, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Estimated impact</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#047857", fontFamily: "Manrope, sans-serif", lineHeight: 1.1 }}>
+                {bestMove.deltaYears >= 1.5 ? `${bestMove.deltaYears.toFixed(1)} years sooner` : `${Math.round(bestMove.deltaYears * 12)} months sooner`}
               </div>
-              <div style={{ marginTop: 6, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
-                {netSurplus >= 0
-                  ? "This month is helping move your freedom date closer."
-                  : "This month is pushing your freedom date further out unless you correct it."}
-              </div>
-              <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700, marginBottom: 6 }}>Income</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope" }}>{fmtMoney(actualIncome, true)}</div>
-                  {incomeTrend !== null && (
-                    <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: incomeTrend > 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope" }}>
-                      {incomeTrend > 0 ? "↑" : "↓"} {Math.abs(incomeTrend).toFixed(1)}% vs last month
-                    </div>
-                  )}
-                </div>
-                <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700, marginBottom: 6 }}>Spending</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope" }}>{fmtMoney(actualExpenses, true)}</div>
-                  {expenseTrend !== null && (
-                    <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: expenseTrend < 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope" }}>
-                      {expenseTrend > 0 ? "↑" : "↓"} {Math.abs(expenseTrend).toFixed(1)}% vs last month
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
+            </div>
           ) : (
-            <button onClick={() => onTabChange?.("cashflow")} style={{ width: "100%", padding: "18px 14px", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#047857", fontFamily: "Manrope", marginBottom: 4 }}>Log your first transactions →</div>
-              <div style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope" }}>Track real income and spending so UntilFire can show whether you are actually moving toward freedom.</div>
-            </button>
+            <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>We&apos;ll show the highest-impact lever once your plan is complete.</div>
           )}
+          {extraMoves.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {extraMoves.map((move) => (
+                <div key={move.label} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", paddingTop: 8, borderTop: "1px solid #F1F5F9" }}>
+                  <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{move.label}</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "#047857", background: "#ECFDF5", borderRadius: 999, padding: "4px 10px", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap" }}>
+                    {move.deltaYears >= 1.5 ? `${move.deltaYears.toFixed(1)} years` : `${Math.round(move.deltaYears * 12)} months`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Monthly operating row ────────────────────────────────────────── */}
+      <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s plan</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em" }}>{fmtMoney(goalContribution)}</div>
+          <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{thisMonthHeadline}</div>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>
+              <span>Progress</span>
+              <span style={{ color: "#0F172A", fontWeight: 800 }}>{planProgress.toFixed(0)}%</span>
+            </div>
+            <div style={{ height: 8, background: "#E2E8F0", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ width: `${planProgress}%`, height: "100%", background: "linear-gradient(90deg, #059669, #34D399)", borderRadius: 999 }} />
+            </div>
+          </div>
+          <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>Open cashflow →</button>
+        </div>
+
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s spending</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Planned</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(monthlyExpenses)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>{hasActuals ? "So far" : "Current"}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: hasActuals ? "#0F172A" : "#64748B", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(actualOrPlannedExpenses)}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
+          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
+          <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>View categories →</button>
+        </div>
+
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Income vs spending</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Income</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(actualOrPlannedIncome)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Saved</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: actualOrPlannedSavings >= 0 ? "#0F172A" : "#DC2626", fontFamily: "Manrope, sans-serif" }}>{actualOrPlannedSavings >= 0 ? fmtMoney(actualOrPlannedSavings) : `−${fmtMoney(Math.abs(actualOrPlannedSavings))}`}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: actualOrPlannedSavingsRate >= 25 ? "#059669" : "#F59E0B", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
+            {actualOrPlannedSavingsRate.toFixed(1)}%
+          </div>
+          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>Savings rate {hasPrev ? `· compared with ${prevMonthName}` : ""}</div>
+          {hasActuals && <TrendBadge pp={srDelta} />}
+        </div>
+      </div>
+
+      {/* ── Lower support row ────────────────────────────────────────────── */}
+      <div className="uf-overview-grid-2" style={{ display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: 16 }}>
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>What to do next</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {actionItems.map((item, index) => (
+              <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ width: 24, height: 24, borderRadius: 999, background: "#ECFDF5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>{index + 1}</div>
+                <div style={{ fontSize: 14, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>{item}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: "14px 16px", borderRadius: 14, background: "#F8FAFC", border: "1px solid #E2E8F0", fontSize: 13, color: "#475569", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
+            Calm read: {growthSummary}
+          </div>
+        </div>
+
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+            <div style={{ width: 140, height: 140, borderRadius: "50%", background: moneyMixGradient, position: "relative", flexShrink: 0 }}>
+              <div style={{ position: "absolute", inset: 18, borderRadius: "50%", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 14 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Total</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.1 }}>{fmtMoney(positiveMoneyTotal, true)}</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { label: "Retirement accounts", value: retirementAccounts, color: "#064E3B", pct: retirementPct },
+                { label: "Brokerage", value: brokerageAssets, color: "#10B981", pct: brokeragePct },
+                { label: "Cash", value: totalCash, color: "#CFFAEF", pct: cashPct, text: "#065F46" },
+              ].map((row) => (
+                <div key={row.label}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5, fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
+                    <span style={{ color: "#475569" }}>{row.label}</span>
+                    <span style={{ color: row.text ?? "#0F172A", fontWeight: 800 }}>{fmtMoney(row.value, true)}</span>
+                  </div>
+                  <div style={{ height: 8, background: "#F1F5F9", borderRadius: 999, overflow: "hidden" }}>
+                    <div style={{ width: `${row.pct}%`, height: "100%", background: row.color, borderRadius: 999 }} />
+                  </div>
+                </div>
+              ))}
+              {(totalDebt + mortgageBalance) > 0 && (
+                <div style={{ paddingTop: 4, borderTop: "1px solid #F1F5F9", fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>
+                  Debt: <span style={{ color: "#DC2626", fontWeight: 800 }}>{fmtMoney(totalDebt + mortgageBalance, true)}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3912,15 +3832,9 @@ export default function Dashboard() {
           .uf-section-button.active { border-color: #047857; background: #ECFDF5; color: #047857; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
           .uf-content { padding: calc(72px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
-          .uf-overview-top-grid { grid-template-columns: 1fr !important; }
-          .uf-overview-top-stack { gap: 12px !important; }
-          .uf-overview-secondary-grid,
-          .uf-overview-tertiary-grid { grid-template-columns: 1fr !important; }
-          .uf-overview-primary-card,
-          .uf-overview-secondary-card { min-width: 0; }
-          .uf-hero-split { flex-direction: column; min-height: unset; }
-          .uf-hero-left { flex: none !important; padding: 20px 18px !important; }
-          .uf-hero-right { flex: none !important; padding: 20px 18px !important; }
+          .uf-overview-grid-2,
+          .uf-overview-grid-3,
+          .uf-progress-metrics { grid-template-columns: 1fr !important; }
           .cf-mobile-bar { bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important; }
           .uf-nav-label-full { display: none; }
           .uf-nav-label-mobile { display: block; white-space: nowrap; overflow: hidden; max-width: 100%; }
@@ -4154,7 +4068,6 @@ export default function Dashboard() {
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
                 plaidAccounts={plaidAccounts}
-                retirementCityName={retirementCityName}
                 retirementCityCol={retirementCityCol}
                 lifestyleMultiplier={lifestyleMultiplier}
                 fireAge={fireAge}
