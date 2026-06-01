@@ -2,7 +2,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
-type Step = "upload" | "map" | "review" | "importing" | "done";
+type Step = "upload" | "map" | "importing" | "done";
 
 type Transaction = {
   date: string;
@@ -219,9 +219,11 @@ export default function CsvImportModal({
     }));
   })();
 
+  const previewMonthKey = sampleTransaction?.date.slice(0, 7) || parsedTransactions[0]?.date.slice(0, 7) || viewMonth;
+
   const monthLabel = (() => {
-    if (!viewMonth) return "this month";
-    const [y, m] = viewMonth.split("-").map(Number);
+    if (!previewMonthKey) return "this month";
+    const [y, m] = previewMonthKey.split("-").map(Number);
     if (!y || !m) return "this month";
     return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
   })();
@@ -236,8 +238,8 @@ export default function CsvImportModal({
     }).format(value);
   };
 
-  const currentMonthTxns = viewMonth ? transactions.filter((t) => t.date.startsWith(viewMonth)) : [];
-  const importedMonthTxns = viewMonth ? parsedTransactions.filter((t) => t.date.startsWith(viewMonth)) : [];
+  const currentMonthTxns = previewMonthKey ? transactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
+  const importedMonthTxns = previewMonthKey ? parsedTransactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
   const currentIncome = currentMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const currentExpenses = currentMonthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const importedIncome = importedMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, defaultCurrency, rates), 0);
@@ -245,16 +247,6 @@ export default function CsvImportModal({
   const projectedIncome = currentIncome + importedIncome;
   const projectedExpenses = currentExpenses + importedExpenses;
   const projectedNet = projectedIncome - projectedExpenses;
-
-  const openReview = useCallback(() => {
-    if (!colDate || !colDesc || !colAmount) return;
-    if (parsedTransactions.length === 0) {
-      setError("No valid rows found. Check that Date, Description, and Amount columns are correct.");
-      return;
-    }
-    setError("");
-    setStep("review");
-  }, [colAmount, colDate, colDesc, parsedTransactions.length]);
 
   const handleImport = useCallback(async () => {
     const parsed = buildParsedTransactions();
@@ -288,7 +280,7 @@ export default function CsvImportModal({
       const { error: dbErr } = await supabase.from("expenses").insert(batch);
       if (dbErr) {
         setError("Import failed: " + dbErr.message);
-        setStep("review");
+        setStep("map");
         return;
       }
       inserted += batch.length;
@@ -334,8 +326,7 @@ export default function CsvImportModal({
               Import bank CSV
             </div>
             {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV exported from your bank</div>}
-            {step === "map" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{rows.length} rows detected — map the columns below</div>}
-            {step === "review" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Check one interpreted example and the month totals before importing</div>}
+            {step === "map" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
         </div>
@@ -424,24 +415,6 @@ export default function CsvImportModal({
               </div>
             )}
 
-            <button
-              onClick={openReview}
-              disabled={!colDate || !colDesc || !colAmount}
-              style={{
-                width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
-                background: (!colDate || !colDesc || !colAmount) ? "#1a1a24" : "#059669",
-                color: (!colDate || !colDesc || !colAmount) ? "#475569" : "#fff",
-                fontSize: 14, fontWeight: 700, cursor: (!colDate || !colDesc || !colAmount) ? "not-allowed" : "pointer",
-                fontFamily: "Manrope, sans-serif",
-              }}
-            >
-              Review import →
-            </button>
-          </>
-        )}
-
-        {step === "review" && (
-          <>
             <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
               <div style={{ background: "#161621", border: "1px solid #23232d", borderRadius: 14, padding: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Import summary</div>
@@ -498,29 +471,34 @@ export default function CsvImportModal({
                       ? `${importedMonthTxns.length} imported transaction${importedMonthTxns.length === 1 ? "" : "s"} land in ${monthLabel}.`
                       : `None of these imported transactions land in ${monthLabel}.`}
                   </div>
+                  {touchedMonths > 1 && importedMonthTxns.length > 0 && (
+                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+                      Showing {monthLabel} because this preview example lands there. This file touches {touchedMonths} months in total.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <button
-                onClick={() => setStep("map")}
+                onClick={() => setStep("upload")}
                 style={{
                   width: "100%", padding: "12px 0", borderRadius: 10, border: "1px solid #334155",
                   background: "transparent", color: "#cbd5e1", fontSize: 14, fontWeight: 700, cursor: "pointer",
                   fontFamily: "Manrope, sans-serif",
                 }}
               >
-                Back
+                Choose another file
               </button>
               <button
                 onClick={handleImport}
-                disabled={parsedTransactions.length === 0}
+                disabled={!colDate || !colDesc || !colAmount || parsedTransactions.length === 0}
                 style={{
                   width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
-                  background: parsedTransactions.length === 0 ? "#1a1a24" : "#059669",
-                  color: parsedTransactions.length === 0 ? "#475569" : "#fff",
-                  fontSize: 14, fontWeight: 700, cursor: parsedTransactions.length === 0 ? "not-allowed" : "pointer",
+                  background: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#1a1a24" : "#059669",
+                  color: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#475569" : "#fff",
+                  fontSize: 14, fontWeight: 700, cursor: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "not-allowed" : "pointer",
                   fontFamily: "Manrope, sans-serif",
                 }}
               >
