@@ -612,10 +612,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── Row 1: Growth Over Time (left) + Freedom Date / Streak (right) ─ */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 16, alignItems: "stretch" }}>
+      <div className="uf-overview-top-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 16, alignItems: "stretch" }}>
 
         {/* Growth Over Time — large dark green card */}
-        <div style={{ background: "linear-gradient(160deg, #0a2419 0%, #0d1f1a 100%)", border: "1px solid #1a3028", borderRadius: 16, padding: "24px 24px 20px", display: "flex", flexDirection: "column" }}>
+        <div className="uf-overview-primary-card" style={{ background: "linear-gradient(160deg, #0a2419 0%, #0d1f1a 100%)", border: "1px solid #1a3028", borderRadius: 16, padding: "24px 24px 20px", display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#6ee7b7", fontFamily: "DM Sans, sans-serif", letterSpacing: "0.3px", marginBottom: 4 }}>Growth Over Time</div>
           <div style={{ fontSize: "clamp(28px, 4.5vw, 44px)", fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif", letterSpacing: "-2px", lineHeight: 1 }}>
             {fmtMoney(netWorth)}
@@ -689,36 +689,36 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </div>
 
         {/* Right column: Freedom Date + Streak */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="uf-overview-top-stack" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
           {/* Freedom Date */}
-          <div style={{ background: "linear-gradient(160deg, #0a2419 0%, #0d1f1a 100%)", border: "1px solid #1a3028", borderRadius: 16, padding: "22px 22px" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#6ee7b7", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Freedom Date</div>
+          <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "22px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Freedom Date</div>
           {retireYear ? (
             <>
-              <div style={{ fontSize: "clamp(28px, 4vw, 38px)", fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif", letterSpacing: "-1.5px", lineHeight: 1 }}>
+              <div style={{ fontSize: "clamp(28px, 4vw, 38px)", fontWeight: 700, color: "#0F172A", fontFamily: "Syne, sans-serif", letterSpacing: "-1.5px", lineHeight: 1 }}>
                 {retireYear}
               </div>
-              <div style={{ fontSize: 12, color: "#6ee7b7", fontFamily: "DM Sans, sans-serif", marginTop: 6, fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: "#047857", fontFamily: "DM Sans, sans-serif", marginTop: 6, fontWeight: 600 }}>
                 {fireYear} years away{retirementCityName ? ` · ${retirementCityName}` : ""}
               </div>
               <div style={{ marginTop: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>PROGRESS</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#22d3a5", fontFamily: "DM Sans" }}>{progress.toFixed(1)}%</span>
+                  <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>PROGRESS</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#047857", fontFamily: "DM Sans" }}>{progress.toFixed(1)}%</span>
                 </div>
-                <div style={{ height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ height: 6, background: "#E5E7EB", borderRadius: 99, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #22d3a5, #059669)", borderRadius: 99 }} />
                 </div>
-                <div style={{ marginTop: 5, fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "DM Sans" }}>
+                <div style={{ marginTop: 5, fontSize: 11, color: "#64748B", fontFamily: "DM Sans" }}>
                   {fmtMoney(investable, true)} of {fmtMoney(fireTarget, true)}
                 </div>
               </div>
             </>
           ) : (
             <>
-              <div style={{ fontSize: 32, fontWeight: 700, color: "rgba(255,255,255,0.15)", fontFamily: "Syne, sans-serif" }}>—</div>
-              <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: "#22d3a5", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans" }}>
+              <div style={{ fontSize: 32, fontWeight: 700, color: "#CBD5E1", fontFamily: "Syne, sans-serif" }}>—</div>
+              <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans" }}>
                 Get my FIRE date →
               </button>
             </>
@@ -726,24 +726,24 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
 
           {/* Current Streak */}
-          <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 16, padding: "20px 22px", flex: 1 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Current Streak</div>
+          <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", flex: 1, boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Current Streak</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
               <span style={{ fontSize: 20 }}>🔥</span>
-              <div style={{ fontSize: "clamp(20px, 3vw, 30px)", fontWeight: 700, color: "#ffffff", fontFamily: "Syne", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: "clamp(20px, 3vw, 30px)", fontWeight: 700, color: "#0F172A", fontFamily: "Syne", letterSpacing: "-0.5px" }}>
                 {streak > 0 ? `${streak * 30} Days` : hasActuals && netSurplus > 0 ? "Active" : "—"}
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div>
-                <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Time Left</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", fontFamily: "Syne", marginTop: 4 }}>
+                <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Time Left</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", fontFamily: "Syne", marginTop: 4 }}>
                   {fireYear ? `${fireYear} Years` : "—"}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Momentum</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: (ytdChangePct ?? savingsRate) > 0 ? "#22d3a5" : "#6b7280", fontFamily: "Syne", marginTop: 4 }}>
+                <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Momentum</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: (ytdChangePct ?? savingsRate) > 0 ? "#047857" : "#64748B", fontFamily: "Syne", marginTop: 4 }}>
                   {ytdChangePct !== null ? `${ytdChangePct >= 0 ? "+" : ""}${ytdChangePct.toFixed(1)}%` : savingsRate > 0 ? `+${savingsRate.toFixed(1)}%` : "—"}
                 </div>
               </div>
@@ -753,7 +753,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── Row 2: Budget This Month + Asset Allocation + Next Steps ─────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+      <div className="uf-overview-secondary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
 
         {/* Budget This Month */}
         <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 16, padding: "20px 22px" }}>
@@ -908,7 +908,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── Row 3: Cash Flow ─────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+      <div className="uf-overview-tertiary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
         <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 16, padding: "20px 22px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Syne, sans-serif" }}>Cash Flow</div>
@@ -3709,6 +3709,12 @@ export default function Dashboard() {
           .uf-section-button.active { border-color: #047857; background: #ECFDF5; color: #047857; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
           .uf-content { padding: calc(72px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
+          .uf-overview-top-grid { grid-template-columns: 1fr !important; }
+          .uf-overview-top-stack { gap: 12px !important; }
+          .uf-overview-secondary-grid,
+          .uf-overview-tertiary-grid { grid-template-columns: 1fr !important; }
+          .uf-overview-primary-card,
+          .uf-overview-secondary-card { min-width: 0; }
           .uf-hero-split { flex-direction: column; min-height: unset; }
           .uf-hero-left { flex: none !important; padding: 20px 18px !important; }
           .uf-hero-right { flex: none !important; padding: 20px 18px !important; }
