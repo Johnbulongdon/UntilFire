@@ -775,11 +775,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       ? `You’ve saved ${fmtMoney(actualOrPlannedSavings)} so far this month.`
       : `You’re currently ${fmtMoney(Math.abs(actualOrPlannedSavings))} negative this month.`
     : `Aim to save ${fmtMoney(goalContribution)} this month.`;
-  const actionItems = [
-    bestMove?.label ? bestMove.label : null,
+  const monthlyActionItems = [
     projectedSpendStatus === "Running above plan" ? `Trim spending pace by about ${fmtMoney(Math.max(spendingDeltaToDate / Math.max(elapsedFraction, 0.05), 0), true)} this month` : null,
     hasActuals ? "Review your transaction feed and category drift" : "Connect accounts or log transactions to track your month",
-  ].filter(Boolean) as string[];
+  ].filter(Boolean).slice(0, 2) as string[];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1005,6 +1004,17 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               <div style={{ width: `${planProgress}%`, height: "100%", background: "linear-gradient(90deg, #059669, #34D399)", borderRadius: 999 }} />
             </div>
           </div>
+          {monthlyActionItems.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 2 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month</div>
+              {monthlyActionItems.map((item, index) => (
+                <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 999, background: "#ECFDF5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>{index + 1}</div>
+                  <div style={{ fontSize: 13, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>{item}</div>
+                </div>
+              ))}
+            </div>
+          )}
           <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>Open cashflow →</button>
         </div>
 
@@ -1071,22 +1081,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── Lower support row ────────────────────────────────────────────── */}
-      <div className="uf-overview-grid-2" style={{ display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: 16 }}>
-        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>What to do next</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {actionItems.map((item, index) => (
-              <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <div style={{ width: 24, height: 24, borderRadius: 999, background: "#ECFDF5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>{index + 1}</div>
-                <div style={{ fontSize: 14, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>{item}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding: "14px 16px", borderRadius: 14, background: "#F8FAFC", border: "1px solid #E2E8F0", fontSize: 13, color: "#475569", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
-            Calm read: {growthSummary}
-          </div>
-        </div>
-
+      <div>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
           <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
