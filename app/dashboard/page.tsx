@@ -438,7 +438,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
-  const chartDateFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }), []);
+  const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
+  const chartMonthTooltipFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }), []);
 
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -494,8 +495,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const chartData = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const historyStart = new Date(today);
+    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const historyStart = new Date(currentMonth);
     historyStart.setMonth(historyStart.getMonth() - 3);
+
+    const toMonthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const monthTick = (date: Date) => chartMonthTickFormatter.format(date).replace(" ", " '");
 
     const flowByDay = new Map<string, number>();
     for (const tx of recentTransactions) {
@@ -533,11 +538,18 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         points.push({ date: new Date(cursor), value: runningBalance });
       }
       points.reverse();
+
+      const monthEndPoints = new Map<string, { date: Date; value: number }>();
+      for (const point of points) {
+        if (point.date.getFullYear() === today.getFullYear() && point.date.getMonth() === today.getMonth()) continue;
+        monthEndPoints.set(toMonthKey(point.date), point);
+      }
+
       historyEntries.push(
-        ...points.slice(0, -1).map((point, index) => ({
+        ...Array.from(monthEndPoints.values()).map((point, index) => ({
           key: `history-${index}`,
-          label: chartDateFormatter.format(point.date),
-          shortLabel: chartDateFormatter.format(point.date),
+          label: chartMonthTooltipFormatter.format(point.date),
+          shortLabel: monthTick(point.date),
           actual: Math.max(0, Math.round(point.value)),
           projected: null,
           yearsOut: null,
@@ -545,19 +557,20 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         }))
       );
     } else {
-      const recentSnapshots = [...nwSnapshots]
-        .filter(snap => {
-          const capturedAt = new Date(snap.captured_at);
-          return !Number.isNaN(capturedAt.getTime()) && capturedAt >= historyStart;
-        })
-        .sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime());
+      const monthEndSnapshots = new Map<string, { date: Date; value: number }>();
+      for (const snap of [...nwSnapshots].sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime())) {
+        const capturedAt = new Date(snap.captured_at);
+        if (Number.isNaN(capturedAt.getTime()) || capturedAt < historyStart) continue;
+        if (capturedAt.getFullYear() === today.getFullYear() && capturedAt.getMonth() === today.getMonth()) continue;
+        monthEndSnapshots.set(toMonthKey(capturedAt), { date: capturedAt, value: snap.portfolio_value });
+      }
 
       historyEntries.push(
-        ...recentSnapshots.map((snap, index) => ({
+        ...Array.from(monthEndSnapshots.values()).map((snap, index) => ({
           key: `history-${index}`,
-          label: chartDateFormatter.format(new Date(snap.captured_at)),
-          shortLabel: chartDateFormatter.format(new Date(snap.captured_at)),
-          actual: snap.portfolio_value,
+          label: chartMonthTooltipFormatter.format(snap.date),
+          shortLabel: monthTick(snap.date),
+          actual: snap.value,
           projected: null,
           yearsOut: null,
           phase: "history" as const,
@@ -568,7 +581,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     const todayEntry = {
       key: "today",
       label: "Today",
-      shortLabel: "Today",
+      shortLabel: monthTick(today),
       actual: investable,
       projected: investable,
       yearsOut: 0,
@@ -577,22 +590,35 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       "Market Growth": rawChartData[0]?.["Market Growth"] ?? 0,
     };
 
-    const futureEntries = rawChartData
-      .filter((_, index) => index > 0)
-      .map((entry, index) => ({
-        key: `future-${index + 1}`,
-        label: `${entry.year} year${entry.year === 1 ? "" : "s"}`,
-        shortLabel: `${entry.year}Y`,
+    const futureEntries = Array.from({ length: Math.max(0, (rawChartData.length - 1) * 12) }, (_, index) => {
+      const monthOffset = index + 1;
+      const yearsOut = monthOffset / 12;
+      const lowerYear = Math.floor(yearsOut);
+      const upperYear = Math.min(rawChartData.length - 1, Math.ceil(yearsOut));
+      const lowerPoint = rawChartData[lowerYear] ?? rawChartData[0];
+      const upperPoint = rawChartData[upperYear] ?? rawChartData[rawChartData.length - 1];
+      const fraction = yearsOut - lowerYear;
+      const interpolate = (key: "Investable" | "Contributions" | "Market Growth") => {
+        const start = lowerPoint?.[key] ?? 0;
+        const end = upperPoint?.[key] ?? start;
+        return Math.round(start + (end - start) * fraction);
+      };
+      const pointDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+      return {
+        key: `future-${monthOffset}`,
+        label: chartMonthTooltipFormatter.format(pointDate),
+        shortLabel: monthTick(pointDate),
         actual: null,
-        projected: entry["Investable"],
-        yearsOut: entry.year,
+        projected: interpolate("Investable"),
+        yearsOut,
         phase: "projection" as const,
-        Contributions: entry["Contributions"],
-        "Market Growth": entry["Market Growth"],
-      }));
+        Contributions: interpolate("Contributions"),
+        "Market Growth": interpolate("Market Growth"),
+      };
+    });
 
     return [...historyEntries, todayEntry, ...futureEntries];
-  }, [rawChartData, investable, nwSnapshots, chartDateFormatter, recentTransactions, displayCurrency, displayRates]);
+  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -706,19 +732,20 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                   <XAxis dataKey="shortLabel" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
                   <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} width={56} />
-                  <Tooltip animationDuration={150} content={({ active, payload, label }) => {
+                  <Tooltip animationDuration={150} content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
+                    const entry = payload[0]?.payload as { label?: string; actual?: number | null; projected?: number | null; phase?: string } | undefined;
                     const actualVal = payload.find(p => p.dataKey === "actual")?.value as number | undefined;
                     const projectedVal = payload.find(p => p.dataKey === "projected")?.value as number | undefined;
                     return (
                       <div style={{ background: "#0a1f17", border: "1px solid #1a3028", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontFamily: "DM Sans" }}>
-                        <div style={{ color: "#ffffff", fontWeight: 700 }}>{String(label)}</div>
-                        {actualVal != null && <div style={{ color: "rgba(255,255,255,0.85)", marginTop: 2 }}>History: {fmtMoney(actualVal, true)}</div>}
-                        {projectedVal != null && <div style={{ color: "#22d3a5", marginTop: 2 }}>Projection: {fmtMoney(projectedVal, true)}</div>}
+                        <div style={{ color: "#ffffff", fontWeight: 700 }}>{entry?.label ?? ""}</div>
+                        {actualVal != null && <div style={{ color: "rgba(255,255,255,0.85)", marginTop: 2 }}>{entry?.phase === "today" ? "Current: " : "History: "}{fmtMoney(actualVal, true)}</div>}
+                        {projectedVal != null && <div style={{ color: "#22d3a5", marginTop: 2 }}>{entry?.phase === "today" ? "Starting point: " : "Projection: "}{fmtMoney(projectedVal, true)}</div>}
                       </div>
                     );
                   }} />
-                  <ReferenceLine x="Today" stroke="rgba(255,255,255,0.18)" strokeDasharray="4 3" strokeWidth={1.25} />
+                  <ReferenceLine x={periodData.find(entry => entry.phase === "today")?.shortLabel} stroke="rgba(255,255,255,0.18)" strokeDasharray="4 3" strokeWidth={1.25} />
                   <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.82)" strokeWidth={2.25} connectNulls={false} dot={false} activeDot={{ r: 4, fill: "#ffffff" }} isAnimationActive animationBegin={0} animationDuration={700} animationEasing="ease-out" />
                   <Area type="monotone" dataKey="projected" stroke="#22d3a5" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 4, fill: "#22d3a5" }} isAnimationActive animationBegin={150} animationDuration={1000} animationEasing="ease-out" />
                 </ComposedChart>
@@ -736,7 +763,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               ))}
             </div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "DM Sans" }}>
-              Past 3 months from transactions · future projection
+              Past 3 months by month · monthly projection
             </div>
           </div>
 
