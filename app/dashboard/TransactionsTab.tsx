@@ -1557,6 +1557,11 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
             setRefreshKey((k) => k + 1);
           }}
           defaultCurrency={defaultCurrency}
+          transactions={transactions}
+          viewMonth={viewMonth}
+          rates={rates}
+          formatAmount={fmtDisplay}
+          displayCurrency={displayCurrency}
         />
       )}
     </>
