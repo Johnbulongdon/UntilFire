@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 
 type Step = "upload" | "map" | "importing" | "done";
 
@@ -15,6 +16,7 @@ type Props = {
   onClose: () => void;
   onImported: (count: number) => void;
   defaultCurrency?: string;
+  preferredCurrencies?: string[];
   transactions?: Transaction[];
   viewMonth?: string;
   rates?: Record<string, number>;
@@ -26,6 +28,7 @@ type ParsedImportTransaction = {
   date: string;
   description: string;
   amount: number;
+  currency: string;
   transaction_type: "expense" | "income";
   category: string;
 };
@@ -74,7 +77,7 @@ function parseDate(s: string): string | null {
 }
 
 function parseAmount(s: string): number | null {
-  s = s.trim().replace(/[$€£¥₩₹,\s]/g, "");
+  s = s.trim().replace(/[^0-9().,\-]/g, "").replace(/,/g, "");
   const paren = s.match(/^\((.+)\)$/);
   if (paren) return -Math.abs(parseFloat(paren[1]));
   const n = parseFloat(s);
@@ -101,14 +104,99 @@ function guessCategory(desc: string, type: "expense" | "income"): string {
   return "other";
 }
 
-function autoDetectColumns(headers: string[]): { date: string; description: string; amount: string } {
+function normalizeCurrencyCode(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const upper = raw.toUpperCase();
+
+  if (SUPPORTED_CURRENCIES.includes(upper as (typeof SUPPORTED_CURRENCIES)[number])) return upper;
+  if (upper === "RMB") return "CNY";
+  if (upper === "CNH") return "CNY";
+
+  if (/HONG KONG|HKD/.test(upper)) return "HKD";
+  if (/SINGAPORE|SGD/.test(upper)) return "SGD";
+  if (/AUSTRALIA|AUD/.test(upper)) return "AUD";
+  if (/CANADA|CAD/.test(upper)) return "CAD";
+  if (/NEW ZEALAND|NZD/.test(upper)) return "NZD";
+  if (/UNITED STATES|US DOLLAR|USD/.test(upper)) return "USD";
+  if (/EURO|EUR/.test(upper)) return "EUR";
+  if (/POUND|STERLING|GBP/.test(upper)) return "GBP";
+  if (/YEN|JPY/.test(upper)) return "JPY";
+  if (/YUAN|RENMINBI|CNY/.test(upper)) return "CNY";
+  if (/RUPEE|INR/.test(upper)) return "INR";
+  if (/WON|KRW/.test(upper)) return "KRW";
+  if (/FRANC|CHF/.test(upper)) return "CHF";
+
+  return null;
+}
+
+function detectCurrencyFromValue(value: string, fallbackCurrency: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+
+  const normalized = normalizeCurrencyCode(raw);
+  if (normalized) return normalized;
+
+  const upper = raw.toUpperCase();
+  if (upper.includes("HK$")) return "HKD";
+  if (upper.includes("SGD") || upper.includes("S$")) return "SGD";
+  if (upper.includes("AUD") || upper.includes("A$")) return "AUD";
+  if (upper.includes("CAD") || upper.includes("C$")) return "CAD";
+  if (upper.includes("NZD") || upper.includes("NZ$")) return "NZD";
+  if (upper.includes("CHF")) return "CHF";
+  if (upper.includes("EUR") || raw.includes("€")) return "EUR";
+  if (upper.includes("GBP") || raw.includes("£")) return "GBP";
+  if (upper.includes("JPY") || upper.includes("CNY") || upper.includes("RMB") || raw.includes("¥")) {
+    if (fallbackCurrency === "CNY") return "CNY";
+    if (fallbackCurrency === "JPY") return "JPY";
+    return upper.includes("CNY") || upper.includes("RMB") ? "CNY" : "JPY";
+  }
+  if (upper.includes("INR") || raw.includes("₹")) return "INR";
+  if (upper.includes("KRW") || raw.includes("₩")) return "KRW";
+  if (upper.includes("USD") || upper.includes("US$")) return "USD";
+  if (raw.includes("$") && normalizeCurrencyCode(fallbackCurrency)) return fallbackCurrency;
+
+  return null;
+}
+
+function autoDetectColumns(headers: string[]): { date: string; description: string; amount: string; currency: string } {
   const find = (patterns: RegExp[]) =>
     headers.find((h) => patterns.some((p) => p.test(h.toLowerCase()))) ?? "";
   return {
     date: find([/^date$/, /date/, /posted/, /transaction date/]),
     description: find([/description/, /memo/, /details/, /narrative/, /payee/, /name/]),
     amount: find([/^amount$/, /amount/, /debit/, /credit/, /transaction amount/]),
+    currency: find([/^currency$/, /currency/, /currency code/, /^ccy$/, /curr/]),
   };
+}
+
+function inferImportCurrency({
+  headers,
+  rows,
+  colAmount,
+  colCurrency,
+  fallbackCurrency,
+}: {
+  headers: string[];
+  rows: string[][];
+  colAmount: string;
+  colCurrency: string;
+  fallbackCurrency: string;
+}): string {
+  const currencyIdx = colCurrency ? headers.indexOf(colCurrency) : -1;
+  const amountIdx = colAmount ? headers.indexOf(colAmount) : -1;
+  const counts = new Map<string, number>();
+
+  for (const row of rows.slice(0, 25)) {
+    const rawCurrency = currencyIdx >= 0 ? row[currencyIdx] ?? "" : "";
+    const rawAmount = amountIdx >= 0 ? row[amountIdx] ?? "" : "";
+    const detected = normalizeCurrencyCode(rawCurrency) || detectCurrencyFromValue(rawAmount, fallbackCurrency);
+    if (!detected) continue;
+    counts.set(detected, (counts.get(detected) ?? 0) + 1);
+  }
+
+  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  return best ?? fallbackCurrency;
 }
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
@@ -121,6 +209,7 @@ export default function CsvImportModal({
   onClose,
   onImported,
   defaultCurrency = "USD",
+  preferredCurrencies = [],
   transactions = [],
   viewMonth = "",
   rates = {},
@@ -133,6 +222,8 @@ export default function CsvImportModal({
   const [colDate, setColDate] = useState("");
   const [colDesc, setColDesc] = useState("");
   const [colAmount, setColAmount] = useState("");
+  const [colCurrency, setColCurrency] = useState("");
+  const [importCurrency, setImportCurrency] = useState(defaultCurrency);
   const [flipSigns, setFlipSigns] = useState(false);
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
@@ -155,17 +246,27 @@ export default function CsvImportModal({
         return;
       }
       const auto = autoDetectColumns(h);
+      const cleanedRows = r.filter((row) => row.some((c) => c.trim()));
+      const detectedCurrency = inferImportCurrency({
+        headers: h,
+        rows: cleanedRows,
+        colAmount: auto.amount,
+        colCurrency: auto.currency,
+        fallbackCurrency: defaultCurrency,
+      });
       setHeaders(h);
-      setRows(r.filter((row) => row.some((c) => c.trim())));
+      setRows(cleanedRows);
       setColDate(auto.date);
       setColDesc(auto.description);
       setColAmount(auto.amount);
+      setColCurrency(auto.currency);
+      setImportCurrency(detectedCurrency);
       setFlipSigns(false);
       setError("");
       setStep("map");
     };
     reader.readAsText(file);
-  }, []);
+  }, [defaultCurrency]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -179,12 +280,14 @@ export default function CsvImportModal({
     const dateIdx = headers.indexOf(colDate);
     const descIdx = headers.indexOf(colDesc);
     const amtIdx = headers.indexOf(colAmount);
+    const currencyIdx = colCurrency ? headers.indexOf(colCurrency) : -1;
 
     const parsed: ParsedImportTransaction[] = [];
     for (const row of rows) {
       const rawDate = row[dateIdx] ?? "";
       const rawDesc = row[descIdx] ?? "";
       const rawAmount = row[amtIdx] ?? "";
+      const rawCurrency = currencyIdx >= 0 ? row[currencyIdx] ?? "" : "";
 
       const date = parseDate(rawDate);
       const rawAmt = parseAmount(rawAmount);
@@ -192,16 +295,18 @@ export default function CsvImportModal({
 
       const amt = flipSigns ? -rawAmt : rawAmt;
       const type: "expense" | "income" = amt < 0 ? "expense" : "income";
+      const currency = normalizeCurrencyCode(rawCurrency) || detectCurrencyFromValue(rawAmount, importCurrency) || importCurrency;
       parsed.push({
         date,
         description: rawDesc.trim(),
         amount: Math.abs(amt),
+        currency,
         transaction_type: type,
         category: guessCategory(rawDesc, type),
       });
     }
     return parsed;
-  }, [colAmount, colDate, colDesc, flipSigns, headers, rows]);
+  }, [colAmount, colCurrency, colDate, colDesc, flipSigns, headers, importCurrency, rows]);
 
   const parsedTransactions = buildParsedTransactions();
   const sampleTransaction = parsedTransactions[0] ?? null;
@@ -238,12 +343,18 @@ export default function CsvImportModal({
     }).format(value);
   };
 
+  const currencyOptions = Array.from(new Set([
+    defaultCurrency,
+    ...preferredCurrencies,
+    ...SUPPORTED_CURRENCIES,
+  ])).filter(Boolean);
+
   const currentMonthTxns = previewMonthKey ? transactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
   const importedMonthTxns = previewMonthKey ? parsedTransactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
   const currentIncome = currentMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const currentExpenses = currentMonthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const importedIncome = importedMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, defaultCurrency, rates), 0);
-  const importedExpenses = importedMonthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, defaultCurrency, rates), 0);
+  const importedIncome = importedMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const importedExpenses = importedMonthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const projectedIncome = currentIncome + importedIncome;
   const projectedExpenses = currentExpenses + importedExpenses;
   const projectedNet = projectedIncome - projectedExpenses;
@@ -270,7 +381,7 @@ export default function CsvImportModal({
         user_id: session.user.id,
         date: tx.date,
         amount: tx.amount,
-        currency: defaultCurrency,
+        currency: tx.currency,
         description: tx.description,
         category: tx.category,
         transaction_type: tx.transaction_type,
@@ -290,7 +401,7 @@ export default function CsvImportModal({
     setImportedCount(inserted);
     setStep("done");
     onImported(inserted);
-  }, [buildParsedTransactions, defaultCurrency, onImported]);
+  }, [buildParsedTransactions, onImported]);
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "8px 10px", borderRadius: 8,
@@ -379,6 +490,7 @@ export default function CsvImportModal({
                 { label: "Date column *", val: colDate, set: setColDate },
                 { label: "Description column *", val: colDesc, set: setColDesc },
                 { label: "Amount column *", val: colAmount, set: setColAmount },
+                { label: "Currency column", val: colCurrency, set: setColCurrency },
               ].map(({ label, val, set }) => (
                 <div key={label} style={{ gridColumn: label.startsWith("Amount") ? "1 / -1" : undefined }}>
                   <label style={labelStyle}>{label}</label>
@@ -388,6 +500,20 @@ export default function CsvImportModal({
                   </select>
                 </div>
               ))}
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={labelStyle}>Currency for imported amounts</label>
+              <select value={importCurrency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setImportCurrency(e.target.value)} style={inputStyle}>
+                {currencyOptions.map((currency) => (
+                  <option key={currency} value={currency} style={selectOptionStyle}>{currency} — {CURRENCY_NAMES[currency] ?? currency}</option>
+                ))}
+              </select>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
+                {colCurrency
+                  ? "Rows use the mapped currency column when present. This selection is the fallback if a row is blank or unclear."
+                  : "Used when there is no separate currency column. We auto-detect when the CSV makes it obvious, and you can override it here."}
+              </div>
             </div>
 
             <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#94a3b8", marginBottom: 20, cursor: "pointer" }}>
@@ -429,7 +555,7 @@ export default function CsvImportModal({
             <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
               <div style={{ background: "#161621", border: "1px solid #23232d", borderRadius: 14, padding: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Import summary</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
                   <div>
                     <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Transactions</div>
                     <div style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc" }}>{parsedTransactions.length}</div>
@@ -442,6 +568,10 @@ export default function CsvImportModal({
                     <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Sign mode</div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: flipSigns ? "#FBBF24" : "#86EFAC" }}>{flipSigns ? "Flipped" : "Original"}</div>
                   </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Currency</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#cbd5e1" }}>{colCurrency ? `${importCurrency} fallback` : importCurrency}</div>
+                  </div>
                 </div>
               </div>
 
@@ -452,7 +582,8 @@ export default function CsvImportModal({
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Date</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 600 }}>{sampleTransaction.date}</span></div>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Description</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 600, textAlign: "right" }}>{sampleTransaction.description}</span></div>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Type</span><span style={{ color: sampleTransaction.transaction_type === "income" ? "#86EFAC" : "#FCA5A5", fontSize: 13, fontWeight: 700, textTransform: "capitalize" }}>{sampleTransaction.transaction_type}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Amount stored</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 700 }}>{previewAmount(sampleTransaction.amount)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Currency</span><span style={{ color: "#cbd5e1", fontSize: 13 }}>{sampleTransaction.currency}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Amount stored</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 700 }}>{new Intl.NumberFormat("en-US", { style: "currency", currency: sampleTransaction.currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(sampleTransaction.amount)}</span></div>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Category guess</span><span style={{ color: "#cbd5e1", fontSize: 13 }}>{sampleTransaction.category}</span></div>
                   </div>
                 ) : (

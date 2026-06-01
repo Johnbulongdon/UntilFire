@@ -1557,6 +1557,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
             setRefreshKey((k) => k + 1);
           }}
           defaultCurrency={defaultCurrency}
+          preferredCurrencies={preferredCurrencies}
           transactions={transactions}
           viewMonth={viewMonth}
           rates={rates}
