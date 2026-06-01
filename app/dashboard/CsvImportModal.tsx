@@ -298,6 +298,17 @@ export default function CsvImportModal({
     fontSize: 13, fontFamily: "Manrope, sans-serif",
   };
 
+  const selectOptionStyle: React.CSSProperties = {
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
+    fontFamily: "Manrope, sans-serif",
+  };
+
+  const placeholderOptionStyle: React.CSSProperties = {
+    ...selectOptionStyle,
+    color: "#64748b",
+  };
+
   const labelStyle: React.CSSProperties = {
     display: "block", fontSize: 12, fontWeight: 600, color: "#94a3b8", marginBottom: 6,
   };
@@ -372,8 +383,8 @@ export default function CsvImportModal({
                 <div key={label} style={{ gridColumn: label.startsWith("Amount") ? "1 / -1" : undefined }}>
                   <label style={labelStyle}>{label}</label>
                   <select value={val} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set(e.target.value)} style={inputStyle}>
-                    <option value="">— select —</option>
-                    {headers.map((h: string) => <option key={h} value={h}>{h}</option>)}
+                    <option value="" style={placeholderOptionStyle}>— select —</option>
+                    {headers.map((h: string) => <option key={h} value={h} style={selectOptionStyle}>{h}</option>)}
                   </select>
                 </div>
               ))}
