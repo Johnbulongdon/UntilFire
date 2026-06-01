@@ -61,7 +61,7 @@ export default function LoginPage() {
       fontFamily: "'Manrope', sans-serif",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         .login-btn {
           width: 100%;
           display: flex;
@@ -120,7 +120,7 @@ export default function LoginPage() {
             fontSize: 12,
             color: '#94A3B8',
             lineHeight: 1.6,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Manrope', sans-serif",
           }}>
             No credit card required. Free forever for the core calculator.<br />
             By signing in you agree to our Terms &amp; Privacy Policy.

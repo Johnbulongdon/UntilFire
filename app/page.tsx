@@ -1674,7 +1674,7 @@ export default function Home() {
           --purple: #a78bfa;
           --font-display: 'Manrope', sans-serif;
           --font-body: 'Manrope', sans-serif;
-          --font-mono: 'Inter', sans-serif;
+          --font-mono: 'Manrope', sans-serif;
         }
 
         body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; }

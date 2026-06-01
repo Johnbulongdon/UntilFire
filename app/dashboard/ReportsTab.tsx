@@ -281,7 +281,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
                 <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
                   {kpi.label}
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: kpi.color, fontFamily: "Inter, sans-serif", letterSpacing: "-1px" }}>
+                <div style={{ fontSize: 26, fontWeight: 800, color: kpi.color, fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
                   {kpi.value}
                 </div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>
@@ -355,7 +355,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
                     {pct.toFixed(0)}%
                   </div>
                   {/* Amount */}
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "#19181E", fontFamily: "Inter, sans-serif", textAlign: "right", minWidth: 80 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#19181E", fontFamily: "Manrope, sans-serif", textAlign: "right", minWidth: 80 }}>
                     {fmtDisplay(cat.total)}
                   </div>
                 </div>
@@ -390,7 +390,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
               className="uf-report-month-grid uf-report-month-row"
               style={{
                 padding: "12px 0", borderBottom: "1px solid #F8FAFC",
-                fontSize: 14, fontFamily: "Inter, sans-serif",
+                fontSize: 14, fontFamily: "Manrope, sans-serif",
               }}
             >
               <span style={{ fontWeight: 600, color: "#64748B", fontFamily: "Manrope, sans-serif", fontSize: 13 }}>

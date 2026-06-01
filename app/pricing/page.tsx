@@ -78,7 +78,7 @@ export default function PricingPage() {
         flexDirection: "column",
         alignItems: "center",
         padding: "64px 24px 120px",
-        fontFamily: "DM Sans, sans-serif",
+        fontFamily: "Manrope, sans-serif",
       }}
     >
       <Link
@@ -100,7 +100,7 @@ export default function PricingPage() {
       <div style={{ textAlign: "center", marginBottom: 56 }}>
         <h1
           style={{
-            fontFamily: "Syne, sans-serif",
+            fontFamily: "Manrope, sans-serif",
             fontSize: 40,
             fontWeight: 800,
             color: "#f1f5f9",
@@ -142,7 +142,7 @@ export default function PricingPage() {
             Free
           </div>
           <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Syne, sans-serif" }}>$0</span>
+            <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>$0</span>
             <span style={{ fontSize: 15, color: "#6b7280", marginLeft: 4 }}>/month</span>
           </div>
           <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 28px" }}>No account required to get started.</p>
@@ -169,7 +169,7 @@ export default function PricingPage() {
               fontSize: 14,
               fontWeight: 700,
               textDecoration: "none",
-              fontFamily: "DM Sans, sans-serif",
+              fontFamily: "Manrope, sans-serif",
             }}
           >
             Get started free
@@ -214,7 +214,7 @@ export default function PricingPage() {
             Pro
           </div>
           <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Syne, sans-serif" }}>$4.99</span>
+            <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>$4.99</span>
             <span style={{ fontSize: 15, color: "#6b7280", marginLeft: 4 }}>/month</span>
           </div>
           <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 28px" }}>Cancel anytime. No long-term commitment.</p>
@@ -241,7 +241,7 @@ export default function PricingPage() {
               fontSize: 14,
               fontWeight: 700,
               textDecoration: "none",
-              fontFamily: "DM Sans, sans-serif",
+              fontFamily: "Manrope, sans-serif",
             }}
           >
             Get started →

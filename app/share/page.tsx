@@ -46,7 +46,7 @@ export default async function SharePage({ searchParams }: Props) {
       padding: '40px 24px',
       color: '#19181E',
     }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500&display=swap');`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');`}</style>
 
       <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
         {/* Logo */}
@@ -63,7 +63,7 @@ export default async function SharePage({ searchParams }: Props) {
           boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06)',
           marginBottom: 32,
         }}>
-          <p style={{ fontSize: 13, color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: "'Inter', sans-serif" }}>
+          <p style={{ fontSize: 13, color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: "'Manrope', sans-serif" }}>
             Freedom date
           </p>
           <h1 style={{ fontSize: 40, fontWeight: 800, margin: '0 0 4px', color: '#064E3B', letterSpacing: '-0.02em' }}>
@@ -73,7 +73,7 @@ export default async function SharePage({ searchParams }: Props) {
             around {year}
           </p>
           {yearsNum > 0 && (
-            <p style={{ fontSize: 16, color: '#64748B', margin: '0 0 0', fontFamily: "'Inter', sans-serif" }}>
+            <p style={{ fontSize: 16, color: '#64748B', margin: '0 0 0', fontFamily: "'Manrope', sans-serif" }}>
               {yearsNum} years away · work optional timeline
             </p>
           )}
@@ -100,7 +100,7 @@ export default async function SharePage({ searchParams }: Props) {
         >
           Find your freedom date — free →
         </Link>
-        <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 14, fontFamily: "'Inter', sans-serif" }}>
+        <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 14, fontFamily: "'Manrope', sans-serif" }}>
           No login required. Takes 60 seconds.
         </p>
       </div>

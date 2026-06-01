@@ -255,7 +255,7 @@ function ManualCard({
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
         <div style={{
-          fontSize: 16, fontWeight: 800, fontFamily: "Inter, sans-serif",
+          fontSize: 16, fontWeight: 800, fontFamily: "Manrope, sans-serif",
           color: item.included ? (isIncome ? "#059669" : "#19181E") : "#94A3B8",
         }}>
           {isIncome ? "+" : "−"}{item.currency !== "USD" ? `${item.currency} ` : "$"}{item.amount.toLocaleString()}
@@ -336,7 +336,7 @@ function AutoCard({
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
         <div style={{
-          fontSize: 16, fontWeight: 800, fontFamily: "Inter, sans-serif",
+          fontSize: 16, fontWeight: 800, fontFamily: "Manrope, sans-serif",
           color: isIncome ? "#059669" : "#19181E",
         }}>
           {isIncome ? "+" : "−"}{formatAmount(item.avgAmountUSD)}
@@ -737,7 +737,7 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
             <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
               Monthly Out
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#FCA5A5", fontFamily: "Inter, sans-serif", letterSpacing: "-1px" }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#FCA5A5", fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
               {fmtDisplay(monthlyOut)}
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
@@ -748,7 +748,7 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
             <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
               Monthly In
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#62FAE3", fontFamily: "Inter, sans-serif", letterSpacing: "-1px" }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#62FAE3", fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
               {fmtDisplay(monthlyIn)}
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>

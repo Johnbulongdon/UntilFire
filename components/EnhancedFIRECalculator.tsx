@@ -388,7 +388,7 @@ export default function EnhancedFIRECalculator() {
       style={{
         background: C.bg,
         color: C.text,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Manrope', sans-serif",
         minHeight: "100vh",
         padding: "0 0 60px 0",
       }}

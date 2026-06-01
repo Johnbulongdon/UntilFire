@@ -1476,7 +1476,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           style={{
             padding: "7px 14px", borderRadius: 8, border: "1px solid #23232d",
             background: "transparent", color: "#94a3b8", fontSize: 12, fontWeight: 600,
-            cursor: "pointer", fontFamily: "DM Sans, sans-serif", display: "flex", alignItems: "center", gap: 6,
+            cursor: "pointer", fontFamily: "Manrope, sans-serif", display: "flex", alignItems: "center", gap: 6,
           }}
         >
           ↑ Import CSV

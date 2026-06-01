@@ -211,7 +211,7 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currenc
       boxShadow: focused ? "0 0 0 3px rgba(6,78,59,0.10)" : "none",
       transition: "border-color 0.2s, box-shadow 0.2s",
     }}>
-      <span style={{ color: "#94A3B8", fontSize: 13, fontFamily: "Inter, sans-serif" }}>{prefix}</span>
+      <span style={{ color: "#94A3B8", fontSize: 13, fontFamily: "Manrope, sans-serif" }}>{prefix}</span>
       <input
         type="number" value={displayValue || ""} placeholder={placeholder}
         onChange={e => {
@@ -224,7 +224,7 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currenc
           onChange(nextValue);
         }}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{ background: "none", border: "none", outline: "none", color: "#19181E", fontSize: 14, width: "100%", fontFamily: "Inter, sans-serif" }}
+        style={{ background: "none", border: "none", outline: "none", color: "#19181E", fontSize: 14, width: "100%", fontFamily: "Manrope, sans-serif" }}
       />
     </div>
   );
@@ -351,7 +351,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
             ] as const).map(row => (
               <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 12, color: "#64748B" }}>{row.label}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: row.color, background: `${row.color}18`, borderRadius: 20, padding: "3px 10px", fontFamily: "Inter, sans-serif" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: row.color, background: `${row.color}18`, borderRadius: 20, padding: "3px 10px", fontFamily: "Manrope, sans-serif" }}>
                   {pctYr(row.years)}
                 </span>
               </div>
@@ -367,18 +367,18 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
             {([["#059669", "Within 40 yr"], ["#D97706", "Beyond 40 yr"]] as const).map(([c, l]) => (
               <div key={l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
-                <span style={{ fontSize: 11, color: "#64748B", fontFamily: "Inter, sans-serif" }}>{l}</span>
+                <span style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{l}</span>
               </div>
             ))}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             {result.histogram.map(h => (
               <div key={h.bucket} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Inter, sans-serif", width: 36, flexShrink: 0, textAlign: "right" }}>{h.bucket}</span>
+                <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Manrope, sans-serif", width: 36, flexShrink: 0, textAlign: "right" }}>{h.bucket}</span>
                 <div style={{ flex: 1, height: 14, background: "#F1F5F9", borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${(h.count / maxCount) * 100}%`, background: h.within40 ? "#059669" : "#D97706", borderRadius: 3, transition: "width 0.4s" }} />
                 </div>
-                <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Inter, sans-serif", width: 26, flexShrink: 0, textAlign: "right" }}>
+                <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Manrope, sans-serif", width: 26, flexShrink: 0, textAlign: "right" }}>
                   {Math.round((h.count / result.totalRuns) * 100)}%
                 </span>
               </div>
@@ -391,8 +391,8 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
               { label: "p90", val: result.p90Years, color: "#94A3B8" },
             ] as const).map(m => (
               <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ fontSize: 10, fontFamily: "Inter, sans-serif", color: m.color, textDecoration: "underline dotted" }}>{m.label}</span>
-                <span style={{ fontSize: 10, fontFamily: "Inter, sans-serif", color: "#94A3B8", marginLeft: 2 }}>{pctYr(m.val)}</span>
+                <span style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", color: m.color, textDecoration: "underline dotted" }}>{m.label}</span>
+                <span style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", color: "#94A3B8", marginLeft: 2 }}>{pctYr(m.val)}</span>
               </div>
             ))}
           </div>
@@ -405,15 +405,15 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
         <input type="range" min={0} max={2000} step={50} value={extraSavings}
           onChange={e => setExtraSavings(Number(e.target.value))}
           style={{ flex: 1, minWidth: 120, accentColor: "#064E3B" }} />
-        <span style={{ fontSize: 13, fontFamily: "Inter, sans-serif", color: "#19181E", flexShrink: 0, minWidth: 90 }}>
+        <span style={{ fontSize: 13, fontFamily: "Manrope, sans-serif", color: "#19181E", flexShrink: 0, minWidth: 90 }}>
           +{fmtMoney(extraSavings)}/mo
         </span>
         {yearDelta > 0 ? (
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "#ECFDF5", borderRadius: 20, padding: "4px 12px", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "#ECFDF5", borderRadius: 20, padding: "4px 12px", fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>
             −{yearDelta} yr
           </span>
         ) : (
-          <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>drag to simulate</span>
+          <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>drag to simulate</span>
         )}
       </div>
     </div>
@@ -666,7 +666,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     if (pct === null || pct === undefined) return null;
     const isPositive = inverse ? pct < 0 : pct > 0;
     return (
-      <span style={{ fontSize: 11, fontWeight: 600, color: isPositive ? "#22d3a5" : "#ef4444", fontFamily: "DM Sans, sans-serif" }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: isPositive ? "#22d3a5" : "#ef4444", fontFamily: "Manrope, sans-serif" }}>
         {pct > 0 ? "↑" : "↓"} {Math.abs(pct).toFixed(1)}%
       </span>
     );
@@ -693,11 +693,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       {/* ── Greeting header ─────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 13, color: "#6b7280", fontFamily: "DM Sans, sans-serif" }}>
+          <div style={{ fontSize: 13, color: "#6b7280", fontFamily: "Manrope, sans-serif" }}>
             {formattedDate}{cityName ? ` · 📍 ${cityName}` : ""}
           </div>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 99, background: `${statusColor}18`, color: statusColor, fontFamily: "DM Sans, sans-serif", border: `1px solid ${statusColor}35` }}>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 99, background: `${statusColor}18`, color: statusColor, fontFamily: "Manrope, sans-serif", border: `1px solid ${statusColor}35` }}>
           {statusLabel}
         </span>
       </div>
@@ -707,12 +707,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
         {/* Growth Over Time — large dark green card */}
         <div className="uf-overview-primary-card" style={{ background: "linear-gradient(160deg, #0a2419 0%, #0d1f1a 100%)", border: "1px solid #1a3028", borderRadius: 16, padding: "24px 24px 20px", display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#6ee7b7", fontFamily: "DM Sans, sans-serif", letterSpacing: "0.3px", marginBottom: 4 }}>Growth Over Time</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#6ee7b7", fontFamily: "Manrope, sans-serif", letterSpacing: "0.3px", marginBottom: 4 }}>Growth Over Time</div>
           <div style={{ fontSize: "clamp(28px, 4.5vw, 44px)", fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.02 }}>
             {fmtMoney(netWorth)}
           </div>
           {ytdChangePct !== null && (
-            <div style={{ fontSize: 12, color: "#22d3a5", fontFamily: "DM Sans, sans-serif", marginTop: 6, fontWeight: 600 }}>
+            <div style={{ fontSize: 12, color: "#22d3a5", fontFamily: "Manrope, sans-serif", marginTop: 6, fontWeight: 600 }}>
               ↗ Net Worth {ytdChangePct >= 0 ? "+" : ""}{ytdChangePct.toFixed(1)}% YTD
             </div>
           )}
@@ -730,15 +730,15 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="shortLabel" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
-                  <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "DM Sans" }} axisLine={false} tickLine={false} width={56} />
+                  <XAxis dataKey="shortLabel" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10, fontFamily: "Manrope" }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
+                  <YAxis tickFormatter={v => fmtMoney(v, true)} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "Manrope" }} axisLine={false} tickLine={false} width={56} />
                   <Tooltip animationDuration={150} content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const entry = payload[0]?.payload as { label?: string; actual?: number | null; projected?: number | null; phase?: string } | undefined;
                     const actualVal = payload.find(p => p.dataKey === "actual")?.value as number | undefined;
                     const projectedVal = payload.find(p => p.dataKey === "projected")?.value as number | undefined;
                     return (
-                      <div style={{ background: "#0a1f17", border: "1px solid #1a3028", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontFamily: "DM Sans" }}>
+                      <div style={{ background: "#0a1f17", border: "1px solid #1a3028", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontFamily: "Manrope" }}>
                         <div style={{ color: "#ffffff", fontWeight: 700 }}>{entry?.label ?? ""}</div>
                         {actualVal != null && <div style={{ color: "rgba(255,255,255,0.85)", marginTop: 2 }}>{entry?.phase === "today" ? "Current: " : "History: "}{fmtMoney(actualVal, true)}</div>}
                         {projectedVal != null && <div style={{ color: "#22d3a5", marginTop: 2 }}>{entry?.phase === "today" ? "Starting point: " : "Projection: "}{fmtMoney(projectedVal, true)}</div>}
@@ -757,25 +757,25 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
             <div style={{ display: "flex", gap: 4 }}>
               {(["5Y", "15Y", "All"] as const).map(p => (
-                <button key={p} onClick={() => setChartPeriod(p)} style={{ padding: "3px 9px", borderRadius: 5, border: "1px solid", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans", background: chartPeriod === p ? "#22d3a5" : "transparent", color: chartPeriod === p ? "#0a2419" : "rgba(255,255,255,0.4)", borderColor: chartPeriod === p ? "#22d3a5" : "rgba(255,255,255,0.15)" }}>
+                <button key={p} onClick={() => setChartPeriod(p)} style={{ padding: "3px 9px", borderRadius: 5, border: "1px solid", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope", background: chartPeriod === p ? "#22d3a5" : "transparent", color: chartPeriod === p ? "#0a2419" : "rgba(255,255,255,0.4)", borderColor: chartPeriod === p ? "#22d3a5" : "rgba(255,255,255,0.15)" }}>
                   {p}
                 </button>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "DM Sans" }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "Manrope" }}>
               Past 3 months by month · monthly projection
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 28, marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
             <div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Monthly Savings</div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700 }}>Monthly Savings</div>
               <div style={{ fontSize: 17, fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", marginTop: 3 }}>
                 {annualSavings > 0 ? `${fmtMoney(annualSavings / 12, true)} ↑` : "—"}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>Assumed Return</div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700 }}>Assumed Return</div>
               <div style={{ fontSize: 17, fontWeight: 800, color: "#ffffff", fontFamily: "Manrope, sans-serif", marginTop: 3 }}>
                 {(growthRate * 100).toFixed(1)}% ↑
               </div>
@@ -788,38 +788,38 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
           {/* Freedom Date */}
           <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "22px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Your freedom date</div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "Manrope", marginBottom: 10 }}>Your freedom date</div>
           {retireYear ? (
             <>
               <div style={{ fontSize: "clamp(28px, 4vw, 38px)", fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-1.5px", lineHeight: 1 }}>
                 {retireYear}
               </div>
-              <div style={{ fontSize: 12, color: "#047857", fontFamily: "DM Sans, sans-serif", marginTop: 6, fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: "#047857", fontFamily: "Manrope, sans-serif", marginTop: 6, fontWeight: 600 }}>
                 {fireYear} years away at your current pace{retirementCityName ? ` · ${retirementCityName}` : ""}
               </div>
               <div style={{ marginTop: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700 }}>PROGRESS</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#047857", fontFamily: "DM Sans" }}>{progress.toFixed(1)}%</span>
+                  <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700 }}>PROGRESS</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#047857", fontFamily: "Manrope" }}>{progress.toFixed(1)}%</span>
                 </div>
                 <div style={{ height: 6, background: "#E5E7EB", borderRadius: 99, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #22d3a5, #059669)", borderRadius: 99 }} />
                 </div>
-                <div style={{ marginTop: 5, fontSize: 11, color: "#64748B", fontFamily: "DM Sans" }}>
+                <div style={{ marginTop: 5, fontSize: 11, color: "#64748B", fontFamily: "Manrope" }}>
                   {fmtMoney(investable, true)} saved of {fmtMoney(fireTarget, true)} needed
                 </div>
               </div>
-              <div style={{ marginTop: 12, fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.45 }}>
+              <div style={{ marginTop: 12, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.45 }}>
                 Move it closer by saving more, spending less, or growing income.
               </div>
             </>
           ) : (
             <>
               <div style={{ fontSize: 32, fontWeight: 700, color: "#CBD5E1", fontFamily: "Manrope, sans-serif" }}>—</div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.45 }}>
+              <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.45 }}>
                 Add your income, spending, and savings to calculate a realistic freedom date.
               </div>
-              <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans" }}>
+              <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope" }}>
                 Get my freedom date →
               </button>
             </>
@@ -828,41 +828,41 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
           {/* Best Next Move */}
           <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", flex: 1, boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "DM Sans", marginBottom: 10 }}>Best way to move your date</div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "Manrope", marginBottom: 10 }}>Best way to move your date</div>
             {bestMove ? (
               <>
-                <div style={{ fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, color: "#0F172A", fontFamily: "Syne", letterSpacing: "-0.5px", lineHeight: 1.15 }}>
+                <div style={{ fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, color: "#0F172A", fontFamily: "Manrope", letterSpacing: "-0.5px", lineHeight: 1.15 }}>
                   {bestMove.label}
                 </div>
-                <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.5 }}>
+                <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
                   {bestMove.detail}
                 </div>
                 <div style={{ marginTop: 14, padding: "10px 12px", borderRadius: 12, background: "#ECFDF5", border: "1px solid #BBF7D0" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#047857", fontFamily: "DM Sans", textTransform: "uppercase", letterSpacing: "0.7px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#047857", fontFamily: "Manrope", textTransform: "uppercase", letterSpacing: "0.7px" }}>
                     Impact on your plan
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 13, color: "#0F172A", fontFamily: "DM Sans", fontWeight: 600 }}>
+                  <div style={{ marginTop: 4, fontSize: 13, color: "#0F172A", fontFamily: "Manrope", fontWeight: 600 }}>
                     Could bring freedom forward by {bestMove.deltaYears >= 2 ? `${bestMove.deltaYears.toFixed(1)} years` : `${Math.round(bestMove.deltaYears * 12)} months`}
                   </div>
                   {bestMove.newRetireYear && (
-                    <div style={{ marginTop: 3, fontSize: 11, color: "#64748B", fontFamily: "DM Sans" }}>
+                    <div style={{ marginTop: 3, fontSize: 11, color: "#64748B", fontFamily: "Manrope" }}>
                       New freedom date: {bestMove.newRetireYear}
                     </div>
                   )}
                 </div>
-                <button onClick={() => onTabChange?.("fire-calculator")} style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans" }}>
+                <button onClick={() => onTabChange?.("fire-calculator")} style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope" }}>
                   Try this move in your plan →
                 </button>
               </>
             ) : (
               <>
-                <div style={{ fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 700, color: "#0F172A", fontFamily: "Syne", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
+                <div style={{ fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 700, color: "#0F172A", fontFamily: "Manrope", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
                   Finish your basics first
                 </div>
-                <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.5 }}>
+                <div style={{ marginTop: 8, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
                   Once your income, spending, and savings are filled in, UntilFire can show the fastest way to pull your freedom date closer.
                 </div>
-                <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans" }}>
+                <button onClick={() => onOpenOnboarding?.()} style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope" }}>
                   Finish setup →
                 </button>
               </>
@@ -878,7 +878,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>This month’s spending</div>
-            <div style={{ fontSize: 11, color: "#64748B", fontFamily: "DM Sans, sans-serif" }}>{monthName}</div>
+            <div style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{monthName}</div>
           </div>
           {(() => {
             const planned = monthlyExpenses > 0 ? monthlyExpenses : income > 0 ? income : 0;
@@ -887,16 +887,16 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             const spendPct = planned > 0 ? Math.min(100, (actual / planned) * 100) : 0;
             if (planned === 0) return (
               <button onClick={() => onTabChange?.("cashflow")} style={{ width: "100%", padding: "14px", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#047857", fontFamily: "DM Sans" }}>Set up your spending plan →</div>
-                <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontFamily: "DM Sans" }}>Add a monthly target so UntilFire can tell you whether you are on track.</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#047857", fontFamily: "Manrope" }}>Set up your spending plan →</div>
+                <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontFamily: "Manrope" }}>Add a monthly target so UntilFire can tell you whether you are on track.</div>
               </button>
             );
             return (
               <>
-                <div style={{ fontSize: 26, fontWeight: 700, color: "#0F172A", fontFamily: "Syne", letterSpacing: "-0.8px" }}>
+                <div style={{ fontSize: 26, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope", letterSpacing: "-0.8px" }}>
                   {fmtMoney(hasActuals ? actual : planned, true)}
                 </div>
-                <div style={{ marginTop: 6, fontSize: 12, color: remaining >= 0 ? "#047857" : "#B91C1C", fontFamily: "DM Sans", fontWeight: 600 }}>
+                <div style={{ marginTop: 6, fontSize: 12, color: remaining >= 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope", fontWeight: 600 }}>
                   {hasActuals
                     ? (remaining >= 0
                       ? `${fmtMoney(Math.abs(remaining), true)} left in your monthly plan`
@@ -908,17 +908,17 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 </div>
                 <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div style={{ padding: "10px 12px", borderRadius: 12, background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                    <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: "DM Sans", fontWeight: 700 }}>Planned</div>
-                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 700, color: "#0F172A", fontFamily: "Syne" }}>{fmtMoney(planned, true)}</div>
+                    <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: "Manrope", fontWeight: 700 }}>Planned</div>
+                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope" }}>{fmtMoney(planned, true)}</div>
                   </div>
                   <div style={{ padding: "10px 12px", borderRadius: 12, background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                    <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: "DM Sans", fontWeight: 700 }}>{hasActuals ? "Left to spend" : "Status"}</div>
-                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 700, color: remaining >= 0 ? "#047857" : "#B91C1C", fontFamily: "Syne" }}>
+                    <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: "Manrope", fontWeight: 700 }}>{hasActuals ? "Left to spend" : "Status"}</div>
+                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 700, color: remaining >= 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope" }}>
                       {hasActuals ? fmtMoney(Math.abs(remaining), true) : "Waiting on actuals"}
                     </div>
                   </div>
                 </div>
-                <div style={{ marginTop: 12, fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.5 }}>
+                <div style={{ marginTop: 12, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
                   {hasActuals
                     ? (remaining >= 0 ? "You are on track this month." : "You are spending faster than planned this month.")
                     : "Log spending to see if you are on track this month."}
@@ -932,7 +932,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>Where your money is</div>
-            <button onClick={() => onTabChange?.("assets")} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>View all →</button>
+            <button onClick={() => onTabChange?.("assets")} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope, sans-serif", fontWeight: 600 }}>View all →</button>
           </div>
           {investable > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -945,13 +945,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 return (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: "#334155", fontFamily: "DM Sans, sans-serif", flex: 1 }}>{label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "DM Sans, sans-serif" }}>{fmtMoney(value, true)}</span>
-                    <span style={{ fontSize: 11, color: "#64748B", fontFamily: "DM Sans, sans-serif", minWidth: 28, textAlign: "right" }}>{pct.toFixed(0)}%</span>
+                    <span style={{ fontSize: 13, color: "#334155", fontFamily: "Manrope, sans-serif", flex: 1 }}>{label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(value, true)}</span>
+                    <span style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope, sans-serif", minWidth: 28, textAlign: "right" }}>{pct.toFixed(0)}%</span>
                   </div>
                 );
               })}
-              <div style={{ marginTop: 4, paddingTop: 12, borderTop: "1px solid #E2E8F0", fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.5 }}>
+              <div style={{ marginTop: 4, paddingTop: 12, borderTop: "1px solid #E2E8F0", fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
                 {totalCash > investable * 0.3 && investable > 10000
                   ? "A large share of your portfolio is still sitting in cash, which may slow your freedom date."
                   : ((k401 + rothIRA) > 0 && (k401 + rothIRA) / investable < 0.2)
@@ -961,8 +961,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </div>
           ) : (
             <button onClick={() => onTabChange?.("assets")} style={{ width: "100%", padding: "14px", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#047857", fontFamily: "DM Sans" }}>Add your savings and investments →</div>
-              <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontFamily: "DM Sans" }}>Connect accounts or enter balances so UntilFire can build your real plan.</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#047857", fontFamily: "Manrope" }}>Add your savings and investments →</div>
+              <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontFamily: "Manrope" }}>Connect accounts or enter balances so UntilFire can build your real plan.</div>
             </button>
           )}
         </div>
@@ -985,8 +985,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             if (items.length === 0) return (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 8 }}>
                 <div style={{ fontSize: 22 }}>✅</div>
-                <div style={{ fontSize: 13, color: "#0F172A", fontFamily: "DM Sans", fontWeight: 700 }}>Your plan is set up.</div>
-                <div style={{ fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.5 }}>Keep logging real activity so UntilFire can keep your freedom date honest.</div>
+                <div style={{ fontSize: 13, color: "#0F172A", fontFamily: "Manrope", fontWeight: 700 }}>Your plan is set up.</div>
+                <div style={{ fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>Keep logging real activity so UntilFire can keep your freedom date honest.</div>
               </div>
             );
             return (
@@ -995,11 +995,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", borderBottom: i < Math.min(items.length, 3) - 1 ? "1px solid #E2E8F0" : "none" }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E", flexShrink: 0, marginTop: 6 }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, color: "#0F172A", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>{item.label}</div>
-                      {item.sub && <div style={{ fontSize: 11, color: "#64748B", fontFamily: "DM Sans, sans-serif", marginTop: 2, lineHeight: 1.45 }}>{item.sub}</div>}
+                      <div style={{ fontSize: 13, color: "#0F172A", fontFamily: "Manrope, sans-serif", fontWeight: 600 }}>{item.label}</div>
+                      {item.sub && <div style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 2, lineHeight: 1.45 }}>{item.sub}</div>}
                     </div>
                     {item.action && (
-                      <button onClick={item.action} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans", fontWeight: 600, flexShrink: 0 }}>Open →</button>
+                      <button onClick={item.action} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope", fontWeight: 600, flexShrink: 0 }}>Open →</button>
                     )}
                   </div>
                 ))}
@@ -1014,33 +1014,33 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>Income vs spending</div>
-            <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "DM Sans", fontWeight: 600 }}>Open cash flow →</button>
+            <button onClick={() => onTabChange?.("cashflow")} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope", fontWeight: 600 }}>Open cash flow →</button>
           </div>
           {hasActuals ? (
             <>
               <div style={{ fontSize: 24, fontWeight: 700, color: netSurplus >= 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.6px" }}>
                 {netSurplus >= 0 ? `You saved ${fmtMoney(netSurplus, true)}` : `You overspent by ${fmtMoney(Math.abs(netSurplus), true)}`}
               </div>
-              <div style={{ marginTop: 6, fontSize: 12, color: "#475569", fontFamily: "DM Sans", lineHeight: 1.5 }}>
+              <div style={{ marginTop: 6, fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
                 {netSurplus >= 0
                   ? "This month is helping move your freedom date closer."
                   : "This month is pushing your freedom date further out unless you correct it."}
               </div>
               <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700, marginBottom: 6 }}>Income</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", fontFamily: "Syne" }}>{fmtMoney(actualIncome, true)}</div>
+                  <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700, marginBottom: 6 }}>Income</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope" }}>{fmtMoney(actualIncome, true)}</div>
                   {incomeTrend !== null && (
-                    <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: incomeTrend > 0 ? "#047857" : "#B91C1C", fontFamily: "DM Sans" }}>
+                    <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: incomeTrend > 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope" }}>
                       {incomeTrend > 0 ? "↑" : "↓"} {Math.abs(incomeTrend).toFixed(1)}% vs last month
                     </div>
                   )}
                 </div>
                 <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "DM Sans", fontWeight: 700, marginBottom: 6 }}>Spending</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", fontFamily: "Syne" }}>{fmtMoney(actualExpenses, true)}</div>
+                  <div style={{ fontSize: 9, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.8px", fontFamily: "Manrope", fontWeight: 700, marginBottom: 6 }}>Spending</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope" }}>{fmtMoney(actualExpenses, true)}</div>
                   {expenseTrend !== null && (
-                    <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: expenseTrend < 0 ? "#047857" : "#B91C1C", fontFamily: "DM Sans" }}>
+                    <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: expenseTrend < 0 ? "#047857" : "#B91C1C", fontFamily: "Manrope" }}>
                       {expenseTrend > 0 ? "↑" : "↓"} {Math.abs(expenseTrend).toFixed(1)}% vs last month
                     </div>
                   )}
@@ -1049,8 +1049,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </>
           ) : (
             <button onClick={() => onTabChange?.("cashflow")} style={{ width: "100%", padding: "18px 14px", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#047857", fontFamily: "DM Sans", marginBottom: 4 }}>Log your first transactions →</div>
-              <div style={{ fontSize: 11, color: "#64748B", fontFamily: "DM Sans" }}>Track real income and spending so UntilFire can show whether you are actually moving toward freedom.</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#047857", fontFamily: "Manrope", marginBottom: 4 }}>Log your first transactions →</div>
+              <div style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope" }}>Track real income and spending so UntilFire can show whether you are actually moving toward freedom.</div>
             </button>
           )}
         </div>
@@ -1107,7 +1107,7 @@ const CALCULATORS = [
 function _CalculatorsTab() {
   return (
     <div>
-      <p style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20 }}>
+      <p style={{ color: "#64748B", fontSize: 12, fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20 }}>
         All tools
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
@@ -1202,7 +1202,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
                 </div>
                 {spent > 0 && (
                   <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
-                    <span style={{ fontSize: 11, fontFamily: "Inter, sans-serif", color: over ? "#DC2626" : "#64748B" }}>
+                    <span style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", color: over ? "#DC2626" : "#64748B" }}>
                       {over ? "⚠ " : ""}Spent {fmtMoney(spent)}{budget > 0 ? ` / ${fmtMoney(budget)}` : ""}
                     </span>
                     {budget > 0 && (
@@ -1232,14 +1232,14 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
               { label: "Annual Savings", val: fmtMoney(Math.max(0, savings) * 12), color: "#19181E" },
             ].map(k => (
               <div key={k.label}>
-                <div style={{ color: "#64748B", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "Inter, sans-serif" }}>{k.label}</div>
-                <div style={{ color: k.color, fontSize: 22, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>{k.val}</div>
+                <div style={{ color: "#64748B", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "Manrope, sans-serif" }}>{k.label}</div>
+                <div style={{ color: k.color, fontSize: 22, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{k.val}</div>
               </div>
             ))}
           </div>
           {/* Rate bar */}
           <div style={{ marginTop: 18 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748B", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748B", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
               <span>Savings rate</span><span>{rate.toFixed(1)}% {rate >= 50 ? "🔥 FIRE pace" : rate >= 25 ? "· Good" : "· Needs work"}</span>
             </div>
             <div style={{ height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
@@ -1313,7 +1313,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
       <div style={{ background: "#fff", borderRadius: 20, padding: "40px 32px", maxWidth: 400, width: "100%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🙏</div>
         <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Thank you!</div>
-        <div style={{ fontSize: 13, color: "#64748B", marginTop: 8, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>Your feedback shapes what we build next.</div>
+        <div style={{ fontSize: 13, color: "#64748B", marginTop: 8, fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>Your feedback shapes what we build next.</div>
       </div>
     </div>
   );
@@ -1327,7 +1327,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#059669", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>Optional check-in</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Want to help us improve this?</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontFamily: "Inter, sans-serif" }}>A few optional questions · skip anytime</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>A few optional questions · skip anytime</div>
           </div>
         </div>
 
@@ -1346,7 +1346,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
             ))}
           </div>
           {satisfaction && (
-            <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
+            <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: "Manrope, sans-serif" }}>
               {["", "Very dissatisfied", "Dissatisfied", "Neutral", "Satisfied", "Very satisfied"][satisfaction]}
             </div>
           )}
@@ -1359,7 +1359,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
             {SURVEY_FEATURES.map(f => {
               const active = featuresUsed.includes(f);
               return (
-                <button key={f} onClick={() => toggleFeature(f)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#059669" : "#E2E8F0"}`, background: active ? "#F0FDF4" : "#F8FAFC", color: active ? "#064E3B" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                <button key={f} onClick={() => toggleFeature(f)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#059669" : "#E2E8F0"}`, background: active ? "#F0FDF4" : "#F8FAFC", color: active ? "#064E3B" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
                   {active ? "✓ " : ""}{f}
                 </button>
               );
@@ -1374,7 +1374,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
             {SURVEY_MISSING.map(m => {
               const active = missing === m;
               return (
-                <button key={m} onClick={() => setMissing(active ? null : m)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#F97316" : "#E2E8F0"}`, background: active ? "#FFF7ED" : "#F8FAFC", color: active ? "#C2410C" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                <button key={m} onClick={() => setMissing(active ? null : m)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#F97316" : "#E2E8F0"}`, background: active ? "#FFF7ED" : "#F8FAFC", color: active ? "#C2410C" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
                   {m}
                 </button>
               );
@@ -1386,7 +1386,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
               value={missingOther}
               onChange={e => setMissingOther(e.target.value)}
               placeholder="Tell us more…"
-              style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", color: "#0F172A" }}
+              style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Manrope, sans-serif", outline: "none", color: "#0F172A" }}
             />
           )}
         </div>
@@ -1396,7 +1396,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
           <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>4. Would you recommend UntilFire to a friend?</div>
           <div style={{ display: "flex", gap: 8 }}>
             {([["yes", "👍 Yes", "#059669", "#F0FDF4"], ["maybe", "🤔 Maybe", "#6366F1", "#EEF2FF"], ["no", "👎 No", "#DC2626", "#FEF2F2"]] as const).map(([val, label, activeColor, activeBg]) => (
-              <button key={val} onClick={() => setRecommend(recommend === val ? null : val)} style={{ flex: 1, padding: "9px 8px", borderRadius: 9, border: `1.5px solid ${recommend === val ? activeColor : "#E2E8F0"}`, background: recommend === val ? activeBg : "#F8FAFC", color: recommend === val ? activeColor : "#64748B", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+              <button key={val} onClick={() => setRecommend(recommend === val ? null : val)} style={{ flex: 1, padding: "9px 8px", borderRadius: 9, border: `1.5px solid ${recommend === val ? activeColor : "#E2E8F0"}`, background: recommend === val ? activeBg : "#F8FAFC", color: recommend === val ? activeColor : "#64748B", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
                 {label}
               </button>
             ))}
@@ -1411,7 +1411,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
             onChange={e => setNotes(e.target.value)}
             placeholder="Feature ideas, annoyances, compliments…"
             rows={3}
-            style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", resize: "none", color: "#0F172A" }}
+            style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Manrope, sans-serif", outline: "none", resize: "none", color: "#0F172A" }}
           />
         </div>
 
@@ -1424,7 +1424,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
           >
             {submitting ? "Sending…" : "Send feedback →"}
           </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "4px 0" }}>
+          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: "4px 0" }}>
             Skip for now
           </button>
         </div>
@@ -1460,7 +1460,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>{label}</label>
       <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Inter, sans-serif" }}>{defaultCurrency}</span>
+        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Manrope, sans-serif" }}>{defaultCurrency}</span>
         <input
           type="text"
           inputMode="numeric"
@@ -1468,11 +1468,11 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
           onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
           onBlur={e => onChange(fmt(e.target.value))}
           placeholder="0"
-          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Inter, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
+          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Manrope, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
           onFocus={e => { e.target.style.borderColor = "#064E3B"; }}
         />
       </div>
-      <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>{hint}</span>
+      <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif" }}>{hint}</span>
     </div>
   );
 
@@ -1485,7 +1485,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
           <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.25 }}>
             Let&apos;s find your FIRE number
           </div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
             Income, spending, and current savings are enough to get started. You can refine everything later.
           </div>
         </div>
@@ -1527,7 +1527,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
           >
             Get my FIRE number →
           </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "4px 0" }}>
+          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: "4px 0" }}>
             Skip for now
           </button>
         </div>
@@ -1563,9 +1563,9 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Manrope, sans-serif" }}>Get started</div>
-          <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "DM Sans, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
+          <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "Manrope, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
         </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3a5", fontFamily: "DM Sans, sans-serif" }}>{Math.round(pct)}%</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3a5", fontFamily: "Manrope, sans-serif" }}>{Math.round(pct)}%</div>
       </div>
 
       {/* Progress bar */}
@@ -1580,9 +1580,9 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
             <div style={{ width: 18, height: 18, borderRadius: "50%", background: step.done ? "#22d3a5" : "transparent", border: step.done ? "none" : "1.5px solid #374151", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {step.done && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#08080e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </div>
-            <span style={{ flex: 1, fontSize: 13, color: step.done ? "#6b7280" : "#e2e8f0", fontFamily: "DM Sans, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
+            <span style={{ flex: 1, fontSize: 13, color: step.done ? "#6b7280" : "#e2e8f0", fontFamily: "Manrope, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
             {!step.done && (
-              <button onClick={step.action} style={{ background: "transparent", border: "none", color: "#22d3a5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans, sans-serif", padding: 0, whiteSpace: "nowrap" }}>
+              <button onClick={step.action} style={{ background: "transparent", border: "none", color: "#22d3a5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0, whiteSpace: "nowrap" }}>
                 {step.cta} →
               </button>
             )}
@@ -1677,7 +1677,7 @@ function RetirementTargetCard({
             placeholder="Where do you want to retire?"
             onChange={e => { setCitySearch(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
-            style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#0F172A", fontFamily: "Inter, sans-serif" }}
+            style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}
           />
           {retirementCityName && (
             <button onClick={handleClear} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
@@ -1689,7 +1689,7 @@ function RetirementTargetCard({
               <button
                 key={c.key}
                 onClick={() => handleSelect(c.name, c.col)}
-                style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#0F172A", fontFamily: "Inter, sans-serif", display: "flex", gap: 8, alignItems: "center" }}
+                style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#0F172A", fontFamily: "Manrope, sans-serif", display: "flex", gap: 8, alignItems: "center" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "#F0FDF4")}
                 onMouseLeave={e => (e.currentTarget.style.background = "none")}
               >
@@ -1721,7 +1721,7 @@ function RetirementTargetCard({
                 >
                   <span style={{ fontSize: 16 }}>{tier.icon}</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: active ? "#059669" : "#64748B", fontFamily: "Manrope, sans-serif" }}>{tier.label}</span>
-                  <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>{fmtMoney(monthlySpend, true)}/mo</span>
+                  <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(monthlySpend, true)}/mo</span>
                 </button>
               );
             })}
@@ -1729,7 +1729,7 @@ function RetirementTargetCard({
 
           {/* Result row */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F0FDF4", borderRadius: 9, padding: "10px 14px" }}>
-            <span style={{ fontSize: 12, color: "#064E3B", fontFamily: "Inter, sans-serif" }}>
+            <span style={{ fontSize: 12, color: "#064E3B", fontFamily: "Manrope, sans-serif" }}>
               {currentTier.icon} {retirementCityName} · {currentTier.label}
             </span>
             <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>
@@ -1814,7 +1814,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
           {fmtMoney(investable, true)} investable assets · {fmtMoney(totalDebt + mortgageBalance, true)} total debt
         </div>
         <div style={{ marginTop: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>
             <span>{fmtMoney(investable, true)} saved</span>
             <span style={{ color: "#62FAE3", fontWeight: 700 }}>{progress.toFixed(1)}% to FIRE</span>
             <span>{fmtMoney(fireTarget, true)} target</span>
@@ -1856,7 +1856,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
               return (
                 <tr key={row.label}>
                   <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
-                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Inter, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
+                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Manrope, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
                     {row.val >= 0 ? fmtMoney(row.val) : `−${fmtMoney(Math.abs(row.val))}`}
                   </td>
                 </tr>
@@ -2236,7 +2236,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             ].map(a => (
               <div key={a.label}>
                 <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{a.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: a.color, fontFamily: "Inter, sans-serif" }}>{a.val}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: a.color, fontFamily: "Manrope, sans-serif" }}>{a.val}</div>
                 <div style={{ fontSize: 11, color: "#94A3B8" }}>{a.pct}% of portfolio</div>
               </div>
             ))}
@@ -2363,7 +2363,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
             ].map(l => (
               <div key={l.label}>
                 <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{l.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: l.color, fontFamily: "Inter, sans-serif" }}>{l.val}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: l.color, fontFamily: "Manrope, sans-serif" }}>{l.val}</div>
               </div>
             ))}
           </div>
@@ -3763,7 +3763,7 @@ export default function Dashboard() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
         body { background: #F7F9FB; color: #19181E; font-family: 'Manrope', sans-serif; margin: 0; }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
@@ -3986,9 +3986,9 @@ export default function Dashboard() {
           </nav>
 
           <div className="uf-sidebar-bottom">
-            {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saving…</span>}
-            {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Inter, sans-serif" }}>✓ Saved</span>}
-            {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Save failed</span>}
+            {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Manrope, sans-serif" }}>Saving…</span>}
+            {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Manrope, sans-serif" }}>✓ Saved</span>}
+            {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Manrope, sans-serif" }}>Save failed</span>}
             <div data-tour-item="profile">
               <UserNav onProfileClick={() => setTab("profile")} isProfileActive={tab === "profile"} />
             </div>

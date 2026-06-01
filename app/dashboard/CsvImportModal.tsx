@@ -222,7 +222,7 @@ export default function CsvImportModal({ onClose, onImported, defaultCurrency = 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "8px 10px", borderRadius: 8,
     border: "1px solid #23232d", background: "#1a1a24", color: "#e2e8f0",
-    fontSize: 13, fontFamily: "DM Sans, sans-serif",
+    fontSize: 13, fontFamily: "Manrope, sans-serif",
   };
 
   const labelStyle: React.CSSProperties = {
@@ -244,13 +244,13 @@ export default function CsvImportModal({ onClose, onImported, defaultCurrency = 
           background: "#111118", border: "1px solid #23232d", borderRadius: 20,
           padding: 32, width: "100%", maxWidth: 520,
           maxHeight: "90dvh", overflowY: "auto",
-          fontFamily: "DM Sans, sans-serif",
+          fontFamily: "Manrope, sans-serif",
         }}
       >
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "Syne, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>
               Import bank CSV
             </div>
             {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV exported from your bank</div>}
@@ -354,7 +354,7 @@ export default function CsvImportModal({ onClose, onImported, defaultCurrency = 
                 background: (!colDate || !colDesc || !colAmount) ? "#1a1a24" : "#059669",
                 color: (!colDate || !colDesc || !colAmount) ? "#475569" : "#fff",
                 fontSize: 14, fontWeight: 700, cursor: (!colDate || !colDesc || !colAmount) ? "not-allowed" : "pointer",
-                fontFamily: "DM Sans, sans-serif",
+                fontFamily: "Manrope, sans-serif",
               }}
             >
               Import {rows.length} transactions →
@@ -382,7 +382,7 @@ export default function CsvImportModal({ onClose, onImported, defaultCurrency = 
         {step === "done" && (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginBottom: 8, fontFamily: "Syne, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>
               {importedCount} transactions imported
             </div>
             <div style={{ fontSize: 13, color: "#64748b", marginBottom: 28 }}>
@@ -393,7 +393,7 @@ export default function CsvImportModal({ onClose, onImported, defaultCurrency = 
               style={{
                 padding: "10px 28px", borderRadius: 10, border: "none",
                 background: "#059669", color: "#fff", fontSize: 14, fontWeight: 700,
-                cursor: "pointer", fontFamily: "DM Sans, sans-serif",
+                cursor: "pointer", fontFamily: "Manrope, sans-serif",
               }}
             >
               Done
