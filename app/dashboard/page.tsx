@@ -74,6 +74,93 @@ type LearnStageId =
   | "approaching-fire"
   | "living-in-fire";
 
+type EmergencyFundState = "missing" | "fragile" | "rebuilding" | "healthy";
+type EmergencyFundPriorityMode = "protect" | "balance" | "grow";
+
+const EMERGENCY_FUND_HISTORY_KEY = "uf_emergency_fund_healthy_once_v1";
+const EMERGENCY_FUND_FLOOR_MONTHS = 1.5;
+const EMERGENCY_FUND_TARGET_MONTHS = 4;
+
+function useEmergencyFundHistory(isHealthyNow: boolean) {
+  const [hasEverHealthy, setHasEverHealthy] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      setHasEverHealthy(window.localStorage.getItem(EMERGENCY_FUND_HISTORY_KEY) === "1");
+    } catch {
+      // ignore localStorage failures
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isHealthyNow || hasEverHealthy || typeof window === "undefined") return;
+    setHasEverHealthy(true);
+    try {
+      window.localStorage.setItem(EMERGENCY_FUND_HISTORY_KEY, "1");
+    } catch {
+      // ignore localStorage failures
+    }
+  }, [isHealthyNow, hasEverHealthy]);
+
+  return hasEverHealthy || isHealthyNow;
+}
+
+function getEmergencyFundPlan(balance: number, monthlyExpenses: number, hasEverHealthy: boolean) {
+  const floorAmount = Math.max(monthlyExpenses * EMERGENCY_FUND_FLOOR_MONTHS, 0);
+  const targetAmount = Math.max(monthlyExpenses * EMERGENCY_FUND_TARGET_MONTHS, 0);
+  const coverageMonths = monthlyExpenses > 0 ? balance / monthlyExpenses : 0;
+  const isHealthyNow = monthlyExpenses > 0 && coverageMonths >= EMERGENCY_FUND_TARGET_MONTHS;
+
+  let state: EmergencyFundState = "missing";
+  let priorityMode: EmergencyFundPriorityMode = "protect";
+  let stateLabel = "Missing";
+  let headline = "Protect your plan first";
+  let guidance = "Build your safety buffer before taking more risk elsewhere.";
+
+  if (isHealthyNow) {
+    state = "healthy";
+    priorityMode = "grow";
+    stateLabel = "Healthy";
+    headline = "Your safety buffer is in place";
+    guidance = "Keep it maintained, then let extra cash work harder on growth.";
+  } else if (coverageMonths >= EMERGENCY_FUND_FLOOR_MONTHS) {
+    priorityMode = "balance";
+    if (hasEverHealthy) {
+      state = "rebuilding";
+      stateLabel = "Rebuilding";
+      headline = "Rebuild your safety buffer";
+      guidance = "Your reserve did its job. Top it back up while keeping some momentum elsewhere.";
+    } else {
+      state = "fragile";
+      stateLabel = "Fragile";
+      headline = "Strengthen your safety buffer";
+      guidance = "You have a base now. Keep building it while staying in motion elsewhere.";
+    }
+  } else if (hasEverHealthy) {
+    state = "rebuilding";
+    priorityMode = "protect";
+    stateLabel = "Rebuilding";
+    headline = "Refill your emergency fund first";
+    guidance = "You used your buffer for real life. Get back above your floor before pushing harder on growth.";
+  }
+
+  return {
+    floorAmount,
+    targetAmount,
+    coverageMonths,
+    isHealthyNow,
+    state,
+    stateLabel,
+    priorityMode,
+    headline,
+    guidance,
+    gapToFloor: Math.max(floorAmount - balance, 0),
+    gapToTarget: Math.max(targetAmount - balance, 0),
+    progressToTargetPct: targetAmount > 0 ? Math.min(100, (balance / targetAmount) * 100) : 0,
+  };
+}
+
 const LEARNING_STAGES: { id: LearnStageId; label: string; whatMattersNow: string }[] = [
   {
     id: "starting-out",
@@ -748,6 +835,9 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const spendingBarTrackColor = hasActuals ? "#E2E8F0" : "#F1F5F9";
   const investedBalance = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0);
   const availableCash = Math.max(displayCashAssets, 0);
+  const emergencyFundHealthyNow = monthlyExpenses > 0 && (availableCash / monthlyExpenses) >= EMERGENCY_FUND_TARGET_MONTHS;
+  const hasEverHealthyEmergencyFund = useEmergencyFundHistory(emergencyFundHealthyNow);
+  const emergencyFundPlan = getEmergencyFundPlan(availableCash, monthlyExpenses, hasEverHealthyEmergencyFund);
   const hasInvestmentAccounts = plaidAccounts.some((account) => account.type === "investment") || manualRetirementTotal > 0 || taxable > 0;
   const plannedContributionGap = Math.max(goalContribution - Math.max(actualOrPlannedSavings, 0), 0);
   const investingHeadline = goalContribution > 0
@@ -831,13 +921,32 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     ? `${fmtMoney(Math.abs(consistencyMonths[0].savings))} ${consistencyMonths[0].savings >= 0 ? "saved" : "net short"} in ${consistencyMonths[0].date.toLocaleString("en-US", { month: "short" })}`
     : "We’ll start tracking this once your monthly history fills in.";
   const topTasks = (() => {
-    const tasks: Array<{ label: string; detail: string; impactYears: number }> = [];
+    const tasks: Array<{ label: string; detail: string; impactYears: number; priority: number }> = [];
     const seen = new Set<string>();
-    const addTask = (label: string, detail: string, impactYears = 0) => {
+    const addTask = (label: string, detail: string, impactYears = 0, priority = 0) => {
       if (seen.has(label)) return;
       seen.add(label);
-      tasks.push({ label, detail, impactYears: Math.max(0, impactYears) });
+      tasks.push({ label, detail, impactYears: Math.max(0, impactYears), priority });
     };
+
+    if (monthlyExpenses > 0 && emergencyFundPlan.priorityMode === "protect") {
+      const refillAmount = emergencyFundPlan.gapToFloor > 0 ? emergencyFundPlan.gapToFloor : Math.min(emergencyFundPlan.gapToTarget, Math.max(monthlyExpenses * 0.75, 0));
+      addTask(
+        `Rebuild your emergency fund by about ${fmtMoney(refillAmount, true)}`,
+        `${emergencyFundPlan.coverageMonths.toFixed(1)} months covered now. Get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor before pushing harder on growth.`,
+        0,
+        100,
+      );
+    }
+
+    if (monthlyExpenses > 0 && emergencyFundPlan.priorityMode === "balance") {
+      addTask(
+        `Keep rebuilding your emergency fund toward ${EMERGENCY_FUND_TARGET_MONTHS} months`,
+        `${emergencyFundPlan.coverageMonths.toFixed(1)} months covered now. Keep some money moving into safety while continuing steady investing.`,
+        0,
+        70,
+      );
+    }
 
     if (hasActuals && spendingDeltaToDate > monthlyExpenses * 0.05) {
       const correction = Math.max(spendingDeltaToDate / Math.max(elapsedFraction, 0.05), 0);
@@ -894,13 +1003,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       );
     }
 
-    if (goalContribution > 0 && !hasInvestmentAccounts) {
+    if (goalContribution > 0 && !hasInvestmentAccounts && emergencyFundPlan.priorityMode !== "protect") {
       addTask(
         "Fund your first investment account this month",
         "Start with a retirement or brokerage account so your savings can compound.",
         bestMove?.deltaYears ?? 0,
       );
-    } else if (goalContribution > 0 && connectedRetirementTotal <= 0 && rothIRA <= 0) {
+    } else if (goalContribution > 0 && connectedRetirementTotal <= 0 && rothIRA <= 0 && emergencyFundPlan.priorityMode !== "protect") {
       addTask(
         "Add this month’s Roth IRA contribution",
         "Retirement contributions give your plan a steady long-term base.",
@@ -916,7 +1025,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       );
     }
 
-    if (availableCash > Math.max(monthlyExpenses, goalContribution) * 1.5 && hasInvestmentAccounts) {
+    if (availableCash > Math.max(monthlyExpenses, goalContribution) * 1.5 && hasInvestmentAccounts && emergencyFundPlan.priorityMode === "grow") {
       const moveAmount = Math.min(availableCash - Math.max(monthlyExpenses, 0), Math.max(goalContribution, 0));
       if (moveAmount > 100) {
         addTask(
@@ -932,7 +1041,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     }
 
     return tasks
-      .sort((a, b) => b.impactYears - a.impactYears)
+      .sort((a, b) => (b.priority - a.priority) || (b.impactYears - a.impactYears))
       .slice(0, 3);
   })();
 
@@ -1112,14 +1221,29 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
-              Best way to move your date
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                Best way to move your date
+              </div>
+              {monthlyExpenses > 0 && (
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  background: emergencyFundPlan.state === "healthy" ? "#DCFCE7" : emergencyFundPlan.state === "fragile" ? "#FEF3C7" : emergencyFundPlan.state === "rebuilding" ? "#E0F2FE" : "#FEE2E2",
+                  color: emergencyFundPlan.state === "healthy" ? "#166534" : emergencyFundPlan.state === "fragile" ? "#92400E" : emergencyFundPlan.state === "rebuilding" ? "#075985" : "#991B1B",
+                  fontFamily: "Manrope, sans-serif",
+                }}>
+                  Safety: {emergencyFundPlan.stateLabel}
+                </span>
+              )}
             </div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
-              Top 3 tasks right now
+              {monthlyExpenses > 0 ? emergencyFundPlan.headline : "Top 3 tasks right now"}
             </div>
             <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>
-              Focus on the next few actions most likely to protect or improve your freedom date.
+              {monthlyExpenses > 0 ? emergencyFundPlan.guidance : "Focus on the next few actions most likely to protect or improve your freedom date."}
             </div>
           </div>
           {topTasks.length > 0 ? (
@@ -2210,11 +2334,13 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
       .reduce((s, a) => s + (a.balance_current ?? 0), 0),
   };
   const brokerageCashExcluded = connectedBreakdown.brokerageCash > 0;
-  const efMin = monthlyExpenses * 3;
-  const efMax = monthlyExpenses * 6;
-  const efPct = efMin > 0 ? Math.min(100, (emergencyFundBalance / efMin) * 100) : 0;
-  const efStatus = emergencyFundBalance >= efMax ? "full" : emergencyFundBalance >= efMin ? "ok" : emergencyFundBalance > 0 ? "partial" : "empty";
-  const monthsCovered = monthlyExpenses > 0 ? emergencyFundBalance / monthlyExpenses : 0;
+  const emergencyFundHealthyNow = monthlyExpenses > 0 && (emergencyFundBalance / monthlyExpenses) >= EMERGENCY_FUND_TARGET_MONTHS;
+  const hasEverHealthyEmergencyFund = useEmergencyFundHistory(emergencyFundHealthyNow);
+  const emergencyFundPlan = getEmergencyFundPlan(emergencyFundBalance, monthlyExpenses, hasEverHealthyEmergencyFund);
+  const efFloor = emergencyFundPlan.floorAmount;
+  const efTarget = emergencyFundPlan.targetAmount;
+  const efPct = emergencyFundPlan.progressToTargetPct;
+  const monthsCovered = emergencyFundPlan.coverageMonths;
   const avgApy = savingsAccts.length > 0
     ? savingsAccts.filter(a => effectiveApy(a) != null).reduce((s, a) => s + (effectiveApy(a) ?? 0), 0) /
       Math.max(1, savingsAccts.filter(a => effectiveApy(a) != null).length)
@@ -2278,21 +2404,43 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
       {/* ── Emergency Fund card ──────────────────────────────────────────── */}
       {monthlyExpenses > 0 && (
         <div className="uf-card" style={{
-          background: efStatus === "full" ? "rgba(5,150,105,0.04)" : efStatus === "ok" ? "rgba(20,184,166,0.04)" : efStatus === "partial" ? "rgba(245,158,11,0.04)" : "rgba(220,38,38,0.04)",
-          border: `1px solid ${efStatus === "full" ? "rgba(5,150,105,0.2)" : efStatus === "ok" ? "rgba(20,184,166,0.2)" : efStatus === "partial" ? "rgba(245,158,11,0.25)" : "rgba(220,38,38,0.2)"}`,
+          background: emergencyFundPlan.state === "healthy" ? "rgba(5,150,105,0.04)" : emergencyFundPlan.state === "fragile" ? "rgba(245,158,11,0.04)" : emergencyFundPlan.state === "rebuilding" ? "rgba(14,165,233,0.05)" : "rgba(220,38,38,0.04)",
+          border: `1px solid ${emergencyFundPlan.state === "healthy" ? "rgba(5,150,105,0.2)" : emergencyFundPlan.state === "fragile" ? "rgba(245,158,11,0.25)" : emergencyFundPlan.state === "rebuilding" ? "rgba(14,165,233,0.22)" : "rgba(220,38,38,0.2)"}`,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <span style={{ fontSize: 16 }}>🛡️</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Fund</span>
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748B", fontWeight: 500 }}>3–6 months of expenses</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748B", fontWeight: 500 }}>{EMERGENCY_FUND_FLOOR_MONTHS} month floor · {EMERGENCY_FUND_TARGET_MONTHS} month target</span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
+                {emergencyFundPlan.headline}
+              </div>
+              <span style={{
+                background: emergencyFundPlan.state === "healthy" ? "#DCFCE7" : emergencyFundPlan.state === "fragile" ? "#FEF3C7" : emergencyFundPlan.state === "rebuilding" ? "#E0F2FE" : "#FEE2E2",
+                color: emergencyFundPlan.state === "healthy" ? "#166534" : emergencyFundPlan.state === "fragile" ? "#92400E" : emergencyFundPlan.state === "rebuilding" ? "#075985" : "#991B1B",
+                borderRadius: 999,
+                padding: "4px 10px",
+                fontSize: 12,
+                fontWeight: 800,
+                fontFamily: "Manrope, sans-serif",
+              }}>
+                {emergencyFundPlan.stateLabel}
+              </span>
+            </div>
+            <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6, fontFamily: "Manrope, sans-serif" }}>
+              {emergencyFundPlan.guidance}
+            </div>
           </div>
 
           {/* Three-stat row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 14 }}>
             {[
-              { label: "Current Savings", value: fmtMoney(emergencyFundBalance), color: efStatus === "full" || efStatus === "ok" ? "#059669" : "#19181E" },
-              { label: "Min · 3 months", value: fmtMoney(efMin) },
-              { label: "Target · 6 months", value: fmtMoney(efMax) },
+              { label: "Current Reserve", value: fmtMoney(emergencyFundBalance), color: emergencyFundPlan.state === "healthy" ? "#059669" : emergencyFundPlan.state === "rebuilding" ? "#0369A1" : "#19181E" },
+              { label: `Floor · ${EMERGENCY_FUND_FLOOR_MONTHS} months`, value: fmtMoney(efFloor) },
+              { label: `Target · ${EMERGENCY_FUND_TARGET_MONTHS} months`, value: fmtMoney(efTarget) },
             ].map(s => (
               <div key={s.label}>
                 <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 3 }}>{s.label}</div>
@@ -2306,17 +2454,17 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             <div style={{
               height: "100%", borderRadius: 99,
               width: `${efPct}%`,
-              background: efStatus === "full" ? "#059669" : efStatus === "ok" ? "#14B8A6" : efStatus === "partial" ? "#F59E0B" : "#DC2626",
+              background: emergencyFundPlan.state === "healthy" ? "#059669" : emergencyFundPlan.state === "fragile" ? "#F59E0B" : emergencyFundPlan.state === "rebuilding" ? "#0EA5E9" : "#DC2626",
               transition: "width 0.4s ease",
             }} />
           </div>
 
           {/* Status badge */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: hasHysa ? 0 : 12 }}>
-            {efStatus === "full" && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✅ Fully funded ({monthsCovered.toFixed(1)} months)</span>}
-            {efStatus === "ok" && <span style={{ background: "#CCFBF1", color: "#0F766E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✓ On track ({monthsCovered.toFixed(1)} months)</span>}
-            {efStatus === "partial" && <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Partially funded ({monthsCovered.toFixed(1)} months)</span>}
-            {efStatus === "empty" && <span style={{ background: "#FEE2E2", color: "#991B1B", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Not started</span>}
+            {emergencyFundPlan.state === "healthy" && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✅ Healthy ({monthsCovered.toFixed(1)} months covered)</span>}
+            {emergencyFundPlan.state === "fragile" && <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Fragile ({monthsCovered.toFixed(1)} months covered)</span>}
+            {emergencyFundPlan.state === "rebuilding" && <span style={{ background: "#E0F2FE", color: "#075985", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>↺ Rebuilding ({monthsCovered.toFixed(1)} months covered)</span>}
+            {emergencyFundPlan.state === "missing" && <span style={{ background: "#FEE2E2", color: "#991B1B", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Missing ({monthsCovered.toFixed(1)} months covered)</span>}
             {hasHysa && avgApy > 0 && (
               <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(emergencyFundBalance * avgApy / 100 / 12))}/mo interest</span>
             )}
@@ -2325,6 +2473,35 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 · excludes {fmtMoney(connectedBreakdown.brokerageCash)} in connected brokerage / investment accounts
               </span>
             )}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: hasHysa ? 0 : 12 }}>
+            <div style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 11, color: "#64748B", fontWeight: 700, marginBottom: 4 }}>Next threshold</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>
+                {emergencyFundPlan.priorityMode === "protect" ? fmtMoney(emergencyFundPlan.gapToFloor) : emergencyFundPlan.priorityMode === "balance" ? fmtMoney(emergencyFundPlan.gapToTarget) : fmtMoney(0)}
+              </div>
+              <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5, marginTop: 4 }}>
+                {emergencyFundPlan.priorityMode === "protect"
+                  ? `Needed to get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor.`
+                  : emergencyFundPlan.priorityMode === "balance"
+                    ? `Needed to reach your ${EMERGENCY_FUND_TARGET_MONTHS}-month target.`
+                    : "Your safety target is covered right now."}
+              </div>
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 11, color: "#64748B", fontWeight: 700, marginBottom: 4 }}>App posture now</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", textTransform: "capitalize" }}>
+                {emergencyFundPlan.priorityMode === "protect" ? "Protect" : emergencyFundPlan.priorityMode === "balance" ? "Balance" : "Grow"}
+              </div>
+              <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5, marginTop: 4 }}>
+                {emergencyFundPlan.priorityMode === "protect"
+                  ? "Emergency fund refill should outrank extra investing for now."
+                  : emergencyFundPlan.priorityMode === "balance"
+                    ? "Split new surplus between reserve refill and steady investing."
+                    : "Emergency cash can step back while growth takes the lead."}
+              </div>
+            </div>
           </div>
 
           {/* HYSA recommendation banner */}
