@@ -654,7 +654,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const formattedDate = `${DAY_NAMES[now.getDay()]} · ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-  const prevMonthName = MONTH_NAMES[(now.getMonth() + 11) % 12];
 
   // Chart period filter
   const periodData = useMemo(() => {
@@ -664,39 +663,16 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
-  const hasPrev          = prevIncome > 0 || prevExpenses > 0;
-  const netSurplus       = actualIncome - actualExpenses;
-  const prevNet          = prevIncome - prevExpenses;
-  const actualSavingsRate = actualIncome > 0 ? (netSurplus / actualIncome) * 100 : 0;
-  const prevSavingsRate   = prevIncome > 0 ? (prevNet / prevIncome) * 100 : 0;
-  const srDelta      = (hasPrev && prevIncome > 0) ? actualSavingsRate - prevSavingsRate : null;
 
   // Status pill
   const statusLabel = savingsRate >= 50 ? "Ahead of schedule" : savingsRate >= 25 ? "On track" : income > 0 ? "Needs attention" : "No data yet";
   const statusColor = savingsRate >= 50 ? "#059669" : savingsRate >= 25 ? "#20D4BF" : income > 0 ? "#F59E0B" : "#94A3B8";
-  const TrendBadge = ({ pct, pp, inverse = false }: { pct?: number | null; pp?: number | null; inverse?: boolean }) => {
-    const val = pp ?? pct;
-    if (val === null || val === undefined) return null;
-    const isPositive = inverse ? val < 0 : val > 0;
-    const color = isPositive ? "#059669" : "#DC2626";
-    const label = pp !== undefined && pp !== null
-      ? `${Math.abs(pp).toFixed(1)} pp vs ${prevMonthName}`
-      : `${Math.abs(pct!).toFixed(1)}% vs ${prevMonthName}`;
-    return (
-      <span style={{ fontSize: 11, color, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
-        {val > 0 ? "▲" : "▼"} {label}
-      </span>
-    );
-  };
 
   const bestMove = nextMoveScenarios?.[0] ?? null;
-  const extraMoves = nextMoveScenarios?.filter((scenario, index) => index > 0 && scenario.deltaYears > 0).slice(0, 2) ?? [];
   const actualOrPlannedIncome = hasActuals ? actualIncome : income;
   const actualOrPlannedExpenses = hasActuals ? actualExpenses : monthlyExpenses;
   const actualOrPlannedSavings = actualOrPlannedIncome - actualOrPlannedExpenses;
-  const actualOrPlannedSavingsRate = actualOrPlannedIncome > 0 ? (actualOrPlannedSavings / actualOrPlannedIncome) * 100 : 0;
   const goalContribution = Math.max(annualSavings / 12, 0);
-  const planProgress = goalContribution > 0 ? Math.max(0, Math.min(100, (Math.max(actualOrPlannedSavings, 0) / goalContribution) * 100)) : 0;
   const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const elapsedFraction = Math.min(1, Math.max(now.getDate() / monthDays, 0.05));
   const expectedSpendToDate = monthlyExpenses * elapsedFraction;
@@ -770,15 +746,195 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
   const spendingExpectedPct = hasActuals ? Math.min(elapsedFraction * 100, 100) : 0;
   const spendingBarTrackColor = hasActuals ? "#E2E8F0" : "#F1F5F9";
-  const thisMonthHeadline = hasActuals
-    ? actualOrPlannedSavings >= 0
-      ? `You’ve saved ${fmtMoney(actualOrPlannedSavings)} so far this month.`
-      : `You’re currently ${fmtMoney(Math.abs(actualOrPlannedSavings))} negative this month.`
-    : `Aim to save ${fmtMoney(goalContribution)} this month.`;
-  const monthlyActionItems = [
-    projectedSpendStatus === "Running above plan" ? `Trim spending pace by about ${fmtMoney(Math.max(spendingDeltaToDate / Math.max(elapsedFraction, 0.05), 0), true)} this month` : null,
-    hasActuals ? "Review your transaction feed and category drift" : "Connect accounts or log transactions to track your month",
-  ].filter(Boolean).slice(0, 2) as string[];
+  const investedBalance = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0);
+  const availableCash = Math.max(displayCashAssets, 0);
+  const hasInvestmentAccounts = plaidAccounts.some((account) => account.type === "investment") || manualRetirementTotal > 0 || taxable > 0;
+  const plannedContributionGap = Math.max(goalContribution - Math.max(actualOrPlannedSavings, 0), 0);
+  const investingHeadline = goalContribution > 0
+    ? `Aim to add ${fmtMoney(goalContribution)} this month. Current invested balance is ${fmtMoney(investedBalance, true)}.`
+    : investedBalance > 0
+      ? `You have ${fmtMoney(investedBalance, true)} invested right now.`
+      : "Add your first investment account to start tracking this here.";
+  const investingNote = "Using your current balances for now. Exact monthly contribution and return tracking comes next.";
+  const consistencyMonths = (() => {
+    const months: Array<{ key: string; date: Date; income: number; expenses: number }> = [];
+    const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    for (let i = 0; i < 6; i += 1) {
+      const date = new Date(start.getFullYear(), start.getMonth() + i, 1);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      months.push({ key, date, income: 0, expenses: 0 });
+    }
+
+    const byKey = new Map(months.map((month) => [month.key, month]));
+    for (const tx of recentTransactions) {
+      const txDate = new Date(tx.date);
+      if (Number.isNaN(txDate.getTime())) continue;
+      const monthDate = new Date(txDate.getFullYear(), txDate.getMonth(), 1);
+      if (monthDate < start || monthDate > new Date(now.getFullYear(), now.getMonth(), 1)) continue;
+      const key = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+      const bucket = byKey.get(key);
+      if (!bucket) continue;
+      const amount = toUSD(tx.amount, tx.currency ?? displayCurrency, displayRates);
+      if (tx.transaction_type === "income") bucket.income += amount;
+      else bucket.expenses += amount;
+    }
+
+    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
+    const currentBucket = byKey.get(currentKey);
+    if (currentBucket && hasActuals) {
+      currentBucket.income = actualIncome;
+      currentBucket.expenses = actualExpenses;
+    }
+    const prevBucket = byKey.get(prevKey);
+    if (prevBucket && (prevIncome > 0 || prevExpenses > 0)) {
+      prevBucket.income = prevIncome;
+      prevBucket.expenses = prevExpenses;
+    }
+
+    return months
+      .filter((month) => month.income > 0 || month.expenses > 0)
+      .map((month) => {
+        const savings = month.income - month.expenses;
+        const metSavingsGoal = goalContribution > 0 ? savings >= goalContribution * 0.85 : savings >= 0;
+        const stayedNearPlan = monthlyExpenses > 0 ? month.expenses <= monthlyExpenses * 1.08 : true;
+        return {
+          ...month,
+          savings,
+          onTrack: metSavingsGoal && stayedNearPlan,
+        };
+      })
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+  })();
+  const consistencyRun = (() => {
+    let run = 0;
+    for (const month of consistencyMonths) {
+      if (!month.onTrack) break;
+      run += 1;
+    }
+    return run;
+  })();
+  const onTrackMonths = consistencyMonths.filter((month) => month.onTrack).length;
+  const trackedMonths = consistencyMonths.length;
+  const consistencyLabel = trackedMonths === 0
+    ? "Not enough history yet"
+    : consistencyRun >= 2
+      ? `${consistencyRun}-month run`
+      : consistencyMonths[0]?.onTrack
+        ? "On track this month"
+        : "Needs a reset";
+  const consistencyDetail = trackedMonths === 0
+    ? "Track a few months to see how steady your plan is here."
+    : `${onTrackMonths} of the last ${trackedMonths} tracked months were on plan.`;
+  const consistencySupport = consistencyMonths[0]
+    ? `${fmtMoney(Math.abs(consistencyMonths[0].savings))} ${consistencyMonths[0].savings >= 0 ? "saved" : "net short"} in ${consistencyMonths[0].date.toLocaleString("en-US", { month: "short" })}`
+    : "We’ll start tracking this once your monthly history fills in.";
+  const topTasks = (() => {
+    const tasks: Array<{ label: string; detail: string; impactYears: number }> = [];
+    const seen = new Set<string>();
+    const addTask = (label: string, detail: string, impactYears = 0) => {
+      if (seen.has(label)) return;
+      seen.add(label);
+      tasks.push({ label, detail, impactYears: Math.max(0, impactYears) });
+    };
+
+    if (hasActuals && spendingDeltaToDate > monthlyExpenses * 0.05) {
+      const correction = Math.max(spendingDeltaToDate / Math.max(elapsedFraction, 0.05), 0);
+      addTask(
+        `Reduce spending by about ${fmtMoney(correction, true)} this month`,
+        "Your spending pace is currently above plan.",
+        spendingImpactYears > 0 ? spendingImpactYears : 0,
+      );
+    }
+
+    if (targetMonthlyExpenses && monthlyExpenses > targetMonthlyExpenses * 1.05 && fireYear !== null) {
+      const cityAverageResult = calcProjection({
+        annualIncome: income * 12,
+        monthlyExpenses: targetMonthlyExpenses,
+        k401,
+        rothIRA,
+        taxable,
+        cashSavings: totalCash,
+        totalDebt,
+        mortgageBalance,
+        mortgageMonthly,
+        growthRate,
+        withdrawalRate,
+        targetMonthlyExpenses,
+      });
+      const deltaYears = cityAverageResult.fireYear !== null ? Math.max(0, fireYear - cityAverageResult.fireYear) : 0;
+      addTask(
+        `Reduce spending toward ${cityName || "your city"} average by ${fmtMoney(monthlyExpenses - targetMonthlyExpenses, true)}`,
+        "A lower target lifestyle cost moves your freedom date faster.",
+        deltaYears,
+      );
+    }
+
+    if (plannedContributionGap > Math.max(goalContribution * 0.15, 100) && fireYear !== null) {
+      const contributionGapResult = calcProjection({
+        annualIncome: income * 12,
+        monthlyExpenses: Math.max(0, monthlyExpenses - plannedContributionGap),
+        k401,
+        rothIRA,
+        taxable,
+        cashSavings: totalCash,
+        totalDebt,
+        mortgageBalance,
+        mortgageMonthly,
+        growthRate,
+        withdrawalRate,
+        targetMonthlyExpenses,
+      });
+      const deltaYears = contributionGapResult.fireYear !== null ? Math.max(0, fireYear - contributionGapResult.fireYear) : 0;
+      addTask(
+        `Add about ${fmtMoney(plannedContributionGap, true)} to stay on this month's target`,
+        "Closing the gap keeps your savings plan on pace.",
+        deltaYears,
+      );
+    }
+
+    if (goalContribution > 0 && !hasInvestmentAccounts) {
+      addTask(
+        "Fund your first investment account this month",
+        "Start with a retirement or brokerage account so your savings can compound.",
+        bestMove?.deltaYears ?? 0,
+      );
+    } else if (goalContribution > 0 && connectedRetirementTotal <= 0 && rothIRA <= 0) {
+      addTask(
+        "Add this month’s Roth IRA contribution",
+        "Retirement contributions give your plan a steady long-term base.",
+        bestMove?.deltaYears ?? 0,
+      );
+    }
+
+    if (!hasActuals) {
+      addTask(
+        "Connect accounts or log transactions",
+        "That turns these cards from plan-only estimates into live monthly tracking.",
+        0,
+      );
+    }
+
+    if (availableCash > Math.max(monthlyExpenses, goalContribution) * 1.5 && hasInvestmentAccounts) {
+      const moveAmount = Math.min(availableCash - Math.max(monthlyExpenses, 0), Math.max(goalContribution, 0));
+      if (moveAmount > 100) {
+        addTask(
+          `Move about ${fmtMoney(moveAmount, true)} of idle cash into investments`,
+          "You already have cash available to put to work.",
+          0,
+        );
+      }
+    }
+
+    if (!tasks.length && bestMove) {
+      addTask(bestMove.label, bestMove.detail, bestMove.deltaYears);
+    }
+
+    return tasks
+      .sort((a, b) => b.impactYears - a.impactYears)
+      .slice(0, 3);
+  })();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -960,31 +1116,39 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               Best way to move your date
             </div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
-              {bestMove?.label ?? "Finish your setup to see your best next move"}
+              Top 3 tasks right now
             </div>
-            {bestMove?.detail && <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>{bestMove.detail}</div>}
+            <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>
+              Focus on the next few actions most likely to protect or improve your freedom date.
+            </div>
           </div>
-          {bestMove && bestMove.deltaYears > 0 ? (
-            <div style={{ background: "linear-gradient(135deg, rgba(5,150,105,0.08) 0%, rgba(5,150,105,0.02) 100%)", border: "1px solid rgba(5,150,105,0.18)", borderRadius: 14, padding: "14px 16px" }}>
-              <div style={{ fontSize: 11, color: "#047857", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 800, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Estimated impact</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#047857", fontFamily: "Manrope, sans-serif", lineHeight: 1.1 }}>
-                {bestMove.deltaYears >= 1.5 ? `${bestMove.deltaYears.toFixed(1)} years sooner` : `${Math.round(bestMove.deltaYears * 12)} months sooner`}
-              </div>
-            </div>
-          ) : (
-            <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>We&apos;ll show the highest-impact lever once your plan is complete.</div>
-          )}
-          {extraMoves.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {extraMoves.map((move) => (
-                <div key={move.label} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", paddingTop: 8, borderTop: "1px solid #F1F5F9" }}>
-                  <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{move.label}</div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: "#047857", background: "#ECFDF5", borderRadius: 999, padding: "4px 10px", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap" }}>
-                    {move.deltaYears >= 1.5 ? `${move.deltaYears.toFixed(1)} years` : `${Math.round(move.deltaYears * 12)} months`}
+          {topTasks.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {topTasks.map((task, index) => (
+                <div key={task.label} style={{ display: "flex", gap: 12, alignItems: "flex-start", paddingTop: index === 0 ? 0 : 10, borderTop: index === 0 ? "none" : "1px solid #F1F5F9" }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 999, background: "#ECFDF5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>
+                    {index + 1}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.4 }}>
+                        {task.label}
+                      </div>
+                      {task.impactYears > 0 && (
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "#047857", background: "#ECFDF5", borderRadius: 999, padding: "4px 10px", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap" }}>
+                          {task.impactYears >= 1.5 ? `${task.impactYears.toFixed(1)} years` : `${Math.round(task.impactYears * 12)} months`}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.5, marginTop: 4 }}>
+                      {task.detail}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
+          ) : (
+            <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>Finish your setup to generate your next best tasks.</div>
           )}
         </div>
       </div>
@@ -992,30 +1156,20 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       {/* ── Monthly operating row ────────────────────────────────────────── */}
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s plan</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em" }}>{fmtMoney(goalContribution)}</div>
-          <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{thisMonthHeadline}</div>
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>
-              <span>Progress</span>
-              <span style={{ color: "#0F172A", fontWeight: 800 }}>{planProgress.toFixed(0)}%</span>
+          <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingHeadline}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Invested now</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(investedBalance, true)}</div>
             </div>
-            <div style={{ height: 8, background: "#E2E8F0", borderRadius: 999, overflow: "hidden" }}>
-              <div style={{ width: `${planProgress}%`, height: "100%", background: "linear-gradient(90deg, #059669, #34D399)", borderRadius: 999 }} />
+            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Cash ready</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: availableCash > 0 ? "#0F172A" : "#94A3B8", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(availableCash, true)}</div>
             </div>
           </div>
-          {monthlyActionItems.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 2 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month</div>
-              {monthlyActionItems.map((item, index) => (
-                <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <div style={{ width: 22, height: 22, borderRadius: 999, background: "#ECFDF5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>{index + 1}</div>
-                  <div style={{ fontSize: 13, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>{item}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>Open cashflow →</button>
+          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingNote}</div>
         </div>
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1061,22 +1215,27 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </div>
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Income vs spending</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Consistency</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Income</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(actualOrPlannedIncome)}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "#059669" : "#F59E0B", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
+                {consistencyLabel}
+              </div>
+              <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 6, lineHeight: 1.6 }}>
+                {consistencyDetail}
+              </div>
             </div>
-            <div>
-              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Saved</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: actualOrPlannedSavings >= 0 ? "#0F172A" : "#DC2626", fontFamily: "Manrope, sans-serif" }}>{actualOrPlannedSavings >= 0 ? fmtMoney(actualOrPlannedSavings) : `−${fmtMoney(Math.abs(actualOrPlannedSavings))}`}</div>
-            </div>
+            {trackedMonths > 0 && (
+              <div style={{ minWidth: 72, borderRadius: 12, background: "#F8FAFC", border: "1px solid #E2E8F0", padding: "10px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>On plan</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{onTrackMonths}/{trackedMonths}</div>
+              </div>
+            )}
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: actualOrPlannedSavingsRate >= 25 ? "#059669" : "#F59E0B", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
-            {actualOrPlannedSavingsRate.toFixed(1)}%
+          <div style={{ height: 8, background: "#E2E8F0", borderRadius: 999, overflow: "hidden" }}>
+            <div style={{ width: `${trackedMonths > 0 ? (onTrackMonths / trackedMonths) * 100 : 0}%`, height: "100%", background: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "linear-gradient(90deg, #059669, #34D399)" : "linear-gradient(90deg, #F59E0B, #FBBF24)", borderRadius: 999 }} />
           </div>
-          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>Savings rate {hasPrev ? `· compared with ${prevMonthName}` : ""}</div>
-          {hasActuals && <TrendBadge pp={srDelta} />}
+          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{consistencySupport}</div>
         </div>
       </div>
 
