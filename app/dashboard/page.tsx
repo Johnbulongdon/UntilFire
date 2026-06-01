@@ -122,6 +122,31 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>) 
   return rate ? amount / rate : amount;
 };
 
+const normalizePlaidSubtype = (subtype: string | null | undefined) =>
+  (subtype ?? "").toLowerCase().replace(/[_-]/g, " ").trim();
+
+const isRetirementInvestmentAccount = (account: PlaidAccount) => {
+  if (account.type !== "investment") return false;
+  const subtype = normalizePlaidSubtype(account.subtype);
+  return [
+    "401",
+    "403",
+    "457",
+    "ira",
+    "roth",
+    "retirement",
+    "pension",
+    "annuity",
+    "sep",
+    "simple",
+    "keogh",
+  ].some((token) => subtype.includes(token));
+};
+
+const isBrokerageInvestmentAccount = (account: PlaidAccount) => (
+  account.type === "investment" && !isRetirementInvestmentAccount(account)
+);
+
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
@@ -709,15 +734,29 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     : spendingImpactYears < -0.15
       ? `Could bring freedom forward about ${Math.abs(spendingImpactYears) >= 1.5 ? `${Math.abs(spendingImpactYears).toFixed(1)} years` : `${Math.round(Math.abs(spendingImpactYears) * 12)} months`}`
       : "No meaningful change to your freedom date yet";
-  const retirementAccounts = k401 + rothIRA;
-  const brokerageAssets = taxable;
-  const positiveMoneyTotal = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0) + Math.max(totalCash, 0);
+  const manualRetirementTotal = k401 + rothIRA;
+  const connectedRetirementTotal = plaidAccounts
+    .filter(isRetirementInvestmentAccount)
+    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
+  const connectedBrokerageTotal = plaidAccounts
+    .filter(isBrokerageInvestmentAccount)
+    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
+  const connectedCashTotal = plaidAccounts
+    .filter((account) => account.type === "depository")
+    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
+  const retirementAccounts = connectedRetirementTotal > 0 ? connectedRetirementTotal : manualRetirementTotal;
+  const brokerageAssets = connectedBrokerageTotal > 0 ? connectedBrokerageTotal : taxable;
+  const displayCashAssets = connectedCashTotal > 0 ? connectedCashTotal : cashSavings;
+  const positiveMoneyTotal = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0) + Math.max(displayCashAssets, 0);
   const retirementPct = positiveMoneyTotal > 0 ? (Math.max(retirementAccounts, 0) / positiveMoneyTotal) * 100 : 0;
   const brokeragePct = positiveMoneyTotal > 0 ? (Math.max(brokerageAssets, 0) / positiveMoneyTotal) * 100 : 0;
-  const cashPct = positiveMoneyTotal > 0 ? (Math.max(totalCash, 0) / positiveMoneyTotal) * 100 : 0;
+  const cashPct = positiveMoneyTotal > 0 ? (Math.max(displayCashAssets, 0) / positiveMoneyTotal) * 100 : 0;
   const moneyMixGradient = positiveMoneyTotal > 0
     ? `conic-gradient(#064E3B 0% ${retirementPct}%, #10B981 ${retirementPct}% ${retirementPct + brokeragePct}%, #CFFAEF ${retirementPct + brokeragePct}% 100%)`
     : "conic-gradient(#E2E8F0 0% 100%)";
+  const moneyMixSourceLabel = plaidAccounts.some((account) => account.type === "depository" || account.type === "investment")
+    ? "Connected balances shown where available"
+    : "Using manual balances";
   const currentNetWorth = investable - totalDebt - mortgageBalance;
   const growthSummary = retireYear
     ? statusLabel === "Ahead of schedule"
@@ -1034,7 +1073,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               {[
                 { label: "Retirement accounts", value: retirementAccounts, color: "#064E3B", pct: retirementPct },
                 { label: "Brokerage", value: brokerageAssets, color: "#10B981", pct: brokeragePct },
-                { label: "Cash", value: totalCash, color: "#CFFAEF", pct: cashPct, text: "#065F46" },
+                { label: "Cash", value: displayCashAssets, color: "#CFFAEF", pct: cashPct, text: "#065F46" },
               ].map((row) => (
                 <div key={row.label}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5, fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
@@ -1046,6 +1085,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   </div>
                 </div>
               ))}
+              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{moneyMixSourceLabel}</div>
               {(totalDebt + mortgageBalance) > 0 && (
                 <div style={{ paddingTop: 4, borderTop: "1px solid #F1F5F9", fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>
                   Debt: <span style={{ color: "#DC2626", fontWeight: 800 }}>{fmtMoney(totalDebt + mortgageBalance, true)}</span>
