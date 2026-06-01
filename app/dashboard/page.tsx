@@ -766,6 +766,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         : `Your current path needs a nudge to protect ${retireYear}.`
     : "Finish your setup to see your projected freedom date.";
   const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "#DC2626" : projectedSpendStatus === "Running below plan" ? "#059669" : "#64748B";
+  const spendingBarColor = projectedSpendStatus === "Running above plan" ? "#DC2626" : projectedSpendStatus === "Running below plan" ? "#059669" : "#0F766E";
+  const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
+  const spendingExpectedPct = hasActuals ? Math.min(elapsedFraction * 100, 100) : 0;
+  const spendingBarTrackColor = hasActuals ? "#E2E8F0" : "#F1F5F9";
   const thisMonthHeadline = hasActuals
     ? actualOrPlannedSavings >= 0
       ? `You’ve saved ${fmtMoney(actualOrPlannedSavings)} so far this month.`
@@ -1016,6 +1020,31 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               <div style={{ fontSize: 20, fontWeight: 800, color: hasActuals ? "#0F172A" : "#64748B", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(actualOrPlannedExpenses)}</div>
             </div>
           </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontFamily: "Manrope, sans-serif", fontSize: 12, color: "#64748B" }}>
+            <span>{hasActuals ? `${Math.round(spendingProgressPct)}% of plan used` : "Budget watch"}</span>
+            {hasActuals && <span>Day {now.getDate()} of {monthDays}</span>}
+          </div>
+          <div style={{ position: "relative", height: 12, borderRadius: 999, background: spendingBarTrackColor, overflow: "hidden" }} aria-label="Monthly spending progress">
+            <div style={{ width: `${spendingProgressPct}%`, height: "100%", background: spendingBarColor, borderRadius: 999, transition: "width 240ms ease" }} />
+            {hasActuals && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: `calc(${spendingExpectedPct}% - 1px)`,
+                  top: 0,
+                  bottom: 0,
+                  width: 2,
+                  background: "rgba(15,23,42,0.32)",
+                }}
+              />
+            )}
+          </div>
+          {hasActuals && (
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "#94A3B8", fontFamily: "Manrope, sans-serif" }}>
+              <span>Expected pace by today: {fmtMoney(expectedSpendToDate, true)}</span>
+              <span>{fmtMoney(Math.max(monthlyExpenses - actualExpenses, 0), true)} left</span>
+            </div>
+          )}
           <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
           <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
           <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>View categories →</button>
