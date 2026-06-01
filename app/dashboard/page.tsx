@@ -929,37 +929,117 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </div>
 
         {/* Where your money is */}
-        <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+        <div className="uf-overview-secondary-card" style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "20px 22px 18px", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>Where your money is</div>
-            <button onClick={() => onTabChange?.("assets")} style={{ fontSize: 11, color: "#047857", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Manrope, sans-serif", fontWeight: 600 }}>View all →</button>
+            <button
+              aria-label="Open assets"
+              onClick={() => onTabChange?.("assets")}
+              style={{
+                fontSize: 18,
+                lineHeight: 1,
+                color: "#64748B",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                fontFamily: "Manrope, sans-serif",
+                fontWeight: 700,
+              }}
+            >
+              …
+            </button>
           </div>
-          {investable > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                { label: "Retirement accounts", value: k401 + rothIRA, color: "#16A34A" },
-                { label: "Brokerage", value: taxable, color: "#22C55E" },
-                { label: "Cash", value: totalCash, color: "#94A3B8" },
-              ].filter(a => a.value > 0).map(({ label, value, color }) => {
-                const pct = (value / investable) * 100;
-                return (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: "#334155", fontFamily: "Manrope, sans-serif", flex: 1 }}>{label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(value, true)}</span>
-                    <span style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope, sans-serif", minWidth: 28, textAlign: "right" }}>{pct.toFixed(0)}%</span>
+          {investable > 0 ? (() => {
+            const allocations = [
+              { label: "Tax-Adv.", value: k401 + rothIRA, color: "#062F24" },
+              { label: "Brokerage", value: taxable, color: "#2EDCCB" },
+              { label: "Liquid", value: totalCash, color: "#E5E7EB" },
+            ].filter(item => item.value > 0);
+            const segments = allocations.length ? allocations.map((item, index) => {
+              const start = index === 0 ? 0 : allocations.slice(0, index).reduce((sum, prev) => sum + ((prev.value / investable) * 100), 0);
+              const end = allocations.slice(0, index + 1).reduce((sum, prev) => sum + ((prev.value / investable) * 100), 0);
+              return `${item.color} ${start}% ${end}%`;
+            }).join(", ") : "#E5E7EB 0 100%";
+            const liquidPct = investable > 0 ? (totalCash / investable) * 100 : 0;
+            const taxAdvPct = investable > 0 ? ((k401 + rothIRA) / investable) * 100 : 0;
+            const brokeragePct = investable > 0 ? (taxable / investable) * 100 : 0;
+            const rebalance = liquidPct >= 30 || brokeragePct >= 70
+              ? { label: "High", color: "#B91C1C", note: "A big chunk is sitting outside your long-term mix." }
+              : taxAdvPct < 20
+                ? { label: "Medium", color: "#D97706", note: "You may have room to improve tax-advantaged allocation." }
+                : { label: "Low", color: "#047857", note: "Your current mix looks reasonably balanced." };
+
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 128px) minmax(0, 1fr)", gap: 18, alignItems: "center" }}>
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <div
+                      style={{
+                        width: 124,
+                        height: 124,
+                        borderRadius: "50%",
+                        background: `conic-gradient(${segments})`,
+                        position: "relative",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 18,
+                          borderRadius: "50%",
+                          background: "#ffffff",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          textAlign: "center",
+                        }}
+                      >
+                        <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94A3B8", fontFamily: "Manrope, sans-serif", fontWeight: 700 }}>
+                          Total
+                        </div>
+                        <div style={{ marginTop: 2, fontSize: 24, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.04em" }}>
+                          {fmtMoney(investable, true)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
-              <div style={{ marginTop: 4, paddingTop: 12, borderTop: "1px solid #E2E8F0", fontSize: 12, color: "#475569", fontFamily: "Manrope", lineHeight: 1.5 }}>
-                {totalCash > investable * 0.3 && investable > 10000
-                  ? "A large share of your portfolio is still sitting in cash, which may slow your freedom date."
-                  : ((k401 + rothIRA) > 0 && (k401 + rothIRA) / investable < 0.2)
-                    ? "Most of your savings are outside retirement accounts, so you may have room to improve tax efficiency."
-                    : "Your portfolio mix looks reasonably balanced for the stage you are in."}
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {allocations.map(({ label, value, color }) => {
+                      const pct = (value / investable) * 100;
+                      return (
+                        <div key={label} style={{ display: "grid", gridTemplateColumns: "12px minmax(0, 1fr) auto", columnGap: 10, rowGap: 2, alignItems: "start" }}>
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, marginTop: 6 }} />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 14, color: "#0F172A", fontFamily: "Manrope, sans-serif", fontWeight: 700, lineHeight: 1.2 }}>{label}</div>
+                            <div style={{ marginTop: 4, fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.2 }}>{pct.toFixed(0)}% of total</div>
+                          </div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap", lineHeight: 1.2 }}>{fmtMoney(value, true)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94A3B8", fontFamily: "Manrope, sans-serif", fontWeight: 700 }}>
+                      Rebalancing needed
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.35 }}>
+                      {rebalance.note}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: rebalance.color, fontFamily: "Manrope, sans-serif", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                    {rebalance.label}
+                  </div>
+                </div>
               </div>
-            </div>
-          ) : (
+            );
+          })() : (
             <button onClick={() => onTabChange?.("assets")} style={{ width: "100%", padding: "14px", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: "#047857", fontFamily: "Manrope" }}>Add your savings and investments →</div>
               <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontFamily: "Manrope" }}>Connect accounts or enter balances so UntilFire can build your real plan.</div>
