@@ -421,7 +421,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityName = "", retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -432,6 +432,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   retirementCityName?: string; retirementCityCol?: number; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
+  recentTransactions?: { date: string; amount: number; currency: string; transaction_type?: string }[];
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -492,25 +493,77 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const rawChartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
   const chartData = useMemo(() => {
     const now = new Date();
-    const historyStart = new Date(now);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const historyStart = new Date(today);
     historyStart.setMonth(historyStart.getMonth() - 3);
 
-    const recentSnapshots = [...nwSnapshots]
-      .filter(snap => {
-        const capturedAt = new Date(snap.captured_at);
-        return !Number.isNaN(capturedAt.getTime()) && capturedAt >= historyStart;
-      })
-      .sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime());
+    const flowByDay = new Map<string, number>();
+    for (const tx of recentTransactions) {
+      const txDate = new Date(tx.date);
+      if (Number.isNaN(txDate.getTime())) continue;
+      const day = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate());
+      if (day < historyStart || day > today) continue;
+      const key = day.toISOString().slice(0, 10);
+      const signedAmount = tx.transaction_type === "income"
+        ? toUSD(tx.amount, tx.currency ?? displayCurrency, displayRates)
+        : -toUSD(tx.amount, tx.currency ?? displayCurrency, displayRates);
+      flowByDay.set(key, (flowByDay.get(key) ?? 0) + signedAmount);
+    }
 
-    const historyEntries = recentSnapshots.map((snap, index) => ({
-      key: `history-${index}`,
-      label: chartDateFormatter.format(new Date(snap.captured_at)),
-      shortLabel: chartDateFormatter.format(new Date(snap.captured_at)),
-      actual: snap.portfolio_value,
-      projected: null,
-      yearsOut: null,
-      phase: "history",
-    }));
+    const historyEntries: Array<{
+      key: string;
+      label: string;
+      shortLabel: string;
+      actual: number | null;
+      projected: number | null;
+      yearsOut: number | null;
+      phase: "history" | "today" | "projection";
+      Contributions?: number;
+      "Market Growth"?: number;
+    }> = [];
+
+    if (flowByDay.size > 0) {
+      let runningBalance = investable;
+      const points: { date: Date; value: number }[] = [{ date: today, value: investable }];
+      const cursor = new Date(today);
+      while (cursor > historyStart) {
+        const dayKey = cursor.toISOString().slice(0, 10);
+        runningBalance -= flowByDay.get(dayKey) ?? 0;
+        cursor.setDate(cursor.getDate() - 1);
+        points.push({ date: new Date(cursor), value: runningBalance });
+      }
+      points.reverse();
+      historyEntries.push(
+        ...points.slice(0, -1).map((point, index) => ({
+          key: `history-${index}`,
+          label: chartDateFormatter.format(point.date),
+          shortLabel: chartDateFormatter.format(point.date),
+          actual: Math.max(0, Math.round(point.value)),
+          projected: null,
+          yearsOut: null,
+          phase: "history" as const,
+        }))
+      );
+    } else {
+      const recentSnapshots = [...nwSnapshots]
+        .filter(snap => {
+          const capturedAt = new Date(snap.captured_at);
+          return !Number.isNaN(capturedAt.getTime()) && capturedAt >= historyStart;
+        })
+        .sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime());
+
+      historyEntries.push(
+        ...recentSnapshots.map((snap, index) => ({
+          key: `history-${index}`,
+          label: chartDateFormatter.format(new Date(snap.captured_at)),
+          shortLabel: chartDateFormatter.format(new Date(snap.captured_at)),
+          actual: snap.portfolio_value,
+          projected: null,
+          yearsOut: null,
+          phase: "history" as const,
+        }))
+      );
+    }
 
     const todayEntry = {
       key: "today",
@@ -519,7 +572,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       actual: investable,
       projected: investable,
       yearsOut: 0,
-      phase: "today",
+      phase: "today" as const,
       Contributions: rawChartData[0]?.["Contributions"] ?? 0,
       "Market Growth": rawChartData[0]?.["Market Growth"] ?? 0,
     };
@@ -533,13 +586,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         actual: null,
         projected: entry["Investable"],
         yearsOut: entry.year,
-        phase: "projection",
+        phase: "projection" as const,
         Contributions: entry["Contributions"],
         "Market Growth": entry["Market Growth"],
       }));
 
     return [...historyEntries, todayEntry, ...futureEntries];
-  }, [rawChartData, investable, nwSnapshots, chartDateFormatter]);
+  }, [rawChartData, investable, nwSnapshots, chartDateFormatter, recentTransactions, displayCurrency, displayRates]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -683,7 +736,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               ))}
             </div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "DM Sans" }}>
-              Past 3 months actual · future projection
+              Past 3 months from transactions · future projection
             </div>
           </div>
 
@@ -3344,6 +3397,7 @@ export default function Dashboard() {
   }, [cashSavings, expenses, growthRate, income, k401, mortgageBalance, mortgageMonthly, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
@@ -3495,6 +3549,23 @@ export default function Dashboard() {
         .then(({ data: prevData }) => {
           if (prevData) {
             setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
+          }
+        });
+
+      const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 3, nowD.getDate());
+      const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
+      supabase.from("expenses").select("date, amount, currency, transaction_type")
+        .eq("user_id", session.user.id)
+        .gte("date", historyStart)
+        .order("date", { ascending: true })
+        .then(({ data: txData }) => {
+          if (txData) {
+            setRecentTransactions(txData.map(tx => ({
+              date: tx.date,
+              amount: tx.amount,
+              currency: tx.currency ?? "USD",
+              transaction_type: tx.transaction_type ?? "expense",
+            })));
           }
         });
 
@@ -3981,6 +4052,7 @@ export default function Dashboard() {
                 lifestyleMultiplier={lifestyleMultiplier}
                 fireAge={fireAge}
                 nwSnapshots={nwSnapshots}
+                recentTransactions={recentTransactions}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
