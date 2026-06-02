@@ -27,6 +27,7 @@ type Props = {
 type ParsedImportTransaction = {
   date: string;
   description: string;
+  notes: string;
   amount: number;
   currency: string;
   transaction_type: "expense" | "income";
@@ -170,13 +171,14 @@ function detectCurrencyFromValue(value: string, fallbackCurrency: string): strin
   return null;
 }
 
-function autoDetectColumns(headers: string[]): { date: string; description: string; amount: string; currency: string; type: string } {
+function autoDetectColumns(headers: string[]): { date: string; description: string; notes: string; amount: string; currency: string; type: string } {
   // Test against original header (not lowercased) so Chinese chars are matched
   const find = (patterns: RegExp[]) =>
     headers.find((h) => patterns.some((p) => p.test(h))) ?? "";
   return {
     date: find([/交易时间/, /^date$/i, /date/i, /posted/i, /transaction.?date/i]),
-    description: find([/商品/, /交易对方/, /description/i, /memo/i, /details/i, /narrative/i, /payee/i, /name/i]),
+    description: find([/交易对方/, /description/i, /memo/i, /details/i, /narrative/i, /payee/i, /name/i]),
+    notes: find([/商品/, /备注/, /^notes?$/i, /note/i, /remark/i, /comment/i]),
     amount: find([/金额/, /^amount$/i, /amount/i, /debit/i, /credit/i, /transaction.?amount/i]),
     currency: find([/^currency$/i, /currency.?code/i, /currency/i, /^ccy$/i, /curr/i]),
     type: find([/收.支/, /^type$/i, /transaction.?type/i, /income/i]),
@@ -234,6 +236,7 @@ export default function CsvImportModal({
   const [rows, setRows] = useState<string[][]>([]);
   const [colDate, setColDate] = useState("");
   const [colDesc, setColDesc] = useState("");
+  const [colNotes, setColNotes] = useState("");
   const [colAmount, setColAmount] = useState("");
   const [colCurrency, setColCurrency] = useState("");
   const [colType, setColType] = useState("");
@@ -279,6 +282,7 @@ export default function CsvImportModal({
       setRows(cleanedRows);
       setColDate(auto.date);
       setColDesc(auto.description);
+      setColNotes(auto.notes);
       setColAmount(auto.amount);
       setColCurrency(auto.currency);
       setColType(auto.type);
@@ -302,6 +306,7 @@ export default function CsvImportModal({
     if (!colDate || !colDesc || !colAmount) return [];
     const dateIdx = headers.indexOf(colDate);
     const descIdx = headers.indexOf(colDesc);
+    const notesIdx = colNotes ? headers.indexOf(colNotes) : -1;
     const amtIdx = headers.indexOf(colAmount);
     const currencyIdx = colCurrency ? headers.indexOf(colCurrency) : -1;
     const typeIdx = colType ? headers.indexOf(colType) : -1;
@@ -310,6 +315,7 @@ export default function CsvImportModal({
     for (const row of rows) {
       const rawDate = row[dateIdx] ?? "";
       const rawDesc = row[descIdx] ?? "";
+      const rawNotes = notesIdx >= 0 ? row[notesIdx] ?? "" : "";
       const rawAmount = row[amtIdx] ?? "";
       const rawCurrency = currencyIdx >= 0 ? row[currencyIdx] ?? "" : "";
       const rawTypeVal = typeIdx >= 0 ? row[typeIdx] ?? "" : "";
@@ -333,6 +339,7 @@ export default function CsvImportModal({
       parsed.push({
         date,
         description: rawDesc.trim(),
+        notes: rawNotes.trim(),
         amount,
         currency,
         transaction_type: type,
@@ -340,7 +347,7 @@ export default function CsvImportModal({
       });
     }
     return parsed;
-  }, [colAmount, colCurrency, colDate, colDesc, colType, flipSigns, headers, importCurrency, rows]);
+  }, [colAmount, colCurrency, colDate, colDesc, colNotes, colType, flipSigns, headers, importCurrency, rows]);
 
   const parsedTransactions = buildParsedTransactions();
   const sampleTransaction = parsedTransactions[0] ?? null;
@@ -417,6 +424,7 @@ export default function CsvImportModal({
         amount: tx.amount,
         currency: tx.currency,
         description: tx.description,
+        notes: tx.notes || "",
         category: tx.category,
         transaction_type: tx.transaction_type,
         tags: [],
@@ -529,6 +537,7 @@ export default function CsvImportModal({
                 { label: "Date column *", val: colDate, set: setColDate },
                 { label: "Description column *", val: colDesc, set: setColDesc },
                 { label: "Amount column *", val: colAmount, set: setColAmount },
+                { label: "Notes column", val: colNotes, set: setColNotes },
                 { label: "Income/Expense column", val: colType, set: setColType },
                 { label: "Currency column", val: colCurrency, set: setColCurrency },
               ].map(({ label, val, set }) => (
