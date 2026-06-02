@@ -231,9 +231,9 @@ export default function ProfileTab({
   }
 
   const cardStyle: React.CSSProperties = {
-    background: "#fff",
+    background: "var(--uf-card)",
     borderRadius: 12,
-    border: "1px solid #E2E8F0",
+    border: "1px solid var(--uf-border)",
     padding: "24px 28px",
     marginBottom: 20,
   };
@@ -249,11 +249,11 @@ export default function ProfileTab({
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "9px 12px",
-    border: "1px solid #E2E8F0",
+    border: "1px solid var(--uf-border)",
     borderRadius: 8,
     fontSize: 14,
     color: "#1a1a2e",
-    background: "#fff",
+    background: "var(--uf-card)",
     outline: "none",
     boxSizing: "border-box",
   };
@@ -344,8 +344,8 @@ export default function ProfileTab({
                     onChange={() => toggleCurrency(c)}
                     style={{ accentColor: "#059669", width: 14, height: 14, flexShrink: 0 }}
                   />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#19181E", fontFamily: "DM Mono, monospace" }}>{c}</span>
-                  <span style={{ fontSize: 11, color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{CURRENCY_NAMES[c]}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text)", fontFamily: "DM Mono, monospace" }}>{c}</span>
+                  <span style={{ fontSize: 11, color: "var(--uf-text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{CURRENCY_NAMES[c]}</span>
                 </label>
               );
             })}
@@ -354,7 +354,7 @@ export default function ProfileTab({
             <button onClick={() => setPreferredCurrencies([...SUPPORTED_CURRENCIES])} style={{ fontSize: 12, color: "#059669", background: "none", border: "1px solid #D1FAE5", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
               Select all
             </button>
-            <button onClick={() => setPreferredCurrencies([])} style={{ fontSize: 12, color: "#64748B", background: "none", border: "1px solid #E2E8F0", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
+            <button onClick={() => setPreferredCurrencies([])} style={{ fontSize: 12, color: "var(--uf-text-2)", background: "none", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
               Clear all
             </button>
           </div>
@@ -366,7 +366,7 @@ export default function ProfileTab({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
           <div>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 6px" }}>FIRE profile</h3>
-            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: 0 }}>
               These assumptions personalize your freedom date across the dashboard.
             </p>
           </div>
@@ -399,7 +399,7 @@ export default function ProfileTab({
           {showRetirementCityDropdown && retirementCitySearchTrimmed.length >= 2 && (filteredRetirementCities.length > 0 || canUseTypedRetirementCity) && (
             <div style={{
               position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
-              background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
+              background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8,
               boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto",
               marginTop: 4,
             }}>
@@ -422,7 +422,7 @@ export default function ProfileTab({
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
                   📍 Use “{retirementCitySearchTrimmed}”
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 500, marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
                     We’ll save the city name even if it is not in our estimate list yet.
                   </div>
                 </div>
@@ -451,13 +451,13 @@ export default function ProfileTab({
           ))}
         </div>
 
-        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}>Current target</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>
+        <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--uf-text-2)", marginBottom: 4 }}>Current target</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)" }}>
             {retirementCityName ? `${retirementCityName} · ${selectedLifestyle.label}` : "Choose a city to price your freedom date"}
           </div>
           {targetFireNumber > 0 && (
-            <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "var(--uf-text-2)", marginTop: 4 }}>
               Rough target: {formatMoney(targetAnnualSpend)}/yr × 25 = {formatMoney(targetFireNumber)}
             </div>
           )}
@@ -528,7 +528,7 @@ export default function ProfileTab({
           {subscription?.plan === "pro" ? (
             <button
               onClick={onManageBilling}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid #E2E8F0", background: "transparent", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+              style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid var(--uf-border)", background: "transparent", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
             >
               Manage billing
             </button>
@@ -560,7 +560,7 @@ export default function ProfileTab({
           </button>
         </div>
         {plaidItems.length === 0 ? (
-          <div style={{ fontSize: 13, color: "#94A3B8" }}>
+          <div style={{ fontSize: 13, color: "var(--uf-text-3)" }}>
             No banks connected yet.{" "}
             <button onClick={() => onTabChange("assets")} style={{ background: "none", border: "none", color: "#047857", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 13 }}>
               Connect one →
@@ -571,13 +571,13 @@ export default function ProfileTab({
             <div key={item.id} style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
               padding: "10px 0",
-              borderBottom: i < plaidItems.length - 1 ? "1px solid #F1F5F9" : "none",
+              borderBottom: i < plaidItems.length - 1 ? "1px solid var(--uf-border)" : "none",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 16 }}>🏦</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E" }}>{item.institution_name}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)" }}>{item.institution_name}</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#94A3B8" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--uf-text-3)" }}>
                 <span style={{ color: "#059669", fontWeight: 600 }}>● Connected</span>
                 <span>{fmtSynced(item.last_synced_at)}</span>
               </div>
@@ -587,7 +587,7 @@ export default function ProfileTab({
       </div>
 
       {/* Danger zone */}
-      <div style={{ ...cardStyle, borderColor: "#fecaca", background: "#fff" }}>
+      <div style={{ ...cardStyle, borderColor: "#fecaca", background: "var(--uf-card)" }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#dc2626", margin: "0 0 8px" }}>Danger Zone</h3>
         <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 16px" }}>
           Permanently deletes your account, all transactions, and FIRE data. This cannot be undone.

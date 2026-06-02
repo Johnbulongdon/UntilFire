@@ -229,7 +229,7 @@ function ManualCard({
 
   return (
     <div style={{
-      background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12,
+      background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12,
       padding: "14px 18px", display: "grid",
       gridTemplateColumns: "40px 1fr auto", gap: 14, alignItems: "center",
       opacity: item.included ? 1 : 0.5,
@@ -238,7 +238,7 @@ function ManualCard({
       <CategoryCircle categoryKey={item.category} />
 
       <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E", marginBottom: 5 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginBottom: 5 }}>
           {item.description}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -246,7 +246,7 @@ function ManualCard({
           <FrequencyBadge frequency={item.frequency} />
           {item.category === "subscriptions" && <SubscriptionBadge />}
           {!item.included && (
-            <span style={{ background: "#F1F5F9", color: "#94A3B8", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
+            <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-3)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
               Excluded
             </span>
           )}
@@ -277,7 +277,7 @@ function ManualCard({
           <button
             onClick={onEdit}
             style={{
-              background: "rgba(100,116,139,0.08)", color: "#64748B",
+              background: "rgba(100,116,139,0.08)", color: "var(--uf-text-2)",
               border: "none", borderRadius: 8, padding: "4px 8px",
               fontSize: 13, cursor: "pointer", lineHeight: 1,
             }}
@@ -314,21 +314,21 @@ function AutoCard({
 
   return (
     <div style={{
-      background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12,
+      background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12,
       padding: "14px 18px", display: "grid",
       gridTemplateColumns: "40px 1fr auto", gap: 14, alignItems: "center",
     }}>
       <CategoryCircle categoryKey={item.category} />
 
       <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E", marginBottom: 5 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginBottom: 5 }}>
           {item.description}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <CategoryPill categoryKey={item.category} />
           <FrequencyBadge frequency={item.frequency} />
           {item.category === "subscriptions" && <SubscriptionBadge />}
-          <span style={{ fontSize: 11, color: "#94A3B8" }}>
+          <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>
             seen {item.monthCount} months
           </span>
         </div>
@@ -346,7 +346,7 @@ function AutoCard({
           <button
             onClick={onRemove}
             style={{
-              background: "rgba(100,116,139,0.08)", color: "#64748B",
+              background: "rgba(100,116,139,0.08)", color: "var(--uf-text-2)",
               border: "none", borderRadius: 8, padding: "4px 10px",
               fontSize: 11, fontWeight: 700, cursor: "pointer",
             }}
@@ -363,7 +363,7 @@ function AutoCard({
 function SectionLabel({ label }: { label: string }) {
   return (
     <div style={{
-      fontSize: 11, fontWeight: 800, color: "#94A3B8",
+      fontSize: 11, fontWeight: 800, color: "var(--uf-text-3)",
       textTransform: "uppercase", letterSpacing: "0.09em",
       marginBottom: 10,
     }}>
@@ -544,14 +544,14 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "10px 12px", borderRadius: 10,
-    border: "1.5px solid #E2E8F0", fontSize: 14, fontFamily: "inherit",
-    outline: "none", background: "#fff", boxSizing: "border-box",
+    border: "1.5px solid var(--uf-border)", fontSize: 14, fontFamily: "inherit",
+    outline: "none", background: "var(--uf-card)", boxSizing: "border-box",
   };
   const selectStyle: React.CSSProperties = { ...inputStyle, cursor: "pointer" };
 
   if (loading) {
     return (
-      <div style={{ textAlign: "center", padding: "80px 24px", color: "#94A3B8", fontSize: 14 }}>
+      <div style={{ textAlign: "center", padding: "80px 24px", color: "var(--uf-text-3)", fontSize: 14 }}>
         Loading…
       </div>
     );
@@ -563,10 +563,10 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
       {/* ── Header row ───────────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "#19181E", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
+          <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
             Recurring
           </h2>
-          <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>
+          <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
             Plan your regular income and bills. We&apos;ll also detect patterns from your transaction history.
           </p>
         </div>
@@ -586,16 +586,16 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
       {/* ── Add / Edit form ───────────────────────────────────────────────── */}
       {formActive && (
         <div style={{
-          background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 16,
+          background: "var(--uf-card)", border: "1.5px solid var(--uf-border)", borderRadius: 16,
           padding: "24px", display: "flex", flexDirection: "column", gap: 16,
         }}>
-          <div style={{ fontWeight: 800, fontSize: 15, color: "#19181E" }}>
+          <div style={{ fontWeight: 800, fontSize: 15, color: "var(--uf-text)" }}>
             {editingId ? "Edit recurring item" : "Add recurring item"}
           </div>
 
           {/* Description */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 700, color: "#64748B", display: "block", marginBottom: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>
               DESCRIPTION
             </label>
             <input
@@ -610,7 +610,7 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
           {/* Amount + Currency */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#64748B", display: "block", marginBottom: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>
                 AMOUNT
               </label>
               <input
@@ -624,7 +624,7 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#64748B", display: "block", marginBottom: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>
                 CURRENCY
               </label>
               <select value={formCurrency} onChange={e => setFormCurrency(e.target.value)} style={selectStyle}>
@@ -638,7 +638,7 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
           {/* Frequency + Type */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#64748B", display: "block", marginBottom: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>
                 FREQUENCY
               </label>
               <select value={formFreq} onChange={e => setFormFreq(e.target.value as FrequencyLabel)} style={selectStyle}>
@@ -650,10 +650,10 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#64748B", display: "block", marginBottom: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>
                 TYPE
               </label>
-              <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1.5px solid #E2E8F0" }}>
+              <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1.5px solid var(--uf-border)" }}>
                 {(["expense", "income"] as const).map(t => (
                   <button
                     key={t}
@@ -678,7 +678,7 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
 
           {/* Category */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 700, color: "#64748B", display: "block", marginBottom: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>
               CATEGORY
             </label>
             <select value={formCategory} onChange={e => setFormCategory(e.target.value)} style={selectStyle}>
@@ -707,14 +707,14 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
       {/* ── Empty state ───────────────────────────────────────────────────── */}
       {!hasAnything && !formActive && (
         <div style={{
-          background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16,
+          background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16,
           padding: "64px 32px", textAlign: "center",
         }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🔄</div>
-          <div style={{ fontWeight: 700, fontSize: 18, color: "#19181E", marginBottom: 8 }}>
+          <div style={{ fontWeight: 700, fontSize: 18, color: "var(--uf-text)", marginBottom: 8 }}>
             Plan your recurring income and bills
           </div>
-          <div style={{ fontSize: 14, color: "#64748B", maxWidth: 380, margin: "0 auto 24px", lineHeight: 1.7 }}>
+          <div style={{ fontSize: 14, color: "var(--uf-text-2)", maxWidth: 380, margin: "0 auto 24px", lineHeight: 1.7 }}>
             Add your rent, salary, subscriptions, and regular payments. Auto-detection kicks in once you have 2+ months of transaction data.
           </div>
           <button
@@ -805,7 +805,7 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
 
       {/* ── Auto-detected ─────────────────────────────────────────────────── */}
       {!hasAutoVisible && hasManual && (
-        <div style={{ fontSize: 13, color: "#94A3B8", textAlign: "center", padding: "16px 0" }}>
+        <div style={{ fontSize: 13, color: "var(--uf-text-3)", textAlign: "center", padding: "16px 0" }}>
           Auto-detection needs 2+ months of Cashflow transactions to find patterns.
         </div>
       )}
