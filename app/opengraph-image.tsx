@@ -5,14 +5,7 @@ export const alt = 'UntilFire - Know When You Can Stop Working'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-export default async function Image() {
-  const logoData = await fetch('https://www.untilfire.com/logo/horizon-color.svg')
-    .then(r => r.arrayBuffer())
-    .catch(() => null)
-  const logoSrc = logoData
-    ? `data:image/svg+xml;base64,${Buffer.from(logoData).toString('base64')}`
-    : null
-
+export default function Image() {
   return new ImageResponse(
     (
       <div
@@ -33,10 +26,10 @@ export default async function Image() {
         <div
           style={{
             position: 'absolute',
-            width: 600,
-            height: 600,
+            width: 700,
+            height: 700,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(5,150,105,0.16) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(5,150,105,0.14) 0%, transparent 70%)',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
@@ -44,13 +37,25 @@ export default async function Image() {
           }}
         />
 
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 32 }}>
-          {logoSrc && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoSrc} width={64} height={64} style={{ borderRadius: 14 }} alt="" />
-          )}
-          <span style={{ color: '#163127', fontSize: 36, fontWeight: 800, letterSpacing: '-2px' }}>
+        {/* Logo — text only, no external fetch */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 36 }}>
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, #059669, #047857)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: 26,
+              fontWeight: 800,
+            }}
+          >
+            U
+          </div>
+          <span style={{ color: '#163127', fontSize: 34, fontWeight: 800, letterSpacing: '-1.5px' }}>
             UntilFire
           </span>
         </div>
@@ -58,7 +63,7 @@ export default async function Image() {
         {/* Headline */}
         <div
           style={{
-            fontSize: 64,
+            fontSize: 62,
             fontWeight: 800,
             color: '#163127',
             textAlign: 'center',
@@ -70,7 +75,7 @@ export default async function Image() {
             alignItems: 'center',
           }}
         >
-          <span>Most people don’t know</span>
+          <span>Most people don't know</span>
           <span style={{ color: '#047857' }}>when they can stop working</span>
         </div>
 
@@ -89,13 +94,7 @@ export default async function Image() {
         </div>
 
         {/* Stats row */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 48,
-            marginTop: 48,
-          }}
-        >
+        <div style={{ display: 'flex', gap: 48, marginTop: 48 }}>
           {[
             { value: '263', label: 'cities covered' },
             { value: '60s', label: 'to your FIRE date' },
@@ -103,12 +102,7 @@ export default async function Image() {
           ].map(({ value, label }) => (
             <div
               key={label}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 4,
-              }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
             >
               <span style={{ fontSize: 32, fontWeight: 700, color: '#059669' }}>{value}</span>
               <span style={{ fontSize: 16, color: '#6b7f76' }}>{label}</span>
