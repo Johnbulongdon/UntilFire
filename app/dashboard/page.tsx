@@ -1463,7 +1463,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
           <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
             <div style={{ width: 140, height: 140, borderRadius: "50%", background: moneyMixGradient, position: "relative", flexShrink: 0 }}>
-              <div style={{ position: "absolute", inset: 18, borderRadius: "50%", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 14 }}>
+              <div style={{ position: "absolute", inset: 18, borderRadius: "50%", background: "var(--uf-card)", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 14 }}>
                 <div>
                   <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Total</div>
                   <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1.1 }}>{fmtMoney(positiveMoneyTotal, true)}</div>
