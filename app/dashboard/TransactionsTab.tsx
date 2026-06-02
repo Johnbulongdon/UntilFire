@@ -849,11 +849,11 @@ function TransactionList({
                           display: "grid", gridTemplateColumns: "36px 1fr auto 28px",
                           gap: 14, alignItems: "center", padding: "12px 20px",
                           borderTop: "1px solid var(--uf-border)", cursor: "pointer",
-                          background: isEditing ? "#ECFDF5" : wasJustAdded ? "#DCFCE7" : "transparent",
+                          background: isEditing ? "rgba(16,185,129,0.12)" : wasJustAdded ? "rgba(16,185,129,0.08)" : "transparent",
                           transition: "background 0.12s",
                         }}
                         onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLDivElement).style.background = "var(--uf-surface)"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isEditing ? "#ECFDF5" : "transparent"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isEditing ? "rgba(16,185,129,0.12)" : "transparent"; }}
                       >
                         {/* Category chip */}
                         <div style={{ width: 36, height: 36, borderRadius: "50%", background: chipColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
