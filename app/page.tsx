@@ -1598,32 +1598,33 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               </div>
 
               {/* ── STAGE-SPECIFIC NEXT STEPS ── */}
-              {!isAlreadyFire && (
-                <div data-gsap="decision-card" className="uf-reveal-card" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, padding: "clamp(16px, 2vw, 24px)", marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669", marginBottom: 12 }}>
-                    {fireStage === "ignition" && "Your first priority"}
-                    {fireStage === "momentum" && "Your acceleration focus"}
-                    {fireStage === "final-stretch" && "Your protection priority"}
-                  </div>
-                  <div style={{ fontSize: 15, lineHeight: 1.55, color: "#374151" }}>
-                    {fireStage === "ignition" && (
-                      <>
-                        <strong style={{ color: "#0F172A" }}>Build the habit first.</strong> The most powerful move right now is consistency, not complexity. Set up an automatic transfer for the same day each month — even if it starts small. Compound growth rewards showing up more than timing the market perfectly.
-                      </>
-                    )}
-                    {fireStage === "momentum" && (
-                      <>
-                        <strong style={{ color: "#0F172A" }}>Widen the gap.</strong> You&apos;ve proven you can save. The fastest accelerator now is catching lifestyle inflation before it catches you. Consider directing any raise or bonus straight to investments before it absorbs into your spending baseline.
-                      </>
-                    )}
-                    {fireStage === "final-stretch" && (
-                      <>
-                        <strong style={{ color: "#0F172A" }}>Protect your runway.</strong> At this stage, capital preservation matters more than chasing extra return. Avoid concentrated bets or lifestyle upgrades that reset your timeline. Your discipline has built momentum — trust it.
-                      </>
-                    )}
-                  </div>
+              <div data-gsap="decision-card" className="uf-reveal-card" style={{ background: isAlreadyFire ? "#003527" : "#F8FAFC", border: `1px solid ${isAlreadyFire ? "rgba(34,211,165,0.2)" : "#E2E8F0"}`, borderRadius: 16, padding: "clamp(16px, 2vw, 24px)", marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: isAlreadyFire ? "#22D3A5" : "#059669", marginBottom: 12 }}>
+                  {isAlreadyFire ? "You've done it" : fireStage === "ignition" ? "Your first priority" : fireStage === "momentum" ? "Your acceleration focus" : "Your protection priority"}
                 </div>
-              )}
+                <div style={{ fontSize: 15, lineHeight: 1.55, color: isAlreadyFire ? "rgba(255,255,255,0.85)" : "#374151" }}>
+                  {isAlreadyFire && (
+                    <>
+                      <strong style={{ color: "#22D3A5" }}>The accumulation phase is complete.</strong> Your portfolio covers your cost of living in {city.name}. The work ahead is different: designing the life you want, managing withdrawals to last, and deciding what optional work looks like for you — if any. UntilFire can help you model withdrawal scenarios and track your runway.
+                    </>
+                  )}
+                  {fireStage === "ignition" && (
+                    <>
+                      <strong style={{ color: "#0F172A" }}>Build the habit first.</strong> The most powerful move right now is consistency, not complexity. Set up an automatic transfer for the same day each month — even if it starts small. Compound growth rewards showing up more than timing the market perfectly.
+                    </>
+                  )}
+                  {fireStage === "momentum" && (
+                    <>
+                      <strong style={{ color: "#0F172A" }}>Widen the gap.</strong> You&apos;ve proven you can save. The fastest accelerator now is catching lifestyle inflation before it catches you. Consider directing any raise or bonus straight to investments before it absorbs into your spending baseline.
+                    </>
+                  )}
+                  {fireStage === "final-stretch" && (
+                    <>
+                      <strong style={{ color: "#0F172A" }}>Protect your runway.</strong> At this stage, capital preservation matters more than chasing extra return. Avoid concentrated bets or lifestyle upgrades that reset your timeline. Your discipline has built momentum — trust it.
+                    </>
+                  )}
+                </div>
+              </div>
 
               {/* ── HOW THIS WAS CALCULATED ── */}
               <div style={{ marginBottom: 16, borderRadius: 12, border: "1px solid #E2E8F0", background: "#fff", overflow: "hidden" }}>
