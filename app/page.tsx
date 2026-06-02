@@ -40,7 +40,7 @@ function fmtUSD(n: number) {
 }
 
 type IncomeMode = "annual" | "monthly" | "biweekly" | "hourly" | "takehome";
-type ShareCardKind = "identity" | "benchmark";
+type ShareCardKind = "identity" | "benchmark" | "year";
 
 type FireIdentity = {
   name: string;
@@ -788,14 +788,15 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
 // -----------------------------------------------------------------------------
 
 function ShareModal({
-  cityName, fireIdentity, benchmark, onClose,
+  cityName, fireIdentity, benchmark, retireYear, onClose,
 }: {
   cityName: string;
   fireIdentity: FireIdentity; benchmark: SavingsBenchmark;
+  retireYear?: number;
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const [selectedCard, setSelectedCard] = useState<ShareCardKind>("identity");
+  const [selectedCard, setSelectedCard] = useState<ShareCardKind>("year");
 
   const cityShort = cityName.split(",")[0] || cityName;
   const shareUrl = `https://www.untilfire.com/?source=share-${selectedCard}`;
@@ -803,14 +804,22 @@ function ShareModal({
     ? `My savings rate beats the benchmark in ${cityShort}. Find your freedom date at UntilFire.`
     : `I found my FIRE starting point in ${cityShort}. Find your freedom date at UntilFire.`;
   const shareCards: Record<ShareCardKind, { label: string; title: string; body: string; text: string }> = {
+    year: {
+      label: "Card A · Freedom Year",
+      title: retireYear ? `My freedom year is ${retireYear} 🔥` : "I found my freedom date 🔥",
+      body: `I just calculated when work becomes optional for me. Find your freedom date — free, no login required.`,
+      text: retireYear
+        ? `My freedom year is ${retireYear} 🔥\nI just calculated when work becomes optional. Find yours at UntilFire — free, no login needed.`
+        : `I just found my freedom date 🔥\nFind yours at UntilFire — free, no login needed.`,
+    },
     identity: {
-      label: "Card A · FIRE Type",
+      label: "Card B · FIRE Type",
       title: `I’m a ${fireIdentity.name} 🔥`,
       body: `${fireIdentity.headline} Find your FIRE Type at UntilFire.`,
       text: `I’m a ${fireIdentity.name} 🔥\n${fireIdentity.headline}\nFind your FIRE Type at UntilFire.`,
     },
     benchmark: {
-      label: "Card B · Benchmark",
+      label: "Card C · Benchmark",
       title: benchmark.headline,
       body: benchmarkShareBody,
       text: `${benchmark.headline}\n${benchmarkShareBody}`,
@@ -868,9 +877,9 @@ function ShareModal({
             <Logo variant="dark" size={20} />
           </div>
           <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>{selectedCard === "identity" ? "FIRE Type" : "Benchmark"}</div>
-          <div className="uf-share-card-number" style={{ fontSize: 28, lineHeight: 1.1 }}>{activeShare.title}</div>
-          <div className="uf-share-card-meta" style={{ fontSize: 15, color: '#62FAE3', fontWeight: 800, lineHeight: 1.35 }}>{activeShare.body}</div>
-          <div className="uf-share-card-city" style={{ color: 'rgba(255,255,255,0.4)' }}>No exact income · no FIRE number · no freedom date</div>
+          <div className="uf-share-card-number" style={{ fontSize: selectedCard === "year" && retireYear ? 42 : 28, lineHeight: 1.1, color: selectedCard === "year" ? '#62FAE3' : undefined }}>{activeShare.title}</div>
+          <div className="uf-share-card-meta" style={{ fontSize: 15, color: selectedCard === "year" ? 'rgba(255,255,255,0.75)' : '#62FAE3', fontWeight: selectedCard === "year" ? 500 : 800, lineHeight: 1.35 }}>{activeShare.body}</div>
+          <div className="uf-share-card-city" style={{ color: 'rgba(255,255,255,0.4)' }}>{selectedCard === "year" ? "Freedom year only · no income or exact number" : "No exact income · no FIRE number · no freedom date"}</div>
           <div className="uf-share-card-divider" />
           <div className="uf-share-card-url">Find your freedom date {"->"} untilfire.com</div>
         </div>
@@ -1273,6 +1282,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
           cityName={city.name}
           fireIdentity={fireIdentity}
           benchmark={savingsBenchmark}
+          retireYear={result.retireYear}
           onClose={() => setShowShare(false)}
         />
       )}
