@@ -1,552 +1,703 @@
 "use client";
-
-import { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 
-type ParsedRow = {
+type Step = "upload" | "map" | "importing" | "done";
+
+type Transaction = {
   date: string;
   amount: number;
   currency: string;
-  description: string;
-  category: string;
-  sub_category: string | null;
   transaction_type: "expense" | "income";
 };
 
-type DuplicateFlag = {
-  rowIndex: number;
-  row: ParsedRow;
-  existing: { id: string; date: string; amount: number; category: string };
+type Props = {
+  onClose: () => void;
+  onImported: (count: number) => void;
+  defaultCurrency?: string;
+  preferredCurrencies?: string[];
+  transactions?: Transaction[];
+  viewMonth?: string;
+  rates?: Record<string, number>;
+  formatAmount?: (value: number) => string;
+  displayCurrency?: string;
 };
 
-type Step = "upload" | "map" | "review" | "importing" | "done";
-
-const FIELD_OPTIONS = [
-  { value: "", label: "(ignore)" },
-  { value: "date", label: "Date" },
-  { value: "amount", label: "Amount" },
-  { value: "description", label: "Description" },
-  { value: "category", label: "Category" },
-  { value: "currency", label: "Currency" },
-  { value: "transaction_type", label: "Type (expense/income)" },
-];
-
-const AUTO_DETECT: Record<string, string> = {
-  date: "date",
-  "transaction date": "date",
-  "trans date": "date",
-  "posted date": "date",
-  "posting date": "date",
-  amount: "amount",
-  "debit amount": "amount",
-  "credit amount": "amount",
-  sum: "amount",
-  price: "amount",
-  description: "description",
-  merchant: "description",
-  payee: "description",
-  memo: "description",
-  narration: "description",
-  name: "description",
-  category: "category",
-  currency: "currency",
-  type: "transaction_type",
-  "transaction type": "transaction_type",
+type ParsedImportTransaction = {
+  date: string;
+  description: string;
+  amount: number;
+  currency: string;
+  transaction_type: "expense" | "income";
+  category: string;
 };
 
-function parseCSV(text: string): string[][] {
-  const rows: string[][] = [];
-  const cells: string[] = [];
-  let current = "";
-  let inQuotes = false;
+// ─── CSV parsing ──────────────────────────────────────────────────────────────
+function parseCSV(text: string): { headers: string[]; rows: string[][] } {
+  const firstLine = text.split(/\r?\n/)[0] ?? "";
+  const delim = firstLine.includes(";") ? ";" : firstLine.includes("\t") ? "\t" : ",";
 
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '"') {
-      if (inQuotes && text[i + 1] === '"') { current += '"'; i++; }
-      else inQuotes = !inQuotes;
-    } else if (ch === "," && !inQuotes) {
-      cells.push(current.trim()); current = "";
-    } else if ((ch === "\n" || ch === "\r") && !inQuotes) {
-      if (ch === "\r" && text[i + 1] === "\n") i++;
-      cells.push(current.trim()); current = "";
-      if (cells.some(c => c !== "")) rows.push([...cells]);
-      cells.length = 0;
-    } else {
-      current += ch;
+  function parseLine(line: string): string[] {
+    const result: string[] = [];
+    let cur = "";
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (c === delim && !inQ) {
+        result.push(cur.trim());
+        cur = "";
+      } else {
+        cur += c;
+      }
     }
+    result.push(cur.trim());
+    return result;
   }
-  if (cells.length || current) {
-    cells.push(current.trim());
-    if (cells.some(c => c !== "")) rows.push([...cells]);
-  }
-  return rows;
+
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  const headers = parseLine(lines[0]).map((h) => h.replace(/^"|"$/g, ""));
+  const rows = lines.slice(1).map(parseLine);
+  return { headers, rows };
 }
 
-function normalizeDate(raw: string): string {
-  if (!raw) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  const d = new Date(raw);
+function parseDate(s: string): string | null {
+  s = s.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdy) return `${mdy[3]}-${mdy[1].padStart(2, "0")}-${mdy[2].padStart(2, "0")}`;
+  const dmy = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[1].padStart(2, "0")}-${dmy[2].padStart(2, "0")}`;
+  const d = new Date(s);
   if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
-  return "";
+  return null;
 }
 
-function ErrorBox({ msg }: { msg: string }) {
-  return (
-    <div style={{
-      fontSize: 13, color: "#DC2626", background: "#FEF2F2",
-      border: "1px solid #FCA5A5", borderRadius: 8,
-      padding: "8px 12px", marginBottom: 16,
-    }}>
-      {msg}
-    </div>
-  );
+function parseAmount(s: string): number | null {
+  s = s.trim().replace(/[^0-9().,\-]/g, "").replace(/,/g, "");
+  const paren = s.match(/^\((.+)\)$/);
+  if (paren) return -Math.abs(parseFloat(paren[1]));
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
 }
+
+function guessCategory(desc: string, type: "expense" | "income"): string {
+  const d = desc.toLowerCase();
+  if (type === "income") {
+    if (/salary|payroll|direct dep|wages/.test(d)) return "salary";
+    if (/freelance|consulting|invoice/.test(d)) return "freelance";
+    if (/dividend|interest|capital gain/.test(d)) return "investment";
+    return "other_income";
+  }
+  if (/uber|lyft|taxi|transit|parking|gas station|fuel|subway|metro|bus/.test(d)) return "transport";
+  if (/netflix|spotify|hulu|disney|apple\.com\/bill|subscription|amazon prime/.test(d)) return "subscriptions";
+  if (/grocery|whole foods|trader joe|kroger|safeway|aldi|costco|publix/.test(d)) return "food";
+  if (/restaurant|mcdonald|starbucks|chipotle|doordash|grubhub|ubereats|cafe|diner/.test(d)) return "food";
+  if (/amazon|target|walmart|best buy|ebay|shop|store|mall/.test(d)) return "shopping";
+  if (/rent|mortgage|utilities|electric|water|internet|comcast|verizon/.test(d)) return "housing";
+  if (/doctor|hospital|pharmacy|cvs|walgreens|dental|clinic|health/.test(d)) return "healthcare";
+  if (/movie|theater|cinema|concert|spotify|ticketmaster|steam|game/.test(d)) return "entertainment";
+  if (/hotel|airbnb|flight|airline|united|delta|american air|booking/.test(d)) return "travel";
+  return "other";
+}
+
+function normalizeCurrencyCode(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const upper = raw.toUpperCase();
+
+  if (SUPPORTED_CURRENCIES.includes(upper as (typeof SUPPORTED_CURRENCIES)[number])) return upper;
+  if (upper === "RMB") return "CNY";
+  if (upper === "CNH") return "CNY";
+
+  if (/HONG KONG|HKD/.test(upper)) return "HKD";
+  if (/SINGAPORE|SGD/.test(upper)) return "SGD";
+  if (/AUSTRALIA|AUD/.test(upper)) return "AUD";
+  if (/CANADA|CAD/.test(upper)) return "CAD";
+  if (/NEW ZEALAND|NZD/.test(upper)) return "NZD";
+  if (/UNITED STATES|US DOLLAR|USD/.test(upper)) return "USD";
+  if (/EURO|EUR/.test(upper)) return "EUR";
+  if (/POUND|STERLING|GBP/.test(upper)) return "GBP";
+  if (/YEN|JPY/.test(upper)) return "JPY";
+  if (/YUAN|RENMINBI|CNY/.test(upper)) return "CNY";
+  if (/RUPEE|INR/.test(upper)) return "INR";
+  if (/WON|KRW/.test(upper)) return "KRW";
+  if (/FRANC|CHF/.test(upper)) return "CHF";
+
+  return null;
+}
+
+function detectCurrencyFromValue(value: string, fallbackCurrency: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+
+  const normalized = normalizeCurrencyCode(raw);
+  if (normalized) return normalized;
+
+  const upper = raw.toUpperCase();
+  if (upper.includes("HK$")) return "HKD";
+  if (upper.includes("SGD") || upper.includes("S$")) return "SGD";
+  if (upper.includes("AUD") || upper.includes("A$")) return "AUD";
+  if (upper.includes("CAD") || upper.includes("C$")) return "CAD";
+  if (upper.includes("NZD") || upper.includes("NZ$")) return "NZD";
+  if (upper.includes("CHF")) return "CHF";
+  if (upper.includes("EUR") || raw.includes("€")) return "EUR";
+  if (upper.includes("GBP") || raw.includes("£")) return "GBP";
+  if (upper.includes("JPY") || upper.includes("CNY") || upper.includes("RMB") || raw.includes("¥")) {
+    if (fallbackCurrency === "CNY") return "CNY";
+    if (fallbackCurrency === "JPY") return "JPY";
+    return upper.includes("CNY") || upper.includes("RMB") ? "CNY" : "JPY";
+  }
+  if (upper.includes("INR") || raw.includes("₹")) return "INR";
+  if (upper.includes("KRW") || raw.includes("₩")) return "KRW";
+  if (upper.includes("USD") || upper.includes("US$")) return "USD";
+  if (raw.includes("$") && normalizeCurrencyCode(fallbackCurrency)) return fallbackCurrency;
+
+  return null;
+}
+
+function autoDetectColumns(headers: string[]): { date: string; description: string; amount: string; currency: string } {
+  const find = (patterns: RegExp[]) =>
+    headers.find((h) => patterns.some((p) => p.test(h.toLowerCase()))) ?? "";
+  return {
+    date: find([/^date$/, /date/, /posted/, /transaction date/]),
+    description: find([/description/, /memo/, /details/, /narrative/, /payee/, /name/]),
+    amount: find([/^amount$/, /amount/, /debit/, /credit/, /transaction amount/]),
+    currency: find([/^currency$/, /currency/, /currency code/, /^ccy$/, /curr/]),
+  };
+}
+
+function inferImportCurrency({
+  headers,
+  rows,
+  colAmount,
+  colCurrency,
+  fallbackCurrency,
+}: {
+  headers: string[];
+  rows: string[][];
+  colAmount: string;
+  colCurrency: string;
+  fallbackCurrency: string;
+}): string {
+  const currencyIdx = colCurrency ? headers.indexOf(colCurrency) : -1;
+  const amountIdx = colAmount ? headers.indexOf(colAmount) : -1;
+  const counts = new Map<string, number>();
+
+  for (const row of rows.slice(0, 25)) {
+    const rawCurrency = currencyIdx >= 0 ? row[currencyIdx] ?? "" : "";
+    const rawAmount = amountIdx >= 0 ? row[amountIdx] ?? "" : "";
+    const detected = normalizeCurrencyCode(rawCurrency) || detectCurrencyFromValue(rawAmount, fallbackCurrency);
+    if (!detected) continue;
+    counts.set(detected, (counts.get(detected) ?? 0) + 1);
+  }
+
+  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  return best ?? fallbackCurrency;
+}
+
+const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
+  if (!currency || currency === "USD") return amount;
+  const rate = rates[currency];
+  return rate ? amount / rate : amount;
+};
 
 export default function CsvImportModal({
-  open, onClose, onImported,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onImported: () => void;
-}) {
+  onClose,
+  onImported,
+  defaultCurrency = "USD",
+  preferredCurrencies = [],
+  transactions = [],
+  viewMonth = "",
+  rates = {},
+  formatAmount,
+  displayCurrency = defaultCurrency,
+}: Props) {
   const [step, setStep] = useState<Step>("upload");
   const [headers, setHeaders] = useState<string[]>([]);
-  const [rawRows, setRawRows] = useState<string[][]>([]);
-  const [columnMap, setColumnMap] = useState<Record<number, string>>({});
-  const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
-  const [duplicateFlags, setDuplicateFlags] = useState<DuplicateFlag[]>([]);
-  const [skipIndices, setSkipIndices] = useState<Set<number>>(new Set());
+  const [rows, setRows] = useState<string[][]>([]);
+  const [colDate, setColDate] = useState("");
+  const [colDesc, setColDesc] = useState("");
+  const [colAmount, setColAmount] = useState("");
+  const [colCurrency, setColCurrency] = useState("");
+  const [importCurrency, setImportCurrency] = useState(defaultCurrency);
+  const [flipSigns, setFlipSigns] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [importResult, setImportResult] = useState<{ imported: number; skipped: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [importedCount, setImportedCount] = useState(0);
+  const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
 
-  function reset() {
-    setStep("upload");
-    setHeaders([]);
-    setRawRows([]);
-    setColumnMap({});
-    setParsedRows([]);
-    setDuplicateFlags([]);
-    setSkipIndices(new Set());
-    setProgress(0);
-    setImportResult(null);
-    setError(null);
-  }
-
-  function handleClose() { reset(); onClose(); }
-
-  function handleFile(file: File) {
-    setError(null);
+  const processFile = useCallback((file: File) => {
+    if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
+      setError("Please upload a .csv file.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const rows = parseCSV(text);
-      if (rows.length < 2) {
-        setError("CSV must have at least a header row and one data row.");
+      const { headers: h, rows: r } = parseCSV(text);
+      if (h.length < 2) {
+        setError("Couldn't parse this file. Make sure it's a CSV with headers.");
         return;
       }
-      const hdrs = rows[0];
-      const data = rows.slice(1);
-      setHeaders(hdrs);
-      setRawRows(data);
-      const map: Record<number, string> = {};
-      hdrs.forEach((h, i) => {
-        const key = h.trim().toLowerCase();
-        if (AUTO_DETECT[key]) map[i] = AUTO_DETECT[key];
+      const auto = autoDetectColumns(h);
+      const cleanedRows = r.filter((row) => row.some((c) => c.trim()));
+      const detectedCurrency = inferImportCurrency({
+        headers: h,
+        rows: cleanedRows,
+        colAmount: auto.amount,
+        colCurrency: auto.currency,
+        fallbackCurrency: defaultCurrency,
       });
-      setColumnMap(map);
+      setHeaders(h);
+      setRows(cleanedRows);
+      setColDate(auto.date);
+      setColDesc(auto.description);
+      setColAmount(auto.amount);
+      setColCurrency(auto.currency);
+      setImportCurrency(detectedCurrency);
+      setFlipSigns(false);
+      setError("");
       setStep("map");
     };
     reader.readAsText(file);
-  }
+  }, [defaultCurrency]);
 
-  function buildParsedRows(): ParsedRow[] {
-    const find = (field: string) => {
-      const entry = Object.entries(columnMap).find(([, v]) => v === field);
-      return entry ? Number(entry[0]) : null;
-    };
-    const dateIdx = find("date");
-    const amountIdx = find("amount");
-    const descIdx = find("description");
-    const catIdx = find("category");
-    const currIdx = find("currency");
-    const typeIdx = find("transaction_type");
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  }, [processFile]);
 
-    return rawRows.map((row) => {
-      const rawAmt = amountIdx != null ? (row[amountIdx] ?? "") : "";
-      const amtNum = parseFloat(rawAmt.replace(/[^0-9.\-]/g, "")) || 0;
-      const txType: "expense" | "income" =
-        typeIdx != null
-          ? (row[typeIdx]?.toLowerCase().includes("income") ? "income" : "expense")
-          : (amtNum < 0 ? "income" : "expense");
-      return {
-        date: normalizeDate(dateIdx != null ? (row[dateIdx] ?? "") : ""),
-        amount: Math.abs(amtNum),
-        currency: currIdx != null ? (row[currIdx] || "USD") : "USD",
-        description: descIdx != null ? (row[descIdx] ?? "") : "",
-        category: catIdx != null ? ((row[catIdx] || "other").trim().toLowerCase()) : "other",
-        sub_category: null,
-        transaction_type: txType,
-      };
-    }).filter(r => r.date !== "" && r.amount > 0);
-  }
+  const buildParsedTransactions = useCallback((): ParsedImportTransaction[] => {
+    if (!colDate || !colDesc || !colAmount) return [];
+    const dateIdx = headers.indexOf(colDate);
+    const descIdx = headers.indexOf(colDesc);
+    const amtIdx = headers.indexOf(colAmount);
+    const currencyIdx = colCurrency ? headers.indexOf(colCurrency) : -1;
 
-  async function handleCheckDuplicates() {
-    setError(null);
-    const rows = buildParsedRows();
-    if (rows.length === 0) {
-      setError("No valid rows found. Make sure Date and Amount columns are mapped correctly.");
+    const parsed: ParsedImportTransaction[] = [];
+    for (const row of rows) {
+      const rawDate = row[dateIdx] ?? "";
+      const rawDesc = row[descIdx] ?? "";
+      const rawAmount = row[amtIdx] ?? "";
+      const rawCurrency = currencyIdx >= 0 ? row[currencyIdx] ?? "" : "";
+
+      const date = parseDate(rawDate);
+      const rawAmt = parseAmount(rawAmount);
+      if (!date || rawAmt === null || !rawDesc.trim()) continue;
+
+      const amt = flipSigns ? -rawAmt : rawAmt;
+      const type: "expense" | "income" = amt < 0 ? "expense" : "income";
+      const currency = normalizeCurrencyCode(rawCurrency) || detectCurrencyFromValue(rawAmount, importCurrency) || importCurrency;
+      parsed.push({
+        date,
+        description: rawDesc.trim(),
+        amount: Math.abs(amt),
+        currency,
+        transaction_type: type,
+        category: guessCategory(rawDesc, type),
+      });
+    }
+    return parsed;
+  }, [colAmount, colCurrency, colDate, colDesc, flipSigns, headers, importCurrency, rows]);
+
+  const parsedTransactions = buildParsedTransactions();
+  const sampleTransaction = parsedTransactions[0] ?? null;
+  const touchedMonths = [...new Set(parsedTransactions.map((t) => t.date.slice(0, 7)).filter(Boolean))].length;
+
+  const previewRows = (() => {
+    if (!colDate || !colDesc || !colAmount) return [];
+    const di = headers.indexOf(colDate);
+    const ni = headers.indexOf(colDesc);
+    const ai = headers.indexOf(colAmount);
+    return rows.slice(0, 5).map((r: string[]) => ({
+      date: r[di] ?? "",
+      desc: r[ni] ?? "",
+      amount: r[ai] ?? "",
+    }));
+  })();
+
+  const previewMonthKey = sampleTransaction?.date.slice(0, 7) || parsedTransactions[0]?.date.slice(0, 7) || viewMonth;
+
+  const monthLabel = (() => {
+    if (!previewMonthKey) return "this month";
+    const [y, m] = previewMonthKey.split("-").map(Number);
+    if (!y || !m) return "this month";
+    return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  })();
+
+  const previewAmount = (value: number) => {
+    if (formatAmount) return formatAmount(value);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: displayCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const currencyOptions = Array.from(new Set([
+    defaultCurrency,
+    ...preferredCurrencies,
+    ...SUPPORTED_CURRENCIES,
+  ])).filter(Boolean);
+
+  const currentMonthTxns = previewMonthKey ? transactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
+  const importedMonthTxns = previewMonthKey ? parsedTransactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
+  const currentIncome = currentMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const currentExpenses = currentMonthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const importedIncome = importedMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const importedExpenses = importedMonthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const projectedIncome = currentIncome + importedIncome;
+  const projectedExpenses = currentExpenses + importedExpenses;
+  const projectedNet = projectedIncome - projectedExpenses;
+
+  const handleImport = useCallback(async () => {
+    const parsed = buildParsedTransactions();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    if (parsed.length === 0) {
+      setError("No valid rows found. Check that Date, Description, and Amount columns are correct.");
+      setStep("map");
       return;
     }
-    setParsedRows(rows);
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setError("Not signed in."); return; }
-
-    const dates = rows.map(r => r.date);
-    const minDate = dates.reduce((a, b) => a < b ? a : b);
-    const maxDate = dates.reduce((a, b) => a > b ? a : b);
-
-    const { data: existing, error: fetchErr } = await supabase
-      .from("expenses")
-      .select("id, date, amount, category")
-      .eq("user_id", session.user.id)
-      .gte("date", minDate)
-      .lte("date", maxDate);
-
-    if (fetchErr) { setError("Failed to check for duplicates. Please try again."); return; }
-
-    const flags: DuplicateFlag[] = [];
-    rows.forEach((row, i) => {
-      const match = existing?.find(e =>
-        e.date === row.date &&
-        Math.abs(Number(e.amount) - row.amount) < 0.01 &&
-        (e.category ?? "").trim().toLowerCase() === row.category.trim().toLowerCase()
-      );
-      if (match) flags.push({ rowIndex: i, row, existing: match });
-    });
-
-    if (flags.length > 0) {
-      setDuplicateFlags(flags);
-      setSkipIndices(new Set(flags.map(f => f.rowIndex)));
-      setStep("review");
-    } else {
-      await runImport(rows, new Set());
-    }
-  }
-
-  async function runImport(rows: ParsedRow[], skip: Set<number>) {
-    setStep("importing");
+    setTotal(parsed.length);
     setProgress(0);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setError("Not signed in."); return; }
+    setStep("importing");
 
-    const toInsert = rows
-      .filter((_, i) => !skip.has(i))
-      .map(r => ({
-        user_id: session.user.id,
-        date: r.date,
-        amount: r.amount,
-        currency: r.currency,
-        description: r.description,
-        category: r.category || "other",
-        sub_category: r.sub_category,
-        tags: [] as string[],
-        transaction_type: r.transaction_type,
-      }));
-
-    const CHUNK = 50;
+    const BATCH = 50;
     let inserted = 0;
-    for (let i = 0; i < toInsert.length; i += CHUNK) {
-      const batch = toInsert.slice(i, i + CHUNK);
-      const { error: insertErr } = await supabase.from("expenses").insert(batch);
-      if (insertErr) {
-        setError(`Import failed at row ${i + 1}: ${insertErr.message}`);
+    for (let i = 0; i < parsed.length; i += BATCH) {
+      const batch = parsed.slice(i, i + BATCH).map((tx) => ({
+        user_id: session.user.id,
+        date: tx.date,
+        amount: tx.amount,
+        currency: tx.currency,
+        description: tx.description,
+        category: tx.category,
+        transaction_type: tx.transaction_type,
+        tags: [],
+        sub_category: null,
+      }));
+      const { error: dbErr } = await supabase.from("expenses").insert(batch);
+      if (dbErr) {
+        setError("Import failed: " + dbErr.message);
         setStep("map");
         return;
       }
       inserted += batch.length;
-      setProgress(toInsert.length > 0 ? Math.round((inserted / toInsert.length) * 100) : 100);
+      setProgress(inserted);
     }
 
-    const skipped = rows.length - inserted;
-    setImportResult({ imported: inserted, skipped });
+    setImportedCount(inserted);
     setStep("done");
-    onImported();
-  }
+    onImported(inserted);
+  }, [buildParsedTransactions, onImported]);
 
-  if (!open) return null;
+  const inputStyle: React.CSSProperties = {
+    width: "100%", padding: "8px 10px", borderRadius: 8,
+    border: "1px solid #23232d", background: "#1a1a24", color: "#e2e8f0",
+    fontSize: 13, fontFamily: "Manrope, sans-serif",
+  };
+
+  const selectStyle: React.CSSProperties = {
+    ...inputStyle,
+    colorScheme: "dark",
+  };
+
+  const selectOptionStyle: React.CSSProperties = {
+    backgroundColor: "#1a1a24",
+    color: "#e2e8f0",
+    fontFamily: "Manrope, sans-serif",
+  };
+
+  const placeholderOptionStyle: React.CSSProperties = {
+    ...selectOptionStyle,
+    color: "#64748b",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block", fontSize: 12, fontWeight: 600, color: "#94a3b8", marginBottom: 6,
+  };
 
   return (
     <div
-      onClick={handleClose}
+      onClick={onClose}
       style={{
-        position: "fixed", inset: 0, zIndex: 10000,
-        background: "rgba(0,0,0,0.45)",
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 16,
+        zIndex: 300, padding: 16,
       }}
     >
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
-          position: "relative",
-          background: "#fff", borderRadius: 16, padding: "32px 28px",
-          maxWidth: 640, width: "100%",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
-          maxHeight: "90vh", overflowY: "auto",
+          background: "#111118", border: "1px solid #23232d", borderRadius: 20,
+          padding: 32, width: "100%", maxWidth: 520,
+          maxHeight: "90dvh", overflowY: "auto",
+          fontFamily: "Manrope, sans-serif",
         }}
       >
-        {/* Close button */}
-        {step !== "importing" && (
-          <button
-            onClick={handleClose}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>
+              Import bank CSV
+            </div>
+            {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV exported from your bank</div>}
+            {step === "map" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
+        </div>
+
+        {step === "upload" && (
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e: React.DragEvent) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onClick={() => fileRef.current?.click()}
             style={{
-              position: "absolute", top: 14, right: 18,
-              background: "none", border: "none",
-              fontSize: 22, color: "#94A3B8", cursor: "pointer", lineHeight: 1,
+              border: `2px dashed ${dragging ? "#059669" : "#23232d"}`,
+              borderRadius: 14, padding: "48px 32px", textAlign: "center",
+              cursor: "pointer", transition: "border-color 0.15s",
+              background: dragging ? "rgba(5,150,105,0.05)" : "transparent",
             }}
           >
-            ×
-          </button>
-        )}
-
-        {/* ── Step 1: Upload ── */}
-        {step === "upload" && (
-          <>
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Import CSV</div>
-              <div style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>
-                Upload a bank or expense CSV to bulk-import transactions.
-              </div>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#e2e8f0", marginBottom: 6 }}>
+              Drop your CSV here or click to browse
             </div>
-            {error && <ErrorBox msg={error} />}
+            <div style={{ fontSize: 13, color: "#64748b" }}>
+              Export from your bank as CSV, then upload it here
+            </div>
             <input
-              ref={fileRef} type="file" accept=".csv"
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
               style={{ display: "none" }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) processFile(f); }}
             />
-            <div
-              onClick={() => fileRef.current?.click()}
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
-              style={{
-                border: "2px dashed #A7F3D0", borderRadius: 12, padding: "44px 24px",
-                textAlign: "center", cursor: "pointer",
-                background: "#F0FDF4",
-              }}
-            >
-              <div style={{ fontSize: 32, marginBottom: 10 }}>📂</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#047857" }}>
-                Click or drag a CSV file here
-              </div>
-              <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 4 }}>
-                Supports any bank export — .csv files only
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── Step 2: Map columns ── */}
-        {step === "map" && (
-          <>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Map columns</div>
-              <div style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>
-                {rawRows.length} rows found. Match each CSV column to a field.
-              </div>
-            </div>
-            {error && <ErrorBox msg={error} />}
-            <div style={{ border: "1px solid #E2E8F0", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: "#F8FAFC" }}>
-                    <th style={thStyle}>CSV column</th>
-                    <th style={thStyle}>Maps to</th>
-                    <th style={{ ...thStyle, borderRight: "none" }}>Preview</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {headers.map((h, i) => (
-                    <tr key={i} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                      <td style={{ padding: "9px 14px", fontWeight: 600, color: "#19181E" }}>{h}</td>
-                      <td style={{ padding: "9px 14px" }}>
-                        <select
-                          value={columnMap[i] ?? ""}
-                          onChange={e => setColumnMap(prev => ({ ...prev, [i]: e.target.value }))}
-                          style={{
-                            fontSize: 13, padding: "5px 8px", borderRadius: 6,
-                            border: "1px solid #E2E8F0", background: "#fff",
-                            color: "#19181E", cursor: "pointer",
-                          }}
-                        >
-                          {FIELD_OPTIONS.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td style={{
-                        padding: "9px 14px", color: "#94A3B8", fontSize: 12,
-                        maxWidth: 140, overflow: "hidden",
-                        textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      }}>
-                        {rawRows.slice(0, 2).map(r => r[i]).filter(Boolean).join(" · ")}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <button
-                onClick={() => { setStep("upload"); setError(null); }}
-                style={{ fontSize: 14, color: "#64748B", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-              >
-                ← Back
-              </button>
-              <button
-                onClick={handleCheckDuplicates}
-                style={primaryBtnStyle}
-              >
-                Import {rawRows.length} rows →
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* ── Step 3: Review duplicates ── */}
-        {step === "review" && (
-          <>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>
-                {duplicateFlags.length} possible duplicate{duplicateFlags.length !== 1 ? "s" : ""} found
-              </div>
-              <div style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>
-                These rows may already exist in your records. Checked rows will be skipped.
-              </div>
-            </div>
-            <div style={{ border: "1px solid #FED7AA", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: "#FFF7ED" }}>
-                    <th style={{ ...thStyle, color: "#92400E", borderBottom: "1px solid #FED7AA" }}>Skip</th>
-                    <th style={{ ...thStyle, color: "#92400E", borderBottom: "1px solid #FED7AA" }}>Date</th>
-                    <th style={{ ...thStyle, color: "#92400E", borderBottom: "1px solid #FED7AA" }}>Description</th>
-                    <th style={{ ...thStyle, color: "#92400E", borderBottom: "1px solid #FED7AA", textAlign: "right" }}>Amount</th>
-                    <th style={{ ...thStyle, color: "#92400E", borderBottom: "1px solid #FED7AA", borderRight: "none" }}>Category</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {duplicateFlags.map(({ rowIndex, row }) => {
-                    const isSkipped = skipIndices.has(rowIndex);
-                    return (
-                      <tr
-                        key={rowIndex}
-                        style={{ borderBottom: "1px solid #F1F5F9", background: isSkipped ? "#FFFBEB" : "#fff" }}
-                      >
-                        <td style={{ padding: "9px 12px", textAlign: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={isSkipped}
-                            onChange={() => setSkipIndices(prev => {
-                              const s = new Set(prev);
-                              if (s.has(rowIndex)) s.delete(rowIndex); else s.add(rowIndex);
-                              return s;
-                            })}
-                            style={{ cursor: "pointer" }}
-                          />
-                        </td>
-                        <td style={tdStyle}>{row.date}</td>
-                        <td style={{ ...tdStyle, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {row.description || "—"}
-                        </td>
-                        <td style={{ ...tdStyle, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                          ${row.amount.toFixed(2)}
-                        </td>
-                        <td style={tdStyle}>{row.category}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <button
-                onClick={() => runImport(parsedRows, new Set())}
-                style={{
-                  fontSize: 13, color: "#64748B",
-                  background: "none", border: "1px solid #E2E8F0",
-                  borderRadius: 8, padding: "9px 16px", cursor: "pointer",
-                }}
-              >
-                Import all anyway
-              </button>
-              <button
-                onClick={() => runImport(parsedRows, skipIndices)}
-                style={primaryBtnStyle}
-              >
-                Skip checked & continue →
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* ── Step 4: Importing ── */}
-        {step === "importing" && (
-          <div style={{ textAlign: "center", padding: "48px 0" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#064E3B", marginBottom: 20 }}>Importing…</div>
-            <div style={{
-              height: 8, background: "#E2E8F0", borderRadius: 99,
-              overflow: "hidden", maxWidth: 320, margin: "0 auto",
-            }}>
-              <div style={{
-                height: "100%", width: `${progress}%`,
-                background: "#059669", borderRadius: 99, transition: "width 0.3s",
-              }} />
-            </div>
-            <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 10 }}>{progress}%</div>
-            {error && <ErrorBox msg={error} />}
           </div>
         )}
 
-        {/* ── Step 5: Done ── */}
-        {step === "done" && importResult && (
-          <div style={{ textAlign: "center", padding: "28px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B", marginBottom: 8 }}>
-              Import complete
+        {step === "map" && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              {[
+                { label: "Date column *", val: colDate, set: setColDate },
+                { label: "Description column *", val: colDesc, set: setColDesc },
+                { label: "Amount column *", val: colAmount, set: setColAmount },
+                { label: "Currency column", val: colCurrency, set: setColCurrency },
+              ].map(({ label, val, set }) => (
+                <div key={label} style={{ gridColumn: label.startsWith("Amount") ? "1 / -1" : undefined }}>
+                  <label style={labelStyle}>{label}</label>
+                  <select value={val} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set(e.target.value)} style={selectStyle}>
+                    <option value="" style={placeholderOptionStyle}>— select —</option>
+                    {headers.map((h: string) => <option key={h} value={h} style={selectOptionStyle}>{h}</option>)}
+                  </select>
+                </div>
+              ))}
             </div>
-            <div style={{ fontSize: 15, color: "#374151" }}>
-              <strong>{importResult.imported}</strong> row{importResult.imported !== 1 ? "s" : ""} imported
-              {importResult.skipped > 0 && (
-                <>, <strong>{importResult.skipped}</strong> duplicate{importResult.skipped !== 1 ? "s" : ""} skipped</>
-              )}.
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={labelStyle}>Currency for imported amounts</label>
+              <select value={importCurrency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setImportCurrency(e.target.value)} style={selectStyle}>
+                {currencyOptions.map((currency) => (
+                  <option key={currency} value={currency} style={selectOptionStyle}>{currency} — {CURRENCY_NAMES[currency] ?? currency}</option>
+                ))}
+              </select>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
+                {colCurrency
+                  ? "Rows use the mapped currency column when present. This selection is the fallback if a row is blank or unclear."
+                  : "Used when there is no separate currency column. We auto-detect when the CSV makes it obvious, and you can override it here."}
+              </div>
             </div>
-            <button onClick={handleClose} style={{ ...primaryBtnStyle, marginTop: 28 }}>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#94a3b8", marginBottom: 20, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={flipSigns}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFlipSigns(e.target.checked)}
+                style={{ width: 15, height: 15, accentColor: "#059669" }}
+              />
+              My bank shows expenses as positive numbers (flip signs)
+            </label>
+
+            {previewRows.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Raw CSV sample</div>
+                <div style={{ border: "1px solid #23232d", borderRadius: 10, overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: "#1a1a24" }}>
+                        {["Date", "Description", "Amount"].map((h) => (
+                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #23232d" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewRows.map((r: { date: string; desc: string; amount: string }, i: number) => (
+                        <tr key={i} style={{ borderBottom: i < previewRows.length - 1 ? "1px solid #1a1a24" : undefined }}>
+                          <td style={{ padding: "8px 12px", color: "#94a3b8" }}>{r.date}</td>
+                          <td style={{ padding: "8px 12px", color: "#e2e8f0", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</td>
+                          <td style={{ padding: "8px 12px", color: "#e2e8f0", whiteSpace: "nowrap" }}>{r.amount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
+              <div style={{ background: "#161621", border: "1px solid #23232d", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Import summary</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Transactions</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc" }}>{parsedTransactions.length}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Months touched</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc" }}>{touchedMonths}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Sign mode</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: flipSigns ? "#FBBF24" : "#86EFAC" }}>{flipSigns ? "Flipped" : "Original"}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Currency</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#cbd5e1" }}>{colCurrency ? `${importCurrency} fallback` : importCurrency}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: "#161621", border: "1px solid #23232d", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Example transaction</div>
+                {sampleTransaction ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Date</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 600 }}>{sampleTransaction.date}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Description</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 600, textAlign: "right" }}>{sampleTransaction.description}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Type</span><span style={{ color: sampleTransaction.transaction_type === "income" ? "#86EFAC" : "#FCA5A5", fontSize: 13, fontWeight: 700, textTransform: "capitalize" }}>{sampleTransaction.transaction_type}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Currency</span><span style={{ color: "#cbd5e1", fontSize: 13 }}>{sampleTransaction.currency}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Amount stored</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 700 }}>{new Intl.NumberFormat("en-US", { style: "currency", currency: sampleTransaction.currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(sampleTransaction.amount)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Category guess</span><span style={{ color: "#cbd5e1", fontSize: 13 }}>{sampleTransaction.category}</span></div>
+                  </div>
+                ) : (
+                  <div style={{ color: "#94a3b8", fontSize: 13 }}>No valid example row found.</div>
+                )}
+              </div>
+
+              <div style={{ background: "#161621", border: "1px solid #23232d", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{monthLabel} if accepted</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 }}>
+                  <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Income</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#86EFAC" }}>{previewAmount(projectedIncome)}</div>
+                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Now {previewAmount(currentIncome)} · adding {previewAmount(importedIncome)}</div>
+                  </div>
+                  <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Expenses</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#f8fafc" }}>{previewAmount(projectedExpenses)}</div>
+                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Now {previewAmount(currentExpenses)} · adding {previewAmount(importedExpenses)}</div>
+                  </div>
+                </div>
+                <div style={{ background: projectedNet >= 0 ? "rgba(5,150,105,0.12)" : "rgba(239,68,68,0.12)", border: `1px solid ${projectedNet >= 0 ? "rgba(5,150,105,0.3)" : "rgba(239,68,68,0.3)"}`, borderRadius: 12, padding: 12 }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Projected net after import</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: projectedNet >= 0 ? "#86EFAC" : "#FCA5A5" }}>{projectedNet >= 0 ? "+" : ""}{previewAmount(projectedNet)}</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                    {importedMonthTxns.length > 0
+                      ? `${importedMonthTxns.length} imported transaction${importedMonthTxns.length === 1 ? "" : "s"} land in ${monthLabel}.`
+                      : `None of these imported transactions land in ${monthLabel}.`}
+                  </div>
+                  {touchedMonths > 1 && importedMonthTxns.length > 0 && (
+                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+                      Showing {monthLabel} because this preview example lands there. This file touches {touchedMonths} months in total.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <button
+                onClick={() => setStep("upload")}
+                style={{
+                  width: "100%", padding: "12px 0", borderRadius: 10, border: "1px solid #334155",
+                  background: "transparent", color: "#cbd5e1", fontSize: 14, fontWeight: 700, cursor: "pointer",
+                  fontFamily: "Manrope, sans-serif",
+                }}
+              >
+                Choose another file
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={!colDate || !colDesc || !colAmount || parsedTransactions.length === 0}
+                style={{
+                  width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
+                  background: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#1a1a24" : "#059669",
+                  color: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#475569" : "#fff",
+                  fontSize: 14, fontWeight: 700, cursor: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "not-allowed" : "pointer",
+                  fontFamily: "Manrope, sans-serif",
+                }}
+              >
+                Import {parsedTransactions.length} transactions
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === "importing" && (
+          <div style={{ textAlign: "center", padding: "32px 0" }}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>⏳</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#e2e8f0", marginBottom: 8 }}>
+              Importing transactions…
+            </div>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+              {progress} / {total}
+            </div>
+            <div style={{ height: 6, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ height: "100%", background: "#059669", borderRadius: 99, width: `${total > 0 ? (progress / total) * 100 : 0}%`, transition: "width 0.2s" }} />
+            </div>
+          </div>
+        )}
+
+        {step === "done" && (
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>
+              {importedCount} transactions imported
+            </div>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 28 }}>
+              Categories were auto-detected. Tap any transaction to adjust.
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                padding: "10px 28px", borderRadius: 10, border: "none",
+                background: "#059669", color: "#fff", fontSize: 14, fontWeight: 700,
+                cursor: "pointer", fontFamily: "Manrope, sans-serif",
+              }}
+            >
               Done
             </button>
+          </div>
+        )}
+
+        {error && (
+          <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 13, color: "#fca5a5" }}>
+            {error}
           </div>
         )}
       </div>
     </div>
   );
 }
-
-const thStyle: React.CSSProperties = {
-  padding: "10px 14px", textAlign: "left",
-  fontWeight: 700, color: "#64748B",
-  borderBottom: "1px solid #E2E8F0",
-  borderRight: "none",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "9px 12px", color: "#374151",
-};
-
-const primaryBtnStyle: React.CSSProperties = {
-  padding: "11px 24px", borderRadius: 10, border: "none",
-  background: "#047857", color: "#fff",
-  fontSize: 14, fontWeight: 700, cursor: "pointer",
-};
