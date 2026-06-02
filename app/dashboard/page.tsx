@@ -1708,13 +1708,13 @@ function RetirementTargetCard({
   };
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Header */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>🎯 Retirement Target</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>🎯 Retirement Target</div>
 
       {/* City search */}
       <div style={{ position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #E2E8F0", borderRadius: 9, padding: "9px 12px", background: "#F8FAFC" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid var(--uf-border)", borderRadius: 9, padding: "9px 12px", background: "var(--uf-surface)" }}>
           <span style={{ fontSize: 15 }}>📍</span>
           <input
             type="text"
@@ -1722,19 +1722,19 @@ function RetirementTargetCard({
             placeholder="Where do you want to retire?"
             onChange={e => { setCitySearch(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
-            style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#0F172A", fontFamily: "Inter, sans-serif" }}
+            style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}
           />
           {retirementCityName && (
             <button onClick={handleClear} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
           )}
         </div>
         {open && filtered.length > 0 && (
-          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 50, overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.2)", zIndex: 50, overflow: "hidden" }}>
             {filtered.map(c => (
               <button
                 key={c.key}
                 onClick={() => handleSelect(c.name, c.col)}
-                style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#0F172A", fontFamily: "Inter, sans-serif", display: "flex", gap: 8, alignItems: "center" }}
+                style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", display: "flex", gap: 8, alignItems: "center" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "#F0FDF4")}
                 onMouseLeave={e => (e.currentTarget.style.background = "none")}
               >
@@ -1760,7 +1760,7 @@ function RetirementTargetCard({
                   onClick={() => onLifestyleChange(tier.multiplier)}
                   style={{
                     flex: 1, padding: "9px 8px", border: `1.5px solid ${active ? "#059669" : "#E2E8F0"}`,
-                    borderRadius: 9, background: active ? "#F0FDF4" : "#F8FAFC",
+                    borderRadius: 9, background: active ? "#F0FDF4" : "var(--uf-surface)",
                     cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                   }}
                 >
@@ -2071,10 +2071,10 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
               const isSavingsType = ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "));
               const isHysaAccount = isSavingsType && (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD;
               return (
-                <div key={a.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+                <div key={a.id} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <span style={{ fontSize: 18, flexShrink: 0 }}>{meta.emoji}</span>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#19181E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{a.name}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{a.name}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                     <span style={{ background: meta.color + "18", color: meta.color, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{meta.label}</span>
@@ -2335,8 +2335,8 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
             {visibleLiabilities.map(a => (
-              <div key={a.id} style={{ background: "#fff", border: "1px solid #FCA5A5", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
+              <div key={a.id} style={{ background: "var(--uf-card)", border: "1px solid #FCA5A5", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
                 <div style={{ fontSize: 12, color: "#94A3B8" }}>
                   <span style={{ textTransform: "capitalize" }}>{a.subtype?.replace(/-/g, " ") ?? a.type}</span>
                   {a.mask && <span style={{ marginLeft: 6 }}>•••• {a.mask}</span>}
@@ -2833,16 +2833,16 @@ function PlanCard({ s, updateScenario, updateHoldings }: PlanCardProps) {
               onFocus={() => setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
               onKeyDown={e => { if (e.key === "Enter") addHolding(tickerInput); }}
-              style={{ flex: 1, background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 7, padding: "6px 8px", fontSize: 12, color: "#19181E", fontFamily: "DM Mono, monospace", outline: "none" }} />
+              style={{ flex: 1, background: "var(--uf-surface-2)", border: "1.5px solid var(--uf-border)", borderRadius: 7, padding: "6px 8px", fontSize: 12, color: "var(--uf-text)", fontFamily: "DM Mono, monospace", outline: "none" }} />
             <button onClick={() => addHolding(tickerInput)} style={{ background: s.color, border: "none", borderRadius: 7, padding: "6px 12px", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>+</button>
           </div>
           {showDropdown && suggestions.length > 0 && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, marginTop: 3, overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.2)", zIndex: 50, marginTop: 3, overflow: "hidden" }}>
               {suggestions.map(([ticker, info]) => (
                 <button key={ticker} onMouseDown={() => addHolding(ticker)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 10px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderBottom: "1px solid #F8FAFC" }}>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 11, color: "#19181E", minWidth: 40 }}>{ticker}</span>
-                  <span style={{ fontSize: 11, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.name}</span>
+                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 10px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderBottom: "1px solid var(--uf-border)" }}>
+                  <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 11, color: "var(--uf-text)", minWidth: 40 }}>{ticker}</span>
+                  <span style={{ fontSize: 11, color: "var(--uf-text-2)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.name}</span>
                   <span style={{ fontSize: 10, fontWeight: 700, color: "#059669" }}>{(info.cagr * 100).toFixed(1)}%</span>
                 </button>
               ))}
@@ -3143,16 +3143,16 @@ function FireCalcMenuTab({
           <div
             key={tool.title}
             style={{
-              background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16,
+              background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16,
               padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16,
             }}
           >
             <div style={{ fontSize: 48, lineHeight: 1 }}>{tool.icon}</div>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#19181E", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
                 {tool.title}
               </div>
-              <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7 }}>
+              <div style={{ fontSize: 14, color: "var(--uf-text-2)", lineHeight: 1.7 }}>
                 {tool.desc}
               </div>
             </div>
@@ -3174,13 +3174,13 @@ function FireCalcMenuTab({
         ))}
 
         {/* FIRE Type quiz card */}
-        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ fontSize: 48, lineHeight: 1 }}>🧭</div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#19181E", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
               {fireTypeResult ? "Your FIRE Type" : "FIRE Type Quiz"}
             </div>
-            <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7 }}>
+            <div style={{ fontSize: 14, color: "var(--uf-text-2)", lineHeight: 1.7 }}>
               {fireTypeResult
                 ? "Discover how your personality shapes your path to financial independence."
                 : "8 quick questions to discover your FIRE personality — how you naturally think about financial independence."}
@@ -3223,7 +3223,7 @@ function LearningHubTab({ recommendedStageId }: { recommendedStageId: LearnStage
       <div style={{ marginBottom: 32 }}>
         <div style={{ fontSize: 12, color: "#059669", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 10 }}>Learning Hub</div>
         <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 8px" }}>Build your knowledge by stage</h2>
-        <p style={{ fontSize: 15, color: "#64748B", margin: 0 }}>Start with the stage that fits your progress, then switch anytime if you want broader reading.</p>
+        <p style={{ fontSize: 15, color: "var(--uf-text-2)", margin: 0 }}>Start with the stage that fits your progress, then switch anytime if you want broader reading.</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 18 }}>
           {LEARNING_STAGES.map(stage => (
             <Link
@@ -3233,9 +3233,9 @@ function LearningHubTab({ recommendedStageId }: { recommendedStageId: LearnStage
                 textDecoration: "none",
                 padding: "10px 14px",
                 borderRadius: 999,
-                border: stage.id === recommendedStageId ? "1px solid #047857" : "1px solid #E2E8F0",
-                background: stage.id === recommendedStageId ? "rgba(209,250,229,0.45)" : "#ffffff",
-                color: stage.id === recommendedStageId ? "#065F46" : "#334155",
+                border: stage.id === recommendedStageId ? "1px solid #047857" : "1px solid var(--uf-border)",
+                background: stage.id === recommendedStageId ? "rgba(209,250,229,0.45)" : "var(--uf-card)",
+                color: stage.id === recommendedStageId ? "#065F46" : "var(--uf-text-2)",
                 fontSize: 13,
                 fontWeight: 700,
               }}

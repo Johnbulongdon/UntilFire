@@ -222,9 +222,9 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
   const btnStyle = (variant: "primary" | "ghost"): React.CSSProperties => ({
     padding: variant === "primary" ? "9px 18px" : "7px 12px",
     borderRadius: 8,
-    border: variant === "primary" ? "none" : "1px solid #E2E8F0",
-    background: variant === "primary" ? "#047857" : "#ffffff",
-    color: variant === "primary" ? "#ffffff" : "#64748B",
+    border: variant === "primary" ? "none" : "1px solid var(--uf-border)",
+    background: variant === "primary" ? "#047857" : "var(--uf-card)",
+    color: variant === "primary" ? "#ffffff" : "var(--uf-text-2)",
     fontSize: 13,
     fontWeight: 700,
     cursor: "pointer",
@@ -329,8 +329,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
           alignItems: "center",
           justifyContent: "space-between",
           gap: 16,
-          background: "#F8FAFC",
-          border: "1px solid #E2E8F0",
+          background: "var(--uf-surface)",
+          border: "1px solid var(--uf-border)",
           borderRadius: 12,
           padding: "14px 18px",
           marginBottom: items.length > 0 ? 10 : 0,
@@ -342,7 +342,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
             BANK
           </span>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>
               {!itemsLoaded
                 ? "Checking connected accounts"
                 : items.length === 0
@@ -398,8 +398,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
             marginTop: 12,
             padding: "18px 18px 16px",
             borderRadius: 12,
-            border: "1px solid #CCFBF1",
-            background: "linear-gradient(180deg, #F0FDFA 0%, #FFFFFF 100%)",
+            border: "1px solid rgba(20,184,166,0.25)",
+            background: "var(--uf-card)",
             display: "flex",
             flexDirection: "column",
             gap: 12,
@@ -424,7 +424,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
               💧
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>
                 Park your emergency fund where it can quietly earn more.
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.6, color: "#475569", margin: "6px 0 0" }}>
@@ -441,15 +441,15 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
               gap: 10,
             }}
           >
-            <div style={{ background: "#FFFFFF", border: "1px solid #D1FAE5", borderRadius: 10, padding: "12px 14px" }}>
+            <div style={{ background: "var(--uf-surface)", border: "1px solid rgba(20,184,166,0.18)", borderRadius: 10, padding: "12px 14px" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#0F766E", marginBottom: 4 }}>Why it matters</div>
-              <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.55 }}>
+              <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.55 }}>
                 If your emergency fund is sitting in low-yield cash, even a modest APY can add a little progress without changing your risk.
               </div>
             </div>
-            <div style={{ background: "#FFFFFF", border: "1px solid #D1FAE5", borderRadius: 10, padding: "12px 14px" }}>
+            <div style={{ background: "var(--uf-surface)", border: "1px solid rgba(20,184,166,0.18)", borderRadius: 10, padding: "12px 14px" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#0F766E", marginBottom: 4 }}>What to check</div>
-              <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.55 }}>
+              <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.55 }}>
                 Compare APY, any minimum balance rules, transfer speed, and whether the account still feels simple enough for emergencies.
               </div>
             </div>
@@ -470,8 +470,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
                 justifyContent: "center",
                 padding: "10px 14px",
                 borderRadius: 8,
-                border: "1px solid #99F6E4",
-                background: "#FFFFFF",
+                border: "1px solid rgba(20,184,166,0.3)",
+                background: "var(--uf-card)",
                 color: "#0F766E",
                 fontSize: 13,
                 fontWeight: 700,
@@ -504,8 +504,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
               alignItems: "center",
               justifyContent: "space-between",
               gap: 12,
-              background: "#ffffff",
-              border: "1px solid #E2E8F0",
+              background: "var(--uf-card)",
+              border: "1px solid var(--uf-border)",
               borderRadius: 10,
               padding: "12px 16px",
               marginBottom: 6,
@@ -551,9 +551,9 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
             color: "#64748B",
             marginTop: 6,
             padding: "6px 12px",
-            background: "#F8FAFC",
+            background: "var(--uf-surface)",
             borderRadius: 8,
-            border: "1px solid #E2E8F0",
+            border: "1px solid var(--uf-border)",
           }}
         >
           Free plan | 1 bank included |{" "}
