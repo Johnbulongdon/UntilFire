@@ -736,6 +736,7 @@ function TransactionList({
   justAddedId,
   onEdit,
   onDelete,
+  onToggleNeedWant,
   rates,
   formatAmount,
   catCustomizations,
@@ -746,6 +747,7 @@ function TransactionList({
   justAddedId: string | null;
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
+  onToggleNeedWant: (tx: Transaction) => void;
   rates: Record<string, number>;
   formatAmount: (value: number) => string;
   catCustomizations: CatCustomizations;
@@ -858,6 +860,9 @@ function TransactionList({
                     const wasJustAdded = justAddedId === tx.id;
                     const baseDisplay = { color: cat?.color || "#6b7280", emoji: (cat as {emoji?: string})?.emoji || "📦" };
                     const { color: chipColor, emoji: chipEmoji } = resolveDisplay(baseDisplay, catCustomizations, tx.category);
+                    const txTags = tx.tags || [];
+                    const needOrWant = txTags.includes("need") ? "need" : txTags.includes("want") ? "want" : null;
+                    const displayTags = txTags.filter((t) => t !== "need" && t !== "want").slice(0, 2);
 
                     return (
                       <div
@@ -884,7 +889,21 @@ function TransactionList({
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
                             <span style={{ fontSize: 11.5, color: "var(--uf-text-3)" }}>{cat?.label || tx.category}</span>
                             {tx.sub_category && <span style={{ fontSize: 11, color: "var(--uf-text-2)" }}>· {tx.sub_category}</span>}
-                            {(tx.tags || []).slice(0, 2).map((t) => (
+                            {tx.transaction_type === "expense" && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onToggleNeedWant(tx); }}
+                                title={needOrWant ? `Marked as ${needOrWant} — click to cycle` : "Click to mark as need or want"}
+                                style={{
+                                  background: needOrWant === "need" ? "rgba(34,211,165,0.15)" : needOrWant === "want" ? "rgba(249,115,22,0.15)" : "var(--uf-surface-2)",
+                                  color: needOrWant === "need" ? "#22d3a5" : needOrWant === "want" ? "#f97316" : "var(--uf-text-3)",
+                                  border: "none", borderRadius: 999, padding: "1px 7px",
+                                  fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0,
+                                }}
+                              >
+                                {needOrWant ?? "?"}
+                              </button>
+                            )}
+                            {displayTags.map((t) => (
                               <span key={t} style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
                             ))}
                           </div>
@@ -936,6 +955,10 @@ function MonthlySummary({
   displayCurrency,
   expenseCategories,
   catCustomizations,
+  isPro,
+  isClassifying,
+  onAiClassify,
+  onPredictBudget,
 }: {
   transactions: Transaction[];
   viewMonth: string;
@@ -948,6 +971,10 @@ function MonthlySummary({
   displayCurrency: string;
   expenseCategories: CustomCategory[];
   catCustomizations: CatCustomizations;
+  isPro: boolean;
+  isClassifying: boolean;
+  onAiClassify: () => Promise<void>;
+  onPredictBudget: () => void;
 }) {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -1052,7 +1079,72 @@ function MonthlySummary({
         )}
       </div>
 
+      {/* Needs vs Wants */}
+      {(() => {
+        const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
+        const taggedTxns = expenseTxns.filter((t) => t.tags?.includes("need") || t.tags?.includes("want"));
+        if (!expenseTxns.length || (!isPro && !taggedTxns.length)) return null;
+        const needsTotal = taggedTxns.filter((t) => t.tags?.includes("need")).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+        const wantsTotal = taggedTxns.filter((t) => t.tags?.includes("want")).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+        const classifiedTotal = needsTotal + wantsTotal;
+        const untaggedCount = expenseTxns.length - taggedTxns.length;
+        return (
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "14px 18px", marginBottom: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: classifiedTotal > 0 ? 10 : 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Needs vs Wants</div>
+              {isPro ? (
+                <button
+                  onClick={() => { onAiClassify(); }}
+                  disabled={isClassifying}
+                  style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 700, cursor: isClassifying ? "not-allowed" : "pointer", opacity: isClassifying ? 0.6 : 1 }}
+                >
+                  {isClassifying ? "Classifying…" : "✦ AI classify all"}
+                </button>
+              ) : (
+                <div style={{ fontSize: 11, color: "var(--uf-text-3)" }}>Tap ? on each expense to tag</div>
+              )}
+            </div>
+            {classifiedTotal > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {[
+                  { label: "Needs", total: needsTotal, color: "#22d3a5" },
+                  { label: "Wants", total: wantsTotal, color: "#f97316" },
+                ].map(({ label, total, color }) => (
+                  <div key={label}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                      <span style={{ color, fontWeight: 600 }}>{label}</span>
+                      <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: "var(--uf-text)" }}>
+                        {formatAmount(total)}
+                        <span style={{ color: "var(--uf-text-3)", fontWeight: 400 }}> ({classifiedTotal > 0 ? Math.round((total / classifiedTotal) * 100) : 0}%)</span>
+                      </span>
+                    </div>
+                    <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${classifiedTotal > 0 ? (total / classifiedTotal) * 100 : 0}%`, background: color, borderRadius: 4, transition: "width 0.4s" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {untaggedCount > 0 && (
+              <div style={{ fontSize: 11, color: "var(--uf-text-3)", marginTop: classifiedTotal > 0 ? 8 : 0 }}>
+                {untaggedCount} expense{untaggedCount !== 1 ? "s" : ""} unclassified
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Budget bars */}
+      {byCat.length > 0 && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+          <button
+            onClick={onPredictBudget}
+            style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
+          >
+            ↺ Predict budget from history
+          </button>
+        </div>
+      )}
       {byCat.length > 0 && budgetExpenses && (
         <div className="uf-card" style={{ marginBottom: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1155,16 +1247,18 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [] }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false }: {
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
   preferredCurrencies?: string[];
+  isPro?: boolean;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showImport, setShowImport] = useState(false);
+  const [isClassifying, setIsClassifying] = useState(false);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
@@ -1352,6 +1446,107 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
   }, []);
 
+  const handleToggleNeedWant = useCallback(async (tx: Transaction) => {
+    const tags = tx.tags || [];
+    const hasNeed = tags.includes("need");
+    const hasWant = tags.includes("want");
+    const newTags = !hasNeed && !hasWant
+      ? [...tags, "need"]
+      : hasNeed
+        ? [...tags.filter((t) => t !== "need"), "want"]
+        : tags.filter((t) => t !== "want");
+    const { data, error } = await supabase.from("expenses").update({ tags: newTags }).eq("id", tx.id).select().single();
+    if (!error && data) setTransactions((prev) => prev.map((t) => t.id === tx.id ? { ...t, tags: newTags } : t));
+  }, []);
+
+  const handleAiClassify = useCallback(async () => {
+    if (isClassifying) return;
+    setIsClassifying(true);
+    try {
+      const unclassified = transactions.filter(
+        (t) => t.transaction_type === "expense" && !t.tags?.includes("need") && !t.tags?.includes("want")
+      );
+      if (!unclassified.length) { showToast("All expenses are already classified"); return; }
+
+      const items = [...new Map(
+        unclassified.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
+      ).values()];
+
+      const res = await fetch("/api/classify-needs-wants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      if (!res.ok) throw new Error("classification failed");
+      const { results } = await res.json() as { results: { description: string; needOrWant: string }[] };
+      const classMap = new Map(results.map((r) => [r.description.toLowerCase(), r.needOrWant]));
+
+      const updates = unclassified.map((tx) => ({
+        id: tx.id,
+        tags: [...(tx.tags || []), classMap.get(tx.description.toLowerCase()) ?? "want"],
+      }));
+
+      for (let i = 0; i < updates.length; i += 20) {
+        await Promise.all(
+          updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags }).eq("id", u.id))
+        );
+      }
+      setTransactions((prev) => prev.map((t) => {
+        const u = updates.find((x) => x.id === t.id);
+        return u ? { ...t, tags: u.tags } : t;
+      }));
+      showToast(`${unclassified.length} expense${unclassified.length !== 1 ? "s" : ""} classified`);
+    } catch {
+      showToast("Classification failed — try again", undefined, undefined, true);
+    } finally {
+      setIsClassifying(false);
+    }
+  }, [transactions, isClassifying, showToast]);
+
+  const handlePredictBudget = useCallback(async () => {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const priorMonths = [...new Set(
+      transactions
+        .filter((t) => t.transaction_type === "expense" && !t.date.startsWith(currentMonth))
+        .map((t) => t.date.slice(0, 7))
+    )].sort().slice(-3);
+
+    if (!priorMonths.length) { showToast("Need at least 1 prior month of expenses"); return; }
+
+    const catMonthTotals: Record<string, number[]> = {};
+    for (const month of priorMonths) {
+      const monthExpenses = transactions.filter((t) => t.transaction_type === "expense" && t.date.startsWith(month));
+      const catTotals: Record<string, number> = {};
+      for (const tx of monthExpenses) {
+        const usd = toUSD(tx.amount, tx.currency, rates);
+        catTotals[tx.category] = (catTotals[tx.category] || 0) + usd;
+      }
+      for (const [cat, total] of Object.entries(catTotals)) {
+        if (!catMonthTotals[cat]) catMonthTotals[cat] = [];
+        catMonthTotals[cat].push(total);
+      }
+    }
+    const predicted: Record<string, number> = {};
+    for (const [cat, totals] of Object.entries(catMonthTotals)) {
+      predicted[cat] = Math.round(totals.reduce((s, v) => s + v, 0) / priorMonths.length);
+    }
+    const newBudget = { ...(budgetExpenses || {}), ...predicted };
+    setBudgetExpenses(newBudget);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data: existing } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+      const cur = (existing?.expenses as Record<string, unknown>) || {};
+      await supabase.from("user_budget").upsert({
+        user_id: session.user.id,
+        expenses: { ...cur, ...predicted },
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+    }
+    showToast(`Budget set from ${priorMonths.length}-month average`);
+  }, [transactions, rates, budgetExpenses, showToast]);
+
   const handleSave = useCallback(async (keepOpen: boolean) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -1515,6 +1710,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         displayCurrency={displayCurrency}
         expenseCategories={allExpenseCats}
         catCustomizations={catCustomizations}
+        isPro={isPro}
+        isClassifying={isClassifying}
+        onAiClassify={handleAiClassify}
+        onPredictBudget={handlePredictBudget}
       />
 
       <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "stretch" }}>
@@ -1524,6 +1723,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           justAddedId={justAddedId}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onToggleNeedWant={handleToggleNeedWant}
           rates={rates}
           formatAmount={fmtDisplay}
           catCustomizations={catCustomizations}
