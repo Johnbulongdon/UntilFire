@@ -409,9 +409,14 @@ export default function CsvImportModal({
     fontSize: 13, fontFamily: "Manrope, sans-serif",
   };
 
+  const selectStyle: React.CSSProperties = {
+    ...inputStyle,
+    colorScheme: "dark",
+  };
+
   const selectOptionStyle: React.CSSProperties = {
-    backgroundColor: "#ffffff",
-    color: "#0f172a",
+    backgroundColor: "#1a1a24",
+    color: "#e2e8f0",
     fontFamily: "Manrope, sans-serif",
   };
 
@@ -494,7 +499,7 @@ export default function CsvImportModal({
               ].map(({ label, val, set }) => (
                 <div key={label} style={{ gridColumn: label.startsWith("Amount") ? "1 / -1" : undefined }}>
                   <label style={labelStyle}>{label}</label>
-                  <select value={val} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set(e.target.value)} style={inputStyle}>
+                  <select value={val} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set(e.target.value)} style={selectStyle}>
                     <option value="" style={placeholderOptionStyle}>— select —</option>
                     {headers.map((h: string) => <option key={h} value={h} style={selectOptionStyle}>{h}</option>)}
                   </select>
@@ -504,7 +509,7 @@ export default function CsvImportModal({
 
             <div style={{ marginBottom: 20 }}>
               <label style={labelStyle}>Currency for imported amounts</label>
-              <select value={importCurrency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setImportCurrency(e.target.value)} style={inputStyle}>
+              <select value={importCurrency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setImportCurrency(e.target.value)} style={selectStyle}>
                 {currencyOptions.map((currency) => (
                   <option key={currency} value={currency} style={selectOptionStyle}>{currency} — {CURRENCY_NAMES[currency] ?? currency}</option>
                 ))}
