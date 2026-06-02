@@ -138,7 +138,7 @@ function ProjectInput({
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 120)}
-          style={{ flex: 1, border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
+          style={{ flex: 1, border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
         />
         {value.trim() && (
           <button
@@ -151,29 +151,29 @@ function ProjectInput({
         )}
       </div>
       {focused && value.trim() && suggestions.length > 0 && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
           {suggestions.slice(0, 6).map((t) => (
             <button
               key={t}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => { onAdd(t); setValue(""); }}
-              style={{ width: "100%", textAlign: "left", padding: "8px 14px", fontSize: 13, color: "#19181E", background: "none", border: "none", borderBottom: "1px solid #F1F5F9", cursor: "pointer", fontFamily: "inherit" }}
+              style={{ width: "100%", textAlign: "left", padding: "8px 14px", fontSize: 13, color: "var(--uf-text)", background: "none", border: "none", borderBottom: "1px solid var(--uf-border)", cursor: "pointer", fontFamily: "inherit" }}
             >
-              <span style={{ color: "#94A3B8" }}>#</span>{t}
+              <span style={{ color: "var(--uf-text-3)" }}>#</span>{t}
             </button>
           ))}
         </div>
       )}
       {focused && !value.trim() && existingTags.filter(t => !currentTags.includes(t)).length > 0 && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
           {existingTags.filter(t => !currentTags.includes(t)).slice(0, 6).map((t) => (
             <button
               key={t}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => { onAdd(t); setValue(""); }}
-              style={{ width: "100%", textAlign: "left", padding: "8px 14px", fontSize: 13, color: "#19181E", background: "none", border: "none", borderBottom: "1px solid #F1F5F9", cursor: "pointer", fontFamily: "inherit" }}
+              style={{ width: "100%", textAlign: "left", padding: "8px 14px", fontSize: 13, color: "var(--uf-text)", background: "none", border: "none", borderBottom: "1px solid var(--uf-border)", cursor: "pointer", fontFamily: "inherit" }}
             >
-              <span style={{ color: "#94A3B8" }}>#</span>{t}
+              <span style={{ color: "var(--uf-text-3)" }}>#</span>{t}
             </button>
           ))}
         </div>
@@ -284,8 +284,8 @@ function QuickAddForm({
 
   return (
     <div className="cf-quick-form" style={{
-      background: "#fff",
-      border: "1px solid #E2E8F0",
+      background: "var(--uf-card)",
+      border: "1px solid var(--uf-border)",
       borderRadius: 12,
       overflow: "hidden",
       position: "sticky",
@@ -296,30 +296,30 @@ function QuickAddForm({
       boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
     }}>
       {/* Header */}
-      <div style={{ padding: "14px 20px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #E2E8F0" }}>
+      <div style={{ padding: "14px 20px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--uf-border)" }}>
         <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.1px", textTransform: "uppercase", color: "#047857" }}>
           {editing ? "Edit transaction" : "Quick add"}
         </div>
         {editing ? (
-          <button onClick={onCancelEdit} style={{ background: "transparent", border: "1px solid #E2E8F0", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+          <button onClick={onCancelEdit} style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
             ✕ Cancel
           </button>
         ) : (
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Pinned</div>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Pinned</div>
         )}
       </div>
 
       {/* Body */}
       <div className="cf-quick-form-body" style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1, minHeight: 0 }}>
         {/* Type toggle */}
-        <div style={{ display: "inline-flex", background: "#F1F5F9", borderRadius: 999, padding: 3, alignSelf: "flex-start" }}>
+        <div style={{ display: "inline-flex", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3, alignSelf: "flex-start" }}>
           {(["expense", "income"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setDraft((d) => ({ ...d, transaction_type: t, category: t === "income" ? "salary" : "", sub_category: "", aiSuggestion: null }))}
               style={{
-                background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : "#fff") : "transparent",
-                color: draft.transaction_type === t ? (t === "income" ? "#047857" : "#19181E") : "#64748B",
+                background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : "var(--uf-card)") : "transparent",
+                color: draft.transaction_type === t ? (t === "income" ? "#047857" : "var(--uf-text)") : "var(--uf-text-2)",
                 border: "none", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
                 boxShadow: draft.transaction_type === t && t === "expense" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
               }}
@@ -331,17 +331,17 @@ function QuickAddForm({
 
         {/* Amount input */}
         <div style={{
-          border: `1.5px solid #E2E8F0`,
+          border: `1.5px solid var(--uf-border)`,
           borderRadius: 8,
           padding: "12px 14px 14px",
-          background: "#fff",
+          background: "var(--uf-card)",
           display: "flex", alignItems: "baseline", gap: 6,
           transition: "border-color 0.15s",
         }}
           onFocus={(e) => (e.currentTarget.style.borderColor = "#047857")}
-          onBlur={(e) => (e.currentTarget.style.borderColor = "#E2E8F0")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--uf-border)")}
         >
-          <span style={{ fontSize: 26, fontWeight: 700, color: "#94A3B8", letterSpacing: "-0.6px" }}>$</span>
+          <span style={{ fontSize: 26, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "-0.6px" }}>$</span>
           <input
             ref={amountRef}
             type="text"
@@ -358,7 +358,7 @@ function QuickAddForm({
           <select
             value={draft.currency}
             onChange={(e) => setField("currency", e.target.value)}
-            style={{ fontSize: 11, fontWeight: 700, color: "#64748B", padding: "4px 8px", background: "#F1F5F9", border: "none", borderRadius: 999, cursor: "pointer", fontFamily: "inherit" }}
+            style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-2)", padding: "4px 8px", background: "var(--uf-surface-2)", border: "none", borderRadius: 999, cursor: "pointer", fontFamily: "inherit" }}
           >
             {(preferredCurrencies.length > 0 ? preferredCurrencies : [...SUPPORTED_CURRENCIES]).map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -366,7 +366,7 @@ function QuickAddForm({
 
         {/* Description */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
             Description
             {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
           </label>
@@ -381,7 +381,7 @@ function QuickAddForm({
               if (wasAiCategory) { setField("category", ""); setField("sub_category", ""); }
             }}
             onBlur={handleDescriptionBlur}
-            style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
+            style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
           />
         </div>
 
@@ -405,20 +405,20 @@ function QuickAddForm({
 
         {/* Date */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Date</label>
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Date</label>
           <input
             type="date"
             value={draft.date}
             max={new Date().toISOString().split("T")[0]}
             onChange={(e) => setField("date", e.target.value)}
-            style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "#19181E", background: "#fff", outline: "none", fontFamily: "inherit" }}
+            style={{ border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
           />
         </div>
 
         {/* Category grid */}
         {!isIncome && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Category</label>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Category</label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
               {categories.map((c) => {
                 const isSelected = draft.category === c.key;
