@@ -9,7 +9,7 @@ type Transaction = {
   date: string;
   amount: number;
   currency: string;
-  transaction_type: "expense" | "income";
+  transaction_type: "expense" | "income" | "transfer";
 };
 
 type Props = {
@@ -30,11 +30,11 @@ type ParsedImportTransaction = {
   notes: string;
   amount: number;
   currency: string;
-  transaction_type: "expense" | "income";
+  transaction_type: "expense" | "income" | "transfer";
   category: string;
 };
 
-// ─── CSV parsing ──────────────────────────────────────────────────────────────
+// ─── CSV parsing ───────────────────────────────────────────────────────────────────────────────
 function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   const firstLine = text.split(/\r?\n/)[0] ?? "";
   const delim = firstLine.includes(";") ? ";" : firstLine.includes("\t") ? "\t" : ",";
@@ -89,7 +89,7 @@ function parseDate(s: string): string | null {
 }
 
 function parseAmount(s: string): number | null {
-  s = s.trim().replace(/[^0-9().,\-]/g, "").replace(/,/g, "");
+  s = s.trim().replace(/[^0-9().,-]/g, "").replace(/,/g, "");
   const paren = s.match(/^\((.+)\)$/);
   if (paren) return -Math.abs(parseFloat(paren[1]));
   const n = parseFloat(s);
@@ -393,9 +393,9 @@ export default function CsvImportModal({
   const currentMonthTxns = previewMonthKey ? transactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
   const importedMonthTxns = previewMonthKey ? parsedTransactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
   const currentIncome = currentMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const currentExpenses = currentMonthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const currentExpenses = currentMonthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const importedIncome = importedMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const importedExpenses = importedMonthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const importedExpenses = importedMonthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const projectedIncome = currentIncome + importedIncome;
   const projectedExpenses = currentExpenses + importedExpenses;
   const projectedNet = projectedIncome - projectedExpenses;
