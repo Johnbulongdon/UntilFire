@@ -533,7 +533,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], budgetMode = "manual", histMonthsCount = 0, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -545,6 +545,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   recentTransactions?: { date: string; amount: number; currency: string; transaction_type?: string }[];
+  budgetMode?: "manual" | "history";
+  histMonthsCount?: number;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -1233,8 +1235,15 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       <div className="uf-overview-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
-              Your freedom date
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                Your freedom date
+              </div>
+              {budgetMode === "history" && histMonthsCount > 0 && (
+                <span style={{ fontSize: 10, fontWeight: 700, background: "rgba(5,150,105,0.12)", color: "#059669", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
+                  {histMonthsCount}mo avg
+                </span>
+              )}
             </div>
             {retireYear ? (
               <>
@@ -3938,6 +3947,41 @@ export default function Dashboard() {
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
+  const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
+    try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
+  });
+  const histIncomeAvg = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const byMonth: Record<string, number> = {};
+    recentTransactions.filter(t => t.transaction_type === "income" && !t.date.startsWith(curMonth))
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(t.amount, t.currency, rates); });
+    const vals = Object.values(byMonth);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+  }, [recentTransactions, rates]);
+  const histExpensesAvg = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const byMonth: Record<string, number> = {};
+    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth))
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(t.amount, t.currency, rates); });
+    const vals = Object.values(byMonth);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+  }, [recentTransactions, rates]);
+  const histMonthsCount = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return new Set(recentTransactions.filter(t => !t.date.startsWith(curMonth)).map(t => t.date.slice(0, 7))).size;
+  }, [recentTransactions]);
+  const effectiveIncome = budgetMode === "history" && histIncomeAvg > 0 ? histIncomeAvg : income;
+  const effectiveExpenses = useMemo((): Expenses => {
+    if (budgetMode !== "history" || histExpensesAvg <= 0) return expenses;
+    const numericEntries = Object.entries(expenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number");
+    const currentTotal = numericEntries.reduce((s, [, v]) => s + (v as number), 0);
+    if (currentTotal <= 0) return { ...expenses, other: histExpensesAvg };
+    const scale = histExpensesAvg / currentTotal;
+    return { ...expenses, ...Object.fromEntries(numericEntries.map(([k, v]) => [k, Math.round((v as number) * scale)])) };
+  }, [budgetMode, histExpensesAvg, expenses]);
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
     rawActuals
@@ -4607,9 +4651,30 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
+            {tab === "overview" && histMonthsCount >= 1 && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                <div style={{ display: "flex", background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 999, padding: 3, gap: 2 }}>
+                  {(["manual", "history"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => { setBudgetMode(mode); try { localStorage.setItem("uf_budget_mode", mode); } catch {} }}
+                      style={{
+                        background: budgetMode === mode ? "#047857" : "transparent",
+                        color: budgetMode === mode ? "#fff" : "var(--uf-text-2)",
+                        border: "none", borderRadius: 999, padding: "5px 14px",
+                        fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      {mode === "manual" ? "Manual budget" : `From history`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {tab === "overview" && (
               <DashTab
-                income={income} expenses={expenses}
+                income={effectiveIncome} expenses={effectiveExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                 totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                 mortgageMonthly={mortgageMonthly} growthRate={growthRate}
@@ -4629,6 +4694,8 @@ export default function Dashboard() {
                 fireAge={fireAge}
                 nwSnapshots={nwSnapshots}
                 recentTransactions={recentTransactions}
+                budgetMode={budgetMode}
+                histMonthsCount={histMonthsCount}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
