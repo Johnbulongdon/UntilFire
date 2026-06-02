@@ -105,6 +105,9 @@ function CategoryRow({
   deleteConfirmKey,
   onRequestDelete,
   onCancelDelete,
+  subCategories,
+  onAddSubCategory,
+  onDeleteSubCategory,
 }: {
   cat: CatBreakdown;
   totalSpend: number;
@@ -120,9 +123,20 @@ function CategoryRow({
   deleteConfirmKey: string | null;
   onRequestDelete: (key: string) => void;
   onCancelDelete: () => void;
+  subCategories: string[];
+  onAddSubCategory: (sub: string) => void;
+  onDeleteSubCategory: (sub: string) => void;
 }) {
   const pct = totalSpend > 0 ? (cat.total / totalSpend) * 100 : 0;
   const isDeleteConfirming = deleteConfirmKey === cat.key;
+  const [newSubCat, setNewSubCat] = useState("");
+
+  const handleAddSub = () => {
+    const v = newSubCat.trim();
+    if (!v || subCategories.includes(v)) return;
+    onAddSubCategory(v);
+    setNewSubCat("");
+  };
 
   return (
     <div>
@@ -154,7 +168,7 @@ function CategoryRow({
               if (isEditing) onCloseEdit();
               else onEdit();
             }}
-            title="Customize color & emoji"
+            title="Customize"
             style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: isEditing ? "#059669" : "#CBD5E1", fontSize: 14, lineHeight: 1, flexShrink: 0 }}
           >
             ✏️
@@ -199,7 +213,7 @@ function CategoryRow({
 
           {/* Emoji grid */}
           <div style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600, marginBottom: 6 }}>Emoji</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
             {EMOJI_PALETTE.map(em => (
               <button
                 key={em}
@@ -215,7 +229,45 @@ function CategoryRow({
             ))}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4 }}>
+          {/* Sub-categories */}
+          <div style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 14, marginBottom: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600, marginBottom: 8 }}>Sub-categories</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {subCategories.length === 0 && (
+                <span style={{ fontSize: 12, color: "var(--uf-text-3)" }}>None defined yet</span>
+              )}
+              {subCategories.map(sc => (
+                <div key={sc} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 999, padding: "3px 6px 3px 10px", fontSize: 12, color: "var(--uf-text-2)" }}>
+                  {sc}
+                  <button
+                    onClick={() => onDeleteSubCategory(sc)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 16, lineHeight: 1, padding: "0 2px", display: "flex", alignItems: "center" }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                type="text"
+                placeholder="New sub-category"
+                value={newSubCat}
+                onChange={(e) => setNewSubCat(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddSub(); }}
+                style={{ flex: 1, padding: "6px 10px", border: "1px solid var(--uf-border)", borderRadius: 7, fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none" }}
+              />
+              <button
+                onClick={handleAddSub}
+                disabled={!newSubCat.trim() || subCategories.includes(newSubCat.trim())}
+                style={{ padding: "6px 14px", background: newSubCat.trim() && !subCategories.includes(newSubCat.trim()) ? "#064E3B" : "var(--uf-border)", color: newSubCat.trim() && !subCategories.includes(newSubCat.trim()) ? "#fff" : "var(--uf-text-3)", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 14, borderTop: "1px solid var(--uf-border)", paddingTop: 14 }}>
             {!isCustom && (
               <button
                 onClick={() => setCatCustomizations(prev => { const n = { ...prev }; delete n[cat.key]; return n; })}
@@ -401,6 +453,39 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   });
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
 
+  // Sub-category definitions per category key
+  const [customSubCats, setCustomSubCats] = useState<Record<string, string[]>>(() => {
+    try { return JSON.parse(localStorage.getItem("uf_custom_subcats") || "{}"); } catch { return {}; }
+  });
+
+  const syncCustomSubCats = (updated: Record<string, string[]>) => {
+    localStorage.setItem("uf_custom_subcats", JSON.stringify(updated));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
+        .then(({ data }) => {
+          const cur = (data?.expenses as Record<string, unknown>) || {};
+          supabase.from("user_budget").upsert({
+            user_id: session.user.id,
+            expenses: { ...cur, _custom_subcats: updated },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+        });
+    });
+  };
+
+  const handleAddSubCategory = (catKey: string, sub: string) => {
+    const updated = { ...customSubCats, [catKey]: [...(customSubCats[catKey] || []), sub] };
+    setCustomSubCats(updated);
+    syncCustomSubCats(updated);
+  };
+
+  const handleDeleteSubCategory = (catKey: string, sub: string) => {
+    const updated = { ...customSubCats, [catKey]: (customSubCats[catKey] || []).filter((s) => s !== sub) };
+    setCustomSubCats(updated);
+    syncCustomSubCats(updated);
+  };
+
   // ── Category manager state ──────────────────────────────────────────────────
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCatLabel, setNewCatLabel] = useState("");
@@ -476,17 +561,21 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
       supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
         .then(({ data }) => {
           if (data?.expenses) {
-            const { _custom_cats } = data.expenses as Record<string, unknown>;
-            if (Array.isArray(_custom_cats)) {
-              setCustomCats(_custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
-              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            const exp = data.expenses as Record<string, unknown>;
+            if (Array.isArray(exp._custom_cats)) {
+              setCustomCats(exp._custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(exp._custom_cats));
+            }
+            if (exp._custom_subcats && typeof exp._custom_subcats === "object") {
+              setCustomSubCats(exp._custom_subcats as Record<string, string[]>);
+              localStorage.setItem("uf_custom_subcats", JSON.stringify(exp._custom_subcats));
             }
           }
         });
     });
   }, []);
 
-  // Re-fetch custom categories when the browser tab regains focus
+  // Re-fetch when tab regains focus
   useEffect(() => {
     const refetch = () => {
       supabase.auth.getSession().then(({ data: { session } }) => {
@@ -494,10 +583,14 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
         supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
           .then(({ data }) => {
             if (!data?.expenses) return;
-            const { _custom_cats } = data.expenses as Record<string, unknown>;
-            if (Array.isArray(_custom_cats)) {
-              setCustomCats(_custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
-              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
+            const exp = data.expenses as Record<string, unknown>;
+            if (Array.isArray(exp._custom_cats)) {
+              setCustomCats(exp._custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
+              localStorage.setItem("uf_custom_cats", JSON.stringify(exp._custom_cats));
+            }
+            if (exp._custom_subcats && typeof exp._custom_subcats === "object") {
+              setCustomSubCats(exp._custom_subcats as Record<string, string[]>);
+              localStorage.setItem("uf_custom_subcats", JSON.stringify(exp._custom_subcats));
             }
           });
       });
@@ -526,9 +619,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
       .map((cat) => {
         const catTxns = expTxns.filter((t) => t.category === cat.key);
         const total = catTxns.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-
         const subBreakdown = groupBySubCat(catTxns, rates);
-
         const tagMap: Record<string, number> = {};
         catTxns.forEach((t) => {
           (t.tags || []).forEach((tag) => {
@@ -538,25 +629,13 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
         const tagBreakdown: TagBreakdown[] = Object.entries(tagMap)
           .map(([tag, ttl]) => ({ tag, total: ttl }))
           .sort((a, b) => b.total - a.total);
-
         const base = { color: cat.color, emoji: (cat as { emoji?: string }).emoji ?? "📦" };
         const { color, emoji } = resolveDisplay(base, catCustomizations, cat.key);
-
-        return {
-          key: cat.key,
-          label: cat.label,
-          code: cat.code,
-          color,
-          emoji,
-          total,
-          subBreakdown,
-          tagBreakdown,
-        };
+        return { key: cat.key, label: cat.label, code: cat.code, color, emoji, total, subBreakdown, tagBreakdown };
       })
       .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
   }, [expTxns, rates, allExpenseCats, catCustomizations]);
 
-  // Project groups (by tag)
   const projectGroups = useMemo(() => {
     const tagMap: Record<string, Transaction[]> = {};
     expTxns.forEach((t) => {
@@ -578,10 +657,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     const [py, pm] = viewMonth.split("-").map(Number);
     const d = new Date(py, pm - 2, 1);
     setViewMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-    setExpandedCat(null);
-    setEditingCat(null);
-    setDeleteConfirmKey(null);
-    setExpandedProject(null);
+    setExpandedCat(null); setEditingCat(null); setDeleteConfirmKey(null); setExpandedProject(null);
   };
 
   const handleNextMonth = () => {
@@ -590,10 +666,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     if (next <= currentMonth) {
       setViewMonth(next);
-      setExpandedCat(null);
-      setEditingCat(null);
-      setDeleteConfirmKey(null);
-      setExpandedProject(null);
+      setExpandedCat(null); setEditingCat(null); setDeleteConfirmKey(null); setExpandedProject(null);
     }
   };
 
@@ -715,11 +788,14 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
             deleteConfirmKey={deleteConfirmKey}
             onRequestDelete={setDeleteConfirmKey}
             onCancelDelete={() => setDeleteConfirmKey(null)}
+            subCategories={customSubCats[cat.key] || []}
+            onAddSubCategory={(sub) => handleAddSubCategory(cat.key, sub)}
+            onDeleteSubCategory={(sub) => handleDeleteSubCategory(cat.key, sub)}
           />
         ))}
       </div>
 
-      {/* By Project / Event — only if any transactions have tags */}
+      {/* By Project / Event */}
       {projectGroups.length > 0 && (
         <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--uf-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
