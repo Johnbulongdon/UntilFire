@@ -75,7 +75,7 @@ export default function Image() {
             alignItems: 'center',
           }}
         >
-          <span>Most people don't know</span>
+          <span>Most people don&apos;t know</span>
           <span style={{ color: '#047857' }}>when they can stop working</span>
         </div>
 
