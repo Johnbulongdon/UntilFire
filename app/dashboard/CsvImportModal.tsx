@@ -59,8 +59,16 @@ function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   }
 
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  const headers = parseLine(lines[0]).map((h) => h.replace(/^"|"$/g, ""));
-  const rows = lines.slice(1).map(parseLine);
+  // Find the real header row — some banks (e.g. WeChat Pay) prepend metadata rows
+  const headerIndicators = [/交易时间/, /^\s*date/i, /金额/, /amount/i];
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(lines.length, 30); i++) {
+    const cells = lines[i].split(delim);
+    const hits = cells.filter(c => headerIndicators.some(p => p.test(c.replace(/^"|"$/g, "").trim()))).length;
+    if (hits >= 2) { headerIdx = i; break; }
+  }
+  const headers = parseLine(lines[headerIdx]).map((h) => h.replace(/^"|"$/g, ""));
+  const rows = lines.slice(headerIdx + 1).map(parseLine);
   return { headers, rows };
 }
 
@@ -71,6 +79,9 @@ function parseDate(s: string): string | null {
   if (mdy) return `${mdy[3]}-${mdy[1].padStart(2, "0")}-${mdy[2].padStart(2, "0")}`;
   const dmy = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
   if (dmy) return `${dmy[3]}-${dmy[1].padStart(2, "0")}-${dmy[2].padStart(2, "0")}`;
+  // WeChat Pay and other banks export datetime strings like "2026-05-29 15:14:49"
+  const dt = s.match(/^(\d{4}-\d{2}-\d{2})\s\d{2}:\d{2}:\d{2}$/);
+  if (dt) return dt[1];
   const d = new Date(s);
   if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
   return null;
@@ -159,14 +170,16 @@ function detectCurrencyFromValue(value: string, fallbackCurrency: string): strin
   return null;
 }
 
-function autoDetectColumns(headers: string[]): { date: string; description: string; amount: string; currency: string } {
+function autoDetectColumns(headers: string[]): { date: string; description: string; amount: string; currency: string; type: string } {
+  // Test against original header (not lowercased) so Chinese chars are matched
   const find = (patterns: RegExp[]) =>
-    headers.find((h) => patterns.some((p) => p.test(h.toLowerCase()))) ?? "";
+    headers.find((h) => patterns.some((p) => p.test(h))) ?? "";
   return {
-    date: find([/^date$/, /date/, /posted/, /transaction date/]),
-    description: find([/description/, /memo/, /details/, /narrative/, /payee/, /name/]),
-    amount: find([/^amount$/, /amount/, /debit/, /credit/, /transaction amount/]),
-    currency: find([/^currency$/, /currency/, /currency code/, /^ccy$/, /curr/]),
+    date: find([/交易时间/, /^date$/i, /date/i, /posted/i, /transaction.?date/i]),
+    description: find([/商品/, /交易对方/, /description/i, /memo/i, /details/i, /narrative/i, /payee/i, /name/i]),
+    amount: find([/金额/, /^amount$/i, /amount/i, /debit/i, /credit/i, /transaction.?amount/i]),
+    currency: find([/^currency$/i, /currency.?code/i, /currency/i, /^ccy$/i, /curr/i]),
+    type: find([/收.支/, /^type$/i, /transaction.?type/i, /income/i]),
   };
 }
 
@@ -223,6 +236,7 @@ export default function CsvImportModal({
   const [colDesc, setColDesc] = useState("");
   const [colAmount, setColAmount] = useState("");
   const [colCurrency, setColCurrency] = useState("");
+  const [colType, setColType] = useState("");
   const [importCurrency, setImportCurrency] = useState(defaultCurrency);
   const [flipSigns, setFlipSigns] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -232,14 +246,21 @@ export default function CsvImportModal({
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
-  const processFile = useCallback((file: File) => {
+  const processFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
       setError("Please upload a .csv file.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
+    try {
+      const buffer = await file.arrayBuffer();
+      let text: string;
+      try {
+        // Try UTF-8 first; strict mode throws if bytes are invalid UTF-8 (e.g. GBK files)
+        text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+      } catch {
+        // WeChat Pay and many Chinese bank exports use GBK encoding
+        text = new TextDecoder("gbk").decode(buffer);
+      }
       const { headers: h, rows: r } = parseCSV(text);
       if (h.length < 2) {
         setError("Couldn't parse this file. Make sure it's a CSV with headers.");
@@ -260,12 +281,14 @@ export default function CsvImportModal({
       setColDesc(auto.description);
       setColAmount(auto.amount);
       setColCurrency(auto.currency);
+      setColType(auto.type);
       setImportCurrency(detectedCurrency);
       setFlipSigns(false);
       setError("");
       setStep("map");
-    };
-    reader.readAsText(file);
+    } catch {
+      setError("Failed to read file. Please try again.");
+    }
   }, [defaultCurrency]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -281,6 +304,7 @@ export default function CsvImportModal({
     const descIdx = headers.indexOf(colDesc);
     const amtIdx = headers.indexOf(colAmount);
     const currencyIdx = colCurrency ? headers.indexOf(colCurrency) : -1;
+    const typeIdx = colType ? headers.indexOf(colType) : -1;
 
     const parsed: ParsedImportTransaction[] = [];
     for (const row of rows) {
@@ -288,25 +312,35 @@ export default function CsvImportModal({
       const rawDesc = row[descIdx] ?? "";
       const rawAmount = row[amtIdx] ?? "";
       const rawCurrency = currencyIdx >= 0 ? row[currencyIdx] ?? "" : "";
+      const rawTypeVal = typeIdx >= 0 ? row[typeIdx] ?? "" : "";
 
       const date = parseDate(rawDate);
       const rawAmt = parseAmount(rawAmount);
       if (!date || rawAmt === null || !rawDesc.trim()) continue;
 
-      const amt = flipSigns ? -rawAmt : rawAmt;
-      const type: "expense" | "income" = amt < 0 ? "expense" : "income";
+      let type: "expense" | "income";
+      let amount: number;
+      if (rawTypeVal) {
+        // WeChat Pay: 收入 = income, 支出 = expense; amounts always positive
+        type = /收入|income|credit/i.test(rawTypeVal) ? "income" : "expense";
+        amount = Math.abs(rawAmt);
+      } else {
+        const amt = flipSigns ? -rawAmt : rawAmt;
+        type = amt < 0 ? "expense" : "income";
+        amount = Math.abs(amt);
+      }
       const currency = normalizeCurrencyCode(rawCurrency) || detectCurrencyFromValue(rawAmount, importCurrency) || importCurrency;
       parsed.push({
         date,
         description: rawDesc.trim(),
-        amount: Math.abs(amt),
+        amount,
         currency,
         transaction_type: type,
         category: guessCategory(rawDesc, type),
       });
     }
     return parsed;
-  }, [colAmount, colCurrency, colDate, colDesc, flipSigns, headers, importCurrency, rows]);
+  }, [colAmount, colCurrency, colDate, colDesc, colType, flipSigns, headers, importCurrency, rows]);
 
   const parsedTransactions = buildParsedTransactions();
   const sampleTransaction = parsedTransactions[0] ?? null;
@@ -495,6 +529,7 @@ export default function CsvImportModal({
                 { label: "Date column *", val: colDate, set: setColDate },
                 { label: "Description column *", val: colDesc, set: setColDesc },
                 { label: "Amount column *", val: colAmount, set: setColAmount },
+                { label: "Income/Expense column", val: colType, set: setColType },
                 { label: "Currency column", val: colCurrency, set: setColCurrency },
               ].map(({ label, val, set }) => (
                 <div key={label} style={{ gridColumn: label.startsWith("Amount") ? "1 / -1" : undefined }}>
