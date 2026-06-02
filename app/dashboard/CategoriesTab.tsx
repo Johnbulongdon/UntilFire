@@ -82,7 +82,7 @@ function Chevron({ open }: { open: boolean }) {
     <svg
       width="16" height="16" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s", color: "#94A3B8", flexShrink: 0 }}
+      style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s", color: "var(--uf-text-3)", flexShrink: 0 }}
     >
       <path d="m9 18 6-6-6-6" />
     </svg>
@@ -132,19 +132,19 @@ function CategoryRow({
         style={{
           display: "grid", gridTemplateColumns: "36px 1fr 160px 80px 24px",
           gap: 12, alignItems: "center", padding: "14px 20px",
-          borderTop: "1px solid #F1F5F9", cursor: "pointer",
-          background: open || isEditing ? "#F8FAFC" : "transparent",
+          borderTop: "1px solid var(--uf-border)", cursor: "pointer",
+          background: open || isEditing ? "var(--uf-surface)" : "transparent",
         }}
-        onMouseEnter={(e) => { if (!open && !isEditing) (e.currentTarget as HTMLElement).style.background = "#F8FAFC"; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = open || isEditing ? "#F8FAFC" : "transparent"; }}
+        onMouseEnter={(e) => { if (!open && !isEditing) (e.currentTarget as HTMLElement).style.background = "var(--uf-surface)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = open || isEditing ? "var(--uf-surface)" : "transparent"; }}
       >
         <div style={{ width: 36, height: 36, borderRadius: "50%", background: cat.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
           {cat.emoji}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#19181E" }}>{cat.label}</div>
-            <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 1 }}>{cat.subBreakdown.length > 0 ? `${cat.subBreakdown.length} sub-categories` : "No sub-categories"}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--uf-text)" }}>{cat.label}</div>
+            <div style={{ fontSize: 11.5, color: "var(--uf-text-3)", marginTop: 1 }}>{cat.subBreakdown.length > 0 ? `${cat.subBreakdown.length} sub-categories` : "No sub-categories"}</div>
           </div>
           <button
             onClick={(e) => {
@@ -160,12 +160,12 @@ function CategoryRow({
         </div>
         {/* Bar */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ flex: 1, height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
+          <div style={{ flex: 1, height: 6, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${pct}%`, background: cat.color, borderRadius: 99 }} />
           </div>
-          <span style={{ fontSize: 11, color: "#64748B", fontVariantNumeric: "tabular-nums", minWidth: 28, textAlign: "right" }}>{pct.toFixed(0)}%</span>
+          <span style={{ fontSize: 11, color: "var(--uf-text-2)", fontVariantNumeric: "tabular-nums", minWidth: 28, textAlign: "right" }}>{pct.toFixed(0)}%</span>
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(cat.total)}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(cat.total)}</div>
         <Chevron open={open} />
       </div>
 
@@ -176,11 +176,11 @@ function CategoryRow({
             <span style={{ fontSize: 11, fontWeight: 700, color: "#047857", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Customize {cat.label}
             </span>
-            <button onClick={onCloseEdit} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>✕</button>
+            <button onClick={onCloseEdit} style={{ background: "none", border: "none", color: "var(--uf-text-3)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>✕</button>
           </div>
 
           {/* Color swatches */}
-          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 6 }}>Color</div>
+          <div style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600, marginBottom: 6 }}>Color</div>
           <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
             {COLOR_PALETTE.map(c => (
               <button
@@ -196,7 +196,7 @@ function CategoryRow({
           </div>
 
           {/* Emoji grid */}
-          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 6 }}>Emoji</div>
+          <div style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600, marginBottom: 6 }}>Emoji</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
             {EMOJI_PALETTE.map(em => (
               <button
@@ -204,7 +204,7 @@ function CategoryRow({
                 onClick={() => setCatCustomizations(prev => ({ ...prev, [cat.key]: { ...prev[cat.key], emoji: em } }))}
                 style={{
                   width: 34, height: 34, background: cat.emoji === em ? "#DCFCE7" : "transparent",
-                  border: cat.emoji === em ? "1.5px solid #059669" : "1.5px solid #E2E8F0",
+                  border: cat.emoji === em ? "1.5px solid #059669" : "1.5px solid var(--uf-border)",
                   borderRadius: 6, cursor: "pointer", fontSize: 18, lineHeight: 1,
                 }}
               >
@@ -217,7 +217,7 @@ function CategoryRow({
             {!isCustom && (
               <button
                 onClick={() => setCatCustomizations(prev => { const n = { ...prev }; delete n[cat.key]; return n; })}
-                style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                style={{ fontSize: 12, color: "var(--uf-text-3)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
               >
                 Reset to default
               </button>
@@ -245,7 +245,7 @@ function CategoryRow({
                     </span>
                     <button
                       onClick={onCancelDelete}
-                      style={{ fontSize: 12, color: "#64748B", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                      style={{ fontSize: 12, color: "var(--uf-text-2)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
                     >
                       Cancel
                     </button>
@@ -259,20 +259,20 @@ function CategoryRow({
 
       {/* Expanded sub-categories + tags */}
       {open && (
-        <div style={{ background: "#F8FAFC", borderTop: "1px solid #F1F5F9", padding: "12px 20px 16px 68px" }}>
+        <div style={{ background: "var(--uf-surface)", borderTop: "1px solid var(--uf-border)", padding: "12px 20px 16px 68px" }}>
           {cat.subBreakdown.length > 0 && (
             <>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#94A3B8", marginBottom: 10 }}>Sub-categories</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 10 }}>Sub-categories</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {cat.subBreakdown.map((sc) => {
                   const scPct = cat.total > 0 ? (sc.total / cat.total) * 100 : 0;
                   return (
                     <div key={sc.name} style={{ display: "grid", gridTemplateColumns: "140px 1fr 70px", gap: 10, alignItems: "center" }}>
-                      <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>{sc.name}</span>
-                      <div style={{ height: 4, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
+                      <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontWeight: 500 }}>{sc.name}</span>
+                      <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${scPct}%`, background: cat.color, opacity: 0.65, borderRadius: 99 }} />
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(sc.total)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(sc.total)}</span>
                     </div>
                   );
                 })}
@@ -282,12 +282,12 @@ function CategoryRow({
 
           {cat.tagBreakdown.length > 0 && (
             <div style={{ marginTop: cat.subBreakdown.length > 0 ? 16 : 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#94A3B8", marginBottom: 10 }}>Projects / Events</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 10 }}>Projects / Events</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {cat.tagBreakdown.map((tb) => (
-                  <div key={tb.tag} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 600, color: "#64748B" }}>
-                    <span style={{ color: "#94A3B8" }}>#</span>{tb.tag}
-                    <span style={{ color: "#19181E" }}>{formatAmount(tb.total)}</span>
+                  <div key={tb.tag} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)" }}>
+                    <span style={{ color: "var(--uf-text-3)" }}>#</span>{tb.tag}
+                    <span style={{ color: "var(--uf-text)" }}>{formatAmount(tb.total)}</span>
                   </div>
                 ))}
               </div>
@@ -295,7 +295,7 @@ function CategoryRow({
           )}
 
           {cat.subBreakdown.length === 0 && cat.tagBreakdown.length === 0 && (
-            <div style={{ fontSize: 13, color: "#94A3B8" }}>No breakdown available. Add tags or sub-categories when logging expenses.</div>
+            <div style={{ fontSize: 13, color: "var(--uf-text-3)" }}>No breakdown available. Add tags or sub-categories when logging expenses.</div>
           )}
         </div>
       )}
@@ -326,39 +326,39 @@ function ProjectRow({
         style={{
           display: "grid", gridTemplateColumns: "1fr 80px 24px",
           gap: 12, alignItems: "center", padding: "14px 20px",
-          borderTop: "1px solid #F1F5F9", cursor: "pointer",
-          background: open ? "#F8FAFC" : "transparent",
+          borderTop: "1px solid var(--uf-border)", cursor: "pointer",
+          background: open ? "var(--uf-surface)" : "transparent",
         }}
-        onMouseEnter={(e) => { if (!open) (e.currentTarget as HTMLElement).style.background = "#F8FAFC"; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = open ? "#F8FAFC" : "transparent"; }}
+        onMouseEnter={(e) => { if (!open) (e.currentTarget as HTMLElement).style.background = "var(--uf-surface)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = open ? "var(--uf-surface)" : "transparent"; }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 14, color: "#94A3B8", fontWeight: 600 }}>#</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#19181E" }}>{tag}</span>
-          <span style={{ fontSize: 12, color: "#94A3B8" }}>{catBreakdown.length} categories</span>
+          <span style={{ fontSize: 14, color: "var(--uf-text-3)", fontWeight: 600 }}>#</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>{tag}</span>
+          <span style={{ fontSize: 12, color: "var(--uf-text-3)" }}>{catBreakdown.length} categories</span>
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(total)}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(total)}</div>
         <Chevron open={open} />
       </div>
 
       {open && (
-        <div style={{ background: "#F8FAFC", borderTop: "1px solid #F1F5F9", padding: "12px 20px 16px 36px" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#94A3B8", marginBottom: 10 }}>By Category</div>
+        <div style={{ background: "var(--uf-surface)", borderTop: "1px solid var(--uf-border)", padding: "12px 20px 16px 36px" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 10 }}>By Category</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {catBreakdown.map((cat) => (
               <div key={cat.key}>
                 <div style={{ display: "grid", gridTemplateColumns: "24px 120px 1fr 70px", gap: 10, alignItems: "center", marginBottom: cat.subBreakdown.length > 0 ? 6 : 0 }}>
                   <div style={{ width: 20, height: 20, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E" }}>{cat.label}</span>
-                  <div style={{ height: 4, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)" }}>{cat.label}</span>
+                  <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${total > 0 ? (cat.total / total) * 100 : 0}%`, background: cat.color, opacity: 0.7, borderRadius: 99 }} />
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#19181E", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(cat.total)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(cat.total)}</span>
                 </div>
                 {cat.subBreakdown.length > 0 && (
                   <div style={{ paddingLeft: 34, display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
                     {cat.subBreakdown.map((sc) => (
-                      <span key={sc.name} style={{ fontSize: 11.5, color: "#64748B", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 4, padding: "2px 8px" }}>
+                      <span key={sc.name} style={{ fontSize: 11.5, color: "var(--uf-text-2)", background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 4, padding: "2px 8px" }}>
                         {sc.name}: {formatAmount(sc.total)}
                       </span>
                     ))}
@@ -625,19 +625,19 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   };
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: "60px 0", color: "#94A3B8" }}>Loading…</div>;
+    return <div style={{ textAlign: "center", padding: "60px 0", color: "var(--uf-text-3)" }}>Loading…</div>;
   }
 
   return (
     <div>
       {/* ── All Categories Manager ──────────────────────────────────────── */}
-      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", marginBottom: 24 }}>
+      <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", marginBottom: 24 }}>
         {/* Header */}
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--uf-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B" }}>All Categories</span>
           <button
             onClick={() => { setShowAddForm((v) => !v); setManageCatKey(null); }}
-            style={{ display: "flex", alignItems: "center", gap: 5, background: showAddForm ? "#F1F5F9" : "#064E3B", color: showAddForm ? "#64748B" : "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 5, background: showAddForm ? "var(--uf-surface-2)" : "#064E3B", color: showAddForm ? "var(--uf-text-2)" : "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             {showAddForm ? "✕ Cancel" : "+ Add"}
           </button>
@@ -645,9 +645,9 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
 
         {/* Add form */}
         {showAddForm && (
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", background: "#F8FAFC" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--uf-border)", background: "var(--uf-surface)" }}>
             <div style={{ marginBottom: 10 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 4 }}>Category name</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 4 }}>Category name</label>
               <input
                 type="text"
                 autoFocus
@@ -655,22 +655,22 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
                 value={newCatLabel}
                 onChange={(e) => setNewCatLabel(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleAddCustomCat(); if (e.key === "Escape") setShowAddForm(false); }}
-                style={{ width: "100%", padding: "8px 10px", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 14, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--uf-border)", borderRadius: 7, fontSize: 14, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", boxSizing: "border-box" }}
               />
             </div>
             <div style={{ marginBottom: 10 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Color</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>Color</label>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {COLOR_PALETTE.map((c) => (
-                  <button key={c} onClick={() => setNewCatColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: newCatColor === c ? "2px solid #0F172A" : "2px solid transparent", cursor: "pointer", outline: newCatColor === c ? "2px solid #fff" : "none", outlineOffset: "-3px" }} />
+                  <button key={c} onClick={() => setNewCatColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: newCatColor === c ? "2px solid var(--uf-text)" : "2px solid transparent", cursor: "pointer", outline: newCatColor === c ? "2px solid var(--uf-card)" : "none", outlineOffset: "-3px" }} />
                 ))}
               </div>
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Emoji <span style={{ fontWeight: 400, color: "#94A3B8" }}>(optional)</span></label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>Emoji <span style={{ fontWeight: 400, color: "var(--uf-text-3)" }}>(optional)</span></label>
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {EMOJI_PALETTE.map((em) => (
-                  <button key={em} onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: newCatEmoji === em ? "2px solid #064E3B" : "1px solid #E2E8F0", background: newCatEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button key={em} onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: newCatEmoji === em ? "2px solid #064E3B" : "1px solid var(--uf-border)", background: newCatEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {em}
                   </button>
                 ))}
@@ -680,11 +680,11 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
               <button
                 onClick={handleAddCustomCat}
                 disabled={!newCatLabel.trim()}
-                style={{ flex: 1, padding: "8px 0", background: newCatLabel.trim() ? "#064E3B" : "#E2E8F0", color: newCatLabel.trim() ? "#fff" : "#94A3B8", border: "none", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: newCatLabel.trim() ? "pointer" : "not-allowed" }}
+                style={{ flex: 1, padding: "8px 0", background: newCatLabel.trim() ? "#064E3B" : "var(--uf-border)", color: newCatLabel.trim() ? "#fff" : "var(--uf-text-3)", border: "none", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: newCatLabel.trim() ? "pointer" : "not-allowed" }}
               >
                 Add Category
               </button>
-              <button onClick={() => setShowAddForm(false)} style={{ padding: "8px 16px", background: "transparent", color: "#64748B", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 14, cursor: "pointer" }}>
+              <button onClick={() => setShowAddForm(false)} style={{ padding: "8px 16px", background: "transparent", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 7, fontSize: 14, cursor: "pointer" }}>
                 Cancel
               </button>
             </div>
@@ -699,12 +699,12 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
             const isEditing = manageCatKey === cat.key;
             return (
               <div key={cat.key}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid var(--uf-border)" }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", background: color, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: emoji ? 16 : 11, color: "#fff", fontWeight: 700 }}>
                     {emoji || cat.code}
                   </div>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#0F172A" }}>{cat.label}</span>
-                  <span style={{ fontSize: 11, padding: "2px 6px", background: "#F1F5F9", borderRadius: 4, color: "#64748B", fontWeight: 600, marginRight: 4 }}>{cat.code}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--uf-text)" }}>{cat.label}</span>
+                  <span style={{ fontSize: 11, padding: "2px 6px", background: "var(--uf-surface-2)", borderRadius: 4, color: "var(--uf-text-2)", fontWeight: 600, marginRight: 4 }}>{cat.code}</span>
                   <button
                     onClick={() => openManageEdit(cat)}
                     title="Edit appearance"
@@ -714,20 +714,20 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
                   </button>
                 </div>
                 {isEditing && (
-                  <div style={{ padding: "12px 20px 16px", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC" }}>
+                  <div style={{ padding: "12px 20px 16px", borderBottom: "1px solid var(--uf-border)", background: "var(--uf-surface)" }}>
                     <div style={{ marginBottom: 10 }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Color</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>Color</label>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         {COLOR_PALETTE.map((c) => (
-                          <button key={c} onClick={() => setEditColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: editColor === c ? "2px solid #0F172A" : "2px solid transparent", cursor: "pointer", outline: editColor === c ? "2px solid #fff" : "none", outlineOffset: "-3px" }} />
+                          <button key={c} onClick={() => setEditColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: editColor === c ? "2px solid var(--uf-text)" : "2px solid transparent", cursor: "pointer", outline: editColor === c ? "2px solid var(--uf-card)" : "none", outlineOffset: "-3px" }} />
                         ))}
                       </div>
                     </div>
                     <div style={{ marginBottom: 14 }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Emoji</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>Emoji</label>
                       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                         {EMOJI_PALETTE.map((em) => (
-                          <button key={em} onClick={() => setEditEmoji(editEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: editEmoji === em ? "2px solid #064E3B" : "1px solid #E2E8F0", background: editEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <button key={em} onClick={() => setEditEmoji(editEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: editEmoji === em ? "2px solid #064E3B" : "1px solid var(--uf-border)", background: editEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             {em}
                           </button>
                         ))}
@@ -745,11 +745,11 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
                       </button>
                       <button
                         onClick={() => { setCatCustomizations((prev) => { const n = { ...prev }; delete n[cat.key]; return n; }); setManageCatKey(null); }}
-                        style={{ padding: "7px 12px", background: "transparent", color: "#94A3B8", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}
+                        style={{ padding: "7px 12px", background: "transparent", color: "var(--uf-text-3)", border: "1px solid var(--uf-border)", borderRadius: 7, fontSize: 13, cursor: "pointer" }}
                       >
                         Reset
                       </button>
-                      <button onClick={() => setManageCatKey(null)} style={{ marginLeft: "auto", padding: "7px 12px", background: "transparent", color: "#64748B", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>
+                      <button onClick={() => setManageCatKey(null)} style={{ marginLeft: "auto", padding: "7px 12px", background: "transparent", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>
                         Cancel
                       </button>
                     </div>
@@ -761,8 +761,8 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
 
           {/* Custom categories divider + rows */}
           {customCats.length > 0 && (
-            <div style={{ padding: "6px 20px 2px", background: "#F8FAFC", borderBottom: "1px solid #F1F5F9" }}>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "#94A3B8" }}>Custom</span>
+            <div style={{ padding: "6px 20px 2px", background: "var(--uf-surface)", borderBottom: "1px solid var(--uf-border)" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "var(--uf-text-3)" }}>Custom</span>
             </div>
           )}
           {customCats.map((cat) => {
@@ -770,12 +770,12 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
             const isEditing = manageCatKey === cat.key;
             return (
               <div key={cat.key}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid var(--uf-border)" }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", background: color, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: emoji ? 16 : 11, color: "#fff", fontWeight: 700 }}>
                     {emoji || cat.code}
                   </div>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#0F172A" }}>{cat.label}</span>
-                  <span style={{ fontSize: 11, padding: "2px 6px", background: "#F1F5F9", borderRadius: 4, color: "#64748B", fontWeight: 600, marginRight: 4 }}>{cat.code}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--uf-text)" }}>{cat.label}</span>
+                  <span style={{ fontSize: 11, padding: "2px 6px", background: "var(--uf-surface-2)", borderRadius: 4, color: "var(--uf-text-2)", fontWeight: 600, marginRight: 4 }}>{cat.code}</span>
                   <button
                     onClick={() => openManageEdit(cat)}
                     title="Edit"
@@ -792,30 +792,30 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
                   </button>
                 </div>
                 {isEditing && (
-                  <div style={{ padding: "12px 20px 16px", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC" }}>
+                  <div style={{ padding: "12px 20px 16px", borderBottom: "1px solid var(--uf-border)", background: "var(--uf-surface)" }}>
                     <div style={{ marginBottom: 10 }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 4 }}>Name</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 4 }}>Name</label>
                       <input
                         type="text"
                         value={editLabel}
                         onChange={(e) => setEditLabel(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") handleUpdateCustomCat(cat.key); if (e.key === "Escape") setManageCatKey(null); }}
-                        style={{ width: "100%", padding: "7px 10px", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 14, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box" }}
+                        style={{ width: "100%", padding: "7px 10px", border: "1px solid var(--uf-border)", borderRadius: 7, fontSize: 14, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", boxSizing: "border-box" }}
                       />
                     </div>
                     <div style={{ marginBottom: 10 }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Color</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>Color</label>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         {COLOR_PALETTE.map((c) => (
-                          <button key={c} onClick={() => setEditColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: editColor === c ? "2px solid #0F172A" : "2px solid transparent", cursor: "pointer", outline: editColor === c ? "2px solid #fff" : "none", outlineOffset: "-3px" }} />
+                          <button key={c} onClick={() => setEditColor(c)} style={{ width: 24, height: 24, borderRadius: "50%", background: c, border: editColor === c ? "2px solid var(--uf-text)" : "2px solid transparent", cursor: "pointer", outline: editColor === c ? "2px solid var(--uf-card)" : "none", outlineOffset: "-3px" }} />
                         ))}
                       </div>
                     </div>
                     <div style={{ marginBottom: 14 }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Emoji <span style={{ fontWeight: 400, color: "#94A3B8" }}>(optional)</span></label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>Emoji <span style={{ fontWeight: 400, color: "var(--uf-text-3)" }}>(optional)</span></label>
                       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                         {EMOJI_PALETTE.map((em) => (
-                          <button key={em} onClick={() => setEditEmoji(editEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: editEmoji === em ? "2px solid #064E3B" : "1px solid #E2E8F0", background: editEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <button key={em} onClick={() => setEditEmoji(editEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: editEmoji === em ? "2px solid #064E3B" : "1px solid var(--uf-border)", background: editEmoji === em ? "#F0FDF4" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             {em}
                           </button>
                         ))}
@@ -825,11 +825,11 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
                       <button
                         onClick={() => handleUpdateCustomCat(cat.key)}
                         disabled={!editLabel.trim()}
-                        style={{ flex: 1, padding: "7px 0", background: editLabel.trim() ? "#064E3B" : "#E2E8F0", color: editLabel.trim() ? "#fff" : "#94A3B8", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: editLabel.trim() ? "pointer" : "not-allowed" }}
+                        style={{ flex: 1, padding: "7px 0", background: editLabel.trim() ? "#064E3B" : "var(--uf-border)", color: editLabel.trim() ? "#fff" : "var(--uf-text-3)", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: editLabel.trim() ? "pointer" : "not-allowed" }}
                       >
                         Save
                       </button>
-                      <button onClick={() => setManageCatKey(null)} style={{ padding: "7px 12px", background: "transparent", color: "#64748B", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>
+                      <button onClick={() => setManageCatKey(null)} style={{ padding: "7px 12px", background: "transparent", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>
                         Cancel
                       </button>
                     </div>

@@ -1251,7 +1251,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
               <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Progress</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: progress >= 50 ? "#059669" : "#0F172A", fontFamily: "Manrope, sans-serif" }}>{progress.toFixed(0)}%</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: progress >= 50 ? "#059669" : "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{progress.toFixed(0)}%</div>
             </div>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
               <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Target</div>
@@ -1293,7 +1293,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           {topTasks.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {topTasks.map((task, index) => (
-                <div key={task.label} style={{ display: "flex", gap: 12, alignItems: "flex-start", paddingTop: index === 0 ? 0 : 10, borderTop: index === 0 ? "none" : "1px solid #F1F5F9" }}>
+                <div key={task.label} style={{ display: "flex", gap: 12, alignItems: "flex-start", paddingTop: index === 0 ? 0 : 10, borderTop: index === 0 ? "none" : "1px solid var(--uf-border)" }}>
                   {index < 2 && typeof task.progressPct === "number" ? (
                     <div
                       aria-label={task.progressAria || `Task ${index + 1} progress`}
@@ -1384,7 +1384,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </div>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
               <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Cash ready</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: availableCash > 0 ? "#0F172A" : "#94A3B8", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(availableCash, true)}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: availableCash > 0 ? "var(--uf-text)" : "var(--uf-text-3)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(availableCash, true)}</div>
             </div>
           </div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingNote}</div>
@@ -1399,7 +1399,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </div>
             <div>
               <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>{hasActuals ? "So far" : "Current"}</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: hasActuals ? "#0F172A" : "#64748B", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(actualOrPlannedExpenses)}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: hasActuals ? "var(--uf-text)" : "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(actualOrPlannedExpenses)}</div>
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontFamily: "Manrope, sans-serif", fontSize: 12, color: "var(--uf-text-2)" }}>
@@ -1450,7 +1450,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               </div>
             )}
           </div>
-          <div style={{ height: 8, background: "#E2E8F0", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ height: 8, background: "var(--uf-border)", borderRadius: 999, overflow: "hidden" }}>
             <div style={{ width: `${trackedMonths > 0 ? (onTrackMonths / trackedMonths) * 100 : 0}%`, height: "100%", background: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "linear-gradient(90deg, #059669, #34D399)" : "linear-gradient(90deg, #F59E0B, #FBBF24)", borderRadius: 999 }} />
           </div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{consistencySupport}</div>
@@ -1479,7 +1479,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 <div key={row.label}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5, fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
                     <span style={{ color: "var(--uf-text-2)" }}>{row.label}</span>
-                    <span style={{ color: row.text ?? "#0F172A", fontWeight: 800 }}>{fmtMoney(row.value, true)}</span>
+                    <span style={{ color: row.text ?? "var(--uf-text)", fontWeight: 800 }}>{fmtMoney(row.value, true)}</span>
                   </div>
                   <div style={{ height: 8, background: "var(--uf-surface-2)", borderRadius: 999, overflow: "hidden" }}>
                     <div style={{ width: `${row.pct}%`, height: "100%", background: row.color, borderRadius: 999 }} />
@@ -1555,16 +1555,16 @@ function _CalculatorsTab() {
         {CALCULATORS.map(c => (
           <Link key={c.href} href={c.href} target="_blank" style={{ textDecoration: "none" }}>
             <div
-              style={{ background: "#ffffff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "24px 20px", height: "100%", display: "flex", flexDirection: "column", gap: 10, cursor: "pointer", transition: "border-color 0.15s" }}
+              style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "24px 20px", height: "100%", display: "flex", flexDirection: "column", gap: 10, cursor: "pointer", transition: "border-color 0.15s" }}
               onMouseEnter={e => (e.currentTarget.style.borderColor = c.color)}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = "#E2E8F0")}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--uf-border)")}
             >
               <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, border: `1px solid ${c.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: c.color, letterSpacing: "-1px" }}>
                 {c.label}
               </div>
               <p style={{ fontSize: 11, fontWeight: 700, color: c.color, letterSpacing: "1.5px", textTransform: "uppercase", margin: 0 }}>{c.tag}</p>
-              <p style={{ fontSize: 16, fontWeight: 700, color: "#19181E", margin: 0, letterSpacing: "-0.3px" }}>{c.title}</p>
-              <p style={{ fontSize: 13, color: "#64748B", margin: 0, lineHeight: 1.6, flexGrow: 1 }}>{c.description}</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--uf-text)", margin: 0, letterSpacing: "-0.3px" }}>{c.title}</p>
+              <p style={{ fontSize: 13, color: "var(--uf-text-2)", margin: 0, lineHeight: 1.6, flexGrow: 1 }}>{c.description}</p>
               <p style={{ fontSize: 12, color: c.color, fontWeight: 600, margin: 0 }}>Open calculator →</p>
             </div>
           </Link>

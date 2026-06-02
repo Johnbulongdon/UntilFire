@@ -429,14 +429,14 @@ function QuickAddForm({
                     onClick={() => { setField("category", c.key); setField("sub_category", ""); setShowSubForm(false); }}
                     style={{
                       background: isSelected ? "#ECFDF5" : "transparent",
-                      border: `1px solid ${isSelected ? "#047857" : "#E2E8F0"}`,
+                      border: `1px solid ${isSelected ? "#047857" : "var(--uf-border)"}`,
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer", transition: "all 0.12s",
                     }}
                   >
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "#64748B", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
                   </button>
                 );
               })}
@@ -446,12 +446,12 @@ function QuickAddForm({
               <button
                 type="button"
                 onClick={() => setShowCatForm(true)}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#94A3B8", padding: "2px 0", fontFamily: "inherit", textAlign: "left", alignSelf: "flex-start" }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--uf-text-3)", padding: "2px 0", fontFamily: "inherit", textAlign: "left", alignSelf: "flex-start" }}
               >
                 + Add category
               </button>
             ) : (
-              <div style={{ border: "1px solid #E2E8F0", borderRadius: 10, padding: "12px", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ border: "1px solid var(--uf-border)", borderRadius: 10, padding: "12px", background: "var(--uf-surface)", display: "flex", flexDirection: "column", gap: 10 }}>
                 <input
                   autoFocus
                   placeholder="Category name"
@@ -470,7 +470,7 @@ function QuickAddForm({
                     }
                     if (e.key === "Escape") { setShowCatForm(false); setNewCatLabel(""); }
                   }}
-                  style={{ border: "1px solid #E2E8F0", borderRadius: 6, padding: "7px 10px", fontSize: 13, outline: "none", fontFamily: "inherit", background: "#fff" }}
+                  style={{ border: "1px solid var(--uf-border)", borderRadius: 6, padding: "7px 10px", fontSize: 13, outline: "none", fontFamily: "inherit", background: "var(--uf-card)", color: "var(--uf-text)" }}
                 />
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {colorPalette.map((c) => (
@@ -481,11 +481,11 @@ function QuickAddForm({
                     />
                   ))}
                 </div>
-                <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 4, marginTop: 2 }}>Emoji <span style={{ fontWeight: 400, color: "#94A3B8" }}>optional</span></div>
+                <div style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600, marginBottom: 4, marginTop: 2 }}>Emoji <span style={{ fontWeight: 400, color: "var(--uf-text-3)" }}>optional</span></div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
                   {emojiPalette.map((em) => (
                     <button key={em} type="button" onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)}
-                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "#DCFCE7" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "#059669" : "#E2E8F0"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
+                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "#DCFCE7" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "#059669" : "var(--uf-border)"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
                       {em}
                     </button>
                   ))}
@@ -509,7 +509,7 @@ function QuickAddForm({
                   <button
                     type="button"
                     onClick={() => { setShowCatForm(false); setNewCatLabel(""); }}
-                    style={{ flex: 1, background: "#F1F5F9", color: "#64748B", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                    style={{ flex: 1, background: "var(--uf-surface-2)", color: "var(--uf-text-2)", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
                   >
                     Cancel
                   </button>
@@ -522,8 +522,8 @@ function QuickAddForm({
         {/* Sub-category picker */}
         {!isIncome && draft.category && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>
-              Sub-Category <span style={{ color: "#94A3B8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Sub-Category <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {(allSubCats[draft.category] || []).map((sc) => {
@@ -532,11 +532,11 @@ function QuickAddForm({
                   <button key={sc} type="button"
                     onClick={() => setField("sub_category", isSelected ? "" : sc)}
                     style={{
-                      background: isSelected ? "#ECFDF5" : "#F1F5F9",
+                      background: isSelected ? "#ECFDF5" : "var(--uf-surface-2)",
                       border: `1px solid ${isSelected ? "#047857" : "transparent"}`,
                       borderRadius: 999, padding: "5px 12px",
                       fontSize: 12, fontWeight: 600,
-                      color: isSelected ? "#047857" : "#64748B",
+                      color: isSelected ? "#047857" : "var(--uf-text-2)",
                       cursor: "pointer", fontFamily: "inherit",
                     }}>
                     {sc}
@@ -559,13 +559,13 @@ function QuickAddForm({
                     if (e.key === "Escape") { setShowSubForm(false); setNewSubLabel(""); }
                   }}
                   onBlur={() => { setShowSubForm(false); setNewSubLabel(""); }}
-                  style={{ border: "1px solid #E2E8F0", borderRadius: 999, padding: "5px 12px", fontSize: 12, outline: "none", fontFamily: "inherit", width: 150, background: "#fff" }}
+                  style={{ border: "1px solid var(--uf-border)", borderRadius: 999, padding: "5px 12px", fontSize: 12, outline: "none", fontFamily: "inherit", width: 150, background: "var(--uf-card)", color: "var(--uf-text)" }}
                 />
               ) : (
                 <button
                   type="button"
                   onClick={() => setShowSubForm(true)}
-                  style={{ background: "none", border: "1px dashed #CBD5E1", borderRadius: 999, padding: "5px 12px", fontSize: 12, color: "#94A3B8", cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ background: "none", border: "1px dashed #CBD5E1", borderRadius: 999, padding: "5px 12px", fontSize: 12, color: "var(--uf-text-3)", cursor: "pointer", fontFamily: "inherit" }}
                 >
                   + Add
                 </button>
@@ -576,8 +576,8 @@ function QuickAddForm({
 
         {/* Project / Event */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>
-            Project / Event <span style={{ color: "#94A3B8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+            Project / Event <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
           </label>
           {draft.tags.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -603,7 +603,7 @@ function QuickAddForm({
         {/* Income category dropdown */}
         {isIncome && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "#64748B" }}>Category</label>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Category</label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
               {INCOME_CATEGORIES.map((c) => {
                 const isSelected = draft.category === c.key;
@@ -614,14 +614,14 @@ function QuickAddForm({
                     onClick={() => setField("category", c.key)}
                     style={{
                       background: isSelected ? "#ECFDF5" : "transparent",
-                      border: `1px solid ${isSelected ? "#047857" : "#E2E8F0"}`,
+                      border: `1px solid ${isSelected ? "#047857" : "var(--uf-border)"}`,
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer",
                     }}
                   >
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "#64748B", textAlign: "center" }}>{c.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "var(--uf-text-2)", textAlign: "center" }}>{c.label}</span>
                   </button>
                 );
               })}
@@ -631,7 +631,7 @@ function QuickAddForm({
       </div>
 
       {/* Footer */}
-      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", borderTop: "1px solid #E2E8F0", background: "linear-gradient(180deg, transparent, #FAFBFC)", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", borderTop: "1px solid var(--uf-border)", background: "linear-gradient(180deg, transparent, var(--uf-card))", display: "flex", flexDirection: "column", gap: 10 }}>
         {!editing && (
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 12 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -651,12 +651,12 @@ function QuickAddForm({
                   boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                 }} />
               </span>
-              <strong style={{ color: "#19181E" }}>Save &amp; add another</strong>
+              <strong style={{ color: "var(--uf-text)" }}>Save &amp; add another</strong>
             </span>
-            <span style={{ color: "#94A3B8", fontSize: 11 }}>
-              <span style={{ border: "1px solid #E2E8F0", borderBottomWidth: 2, borderRadius: 4, padding: "0 4px", fontSize: 10, fontWeight: 600, color: "#64748B", background: "#FAFBFC" }}>⌘</span>
+            <span style={{ color: "var(--uf-text-3)", fontSize: 11 }}>
+              <span style={{ border: "1px solid var(--uf-border)", borderBottomWidth: 2, borderRadius: 4, padding: "0 4px", fontSize: 10, fontWeight: 600, color: "var(--uf-text-2)", background: "var(--uf-surface)" }}>⌘</span>
               {" "}
-              <span style={{ border: "1px solid #E2E8F0", borderBottomWidth: 2, borderRadius: 4, padding: "0 4px", fontSize: 10, fontWeight: 600, color: "#64748B", background: "#FAFBFC" }}>↵</span>
+              <span style={{ border: "1px solid var(--uf-border)", borderBottomWidth: 2, borderRadius: 4, padding: "0 4px", fontSize: 10, fontWeight: 600, color: "var(--uf-text-2)", background: "var(--uf-surface)" }}>↵</span>
             </span>
           </label>
         )}
@@ -704,7 +704,7 @@ function QuickAddForm({
             bottom: 0;
             z-index: 2;
             padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
-            background: linear-gradient(180deg, rgba(250,251,252,0.92), #fff 24%) !important;
+            background: linear-gradient(180deg, rgba(250,251,252,0.92), var(--uf-card) 24%) !important;
           }
         }
       `}</style>
@@ -765,12 +765,12 @@ function TransactionList({
   }, [filtered]);
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", height: "calc(100vh - 48px)" }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", height: "calc(100vh - 48px)" }}>
       {/* List header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #E2E8F0", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid var(--uf-border)", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", letterSpacing: "-0.2px" }}>Transactions</span>
-          <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600, marginLeft: 8 }}>{filtered.length}</span>
+          <span style={{ fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600, marginLeft: 8 }}>{filtered.length}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* Search */}
@@ -783,7 +783,7 @@ function TransactionList({
               placeholder="Search…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ background: "#F2F4F6", border: "1px solid transparent", borderRadius: 999, padding: "6px 12px 6px 30px", fontSize: 13, color: "#19181E", width: 180, outline: "none", fontFamily: "inherit" }}
+              style={{ background: "var(--uf-surface-2)", border: "1px solid transparent", borderRadius: 999, padding: "6px 12px 6px 30px", fontSize: 13, color: "var(--uf-text)", width: 180, outline: "none", fontFamily: "inherit" }}
             />
           </div>
           {/* Filter pills */}
@@ -792,11 +792,11 @@ function TransactionList({
               key={f}
               onClick={() => setFilter(f)}
               style={{
-                background: filter === f ? "#ECFDF5" : "#F2F4F6",
+                background: filter === f ? "#ECFDF5" : "var(--uf-surface-2)",
                 border: `1px solid ${filter === f ? "#6EE7B7" : "transparent"}`,
                 borderRadius: 999, padding: "6px 14px",
                 fontSize: 12, fontWeight: 600,
-                color: filter === f ? "#047857" : "#64748B",
+                color: filter === f ? "#047857" : "var(--uf-text-2)",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
@@ -809,7 +809,7 @@ function TransactionList({
       {/* Scrollable list */}
       <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
         {groups.length === 0 ? (
-          <div style={{ padding: "60px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "#94A3B8", textAlign: "center" }}>
+          <div style={{ padding: "60px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--uf-text-3)", textAlign: "center" }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 17 9 13l3 3 7-7" /><path d="M14 6h5v5" />
@@ -825,9 +825,9 @@ function TransactionList({
             const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : -usd); }, 0);
             return (
               <div key={date}>
-                <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "#94A3B8" }}>
+                <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-3)" }}>
                   <span>{dayLabel(date, todayYmd)}</span>
-                  <span style={{ color: "#64748B", fontVariantNumeric: "tabular-nums" }}>
+                  <span style={{ color: "var(--uf-text-2)", fontVariantNumeric: "tabular-nums" }}>
                     {dayNet > 0 ? "+" : dayNet < 0 ? "−" : ""}{formatAmount(Math.abs(dayNet))}
                   </span>
                 </div>
@@ -848,11 +848,11 @@ function TransactionList({
                         style={{
                           display: "grid", gridTemplateColumns: "36px 1fr auto 28px",
                           gap: 14, alignItems: "center", padding: "12px 20px",
-                          borderTop: "1px solid #F1F5F9", cursor: "pointer",
+                          borderTop: "1px solid var(--uf-border)", cursor: "pointer",
                           background: isEditing ? "#ECFDF5" : wasJustAdded ? "#DCFCE7" : "transparent",
                           transition: "background 0.12s",
                         }}
-                        onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLDivElement).style.background = "#F8FAFC"; }}
+                        onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLDivElement).style.background = "var(--uf-surface)"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isEditing ? "#ECFDF5" : "transparent"; }}
                       >
                         {/* Category chip */}
@@ -862,25 +862,25 @@ function TransactionList({
 
                         {/* Description + meta */}
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: "#19181E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
-                            <span style={{ fontSize: 11.5, color: "#94A3B8" }}>{cat?.label || tx.category}</span>
-                            {tx.sub_category && <span style={{ fontSize: 11, color: "#64748B" }}>· {tx.sub_category}</span>}
+                            <span style={{ fontSize: 11.5, color: "var(--uf-text-3)" }}>{cat?.label || tx.category}</span>
+                            {tx.sub_category && <span style={{ fontSize: 11, color: "var(--uf-text-2)" }}>· {tx.sub_category}</span>}
                             {(tx.tags || []).slice(0, 2).map((t) => (
-                              <span key={t} style={{ background: "#F1F5F9", color: "#64748B", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
+                              <span key={t} style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
                             ))}
                           </div>
                         </div>
 
                         {/* Amount */}
-                        <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "#19181E", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
                           {isIncome ? "+" : "−"}{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                         </div>
 
                         {/* Delete */}
                         <button
                           onClick={(e) => { e.stopPropagation(); onDelete(tx); }}
-                          style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", border: "none", color: "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: 0.35, transition: "opacity 0.12s, background 0.12s" }}
+                          style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", border: "none", color: "var(--uf-text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: 0.35, transition: "opacity 0.12s, background 0.12s" }}
                           className="tx-delete-btn"
                           aria-label="delete"
                         >
@@ -967,12 +967,12 @@ function MonthlySummary({
   const prevSpent = prevTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
 
   const kpiCard = (label: string, value: number, color: string, hint: string) => (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "#64748B", marginBottom: 8 }}>{label}</div>
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-2)", marginBottom: 8 }}>{label}</div>
       <div style={{ fontSize: 28, fontWeight: 800, color, letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums", lineHeight: 1.05 }}>
         {label === "Net" && value >= 0 ? "+" : ""}{formatAmount(value)}
       </div>
-      <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 10, fontVariantNumeric: "tabular-nums" }}>{hint}</div>
+      <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 10, fontVariantNumeric: "tabular-nums" }}>{hint}</div>
     </div>
   );
 
@@ -983,17 +983,17 @@ function MonthlySummary({
         <div>
           <div style={{ fontWeight: 700, fontSize: 22, color: "#064E3B", letterSpacing: "-0.4px" }}>{monthLabel}</div>
           {isMixed && (
-            <div style={{ fontSize: 11, color: ratesFallback ? "#D97706" : "#94A3B8", marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: ratesFallback ? "#D97706" : "var(--uf-text-3)", marginTop: 2 }}>
               Totals shown in {displayCurrency} · {ratesFallback ? "⚠ estimated rates (live fetch failed)" : "live rates"}
             </div>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "var(--uf-text-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m14 6-6 6 6 6" /></svg>
           </button>
           <div style={{ padding: "0 8px", fontSize: 14, fontWeight: 700, color: "#064E3B", minWidth: 130, textAlign: "center", letterSpacing: "-0.2px" }}>{monthLabel}</div>
-          <button onClick={onNextMonth} disabled={isCurrentMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: isCurrentMonth ? "#CBD5E1" : "#64748B", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center" }}>
+          <button onClick={onNextMonth} disabled={isCurrentMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: isCurrentMonth ? "#CBD5E1" : "var(--uf-text-2)", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6 6 6-6 6" /></svg>
           </button>
         </div>
@@ -1002,12 +1002,12 @@ function MonthlySummary({
       {/* KPI grid */}
       <div className="uf-kpi-grid" style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
         {kpiCard("Income", incomeTotal, "#059669", prevIncome > 0 ? `vs ${formatAmount(prevIncome)} last month` : "No prior month data")}
-        {kpiCard("Spent", expenseTotal, "#19181E", prevSpent > 0 ? `vs ${formatAmount(prevSpent)} last month` : "No prior month data")}
+        {kpiCard("Spent", expenseTotal, "var(--uf-text)", prevSpent > 0 ? `vs ${formatAmount(prevSpent)} last month` : "No prior month data")}
         {kpiCard("Net", net, net >= 0 ? "#047857" : "#DC2626", net >= 0 && incomeTotal > 0 ? `${((net / incomeTotal) * 100).toFixed(1)}% savings rate` : "Spending exceeds income")}
 
         {/* Donut card */}
         {byCat.length > 0 && (
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
             <div style={{ flexShrink: 0 }}>
               <ResponsiveContainer width={88} height={88}>
                 <PieChart>
@@ -1016,7 +1016,7 @@ function MonthlySummary({
                   </Pie>
                   <ChartTooltip
                     formatter={(v) => [formatAmount(Number(v ?? 0)), ""]}
-                    contentStyle={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
+                    contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -1025,8 +1025,8 @@ function MonthlySummary({
               {byCat.slice(0, 4).map((cat) => (
                 <div key={cat.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: cat.color, flexShrink: 0 }} />
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, color: "#19181E" }}>{cat.label}</span>
-                  <span style={{ color: "#94A3B8", fontVariantNumeric: "tabular-nums" }}>{expenseTotal ? Math.round((cat.total / expenseTotal) * 100) : 0}%</span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, color: "var(--uf-text)" }}>{cat.label}</span>
+                  <span style={{ color: "var(--uf-text-3)", fontVariantNumeric: "tabular-nums" }}>{expenseTotal ? Math.round((cat.total / expenseTotal) * 100) : 0}%</span>
                 </div>
               ))}
             </div>
@@ -1045,13 +1045,13 @@ function MonthlySummary({
               return (
                 <div key={cat.key}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                    <span style={{ color: "#64748B" }}>{cat.label}</span>
+                    <span style={{ color: "var(--uf-text-2)" }}>{cat.label}</span>
                     <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: over ? "#DC2626" : cat.color }}>
                       {formatAmount(cat.total)}
-                      {budget > 0 ? <span style={{ color: "#94A3B8", fontWeight: 400 }}> / {formatAmount(budget)}</span> : <span style={{ color: "#94A3B8", fontWeight: 400 }}> ({((cat.total / expenseTotal) * 100).toFixed(0)}%)</span>}
+                      {budget > 0 ? <span style={{ color: "var(--uf-text-3)", fontWeight: 400 }}> / {formatAmount(budget)}</span> : <span style={{ color: "var(--uf-text-3)", fontWeight: 400 }}> ({((cat.total / expenseTotal) * 100).toFixed(0)}%)</span>}
                     </span>
                   </div>
-                  <div style={{ height: 4, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${barPct}%`, background: over ? "#DC2626" : cat.color, borderRadius: 4, transition: "width 0.4s" }} />
                   </div>
                   {over && <div style={{ fontSize: 11, color: "#DC2626", marginTop: 2 }}>over by {formatAmount(cat.total - budget)}</div>}
@@ -1125,10 +1125,10 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 40, opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity 200ms" }} />
-      <div className="cf-mobile-drawer" style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "#fff", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
+      <div className="cf-mobile-drawer" style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "var(--uf-card)", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 16px 4px", position: "relative" }}>
           <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", cursor: "pointer" }} />
-          <button onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "#94A3B8", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
+          <button onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "var(--uf-text-3)", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>{children}</div>
       </div>
@@ -1457,7 +1457,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   };
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: "60px 0", color: "#94A3B8" }}>Loading transactions…</div>;
+    return <div style={{ textAlign: "center", padding: "60px 0", color: "var(--uf-text-3)" }}>Loading transactions…</div>;
   }
 
   return (
