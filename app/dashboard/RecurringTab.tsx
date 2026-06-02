@@ -96,7 +96,12 @@ function detectRecurring(txns: RawTx[], rates: Record<string, number>): { expens
     const frequency = inferFrequency(avgGap);
     if (frequency === "irregular" && avgGap < 5) continue;
 
-    const avgAmountUSD = group.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0) / group.length;
+    const amounts = group.map(t => toUSD(t.amount, t.currency, rates));
+    const avgAmountUSD = amounts.reduce((s, a) => s + a, 0) / amounts.length;
+    if (avgAmountUSD > 0) {
+      const stdDev = Math.sqrt(amounts.reduce((s, a) => s + (a - avgAmountUSD) ** 2, 0) / amounts.length);
+      if (stdDev / avgAmountUSD > 0.2) continue; // skip if amounts vary more than 20%
+    }
     const lastSeenDate = sortedDates[sortedDates.length - 1];
     const mostRecent = group.find(t => t.date === lastSeenDate)!;
 
