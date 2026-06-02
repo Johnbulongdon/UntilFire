@@ -832,7 +832,8 @@ function TransactionList({
                   </span>
                 </div>
                 {txns
-                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .slice()
+                  .sort((a, b) => toUSD(b.amount, b.currency, rates) - toUSD(a.amount, a.currency, rates))
                   .map((tx) => {
                     const isIncome = tx.transaction_type === "income";
                     const cat = allCategories.find((c) => c.key === tx.category);
