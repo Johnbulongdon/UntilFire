@@ -4676,7 +4676,7 @@ export default function Dashboard() {
                         fontFamily: "inherit",
                       }}
                     >
-                      {mode === "manual" ? "Manual budget" : `From history`}
+                      {mode === "manual" ? "Manual budget" : `${histMonthsCount}mo history`}
                     </button>
                   ))}
                 </div>

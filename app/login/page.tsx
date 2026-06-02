@@ -2,7 +2,7 @@
 import Logo from '@/app/components/Logo'
 import { supabase } from '@/lib/supabase'
 import { siteUrl } from '@/lib/site'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getAcquisitionSource } from '@/lib/acquisition'
@@ -11,6 +11,16 @@ import { peekCalculatorPrefill } from '@/lib/journey'
 
 export default function LoginPage() {
   const router = useRouter()
+  const [hasPrefill, setHasPrefill] = useState(false)
+  const [prefillYear, setPrefillYear] = useState<number | null>(null)
+
+  useEffect(() => {
+    const prefill = peekCalculatorPrefill()
+    if (prefill) {
+      setHasPrefill(true)
+      if (prefill.retireYear) setPrefillYear(prefill.retireYear)
+    }
+  }, [])
 
   const getOAuthRedirectTo = () => {
     if (typeof window === 'undefined') return siteUrl('/auth/callback')
@@ -91,9 +101,18 @@ export default function LoginPage() {
           <div style={{ marginBottom: 10 }}>
             <Logo variant="light" size={28} />
           </div>
-          <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.5 }}>
-            Sign in to track your progress<br />toward financial independence
-          </div>
+          {hasPrefill ? (
+            <div style={{ fontSize: 15, color: '#0F172A', lineHeight: 1.5, fontWeight: 700 }}>
+              {prefillYear
+                ? <>Your freedom year is <span style={{ color: '#059669' }}>{prefillYear}</span>.<br />Save your plan to track it.</>
+                : <>Your plan is ready.<br /><span style={{ color: '#64748B', fontWeight: 400 }}>Sign in to save and track it.</span></>
+              }
+            </div>
+          ) : (
+            <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.5 }}>
+              Sign in to track your progress<br />toward financial independence
+            </div>
+          )}
         </div>
 
         {/* Card */}
