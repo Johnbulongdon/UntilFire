@@ -1095,10 +1095,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       {/* ── Greeting header ─────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>
             Good {timeOfDay}{firstName ? `, ${firstName}` : ""}
           </div>
-          <div style={{ fontSize: 13, color: "#64748B", marginTop: 3, fontFamily: "Manrope, sans-serif" }}>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 3, fontFamily: "Manrope, sans-serif" }}>
             {formattedDate}{cityName ? ` · ${cityName}` : ""}
           </div>
         </div>
@@ -1233,32 +1233,32 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       <div className="uf-overview-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
               Your freedom date
             </div>
             {retireYear ? (
               <>
-                <div style={{ fontSize: "clamp(32px, 6vw, 44px)", fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.04em", lineHeight: 1 }}>{retireYear}</div>
-                <div style={{ fontSize: 14, color: "#475569", fontFamily: "Manrope, sans-serif", marginTop: 6 }}>
+                <div style={{ fontSize: "clamp(32px, 6vw, 44px)", fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.04em", lineHeight: 1 }}>{retireYear}</div>
+                <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 6 }}>
                   {fireYear ? `${fireYear} years away` : "Projected from your current plan"}
                   {fireAge > 0 && fireYear ? ` · around age ${fireAge + fireYear}` : ""}
                 </div>
               </>
             ) : (
-              <div style={{ fontSize: 16, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>Finish your setup to unlock your freedom date.</div>
+              <div style={{ fontSize: 16, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Finish your setup to unlock your freedom date.</div>
             )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Progress</div>
+            <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Progress</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: progress >= 50 ? "#059669" : "#0F172A", fontFamily: "Manrope, sans-serif" }}>{progress.toFixed(0)}%</div>
             </div>
-            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Target</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(fireTarget, true)}</div>
+            <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Target</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(fireTarget, true)}</div>
             </div>
           </div>
-          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
             Your date moves most with your savings pace, spending, and invested growth.
           </div>
         </div>
@@ -1266,7 +1266,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Best way to move your date
               </div>
               {monthlyExpenses > 0 && (
@@ -1283,10 +1283,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
               {monthlyExpenses > 0 ? emergencyFundPlan.headline : "Top 3 tasks right now"}
             </div>
-            <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>
               {monthlyExpenses > 0 ? emergencyFundPlan.guidance : "Focus on the next few actions most likely to protect or improve your freedom date."}
             </div>
           </div>
@@ -1344,7 +1344,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1.4 }}>
                         {task.label}
                       </div>
                       {task.impactYears > 0 && (
@@ -1358,7 +1358,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                         Progress: {task.progressText}
                       </div>
                     )}
-                    <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.5, marginTop: 4 }}>
+                    <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.5, marginTop: 4 }}>
                       {task.detail}
                     </div>
                   </div>
@@ -1366,7 +1366,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>Finish your setup to generate your next best tasks.</div>
+            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Finish your setup to generate your next best tasks.</div>
           )}
         </div>
       </div>
@@ -1374,35 +1374,35 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       {/* ── Monthly operating row ────────────────────────────────────────── */}
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em" }}>{fmtMoney(goalContribution)}</div>
-          <div style={{ fontSize: 14, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingHeadline}</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em" }}>{fmtMoney(goalContribution)}</div>
+          <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingHeadline}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Invested now</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(investedBalance, true)}</div>
+            <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Invested now</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(investedBalance, true)}</div>
             </div>
-            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Cash ready</div>
+            <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Cash ready</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: availableCash > 0 ? "#0F172A" : "#94A3B8", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(availableCash, true)}</div>
             </div>
           </div>
-          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingNote}</div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingNote}</div>
         </div>
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s spending</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s spending</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             <div>
-              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Planned</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(monthlyExpenses)}</div>
+              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Planned</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(monthlyExpenses)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>{hasActuals ? "So far" : "Current"}</div>
+              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>{hasActuals ? "So far" : "Current"}</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: hasActuals ? "#0F172A" : "#64748B", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(actualOrPlannedExpenses)}</div>
             </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontFamily: "Manrope, sans-serif", fontSize: 12, color: "#64748B" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontFamily: "Manrope, sans-serif", fontSize: 12, color: "var(--uf-text-2)" }}>
             <span>{hasActuals ? `${Math.round(spendingProgressPct)}% of plan used` : "Budget watch"}</span>
             {hasActuals && <span>Day {now.getDate()} of {monthDays}</span>}
           </div>
@@ -1422,51 +1422,51 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             )}
           </div>
           {hasActuals && (
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "#94A3B8", fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "var(--uf-text-3)", fontFamily: "Manrope, sans-serif" }}>
               <span>Expected pace by today: {fmtMoney(expectedSpendToDate, true)}</span>
               <span>{fmtMoney(Math.max(monthlyExpenses - actualExpenses, 0), true)} left</span>
             </div>
           )}
           <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
-          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
           <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>View categories →</button>
         </div>
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Consistency</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Consistency</div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
               <div style={{ fontSize: 28, fontWeight: 800, color: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "#059669" : "#F59E0B", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
                 {consistencyLabel}
               </div>
-              <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", marginTop: 6, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 6, lineHeight: 1.6 }}>
                 {consistencyDetail}
               </div>
             </div>
             {trackedMonths > 0 && (
-              <div style={{ minWidth: 72, borderRadius: 12, background: "#F8FAFC", border: "1px solid #E2E8F0", padding: "10px 12px", textAlign: "center" }}>
-                <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>On plan</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>{onTrackMonths}/{trackedMonths}</div>
+              <div style={{ minWidth: 72, borderRadius: 12, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", padding: "10px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>On plan</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{onTrackMonths}/{trackedMonths}</div>
               </div>
             )}
           </div>
           <div style={{ height: 8, background: "#E2E8F0", borderRadius: 999, overflow: "hidden" }}>
             <div style={{ width: `${trackedMonths > 0 ? (onTrackMonths / trackedMonths) * 100 : 0}%`, height: "100%", background: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "linear-gradient(90deg, #059669, #34D399)" : "linear-gradient(90deg, #F59E0B, #FBBF24)", borderRadius: 999 }} />
           </div>
-          <div style={{ fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{consistencySupport}</div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{consistencySupport}</div>
         </div>
       </div>
 
       {/* ── Lower support row ────────────────────────────────────────────── */}
       <div>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
           <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
             <div style={{ width: 140, height: 140, borderRadius: "50%", background: moneyMixGradient, position: "relative", flexShrink: 0 }}>
               <div style={{ position: "absolute", inset: 18, borderRadius: "50%", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 14 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Total</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", lineHeight: 1.1 }}>{fmtMoney(positiveMoneyTotal, true)}</div>
+                  <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Total</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1.1 }}>{fmtMoney(positiveMoneyTotal, true)}</div>
                 </div>
               </div>
             </div>
@@ -1478,17 +1478,17 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               ].map((row) => (
                 <div key={row.label}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5, fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
-                    <span style={{ color: "#475569" }}>{row.label}</span>
+                    <span style={{ color: "var(--uf-text-2)" }}>{row.label}</span>
                     <span style={{ color: row.text ?? "#0F172A", fontWeight: 800 }}>{fmtMoney(row.value, true)}</span>
                   </div>
-                  <div style={{ height: 8, background: "#F1F5F9", borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ height: 8, background: "var(--uf-surface-2)", borderRadius: 999, overflow: "hidden" }}>
                     <div style={{ width: `${row.pct}%`, height: "100%", background: row.color, borderRadius: 999 }} />
                   </div>
                 </div>
               ))}
-              <div style={{ fontSize: 12, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{moneyMixSourceLabel}</div>
+              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>{moneyMixSourceLabel}</div>
               {(totalDebt + mortgageBalance) > 0 && (
-                <div style={{ paddingTop: 4, borderTop: "1px solid #F1F5F9", fontSize: 13, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>
+                <div style={{ paddingTop: 4, borderTop: "1px solid var(--uf-border)", fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
                   Debt: <span style={{ color: "#DC2626", fontWeight: 800 }}>{fmtMoney(totalDebt + mortgageBalance, true)}</span>
                 </div>
               )}
