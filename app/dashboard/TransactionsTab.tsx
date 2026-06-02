@@ -58,13 +58,13 @@ type Transaction = {
   notes?: string;
   category: string;
   tags: string[];
-  transaction_type: "expense" | "income";
+  transaction_type: "expense" | "income" | "transfer";
   sub_category: string | null;
 };
 
 type DraftTransaction = {
   id: string | null;
-  transaction_type: "expense" | "income";
+  transaction_type: "expense" | "income" | "transfer";
   amount: string;
   currency: string;
   description: string;
@@ -93,7 +93,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
 // ─── AI Categorization ────────────────────────────────────────────────────────────────────────────
 async function aiCategorize(
   description: string,
-  type: "expense" | "income"
+  type: "expense" | "income" | "transfer"
 ): Promise<{ category: string; tags: string[] }> {
   try {
     const res = await fetch("/api/categorise", {
@@ -226,7 +226,7 @@ function QuickAddForm({
   const [showSubForm, setShowSubForm] = useState(false);
   const [newSubLabel, setNewSubLabel] = useState("");
 
-  const categories = draft.transaction_type === "income" ? INCOME_CATEGORIES : allExpenseCats;
+  const categories = draft.transaction_type === "income" ? INCOME_CATEGORIES : draft.transaction_type === "transfer" ? [] : allExpenseCats;
 
   const setField = useCallback(<K extends keyof DraftTransaction>(k: K, v: DraftTransaction[K]) => {
     setDraft((d) => ({ ...d, [k]: v }));
@@ -234,7 +234,7 @@ function QuickAddForm({
 
   const handleDescriptionBlur = async () => {
     const desc = draft.description.trim();
-    if (desc.length < 4 || draft.transaction_type === "income") return;
+    if (desc.length < 4 || draft.transaction_type !== "expense") return;
     setCategorizing(true);
     try {
       const { category, tags } = await aiCategorize(desc, "expense");
@@ -251,7 +251,7 @@ function QuickAddForm({
     if (draft.aiSuggestion) setField("category", draft.aiSuggestion);
   };
 
-  const canSave = parseFloat(draft.amount) > 0 && draft.category;
+  const canSave = parseFloat(draft.amount) > 0 && (draft.transaction_type === "transfer" || draft.category);
 
   const handleSubmit = async (forceKeepOpen?: boolean) => {
     if (!canSave || saving) return;
@@ -316,18 +316,18 @@ function QuickAddForm({
       <div className="cf-quick-form-body" style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1, minHeight: 0 }}>
         {/* Type toggle */}
         <div style={{ display: "inline-flex", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3, alignSelf: "flex-start" }}>
-          {(["expense", "income"] as const).map((t) => (
+          {(["expense", "income", "transfer"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setDraft((d) => ({ ...d, transaction_type: t, category: t === "income" ? "salary" : "", sub_category: "", aiSuggestion: null }))}
               style={{
-                background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : "var(--uf-card)") : "transparent",
-                color: draft.transaction_type === t ? (t === "income" ? "#047857" : "var(--uf-text)") : "var(--uf-text-2)",
+                background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : t === "transfer" ? "#F3F4F6" : "var(--uf-card)") : "transparent",
+                color: draft.transaction_type === t ? (t === "income" ? "#047857" : t === "transfer" ? "#6B7280" : "var(--uf-text)") : "var(--uf-text-2)",
                 border: "none", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
                 boxShadow: draft.transaction_type === t && t === "expense" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
               }}
             >
-              {t === "expense" ? "Expense" : "Income"}
+              {t === "expense" ? "Expense" : t === "income" ? "Income" : "Transfer"}
             </button>
           ))}
         </div>
@@ -752,7 +752,7 @@ function TransactionList({
   expenseCategories: CustomCategory[];
 }) {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "expense" | "income">("all");
+  const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
   const todayYmd = new Date().toISOString().split("T")[0];
   const allCategories = useMemo(() => [...expenseCategories, ...INCOME_CATEGORIES], [expenseCategories]);
 
@@ -804,7 +804,7 @@ function TransactionList({
             />
           </div>
           {/* Filter pills */}
-          {(["all", "expense", "income"] as const).map((f) => (
+          {(["all", "expense", "income", "transfer"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -817,7 +817,7 @@ function TransactionList({
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
-              {f === "all" ? "All" : f === "expense" ? "Out" : "In"}
+              {f === "all" ? "All" : f === "expense" ? "Out" : f === "income" ? "In" : "Transfer"}
             </button>
           ))}
         </div>
@@ -839,7 +839,7 @@ function TransactionList({
           </div>
         ) : (
           groups.map(([date, txns]) => {
-            const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : -usd); }, 0);
+            const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : t.transaction_type === "expense" ? -usd : 0); }, 0);
             return (
               <div key={date}>
                 <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-3)" }}>
@@ -961,7 +961,7 @@ function MonthlySummary({
   const isMixed = currencies.length > 1;
 
   const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const expenseTotal = monthTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const expenseTotal = monthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const net = incomeTotal - expenseTotal;
   const byCat = expenseCategories.map((cat) => {
     const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
@@ -970,7 +970,7 @@ function MonthlySummary({
       ...cat,
       color,
       emoji,
-      total: monthTxns.filter((t) => t.transaction_type !== "income" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+      total: monthTxns.filter((t) => t.transaction_type === "expense" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
     };
   })
     .filter((c) => c.total > 0)
@@ -983,7 +983,7 @@ function MonthlySummary({
   })();
   const prevTxns = transactions.filter((t) => t.date.startsWith(prevMonth));
   const prevIncome = prevTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const prevSpent = prevTxns.filter((t) => t.transaction_type !== "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const prevSpent = prevTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
 
   const kpiCard = (label: string, value: number, color: string, hint: string) => (
     <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
@@ -1364,7 +1364,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       currency: draft.currency,
       description: draft.description,
       notes: draft.notes || "",
-      category: draft.category || (draft.transaction_type === "income" ? "other_income" : "other"),
+      category: draft.category || (draft.transaction_type === "income" ? "other_income" : draft.transaction_type === "transfer" ? "transfer" : "other"),
       sub_category: draft.sub_category || null,
       tags: draft.tags,
       transaction_type: draft.transaction_type,
