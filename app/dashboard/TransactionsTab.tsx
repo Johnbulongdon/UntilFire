@@ -55,6 +55,7 @@ type Transaction = {
   amount: number;
   currency: string;
   description: string;
+  notes?: string;
   category: string;
   tags: string[];
   transaction_type: "expense" | "income";
@@ -67,6 +68,7 @@ type DraftTransaction = {
   amount: string;
   currency: string;
   description: string;
+  notes: string;
   date: string;
   category: string;
   sub_category: string;
@@ -80,6 +82,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   amount: "",
   currency: "USD",
   description: "",
+  notes: "",
   date: new Date().toISOString().split("T")[0],
   category: "",
   sub_category: "",
@@ -382,6 +385,20 @@ function QuickAddForm({
             }}
             onBlur={handleDescriptionBlur}
             style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
+          />
+        </div>
+
+        {/* Notes */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+            Notes <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+          </label>
+          <textarea
+            placeholder="Add a note…"
+            value={draft.notes}
+            onChange={(e) => setField("notes", e.target.value)}
+            rows={2}
+            style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.5 }}
           />
         </div>
 
@@ -1345,6 +1362,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       amount: parseFloat(draft.amount),
       currency: draft.currency,
       description: draft.description,
+      notes: draft.notes || "",
       category: draft.category || (draft.transaction_type === "income" ? "other_income" : "other"),
       sub_category: draft.sub_category || null,
       tags: draft.tags,
@@ -1391,6 +1409,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       amount: String(tx.amount),
       currency: tx.currency,
       description: tx.description,
+      notes: tx.notes || "",
       date: tx.date,
       category: tx.category,
       sub_category: tx.sub_category || "",
