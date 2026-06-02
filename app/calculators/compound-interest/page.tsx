@@ -49,6 +49,41 @@ export default function CompoundInterestPage() {
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'What is compound interest?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Compound interest is interest calculated on both your initial principal and the interest already accumulated. Unlike simple interest, compounding grows exponentially over time. For example, $10,000 invested at 7% grows to $19,672 after 10 years with compound interest, versus $17,000 with simple interest.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'How does compound interest affect FIRE planning?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Compound interest is the engine behind FIRE (Financial Independence Retire Early). Starting earlier gives your money more time to compound, dramatically shortening the timeline to financial independence. Investing $500/month starting at age 25 instead of 35 can result in more than double the portfolio at retirement due to compounding.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'What is the Rule of 72?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'The Rule of 72 is a quick way to estimate how long it takes to double your money at a given interest rate. Divide 72 by your annual return rate. At 7% returns, your money doubles approximately every 72 ÷ 7 = 10.3 years. At 10% returns, it doubles every 7.2 years.',
+                },
+              },
+            ],
+          }),
+        }}
+      />
     </>
   )
 }

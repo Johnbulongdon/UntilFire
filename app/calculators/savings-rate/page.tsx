@@ -49,6 +49,49 @@ export default function SavingsRatePage() {
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'What is a savings rate?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Your savings rate is the percentage of your take-home income that you save or invest each month. It is calculated as monthly savings divided by monthly take-home income. A higher savings rate means you can retire earlier because you accumulate wealth faster and also prove you can live on less.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'What savings rate do I need to retire early?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'The higher your savings rate, the faster you reach financial independence. Saving 10% takes roughly 40 years. Saving 25% takes about 32 years. Saving 50% takes around 17 years. Saving 65%+ can get you to FIRE in under 10 years. The exact timeline also depends on your starting portfolio and investment returns.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Does savings rate or income matter more for FIRE?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Savings rate matters more than income for FIRE timelines. Someone earning $60,000 and saving 50% will reach financial independence far sooner than someone earning $150,000 and saving 10%. Income helps, but the percentage you keep — not the dollar amount you earn — is the primary driver of your FIRE date.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'How do I calculate my savings rate?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Savings rate = (monthly savings ÷ monthly take-home income) × 100. Monthly savings includes retirement contributions (401k, IRA), taxable investing, and any other money you put aside. Take-home income is after tax. If you save $1,500 per month and take home $5,000, your savings rate is 30%.',
+                },
+              },
+            ],
+          }),
+        }}
+      />
     </>
   )
 }
