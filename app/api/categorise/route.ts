@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL = "mistralai/mistral-7b-instruct";
 
 export async function POST(req: NextRequest) {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.OPENROUTER_API_KEY) {
     return NextResponse.json({ category: "other", tags: [] }, { status: 200 });
   }
   try {
@@ -19,21 +19,33 @@ export async function POST(req: NextRequest) {
         ? "salary, freelance, investment, gift, other_income"
         : "food, transport, housing, travel, subscriptions, healthcare, entertainment, shopping, other";
 
-    const msg = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 100,
-      messages: [
-        {
-          role: "user",
-          content: `Categorize this ${type} transaction. Respond ONLY with valid JSON, no markdown.
+    const res = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 100,
+        messages: [
+          {
+            role: "user",
+            content: `Categorize this ${type} transaction. Respond ONLY with valid JSON, no markdown.
 Description: "${safeDescription}"
 Categories: ${categories}
 Format: {"category": "...", "tags": ["tag1", "tag2"]}`,
-        },
-      ],
+          },
+        ],
+      }),
     });
 
-    const text = (msg.content[0] as { type: "text"; text: string }).text.trim();
+    if (!res.ok) {
+      return NextResponse.json({ category: "other", tags: [] });
+    }
+
+    const data = await res.json() as { choices: { message: { content: string } }[] };
+    const text = data.choices[0]?.message?.content?.trim() ?? "";
     const result = JSON.parse(text) as { category: string; tags: string[] };
     return NextResponse.json(result);
   } catch {
