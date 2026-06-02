@@ -1025,6 +1025,30 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const [counting, setCounting] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [showShare, setShowShare] = useState(false);
+
+  // Email capture
+  const [emailInput, setEmailInput] = useState("");
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
+
+  async function handleEmailCapture(e: React.FormEvent) {
+    e.preventDefault();
+    if (!emailInput || emailSubmitting) return;
+    setEmailSubmitting(true);
+    try {
+      await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput }),
+      });
+      saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency });
+      setEmailSubmitted(true);
+    } catch {
+      setEmailSubmitted(true);
+    } finally {
+      setEmailSubmitting(false);
+    }
+  }
   const numRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const belowRef = useRef<HTMLDivElement>(null);
@@ -1363,9 +1387,37 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   >
                     Save my plan →
                   </Link>
-                  <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.5 }}>
-                    Free account · Your numbers stay private · Track monthly progress
-                  </div>
+                  {!emailSubmitted ? (
+                    <form onSubmit={handleEmailCapture} style={{ marginTop: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                        <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.12)" }} />
+                        <span style={{ margin: "0 10px", fontSize: 11, color: "rgba(255,255,255,0.3)", fontWeight: 600 }}>or get it by email</span>
+                        <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.12)" }} />
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <input
+                          type="email"
+                          placeholder="your@email.com"
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          style={{ flex: 1, height: 36, borderRadius: 8, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 13, padding: "0 12px", fontFamily: "inherit", outline: "none" }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={emailSubmitting || !emailInput.includes("@")}
+                          style={{ height: 36, borderRadius: 8, border: "none", background: "rgba(34,211,165,0.25)", color: "#22D3A5", fontSize: 13, fontWeight: 700, padding: "0 14px", cursor: emailSubmitting || !emailInput.includes("@") ? "not-allowed" : "pointer", opacity: !emailInput.includes("@") ? 0.5 : 1, whiteSpace: "nowrap" }}
+                        >
+                          {emailSubmitting ? "…" : "Send →"}
+                        </button>
+                      </div>
+                      <div style={{ marginTop: 6, fontSize: 10, color: "rgba(255,255,255,0.28)", textAlign: "center" }}>No spam. No account needed.</div>
+                    </form>
+                  ) : (
+                    <div style={{ marginTop: 10, textAlign: "center", padding: "10px 14px", borderRadius: 8, background: "rgba(34,211,165,0.1)", border: "1px solid rgba(34,211,165,0.2)" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#22D3A5" }}>✓ Saved — check your inbox</div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>Log in anytime to track monthly progress</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1475,9 +1527,11 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                         >
                           Save my plan →
                         </Link>
-                        <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.5 }}>
-                          Free account · Your numbers stay private · Track monthly progress
-                        </div>
+                        {emailSubmitted ? (
+                          <div style={{ marginTop: 8, textAlign: "center", fontSize: 12, color: "#22D3A5", fontWeight: 600 }}>✓ Result saved to your inbox</div>
+                        ) : (
+                          <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center" }}>Free account · Your numbers stay private</div>
+                        )}
                       </div>
                     </div>
                   )}

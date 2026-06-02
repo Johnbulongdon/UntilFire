@@ -20,12 +20,12 @@ export const metadata: Metadata = {
   title: 'UntilFire | Personal Finance That Sets You Free',
   description: UNTILFIRE_ANCHOR_COPY,
   keywords:
-    'financial freedom app, freedom date calculator, personal finance planning, work optionality planner, savings rate calculator, retirement timeline, financial independence',
+    'FIRE calculator, financial independence retire early, freedom date calculator, when can I retire, personal finance planning, work optionality, financial freedom, early retirement calculator, FIRE number, savings rate calculator, coast FIRE, barista FIRE, lean FIRE, fat FIRE, retirement timeline, how much do I need to retire',
   alternates: {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: 'UntilFire | Personal Finance That Sets You Free',
+    title: 'UntilFire — Find Your Freedom Date in 60 Seconds',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
     url: SITE_URL,
     siteName: 'UntilFire',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'UntilFire | Personal Finance That Sets You Free',
+    title: 'UntilFire — Find Your Freedom Date in 60 Seconds',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
     images: [`${SITE_URL}/opengraph-image`],
   },
@@ -80,11 +80,93 @@ export default function RootLayout({
               description: UNTILFIRE_ANCHOR_COPY,
               applicationCategory: 'FinanceApplication',
               operatingSystem: 'Any',
+              browserRequirements: 'Requires JavaScript',
+              featureList: [
+                'FIRE number calculator',
+                'Freedom date calculator',
+                'Savings rate calculator',
+                'Coast FIRE calculator',
+                'Monthly plan to reach financial independence',
+                'Budget tracking with needs vs wants analysis',
+                'Multi-currency support',
+                'AI-powered transaction categorisation',
+                'Bank connection via Plaid',
+              ],
+              about: {
+                '@type': 'Thing',
+                name: 'Financial Independence Retire Early (FIRE)',
+                description: 'A financial movement focused on extreme savings and investment to allow retirement far earlier than traditional timelines.',
+              },
               offers: {
                 '@type': 'Offer',
                 price: '0',
                 priceCurrency: 'USD',
+                description: 'Free plan — calculate your freedom date with no account required',
               },
+              publisher: {
+                '@type': 'Organization',
+                name: 'UntilFire',
+                url: SITE_URL,
+              },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: [
+                {
+                  '@type': 'Question',
+                  name: 'What is a FIRE number?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Your FIRE number is the total savings or investment portfolio you need to retire early and live off investment returns indefinitely. It is typically calculated as 25× your annual expenses, based on the 4% safe withdrawal rate.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How do I calculate my freedom date?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Your freedom date is the point when your investments can cover your living expenses without needing to work. UntilFire calculates it from your income, monthly savings, current net worth, and target spending, then projects when your portfolio hits 25× annual expenses.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'What is the difference between lean FIRE, fat FIRE, barista FIRE, and coast FIRE?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Lean FIRE means retiring on a minimal budget (typically under $40k/year). Fat FIRE means retiring with a larger portfolio for a comfortable lifestyle. Barista FIRE means partially retiring with part-time work to cover some expenses. Coast FIRE means you have saved enough that, with no further contributions, your portfolio will grow to your FIRE number by traditional retirement age.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How much do I need to retire early?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'You need approximately 25 times your annual expenses invested in a diversified portfolio to retire early — this is known as your FIRE number. For example, if you spend $50,000 per year, you need roughly $1.25 million. UntilFire calculates your exact target based on your location, spending, and tax situation.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'What savings rate do I need for financial independence?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Higher savings rates dramatically shorten the timeline to financial independence. Saving 10% of your income takes roughly 40 years. Saving 25% takes about 32 years. Saving 50% takes around 17 years. Saving 70%+ can get you to financial independence in under 10 years. UntilFire shows your exact timeline based on your current numbers.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'What is the 4% rule for retirement?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: "The 4% rule states that you can withdraw 4% of your portfolio in the first year of retirement, then adjust for inflation each year, with a high probability of the portfolio lasting 30+ years. It comes from the Trinity Study. This means your FIRE number is 25× your annual expenses (1 ÷ 4% = 25).",
+                  },
+                },
+              ],
             }),
           }}
         />
@@ -97,18 +179,17 @@ export default function RootLayout({
           <Analytics />
 
           <Script
-  src="https://www.googletagmanager.com/gtag/js?id=G-L8EQM1LL1S"
-  strategy="afterInteractive"
-/>
-
-<Script id="ga4-init" strategy="afterInteractive">
-  {`
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-L8EQM1LL1S');
-  `}
-</Script>
+            src="https://www.googletagmanager.com/gtag/js?id=G-L8EQM1LL1S"
+            strategy="afterInteractive"
+          />
+          <Script id="ga4-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-L8EQM1LL1S');
+            `}
+          </Script>
 
           {/* Ahrefs Analytics */}
           <Script
