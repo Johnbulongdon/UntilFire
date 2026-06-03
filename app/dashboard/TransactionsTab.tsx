@@ -1609,12 +1609,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     if (isClassifying) return;
     setIsClassifying(true);
     try {
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const toReview = transactions.filter(
-        (t) => t.transaction_type === "expense" && t.date.startsWith(currentMonth)
+        (t) => t.transaction_type === "expense" && t.date.startsWith(viewMonth)
       );
-      console.log("[AI Classify] Found current month expenses to review:", toReview.length);
+      console.log("[AI Classify] Found expenses to review for", viewMonth, ":", toReview.length);
       if (!toReview.length) { showToast("No expenses to classify this month"); return; }
 
       const items = [...new Map(
@@ -1645,7 +1643,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     } finally {
       setIsClassifying(false);
     }
-  }, [transactions, isClassifying, showToast]);
+  }, [transactions, isClassifying, showToast, viewMonth]);
 
   const handlePredictBudget = useCallback(async () => {
     const now = new Date();
