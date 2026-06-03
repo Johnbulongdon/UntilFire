@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
@@ -3776,7 +3776,7 @@ export default function Dashboard() {
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
     const obs = new MutationObserver(() =>
       setIsDark(document.documentElement.classList.contains('dark'))
