@@ -3971,7 +3971,7 @@ export default function Dashboard() {
   const histMonthsCount = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    return new Set(recentTransactions.filter(t => !t.date.startsWith(curMonth)).map(t => t.date.slice(0, 7))).size;
+    return new Set(recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth)).map(t => t.date.slice(0, 7))).size;
   }, [recentTransactions]);
   const effectiveIncome = budgetMode === "history" && histIncomeAvg > 0 ? histIncomeAvg : income;
   const effectiveExpenses = useMemo((): Expenses => {

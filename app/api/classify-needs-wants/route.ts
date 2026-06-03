@@ -5,7 +5,7 @@ const MODEL = "mistralai/mistral-7b-instruct";
 
 export async function POST(req: NextRequest) {
   if (!process.env.OPENROUTER_API_KEY) {
-    return NextResponse.json({ results: [] }, { status: 200 });
+    return NextResponse.json({ error: "API key not configured" }, { status: 503 });
   }
   try {
     const { items } = await req.json() as { items: { description: string; category: string }[] };
@@ -43,8 +43,13 @@ Respond ONLY with valid JSON array, no markdown:
 
     if (!res.ok) return NextResponse.json({ results: [] });
     const data = await res.json() as { choices: { message: { content: string } }[] };
-    const text = data.choices[0]?.message?.content?.trim() ?? "[]";
-    const results = JSON.parse(text) as { description: string; needOrWant: string }[];
+    const text = data.choices[0]?.message?.content?.trim() ?? "";
+    let results: { description: string; needOrWant: string }[];
+    try {
+      results = JSON.parse(text) as { description: string; needOrWant: string }[];
+    } catch {
+      return NextResponse.json({ error: "Failed to parse model response" }, { status: 500 });
+    }
     return NextResponse.json({ results });
   } catch {
     return NextResponse.json({ results: [] });

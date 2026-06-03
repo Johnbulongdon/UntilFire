@@ -876,7 +876,7 @@ function ShareModal({
           <div className="uf-share-card-brand">
             <Logo variant="dark" size={20} />
           </div>
-          <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>{selectedCard === "identity" ? "FIRE Type" : "Benchmark"}</div>
+          <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>{selectedCard === "year" ? "Freedom Year" : selectedCard === "identity" ? "FIRE Type" : "Benchmark"}</div>
           <div className="uf-share-card-number" style={{ fontSize: selectedCard === "year" && retireYear ? 42 : 28, lineHeight: 1.1, color: selectedCard === "year" ? '#62FAE3' : undefined }}>{activeShare.title}</div>
           <div className="uf-share-card-meta" style={{ fontSize: 15, color: selectedCard === "year" ? 'rgba(255,255,255,0.75)' : '#62FAE3', fontWeight: selectedCard === "year" ? 500 : 800, lineHeight: 1.35 }}>{activeShare.body}</div>
           <div className="uf-share-card-city" style={{ color: 'rgba(255,255,255,0.4)' }}>{selectedCard === "year" ? "Freedom year only · no income or exact number" : "No exact income · no FIRE number · no freedom date"}</div>
