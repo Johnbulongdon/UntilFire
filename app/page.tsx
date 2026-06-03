@@ -1029,7 +1029,10 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   landingSource?: string;
   onAdjust: () => void;
 }) {
-  const result = calcFIRE(savings, city.col, currentAge, portfolioBalance);
+  const [useRealReturn, setUseRealReturn] = useState(false);
+  const marketReturn = useRealReturn ? 0.07 : 0.10;
+
+  const result = calcFIRE(savings, city.col, currentAge, portfolioBalance, marketReturn);
   const takeHome = income;
 
   // Phase 1: calculating steps
@@ -1156,10 +1159,10 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const [extraSavings, setExtraSavings] = useState(500);
 
-  const d1 = calcFIRE(savings + Math.round(city.col * 0.2 / 12), city.col, currentAge, portfolioBalance);
-  const d2 = calcFIRE(savings + 416, city.col, currentAge, portfolioBalance);
-  const d3 = calcFIRE(savings + income * 0.1 / 12, city.col, currentAge, portfolioBalance);
-  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge, portfolioBalance);
+  const d1 = calcFIRE(savings + Math.round(city.col * 0.2 / 12), city.col, currentAge, portfolioBalance, marketReturn);
+  const d2 = calcFIRE(savings + 416, city.col, currentAge, portfolioBalance, marketReturn);
+  const d3 = calcFIRE(savings + income * 0.1 / 12, city.col, currentAge, portfolioBalance, marketReturn);
+  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge, portfolioBalance, marketReturn);
 
   // Next-move guidance helpers
   const getNextMoveGuidance = () => {
@@ -1179,7 +1182,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
     // COL optimization move
     const colMove = Math.round(city.col * 0.05 / 12);
-    const dCol = calcFIRE(savings + colMove, city.col, currentAge, portfolioBalance);
+    const dCol = calcFIRE(savings + colMove, city.col, currentAge, portfolioBalance, marketReturn);
     const colYears = result.years - dCol.years;
     if (colYears > 0.5 && colMove > 50) {
       moves.push({
@@ -1192,7 +1195,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
     // Small consistent win
     const smallWin = 250;
-    const dSmall = calcFIRE(savings + smallWin, city.col, currentAge, portfolioBalance);
+    const dSmall = calcFIRE(savings + smallWin, city.col, currentAge, portfolioBalance, marketReturn);
     const smallYears = result.years - dSmall.years;
     if (smallYears > 0.25) {
       moves.push({
@@ -1245,7 +1248,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     { label: isAlreadyFire ? "Next chapter awaits" : "Monthly move ready", done: !isAlreadyFire },
   ];
   const chartData = useMemo(() => {
-    const r = 0.07;
+    const r = marketReturn;
     const annualBase = savings * 12;
     const annualBoosted = (savings + extraSavings) * 12;
     const buildPts = (annual: number, years: number) => {
@@ -1268,9 +1271,9 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
       maxYears,
       fireTarget: result.fireTarget ?? 0,
     };
-  }, [portfolioBalance, savings, extraSavings, result.years, result.fireTarget, d4.years]);
+  }, [portfolioBalance, savings, extraSavings, result.years, result.fireTarget, d4.years, marketReturn]);
 
-  const calcLabels = ["City cost-of-living", "After-tax income", "Compound growth at 7%", "25× withdrawal rule"];
+  const calcLabels = ["City cost-of-living", "After-tax income", `Compound growth at ${useRealReturn ? "7%" : "10%"}`, "25× withdrawal rule"];
 
   const stageIdx = stageData.index;
   const stages4 = ["Ignition", "Momentum", "Final Stretch", "FIRE Achieved"] as const;
@@ -1451,7 +1454,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
                       <div>
                         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Your path to FIRE</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginTop: 6, letterSpacing: "-0.015em" }}>Compounded at 7% real return</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginTop: 6, letterSpacing: "-0.015em" }}>Compounded at {useRealReturn ? "7% real" : "10% nominal"} return</div>
                       </div>
                       <div style={{ display: "flex", gap: 18, fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
                         <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#6B7280" }}>
@@ -1649,9 +1652,22 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                       </div>
                       <div style={{ display: "flex", gap: 12 }}>
                         <div style={{ width: 4, borderRadius: 99, background: "#059669", flexShrink: 0, alignSelf: "stretch" }} />
-                        <div>
-                          <strong style={{ color: "#0F172A" }}>7% real return.</strong>{" "}
-                          The S&P 500 has averaged ~10% nominal returns historically. We use 7% after inflation to give a conservative, real-terms picture of your portfolio growth.
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                            <strong style={{ color: "#0F172A" }}>{useRealReturn ? "7% real return" : "10% nominal return"}.</strong>
+                            <button
+                              type="button"
+                              onClick={() => setUseRealReturn(v => !v)}
+                              style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, border: "1px solid #CBD5E1", background: useRealReturn ? "#F0FDF4" : "#fff", color: "#374151", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}
+                            >
+                              Switch to {useRealReturn ? "10% nominal" : "7% real"}
+                            </button>
+                          </div>
+                          <div style={{ marginTop: 4 }}>
+                            {useRealReturn
+                              ? "7% after inflation — the traditional FIRE/Trinity Study assumption."
+                              : "S&P 500 historical average (~10% nominal). Switch to 7% real for an inflation-adjusted view."}
+                          </div>
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 12 }}>
@@ -1684,7 +1700,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                 </button>
               </div>
               <p className="uf-disclaimer">
-                Estimate only. Not financial advice. Based on 7% real return (historical S&P500 average after inflation).
+                Estimate only. Not financial advice. Based on {useRealReturn ? "7% real return (inflation-adjusted)" : "10% nominal return (historical S&P 500 average)"}.
               </p>
             </div>
           )}
