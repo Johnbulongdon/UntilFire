@@ -511,14 +511,18 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
           const filtered = prev.filter((r) => !(r.category === category && r.sub_category === sub_category));
           return [...filtered, data as ClassificationRule];
         });
-        // Find mismatched existing transactions (wrong tag or untagged)
+        // Query fresh from DB so we catch transactions added since this tab mounted
         const opposite = classification === "need" ? "want" : "need";
-        const mismatched = transactions.filter((t) =>
-          t.transaction_type === "expense" &&
-          t.category?.toLowerCase() === category.toLowerCase() &&
-          t.sub_category?.toLowerCase() === sub_category.toLowerCase() &&
-          (!t.tags?.includes(classification) || t.tags?.includes(opposite))
-        );
+        const { data: freshData } = await supabase
+          .from("expenses")
+          .select("id, tags, category, sub_category, transaction_type, date, amount, currency")
+          .eq("user_id", session.user.id)
+          .eq("transaction_type", "expense")
+          .ilike("category", category)
+          .ilike("sub_category", sub_category);
+        const mismatched = (freshData || []).filter((t) =>
+          !t.tags?.includes(classification) || t.tags?.includes(opposite)
+        ) as Transaction[];
         if (mismatched.length > 0) {
           setMismatchPrompt({ category, sub_category, classification, mismatched });
         }
@@ -529,7 +533,6 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   const handleApplyMismatch = async () => {
     if (!mismatchPrompt) return;
     const { classification, mismatched } = mismatchPrompt;
-    const opposite = classification === "need" ? "want" : "need";
     const updates = mismatched.map((t) => ({
       id: t.id,
       tags: [...(t.tags || []).filter((tag) => tag !== "need" && tag !== "want"), classification],
@@ -539,12 +542,12 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
         updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags }).eq("id", u.id))
       );
     }
+    const updateMap = new Map(updates.map((u) => [u.id, u]));
     setTransactions((prev) => prev.map((t) => {
-      const u = updates.find((x) => x.id === t.id);
+      const u = updateMap.get(t.id);
       return u ? { ...t, tags: u.tags } : t;
     }));
     setMismatchPrompt(null);
-    void opposite; // suppress unused warning
   };
   const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 

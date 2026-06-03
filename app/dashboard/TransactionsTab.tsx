@@ -1305,16 +1305,24 @@ function AiReviewModal({
   onClose,
   onSaveRule,
 }: {
-  pending: { tx: Transaction; suggestion: "need" | "want" }[];
+  pending: { tx: Transaction; suggestion: "need" | "want"; wasTag?: "need" | "want" }[];
   onApprove: (tx: Transaction, suggestion: "need" | "want") => void;
   onApproveAllSameName: (description: string, suggestion: "need" | "want") => void;
-  onApproveAll: () => void;
+  onApproveAll: (resolved: { tx: Transaction; suggestion: "need" | "want" }[]) => void;
   onSkip: (txId: string) => void;
   onClose: () => void;
   onSaveRule: (category: string, sub_category: string, classification: "need" | "want") => void;
 }) {
   const [overrides, setOverrides] = useState<Record<string, "need" | "want">>({});
   const [saveRuleIds, setSaveRuleIds] = useState<Set<string>>(new Set());
+  const sameNameCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const { tx } of pending) {
+      const key = tx.description.toLowerCase();
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return counts;
+  }, [pending]);
   if (!pending.length) return null;
 
   const effectiveSuggestion = (tx: Transaction, suggestion: "need" | "want") =>
@@ -1340,7 +1348,7 @@ function AiReviewModal({
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button
-              onClick={onApproveAll}
+              onClick={() => onApproveAll(pending.map(({ tx, suggestion }) => ({ tx, suggestion: overrides[tx.id] ?? suggestion })))}
               style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
             >
               Approve all
@@ -1351,10 +1359,10 @@ function AiReviewModal({
 
         {/* Rows */}
         <div style={{ overflowY: "auto", flex: 1 }}>
-          {pending.map(({ tx, suggestion }) => {
+          {pending.map(({ tx, suggestion, wasTag }) => {
             const effective = effectiveSuggestion(tx, suggestion);
             const changed = effective !== suggestion;
-            const sameNameCount = pending.filter((p) => p.tx.description.toLowerCase() === tx.description.toLowerCase()).length;
+            const sameNameCount = sameNameCounts.get(tx.description.toLowerCase()) ?? 1;
             return (
               <div key={tx.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", padding: "12px 20px", borderTop: "1px solid var(--uf-border)" }}>
                 <div style={{ minWidth: 0 }}>
@@ -1369,6 +1377,11 @@ function AiReviewModal({
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)", textTransform: "capitalize" }}>
                       {tx.sub_category ? `${tx.category} / ${tx.sub_category}` : tx.category}
                     </span>
+                    {wasTag && (
+                      <span style={{ fontSize: 10, color: "var(--uf-text-3)", fontStyle: "italic" }}>
+                        was: {wasTag}
+                      </span>
+                    )}
                     {/* Clickable toggle pill */}
                     <button
                       onClick={() => toggle(tx, effective)}
@@ -1460,10 +1473,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [refreshKey, setRefreshKey] = useState(0);
   const [showImport, setShowImport] = useState(false);
   const [isClassifying, setIsClassifying] = useState(false);
-  const [pendingClassifications, setPendingClassifications] = useState<{ tx: Transaction; suggestion: "need" | "want" }[]>([]);
-  useEffect(() => {
-    console.log("[TransactionsTab] pendingClassifications updated:", pendingClassifications.length);
-  }, [pendingClassifications]);
+  const [pendingClassifications, setPendingClassifications] = useState<{ tx: Transaction; suggestion: "need" | "want"; wasTag?: "need" | "want" }[]>([]);
   const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>([]);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -1663,20 +1673,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, []);
 
   const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want" }[]) => {
-    console.log("[applyClassifications] Applying", toApply.length, "classifications");
     const updates = toApply.map(({ tx, suggestion }) => ({
       id: tx.id,
       tags: [...(tx.tags || []).filter((t) => t !== "need" && t !== "want"), suggestion],
     }));
-    console.log("[applyClassifications] Updating DB with:", updates.length, "updates");
     for (let i = 0; i < updates.length; i += 20) {
       await Promise.all(
         updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags }).eq("id", u.id))
       );
     }
-    console.log("[applyClassifications] DB updates complete, updating local state");
+    const updateMap = new Map(updates.map((u) => [u.id, u]));
     setTransactions((prev) => prev.map((t) => {
-      const u = updates.find((x) => x.id === t.id);
+      const u = updateMap.get(t.id);
       return u ? { ...t, tags: u.tags } : t;
     }));
   }, []);
@@ -1688,20 +1696,24 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       const toReview = transactions.filter(
         (t) => t.transaction_type === "expense" && t.date.startsWith(viewMonth)
       );
-      console.log("[AI Classify] Found expenses to review for", viewMonth, ":", toReview.length);
       if (!toReview.length) { showToast("No expenses to classify this month"); return; }
 
-      // Apply saved rules first — these get written immediately, skipping AI + modal
+      // Apply saved rules first — only for transactions not already correctly tagged
+      const ruleMap = new Map(
+        classificationRules
+          .filter((r) => r.sub_category !== null)
+          .map((r) => [`${r.category.toLowerCase()}|${r.sub_category!.toLowerCase()}`, r])
+      );
       const ruleMatched: { tx: Transaction; suggestion: "need" | "want" }[] = [];
       const needsAi: Transaction[] = [];
       for (const tx of toReview) {
-        const rule = classificationRules.find((r) =>
-          r.category.toLowerCase() === (tx.category || "").toLowerCase() &&
-          r.sub_category !== null &&
-          r.sub_category.toLowerCase() === (tx.sub_category || "").toLowerCase()
-        );
-        if (rule) ruleMatched.push({ tx, suggestion: rule.classification });
-        else needsAi.push(tx);
+        const rule = ruleMap.get(`${(tx.category || "").toLowerCase()}|${(tx.sub_category || "").toLowerCase()}`);
+        if (rule) {
+          const alreadyCorrect = !!(tx.tags?.includes(rule.classification) && !tx.tags?.includes(rule.classification === "need" ? "want" : "need"));
+          if (!alreadyCorrect) ruleMatched.push({ tx, suggestion: rule.classification });
+        } else {
+          needsAi.push(tx);
+        }
       }
       if (ruleMatched.length > 0) {
         await applyClassifications(ruleMatched);
@@ -1713,26 +1725,22 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         needsAi.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
       ).values()];
 
-      console.log("[AI Classify] Sending to API:", items.length, "unique items");
       const res = await fetch("/api/classify-needs-wants", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
-      console.log("[AI Classify] API response status:", res.status);
       if (!res.ok) throw new Error("classification failed");
       const { results } = await res.json() as { results: { description: string; needOrWant: string }[] };
-      console.log("[AI Classify] Got results:", results.length);
       const classMap = new Map(results.map((r) => [r.description.toLowerCase(), r.needOrWant]));
 
       const pending = needsAi.map((tx) => ({
         tx,
         suggestion: (classMap.get(tx.description.toLowerCase()) === "need" ? "need" : "want") as "need" | "want",
+        wasTag: (tx.tags?.includes("need") ? "need" : tx.tags?.includes("want") ? "want" : undefined) as "need" | "want" | undefined,
       }));
-      console.log("[AI Classify] Setting pending classifications:", pending.length);
       setPendingClassifications(pending);
-    } catch (e) {
-      console.error("[AI Classify] Error:", e);
+    } catch {
       showToast("Classification failed — try again", undefined, undefined, true);
     } finally {
       setIsClassifying(false);
@@ -2029,12 +2037,12 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           }}
           onApproveAllSameName={async (description, suggestion) => {
             const matches = pendingClassifications.filter((p) => p.tx.description.toLowerCase() === description.toLowerCase());
-            await applyClassifications(matches);
+            await applyClassifications(matches.map((m) => ({ tx: m.tx, suggestion })));
             setPendingClassifications((prev) => prev.filter((p) => p.tx.description.toLowerCase() !== description.toLowerCase()));
           }}
-          onApproveAll={async () => {
-            await applyClassifications(pendingClassifications);
-            showToast(`${pendingClassifications.length} expense${pendingClassifications.length !== 1 ? "s" : ""} classified`);
+          onApproveAll={async (resolved) => {
+            await applyClassifications(resolved);
+            showToast(`${resolved.length} expense${resolved.length !== 1 ? "s" : ""} classified`);
             setPendingClassifications([]);
           }}
           onSkip={(txId) => setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== txId))}
