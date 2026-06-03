@@ -551,6 +551,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   onOpenOnboarding?: () => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
+  const [showSP500, setShowSP500] = useState(true);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
   const chartMonthTooltipFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }), []);
@@ -639,6 +641,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       phase: "history" | "today" | "projection";
       Contributions?: number;
       "Market Growth"?: number;
+      sp500?: number;
     }> = [];
 
     if (flowByDay.size > 0) {
@@ -702,6 +705,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       phase: "today" as const,
       Contributions: rawChartData[0]?.["Contributions"] ?? 0,
       "Market Growth": rawChartData[0]?.["Market Growth"] ?? 0,
+      sp500: investable,
     };
 
     const futureEntries = Array.from({ length: Math.max(0, (rawChartData.length - 1) * 12) }, (_, index) => {
@@ -728,6 +732,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         phase: "projection" as const,
         Contributions: interpolate("Contributions"),
         "Market Growth": interpolate("Market Growth"),
+        sp500: Math.round(investable * Math.pow(1.10, yearsOut)),
       };
     });
 
@@ -1169,6 +1174,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   <stop offset="55%" stopColor="#62FAE3" stopOpacity={0.10} />
                   <stop offset="100%" stopColor="#62FAE3" stopOpacity={0} />
                 </linearGradient>
+                <linearGradient id="contribGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#059669" stopOpacity={0.65} />
+                  <stop offset="100%" stopColor="#059669" stopOpacity={0.15} />
+                </linearGradient>
+                <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#62FAE3" stopOpacity={0.45} />
+                  <stop offset="100%" stopColor="#62FAE3" stopOpacity={0.05} />
+                </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" vertical={false} />
               <XAxis
@@ -1190,14 +1203,21 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 animationDuration={150}
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
-                  const entry = payload[0]?.payload as { label?: string; actual?: number | null; projected?: number | null; phase?: string } | undefined;
-                  const actual = payload.find((series) => series.dataKey === "actual")?.value as number | undefined;
-                  const projected = payload.find((series) => series.dataKey === "projected")?.value as number | undefined;
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const entry = payload[0]?.payload as any;
+                  const actual = entry?.actual as number | undefined;
+                  const projected = entry?.projected as number | undefined;
+                  const contrib = entry?.Contributions as number | undefined;
+                  const gains = entry?.["Market Growth"] as number | undefined;
+                  const sp500val = entry?.sp500 as number | undefined;
                   return (
                     <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12, padding: "10px 12px", fontSize: 12, fontFamily: "Manrope, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
                       <div style={{ fontWeight: 800, marginBottom: 6, color: "#F8FAFC" }}>{entry?.label ?? ""}</div>
-                      {actual !== undefined && <div style={{ color: "rgba(255,255,255,0.86)", marginBottom: 4 }}>{entry?.phase === "today" ? "Current" : "History"}: {fmtMoney(actual, true)}</div>}
-                      {projected !== undefined && <div style={{ color: "#62FAE3", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
+                      {actual !== undefined && actual !== null && <div style={{ color: "rgba(255,255,255,0.86)", marginBottom: 4 }}>{entry?.phase === "today" ? "Current" : "History"}: {fmtMoney(actual, true)}</div>}
+                      {projected !== undefined && projected !== null && !showBreakdown && <div style={{ color: "#62FAE3", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
+                      {showBreakdown && contrib !== undefined && <div style={{ color: "#4ADE80", marginBottom: 2 }}>Contributions: {fmtMoney(contrib, true)}</div>}
+                      {showBreakdown && gains !== undefined && <div style={{ color: "#62FAE3", marginBottom: 4 }}>Market returns: {fmtMoney(gains, true)}</div>}
+                      {showSP500 && sp500val !== undefined && sp500val !== null && <div style={{ color: "#FDBA74", marginBottom: 4 }}>S&P 500 (10%/yr): {fmtMoney(sp500val, true)}</div>}
                       <div style={{ color: "rgba(255,255,255,0.6)" }}>Target: {fmtMoney(fireTarget, true)}</div>
                     </div>
                   );
@@ -1206,24 +1226,64 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               <ReferenceLine y={fireTarget} stroke="rgba(167,243,208,0.95)" strokeDasharray="5 4" strokeWidth={1.3} />
               <ReferenceLine x={periodData.find((entry) => entry.phase === "today")?.shortLabel} stroke="rgba(255,255,255,0.26)" strokeDasharray="4 4" strokeWidth={1.2} />
               <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.88)" strokeWidth={2} connectNulls={false} dot={false} activeDot={{ r: 5, fill: "#FFFFFF" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
-              <Area type="monotone" dataKey="projected" stroke="#62FAE3" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#62FAE3" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
+              {!showBreakdown && (
+                <Area type="monotone" dataKey="projected" stroke="#62FAE3" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#62FAE3" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
+              )}
+              {showBreakdown && (
+                <>
+                  <Area type="monotone" dataKey="Contributions" stroke="#059669" strokeWidth={1.5} fill="url(#contribGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
+                  <Area type="monotone" dataKey="Market Growth" stroke="#62FAE3" strokeWidth={1.5} fill="url(#growthGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
+                </>
+              )}
+              {showSP500 && (
+                <Line type="monotone" dataKey="sp500" stroke="#FDBA74" strokeWidth={1.5} strokeDasharray="5 4" dot={false} activeDot={{ r: 4, fill: "#FDBA74" }} isAnimationActive animationBegin={100} animationDuration={1000} animationEasing="ease-out" />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         </div>
 
         <div style={{ padding: "0 22px 22px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            {/* Static items */}
             {[
-              ["rgba(255,255,255,0.88)", "History"],
-              ["#62FAE3", "Projection"],
-              ["#FDBA74", "S&P 500"],
-              ["#A7F3D0", "FIRE target"],
-            ].map(([color, label]) => (
-              <span key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "rgba(255,255,255,0.72)", fontFamily: "Manrope, sans-serif" }}>
-                <span style={{ width: 20, height: 3, borderRadius: 999, background: color, display: "inline-block" }} />
+              { color: "rgba(255,255,255,0.88)", label: "History", dashed: false },
+              { color: "rgba(167,243,208,0.95)", label: "FIRE target", dashed: true },
+            ].map(({ color, label, dashed }) => (
+              <span key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "rgba(255,255,255,0.72)", fontFamily: "Manrope, sans-serif" }}>
+                <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke={color} strokeWidth="2" strokeDasharray={dashed ? "4 3" : undefined} /></svg>
                 {label}
               </span>
             ))}
+            {/* Projection / Breakdown toggle */}
+            <button
+              onClick={() => setShowBreakdown(v => !v)}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "Manrope, sans-serif", background: "none", border: "none", cursor: "pointer", padding: "2px 0", color: showBreakdown ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.72)", textDecoration: "none" }}
+              title="Toggle contributions vs market returns breakdown"
+            >
+              {showBreakdown ? (
+                <>
+                  <span style={{ display: "flex", gap: 2 }}>
+                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "#059669", opacity: 0.8, display: "inline-block" }} />
+                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "#62FAE3", opacity: 0.6, display: "inline-block" }} />
+                  </span>
+                  <span>Contributions · Returns</span>
+                </>
+              ) : (
+                <>
+                  <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="#62FAE3" strokeWidth="2" /></svg>
+                  Projection
+                </>
+              )}
+            </button>
+            {/* S&P 500 toggle */}
+            <button
+              onClick={() => setShowSP500(v => !v)}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "Manrope, sans-serif", background: "none", border: "none", cursor: "pointer", padding: "2px 0", color: showSP500 ? "rgba(255,255,255,0.72)" : "rgba(255,255,255,0.3)", textDecoration: showSP500 ? "none" : "line-through" }}
+              title="Toggle S&P 500 benchmark"
+            >
+              <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="#FDBA74" strokeWidth="1.5" strokeDasharray="4 3" strokeOpacity={showSP500 ? 1 : 0.35} /></svg>
+              S&P 500
+            </button>
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", maxWidth: 300 }}>
             {growthSummary}
