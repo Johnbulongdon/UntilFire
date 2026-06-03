@@ -1349,8 +1349,16 @@ function AiReviewModal({
               <div key={tx.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", padding: "12px 20px", borderTop: "1px solid var(--uf-border)" }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 3 }}>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date}</span>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600 }}>
+                      {tx.currency} {Math.abs(tx.amount).toFixed(2)}
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-3)", textTransform: "capitalize" }}>
+                      {tx.sub_category ? `${tx.category} / ${tx.sub_category}` : tx.category}
+                    </span>
                     {/* Clickable toggle pill */}
                     <button
                       onClick={() => toggle(tx, effective)}
@@ -1369,6 +1377,11 @@ function AiReviewModal({
                       <span style={{ fontSize: 9, opacity: 0.7 }}>⇄</span>
                     </button>
                   </div>
+                  {tx.notes && (
+                    <div style={{ fontSize: 11, color: "var(--uf-text-3)", marginTop: 2, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {tx.notes}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                   <button
