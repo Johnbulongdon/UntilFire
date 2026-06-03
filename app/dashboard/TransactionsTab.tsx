@@ -591,6 +591,52 @@ function QuickAddForm({
           </div>
         )}
 
+        {/* Need / Want toggle */}
+        {!isIncome && draft.transaction_type === "expense" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Need or Want
+            </label>
+            <div style={{ display: "flex", gap: 6 }}>
+              {(["need", "want", "untagged"] as const).map((option) => {
+                const hasNeed = draft.tags.includes("need");
+                const hasWant = draft.tags.includes("want");
+                const isSelected = option === "need" ? hasNeed : option === "want" ? hasWant : !hasNeed && !hasWant;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => {
+                      if (option === "need") {
+                        setField("tags", hasNeed ? draft.tags.filter((t) => t !== "need") : [...draft.tags.filter((t) => t !== "want"), "need"]);
+                      } else if (option === "want") {
+                        setField("tags", hasWant ? draft.tags.filter((t) => t !== "want") : [...draft.tags.filter((t) => t !== "need"), "want"]);
+                      } else {
+                        setField("tags", draft.tags.filter((t) => t !== "need" && t !== "want"));
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      background: isSelected ? (option === "need" ? "#DCFCE7" : option === "want" ? "#FEE2E2" : "var(--uf-surface-2)") : "transparent",
+                      border: `1px solid ${isSelected ? (option === "need" ? "#22d3a5" : option === "want" ? "#f97316" : "var(--uf-border)") : "var(--uf-border)"}`,
+                      borderRadius: 8,
+                      padding: "9px 12px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: isSelected ? (option === "need" ? "#059669" : option === "want" ? "#ea580c" : "var(--uf-text)") : "var(--uf-text-2)",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      transition: "all 0.12s",
+                    }}
+                  >
+                    {option === "need" ? "💚 Need" : option === "want" ? "🧡 Want" : "◯ Clear"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Project / Event */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
