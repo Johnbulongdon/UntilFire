@@ -38,6 +38,9 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>):
   return rate ? amount / rate : amount;
 };
 
+const netAmt = (t: { amount: number; refund_amount: number }) =>
+  Math.max(0, t.amount - (t.refund_amount || 0));
+
 function dayLabel(ymd: string, todayYmd: string): string {
   if (ymd === todayYmd) return "Today";
   const y = new Date(todayYmd);
@@ -53,6 +56,7 @@ type Transaction = {
   id: string;
   date: string;
   amount: number;
+  refund_amount: number;
   currency: string;
   description: string;
   notes?: string;
@@ -73,6 +77,7 @@ type DraftTransaction = {
   id: string | null;
   transaction_type: "expense" | "income" | "transfer";
   amount: string;
+  refund_amount: string;
   currency: string;
   description: string;
   notes: string;
@@ -87,6 +92,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   id: null,
   transaction_type: "expense",
   amount: "",
+  refund_amount: "",
   currency: "USD",
   description: "",
   notes: "",
@@ -644,6 +650,47 @@ function QuickAddForm({
           </div>
         )}
 
+        {/* Refund */}
+        {draft.transaction_type === "expense" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Refund <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional — full or partial</span>
+            </label>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                max={draft.amount || undefined}
+                placeholder="0"
+                value={draft.refund_amount}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const max = parseFloat(draft.amount) || 0;
+                  if (v === "" || parseFloat(v) <= max) setField("refund_amount", v);
+                }}
+                style={{ flex: 1, border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
+              />
+              <span style={{ fontSize: 13, color: "var(--uf-text-2)", minWidth: 36 }}>{draft.currency}</span>
+              {draft.refund_amount && parseFloat(draft.refund_amount) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setField("refund_amount", "")}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 18, lineHeight: 1, padding: "0 4px", display: "flex", alignItems: "center" }}
+                  title="Clear refund"
+                >×</button>
+              )}
+            </div>
+            {draft.refund_amount && parseFloat(draft.refund_amount) > 0 && draft.amount && parseFloat(draft.amount) > 0 && (
+              <div style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>
+                {parseFloat(draft.refund_amount) >= parseFloat(draft.amount)
+                  ? "✓ Fully refunded — net cost: 0"
+                  : `Net cost: ${fmt(parseFloat(draft.amount) - parseFloat(draft.refund_amount), draft.currency)}`}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Project / Event */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
@@ -892,7 +939,7 @@ function TransactionList({
           </div>
         ) : (
           groups.map(([date, txns]) => {
-            const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : t.transaction_type === "expense" ? -usd : 0); }, 0);
+            const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.transaction_type === "expense" ? netAmt(t) : t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : t.transaction_type === "expense" ? -usd : 0); }, 0);
             return (
               <div key={date}>
                 <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-3)" }}>
@@ -959,8 +1006,23 @@ function TransactionList({
                         </div>
 
                         {/* Amount */}
-                        <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                          {isIncome ? "+" : "−"}{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                          {tx.refund_amount > 0 ? (
+                            <>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: tx.refund_amount >= tx.amount ? "#94A3B8" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", textDecoration: tx.refund_amount >= tx.amount ? "line-through" : "none" }}>
+                                −{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                              </div>
+                              {tx.refund_amount >= tx.amount ? (
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
+                              ) : (
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{fmt(tx.refund_amount, tx.currency).replace(/^−/, "")} net {fmt(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
+                              )}
+                            </>
+                          ) : (
+                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                              {isIncome ? "+" : "−"}{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                            </div>
+                          )}
                         </div>
 
                         {/* Delete */}
@@ -1036,7 +1098,7 @@ function MonthlySummary({
   const isMixed = currencies.length > 1;
 
   const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const expenseTotal = monthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const expenseTotal = monthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
   const net = incomeTotal - expenseTotal;
   const byCat = expenseCategories.map((cat) => {
     const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
@@ -1045,7 +1107,7 @@ function MonthlySummary({
       ...cat,
       color,
       emoji,
-      total: monthTxns.filter((t) => t.transaction_type === "expense" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+      total: monthTxns.filter((t) => t.transaction_type === "expense" && t.category === cat.key).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
     };
   })
     .filter((c) => c.total > 0)
@@ -1058,7 +1120,7 @@ function MonthlySummary({
   })();
   const prevTxns = transactions.filter((t) => t.date.startsWith(prevMonth));
   const prevIncome = prevTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const prevSpent = prevTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const prevSpent = prevTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
 
   const kpiCard = (label: string, value: number, color: string, hint: string) => (
     <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
@@ -1133,8 +1195,8 @@ function MonthlySummary({
         const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
         const taggedTxns = expenseTxns.filter((t) => t.tags?.includes("need") || t.tags?.includes("want"));
         if (!expenseTxns.length || (!isPro && !taggedTxns.length)) return null;
-        const needsTotal = taggedTxns.filter((t) => t.tags?.includes("need")).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-        const wantsTotal = taggedTxns.filter((t) => t.tags?.includes("want")).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+        const needsTotal = taggedTxns.filter((t) => t.tags?.includes("need")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+        const wantsTotal = taggedTxns.filter((t) => t.tags?.includes("want")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
         const classifiedTotal = needsTotal + wantsTotal;
         const untaggedCount = expenseTxns.length - taggedTxns.length;
         return (
@@ -1371,7 +1433,7 @@ function AiReviewModal({
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date}</span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600 }}>
-                      {tx.currency} {Math.abs(tx.amount).toFixed(2)}
+                      {tx.currency} {netAmt(tx).toFixed(2)}{tx.refund_amount > 0 ? ` (↩ ${tx.refund_amount.toFixed(2)} refunded)` : ""}
                     </span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)", textTransform: "capitalize" }}>
@@ -1779,7 +1841,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       const monthExpenses = transactions.filter((t) => t.transaction_type === "expense" && t.date.startsWith(month));
       const catTotals: Record<string, number> = {};
       for (const tx of monthExpenses) {
-        const usd = toUSD(tx.amount, tx.currency, rates);
+        const usd = toUSD(netAmt(tx), tx.currency, rates);
         catTotals[tx.category] = (catTotals[tx.category] || 0) + usd;
       }
       for (const [cat, total] of Object.entries(catTotals)) {
@@ -1815,6 +1877,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       user_id: session.user.id,
       date: draft.date,
       amount: parseFloat(draft.amount),
+      refund_amount: Math.min(parseFloat(draft.refund_amount) || 0, parseFloat(draft.amount) || 0),
       currency: draft.currency,
       description: draft.description,
       notes: draft.notes || "",
@@ -1862,6 +1925,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       id: tx.id,
       transaction_type: tx.transaction_type,
       amount: String(tx.amount),
+      refund_amount: tx.refund_amount ? String(tx.refund_amount) : "",
       currency: tx.currency,
       description: tx.description,
       notes: tx.notes || "",
