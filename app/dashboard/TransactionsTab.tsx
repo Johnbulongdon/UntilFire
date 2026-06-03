@@ -782,7 +782,6 @@ function TransactionList({
   justAddedId,
   onEdit,
   onDelete,
-  onToggleNeedWant,
   rates,
   formatAmount,
   catCustomizations,
@@ -793,7 +792,6 @@ function TransactionList({
   justAddedId: string | null;
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
-  onToggleNeedWant: (tx: Transaction) => void;
   rates: Record<string, number>;
   formatAmount: (value: number) => string;
   catCustomizations: CatCustomizations;
@@ -935,19 +933,17 @@ function TransactionList({
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
                             <span style={{ fontSize: 11.5, color: "var(--uf-text-3)" }}>{cat?.label || tx.category}</span>
                             {tx.sub_category && <span style={{ fontSize: 11, color: "var(--uf-text-2)" }}>· {tx.sub_category}</span>}
-                            {tx.transaction_type === "expense" && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onToggleNeedWant(tx); }}
-                                title={needOrWant ? `Marked as ${needOrWant} — click to cycle` : "Click to mark as need or want"}
+                            {tx.transaction_type === "expense" && needOrWant && (
+                              <span
                                 style={{
-                                  background: needOrWant === "need" ? "rgba(34,211,165,0.15)" : needOrWant === "want" ? "rgba(249,115,22,0.15)" : "var(--uf-surface-2)",
-                                  color: needOrWant === "need" ? "#22d3a5" : needOrWant === "want" ? "#f97316" : "var(--uf-text-3)",
-                                  border: "none", borderRadius: 999, padding: "1px 7px",
-                                  fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0,
+                                  background: needOrWant === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)",
+                                  color: needOrWant === "need" ? "#22d3a5" : "#f97316",
+                                  border: "none", borderRadius: 999, padding: "1px 8px",
+                                  fontSize: 10, fontWeight: 700, flexShrink: 0,
                                 }}
                               >
-                                {needOrWant ?? "?"}
-                              </button>
+                                {needOrWant}
+                              </span>
                             )}
                             {displayTags.map((t) => (
                               <span key={t} style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
@@ -1492,19 +1488,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
   }, []);
 
-  const handleToggleNeedWant = useCallback(async (tx: Transaction) => {
-    const tags = tx.tags || [];
-    const hasNeed = tags.includes("need");
-    const hasWant = tags.includes("want");
-    const newTags = !hasNeed && !hasWant
-      ? [...tags, "need"]
-      : hasNeed
-        ? [...tags.filter((t) => t !== "need"), "want"]
-        : tags.filter((t) => t !== "want");
-    const { data, error } = await supabase.from("expenses").update({ tags: newTags }).eq("id", tx.id).select().single();
-    if (!error && data) setTransactions((prev) => prev.map((t) => t.id === tx.id ? { ...t, tags: newTags } : t));
-  }, []);
-
   const handleAiClassify = useCallback(async () => {
     if (isClassifying) return;
     setIsClassifying(true);
@@ -1769,7 +1752,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           justAddedId={justAddedId}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          onToggleNeedWant={handleToggleNeedWant}
           rates={rates}
           formatAmount={fmtDisplay}
           catCustomizations={catCustomizations}
