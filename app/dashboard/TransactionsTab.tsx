@@ -1288,6 +1288,100 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
   );
 }
 
+// ─── AI Review Modal ──────────────────────────────────────────────────────────
+function AiReviewModal({
+  pending,
+  onApprove,
+  onApproveAllSameName,
+  onApproveAll,
+  onSkip,
+  onClose,
+}: {
+  pending: { tx: Transaction; suggestion: "need" | "want" }[];
+  onApprove: (tx: Transaction, suggestion: "need" | "want") => void;
+  onApproveAllSameName: (description: string, suggestion: "need" | "want") => void;
+  onApproveAll: () => void;
+  onSkip: (txId: string) => void;
+  onClose: () => void;
+}) {
+  if (!pending.length) return null;
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,8,14,0.7)", zIndex: 50 }} />
+      <div style={{
+        position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+        background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14,
+        zIndex: 51, width: "min(560px, 95vw)", maxHeight: "80vh", display: "flex", flexDirection: "column",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--uf-border)", flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>Review AI classifications</div>
+            <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 2 }}>{pending.length} suggestion{pending.length !== 1 ? "s" : ""} — approve or skip each one</div>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              onClick={onApproveAll}
+              style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            >
+              Approve all
+            </button>
+            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 18, color: "var(--uf-text-3)", cursor: "pointer", padding: "4px 8px" }}>✕</button>
+          </div>
+        </div>
+
+        {/* Rows */}
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {pending.map(({ tx, suggestion }) => {
+            const sameNameCount = pending.filter((p) => p.tx.description.toLowerCase() === tx.description.toLowerCase()).length;
+            return (
+              <div key={tx.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", padding: "12px 20px", borderTop: "1px solid var(--uf-border)" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date}</span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "1px 8px",
+                      background: suggestion === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)",
+                      color: suggestion === "need" ? "#22d3a5" : "#f97316",
+                    }}>
+                      AI: {suggestion}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button
+                    onClick={() => onApprove(tx, suggestion)}
+                    style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                  >
+                    Approve
+                  </button>
+                  {sameNameCount > 1 && (
+                    <button
+                      onClick={() => onApproveAllSameName(tx.description, suggestion)}
+                      style={{ background: "var(--uf-surface-2)", color: "var(--uf-text)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                      title={`Approve all ${sameNameCount} "${tx.description}" transactions as ${suggestion}`}
+                    >
+                      Approve all ({sameNameCount})
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onSkip(tx.id)}
+                    style={{ background: "none", color: "var(--uf-text-3)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false }: {
   defaultCurrency?: string;
@@ -1301,6 +1395,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [refreshKey, setRefreshKey] = useState(0);
   const [showImport, setShowImport] = useState(false);
   const [isClassifying, setIsClassifying] = useState(false);
+  const [pendingClassifications, setPendingClassifications] = useState<{ tx: Transaction; suggestion: "need" | "want" }[]>([]);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
@@ -1488,6 +1583,22 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
   }, []);
 
+  const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want" }[]) => {
+    const updates = toApply.map(({ tx, suggestion }) => ({
+      id: tx.id,
+      tags: [...(tx.tags || []).filter((t) => t !== "need" && t !== "want"), suggestion],
+    }));
+    for (let i = 0; i < updates.length; i += 20) {
+      await Promise.all(
+        updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags }).eq("id", u.id))
+      );
+    }
+    setTransactions((prev) => prev.map((t) => {
+      const u = updates.find((x) => x.id === t.id);
+      return u ? { ...t, tags: u.tags } : t;
+    }));
+  }, []);
+
   const handleAiClassify = useCallback(async () => {
     if (isClassifying) return;
     setIsClassifying(true);
@@ -1510,21 +1621,11 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       const { results } = await res.json() as { results: { description: string; needOrWant: string }[] };
       const classMap = new Map(results.map((r) => [r.description.toLowerCase(), r.needOrWant]));
 
-      const updates = unclassified.map((tx) => ({
-        id: tx.id,
-        tags: [...(tx.tags || []), classMap.get(tx.description.toLowerCase()) ?? "want"],
+      const pending = unclassified.map((tx) => ({
+        tx,
+        suggestion: (classMap.get(tx.description.toLowerCase()) === "need" ? "need" : "want") as "need" | "want",
       }));
-
-      for (let i = 0; i < updates.length; i += 20) {
-        await Promise.all(
-          updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags }).eq("id", u.id))
-        );
-      }
-      setTransactions((prev) => prev.map((t) => {
-        const u = updates.find((x) => x.id === t.id);
-        return u ? { ...t, tags: u.tags } : t;
-      }));
-      showToast(`${unclassified.length} expense${unclassified.length !== 1 ? "s" : ""} classified`);
+      setPendingClassifications(pending);
     } catch {
       showToast("Classification failed — try again", undefined, undefined, true);
     } finally {
@@ -1796,6 +1897,28 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       </MobileDrawer>
 
       <Toast toast={toast} onUndo={handleUndo} />
+
+      {pendingClassifications.length > 0 && (
+        <AiReviewModal
+          pending={pendingClassifications}
+          onApprove={async (tx, suggestion) => {
+            await applyClassifications([{ tx, suggestion }]);
+            setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== tx.id));
+          }}
+          onApproveAllSameName={async (description, suggestion) => {
+            const matches = pendingClassifications.filter((p) => p.tx.description.toLowerCase() === description.toLowerCase());
+            await applyClassifications(matches);
+            setPendingClassifications((prev) => prev.filter((p) => p.tx.description.toLowerCase() !== description.toLowerCase()));
+          }}
+          onApproveAll={async () => {
+            await applyClassifications(pendingClassifications);
+            showToast(`${pendingClassifications.length} expense${pendingClassifications.length !== 1 ? "s" : ""} classified`);
+            setPendingClassifications([]);
+          }}
+          onSkip={(txId) => setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== txId))}
+          onClose={() => setPendingClassifications([])}
+        />
+      )}
 
       {showImport && (
         <CsvImportModal
