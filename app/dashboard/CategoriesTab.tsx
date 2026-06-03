@@ -27,12 +27,15 @@ type Transaction = {
   id: string;
   date: string;
   amount: number;
+  refund_amount: number;
   currency: string;
   category: string;
   sub_category: string | null;
   tags: string[];
   transaction_type: "expense" | "income";
 };
+
+const netAmt = (t: Transaction) => Math.max(0, t.amount - (t.refund_amount || 0));
 
 type SubBreakdown = { name: string; total: number };
 type TagBreakdown = { tag: string; total: number };
@@ -46,7 +49,7 @@ function groupBySubCat(txns: Transaction[], rates: Record<string, number>): SubB
   const map: Record<string, number> = {};
   txns.forEach((t) => {
     const sc = t.sub_category || "Uncategorized";
-    map[sc] = (map[sc] || 0) + toUSD(t.amount, t.currency, rates);
+    map[sc] = (map[sc] || 0) + toUSD(netAmt(t), t.currency, rates);
   });
   return Object.entries(map)
     .map(([name, total]) => ({ name, total }))
@@ -76,7 +79,7 @@ function groupByCat(
       code: meta?.code || key.slice(0, 2).toUpperCase(),
       color,
       emoji,
-      total: catTxns.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+      total: catTxns.reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
       subBreakdown: groupBySubCat(catTxns, rates),
       tagBreakdown: [],
     };
@@ -515,7 +518,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
         const opposite = classification === "need" ? "want" : "need";
         const { data: freshData } = await supabase
           .from("expenses")
-          .select("id, tags, category, sub_category, transaction_type, date, amount, currency")
+          .select("id, tags, category, sub_category, transaction_type, date, amount, refund_amount, currency")
           .eq("user_id", session.user.id)
           .eq("transaction_type", "expense")
           .ilike("category", category)
@@ -657,7 +660,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
       if (!session) return;
       supabase
         .from("expenses")
-        .select("id, date, amount, currency, category, sub_category, tags, transaction_type")
+        .select("id, date, amount, refund_amount, currency, category, sub_category, tags, transaction_type")
         .eq("user_id", session.user.id)
         .order("date", { ascending: false })
         .then(({ data }) => {
@@ -716,7 +719,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   );
 
   const totalSpend = useMemo(
-    () => expTxns.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+    () => expTxns.reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
     [expTxns, rates]
   );
 
@@ -724,12 +727,12 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     return allExpenseCats
       .map((cat) => {
         const catTxns = expTxns.filter((t) => t.category === cat.key);
-        const total = catTxns.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+        const total = catTxns.reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
         const subBreakdown = groupBySubCat(catTxns, rates);
         const tagMap: Record<string, number> = {};
         catTxns.forEach((t) => {
           (t.tags || []).forEach((tag) => {
-            tagMap[tag] = (tagMap[tag] || 0) + toUSD(t.amount, t.currency, rates);
+            tagMap[tag] = (tagMap[tag] || 0) + toUSD(netAmt(t), t.currency, rates);
           });
         });
         const tagBreakdown: TagBreakdown[] = Object.entries(tagMap)
@@ -753,7 +756,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     return Object.entries(tagMap)
       .map(([tag, txns]) => ({
         tag,
-        total: txns.reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+        total: txns.reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
         catBreakdown: groupByCat(txns, rates, allExpenseCats, catCustomizations),
       }))
       .sort((a, b) => b.total - a.total);

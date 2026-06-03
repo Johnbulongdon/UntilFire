@@ -666,8 +666,8 @@ function QuickAddForm({
                 value={draft.refund_amount}
                 onChange={(e) => {
                   const v = e.target.value;
-                  const max = parseFloat(draft.amount) || 0;
-                  if (v === "" || parseFloat(v) <= max) setField("refund_amount", v);
+                  const max = draft.amount ? parseFloat(draft.amount) : Infinity;
+                  if (v === "" || (parseFloat(v) >= 0 && parseFloat(v) <= max)) setField("refund_amount", v);
                 }}
                 style={{ flex: 1, border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
               />
