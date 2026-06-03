@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import CsvImportModal from "./CsvImportModal";
-import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, Line } from "recharts";
 import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES as ALL_CATEGORIES_BASE,
@@ -1059,6 +1059,7 @@ function MonthlySummary({
   viewMonth,
   onPrevMonth,
   onNextMonth,
+  onSelectMonth,
   budgetExpenses,
   rates,
   ratesFallback,
@@ -1075,6 +1076,7 @@ function MonthlySummary({
   viewMonth: string;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  onSelectMonth: (month: string) => void;
   budgetExpenses: Record<string, number> | null;
   rates: Record<string, number>;
   ratesFallback: boolean;
@@ -1122,6 +1124,27 @@ function MonthlySummary({
   const prevIncome = prevTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const prevSpent = prevTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
 
+  // MOM chart data — last 12 months with data
+  const momData = useMemo(() => {
+    const months = [...new Set(transactions.map((t) => t.date.slice(0, 7)))]
+      .filter(Boolean).sort().slice(-12);
+    return months.map((month) => {
+      const txns = transactions.filter((t) => t.date.startsWith(month));
+      const income = txns.filter((t) => t.transaction_type === "income")
+        .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+      const expense = txns.filter((t) => t.transaction_type === "expense")
+        .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+      const [y, mo] = month.split("-").map(Number);
+      return {
+        month,
+        label: new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+        income: Math.round(income),
+        expense: Math.round(expense),
+        net: Math.round(income - expense),
+      };
+    });
+  }, [transactions, rates]);
+
   const kpiCard = (label: string, value: number, color: string, hint: string) => (
     <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-2)", marginBottom: 8 }}>{label}</div>
@@ -1134,6 +1157,48 @@ function MonthlySummary({
 
   return (
     <div style={{ marginBottom: 20 }}>
+
+      {/* MOM cashflow chart */}
+      {momData.length >= 2 && (
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "16px 20px 10px", marginBottom: 20, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "var(--uf-text-2)", marginBottom: 12 }}>
+            Monthly cashflow
+          </div>
+          <ResponsiveContainer width="100%" height={130}>
+            <ComposedChart data={momData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onClick={(e: any) => { if (e?.activePayload?.[0]) onSelectMonth(e.activePayload[0].payload.month); }}>
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--uf-text-3)", fontFamily: "inherit" }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <ChartTooltip
+                formatter={(v, name) => [formatAmount(Number(v ?? 0)), name === "income" ? "Income" : name === "expense" ? "Spent" : "Net"] as [string, string]}
+                contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
+                cursor={{ fill: "rgba(100,116,139,0.07)" }}
+              />
+              <Bar dataKey="income" fill="#059669" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
+              <Bar dataKey="expense" fill="#f97316" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
+              <Line dataKey="net" type="monotone" stroke="#22d3a5" strokeWidth={2}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                dot={(props: any) => (
+                  <circle key={props.payload.month} cx={props.cx} cy={props.cy} r={props.payload.month === viewMonth ? 5 : 3}
+                    fill={props.payload.month === viewMonth ? "#22d3a5" : "var(--uf-card)"}
+                    stroke="#22d3a5" strokeWidth={2} />
+                )} />
+            </ComposedChart>
+          </ResponsiveContainer>
+          <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+            {[{ color: "#059669", opacity: 0.7, label: "Income" }, { color: "#f97316", opacity: 0.7, label: "Spent" }, { color: "#22d3a5", opacity: 1, label: "Net", line: true }].map(({ color, opacity, label, line }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--uf-text-3)" }}>
+                {line
+                  ? <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2" /><circle cx="8" cy="4" r="2.5" fill="white" stroke={color} strokeWidth="2" /></svg>
+                  : <span style={{ width: 10, height: 10, borderRadius: 2, background: color, opacity, display: "inline-block" }} />}
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header row: month label + nav */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div>
@@ -2027,6 +2092,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         viewMonth={viewMonth}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
+        onSelectMonth={setViewMonth}
         budgetExpenses={budgetExpenses}
         rates={rates}
         ratesFallback={ratesFallback}
