@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import CsvImportModal from "./CsvImportModal";
+import PdfImportModal from "./PdfImportModal";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
 import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import {
@@ -1472,6 +1473,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showImport, setShowImport] = useState(false);
+  const [showPdfImport, setShowPdfImport] = useState(false);
   const [isClassifying, setIsClassifying] = useState(false);
   const [pendingClassifications, setPendingClassifications] = useState<{ tx: Transaction; suggestion: "need" | "want"; wasTag?: "need" | "want" }[]>([]);
   const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>([]);
@@ -1945,7 +1947,17 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         }
       `}</style>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 4 }}>
+        <button
+          onClick={() => setShowPdfImport(true)}
+          style={{
+            padding: "7px 14px", borderRadius: 8, border: "1px solid #23232d",
+            background: "transparent", color: "#94a3b8", fontSize: 12, fontWeight: 600,
+            cursor: "pointer", fontFamily: "Manrope, sans-serif", display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          ↑ Import PDF
+        </button>
         <button
           onClick={() => setShowImport(true)}
           style={{
@@ -2065,6 +2077,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           rates={rates}
           formatAmount={fmtDisplay}
           displayCurrency={displayCurrency}
+        />
+      )}
+
+      {showPdfImport && (
+        <PdfImportModal
+          onClose={() => setShowPdfImport(false)}
+          onImported={(count) => {
+            setShowPdfImport(false);
+            setRefreshKey((k) => k + 1);
+          }}
+          defaultCurrency={defaultCurrency}
+          existingTransactions={transactions}
         />
       )}
     </>

@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["pdf-parse"],
   productionBrowserSourceMaps: false,
   async redirects() {
     return [
