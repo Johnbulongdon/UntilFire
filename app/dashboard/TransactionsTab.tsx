@@ -1396,6 +1396,9 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [showImport, setShowImport] = useState(false);
   const [isClassifying, setIsClassifying] = useState(false);
   const [pendingClassifications, setPendingClassifications] = useState<{ tx: Transaction; suggestion: "need" | "want" }[]>([]);
+  useEffect(() => {
+    console.log("[TransactionsTab] pendingClassifications updated:", pendingClassifications.length);
+  }, [pendingClassifications]);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
@@ -1584,15 +1587,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, []);
 
   const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want" }[]) => {
+    console.log("[applyClassifications] Applying", toApply.length, "classifications");
     const updates = toApply.map(({ tx, suggestion }) => ({
       id: tx.id,
       tags: [...(tx.tags || []).filter((t) => t !== "need" && t !== "want"), suggestion],
     }));
+    console.log("[applyClassifications] Updating DB with:", updates.length, "updates");
     for (let i = 0; i < updates.length; i += 20) {
       await Promise.all(
         updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags }).eq("id", u.id))
       );
     }
+    console.log("[applyClassifications] DB updates complete, updating local state");
     setTransactions((prev) => prev.map((t) => {
       const u = updates.find((x) => x.id === t.id);
       return u ? { ...t, tags: u.tags } : t;
@@ -1603,30 +1609,38 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     if (isClassifying) return;
     setIsClassifying(true);
     try {
-      const unclassified = transactions.filter(
-        (t) => t.transaction_type === "expense" && !t.tags?.includes("need") && !t.tags?.includes("want")
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const toReview = transactions.filter(
+        (t) => t.transaction_type === "expense" && t.date.startsWith(currentMonth)
       );
-      if (!unclassified.length) { showToast("All expenses are already classified"); return; }
+      console.log("[AI Classify] Found current month expenses to review:", toReview.length);
+      if (!toReview.length) { showToast("No expenses to classify this month"); return; }
 
       const items = [...new Map(
-        unclassified.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
+        toReview.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
       ).values()];
 
+      console.log("[AI Classify] Sending to API:", items.length, "unique items");
       const res = await fetch("/api/classify-needs-wants", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
+      console.log("[AI Classify] API response status:", res.status);
       if (!res.ok) throw new Error("classification failed");
       const { results } = await res.json() as { results: { description: string; needOrWant: string }[] };
+      console.log("[AI Classify] Got results:", results.length);
       const classMap = new Map(results.map((r) => [r.description.toLowerCase(), r.needOrWant]));
 
-      const pending = unclassified.map((tx) => ({
+      const pending = toReview.map((tx) => ({
         tx,
         suggestion: (classMap.get(tx.description.toLowerCase()) === "need" ? "need" : "want") as "need" | "want",
       }));
+      console.log("[AI Classify] Setting pending classifications:", pending.length);
       setPendingClassifications(pending);
-    } catch {
+    } catch (e) {
+      console.error("[AI Classify] Error:", e);
       showToast("Classification failed — try again", undefined, undefined, true);
     } finally {
       setIsClassifying(false);
