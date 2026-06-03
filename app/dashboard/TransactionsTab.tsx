@@ -1304,7 +1304,15 @@ function AiReviewModal({
   onSkip: (txId: string) => void;
   onClose: () => void;
 }) {
+  const [overrides, setOverrides] = useState<Record<string, "need" | "want">>({});
   if (!pending.length) return null;
+
+  const effectiveSuggestion = (tx: Transaction, suggestion: "need" | "want") =>
+    overrides[tx.id] ?? suggestion;
+
+  const toggle = (tx: Transaction, current: "need" | "want") =>
+    setOverrides((prev) => ({ ...prev, [tx.id]: current === "need" ? "want" : "need" }));
+
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,8,14,0.7)", zIndex: 50 }} />
@@ -1318,7 +1326,7 @@ function AiReviewModal({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--uf-border)", flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>Review AI classifications</div>
-            <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 2 }}>{pending.length} suggestion{pending.length !== 1 ? "s" : ""} — approve or skip each one</div>
+            <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 2 }}>{pending.length} suggestion{pending.length !== 1 ? "s" : ""} — tap the badge to change, then approve</div>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button
@@ -1334,6 +1342,8 @@ function AiReviewModal({
         {/* Rows */}
         <div style={{ overflowY: "auto", flex: 1 }}>
           {pending.map(({ tx, suggestion }) => {
+            const effective = effectiveSuggestion(tx, suggestion);
+            const changed = effective !== suggestion;
             const sameNameCount = pending.filter((p) => p.tx.description.toLowerCase() === tx.description.toLowerCase()).length;
             return (
               <div key={tx.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", padding: "12px 20px", borderTop: "1px solid var(--uf-border)" }}>
@@ -1341,27 +1351,37 @@ function AiReviewModal({
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date}</span>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "1px 8px",
-                      background: suggestion === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)",
-                      color: suggestion === "need" ? "#22d3a5" : "#f97316",
-                    }}>
-                      AI: {suggestion}
-                    </span>
+                    {/* Clickable toggle pill */}
+                    <button
+                      onClick={() => toggle(tx, effective)}
+                      title="Click to switch between need / want"
+                      style={{
+                        fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "2px 8px",
+                        background: effective === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)",
+                        color: effective === "need" ? "#22d3a5" : "#f97316",
+                        border: changed
+                          ? `1px solid ${effective === "need" ? "#22d3a5" : "#f97316"}`
+                          : "1px solid transparent",
+                        cursor: "pointer", display: "flex", alignItems: "center", gap: 3,
+                      }}
+                    >
+                      {effective === "need" ? "need" : "want"}
+                      <span style={{ fontSize: 9, opacity: 0.7 }}>⇄</span>
+                    </button>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                   <button
-                    onClick={() => onApprove(tx, suggestion)}
+                    onClick={() => onApprove(tx, effective)}
                     style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                   >
                     Approve
                   </button>
                   {sameNameCount > 1 && (
                     <button
-                      onClick={() => onApproveAllSameName(tx.description, suggestion)}
+                      onClick={() => onApproveAllSameName(tx.description, effective)}
                       style={{ background: "var(--uf-surface-2)", color: "var(--uf-text)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-                      title={`Approve all ${sameNameCount} "${tx.description}" transactions as ${suggestion}`}
+                      title={`Approve all ${sameNameCount} "${tx.description}" as ${effective}`}
                     >
                       Approve all ({sameNameCount})
                     </button>
