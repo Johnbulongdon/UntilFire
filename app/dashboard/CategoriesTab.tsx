@@ -477,6 +477,9 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   const [deleteConfirmKey, setDeleteConfirmKey] = useState<string | null>(null);
   const [catCustomizations, setCatCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
   const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>([]);
+  const [mismatchPrompt, setMismatchPrompt] = useState<{
+    category: string; sub_category: string; classification: "need" | "want"; mismatched: Transaction[];
+  } | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -508,8 +511,40 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
           const filtered = prev.filter((r) => !(r.category === category && r.sub_category === sub_category));
           return [...filtered, data as ClassificationRule];
         });
+        // Find mismatched existing transactions (wrong tag or untagged)
+        const opposite = classification === "need" ? "want" : "need";
+        const mismatched = transactions.filter((t) =>
+          t.transaction_type === "expense" &&
+          t.category?.toLowerCase() === category.toLowerCase() &&
+          t.sub_category?.toLowerCase() === sub_category.toLowerCase() &&
+          (!t.tags?.includes(classification) || t.tags?.includes(opposite))
+        );
+        if (mismatched.length > 0) {
+          setMismatchPrompt({ category, sub_category, classification, mismatched });
+        }
       }
     }
+  };
+
+  const handleApplyMismatch = async () => {
+    if (!mismatchPrompt) return;
+    const { classification, mismatched } = mismatchPrompt;
+    const opposite = classification === "need" ? "want" : "need";
+    const updates = mismatched.map((t) => ({
+      id: t.id,
+      tags: [...(t.tags || []).filter((tag) => tag !== "need" && tag !== "want"), classification],
+    }));
+    for (let i = 0; i < updates.length; i += 20) {
+      await Promise.all(
+        updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags }).eq("id", u.id))
+      );
+    }
+    setTransactions((prev) => prev.map((t) => {
+      const u = updates.find((x) => x.id === t.id);
+      return u ? { ...t, tags: u.tags } : t;
+    }));
+    setMismatchPrompt(null);
+    void opposite; // suppress unused warning
   };
   const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 
@@ -744,6 +779,45 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
 
   return (
     <div>
+      {/* Mismatch prompt */}
+      {mismatchPrompt && (
+        <>
+          <div onClick={() => setMismatchPrompt(null)} style={{ position: "fixed", inset: 0, background: "rgba(8,8,14,0.6)", zIndex: 50 }} />
+          <div style={{
+            position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+            background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14,
+            zIndex: 51, width: "min(420px, 92vw)", padding: "20px 24px",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginBottom: 6 }}>
+              Rule mismatch detected
+            </div>
+            <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.5, marginBottom: 18 }}>
+              <strong>{mismatchPrompt.mismatched.length}</strong> existing{" "}
+              <strong style={{ textTransform: "capitalize" }}>{mismatchPrompt.sub_category}</strong>{" "}
+              transaction{mismatchPrompt.mismatched.length !== 1 ? "s are" : " is"} not tagged as{" "}
+              <strong style={{ color: mismatchPrompt.classification === "need" ? "#22d3a5" : "#f97316" }}>
+                {mismatchPrompt.classification}
+              </strong>. Update them to match the rule?
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={handleApplyMismatch}
+                style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", flex: 1 }}
+              >
+                Update {mismatchPrompt.mismatched.length} transaction{mismatchPrompt.mismatched.length !== 1 ? "s" : ""}
+              </button>
+              <button
+                onClick={() => setMismatchPrompt(null)}
+                style={{ background: "none", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 7, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                Ignore
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Month nav */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
