@@ -9,6 +9,13 @@ import {
   CatCustomizations, COLOR_PALETTE, EMOJI_PALETTE, resolveDisplay,
 } from "@/lib/categories";
 
+type ClassificationRule = {
+  id: string;
+  category: string;
+  sub_category: string | null;
+  classification: "need" | "want";
+};
+
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
   const rate = rates[currency];
@@ -104,6 +111,8 @@ function CategoryRow({
   onDelete,
   deleteConfirmKey,
   onRequestDelete,
+  classificationRules,
+  onSetRule,
   onCancelDelete,
   subCategories,
   onAddSubCategory,
@@ -126,6 +135,8 @@ function CategoryRow({
   subCategories: string[];
   onAddSubCategory: (sub: string) => void;
   onDeleteSubCategory: (sub: string) => void;
+  classificationRules: ClassificationRule[];
+  onSetRule: (category: string, sub_category: string, classification: "need" | "want" | null) => void;
 }) {
   const pct = totalSpend > 0 ? (cat.total / totalSpend) * 100 : 0;
   const isDeleteConfirming = deleteConfirmKey === cat.key;
@@ -320,13 +331,35 @@ function CategoryRow({
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {cat.subBreakdown.map((sc) => {
                   const scPct = cat.total > 0 ? (sc.total / cat.total) * 100 : 0;
+                  const rule = classificationRules.find(
+                    (r) => r.category.toLowerCase() === cat.key.toLowerCase() &&
+                           r.sub_category?.toLowerCase() === sc.name.toLowerCase()
+                  );
+                  const cycleRule = () => {
+                    if (!rule) onSetRule(cat.key, sc.name, "need");
+                    else if (rule.classification === "need") onSetRule(cat.key, sc.name, "want");
+                    else onSetRule(cat.key, sc.name, null);
+                  };
                   return (
-                    <div key={sc.name} style={{ display: "grid", gridTemplateColumns: "140px 1fr 70px", gap: 10, alignItems: "center" }}>
+                    <div key={sc.name} style={{ display: "grid", gridTemplateColumns: "140px 1fr 70px auto", gap: 10, alignItems: "center" }}>
                       <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontWeight: 500 }}>{sc.name}</span>
                       <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${scPct}%`, background: cat.color, opacity: 0.65, borderRadius: 99 }} />
                       </div>
                       <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatAmount(sc.total)}</span>
+                      <button
+                        onClick={cycleRule}
+                        title={rule ? `Rule: always ${rule.classification} — click to change` : "Click to set a classification rule"}
+                        style={{
+                          fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "2px 8px",
+                          background: rule?.classification === "need" ? "rgba(34,211,165,0.15)" : rule?.classification === "want" ? "rgba(249,115,22,0.15)" : "var(--uf-surface-2)",
+                          color: rule?.classification === "need" ? "#22d3a5" : rule?.classification === "want" ? "#f97316" : "var(--uf-text-3)",
+                          border: rule ? `1px solid ${rule.classification === "need" ? "#22d3a5" : "#f97316"}` : "1px dashed var(--uf-border)",
+                          cursor: "pointer", whiteSpace: "nowrap",
+                        }}
+                      >
+                        {rule ? rule.classification : "+ rule"}
+                      </button>
                     </div>
                   );
                 })}
@@ -443,6 +476,41 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   const [editingCat, setEditingCat] = useState<string | null>(null);
   const [deleteConfirmKey, setDeleteConfirmKey] = useState<string | null>(null);
   const [catCustomizations, setCatCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
+  const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>([]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("classification_rules")
+        .select("id, category, sub_category, classification")
+        .eq("user_id", session.user.id)
+        .then(({ data }) => { if (data) setClassificationRules(data as ClassificationRule[]); });
+    });
+  }, []);
+
+  const handleSetRule = async (category: string, sub_category: string, classification: "need" | "want" | null) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    if (classification === null) {
+      await supabase.from("classification_rules")
+        .delete()
+        .eq("user_id", session.user.id)
+        .eq("category", category)
+        .eq("sub_category", sub_category);
+      setClassificationRules((prev) => prev.filter((r) => !(r.category === category && r.sub_category === sub_category)));
+    } else {
+      const { data } = await supabase.from("classification_rules").upsert(
+        { user_id: session.user.id, category, sub_category, classification },
+        { onConflict: "user_id,category,sub_category" }
+      ).select("id, category, sub_category, classification").single();
+      if (data) {
+        setClassificationRules((prev) => {
+          const filtered = prev.filter((r) => !(r.category === category && r.sub_category === sub_category));
+          return [...filtered, data as ClassificationRule];
+        });
+      }
+    }
+  };
   const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 
   useEffect(() => { saveCatCustomizations(catCustomizations); }, [catCustomizations]);
@@ -791,6 +859,8 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
             subCategories={customSubCats[cat.key] || []}
             onAddSubCategory={(sub) => handleAddSubCategory(cat.key, sub)}
             onDeleteSubCategory={(sub) => handleDeleteSubCategory(cat.key, sub)}
+            classificationRules={classificationRules}
+            onSetRule={handleSetRule}
           />
         ))}
       </div>
