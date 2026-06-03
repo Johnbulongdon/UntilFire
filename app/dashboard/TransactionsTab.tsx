@@ -62,6 +62,13 @@ type Transaction = {
   sub_category: string | null;
 };
 
+type ClassificationRule = {
+  id: string;
+  category: string;
+  sub_category: string | null;
+  classification: "need" | "want";
+};
+
 type DraftTransaction = {
   id: string | null;
   transaction_type: "expense" | "income" | "transfer";
@@ -1296,6 +1303,7 @@ function AiReviewModal({
   onApproveAll,
   onSkip,
   onClose,
+  onSaveRule,
 }: {
   pending: { tx: Transaction; suggestion: "need" | "want" }[];
   onApprove: (tx: Transaction, suggestion: "need" | "want") => void;
@@ -1303,8 +1311,10 @@ function AiReviewModal({
   onApproveAll: () => void;
   onSkip: (txId: string) => void;
   onClose: () => void;
+  onSaveRule: (category: string, sub_category: string, classification: "need" | "want") => void;
 }) {
   const [overrides, setOverrides] = useState<Record<string, "need" | "want">>({});
+  const [saveRuleIds, setSaveRuleIds] = useState<Set<string>>(new Set());
   if (!pending.length) return null;
 
   const effectiveSuggestion = (tx: Transaction, suggestion: "need" | "want") =>
@@ -1349,8 +1359,16 @@ function AiReviewModal({
               <div key={tx.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", padding: "12px 20px", borderTop: "1px solid var(--uf-border)" }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 3 }}>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date}</span>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600 }}>
+                      {tx.currency} {Math.abs(tx.amount).toFixed(2)}
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
+                    <span style={{ fontSize: 11, color: "var(--uf-text-3)", textTransform: "capitalize" }}>
+                      {tx.sub_category ? `${tx.category} / ${tx.sub_category}` : tx.category}
+                    </span>
                     {/* Clickable toggle pill */}
                     <button
                       onClick={() => toggle(tx, effective)}
@@ -1369,10 +1387,37 @@ function AiReviewModal({
                       <span style={{ fontSize: 9, opacity: 0.7 }}>⇄</span>
                     </button>
                   </div>
+                  {tx.notes && (
+                    <div style={{ fontSize: 11, color: "var(--uf-text-3)", marginTop: 2, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {tx.notes}
+                    </div>
+                  )}
+                  {changed && tx.sub_category && (
+                    <label style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={saveRuleIds.has(tx.id)}
+                        onChange={(e) => setSaveRuleIds((prev) => {
+                          const next = new Set(prev);
+                          e.target.checked ? next.add(tx.id) : next.delete(tx.id);
+                          return next;
+                        })}
+                        style={{ accentColor: "#22d3a5", width: 12, height: 12 }}
+                      />
+                      <span style={{ fontSize: 10, color: "var(--uf-text-3)" }}>
+                        Always classify <strong style={{ color: "var(--uf-text-2)" }}>{tx.sub_category}</strong> as <strong style={{ color: effective === "need" ? "#22d3a5" : "#f97316" }}>{effective}</strong>
+                      </span>
+                    </label>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                   <button
-                    onClick={() => onApprove(tx, effective)}
+                    onClick={() => {
+                      if (saveRuleIds.has(tx.id) && tx.sub_category) {
+                        onSaveRule(tx.category, tx.sub_category, effective);
+                      }
+                      onApprove(tx, effective);
+                    }}
                     style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                   >
                     Approve
@@ -1419,6 +1464,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   useEffect(() => {
     console.log("[TransactionsTab] pendingClassifications updated:", pendingClassifications.length);
   }, [pendingClassifications]);
+  const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>([]);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
@@ -1590,6 +1636,16 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     });
   }, [refreshKey]);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("classification_rules")
+        .select("id, category, sub_category, classification")
+        .eq("user_id", session.user.id)
+        .then(({ data }) => { if (data) setClassificationRules(data as ClassificationRule[]); });
+    });
+  }, []);
+
   const monthTxns = useMemo(
     () => transactions.filter((t) => t.date.startsWith(viewMonth)),
     [transactions, viewMonth]
@@ -1635,8 +1691,26 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       console.log("[AI Classify] Found expenses to review for", viewMonth, ":", toReview.length);
       if (!toReview.length) { showToast("No expenses to classify this month"); return; }
 
+      // Apply saved rules first — these get written immediately, skipping AI + modal
+      const ruleMatched: { tx: Transaction; suggestion: "need" | "want" }[] = [];
+      const needsAi: Transaction[] = [];
+      for (const tx of toReview) {
+        const rule = classificationRules.find((r) =>
+          r.category.toLowerCase() === (tx.category || "").toLowerCase() &&
+          r.sub_category !== null &&
+          r.sub_category.toLowerCase() === (tx.sub_category || "").toLowerCase()
+        );
+        if (rule) ruleMatched.push({ tx, suggestion: rule.classification });
+        else needsAi.push(tx);
+      }
+      if (ruleMatched.length > 0) {
+        await applyClassifications(ruleMatched);
+        showToast(`${ruleMatched.length} transaction${ruleMatched.length !== 1 ? "s" : ""} auto-classified by rules`);
+      }
+      if (!needsAi.length) return;
+
       const items = [...new Map(
-        toReview.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
+        needsAi.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
       ).values()];
 
       console.log("[AI Classify] Sending to API:", items.length, "unique items");
@@ -1651,7 +1725,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       console.log("[AI Classify] Got results:", results.length);
       const classMap = new Map(results.map((r) => [r.description.toLowerCase(), r.needOrWant]));
 
-      const pending = toReview.map((tx) => ({
+      const pending = needsAi.map((tx) => ({
         tx,
         suggestion: (classMap.get(tx.description.toLowerCase()) === "need" ? "need" : "want") as "need" | "want",
       }));
@@ -1663,7 +1737,23 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     } finally {
       setIsClassifying(false);
     }
-  }, [transactions, isClassifying, showToast, viewMonth]);
+  }, [transactions, isClassifying, showToast, viewMonth, classificationRules, applyClassifications]);
+
+  const handleSaveRule = useCallback(async (category: string, sub_category: string, classification: "need" | "want") => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const { data } = await supabase.from("classification_rules").upsert(
+      { user_id: session.user.id, category, sub_category, classification },
+      { onConflict: "user_id,category,sub_category" }
+    ).select("id, category, sub_category, classification").single();
+    if (data) {
+      setClassificationRules((prev) => {
+        const filtered = prev.filter((r) => !(r.category === category && r.sub_category === sub_category));
+        return [...filtered, data as ClassificationRule];
+      });
+      showToast(`Rule saved: ${sub_category} → ${classification}`);
+    }
+  }, [showToast]);
 
   const handlePredictBudget = useCallback(async () => {
     const now = new Date();
@@ -1949,6 +2039,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           }}
           onSkip={(txId) => setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== txId))}
           onClose={() => setPendingClassifications([])}
+          onSaveRule={handleSaveRule}
         />
       )}
 
