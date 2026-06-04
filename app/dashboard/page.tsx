@@ -636,6 +636,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       flowByDay.set(key, (flowByDay.get(key) ?? 0) + signedAmount);
     }
 
+    // These are set inside the flowByDay branch and used for todayEntry below
+    let todayContributions: number | null = null;
+    let todayMarketGain: number | null = null;
+
     const historyEntries: Array<{
       key: string;
       label: string;
@@ -675,10 +679,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
       // Build a map of actual portfolio values from nwSnapshots (includes unrealized gains).
       // For each month keep the last snapshot — most up-to-date reading for that period.
+      // Skip snapshots with portfolio_value = 0 (captured before Plaid accounts loaded).
       const snapByMonth = new Map<string, number>();
       for (const snap of [...nwSnapshots].sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime())) {
         const d = new Date(snap.captured_at);
-        if (!Number.isNaN(d.getTime())) snapByMonth.set(toMonthKey(d), snap.portfolio_value);
+        if (!Number.isNaN(d.getTime()) && snap.portfolio_value > 0) snapByMonth.set(toMonthKey(d), snap.portfolio_value);
       }
 
       const monthEndPoints = new Map<string, { date: Date; value: number }>();
@@ -697,8 +702,9 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             ? Math.max(0, Math.round(snapVal))
             : Math.max(0, Math.round(point.value));
           const monthCumFlow = cumFlowByMonth.get(monthKey) ?? 0;
-          const contributed = Math.min(portfolioVal, Math.round(startValue + monthCumFlow));
-          const marketGain = Math.max(0, portfolioVal - contributed);
+          // If portfolioVal is suspiciously near 0 (bad data), skip the breakdown
+          const contributed = portfolioVal > 0 ? Math.min(portfolioVal, Math.round(startValue + monthCumFlow)) : null;
+          const marketGain = contributed !== null ? Math.max(0, portfolioVal - contributed) : null;
           return {
             key: `history-${index}`,
             label: chartMonthTooltipFormatter.format(point.date),
@@ -712,6 +718,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           };
         })
       );
+
+      // Compute today's split using the same formula so the stacked area
+      // connects smoothly at the history/today boundary
+      const todayCumFlow = cumFlowByMonth.get(toMonthKey(today)) ?? 0;
+      todayContributions = Math.min(investable, Math.round(startValue + todayCumFlow));
+      todayMarketGain = Math.max(0, investable - todayContributions);
     } else {
       const monthEndSnapshots = new Map<string, { date: Date; value: number }>();
       for (const snap of [...nwSnapshots].sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime())) {
@@ -744,8 +756,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       projected: investable,
       yearsOut: 0,
       phase: "today" as const,
-      Contributions: rawChartData[0]?.["Contributions"] ?? 0,
-      "Market Growth": rawChartData[0]?.["Market Growth"] ?? 0,
+      Contributions: todayContributions ?? rawChartData[0]?.["Contributions"] ?? 0,
+      "Market Growth": todayMarketGain ?? rawChartData[0]?.["Market Growth"] ?? 0,
     };
 
     const futureEntries = Array.from({ length: Math.max(0, (rawChartData.length - 1) * 12) }, (_, index) => {
