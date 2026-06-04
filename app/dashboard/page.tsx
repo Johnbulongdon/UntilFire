@@ -732,12 +732,15 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         phase: "projection" as const,
         Contributions: interpolate("Contributions"),
         "Market Growth": interpolate("Market Growth"),
-        sp500: Math.round(investable * Math.pow(1.10, yearsOut)),
+        sp500: Math.round(
+          investable * Math.pow(1.10, yearsOut) +
+          Math.max(0, annualSavings) * (Math.pow(1.10, yearsOut) - 1) / 0.10
+        ),
       };
     });
 
     return [...historyEntries, todayEntry, ...futureEntries];
-  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates]);
+  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates, annualSavings]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
