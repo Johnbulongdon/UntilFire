@@ -134,7 +134,9 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
 
   const avgIncome   = activeMths.reduce((s, m) => s + m.income, 0)   / (activeMths.length || 1);
   const avgExpenses = activeMths.reduce((s, m) => s + m.expenses, 0) / (activeMths.length || 1);
-  const avgRate     = activeMths.reduce((s, m) => s + m.savingsRate, 0) / (activeMths.length || 1);
+  const totalIncome = activeMths.reduce((s, m) => s + m.income, 0);
+  const totalNet    = activeMths.reduce((s, m) => s + m.net, 0);
+  const avgRate     = totalIncome > 0 ? (totalNet / totalIncome) * 100 : 0;
 
   const catTotals = useMemo(() => {
     const periodTxns = transactions.filter(
