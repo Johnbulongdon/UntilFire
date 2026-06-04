@@ -62,10 +62,9 @@ export async function POST(req: Request) {
   }
 
   const { error } = await supabase.from("waitlist").insert({ email: normalizedEmail })
-  if (error?.code === "23505") {
-    return NextResponse.json({ success: true })
-  }
-  if (error) {
+  // A duplicate (23505) is not a failure — the visitor still wants their plan emailed,
+  // so fall through to the email send instead of returning early.
+  if (error && error.code !== "23505") {
     return NextResponse.json({ error: "Unable to join the waitlist right now" }, { status: 400 })
   }
 
@@ -75,11 +74,12 @@ export async function POST(req: Request) {
       const sym = currency === "AUD" ? "A$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : currency === "CAD" ? "C$" : "$"
       return n >= 1_000_000 ? `${sym}${(n / 1_000_000).toFixed(2)}M` : `${sym}${Math.round(n).toLocaleString()}`
     }
-    await resend.emails.send({
-      from: "UntilFire <hello@untilfire.com>",
-      to: normalizedEmail,
-      subject: `Your FIRE number: ${fmt(fireTarget)} by ${retireYear}`,
-      html: `
+    try {
+      const { error: sendError } = await resend.emails.send({
+        from: "UntilFire <hello@untilfire.com>",
+        to: normalizedEmail,
+        subject: `Your FIRE number: ${fmt(fireTarget)} by ${retireYear}`,
+        html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#08080e;color:#f8fafc;border-radius:16px">
           <h1 style="font-size:22px;font-weight:800;margin:0 0 8px;color:#22d3a5">Your freedom date is ${retireYear}</h1>
           <p style="color:rgba(255,255,255,0.6);margin:0 0 28px;font-size:14px">Here's your FIRE summary from UntilFire</p>
@@ -95,7 +95,13 @@ export async function POST(req: Request) {
           <p style="margin:24px 0 0;font-size:11px;color:rgba(255,255,255,0.25)">Based on 4% safe withdrawal rate and 10% nominal return. Past market returns don't guarantee future results.</p>
         </div>
       `,
-    }).catch(() => {})
+      })
+      if (sendError) console.error("[waitlist] Resend send error:", sendError)
+    } catch (err) {
+      console.error("[waitlist] Resend threw:", err)
+    }
+  } else if (!process.env.RESEND_API_KEY) {
+    console.error("[waitlist] RESEND_API_KEY is not set — no email sent")
   }
 
   return NextResponse.json({ success: true })

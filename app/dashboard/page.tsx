@@ -615,6 +615,28 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const investable  = k401 + rothIRA + taxable + totalCash;
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
+
+  // Milestones along the FIRE path: fixed-dollar markers (famous in FIRE culture)
+  // woven in with percentage-of-target markers, ordered by value. The first
+  // unreached one is flagged as "next" to give a concrete near-term goal.
+  const milestones = useMemo(() => {
+    if (fireTarget <= 0) return [] as Array<{ key: string; label: string; blurb: string; value: number; achieved: boolean; isNext: boolean }>;
+    const items = [
+      { key: "start", label: "Started", blurb: "First dollar invested", value: 1 },
+      { key: "10k", label: "$10k invested", blurb: "Momentum begins", value: 10_000 },
+      { key: "100k", label: "$100k invested", blurb: "The hardest milestone is behind you", value: 100_000 },
+      { key: "quarter", label: "Quarter way", blurb: "25% to financial independence", value: fireTarget * 0.25 },
+      { key: "half", label: "Halfway to freedom", blurb: "50% to financial independence", value: fireTarget * 0.5 },
+      { key: "coast", label: "Coast FIRE zone", blurb: "Growth alone can carry you most of the way", value: fireTarget * 0.75 },
+      { key: "fi", label: "Financially independent", blurb: "Work becomes optional", value: fireTarget },
+    ]
+      .filter(m => m.value <= fireTarget)
+      .sort((a, b) => a.value - b.value);
+    const withState = items.map(m => ({ ...m, achieved: investable >= m.value, isNext: false }));
+    const nextIdx = withState.findIndex(m => !m.achieved);
+    if (nextIdx >= 0) withState[nextIdx].isNext = true;
+    return withState;
+  }, [investable, fireTarget]);
   const rawChartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
   const chartData = useMemo(() => {
     const now = new Date();
@@ -1484,6 +1506,60 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           )}
         </div>
       </div>
+
+      {/* ── Milestones along the path ────────────────────────────────────── */}
+      {milestones.length > 0 && (
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Milestones on your path
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", fontFamily: "Manrope, sans-serif" }}>
+              {milestones.filter(m => m.achieved).length} of {milestones.length} reached
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 0, overflowX: "auto", paddingBottom: 4 }}>
+            {milestones.map((m, i) => (
+              <div key={m.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: "1 0 auto", minWidth: 96, position: "relative" }}>
+                {/* connector line to previous node */}
+                {i > 0 && (
+                  <div style={{ position: "absolute", top: 13, right: "50%", width: "100%", height: 2, background: m.achieved ? "#059669" : "var(--uf-border)" }} />
+                )}
+                <div style={{
+                  width: 28, height: 28, borderRadius: 999, zIndex: 1,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 13, fontWeight: 800, fontFamily: "Manrope, sans-serif",
+                  background: m.achieved ? "#059669" : m.isNext ? "#ECFDF5" : "var(--uf-surface)",
+                  color: m.achieved ? "#fff" : m.isNext ? "#047857" : "var(--uf-text-3)",
+                  border: m.isNext ? "2px solid #059669" : m.achieved ? "none" : "1px solid var(--uf-border)",
+                }}>
+                  {m.achieved ? "✓" : i + 1}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: m.achieved || m.isNext ? "var(--uf-text)" : "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", textAlign: "center", marginTop: 8, lineHeight: 1.3, padding: "0 4px" }}>
+                  {m.label}
+                </div>
+                {m.isNext && (
+                  <div style={{ fontSize: 10, fontWeight: 800, color: "#047857", background: "#ECFDF5", borderRadius: 999, padding: "2px 8px", marginTop: 6, whiteSpace: "nowrap" }}>
+                    Next up
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {(() => {
+            const next = milestones.find(m => m.isNext);
+            return next ? (
+              <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
+                Next: <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>{next.label}</span> at {fmtMoney(next.value, true)} — {next.blurb}.
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: "#047857", fontFamily: "Manrope, sans-serif", fontWeight: 700, lineHeight: 1.6 }}>
+                Every milestone reached. You&apos;ve hit financial independence. 🎉
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* ── Monthly operating row ────────────────────────────────────────── */}
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
