@@ -533,7 +533,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -548,6 +548,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   plaidHoldings?: PlaidHolding[];
   budgetMode?: "manual" | "history";
   histMonthsCount?: number;
+  userJoinedAt?: string;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -619,24 +620,35 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   // Milestones along the FIRE path: fixed-dollar markers (famous in FIRE culture)
   // woven in with percentage-of-target markers, ordered by value. The first
   // unreached one is flagged as "next" to give a concrete near-term goal.
+  const joinedDateLabel = useMemo(() => {
+    if (!userJoinedAt) return "";
+    const d = new Date(userJoinedAt);
+    return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  }, [userJoinedAt]);
+
   const milestones = useMemo(() => {
     if (fireTarget <= 0) return [] as Array<{ key: string; label: string; blurb: string; value: number; achieved: boolean; isNext: boolean }>;
-    const items = [
-      { key: "start", label: "Started", blurb: "First dollar invested", value: 1 },
-      { key: "10k", label: "$10k invested", blurb: "Momentum begins", value: 10_000 },
-      { key: "100k", label: "$100k invested", blurb: "The hardest milestone is behind you", value: 100_000 },
-      { key: "quarter", label: "Quarter way", blurb: "25% to financial independence", value: fireTarget * 0.25 },
-      { key: "half", label: "Halfway to freedom", blurb: "50% to financial independence", value: fireTarget * 0.5 },
-      { key: "coast", label: "Coast FIRE zone", blurb: "Growth alone can carry you most of the way", value: fireTarget * 0.75 },
-      { key: "fi", label: "Financially independent", blurb: "Work becomes optional", value: fireTarget },
-    ]
-      .filter(m => m.value <= fireTarget)
+    const fixed = [
+      { key: "start", label: "Journey Started", blurb: joinedDateLabel || "Your FIRE journey begins", value: 1 },
+      { key: "10k",   label: "First $10k",       blurb: "Momentum is building",                         value: 10_000 },
+      { key: "100k",  label: "Six Figures",       blurb: "The hardest part is behind you",               value: 100_000 },
+    ];
+    const pct = [
+      { key: "quarter",  label: "Foundation Built", blurb: "25% to financial independence",           value: fireTarget * 0.25 },
+      { key: "half",     label: "Halfway Free",      blurb: "50% — the hard work is paying off",      value: fireTarget * 0.5  },
+      { key: "approach", label: "On the Approach",   blurb: "75% there — the finish line is visible", value: fireTarget * 0.75 },
+      { key: "fi",       label: "Work is Optional",  blurb: "Financial independence achieved",         value: fireTarget        },
+    ].filter(m => m.value > 100_000);
+    // Include $1M "2 Comma Club" unless it overlaps closely with a %-based milestone
+    const oneMil = { key: "1m", label: "2 Comma Club", blurb: "Portfolio crossed $1,000,000", value: 1_000_000 };
+    const tooClose = pct.some(m => Math.abs(m.value - 1_000_000) / 1_000_000 < 0.12);
+    const items = [...fixed, ...(!tooClose ? [oneMil] : []), ...pct]
       .sort((a, b) => a.value - b.value);
     const withState = items.map(m => ({ ...m, achieved: investable >= m.value, isNext: false }));
     const nextIdx = withState.findIndex(m => !m.achieved);
     if (nextIdx >= 0) withState[nextIdx].isNext = true;
     return withState;
-  }, [investable, fireTarget]);
+  }, [investable, fireTarget, joinedDateLabel]);
   const rawChartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
   const chartData = useMemo(() => {
     const now = new Date();
@@ -1507,21 +1519,20 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </div>
       </div>
 
-      {/* ── Milestones along the path ────────────────────────────────────── */}
+      {/* ── Achievements ─────────────────────────────────────────────────── */}
       {milestones.length > 0 && (
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Milestones on your path
+              Achievements
             </div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", fontFamily: "Manrope, sans-serif" }}>
-              {milestones.filter(m => m.achieved).length} of {milestones.length} reached
+              {milestones.filter(m => m.achieved).length} of {milestones.length} unlocked
             </div>
           </div>
           <div style={{ display: "flex", gap: 0, overflowX: "auto", paddingBottom: 4 }}>
             {milestones.map((m, i) => (
               <div key={m.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: "1 0 auto", minWidth: 96, position: "relative" }}>
-                {/* connector line to previous node */}
                 {i > 0 && (
                   <div style={{ position: "absolute", top: 13, right: "50%", width: "100%", height: 2, background: m.achieved ? "#059669" : "var(--uf-border)" }} />
                 )}
@@ -1538,6 +1549,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 <div style={{ fontSize: 11, fontWeight: 800, color: m.achieved || m.isNext ? "var(--uf-text)" : "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", textAlign: "center", marginTop: 8, lineHeight: 1.3, padding: "0 4px" }}>
                   {m.label}
                 </div>
+                {m.key === "start" && m.achieved && joinedDateLabel && (
+                  <div style={{ fontSize: 9, color: "var(--uf-text-3)", fontFamily: "Manrope, sans-serif", textAlign: "center", marginTop: 3, padding: "0 4px", lineHeight: 1.3 }}>
+                    {joinedDateLabel}
+                  </div>
+                )}
                 {m.isNext && (
                   <div style={{ fontSize: 10, fontWeight: 800, color: "#047857", background: "#ECFDF5", borderRadius: 999, padding: "2px 8px", marginTop: 6, whiteSpace: "nowrap" }}>
                     Next up
@@ -4068,6 +4084,7 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [userJoinedAt, setUserJoinedAt] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
 
@@ -4247,6 +4264,7 @@ export default function Dashboard() {
 
       setUserId(session.user.id);
       setUserEmail(session.user.email ?? "");
+      setUserJoinedAt(session.user.created_at ?? "");
 
       supabase
         .from("profiles")
@@ -4888,6 +4906,7 @@ export default function Dashboard() {
                 plaidHoldings={plaidHoldings}
                 budgetMode={budgetMode}
                 histMonthsCount={histMonthsCount}
+                userJoinedAt={userJoinedAt}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />

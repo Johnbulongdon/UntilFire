@@ -81,23 +81,6 @@ export async function POST(req: Request) {
         subject: `Your FIRE number: ${fmt(fireTarget)} by ${retireYear}`,
         html: (() => {
         const pb = portfolioBalance ?? 0;
-        const r = 0.10;
-        const annual = (monthlySavings ?? 0) * 12;
-        function yearsToMilestone(target: number): number {
-          if (pb >= target) return 0;
-          for (let n = 1; n <= 60; n++) {
-            const val = pb * Math.pow(1 + r, n) + annual * (Math.pow(1 + r, n) - 1) / r;
-            if (val >= target) return n;
-          }
-          return 60;
-        }
-        const currentYear = new Date().getFullYear();
-        const milestones = [
-          { pct: 25, amount: fireTarget * 0.25, year: currentYear + yearsToMilestone(fireTarget * 0.25) },
-          { pct: 50, amount: fireTarget * 0.50, year: currentYear + yearsToMilestone(fireTarget * 0.50) },
-          { pct: 75, amount: fireTarget * 0.75, year: currentYear + yearsToMilestone(fireTarget * 0.75) },
-          { pct: 100, amount: fireTarget, year: retireYear },
-        ];
         const progressPct = fireTarget > 0 ? Math.min(100, Math.round(pb / fireTarget * 100)) : 0;
 
         return `<!DOCTYPE html>
@@ -166,30 +149,6 @@ export async function POST(req: Request) {
               </td>
             </tr>
           </table>` : ""}
-        </td></tr>
-
-        <!-- Journey milestones -->
-        <tr><td style="padding:20px 0 0">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;padding:24px">
-            <tr><td>
-              <p style="margin:0 0 16px;font-size:13px;font-weight:700;color:#003527;text-transform:uppercase;letter-spacing:1px">Your FIRE Journey</p>
-              ${milestones.map((m) => `
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px">
-                <tr>
-                  <td width="100" style="font-size:12px;color:#6B7280;font-weight:600">${m.pct === 100 ? "&#127881; FIRE" : `${m.pct}% &mdash; ${m.year}`}</td>
-                  <td style="padding:0 10px">
-                    <table width="100%" cellpadding="0" cellspacing="0" style="background:#E5E7EB;border-radius:99px;overflow:hidden">
-                      <tr>
-                        <td width="${m.pct}%" style="background:${m.pct === 100 ? "#22D3A5" : "#059669"};height:8px;border-radius:99px"></td>
-                        <td style="height:8px"></td>
-                      </tr>
-                    </table>
-                  </td>
-                  <td width="80" style="text-align:right;font-size:12px;font-weight:700;color:#003527">${fmt(m.amount)}</td>
-                </tr>
-              </table>`).join("")}
-            </td></tr>
-          </table>
         </td></tr>
 
         <!-- CTA -->
