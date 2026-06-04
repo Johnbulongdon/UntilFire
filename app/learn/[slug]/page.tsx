@@ -123,11 +123,21 @@ export default async function LearnArticlePage({ params }: Props) {
           </div>
         </div>
         <div className="uf-article-body">
-          {article.body.map((node, i) =>
-            node.type === 'h2'
-              ? <h2 key={i}>{node.text}</h2>
-              : <p key={i}>{node.text}</p>
-          )}
+          {article.body.map((node, i) => {
+            if (node.type === 'h2') return <h2 key={i}>{node.text}</h2>
+            if (node.type === 'h3') return <h3 key={i} style={{ fontSize: 19, color: '#19181E', margin: '18px 0 8px', letterSpacing: '-0.01em' }}>{node.text}</h3>
+            if (node.type === 'ul') return (
+              <ul key={i} style={{ paddingLeft: 22, margin: '4px 0 16px', lineHeight: 1.75, color: '#334155' }}>
+                {node.items.map((item, j) => <li key={j} style={{ marginBottom: 6 }}>{item}</li>)}
+              </ul>
+            )
+            if (node.type === 'ol') return (
+              <ol key={i} style={{ paddingLeft: 22, margin: '4px 0 16px', lineHeight: 1.75, color: '#334155' }}>
+                {node.items.map((item, j) => <li key={j} style={{ marginBottom: 6 }}>{item}</li>)}
+              </ol>
+            )
+            return <p key={i}>{node.text}</p>
+          })}
         </div>
         <div style={{ marginTop: 40, paddingTop: 32, borderTop: '1px solid #E2E8F0', display: 'grid', gap: 18 }}>
           <div>
