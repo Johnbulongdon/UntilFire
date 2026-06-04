@@ -138,6 +138,35 @@ export default function FireNumberHubPage() {
           </div>
         ))}
 
+        {/* FAQ Section */}
+        <section style={{ marginTop: 48, background: "#ffffff", border: "1px solid #E2E8F0", borderRadius: 18, padding: "28px 24px" }}>
+          <h2 style={{ fontSize: 24, color: "#064E3B", margin: "0 0 18px", letterSpacing: "-0.02em" }}>
+            FIRE number by city FAQ
+          </h2>
+          <div style={{ display: "grid", gap: 16 }}>
+            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Why does the FIRE number vary so much by city?</h3>
+              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Cost of living is the primary driver. Housing, food, transportation, and healthcare all vary significantly across US cities. San Francisco has a ~3.1x higher cost of living than Wichita, KS — which means a $100,000 annual budget in San Francisco requires roughly a $3.1M portfolio, versus $1M in Wichita.</p>
+            </article>
+            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Do I have to use the median cost of living for my city?</h3>
+              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>No. These pages show the baseline using each city's median cost of living, but your actual FIRE number depends on your desired retirement spending — which may be higher or lower than the median. Use the full FIRE calculator to input your specific number.</p>
+            </article>
+            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>What about state taxes — are they included?</h3>
+              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>The cost of living data is based on housing, food, transportation, and other cost factors, but does not embed income tax assumptions. States with no income tax (Florida, Texas, Nevada, Washington, etc.) have a structural tax advantage for retirees — something to consider when comparing cities across state lines.</p>
+            </article>
+            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Can I use Lean FIRE or Fat FIRE targets instead?</h3>
+              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Yes. Each city page shows Lean, Regular, and Fat FIRE targets as well as the monthly savings timeline to reach full FIRE in 10, 15, 20, or more years. Pick the variant that fits your desired lifestyle.</p>
+            </article>
+            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>How accurate is this for my exact situation?</h3>
+              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>These pages provide a realistic baseline, but your actual FIRE number depends on your specific spending, taxes, healthcare, Social Security timing, and withdrawal strategy. Use the full FIRE calculator and pressure-test your number with different assumptions before making major life decisions.</p>
+            </article>
+          </div>
+        </section>
+
         {/* Bottom CTA */}
         <div style={{ marginTop: 48, background: "linear-gradient(135deg, #064E3B 0%, #047857 100%)", borderRadius: 16, padding: "32px 36px", textAlign: "center" }}>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: "0 0 10px" }}>
@@ -163,6 +192,43 @@ export default function FireNumberHubPage() {
           </Link>
         </div>
       </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'Why does the FIRE number vary so much by city?',
+                acceptedAnswer: { '@type': 'Answer', text: 'Cost of living is the primary driver. Housing, food, transportation, and healthcare all vary significantly across US cities. San Francisco has a ~3.1x higher cost of living than Wichita, KS — which means a $100,000 annual budget in San Francisco requires roughly a $3.1M portfolio, versus $1M in Wichita.' },
+              },
+              {
+                '@type': 'Question',
+                name: 'Do I have to use the median cost of living for my city?',
+                acceptedAnswer: { '@type': 'Answer', text: 'No. These pages show the baseline using each city\'s median cost of living, but your actual FIRE number depends on your desired retirement spending — which may be higher or lower than the median. Use the full FIRE calculator to input your specific number.' },
+              },
+              {
+                '@type': 'Question',
+                name: 'What about state taxes — are they included?',
+                acceptedAnswer: { '@type': 'Answer', text: 'The cost of living data is based on housing, food, transportation, and other cost factors, but does not embed income tax assumptions. States with no income tax (Florida, Texas, Nevada, Washington, etc.) have a structural tax advantage for retirees — something to consider when comparing cities across state lines.' },
+              },
+              {
+                '@type': 'Question',
+                name: 'Can I use Lean FIRE or Fat FIRE targets instead?',
+                acceptedAnswer: { '@type': 'Answer', text: 'Yes. Each city page shows Lean, Regular, and Fat FIRE targets as well as the monthly savings timeline to reach full FIRE in 10, 15, 20, or more years. Pick the variant that fits your desired lifestyle.' },
+              },
+              {
+                '@type': 'Question',
+                name: 'How accurate is this for my exact situation?',
+                acceptedAnswer: { '@type': 'Answer', text: 'These pages provide a realistic baseline, but your actual FIRE number depends on your specific spending, taxes, healthcare, Social Security timing, and withdrawal strategy. Use the full FIRE calculator and pressure-test your number with different assumptions before making major life decisions.' },
+              },
+            ],
+          }),
+        }}
+      />
     </>
   );
 }
