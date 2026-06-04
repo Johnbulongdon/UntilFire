@@ -533,7 +533,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], budgetMode = "manual", histMonthsCount = 0, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -545,6 +545,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   recentTransactions?: { date: string; amount: number; currency: string; transaction_type?: string }[];
+  plaidHoldings?: PlaidHolding[];
   budgetMode?: "manual" | "history";
   histMonthsCount?: number;
   onTabChange?: (tab: TabKey) => void;
@@ -748,6 +749,18 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       );
     }
 
+    // If Plaid holdings include cost_basis, use it for the today split.
+    // cost_basis = total amount spent buying stocks (all time, not just 3 months),
+    // so investable - cost_basis = actual unrealized gain including appreciation.
+    const holdingsWithBasis = plaidHoldings.filter(
+      h => h.cost_basis !== null && h.cost_basis > 0 && h.institution_value !== null
+    );
+    if (holdingsWithBasis.length > 0) {
+      const totalCostBasis = holdingsWithBasis.reduce((s, h) => s + (h.cost_basis ?? 0), 0);
+      todayContributions = Math.min(investable, Math.round(totalCostBasis));
+      todayMarketGain = Math.max(0, investable - todayContributions);
+    }
+
     const todayEntry = {
       key: "today",
       label: "Today",
@@ -788,7 +801,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     });
 
     return [...historyEntries, todayEntry, ...futureEntries];
-  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates]);
+  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates, plaidHoldings]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -4801,6 +4814,7 @@ export default function Dashboard() {
                 fireAge={fireAge}
                 nwSnapshots={nwSnapshots}
                 recentTransactions={recentTransactions}
+                plaidHoldings={plaidHoldings}
                 budgetMode={budgetMode}
                 histMonthsCount={histMonthsCount}
                 onTabChange={setTab}
