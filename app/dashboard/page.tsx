@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
+  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine, ReferenceDot,
   ComposedChart, Area,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
@@ -847,6 +847,23 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
   }, [chartData, chartPeriod]);
 
+  // Milestone bubble markers — first point in periodData where portfolio value crosses each milestone
+  const milestoneDots = useMemo(() => {
+    if (!periodData.length || !milestones.length) return [] as Array<{ shortLabel: string; chartValue: number; label: string; achieved: boolean }>;
+    return milestones
+      .filter(m => m.key !== "start")
+      .flatMap(m => {
+        for (let i = 0; i < periodData.length; i++) {
+          const entry = periodData[i];
+          const val = entry.actual ?? entry.projected ?? 0;
+          if (val >= m.value) {
+            return [{ shortLabel: entry.shortLabel, chartValue: val, label: m.label, achieved: m.achieved }];
+          }
+        }
+        return [];
+      });
+  }, [periodData, milestones]);
+
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
 
@@ -1316,6 +1333,27 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               />
               <ReferenceLine y={fireTarget} stroke="rgba(167,243,208,0.95)" strokeDasharray="5 4" strokeWidth={1.3} />
               <ReferenceLine x={periodData.find((entry) => entry.phase === "today")?.shortLabel} stroke="rgba(255,255,255,0.26)" strokeDasharray="4 4" strokeWidth={1.2} />
+              {milestoneDots.map((dot) => (
+                <ReferenceDot
+                  key={dot.label}
+                  x={dot.shortLabel}
+                  y={dot.chartValue}
+                  r={0}
+                  shape={({ cx, cy }: { cx?: number; cy?: number }) => {
+                    const x = cx ?? 0;
+                    const y = cy ?? 0;
+                    const w = Math.max(dot.label.length * 5.8 + 12, 40);
+                    return (
+                      <g>
+                        <rect x={x - w / 2} y={y - 30} width={w} height={16} rx={4} fill="rgba(8,8,14,0.82)" stroke="rgba(34,211,165,0.55)" strokeWidth={0.8} />
+                        <text x={x} y={y - 18} textAnchor="middle" fill="#22d3a5" fontSize={9} fontWeight={700} fontFamily="Manrope, sans-serif">{dot.label}</text>
+                        <line x1={x} y1={y - 14} x2={x} y2={y - 5} stroke="rgba(34,211,165,0.65)" strokeWidth={1} />
+                        <circle cx={x} cy={y} r={4} fill={dot.achieved ? "rgba(34,211,165,0.25)" : "#22d3a5"} stroke="#22d3a5" strokeWidth={1.5} />
+                      </g>
+                    );
+                  }}
+                />
+              ))}
               <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.88)" strokeWidth={2} connectNulls={false} dot={false} activeDot={{ r: 5, fill: "#FFFFFF" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
               {!showBreakdown && (
                 <Area type="monotone" dataKey="projected" stroke="#62FAE3" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#62FAE3" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
