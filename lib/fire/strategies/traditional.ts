@@ -63,6 +63,7 @@ export function calcFIRE(
   annualExpenses: number,
   currentAge?: number,
   startingBalance: number = 0,
+  expectedReturn: number = 0.10,
 ): FireOutput {
-  return compute({ monthlySavings, annualExpenses, currentAge, startingBalance });
+  return compute({ monthlySavings, annualExpenses, currentAge, startingBalance, expectedRealReturn: expectedReturn });
 }

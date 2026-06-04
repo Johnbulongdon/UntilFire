@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import CsvImportModal from "./CsvImportModal";
-import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, Line } from "recharts";
 import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES as ALL_CATEGORIES_BASE,
@@ -38,6 +38,9 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>):
   return rate ? amount / rate : amount;
 };
 
+const netAmt = (t: { amount: number; refund_amount: number }) =>
+  Math.max(0, t.amount - (t.refund_amount || 0));
+
 function dayLabel(ymd: string, todayYmd: string): string {
   if (ymd === todayYmd) return "Today";
   const y = new Date(todayYmd);
@@ -53,6 +56,7 @@ type Transaction = {
   id: string;
   date: string;
   amount: number;
+  refund_amount: number;
   currency: string;
   description: string;
   notes?: string;
@@ -73,6 +77,7 @@ type DraftTransaction = {
   id: string | null;
   transaction_type: "expense" | "income" | "transfer";
   amount: string;
+  refund_amount: string;
   currency: string;
   description: string;
   notes: string;
@@ -87,6 +92,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   id: null,
   transaction_type: "expense",
   amount: "",
+  refund_amount: "",
   currency: "USD",
   description: "",
   notes: "",
@@ -644,6 +650,47 @@ function QuickAddForm({
           </div>
         )}
 
+        {/* Refund */}
+        {draft.transaction_type === "expense" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Refund <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional — full or partial</span>
+            </label>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                max={draft.amount || undefined}
+                placeholder="0"
+                value={draft.refund_amount}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const max = draft.amount ? parseFloat(draft.amount) : Infinity;
+                  if (v === "" || (parseFloat(v) >= 0 && parseFloat(v) <= max)) setField("refund_amount", v);
+                }}
+                style={{ flex: 1, border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
+              />
+              <span style={{ fontSize: 13, color: "var(--uf-text-2)", minWidth: 36 }}>{draft.currency}</span>
+              {draft.refund_amount && parseFloat(draft.refund_amount) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setField("refund_amount", "")}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 18, lineHeight: 1, padding: "0 4px", display: "flex", alignItems: "center" }}
+                  title="Clear refund"
+                >×</button>
+              )}
+            </div>
+            {draft.refund_amount && parseFloat(draft.refund_amount) > 0 && draft.amount && parseFloat(draft.amount) > 0 && (
+              <div style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>
+                {parseFloat(draft.refund_amount) >= parseFloat(draft.amount)
+                  ? "✓ Fully refunded — net cost: 0"
+                  : `Net cost: ${fmt(parseFloat(draft.amount) - parseFloat(draft.refund_amount), draft.currency)}`}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Project / Event */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
@@ -892,7 +939,7 @@ function TransactionList({
           </div>
         ) : (
           groups.map(([date, txns]) => {
-            const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : t.transaction_type === "expense" ? -usd : 0); }, 0);
+            const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.transaction_type === "expense" ? netAmt(t) : t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : t.transaction_type === "expense" ? -usd : 0); }, 0);
             return (
               <div key={date}>
                 <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-3)" }}>
@@ -959,8 +1006,23 @@ function TransactionList({
                         </div>
 
                         {/* Amount */}
-                        <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                          {isIncome ? "+" : "−"}{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                          {tx.refund_amount > 0 ? (
+                            <>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: tx.refund_amount >= tx.amount ? "#94A3B8" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", textDecoration: tx.refund_amount >= tx.amount ? "line-through" : "none" }}>
+                                −{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                              </div>
+                              {tx.refund_amount >= tx.amount ? (
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
+                              ) : (
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{fmt(tx.refund_amount, tx.currency).replace(/^−/, "")} net {fmt(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
+                              )}
+                            </>
+                          ) : (
+                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                              {isIncome ? "+" : "−"}{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                            </div>
+                          )}
                         </div>
 
                         {/* Delete */}
@@ -997,6 +1059,7 @@ function MonthlySummary({
   viewMonth,
   onPrevMonth,
   onNextMonth,
+  onSelectMonth,
   budgetExpenses,
   rates,
   ratesFallback,
@@ -1013,6 +1076,7 @@ function MonthlySummary({
   viewMonth: string;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  onSelectMonth: (month: string) => void;
   budgetExpenses: Record<string, number> | null;
   rates: Record<string, number>;
   ratesFallback: boolean;
@@ -1036,7 +1100,7 @@ function MonthlySummary({
   const isMixed = currencies.length > 1;
 
   const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const expenseTotal = monthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const expenseTotal = monthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
   const net = incomeTotal - expenseTotal;
   const byCat = expenseCategories.map((cat) => {
     const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
@@ -1045,7 +1109,7 @@ function MonthlySummary({
       ...cat,
       color,
       emoji,
-      total: monthTxns.filter((t) => t.transaction_type === "expense" && t.category === cat.key).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+      total: monthTxns.filter((t) => t.transaction_type === "expense" && t.category === cat.key).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
     };
   })
     .filter((c) => c.total > 0)
@@ -1058,7 +1122,28 @@ function MonthlySummary({
   })();
   const prevTxns = transactions.filter((t) => t.date.startsWith(prevMonth));
   const prevIncome = prevTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const prevSpent = prevTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const prevSpent = prevTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+
+  // MOM chart data — last 12 months with data
+  const momData = useMemo(() => {
+    const months = [...new Set(transactions.map((t) => t.date.slice(0, 7)))]
+      .filter(Boolean).sort().slice(-12);
+    return months.map((month) => {
+      const txns = transactions.filter((t) => t.date.startsWith(month));
+      const income = txns.filter((t) => t.transaction_type === "income")
+        .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+      const expense = txns.filter((t) => t.transaction_type === "expense")
+        .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+      const [y, mo] = month.split("-").map(Number);
+      return {
+        month,
+        label: new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+        income: Math.round(income),
+        expense: Math.round(expense),
+        net: Math.round(income - expense),
+      };
+    });
+  }, [transactions, rates]);
 
   const kpiCard = (label: string, value: number, color: string, hint: string) => (
     <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
@@ -1072,6 +1157,48 @@ function MonthlySummary({
 
   return (
     <div style={{ marginBottom: 20 }}>
+
+      {/* MOM cashflow chart */}
+      {momData.length >= 2 && (
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "16px 20px 10px", marginBottom: 20, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "var(--uf-text-2)", marginBottom: 12 }}>
+            Monthly cashflow
+          </div>
+          <ResponsiveContainer width="100%" height={130}>
+            <ComposedChart data={momData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onClick={(e: any) => { if (e?.activePayload?.[0]) onSelectMonth(e.activePayload[0].payload.month); }}>
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--uf-text-3)", fontFamily: "inherit" }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <ChartTooltip
+                formatter={(v, name) => [formatAmount(Number(v ?? 0)), name === "income" ? "Income" : name === "expense" ? "Spent" : "Net"] as [string, string]}
+                contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
+                cursor={{ fill: "rgba(100,116,139,0.07)" }}
+              />
+              <Bar dataKey="income" fill="#059669" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
+              <Bar dataKey="expense" fill="#f97316" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
+              <Line dataKey="net" type="monotone" stroke="#22d3a5" strokeWidth={2}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                dot={(props: any) => (
+                  <circle key={props.payload.month} cx={props.cx} cy={props.cy} r={props.payload.month === viewMonth ? 5 : 3}
+                    fill={props.payload.month === viewMonth ? "#22d3a5" : "var(--uf-card)"}
+                    stroke="#22d3a5" strokeWidth={2} />
+                )} />
+            </ComposedChart>
+          </ResponsiveContainer>
+          <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+            {[{ color: "#059669", opacity: 0.7, label: "Income" }, { color: "#f97316", opacity: 0.7, label: "Spent" }, { color: "#22d3a5", opacity: 1, label: "Net", line: true }].map(({ color, opacity, label, line }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--uf-text-3)" }}>
+                {line
+                  ? <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2" /><circle cx="8" cy="4" r="2.5" fill="white" stroke={color} strokeWidth="2" /></svg>
+                  : <span style={{ width: 10, height: 10, borderRadius: 2, background: color, opacity, display: "inline-block" }} />}
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header row: month label + nav */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div>
@@ -1133,8 +1260,8 @@ function MonthlySummary({
         const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
         const taggedTxns = expenseTxns.filter((t) => t.tags?.includes("need") || t.tags?.includes("want"));
         if (!expenseTxns.length || (!isPro && !taggedTxns.length)) return null;
-        const needsTotal = taggedTxns.filter((t) => t.tags?.includes("need")).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-        const wantsTotal = taggedTxns.filter((t) => t.tags?.includes("want")).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+        const needsTotal = taggedTxns.filter((t) => t.tags?.includes("need")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+        const wantsTotal = taggedTxns.filter((t) => t.tags?.includes("want")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
         const classifiedTotal = needsTotal + wantsTotal;
         const untaggedCount = expenseTxns.length - taggedTxns.length;
         return (
@@ -1371,7 +1498,7 @@ function AiReviewModal({
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date}</span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600 }}>
-                      {tx.currency} {Math.abs(tx.amount).toFixed(2)}
+                      {tx.currency} {netAmt(tx).toFixed(2)}{tx.refund_amount > 0 ? ` (↩ ${tx.refund_amount.toFixed(2)} refunded)` : ""}
                     </span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)", textTransform: "capitalize" }}>
@@ -1779,7 +1906,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       const monthExpenses = transactions.filter((t) => t.transaction_type === "expense" && t.date.startsWith(month));
       const catTotals: Record<string, number> = {};
       for (const tx of monthExpenses) {
-        const usd = toUSD(tx.amount, tx.currency, rates);
+        const usd = toUSD(netAmt(tx), tx.currency, rates);
         catTotals[tx.category] = (catTotals[tx.category] || 0) + usd;
       }
       for (const [cat, total] of Object.entries(catTotals)) {
@@ -1815,6 +1942,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       user_id: session.user.id,
       date: draft.date,
       amount: parseFloat(draft.amount),
+      refund_amount: Math.min(parseFloat(draft.refund_amount) || 0, parseFloat(draft.amount) || 0),
       currency: draft.currency,
       description: draft.description,
       notes: draft.notes || "",
@@ -1862,6 +1990,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       id: tx.id,
       transaction_type: tx.transaction_type,
       amount: String(tx.amount),
+      refund_amount: tx.refund_amount ? String(tx.refund_amount) : "",
       currency: tx.currency,
       description: tx.description,
       notes: tx.notes || "",
@@ -1963,6 +2092,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         viewMonth={viewMonth}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
+        onSelectMonth={setViewMonth}
         budgetExpenses={budgetExpenses}
         rates={rates}
         ratesFallback={ratesFallback}
