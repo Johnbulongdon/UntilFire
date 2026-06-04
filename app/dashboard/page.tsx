@@ -673,6 +673,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         fwdCursor.setDate(fwdCursor.getDate() + 1);
       }
 
+      // Build a map of actual portfolio values from nwSnapshots (includes unrealized gains).
+      // For each month keep the last snapshot — most up-to-date reading for that period.
+      const snapByMonth = new Map<string, number>();
+      for (const snap of [...nwSnapshots].sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime())) {
+        const d = new Date(snap.captured_at);
+        if (!Number.isNaN(d.getTime())) snapByMonth.set(toMonthKey(d), snap.portfolio_value);
+      }
+
       const monthEndPoints = new Map<string, { date: Date; value: number }>();
       for (const point of points) {
         if (point.date.getFullYear() === today.getFullYear() && point.date.getMonth() === today.getMonth()) continue;
@@ -681,8 +689,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
       historyEntries.push(
         ...Array.from(monthEndPoints.values()).map((point, index) => {
-          const portfolioVal = Math.max(0, Math.round(point.value));
-          const monthCumFlow = cumFlowByMonth.get(toMonthKey(point.date)) ?? 0;
+          const monthKey = toMonthKey(point.date);
+          // Prefer actual snapshot value (captures unrealized market gains) over
+          // reconstructed balance (which only reflects cash flows, not market appreciation)
+          const snapVal = snapByMonth.get(monthKey);
+          const portfolioVal = snapVal !== undefined
+            ? Math.max(0, Math.round(snapVal))
+            : Math.max(0, Math.round(point.value));
+          const monthCumFlow = cumFlowByMonth.get(monthKey) ?? 0;
           const contributed = Math.min(portfolioVal, Math.round(startValue + monthCumFlow));
           const marketGain = Math.max(0, portfolioVal - contributed);
           return {
