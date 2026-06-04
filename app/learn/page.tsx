@@ -4,8 +4,9 @@ import { getStageArticles, learnStages } from '@/lib/learn'
 import { CITIES, isUS } from '@/lib/fire-data'
 
 export const metadata = {
-  title: 'Learning Hub | UntilFire',
-  description: 'Choose your FIRE stage and get the most relevant articles, calculators, and next steps without getting overwhelmed.',
+  title: 'FIRE Learning Hub — Financial Independence Guides by Stage | UntilFire',
+  description: 'Learn financial independence and early retirement step by step. FIRE guides, calculators, and next steps organized by stage — from the basics to living off your portfolio.',
+  keywords: 'FIRE guides, financial independence learning, early retirement education, FIRE basics, how to reach FIRE, FIRE stages',
   alternates: {
     canonical: 'https://www.untilfire.com/learn',
   },
