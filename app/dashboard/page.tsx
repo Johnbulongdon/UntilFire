@@ -637,7 +637,22 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       flowByDay.set(key, (flowByDay.get(key) ?? 0) + signedAmount);
     }
 
-    // These are set inside the flowByDay branch and used for todayEntry below
+    // Compute cost_basis-derived split from Plaid holdings.
+    // cost_basis = all-time amount spent buying stocks; difference from current value = unrealized gain.
+    // contributionFraction is applied proportionally to historical snapshot values so history
+    // entries show the same contributions/gains ratio as today rather than defaulting to $0.
+    const holdingsWithBasis = plaidHoldings.filter(
+      h => h.cost_basis !== null && h.cost_basis > 0 && h.institution_value !== null
+    );
+    const totalCostBasis = holdingsWithBasis.length > 0
+      ? holdingsWithBasis.reduce((s, h) => s + (h.cost_basis ?? 0), 0)
+      : 0;
+    // Fraction of current portfolio value that is contributed capital (vs market gains)
+    const contributionFraction = investable > 0 && totalCostBasis > 0
+      ? Math.min(1, totalCostBasis / investable)
+      : null;
+
+    // These are set below and used for todayEntry
     let todayContributions: number | null = null;
     let todayMarketGain: number | null = null;
 
@@ -665,8 +680,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       }
       points.reverse();
 
-      // Compute cumulative net contributions forward from historyStart
-      // so we can split each month's portfolio value into contributed vs market-gained
       const startValue = points[0]?.value ?? investable;
       const cumFlowByMonth = new Map<string, number>();
       let cumFlow = 0;
@@ -696,15 +709,17 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       historyEntries.push(
         ...Array.from(monthEndPoints.values()).map((point, index) => {
           const monthKey = toMonthKey(point.date);
-          // Prefer actual snapshot value (captures unrealized market gains) over
-          // reconstructed balance (which only reflects cash flows, not market appreciation)
           const snapVal = snapByMonth.get(monthKey);
           const portfolioVal = snapVal !== undefined
             ? Math.max(0, Math.round(snapVal))
             : Math.max(0, Math.round(point.value));
-          const monthCumFlow = cumFlowByMonth.get(monthKey) ?? 0;
-          // If portfolioVal is suspiciously near 0 (bad data), skip the breakdown
-          const contributed = portfolioVal > 0 ? Math.min(portfolioVal, Math.round(startValue + monthCumFlow)) : null;
+          // Use cost_basis fraction if available (proportional estimate for historical split).
+          // Falls back to cash-flow reconstruction only when no cost_basis data exists.
+          const contributed = portfolioVal > 0
+            ? contributionFraction !== null
+              ? Math.round(portfolioVal * contributionFraction)
+              : Math.min(portfolioVal, Math.round(startValue + (cumFlowByMonth.get(monthKey) ?? 0)))
+            : null;
           const marketGain = contributed !== null ? Math.max(0, portfolioVal - contributed) : null;
           return {
             key: `history-${index}`,
@@ -720,8 +735,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         })
       );
 
-      // Compute today's split using the same formula so the stacked area
-      // connects smoothly at the history/today boundary
       const todayCumFlow = cumFlowByMonth.get(toMonthKey(today)) ?? 0;
       todayContributions = Math.min(investable, Math.round(startValue + todayCumFlow));
       todayMarketGain = Math.max(0, investable - todayContributions);
@@ -735,28 +748,29 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       }
 
       historyEntries.push(
-        ...Array.from(monthEndSnapshots.values()).map((snap, index) => ({
-          key: `history-${index}`,
-          label: chartMonthTooltipFormatter.format(snap.date),
-          shortLabel: monthTick(snap.date),
-          actual: snap.value,
-          projected: null,
-          yearsOut: null,
-          phase: "history" as const,
-          Contributions: null as number | null,
-          "Market Growth": null as number | null,
-        }))
+        ...Array.from(monthEndSnapshots.values()).map((snap, index) => {
+          const portfolioVal = Math.max(0, Math.round(snap.value));
+          const contributed = portfolioVal > 0 && contributionFraction !== null
+            ? Math.round(portfolioVal * contributionFraction)
+            : null;
+          const marketGain = contributed !== null ? Math.max(0, portfolioVal - contributed) : null;
+          return {
+            key: `history-${index}`,
+            label: chartMonthTooltipFormatter.format(snap.date),
+            shortLabel: monthTick(snap.date),
+            actual: portfolioVal,
+            projected: null,
+            yearsOut: null,
+            phase: "history" as const,
+            Contributions: contributed as number | null,
+            "Market Growth": marketGain as number | null,
+          };
+        })
       );
     }
 
-    // If Plaid holdings include cost_basis, use it for the today split.
-    // cost_basis = total amount spent buying stocks (all time, not just 3 months),
-    // so investable - cost_basis = actual unrealized gain including appreciation.
-    const holdingsWithBasis = plaidHoldings.filter(
-      h => h.cost_basis !== null && h.cost_basis > 0 && h.institution_value !== null
-    );
-    if (holdingsWithBasis.length > 0) {
-      const totalCostBasis = holdingsWithBasis.reduce((s, h) => s + (h.cost_basis ?? 0), 0);
+    // Override today's split with exact cost_basis when available
+    if (totalCostBasis > 0) {
       todayContributions = Math.min(investable, Math.round(totalCostBasis));
       todayMarketGain = Math.max(0, investable - todayContributions);
     }
