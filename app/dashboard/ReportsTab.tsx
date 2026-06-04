@@ -132,11 +132,16 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
     [monthlySummaries]
   );
 
-  const avgIncome   = activeMths.reduce((s, m) => s + m.income, 0)   / (activeMths.length || 1);
-  const avgExpenses = activeMths.reduce((s, m) => s + m.expenses, 0) / (activeMths.length || 1);
-  const totalIncome = activeMths.reduce((s, m) => s + m.income, 0);
-  const totalNet    = activeMths.reduce((s, m) => s + m.net, 0);
-  const avgRate     = totalIncome > 0 ? (totalNet / totalIncome) * 100 : 0;
+  const { avgIncome, avgExpenses, avgRate } = useMemo(() => {
+    const n = activeMths.length || 1;
+    let totalInc = 0, totalExp = 0, totalNet = 0;
+    for (const m of activeMths) { totalInc += m.income; totalExp += m.expenses; totalNet += m.net; }
+    return {
+      avgIncome:  totalInc / n,
+      avgExpenses: totalExp / n,
+      avgRate: totalInc > 0 ? (totalNet / totalInc) * 100 : 0,
+    };
+  }, [activeMths]);
 
   const catTotals = useMemo(() => {
     const periodTxns = transactions.filter(
@@ -408,7 +413,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
                 {empty ? "—" : (row.net >= 0 ? "+" : "") + fmtDisplay(row.net)}
               </span>
               <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : rateColor(row.savingsRate) }}>
-                {empty ? "—" : row.savingsRate.toFixed(0) + "%"}
+                {empty || row.income === 0 ? "—" : Math.max(-999, Math.min(999, row.savingsRate)).toFixed(0) + "%"}
               </span>
             </div>
           );

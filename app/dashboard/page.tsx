@@ -638,8 +638,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       projected: number | null;
       yearsOut: number | null;
       phase: "history" | "today" | "projection";
-      Contributions?: number;
-      "Market Growth"?: number;
+      Contributions?: number | null;
+      "Market Growth"?: number | null;
     }> = [];
 
     if (flowByDay.size > 0) {
@@ -669,6 +669,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           projected: null,
           yearsOut: null,
           phase: "history" as const,
+          Contributions: null as number | null,
+          "Market Growth": null as number | null,
         }))
       );
     } else {
@@ -689,6 +691,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           projected: null,
           yearsOut: null,
           phase: "history" as const,
+          Contributions: null as number | null,
+          "Market Growth": null as number | null,
         }))
       );
     }
