@@ -557,6 +557,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
   const chartMonthTooltipFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }), []);
 
+  // Current unrealized gain from Plaid investment holdings (institution_value - cost_basis)
+  const holdingsUnrealizedGain = useMemo(() => {
+    const withBasis = plaidHoldings.filter(h => h.cost_basis !== null && h.cost_basis > 0 && h.institution_value !== null);
+    if (withBasis.length === 0) return null;
+    const gain = withBasis.reduce((s, h) => s + (h.institution_value ?? 0) - (h.cost_basis ?? 0), 0);
+    return gain > 0 ? Math.round(gain) : null;
+  }, [plaidHoldings]);
+
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
@@ -639,19 +647,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
     // Compute unrealized gain from Plaid holdings cost_basis.
     // Unrealized gain = institution_value - cost_basis within investment holdings only.
-    // investable may include cash accounts, so we measure the gain inside holdings
-    // then express it as a fraction of investable for proportional history estimates.
-    const holdingsWithBasis = plaidHoldings.filter(
-      h => h.cost_basis !== null && h.cost_basis > 0 && h.institution_value !== null
-    );
-    const holdingsUnrealizedGain = holdingsWithBasis.length > 0
-      ? Math.max(0, holdingsWithBasis.reduce((s, h) => s + (h.institution_value ?? 0) - (h.cost_basis ?? 0), 0))
-      : 0;
-    // Fraction of investable that represents market gains (not contributions)
-    const marketGainFraction = investable > 0 && holdingsUnrealizedGain > 0
-      ? Math.min(1, holdingsUnrealizedGain / investable)
-      : null;
-
     // These are set below and used for todayEntry
     let todayContributions: number | null = null;
     let todayMarketGain: number | null = null;
@@ -713,14 +708,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           const portfolioVal = snapVal !== undefined
             ? Math.max(0, Math.round(snapVal))
             : Math.max(0, Math.round(point.value));
-          // Use market gain fraction if available (proportional estimate for historical split).
-          // Falls back to cash-flow reconstruction only when no cost_basis data exists.
-          const marketGain = portfolioVal > 0 && marketGainFraction !== null
-            ? Math.round(portfolioVal * marketGainFraction)
-            : portfolioVal > 0
-              ? Math.max(0, portfolioVal - Math.min(portfolioVal, Math.round(startValue + (cumFlowByMonth.get(monthKey) ?? 0))))
-              : null;
-          const contributed = marketGain !== null ? Math.max(0, portfolioVal - marketGain) : null;
           return {
             key: `history-${index}`,
             label: chartMonthTooltipFormatter.format(point.date),
@@ -729,8 +716,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             projected: null,
             yearsOut: null,
             phase: "history" as const,
-            Contributions: contributed,
-            "Market Growth": marketGain,
+            Contributions: null as number | null,
+            "Market Growth": null as number | null,
           };
         })
       );
@@ -748,30 +735,23 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       }
 
       historyEntries.push(
-        ...Array.from(monthEndSnapshots.values()).map((snap, index) => {
-          const portfolioVal = Math.max(0, Math.round(snap.value));
-          const marketGain = portfolioVal > 0 && marketGainFraction !== null
-            ? Math.round(portfolioVal * marketGainFraction)
-            : null;
-          const contributed = marketGain !== null ? Math.max(0, portfolioVal - marketGain) : null;
-          return {
-            key: `history-${index}`,
-            label: chartMonthTooltipFormatter.format(snap.date),
-            shortLabel: monthTick(snap.date),
-            actual: portfolioVal,
-            projected: null,
-            yearsOut: null,
-            phase: "history" as const,
-            Contributions: contributed as number | null,
-            "Market Growth": marketGain as number | null,
-          };
-        })
+        ...Array.from(monthEndSnapshots.values()).map((snap, index) => ({
+          key: `history-${index}`,
+          label: chartMonthTooltipFormatter.format(snap.date),
+          shortLabel: monthTick(snap.date),
+          actual: Math.max(0, Math.round(snap.value)),
+          projected: null,
+          yearsOut: null,
+          phase: "history" as const,
+          Contributions: null as number | null,
+          "Market Growth": null as number | null,
+        }))
       );
     }
 
-    // Override today's split with exact unrealized gain when available
-    if (holdingsUnrealizedGain > 0) {
-      todayMarketGain = Math.min(investable, Math.round(holdingsUnrealizedGain));
+    // Use exact unrealized gain for today's split when cost_basis data is available
+    if (holdingsUnrealizedGain !== null && holdingsUnrealizedGain > 0) {
+      todayMarketGain = Math.min(investable, holdingsUnrealizedGain);
       todayContributions = Math.max(0, investable - todayMarketGain);
     }
 
@@ -815,7 +795,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     });
 
     return [...historyEntries, todayEntry, ...futureEntries];
-  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates, plaidHoldings]);
+  }, [rawChartData, investable, holdingsUnrealizedGain, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -1228,10 +1208,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </div>
           </div>
 
-          <div className="uf-progress-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14, position: "relative" }}>
+          <div className="uf-progress-metrics" style={{ display: "grid", gridTemplateColumns: holdingsUnrealizedGain !== null ? "repeat(4, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14, position: "relative" }}>
             {[
               { label: "Net worth", value: fmtMoney(currentNetWorth, true), tone: "#FFFFFF" },
               { label: "This month", value: hasActuals ? fmtMoney(actualOrPlannedSavings, true) : fmtMoney(goalContribution, true), tone: actualOrPlannedSavings >= 0 ? "#62FAE3" : "#FCA5A5" },
+              ...(holdingsUnrealizedGain !== null ? [{ label: "Investment gains", value: fmtMoney(holdingsUnrealizedGain, true), tone: "#62FAE3" }] : []),
               { label: "Status", value: statusLabel, tone: "#A7F3D0" },
             ].map((item) => (
               <div key={item.label} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 14, padding: "12px 14px" }}>
