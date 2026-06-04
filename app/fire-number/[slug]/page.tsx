@@ -436,6 +436,35 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   const nearestLowerCostCity = SORTED_US_CITIES_BY_COST
     .filter((city) => city.col < data.col)
     .sort((a, b) => b.col - a.col)[0]
+
+  // City-specific FIRE variant targets (numbers differ per city so each page
+  // carries genuinely unique, keyword-relevant content — lean/coast/barista/fat FIRE).
+  const leanTarget = Math.round(data.col * 0.7) * 25
+  const fatTarget = Math.round(data.col * 1.5) * 25
+  const baristaTarget = Math.round(fireTarget * 0.5)
+  const COAST_FROM_AGE = 30
+  const COAST_TO_AGE = 65
+  const COAST_REAL_RETURN = 0.07
+  const coastTarget = Math.round(fireTarget / Math.pow(1 + COAST_REAL_RETURN, COAST_TO_AGE - COAST_FROM_AGE))
+  const fireVariants = [
+    { label: 'Coast FIRE', value: coastTarget, note: `Invest this by age ${COAST_FROM_AGE} and growth alone (≈7% real) can reach full FIRE by ${COAST_TO_AGE} — no further contributions needed.` },
+    { label: 'Barista FIRE', value: baristaTarget, note: `Portfolio covers roughly half of ${data.name}'s ${fmt(data.col)} annual spending; part-time work bridges the rest.` },
+    { label: 'Lean FIRE', value: leanTarget, note: `A leaner ${fmt(Math.round(data.col * 0.7))}/year lifestyle in ${data.name} (about 70% of the baseline), at the 25× rule.` },
+    { label: 'Full FIRE', value: fireTarget, note: `The standard 25× target on ${data.name}'s ${fmt(data.col)} annual baseline.` },
+    { label: 'Fat FIRE', value: fatTarget, note: `A more comfortable ${fmt(Math.round(data.col * 1.5))}/year lifestyle in ${data.name} (about 1.5× the baseline).` },
+  ]
+
+  // How much to save each month to hit the full FIRE target over different timelines,
+  // assuming ~10% average annual return compounded monthly from $0 (matches the
+  // scenario table assumption above).
+  const SAVINGS_TIMELINES = [10, 15, 20, 25, 30]
+  const SAVINGS_MONTHLY_RATE = 0.10 / 12
+  const savingsByTimeline = SAVINGS_TIMELINES.map((yrs) => {
+    const months = yrs * 12
+    const monthly = (fireTarget * SAVINGS_MONTHLY_RATE) / (Math.pow(1 + SAVINGS_MONTHLY_RATE, months) - 1)
+    return { yrs, monthly }
+  })
+
   const cityFaqs = [
     {
       question: `What FIRE number should I use for ${data.name}?`,
@@ -454,6 +483,10 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
         taxRate === 0
           ? `${data.name} benefits from a state with no income tax, so more of each raise can turn into invested savings. That does not remove lifestyle risk, but it can shorten the path to FIRE if spending stays disciplined.`
           : `${data.name} uses ${taxLabel}, so pre-tax contributions and realistic take-home assumptions matter. Taxes do not change the 25x rule directly, but they do change how quickly you can fund it.`,
+    },
+    {
+      question: `What is the lean FIRE and fat FIRE number for ${data.name}?`,
+      answer: `Lean FIRE in ${data.name} — a leaner lifestyle at about 70% of the local baseline — works out to roughly ${fmt(leanTarget)}. Fat FIRE, a more comfortable lifestyle at about 1.5× the baseline, is closer to ${fmt(fatTarget)}. Standard (full) FIRE sits at ${fmt(fireTarget)}, and Coast FIRE — the amount that can grow into full FIRE on its own by age ${COAST_TO_AGE} if invested by age ${COAST_FROM_AGE} — is about ${fmt(coastTarget)}.`,
     },
   ]
 
@@ -589,6 +622,56 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               The biggest levers are still your savings rate and your timeline. Saving 20% of take-home instead of 10% can cut years off the journey, and starting earlier lowers the amount your portfolio has to do later.
             </p>
           </div>
+        </div>
+
+        {/* FIRE variants for this city */}
+        <div style={{ marginBottom: 40 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.4px", marginBottom: 8 }}>
+            Lean, Coast, Barista, and Fat FIRE numbers for {data.name}
+          </h2>
+          <p style={{ fontSize: 15, color: "#475569", lineHeight: 1.75, margin: "0 0 20px", maxWidth: 640 }}>
+            Not everyone wants the same retirement. Here is how the main FIRE variants translate to {data.name}&apos;s{" "}
+            {fmt(data.col)}/year cost-of-living baseline, so you can target the lifestyle you actually want.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+            {fireVariants.map((v) => (
+              <div key={v.label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "20px 18px" }}>
+                <div style={heading}>{v.label} in {data.name}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px", marginBottom: 8 }}>{fmt(v.value)}</div>
+                <p style={{ margin: 0, fontSize: 13.5, color: "#475569", lineHeight: 1.7 }}>{v.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Monthly savings to retire in this city */}
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, overflow: "hidden", marginBottom: 40 }}>
+          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #E2E8F0" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#064E3B", margin: 0 }}>
+              How much to save each month to retire in {data.name}
+            </h2>
+            <p style={{ fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
+              Monthly investing needed to reach the {fmt(fireTarget)} target, starting from $0 at ~10% average annual return
+            </p>
+          </div>
+          <table className="city-scenario-table">
+            <thead style={{ background: "#F8FAFC" }}>
+              <tr>
+                {["Timeline", "Save per month", "Retire at age (from 30)"].map((h) => (
+                  <th key={h} style={{ padding: "12px 24px", fontSize: 12, fontWeight: 700, color: "#64748B", letterSpacing: "0.05em", textTransform: "uppercase", borderBottom: "1px solid #E2E8F0" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {savingsByTimeline.map((row, i) => (
+                <tr key={row.yrs} style={{ borderBottom: i < savingsByTimeline.length - 1 ? "1px solid #F1F5F9" : "none" }}>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#19181E" }}>{row.yrs} years</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "#064E3B" }}>{fmt(row.monthly)}/mo</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#22d3a5" }}>{30 + row.yrs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 40 }}>
