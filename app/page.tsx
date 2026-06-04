@@ -1059,7 +1059,15 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
       await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailInput }),
+        body: JSON.stringify({
+          email: emailInput,
+          fireTarget: result.fireTarget,
+          retireYear: result.retireYear,
+          years: Math.round(result.years),
+          monthlySavings: savings,
+          cityName: city.name,
+          currency,
+        }),
       });
       saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency });
       setEmailSubmitted(true);
