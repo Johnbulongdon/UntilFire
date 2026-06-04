@@ -611,8 +611,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const historyStart = new Date(currentMonth);
-    historyStart.setMonth(historyStart.getMonth() - 3);
+    const maxHistoryStart = new Date(currentMonth);
+    maxHistoryStart.setMonth(maxHistoryStart.getMonth() - 36);
+    const earliestTx = recentTransactions.length > 0
+      ? new Date(recentTransactions[0].date)
+      : null;
+    const historyStart = earliestTx && earliestTx > maxHistoryStart
+      ? new Date(earliestTx.getFullYear(), earliestTx.getMonth(), 1)
+      : maxHistoryStart;
 
     const toMonthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const monthTick = (date: Date) => chartMonthTickFormatter.format(date).replace(" ", " '");
@@ -4200,7 +4206,7 @@ export default function Dashboard() {
           }
         });
 
-      const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 3, nowD.getDate());
+      const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
       supabase.from("expenses").select("date, amount, currency, transaction_type")
         .eq("user_id", session.user.id)
