@@ -170,6 +170,31 @@ export default function RootLayout({
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'UntilFire',
+              url: SITE_URL,
+              logo: `${SITE_URL}/icon.png`,
+              description: 'Personal finance that sets you free. UntilFire helps you calculate your FIRE number, freedom date, and monthly plan to reach financial independence.',
+              sameAs: [
+                'https://twitter.com/untilfire',
+              ],
+              contactPoint: {
+                '@type': 'ContactPoint',
+                email: 'hello@untilfire.com',
+                contactType: 'Support',
+              },
+              address: {
+                '@type': 'PostalAddress',
+                addressCountry: 'US',
+              },
+            }),
+          }}
+        />
         <AuthProvider>
           {children}
 
