@@ -654,6 +654,19 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       }
       points.reverse();
 
+      // Compute cumulative net contributions forward from historyStart
+      // so we can split each month's portfolio value into contributed vs market-gained
+      const startValue = points[0]?.value ?? investable;
+      const cumFlowByMonth = new Map<string, number>();
+      let cumFlow = 0;
+      const fwdCursor = new Date(historyStart);
+      while (fwdCursor <= today) {
+        const dayKey = fwdCursor.toISOString().slice(0, 10);
+        cumFlow += flowByDay.get(dayKey) ?? 0;
+        cumFlowByMonth.set(toMonthKey(fwdCursor), cumFlow);
+        fwdCursor.setDate(fwdCursor.getDate() + 1);
+      }
+
       const monthEndPoints = new Map<string, { date: Date; value: number }>();
       for (const point of points) {
         if (point.date.getFullYear() === today.getFullYear() && point.date.getMonth() === today.getMonth()) continue;
@@ -661,17 +674,23 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       }
 
       historyEntries.push(
-        ...Array.from(monthEndPoints.values()).map((point, index) => ({
-          key: `history-${index}`,
-          label: chartMonthTooltipFormatter.format(point.date),
-          shortLabel: monthTick(point.date),
-          actual: Math.max(0, Math.round(point.value)),
-          projected: null,
-          yearsOut: null,
-          phase: "history" as const,
-          Contributions: null as number | null,
-          "Market Growth": null as number | null,
-        }))
+        ...Array.from(monthEndPoints.values()).map((point, index) => {
+          const portfolioVal = Math.max(0, Math.round(point.value));
+          const monthCumFlow = cumFlowByMonth.get(toMonthKey(point.date)) ?? 0;
+          const contributed = Math.min(portfolioVal, Math.round(startValue + monthCumFlow));
+          const marketGain = Math.max(0, portfolioVal - contributed);
+          return {
+            key: `history-${index}`,
+            label: chartMonthTooltipFormatter.format(point.date),
+            shortLabel: monthTick(point.date),
+            actual: portfolioVal,
+            projected: null,
+            yearsOut: null,
+            phase: "history" as const,
+            Contributions: contributed,
+            "Market Growth": marketGain,
+          };
+        })
       );
     } else {
       const monthEndSnapshots = new Map<string, { date: Date; value: number }>();
