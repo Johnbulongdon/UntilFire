@@ -637,19 +637,19 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       flowByDay.set(key, (flowByDay.get(key) ?? 0) + signedAmount);
     }
 
-    // Compute cost_basis-derived split from Plaid holdings.
-    // cost_basis = all-time amount spent buying stocks; difference from current value = unrealized gain.
-    // contributionFraction is applied proportionally to historical snapshot values so history
-    // entries show the same contributions/gains ratio as today rather than defaulting to $0.
+    // Compute unrealized gain from Plaid holdings cost_basis.
+    // Unrealized gain = institution_value - cost_basis within investment holdings only.
+    // investable may include cash accounts, so we measure the gain inside holdings
+    // then express it as a fraction of investable for proportional history estimates.
     const holdingsWithBasis = plaidHoldings.filter(
       h => h.cost_basis !== null && h.cost_basis > 0 && h.institution_value !== null
     );
-    const totalCostBasis = holdingsWithBasis.length > 0
-      ? holdingsWithBasis.reduce((s, h) => s + (h.cost_basis ?? 0), 0)
+    const holdingsUnrealizedGain = holdingsWithBasis.length > 0
+      ? Math.max(0, holdingsWithBasis.reduce((s, h) => s + (h.institution_value ?? 0) - (h.cost_basis ?? 0), 0))
       : 0;
-    // Fraction of current portfolio value that is contributed capital (vs market gains)
-    const contributionFraction = investable > 0 && totalCostBasis > 0
-      ? Math.min(1, totalCostBasis / investable)
+    // Fraction of investable that represents market gains (not contributions)
+    const marketGainFraction = investable > 0 && holdingsUnrealizedGain > 0
+      ? Math.min(1, holdingsUnrealizedGain / investable)
       : null;
 
     // These are set below and used for todayEntry
@@ -713,14 +713,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           const portfolioVal = snapVal !== undefined
             ? Math.max(0, Math.round(snapVal))
             : Math.max(0, Math.round(point.value));
-          // Use cost_basis fraction if available (proportional estimate for historical split).
+          // Use market gain fraction if available (proportional estimate for historical split).
           // Falls back to cash-flow reconstruction only when no cost_basis data exists.
-          const contributed = portfolioVal > 0
-            ? contributionFraction !== null
-              ? Math.round(portfolioVal * contributionFraction)
-              : Math.min(portfolioVal, Math.round(startValue + (cumFlowByMonth.get(monthKey) ?? 0)))
-            : null;
-          const marketGain = contributed !== null ? Math.max(0, portfolioVal - contributed) : null;
+          const marketGain = portfolioVal > 0 && marketGainFraction !== null
+            ? Math.round(portfolioVal * marketGainFraction)
+            : portfolioVal > 0
+              ? Math.max(0, portfolioVal - Math.min(portfolioVal, Math.round(startValue + (cumFlowByMonth.get(monthKey) ?? 0))))
+              : null;
+          const contributed = marketGain !== null ? Math.max(0, portfolioVal - marketGain) : null;
           return {
             key: `history-${index}`,
             label: chartMonthTooltipFormatter.format(point.date),
@@ -750,10 +750,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       historyEntries.push(
         ...Array.from(monthEndSnapshots.values()).map((snap, index) => {
           const portfolioVal = Math.max(0, Math.round(snap.value));
-          const contributed = portfolioVal > 0 && contributionFraction !== null
-            ? Math.round(portfolioVal * contributionFraction)
+          const marketGain = portfolioVal > 0 && marketGainFraction !== null
+            ? Math.round(portfolioVal * marketGainFraction)
             : null;
-          const marketGain = contributed !== null ? Math.max(0, portfolioVal - contributed) : null;
+          const contributed = marketGain !== null ? Math.max(0, portfolioVal - marketGain) : null;
           return {
             key: `history-${index}`,
             label: chartMonthTooltipFormatter.format(snap.date),
@@ -769,10 +769,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       );
     }
 
-    // Override today's split with exact cost_basis when available
-    if (totalCostBasis > 0) {
-      todayContributions = Math.min(investable, Math.round(totalCostBasis));
-      todayMarketGain = Math.max(0, investable - todayContributions);
+    // Override today's split with exact unrealized gain when available
+    if (holdingsUnrealizedGain > 0) {
+      todayMarketGain = Math.min(investable, Math.round(holdingsUnrealizedGain));
+      todayContributions = Math.max(0, investable - todayMarketGain);
     }
 
     const todayEntry = {
