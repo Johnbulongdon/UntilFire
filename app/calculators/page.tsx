@@ -227,11 +227,11 @@ export default function CalculatorsHubPage() {
               </article>
               <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
                 <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>How is Coast FIRE different from regular FIRE?</h3>
-                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Coast FIRE is the point where your existing portfolio, untouched, will grow to your full FIRE number by age 65. Regular FIRE means having enough to retire immediately. Coast FIRE is useful when you want work to feel optional sooner but don't need to stop earning entirely.</p>
+                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Coast FIRE is the point where your existing portfolio, untouched, will grow to your full FIRE number by age 65. Regular FIRE means having enough to retire immediately. Coast FIRE is useful when you want work to feel optional sooner but don&apos;t need to stop earning entirely.</p>
               </article>
               <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
                 <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Can I compare multiple cities at once?</h3>
-                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Use the FIRE number calculator for a baseline target, then visit the city pages in the calculators hub to see how the same target translates across different locations. Each city page shows the FIRE number, Coast FIRE number, and monthly savings timeline for that city's cost of living.</p>
+                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Use the FIRE number calculator for a baseline target, then visit the city pages in the calculators hub to see how the same target translates across different locations. Each city page shows the FIRE number, Coast FIRE number, and monthly savings timeline for that city&apos;s cost of living.</p>
               </article>
               <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
                 <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Are these calculators accurate for my situation?</h3>

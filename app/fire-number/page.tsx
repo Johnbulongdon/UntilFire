@@ -150,7 +150,7 @@ export default function FireNumberHubPage() {
             </article>
             <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
               <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Do I have to use the median cost of living for my city?</h3>
-              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>No. These pages show the baseline using each city's median cost of living, but your actual FIRE number depends on your desired retirement spending — which may be higher or lower than the median. Use the full FIRE calculator to input your specific number.</p>
+              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>No. These pages show the baseline using each city&apos;s median cost of living, but your actual FIRE number depends on your desired retirement spending — which may be higher or lower than the median. Use the full FIRE calculator to input your specific number.</p>
             </article>
             <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
               <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>What about state taxes — are they included?</h3>
