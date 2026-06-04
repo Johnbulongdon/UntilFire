@@ -21,6 +21,7 @@ const fmt = (n: number) =>
 
 export default function LearnHubPage() {
   return (
+    <>
     <main className="uf-hub-page">
       <div className="uf-hub-shell">
         <header className="uf-hub-hero">
@@ -208,5 +209,33 @@ export default function LearnHubPage() {
         </section>
       </div>
     </main>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify([
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: 'FIRE Learning Hub — Financial Independence Guides by Stage',
+            description: 'FIRE guides and calculators organized by stage: starting out, building momentum, approaching FIRE, and living in FIRE.',
+            url: 'https://www.untilfire.com/learn',
+            hasPart: learnStages.map((stage) => ({
+              '@type': 'WebPage',
+              name: stage.label,
+              url: `https://www.untilfire.com/learn/stages/${stage.id}`,
+            })),
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+              { '@type': 'ListItem', position: 2, name: 'Learn', item: 'https://www.untilfire.com/learn' },
+            ],
+          },
+        ]),
+      }}
+    />
+    </>
   )
 }

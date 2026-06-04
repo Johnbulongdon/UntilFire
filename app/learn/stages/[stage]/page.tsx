@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getLearnStage, getStageArticles, isLearnStageId, learnStages } from '@/lib/learn'
+import { SITE_URL } from '@/lib/site'
 
 type Props = {
   params: Promise<{ stage: string }>
@@ -39,6 +40,7 @@ export default async function LearnStagePage({ params }: Props) {
   const articles = getStageArticles(stageData.id)
 
   return (
+    <>
     <main className="uf-hub-page">
       <div className="uf-hub-shell">
         <header className="uf-hub-hero">
@@ -153,5 +155,34 @@ export default async function LearnStagePage({ params }: Props) {
         </section>
       </div>
     </main>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify([
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: `${stageData.label} FIRE Guides`,
+            description: stageData.description,
+            url: `${SITE_URL}/learn/stages/${stageData.id}`,
+            hasPart: articles.map((article) => ({
+              '@type': 'Article',
+              name: article.title,
+              url: `${SITE_URL}/learn/${article.slug}`,
+            })),
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+              { '@type': 'ListItem', position: 2, name: 'Learn', item: `${SITE_URL}/learn` },
+              { '@type': 'ListItem', position: 3, name: stageData.label, item: `${SITE_URL}/learn/stages/${stageData.id}` },
+            ],
+          },
+        ]),
+      }}
+    />
+    </>
   )
 }

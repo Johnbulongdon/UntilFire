@@ -2,11 +2,18 @@ import Link from "next/link";
 import { cityLandingPages } from "@/lib/city-pages";
 import HomeClient from "./HomeClient";
 
-// Server-rendered, crawlable SEO content that sits below the interactive
-// calculator. The calculator (HomeClient) stays exactly as-is and remains the
-// first thing a visitor sees; this content is for search engines and visitors
-// who scroll past the tool. Metadata + structured data are provided by the
-// root layout, which the homepage inherits.
+export const metadata = {
+  title: 'FIRE Calculator — Find Your Freedom Date in 60 Seconds | UntilFire',
+  description:
+    'Free FIRE calculator: enter your income, savings, and spending to see your FIRE number and freedom date instantly. No login. Used by thousands of people planning early retirement.',
+  alternates: { canonical: 'https://www.untilfire.com/' },
+  openGraph: {
+    title: 'FIRE Calculator — Find Your Freedom Date in 60 Seconds',
+    description: 'Free FIRE calculator: find your FIRE number and early retirement date in under a minute. No login required.',
+    url: 'https://www.untilfire.com/',
+    type: 'website',
+  },
+}
 
 const seoHeading: React.CSSProperties = {
   fontSize: 13,
