@@ -551,7 +551,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   onOpenOnboarding?: () => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
-  const [showSP500, setShowSP500] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(true);
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
@@ -641,7 +640,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       phase: "history" | "today" | "projection";
       Contributions?: number;
       "Market Growth"?: number;
-      sp500?: number;
     }> = [];
 
     if (flowByDay.size > 0) {
@@ -705,7 +703,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       phase: "today" as const,
       Contributions: rawChartData[0]?.["Contributions"] ?? 0,
       "Market Growth": rawChartData[0]?.["Market Growth"] ?? 0,
-      sp500: investable,
     };
 
     const futureEntries = Array.from({ length: Math.max(0, (rawChartData.length - 1) * 12) }, (_, index) => {
@@ -732,15 +729,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         phase: "projection" as const,
         Contributions: interpolate("Contributions"),
         "Market Growth": interpolate("Market Growth"),
-        sp500: Math.round(
-          investable * Math.pow(1.10, yearsOut) +
-          Math.max(0, annualSavings) * (Math.pow(1.10, yearsOut) - 1) / 0.10
-        ),
       };
     });
 
     return [...historyEntries, todayEntry, ...futureEntries];
-  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates, annualSavings]);
+  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -1212,7 +1205,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   const projected = entry?.projected as number | undefined;
                   const contrib = entry?.Contributions as number | undefined;
                   const gains = entry?.["Market Growth"] as number | undefined;
-                  const sp500val = entry?.sp500 as number | undefined;
                   return (
                     <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12, padding: "10px 12px", fontSize: 12, fontFamily: "Manrope, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
                       <div style={{ fontWeight: 800, marginBottom: 6, color: "#F8FAFC" }}>{entry?.label ?? ""}</div>
@@ -1220,7 +1212,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                       {projected !== undefined && projected !== null && !showBreakdown && <div style={{ color: "#62FAE3", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
                       {showBreakdown && contrib !== undefined && <div style={{ color: "#4ADE80", marginBottom: 2 }}>Contributions: {fmtMoney(contrib, true)}</div>}
                       {showBreakdown && gains !== undefined && <div style={{ color: "#62FAE3", marginBottom: 4 }}>Market returns: {fmtMoney(gains, true)}</div>}
-                      {showSP500 && sp500val !== undefined && sp500val !== null && <div style={{ color: "#FDBA74", marginBottom: 4 }}>S&P 500 (10%/yr): {fmtMoney(sp500val, true)}</div>}
                       <div style={{ color: "rgba(255,255,255,0.6)" }}>Target: {fmtMoney(fireTarget, true)}</div>
                     </div>
                   );
@@ -1237,9 +1228,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   <Area type="monotone" dataKey="Contributions" stroke="#059669" strokeWidth={1.5} fill="url(#contribGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
                   <Area type="monotone" dataKey="Market Growth" stroke="#62FAE3" strokeWidth={1.5} fill="url(#growthGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
                 </>
-              )}
-              {showSP500 && (
-                <Line type="monotone" dataKey="sp500" stroke="#FDBA74" strokeWidth={1.5} strokeDasharray="5 4" dot={false} activeDot={{ r: 4, fill: "#FDBA74" }} isAnimationActive animationBegin={100} animationDuration={1000} animationEasing="ease-out" />
               )}
             </ComposedChart>
           </ResponsiveContainer>
@@ -1277,15 +1265,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   Projection
                 </>
               )}
-            </button>
-            {/* S&P 500 toggle */}
-            <button
-              onClick={() => setShowSP500(v => !v)}
-              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "Manrope, sans-serif", background: "none", border: "none", cursor: "pointer", padding: "2px 0", color: showSP500 ? "rgba(255,255,255,0.72)" : "rgba(255,255,255,0.3)", textDecoration: showSP500 ? "none" : "line-through" }}
-              title="Toggle S&P 500 benchmark"
-            >
-              <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="#FDBA74" strokeWidth="1.5" strokeDasharray="4 3" strokeOpacity={showSP500 ? 1 : 0.35} /></svg>
-              S&P 500
             </button>
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", maxWidth: 300 }}>
