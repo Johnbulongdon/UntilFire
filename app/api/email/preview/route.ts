@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
     from: "UntilFire <hello@untilfire.com>",
     to,
     subject: isRetention
-      ? "[Preview] Your path to financial freedom is waiting"
-      : "[Preview] Welcome to UntilFire — your path to financial freedom starts here",
+      ? "Your path to financial freedom is waiting"
+      : "Welcome to UntilFire — your path to financial freedom starts here",
     html: isRetention ? buildRetentionEmail() : buildWelcomeEmail(),
   });
 
