@@ -213,6 +213,32 @@ export default function CalculatorsHubPage() {
               ))}
             </div>
           </section>
+
+          <section style={{ marginTop: 24, background: "#ffffff", border: "1px solid #E2E8F0", borderRadius: 18, padding: "28px 24px" }}>
+            <h2 style={{ margin: "0 0 18px", fontSize: 24, color: "#19181E", letterSpacing: "-0.02em" }}>Calculator tools FAQ</h2>
+            <div style={{ display: "grid", gap: 16 }}>
+              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Which calculator should I use first?</h3>
+                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Start with the full FIRE calculator if you want a complete retirement date and plan. Use the individual calculators for specific questions: FIRE number calculator for a target, coast FIRE for a milestone, savings rate for understanding your lever, compound interest for growth, and APY for savings account comparisons.</p>
+              </article>
+              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>What does the FIRE number calculator show?</h3>
+                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>It shows how much you need invested based on your annual spending and a withdrawal rate (3%, 4%, or 5%). The default 4% rule suggests multiplying spending by 25. Adjust the withdrawal rate to pressure-test your assumptions for a longer or earlier retirement.</p>
+              </article>
+              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>How is Coast FIRE different from regular FIRE?</h3>
+                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Coast FIRE is the point where your existing portfolio, untouched, will grow to your full FIRE number by age 65. Regular FIRE means having enough to retire immediately. Coast FIRE is useful when you want work to feel optional sooner but don't need to stop earning entirely.</p>
+              </article>
+              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Can I compare multiple cities at once?</h3>
+                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Use the FIRE number calculator for a baseline target, then visit the city pages in the calculators hub to see how the same target translates across different locations. Each city page shows the FIRE number, Coast FIRE number, and monthly savings timeline for that city's cost of living.</p>
+              </article>
+              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Are these calculators accurate for my situation?</h3>
+                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>These tools give you a starting estimate based on standard assumptions. Your actual FIRE date depends on your specific income, spending, taxes, healthcare, Social Security, market returns, and flexibility. Use them to understand the levers, then refine with the full FIRE calculator or a financial adviser for major decisions.</p>
+              </article>
+            </div>
+          </section>
         </div>
       </main>
 
@@ -232,6 +258,42 @@ export default function CalculatorsHubPage() {
               url: `https://www.untilfire.com${calculator.href}`,
               name: calculator.name,
             })),
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'Which calculator should I use first?',
+                acceptedAnswer: { '@type': 'Answer', text: 'Start with the full FIRE calculator if you want a complete retirement date and plan. Use the individual calculators for specific questions: FIRE number calculator for a target, coast FIRE for a milestone, savings rate for understanding your lever, compound interest for growth, and APY for savings account comparisons.' },
+              },
+              {
+                '@type': 'Question',
+                name: 'What does the FIRE number calculator show?',
+                acceptedAnswer: { '@type': 'Answer', text: 'It shows how much you need invested based on your annual spending and a withdrawal rate (3%, 4%, or 5%). The default 4% rule suggests multiplying spending by 25. Adjust the withdrawal rate to pressure-test your assumptions for a longer or earlier retirement.' },
+              },
+              {
+                '@type': 'Question',
+                name: 'How is Coast FIRE different from regular FIRE?',
+                acceptedAnswer: { '@type': 'Answer', text: 'Coast FIRE is the point where your existing portfolio, untouched, will grow to your full FIRE number by age 65. Regular FIRE means having enough to retire immediately. Coast FIRE is useful when you want work to feel optional sooner but don\'t need to stop earning entirely.' },
+              },
+              {
+                '@type': 'Question',
+                name: 'Can I compare multiple cities at once?',
+                acceptedAnswer: { '@type': 'Answer', text: 'Use the FIRE number calculator for a baseline target, then visit the city pages in the calculators hub to see how the same target translates across different locations. Each city page shows the FIRE number, Coast FIRE number, and monthly savings timeline for that city\'s cost of living.' },
+              },
+              {
+                '@type': 'Question',
+                name: 'Are these calculators accurate for my situation?',
+                acceptedAnswer: { '@type': 'Answer', text: 'These tools give you a starting estimate based on standard assumptions. Your actual FIRE date depends on your specific income, spending, taxes, healthcare, Social Security, market returns, and flexibility. Use them to understand the levers, then refine with the full FIRE calculator or a financial adviser for major decisions.' },
+              },
+            ],
           }),
         }}
       />
