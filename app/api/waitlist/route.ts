@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 
         <!-- Logo -->
         <tr><td style="padding-bottom:24px;text-align:center">
-          <span style="font-size:22px;font-weight:900;color:#059669;letter-spacing:-0.5px">Until</span><span style="font-size:22px;font-weight:900;color:#003527;letter-spacing:-0.5px">Fire</span>
+          <img src="https://www.untilfire.com/logo/horizon-wordmark-horizontal.svg" alt="UntilFire" width="160" height="46" style="display:inline-block;border:0;max-width:160px" />
         </td></tr>
 
         <!-- Hero card -->
@@ -194,7 +194,7 @@ export async function POST(req: Request) {
 
         <!-- CTA -->
         <tr><td style="padding:20px 0 0;text-align:center">
-          <a href="https://untilfire.com/?source=plan-email" style="display:inline-block;background:#059669;color:#ffffff;font-size:15px;font-weight:800;padding:16px 36px;border-radius:12px;text-decoration:none;letter-spacing:-0.2px">
+          <a href="https://www.untilfire.com/login?source=plan-email" style="display:inline-block;background:#059669;color:#ffffff;font-size:15px;font-weight:800;padding:16px 36px;border-radius:12px;text-decoration:none;letter-spacing:-0.2px">
             Start optimizing your finances &#8594;
           </a>
         </td></tr>
@@ -228,7 +228,7 @@ export async function POST(req: Request) {
           <p style="margin:0;font-size:11px;color:#9CA3AF;line-height:1.7;text-align:center">
             Based on 4% safe withdrawal rate and 10% nominal return.<br>Past market returns do not guarantee future results.<br><br>
             UntilFire &mdash; Personal finance that sets you free.<br>
-            <a href="https://untilfire.com" style="color:#9CA3AF;text-decoration:none">untilfire.com</a>
+            <a href="https://www.untilfire.com" style="color:#9CA3AF;text-decoration:none">untilfire.com</a>
           </p>
         </td></tr>
 
