@@ -12,6 +12,19 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>):
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+type PlaidStream = {
+  stream_id: string;
+  description: string;
+  category: string;
+  transaction_type: "expense" | "income";
+  amount: number;
+  currency: string;
+  frequency: FrequencyLabel;
+  last_date: string;
+  predicted_next_date: string | null;
+  status: string;
+};
+
 type RawTx = {
   id: string;
   date: string;
@@ -364,6 +377,59 @@ function AutoCard({
   );
 }
 
+function PlaidCard({
+  item, formatAmount,
+}: {
+  item: PlaidStream;
+  formatAmount: (value: number) => string;
+}) {
+  const isIncome = item.transaction_type === "income";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const daysUntilDue = item.predicted_next_date
+    ? Math.round((new Date(item.predicted_next_date + "T00:00:00").getTime() - today.getTime()) / 86_400_000)
+    : null;
+
+  return (
+    <div style={{
+      background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12,
+      padding: "14px 18px", display: "grid",
+      gridTemplateColumns: "40px 1fr auto", gap: 14, alignItems: "center",
+    }}>
+      <CategoryCircle categoryKey={item.category} />
+
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginBottom: 5 }}>
+          {item.description}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <CategoryPill categoryKey={item.category} />
+          <FrequencyBadge frequency={item.frequency} />
+          <span style={{
+            background: "rgba(99,102,241,0.1)", color: "#6366f1",
+            border: "1px solid rgba(99,102,241,0.2)",
+            borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700,
+          }}>
+            Bank verified
+          </span>
+          {item.status === "EARLY_DETECTION" && (
+            <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>early detection</span>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+        <div style={{
+          fontSize: 16, fontWeight: 800, fontFamily: "Manrope, sans-serif",
+          color: isIncome ? "#059669" : "#19181E",
+        }}>
+          {isIncome ? "+" : "−"}{formatAmount(item.amount)}
+        </div>
+        {daysUntilDue !== null && <DueBadge daysUntilDue={daysUntilDue} />}
+      </div>
+    </div>
+  );
+}
+
 // ─── Section label ────────────────────────────────────────────────────────────
 function SectionLabel({ label }: { label: string }) {
   return (
@@ -387,6 +453,9 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
   const [transactions, setTransactions] = useState<RawTx[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [loading, setLoading] = useState(true);
+
+  const [plaidOutflow, setPlaidOutflow] = useState<PlaidStream[]>([]);
+  const [plaidInflow, setPlaidInflow] = useState<PlaidStream[]>([]);
 
   const [manualItems, setManualItems] = useState<ManualItem[]>([]);
   const [excluded, setExcluded] = useState<string[]>([]);
@@ -418,6 +487,8 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { setLoading(false); return; }
+
+      // Fetch transaction history for local auto-detection
       supabase
         .from("expenses")
         .select("id, date, amount, currency, description, category, transaction_type")
@@ -427,6 +498,19 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
           if (data) setTransactions(data as RawTx[]);
           setLoading(false);
         });
+
+      // Fetch Plaid recurring streams if user has connected bank
+      fetch("/api/plaid/recurring", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d) {
+            setPlaidOutflow((d.outflow ?? []) as PlaidStream[]);
+            setPlaidInflow((d.inflow ?? []) as PlaidStream[]);
+          }
+        })
+        .catch(() => {});
     });
   }, []);
 
@@ -451,8 +535,10 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
       .reduce((s, i) => s + toMonthly(toUSD(i.amount, i.currency, rates), i.frequency), 0);
     const fromAuto = visibleAutoExpenses
       .reduce((s, r) => s + toMonthly(r.avgAmountUSD, r.frequency), 0);
-    return fromManual + fromAuto;
-  }, [manualItems, visibleAutoExpenses, rates]);
+    const fromPlaid = plaidOutflow
+      .reduce((s, r) => s + toMonthly(toUSD(r.amount, r.currency, rates), r.frequency), 0);
+    return fromManual + fromAuto + fromPlaid;
+  }, [manualItems, visibleAutoExpenses, plaidOutflow, rates]);
 
   const monthlyIn = useMemo(() => {
     const fromManual = manualItems
@@ -460,8 +546,12 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
       .reduce((s, i) => s + toMonthly(toUSD(i.amount, i.currency, rates), i.frequency), 0);
     const fromAuto = visibleAutoIncome
       .reduce((s, r) => s + toMonthly(r.avgAmountUSD, r.frequency), 0);
-    return fromManual + fromAuto;
-  }, [manualItems, visibleAutoIncome, rates]);
+    const fromPlaid = plaidInflow
+      .reduce((s, r) => s + toMonthly(toUSD(r.amount, r.currency, rates), r.frequency), 0);
+    return fromManual + fromAuto + fromPlaid;
+  }, [manualItems, visibleAutoIncome, plaidInflow, rates]);
+
+  const monthlyNet = monthlyIn - monthlyOut;
 
   // Form actions
   function openAddForm() {
@@ -541,9 +631,10 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
   const sortedAutoExpenses = [...visibleAutoExpenses].sort(subFirst);
   const sortedAutoIncome   = [...visibleAutoIncome].sort(subFirst);
 
-  const hasManual     = manualItems.length > 0;
+  const hasManual      = manualItems.length > 0;
   const hasAutoVisible = visibleAutoExpenses.length > 0 || visibleAutoIncome.length > 0;
-  const hasAnything   = hasManual || hasAutoVisible;
+  const hasPlaid       = plaidOutflow.length > 0 || plaidInflow.length > 0;
+  const hasAnything    = hasManual || hasAutoVisible || hasPlaid;
   const formActive    = showForm || editingId !== null;
   const categoryOptions = formType === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
@@ -737,27 +828,38 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
 
       {/* ── Summary KPI row ───────────────────────────────────────────────── */}
       {hasAnything && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
           <div style={{ background: "#003527", borderRadius: 16, padding: "20px 24px" }}>
             <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
               Monthly Out
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#FCA5A5", fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#FCA5A5", fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
               {fmtDisplay(monthlyOut)}
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
-              {manualExpenses.filter(i => i.included).length + visibleAutoExpenses.length} included item{(manualExpenses.filter(i => i.included).length + visibleAutoExpenses.length) !== 1 ? "s" : ""}
+              {manualExpenses.filter(i => i.included).length + visibleAutoExpenses.length + plaidOutflow.length} items
             </div>
           </div>
           <div style={{ background: "#003527", borderRadius: 16, padding: "20px 24px" }}>
             <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
               Monthly In
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#62FAE3", fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#62FAE3", fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
               {fmtDisplay(monthlyIn)}
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
-              {manualIncome.filter(i => i.included).length + visibleAutoIncome.length} included item{(manualIncome.filter(i => i.included).length + visibleAutoIncome.length) !== 1 ? "s" : ""}
+              {manualIncome.filter(i => i.included).length + visibleAutoIncome.length + plaidInflow.length} items
+            </div>
+          </div>
+          <div style={{ background: monthlyNet >= 0 ? "#001f3f" : "#3b0000", borderRadius: 16, padding: "20px 24px" }}>
+            <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
+              Monthly Net
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: monthlyNet >= 0 ? "#62FAE3" : "#FCA5A5", fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
+              {monthlyNet >= 0 ? "+" : ""}{fmtDisplay(monthlyNet)}
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
+              {monthlyNet >= 0 ? "surplus each month" : "shortfall each month"}
             </div>
           </div>
         </div>
@@ -801,6 +903,37 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
                     onEdit={() => openEditForm(item)}
                     onDelete={() => deleteManual(item.id)}
                   />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── From your bank (Plaid) ────────────────────────────────────────── */}
+      {hasPlaid && (
+        <div>
+          <SectionLabel label="From your bank" />
+          {plaidOutflow.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: "#DC2626", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                Expenses
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {plaidOutflow.map(item => (
+                  <PlaidCard key={item.stream_id} item={item} formatAmount={fmtDisplay} />
+                ))}
+              </div>
+            </div>
+          )}
+          {plaidInflow.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, color: "#059669", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                Income
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {plaidInflow.map(item => (
+                  <PlaidCard key={item.stream_id} item={item} formatAmount={fmtDisplay} />
                 ))}
               </div>
             </div>
