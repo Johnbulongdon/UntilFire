@@ -1,14 +1,13 @@
 'use client'
 import React from 'react'
 
-const T = '#22D3A5'
-const D = '#064E3B'
-const W = '#FFFFFF'
-const G = '#FCD34D'
-const BG = '#0B3B2A'
-const O = '#F97316'
+const T  = '#22D3A5'  // teal — main figure
+const D  = '#064E3B'  // dark teal — shadows / detail
+const W  = '#FFFFFF'  // white
+const G  = '#FCD34D'  // gold
+const BG = '#0B3B2A'  // dark background
+const MG = '#0F3D2E'  // mid-green (surface / desk)
 
-// Taller viewBox (120×160) so characters are full-body
 function Wrap({ size, children }: { size: number; children: React.ReactNode }) {
   const h = Math.round(size * 4 / 3)
   return (
@@ -19,19 +18,35 @@ function Wrap({ size, children }: { size: number; children: React.ReactNode }) {
   )
 }
 
-// ── Shared body helpers ───────────────────────────────────────────────────────
-// Standard standing body: torso + legs at given y
-function Body({ y = 62, color = '#1A5C45', legColor = '#143D30', cx = 60 }: { y?: number; color?: string; legColor?: string; cx?: number }) {
+// Clean geometric head + minimal face at (cx, cy, r)
+function Head({ cx = 60, cy = 38, r = 20, hairColor = D }: { cx?: number; cy?: number; r?: number; hairColor?: string }) {
+  return (
+    <>
+      <circle cx={cx} cy={cy} r={r} fill={T} />
+      {/* Hair block */}
+      <ellipse cx={cx} cy={cy - r + 4} rx={r} ry={8} fill={hairColor} />
+      {/* Eyes */}
+      <circle cx={cx - 6} cy={cy - 1} r={3} fill={D} />
+      <circle cx={cx + 6} cy={cy - 1} r={3} fill={D} />
+      <circle cx={cx - 7.5} cy={cy - 2.5} r={1} fill={W} opacity={0.5} />
+      <circle cx={cx + 4.5} cy={cy - 2.5} r={1} fill={W} opacity={0.5} />
+    </>
+  )
+}
+
+// Geometric standing body (no head)
+function Body({ y = 58, w = 36, legColor = D }: { y?: number; w?: number; legColor?: string }) {
+  const hw = w / 2
   return (
     <>
       {/* Torso */}
-      <rect x={cx - 22} y={y} width="44" height="40" rx="8" fill={color} />
+      <path d={`M ${60 - hw + 4} ${y} L ${60 - hw} ${y + 42} L ${60 + hw} ${y + 42} L ${60 + hw - 4} ${y} Z`} fill={MG} />
       {/* Legs */}
-      <rect x={cx - 20} y={y + 38} width="18" height="36" rx="5" fill={legColor} />
-      <rect x={cx + 2} y={y + 38} width="18" height="36" rx="5" fill={legColor} />
+      <rect x={60 - hw + 2} y={y + 40} width={hw - 4} height={44} rx={5} fill={legColor} />
+      <rect x={60 + 2} y={y + 40} width={hw - 4} height={44} rx={5} fill={legColor} />
       {/* Feet */}
-      <rect x={cx - 22} y={y + 70} width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x={cx} y={y + 70} width="22" height="8" rx="4" fill="#0F2E22" />
+      <rect x={60 - hw} y={y + 80} width={hw + 2} height={7} rx={3} fill={D} />
+      <rect x={60 + 2} y={y + 80} width={hw + 2} height={7} rx={3} fill={D} />
     </>
   )
 }
@@ -40,45 +55,36 @@ function Body({ y = 62, color = '#1A5C45', legColor = '#143D30', cx = 60 }: { y?
 function SpreadsheetNerd({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Desk surface */}
-      <rect x="0" y="138" width="120" height="8" rx="2" fill="#0F2E22" />
-      {/* Laptop on desk */}
-      <rect x="62" y="106" width="42" height="28" rx="3" fill={W} opacity="0.95" />
-      <rect x="64" y="108" width="38" height="22" rx="2" fill={D} />
-      {/* Bar chart on screen */}
-      <rect x="67" y="118" width="5" height="8" fill={T} />
-      <rect x="74" y="115" width="5" height="11" fill={T} />
-      <rect x="81" y="112" width="5" height="14" fill={G} />
-      <rect x="88" y="110" width="5" height="16" fill={T} />
-      <rect x="62" y="134" width="42" height="4" rx="2" fill="#CBD5E1" />
-      {/* Hair */}
-      <path d="M 38 40 Q 42 22 60 20 Q 78 22 82 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Big round glasses */}
-      <circle cx="50" cy="41" r="10" fill="rgba(6,78,59,0.85)" stroke={W} strokeWidth="2.5" />
-      <circle cx="70" cy="41" r="10" fill="rgba(6,78,59,0.85)" stroke={W} strokeWidth="2.5" />
-      <line x1="60" y1="41" x2="60" y2="41" stroke={W} strokeWidth="2.5" />
-      <line x1="40" y1="41" x2="33" y2="45" stroke={W} strokeWidth="2" />
-      <line x1="80" y1="41" x2="87" y2="45" stroke={W} strokeWidth="2" />
-      <circle cx="50" cy="41" r="5" fill={T} opacity="0.9" />
-      <circle cx="70" cy="41" r="5" fill={T} opacity="0.9" />
-      <circle cx="48" cy="39" r="2" fill={W} opacity="0.5" />
-      <circle cx="68" cy="39" r="2" fill={W} opacity="0.5" />
+      {/* Giant laptop — hero prop */}
+      <rect x="4" y="90" width="112" height="62" rx="5" fill={MG} />
+      <rect x="7" y="93" width="106" height="54" rx="3" fill={D} />
+      {/* Chart on screen */}
+      <rect x="14" y="114" width="10" height="28" rx="2" fill={T} opacity="0.4" />
+      <rect x="28" y="106" width="10" height="36" rx="2" fill={T} opacity="0.6" />
+      <rect x="42" y="98" width="10" height="44" rx="2" fill={T} opacity="0.8" />
+      <rect x="56" y="102" width="10" height="40" rx="2" fill={T} />
+      <rect x="70" y="108" width="10" height="34" rx="2" fill={G} />
+      <rect x="84" y="96" width="10" height="46" rx="2" fill={G} opacity="0.8" />
+      {/* Baseline */}
+      <line x1="11" y1="142" x2="107" y2="142" stroke={T} strokeWidth="1" opacity="0.4" />
+      {/* Laptop base */}
+      <rect x="0" y="150" width="120" height="8" rx="4" fill={D} />
+
+      {/* Character — bust above laptop */}
+      <Head cy={42} />
+      {/* BIG round glasses over face */}
+      <circle cx="49" cy="41" r="12" fill="rgba(6,78,59,0.75)" stroke={W} strokeWidth="3" />
+      <circle cx="71" cy="41" r="12" fill="rgba(6,78,59,0.75)" stroke={W} strokeWidth="3" />
+      <rect x="61" y="37" width="10" height="8" fill="none" stroke={W} strokeWidth="2.5" />
+      <line x1="37" y1="41" x2="30" y2="44" stroke={W} strokeWidth="2.5" />
+      <line x1="83" y1="41" x2="90" y2="44" stroke={W} strokeWidth="2.5" />
       {/* Smirk */}
-      <path d="M 52 53 Q 61 58 69 53" stroke={D} strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* Body — suit */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#112B20" />
-      <path d="M 52 66 L 58 80 L 46 66" fill="#1A4035" />
-      <path d="M 68 66 L 62 80 L 74 66" fill="#1A4035" />
-      <polygon points="59,66 63,66 61.5,84 60.5,84" fill={G} />
-      {/* Arm reaching to laptop */}
-      <rect x="60" y="90" width="32" height="14" rx="6" fill={T} opacity="0.85" />
-      {/* Legs */}
-      <rect x="40" y="104" width="18" height="34" rx="5" fill="#1A4035" />
-      <rect x="62" y="104" width="18" height="34" rx="5" fill="#1A4035" />
-      <rect x="38" y="134" width="22" height="8" rx="4" fill="#0F1F18" />
-      <rect x="60" y="134" width="22" height="8" rx="4" fill="#0F1F18" />
+      <path d="M 54 52 Q 62 57 70 52" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Torso (suit) */}
+      <path d="M 40 62 L 37 92 L 83 92 L 80 62 Z" fill="#0F2E22" />
+      <path d="M 52 62 L 58 76 L 46 62" fill={D} />
+      <path d="M 68 62 L 62 76 L 74 62" fill={D} />
+      <rect x="58" y="62" width="4" height="22" rx="2" fill={G} />
     </Wrap>
   )
 }
@@ -87,44 +93,39 @@ function SpreadsheetNerd({ size }: { size: number }) {
 function DigitalNomad({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Plane taking off in bg */}
-      <path d="M 60 18 L 100 10 L 96 16 L 108 12 L 80 28 L 76 38 L 66 28 Z" fill={T} opacity="0.18" />
-      {/* Gate sign */}
-      <rect x="6" y="8" width="30" height="14" rx="3" fill={W} opacity="0.12" />
-      <rect x="9" y="11" width="24" height="2" rx="1" fill={W} opacity="0.3" />
-      <rect x="9" y="15" width="16" height="2" rx="1" fill={W} opacity="0.2" />
-      {/* Hair tousled */}
-      <path d="M 36 40 Q 40 22 60 20 Q 80 22 84 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Wraparound sunglasses */}
-      <rect x="36" y="37" width="20" height="12" rx="5" fill={D} stroke={W} strokeWidth="2" />
-      <rect x="64" y="37" width="20" height="12" rx="5" fill={D} stroke={W} strokeWidth="2" />
-      <line x1="56" y1="43" x2="64" y2="43" stroke={W} strokeWidth="2" />
-      <line x1="36" y1="43" x2="28" y2="46" stroke={W} strokeWidth="1.5" />
-      <line x1="84" y1="43" x2="92" y2="46" stroke={W} strokeWidth="1.5" />
-      <rect x="40" y="40" width="7" height="3" rx="1" fill={W} opacity="0.2" />
-      <rect x="68" y="40" width="7" height="3" rx="1" fill={W} opacity="0.2" />
-      {/* Relaxed smile */}
-      <path d="M 51 54 Q 60 60 69 54" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      {/* Body with backpack straps visible */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
-      {/* Backpack straps */}
-      <path d="M 50 66 Q 46 84 48 106" stroke={T} strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.55" />
-      <path d="M 70 66 Q 74 84 72 106" stroke={T} strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.55" />
-      <rect x="52" y="80" width="16" height="10" rx="3" fill={T} opacity="0.25" />
-      {/* Boarding pass in left hand */}
-      <rect x="6" y="80" width="22" height="14" rx="2" fill={G} opacity="0.9" />
-      <rect x="8" y="83" width="18" height="2" rx="1" fill={D} opacity="0.4" />
-      <rect x="8" y="87" width="12" height="2" rx="1" fill={D} opacity="0.3" />
-      <line x1="20" y1="80" x2="20" y2="94" stroke={D} strokeWidth="1" opacity="0.3" />
-      {/* Left arm */}
-      <rect x="6" y="72" width="32" height="12" rx="6" fill={T} opacity="0.85" />
-      {/* Legs — walking pose */}
-      <rect x="38" y="104" width="18" height="36" rx="5" fill="#143D30" />
-      <rect x="62" y="108" width="18" height="32" rx="5" fill="#143D30" />
-      <rect x="36" y="136" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="60" y="136" width="22" height="8" rx="4" fill="#0F2E22" />
+      {/* Big boarding pass — hero prop */}
+      <rect x="8" y="100" width="104" height="54" rx="6" fill={G} opacity="0.95" />
+      <rect x="8" y="128" width="104" height="1" stroke={D} strokeWidth="1" fill="none" strokeDasharray="4 3" />
+      <rect x="72" y="100" width="2" height="54" fill={D} opacity="0.2" />
+      {/* Pass text lines */}
+      <rect x="16" y="108" width="40" height="4" rx="2" fill={D} opacity="0.35" />
+      <rect x="16" y="116" width="28" height="4" rx="2" fill={D} opacity="0.25" />
+      <rect x="16" y="134" width="20" height="3" rx="1" fill={D} opacity="0.2" />
+      <rect x="16" y="140" width="32" height="3" rx="1" fill={D} opacity="0.2" />
+      {/* Barcode */}
+      {[80, 84, 88, 91, 95, 99, 103].map((x, i) => (
+        <rect key={i} x={x} y="108" width={i % 3 === 0 ? 2 : 1} height="16" rx="0.5" fill={D} opacity="0.4" />
+      ))}
+      {/* Plane icon */}
+      <path d="M 80 138 L 104 132 L 100 136 L 108 134 L 90 146 L 86 142 Z" fill={D} opacity="0.3" />
+
+      {/* Character */}
+      {/* Sunglasses hair */}
+      <Head cy={36} hairColor="#1A5C45" />
+      {/* Wraparound shades */}
+      <rect x="36" y="30" width="18" height="11" rx="4" fill={D} stroke={W} strokeWidth="2.5" />
+      <rect x="66" y="30" width="18" height="11" rx="4" fill={D} stroke={W} strokeWidth="2.5" />
+      <line x1="54" y1="35" x2="66" y2="35" stroke={W} strokeWidth="2.5" />
+      <line x1="36" y1="35" x2="28" y2="38" stroke={W} strokeWidth="2" />
+      <line x1="84" y1="35" x2="92" y2="38" stroke={W} strokeWidth="2" />
+      <rect x="40" y="32" width="7" height="4" rx="2" fill={W} opacity="0.18" />
+      <rect x="70" y="32" width="7" height="4" rx="2" fill={W} opacity="0.18" />
+      {/* Easy smile */}
+      <path d="M 52 47 Q 60 53 68 47" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Body + backpack straps */}
+      <path d="M 42 56 L 38 100 L 82 100 L 78 56 Z" fill="#1A5C45" />
+      <path d="M 50 56 Q 46 76 48 100" stroke={T} strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.55" />
+      <path d="M 70 56 Q 74 76 72 100" stroke={T} strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.55" />
     </Wrap>
   )
 }
@@ -133,45 +134,43 @@ function DigitalNomad({ size }: { size: number }) {
 function BeachBum({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Ocean + sun */}
-      <circle cx="96" cy="14" r="14" fill={G} opacity="0.18" />
-      <path d="M 0 118 Q 20 110 40 118 Q 60 126 80 118 Q 100 110 120 118 L 120 160 L 0 160 Z" fill={T} opacity="0.1" />
-      {/* Wide brim hat */}
-      <ellipse cx="60" cy="22" rx="40" ry="8" fill={G} />
-      <rect x="34" y="14" width="52" height="18" rx="13" fill={G} opacity="0.95" />
-      <rect x="28" y="27" width="64" height="5" rx="2" fill="#D97706" opacity="0.7" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Round sunglasses */}
-      <circle cx="50" cy="43" r="9" fill="rgba(6,78,59,0.85)" stroke={W} strokeWidth="2" />
-      <circle cx="70" cy="43" r="9" fill="rgba(6,78,59,0.85)" stroke={W} strokeWidth="2" />
-      <line x1="59" y1="43" x2="61" y2="43" stroke={W} strokeWidth="2" />
-      <line x1="41" y1="43" x2="33" y2="46" stroke={W} strokeWidth="1.5" />
-      <line x1="79" y1="43" x2="87" y2="46" stroke={W} strokeWidth="1.5" />
-      <circle cx="46" cy="40" r="2.5" fill={W} opacity="0.22" />
-      <circle cx="66" cy="40" r="2.5" fill={W} opacity="0.22" />
+      {/* Sun */}
+      <circle cx="96" cy="18" r="18" fill={G} opacity="0.15" />
+      <circle cx="96" cy="18" r="12" fill={G} opacity="0.25" />
+      {/* Ocean floor */}
+      <path d="M 0 130 Q 30 122 60 128 Q 90 122 120 130 L 120 160 L 0 160 Z" fill={D} opacity="0.5" />
+      {/* Wave lines */}
+      <path d="M 4 134 Q 22 128 40 134" stroke={T} strokeWidth="1.5" fill="none" opacity="0.4" />
+      <path d="M 50 138 Q 68 132 86 138" stroke={T} strokeWidth="1.5" fill="none" opacity="0.4" />
+
+      {/* Giant cocktail — hero */}
+      <polygon points="8,56 36,56 26,102 18,102" fill={T} opacity="0.85" />
+      <rect x="18" y="102" width="8" height="12" rx="2" fill={T} opacity="0.85" />
+      <rect x="12" y="114" width="20" height="4" rx="2" fill={T} opacity="0.85" />
+      {/* Liquid level */}
+      <polygon points="10,68 34,68 31,86 13,86" fill={T} opacity="0.4" />
+      {/* Straw */}
+      <line x1="34" y1="58" x2="44" y2="36" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+      {/* Umbrella */}
+      <path d="M 44 36 Q 50 28 62 36 Q 56 38 50 36 Z" fill={G} opacity="0.85" />
+      <path d="M 44 36 Q 38 28 26 36 Q 32 38 38 36 Z" fill={G} opacity="0.65" />
+
+      {/* Character — wide brim hat then head */}
+      <ellipse cx="76" cy="32" rx="32" ry="8" fill={G} opacity="0.9" />
+      <rect x="50" y="24" width="52" height="18" rx="11" fill={G} opacity="0.95" />
+      <rect x="46" y="37" width="60" height="4" rx="2" fill="#D97706" opacity="0.7" />
+      {/* Head under hat */}
+      <circle cx="76" cy="50" r="18" fill={T} />
+      {/* Round shades */}
+      <circle cx="68" cy="50" r="9" fill={D} stroke={W} strokeWidth="2.5" />
+      <circle cx="84" cy="50" r="9" fill={D} stroke={W} strokeWidth="2.5" />
+      <line x1="77" y1="50" x2="75" y2="50" stroke={W} strokeWidth="2.5" />
+      <line x1="59" y1="50" x2="53" y2="53" stroke={W} strokeWidth="2" />
+      <line x1="93" y1="50" x2="99" y2="53" stroke={W} strokeWidth="2" />
       {/* Big grin */}
-      <path d="M 47 55 Q 60 64 73 55" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      {/* Floral shirt */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
-      <circle cx="52" cy="78" r="3" fill={T} opacity="0.45" />
-      <circle cx="68" cy="75" r="3" fill={T} opacity="0.45" />
-      <circle cx="58" cy="88" r="3" fill={G} opacity="0.35" />
-      <circle cx="44" cy="90" r="2.5" fill={T} opacity="0.3" />
-      {/* Cocktail in right hand */}
-      <rect x="84" y="72" width="14" height="12" rx="6" fill={T} opacity="0.85" />
-      <polygon points="104,68 92,68 96,88 100,88" fill={W} opacity="0.85" />
-      <rect x="96" y="88" width="4" height="6" fill={W} opacity="0.85" />
-      <rect x="92" y="94" width="12" height="2" rx="1" fill={W} opacity="0.85" />
-      <line x1="102" y1="66" x2="108" y2="55" stroke={T} strokeWidth="2" strokeLinecap="round" />
-      <circle cx="108" cy="54" r="3" fill={T} opacity="0.5" />
-      {/* Beach chair legs */}
-      <rect x="8" y="100" width="76" height="6" rx="3" fill="#D97706" opacity="0.6" />
-      {/* Legs reclined on chair */}
-      <rect x="16" y="100" width="18" height="28" rx="5" fill="#143D30" transform="rotate(-10 25 114)" />
-      <rect x="38" y="100" width="18" height="28" rx="5" fill="#143D30" transform="rotate(-10 47 114)" />
-      <rect x="14" y="124" width="22" height="8" rx="4" fill="#0F2E22" transform="rotate(-10 25 128)" />
-      <rect x="36" y="124" width="22" height="8" rx="4" fill="#0F2E22" transform="rotate(-10 47 128)" />
+      <path d="M 65 61 Q 76 69 87 61" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Torso reclining */}
+      <path d="M 56 68 L 54 126 L 98 126 L 96 68 Z" fill="#1A5C45" />
     </Wrap>
   )
 }
@@ -180,28 +179,27 @@ function BeachBum({ size }: { size: number }) {
 function MinimalistMonk({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Aura rings */}
-      <circle cx="60" cy="82" r="72" fill="none" stroke={T} strokeWidth="0.6" opacity="0.08" />
-      <circle cx="60" cy="82" r="56" fill="none" stroke={T} strokeWidth="0.8" opacity="0.1" />
-      <circle cx="60" cy="82" r="40" fill="none" stroke={T} strokeWidth="1" opacity="0.13" />
+      {/* Enso circle — hero prop, huge */}
+      <circle cx="60" cy="82" r="66" fill="none" stroke={T} strokeWidth="3" opacity="0.08" />
+      <circle cx="60" cy="82" r="52" fill="none" stroke={T} strokeWidth="4" opacity="0.12" />
+      <circle cx="60" cy="82" r="38" fill="none" stroke={T} strokeWidth="6" opacity="0.18" />
       {/* Crown glow */}
-      <circle cx="60" cy="14" r="6" fill={G} opacity="0.5" />
-      <circle cx="60" cy="14" r="12" fill={G} opacity="0.15" />
-      {/* Head */}
-      <circle cx="60" cy="40" r="24" fill={T} />
-      {/* Closed peaceful eyes */}
-      <path d="M 47 38 Q 51 34 55 38" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      <path d="M 65 38 Q 69 34 73 38" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <circle cx="60" cy="10" r="8" fill={G} opacity="0.45" />
+      <circle cx="60" cy="10" r="16" fill={G} opacity="0.12" />
+      {/* Clean head */}
+      <circle cx="60" cy="40" r="20" fill={T} />
+      {/* No hair — shaved */}
+      {/* Peaceful closed eyes */}
+      <path d="M 48 38 Q 52 34 56 38" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path d="M 64 38 Q 68 34 72 38" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
       {/* Serene smile */}
-      <path d="M 52 51 Q 60 56 68 51" stroke={D} strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* Robe — wide lotus spread */}
-      <path d="M 8 140 Q 20 78 60 70 Q 100 78 112 140 Z" fill="#1A5C45" />
-      <path d="M 14 140 Q 28 88 60 82 Q 92 88 106 140" fill="#1A7A5E" opacity="0.4" />
-      {/* Arms in mudra */}
-      <ellipse cx="34" cy="102" rx="16" ry="7" fill={T} opacity="0.85" transform="rotate(-15 34 102)" />
-      <ellipse cx="86" cy="102" rx="16" ry="7" fill={T} opacity="0.85" transform="rotate(15 86 102)" />
-      {/* Palms touching hint */}
-      <ellipse cx="60" cy="106" rx="10" ry="6" fill={T} opacity="0.6" />
+      <path d="M 53 49 Q 60 54 67 49" stroke={D} strokeWidth="2" fill="none" strokeLinecap="round" />
+      {/* Lotus robe — wide geometric spread */}
+      <path d="M 6 155 Q 18 82 60 72 Q 102 82 114 155 Z" fill="#1A5C45" />
+      <path d="M 12 155 Q 26 94 60 86 Q 94 94 108 155" fill="#22735A" opacity="0.4" />
+      {/* Hands in mudra */}
+      <ellipse cx="38" cy="106" rx="14" ry="7" fill={T} opacity="0.8" transform="rotate(-16 38 106)" />
+      <ellipse cx="82" cy="106" rx="14" ry="7" fill={T} opacity="0.8" transform="rotate(16 82 106)" />
     </Wrap>
   )
 }
@@ -210,38 +208,35 @@ function MinimalistMonk({ size }: { size: number }) {
 function ChessPlayer({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Chess board at bottom */}
-      {[0, 1, 2, 3, 4, 5, 6, 7].map((col) => [0, 1].map((row) => (
-        <rect key={`${col}-${row}`}
-          x={col * 15} y={144 + row * 8} width="15" height="8"
-          fill={(col + row) % 2 === 0 ? 'rgba(34,211,165,0.18)' : 'rgba(255,255,255,0.06)'} />
-      )))}
-      {/* Chess king piece */}
-      <rect x="86" y="90" width="16" height="24" rx="2" fill={W} opacity="0.88" />
-      <rect x="82" y="112" width="24" height="5" rx="2" fill={W} opacity="0.88" />
-      <rect x="90" y="80" width="6" height="12" rx="2" fill={W} opacity="0.88" />
-      <rect x="86" y="84" width="14" height="5" rx="1" fill={W} opacity="0.88" />
-      {/* Hair */}
-      <path d="M 36 40 Q 40 22 60 20 Q 80 22 84 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Focused eyes — slightly squinted */}
-      <ellipse cx="50" cy="40" rx="5" ry="3.5" fill={D} />
-      <ellipse cx="70" cy="40" rx="5" ry="3.5" fill={D} />
-      <circle cx="48.5" cy="39" r="1.5" fill={W} opacity="0.5" />
-      <circle cx="68.5" cy="39" r="1.5" fill={W} opacity="0.5" />
-      {/* Thoughtful straight mouth */}
-      <line x1="53" y1="53" x2="67" y2="53" stroke={D} strokeWidth="2.5" strokeLinecap="round" />
+      {/* Chess board — hero surface */}
+      {Array.from({ length: 4 }, (_, row) =>
+        Array.from({ length: 8 }, (_, col) => (
+          <rect key={`${row}-${col}`}
+            x={col * 15} y={132 + row * 8} width="15" height="8"
+            fill={(col + row) % 2 === 0 ? 'rgba(34,211,165,0.18)' : 'rgba(255,255,255,0.05)'} />
+        ))
+      )}
+
+      {/* Giant chess king — hero prop */}
+      <rect x="76" y="72" width="36" height="54" rx="3" fill={W} opacity="0.88" />
+      <rect x="72" y="120" width="44" height="8" rx="4" fill={W} opacity="0.88" />
+      {/* King crown */}
+      <rect x="88" y="56" width="12" height="20" rx="3" fill={W} opacity="0.88" />
+      <rect x="76" y="64" width="36" height="10" rx="3" fill={W} opacity="0.88" />
+      <circle cx="94" cy="56" r="4" fill={G} opacity="0.8" />
+
+      {/* Character — thinking pose left side */}
+      <Head cx={44} cy={40} />
+      {/* Thoughtful narrow eyes (override) */}
+      <ellipse cx="37" cy="39" rx="5" ry="3" fill={D} />
+      <ellipse cx="51" cy="39" rx="5" ry="3" fill={D} />
+      {/* Straight mouth */}
+      <line x1="36" y1="50" x2="52" y2="50" stroke={D} strokeWidth="2.5" strokeLinecap="round" />
+      {/* Hand on chin */}
+      <rect x="26" y="56" width="26" height="12" rx="5" fill={T} opacity="0.85" />
+      <rect x="32" y="44" width="12" height="18" rx="5" fill={T} opacity="0.85" />
       {/* Body */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
-      {/* Hand on chin — elbow on table */}
-      <rect x="20" y="82" width="24" height="10" rx="5" fill={T} opacity="0.9" />
-      <rect x="24" y="66" width="12" height="20" rx="5" fill={T} opacity="0.9" />
-      {/* Legs */}
-      <rect x="40" y="104" width="18" height="40" rx="5" fill="#143D30" />
-      <rect x="62" y="104" width="18" height="40" rx="5" fill="#143D30" />
-      <rect x="38" y="140" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="60" y="140" width="22" height="8" rx="4" fill="#0F2E22" />
+      <path d="M 24 68 L 22 132 L 66 132 L 64 68 Z" fill="#1A5C45" />
     </Wrap>
   )
 }
@@ -250,41 +245,38 @@ function ChessPlayer({ size }: { size: number }) {
 function MadScientist({ size }: { size: number }) {
   return (
     <Wrap size={size}>
+      {/* Giant bubbling flask — hero prop */}
+      <path d="M 62 8 L 58 38 Q 52 56 34 72 Q 18 88 22 110 Q 26 136 60 140 Q 94 136 98 110 Q 102 88 86 72 Q 68 56 62 38 L 58 8 Z"
+        fill={T} opacity="0.2" stroke={T} strokeWidth="2" />
+      <path d="M 62 8 L 58 38 Q 52 56 34 72 Q 18 88 22 110 Q 26 136 60 140 Q 94 136 98 110 Q 102 80 78 62 Q 66 54 62 38 L 58 8 Z"
+        fill={T} opacity="0.3" />
+      {/* Liquid inside */}
+      <path d="M 28 116 Q 60 108 92 116 Q 96 136 60 140 Q 24 136 28 116 Z"
+        fill={T} opacity="0.7" />
       {/* Bubbles */}
-      <circle cx="86" cy="52" r="3.5" fill={T} opacity="0.4" />
-      <circle cx="92" cy="42" r="5" fill={T} opacity="0.28" />
-      <circle cx="84" cy="34" r="2.5" fill={T} opacity="0.2" />
+      <circle cx="44" cy="106" r="4" fill={T} opacity="0.4" />
+      <circle cx="72" cy="96" r="6" fill={T} opacity="0.3" />
+      <circle cx="56" cy="86" r="3" fill={T} opacity="0.35" />
+      <circle cx="80" cy="112" r="5" fill={T} opacity="0.35" />
+      {/* Flask neck */}
+      <rect x="53" y="4" width="14" height="36" rx="4" fill={D} opacity="0.7" />
+
+      {/* Character — bust in lower right area */}
       {/* Wild spiky hair */}
-      <path d="M 32 42 L 26 18 L 38 32 L 34 12 L 46 28 L 48 10 L 58 26 L 60 8 L 66 26 L 72 10 L 74 28 L 84 14 L 84 36 L 92 20 L 88 42"
-        fill={T} opacity="0.85" />
-      {/* Head */}
-      <circle cx="60" cy="44" r="24" fill={T} />
-      {/* Big round goggles */}
-      <circle cx="50" cy="42" r="12" fill="rgba(6,78,59,0.65)" stroke={W} strokeWidth="3" />
-      <circle cx="70" cy="42" r="12" fill="rgba(6,78,59,0.65)" stroke={W} strokeWidth="3" />
-      <rect x="62" y="38" width="8" height="8" fill="none" stroke={W} strokeWidth="2.5" />
-      <circle cx="50" cy="42" r="6" fill={T} opacity="0.35" />
-      <circle cx="70" cy="42" r="6" fill={T} opacity="0.35" />
-      <circle cx="46" cy="38" r="2.5" fill={W} opacity="0.35" />
-      <circle cx="66" cy="38" r="2.5" fill={W} opacity="0.35" />
-      {/* Excited grin with teeth */}
-      <path d="M 46 57 Q 60 67 74 57" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      <rect x="51" y="57" width="5" height="4" rx="1" fill={W} />
-      <rect x="58" y="58" width="5" height="4" rx="1" fill={W} />
-      <rect x="65" y="57" width="5" height="4" rx="1" fill={W} />
+      <path d="M 10 44 L 4 24 L 14 34 L 12 18 L 22 30 L 22 14 L 32 28 L 34 12 L 40 26 L 44 14"
+        fill={T} opacity="0.75" />
+      <Head cx={30} cy={52} r={18} hairColor="transparent" />
+      {/* Big goggles */}
+      <circle cx="23" cy="50" r="10" fill="rgba(6,78,59,0.75)" stroke={W} strokeWidth="3" />
+      <circle cx="37" cy="50" r="10" fill="rgba(6,78,59,0.75)" stroke={W} strokeWidth="3" />
+      <rect x="33" y="46" width="4" height="8" fill="none" stroke={W} strokeWidth="2.5" />
+      <circle cx="20" cy="47" r="2.5" fill={W} opacity="0.3" />
+      {/* Grin */}
+      <path d="M 19 62 Q 30 70 41 62" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
       {/* Lab coat */}
-      <rect x="36" y="68" width="48" height="40" rx="8" fill={W} opacity="0.92" />
-      <path d="M 52 68 L 58 82 L 46 68" fill="#DDE8E4" />
-      <path d="M 68 68 L 62 82 L 74 68" fill="#DDE8E4" />
-      {/* Flask in raised right arm */}
-      <rect x="78" y="62" width="14" height="12" rx="6" fill={T} opacity="0.85" />
-      <path d="M 88 56 L 84 70 Q 81 84 90 88 Q 99 84 96 70 L 92 56 Z" fill={T} opacity="0.85" stroke={W} strokeWidth="1.5" />
-      <rect x="86" y="50" width="10" height="7" rx="3" fill={W} opacity="0.9" />
-      {/* Legs */}
-      <rect x="40" y="106" width="18" height="36" rx="5" fill="#CBD5E1" />
-      <rect x="62" y="106" width="18" height="36" rx="5" fill="#CBD5E1" />
-      <rect x="38" y="138" width="22" height="8" rx="4" fill="#94A3B8" />
-      <rect x="60" y="138" width="22" height="8" rx="4" fill="#94A3B8" />
+      <path d="M 10 70 L 8 145 L 52 145 L 50 70 Z" fill={W} opacity="0.88" />
+      <path d="M 22 70 L 28 84 L 16 70" fill="#DDE8E4" />
+      <path d="M 38 70 L 32 84 L 44 70" fill="#DDE8E4" />
     </Wrap>
   )
 }
@@ -293,48 +285,47 @@ function MadScientist({ size }: { size: number }) {
 function SerialHustler({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Lightning bolts */}
-      <path d="M 10 24 L 6 40 L 14 40 L 8 58" stroke={G} strokeWidth="3" fill="none" strokeLinecap="round" />
-      <path d="M 110 16 L 106 32 L 114 32 L 108 50" stroke={G} strokeWidth="3" fill="none" strokeLinecap="round" />
-      <path d="M 98 110 L 95 122 L 101 122 L 97 132" stroke={G} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
-      {/* Hair */}
-      <path d="M 36 40 Q 40 20 60 18 Q 80 20 84 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Wide-awake big eyes */}
-      <circle cx="50" cy="40" r="6" fill={D} />
-      <circle cx="70" cy="40" r="6" fill={D} />
-      <circle cx="47.5" cy="38" r="2.5" fill={W} opacity="0.6" />
-      <circle cx="67.5" cy="38" r="2.5" fill={W} opacity="0.6" />
-      {/* Determined grin */}
-      <path d="M 50 54 Q 60 60 70 54" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      {/* Body */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
-      {/* Left phone */}
-      <rect x="4" y="68" width="20" height="34" rx="3" fill={W} opacity="0.9" />
-      <rect x="6" y="70" width="16" height="28" rx="2" fill={D} />
-      <rect x="8" y="74" width="12" height="2" rx="1" fill={T} />
-      <rect x="8" y="78" width="8" height="2" rx="1" fill={G} opacity="0.7" />
-      <rect x="8" y="82" width="10" height="2" rx="1" fill={T} opacity="0.6" />
-      <rect x="8" y="86" width="6" height="2" rx="1" fill={G} opacity="0.5" />
-      {/* Right phone */}
-      <rect x="96" y="66" width="20" height="34" rx="3" fill={W} opacity="0.9" />
-      <rect x="98" y="68" width="16" height="28" rx="2" fill={D} />
-      <rect x="100" y="72" width="12" height="2" rx="1" fill={G} />
-      <rect x="100" y="76" width="8" height="2" rx="1" fill={T} opacity="0.6" />
-      <rect x="100" y="80" width="10" height="2" rx="1" fill={T} opacity="0.5" />
-      {/* Third phone angled at top */}
-      <g transform="rotate(-15 60 26)">
-        <rect x="38" y="10" width="32" height="20" rx="3" fill={W} opacity="0.82" />
-        <rect x="40" y="12" width="28" height="16" rx="2" fill={D} />
-        <line x1="42" y1="16" x2="66" y2="16" stroke={G} strokeWidth="2.5" />
-        <line x1="42" y1="21" x2="58" y2="21" stroke={T} strokeWidth="1.5" opacity="0.6" />
+      {/* Lightning bolt hero */}
+      <path d="M 68 6 L 44 68 L 62 68 L 38 154 L 86 76 L 64 76 L 90 6 Z" fill={G} opacity="0.18" />
+
+      {/* Three phones — hero arrangement */}
+      {/* Left phone tilted */}
+      <g transform="rotate(-18 20 90)">
+        <rect x="6" y="62" width="28" height="52" rx="5" fill={W} opacity="0.88" />
+        <rect x="9" y="65" width="22" height="44" rx="3" fill={D} />
+        <rect x="11" y="70" width="18" height="3" rx="1" fill={T} />
+        <rect x="11" y="76" width="12" height="3" rx="1" fill={G} opacity="0.6" />
+        <rect x="11" y="82" width="16" height="3" rx="1" fill={T} opacity="0.5" />
+        <circle cx="20" cy="101" r="4" fill="#1A4035" />
       </g>
-      {/* Legs — walking */}
-      <rect x="38" y="104" width="18" height="38" rx="5" fill="#143D30" />
-      <rect x="62" y="110" width="18" height="32" rx="5" fill="#143D30" />
-      <rect x="36" y="138" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="60" y="138" width="22" height="8" rx="4" fill="#0F2E22" />
+      {/* Center phone */}
+      <rect x="46" y="84" width="28" height="52" rx="5" fill={W} opacity="0.95" />
+      <rect x="49" y="87" width="22" height="44" rx="3" fill={D} />
+      <rect x="51" y="92" width="18" height="3" rx="1" fill={G} />
+      <rect x="51" y="98" width="12" height="3" rx="1" fill={T} opacity="0.6" />
+      <rect x="51" y="104" width="16" height="3" rx="1" fill={T} opacity="0.5" />
+      <circle cx="60" cy="122" r="5" fill="#1A4035" />
+      {/* Right phone tilted */}
+      <g transform="rotate(18 100 90)">
+        <rect x="86" y="62" width="28" height="52" rx="5" fill={W} opacity="0.88" />
+        <rect x="89" y="65" width="22" height="44" rx="3" fill={D} />
+        <rect x="91" y="70" width="18" height="3" rx="1" fill={T} />
+        <rect x="91" y="76" width="12" height="3" rx="1" fill={G} opacity="0.6" />
+        <rect x="91" y="82" width="16" height="3" rx="1" fill={T} opacity="0.5" />
+        <circle cx="100" cy="101" r="4" fill="#1A4035" />
+      </g>
+
+      {/* Character bust above phones */}
+      <Head cy={38} />
+      {/* Wide-awake eyes (override) */}
+      <circle cx="54" cy="37" r="5" fill={D} />
+      <circle cx="66" cy="37" r="5" fill={D} />
+      <circle cx="52" cy="35" r="2" fill={W} opacity="0.55" />
+      <circle cx="64" cy="35" r="2" fill={W} opacity="0.55" />
+      {/* Determined grin */}
+      <path d="M 50 49 Q 60 56 70 49" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Torso */}
+      <path d="M 38 58 L 34 84 L 86 84 L 82 58 Z" fill="#1A5C45" />
     </Wrap>
   )
 }
@@ -343,36 +334,32 @@ function SerialHustler({ size }: { size: number }) {
 function FreeSpirit({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Butterfly */}
-      <path d="M 88 26 Q 106 14 110 30 Q 104 42 88 34 Z" fill={T} opacity="0.65" />
-      <path d="M 88 34 Q 106 44 104 56 Q 95 50 88 42 Z" fill={T} opacity="0.4" />
-      <path d="M 88 26 Q 70 14 66 30 Q 72 42 88 34 Z" fill={G} opacity="0.55" />
-      <path d="M 88 34 Q 70 44 72 56 Q 81 50 88 42 Z" fill={G} opacity="0.35" />
-      <circle cx="88" cy="30" r="3" fill={D} opacity="0.7" />
-      <path d="M 86 28 Q 78 18 68 16" stroke={D} strokeWidth="1.2" fill="none" opacity="0.5" />
-      <path d="M 90 28 Q 98 18 108 16" stroke={D} strokeWidth="1.2" fill="none" opacity="0.5" />
-      {/* Wild hair flowing */}
-      <path d="M 33 44 Q 22 16 40 10 Q 52 6 58 22" fill={T} opacity="0.8" />
-      <path d="M 87 44 Q 98 16 80 10 Q 68 6 62 22" fill={T} opacity="0.8" />
-      <path d="M 40 26 Q 34 10 52 6 Q 64 4 64 20" fill="#1A7A5E" />
-      <path d="M 80 26 Q 86 10 68 6 Q 56 4 56 20" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="44" r="24" fill={T} />
-      {/* Bright open eyes */}
-      <circle cx="50" cy="42" r="5" fill={D} />
-      <circle cx="70" cy="42" r="5" fill={D} />
-      <circle cx="48" cy="40" r="2" fill={W} opacity="0.6" />
-      <circle cx="68" cy="40" r="2" fill={W} opacity="0.6" />
-      {/* Big open smile */}
-      <path d="M 46 55 Q 60 66 74 55" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      <ellipse cx="60" cy="61" rx="10" ry="4" fill={D} opacity="0.2" />
-      {/* Arms spread wide */}
-      <rect x="4" y="72" width="34" height="12" rx="6" fill={T} opacity="0.85" />
-      <rect x="82" y="72" width="34" height="12" rx="6" fill={T} opacity="0.85" />
-      {/* Flowy outfit */}
-      <path d="M 36 66 Q 26 90 30 118 L 60 108 L 90 118 Q 94 90 84 66 Z" fill="#1A5C45" />
-      {/* Flowing dress/robe hem */}
-      <path d="M 28 118 Q 44 108 60 112 Q 76 108 92 118 L 96 145 Q 80 138 60 142 Q 40 138 24 145 Z" fill="#1A7A5E" opacity="0.6" />
+      {/* Giant butterfly — hero */}
+      <path d="M 60 70 Q 100 40 110 60 Q 106 84 60 80 Z" fill={T} opacity="0.55" />
+      <path d="M 60 80 Q 108 88 106 108 Q 90 104 60 90 Z" fill={T} opacity="0.35" />
+      <path d="M 60 70 Q 20 40 10 60 Q 14 84 60 80 Z" fill={G} opacity="0.5" />
+      <path d="M 60 80 Q 12 88 14 108 Q 30 104 60 90 Z" fill={G} opacity="0.3" />
+      <ellipse cx="60" cy="75" rx="4" ry="8" fill={D} opacity="0.6" />
+      {/* Antennae */}
+      <path d="M 58 68 Q 46 52 40 44" stroke={D} strokeWidth="1.5" fill="none" opacity="0.5" />
+      <path d="M 62 68 Q 74 52 80 44" stroke={D} strokeWidth="1.5" fill="none" opacity="0.5" />
+      <circle cx="40" cy="44" r="3" fill={D} opacity="0.4" />
+      <circle cx="80" cy="44" r="3" fill={D} opacity="0.4" />
+
+      {/* Character — arms wide */}
+      {/* Wild hair */}
+      <path d="M 36 40 Q 30 16 44 12 Q 56 8 58 24" fill={T} opacity="0.7" />
+      <path d="M 84 40 Q 90 16 76 12 Q 64 8 62 24" fill={T} opacity="0.7" />
+      <Head cy={40} hairColor="transparent" />
+      {/* Bright open smile */}
+      <path d="M 49 51 Q 60 59 71 51" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Arms spread */}
+      <rect x="2" y="60" width="36" height="12" rx="6" fill={T} opacity="0.85" />
+      <rect x="82" y="60" width="36" height="12" rx="6" fill={T} opacity="0.85" />
+      {/* Flowing dress */}
+      <path d="M 38 62 Q 28 94 32 140 L 60 128 L 88 140 Q 92 94 82 62 Z" fill="#1A5C45" />
+      <path d="M 30 140 Q 44 130 60 134 Q 76 130 90 140 L 94 158 Q 76 150 60 154 Q 44 150 26 158 Z"
+        fill="#1A7A5E" opacity="0.5" />
     </Wrap>
   )
 }
@@ -381,35 +368,30 @@ function FreeSpirit({ size }: { size: number }) {
 function CoolMinimalist({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Minimal accent line at bottom */}
-      <rect x="0" y="154" width="120" height="6" rx="3" fill={T} opacity="0.08" />
-      {/* Slicked-back hair */}
-      <path d="M 36 40 Q 42 22 64 22 Q 82 22 84 40" fill="#1A7A5E" />
-      <path d="M 36 40 Q 42 24 68 23" stroke={D} strokeWidth="2" fill="none" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Slim rectangular shades */}
-      <rect x="36" y="37" width="20" height="11" rx="3" fill={D} stroke={W} strokeWidth="2" />
-      <rect x="64" y="37" width="20" height="11" rx="3" fill={D} stroke={W} strokeWidth="2" />
-      <line x1="56" y1="42" x2="64" y2="42" stroke={W} strokeWidth="2" />
-      <line x1="36" y1="42" x2="28" y2="46" stroke={W} strokeWidth="1.5" />
-      <line x1="84" y1="42" x2="92" y2="46" stroke={W} strokeWidth="1.5" />
-      <rect x="40" y="40" width="6" height="3" rx="1" fill={W} opacity="0.2" />
-      <rect x="68" y="40" width="6" height="3" rx="1" fill={W} opacity="0.2" />
-      {/* One-sided smirk */}
-      <path d="M 55 54 Q 64 58 70 54" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      {/* Clean minimal outfit */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
+      {/* Single thin accent line — minimal is the point */}
+      <line x1="0" y1="152" x2="120" y2="152" stroke={T} strokeWidth="2" opacity="0.3" />
+
+      {/* Slicked hair */}
+      <ellipse cx="62" cy="20" rx="22" ry="6" fill={D} />
+      <Head cy={38} hairColor="transparent" />
+      {/* Cool rectangular shades */}
+      <rect x="36" y="32" width="18" height="10" rx="2.5" fill={D} stroke={W} strokeWidth="2.5" />
+      <rect x="66" y="32" width="18" height="10" rx="2.5" fill={D} stroke={W} strokeWidth="2.5" />
+      <line x1="54" y1="37" x2="66" y2="37" stroke={W} strokeWidth="2.5" />
+      <line x1="36" y1="37" x2="28" y2="40" stroke={W} strokeWidth="2" />
+      <line x1="84" y1="37" x2="92" y2="40" stroke={W} strokeWidth="2" />
+      {/* Glare on lenses */}
+      <rect x="40" y="34" width="5" height="3" rx="1.5" fill={W} opacity="0.2" />
+      <rect x="70" y="34" width="5" height="3" rx="1.5" fill={W} opacity="0.2" />
+      {/* One-side smirk */}
+      <path d="M 56 49 Q 65 53 70 49" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Clean slim body */}
+      <path d="M 44 58 L 42 152 L 78 152 L 76 58 Z" fill="#1A5C45" />
+      {/* V-neck */}
+      <path d="M 52 58 L 60 70 L 68 58" stroke={T} strokeWidth="2" fill="none" />
       {/* Hands in pockets */}
-      <rect x="38" y="96" width="12" height="10" rx="4" fill={T} opacity="0.7" />
-      <rect x="70" y="96" width="12" height="10" rx="4" fill={T} opacity="0.7" />
-      {/* Simple V detail */}
-      <path d="M 52 66 L 60 78 L 68 66" stroke="#22A380" strokeWidth="2" fill="none" />
-      {/* Legs — relaxed stance */}
-      <rect x="38" y="104" width="18" height="42" rx="5" fill="#0F3D30" />
-      <rect x="64" y="104" width="18" height="42" rx="5" fill="#0F3D30" />
-      <rect x="36" y="142" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="62" y="142" width="22" height="8" rx="4" fill="#0F2E22" />
+      <rect x="42" y="118" width="14" height="12" rx="4" fill={T} opacity="0.65" />
+      <rect x="64" y="118" width="14" height="12" rx="4" fill={T} opacity="0.65" />
     </Wrap>
   )
 }
@@ -418,38 +400,26 @@ function CoolMinimalist({ size }: { size: number }) {
 function IncomeMaximizer({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Rising chart background */}
-      <path d="M 5 140 L 20 120 L 40 128 L 60 100 L 80 88 L 100 64 L 115 48"
-        stroke={T} strokeWidth="2" fill="none" opacity="0.14" strokeLinecap="round" />
-      {/* Dollar signs floating */}
-      <text x="4" y="32" fontSize="20" fill={G} opacity="0.22" fontWeight="bold">$</text>
-      <text x="92" y="26" fontSize="16" fill={G} opacity="0.18" fontWeight="bold">$</text>
-      {/* Hair — sharp */}
-      <path d="M 36 40 Q 42 22 60 20 Q 78 22 84 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Confident eyes */}
-      <circle cx="50" cy="40" r="4.5" fill={D} />
-      <circle cx="70" cy="40" r="4.5" fill={D} />
-      <circle cx="48" cy="38" r="2" fill={W} opacity="0.5" />
-      <circle cx="68" cy="38" r="2" fill={W} opacity="0.5" />
-      {/* Confident smile */}
-      <path d="M 51 53 Q 60 59 69 53" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      {/* Sharp suit */}
-      <rect x="36" y="66" width="48" height="40" rx="8" fill="#0F2E22" />
-      <path d="M 52 66 L 57 80 L 46 66" fill="#1A4035" />
-      <path d="M 68 66 L 63 80 L 74 66" fill="#1A4035" />
-      <polygon points="59,66 63,66 61.5,84 60.5,84" fill={T} />
-      {/* Big upward arrow */}
-      <path d="M 96 148 L 96 96" stroke={G} strokeWidth="5" strokeLinecap="round" />
-      <path d="M 96 96 L 88 108" stroke={G} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M 96 96 L 104 108" stroke={G} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="96" cy="92" r="6" fill={G} opacity="0.3" />
-      {/* Legs — power stance (wider) */}
-      <rect x="36" y="104" width="18" height="40" rx="5" fill="#1A4035" />
-      <rect x="66" y="104" width="18" height="40" rx="5" fill="#1A4035" />
-      <rect x="34" y="140" width="22" height="8" rx="4" fill="#0F1F18" />
-      <rect x="64" y="140" width="22" height="8" rx="4" fill="#0F1F18" />
+      {/* Giant upward arrow — hero prop, bold */}
+      <polygon points="60,8 90,52 74,52 74,155 46,155 46,52 30,52" fill={G} opacity="0.92" />
+      {/* Dollar overlay on arrow */}
+      <text x="51" y="118" fontSize="22" fill={BG} opacity="0.5" fontWeight="900" fontFamily="monospace">$</text>
+
+      {/* Character — suit, stands in front */}
+      <Head cy={40} hairColor={D} />
+      {/* Confident eyes override */}
+      <circle cx="54" cy="39" r="4" fill={D} />
+      <circle cx="66" cy="39" r="4" fill={D} />
+      <circle cx="52.5" cy="37.5" r="1.5" fill={W} opacity="0.5" />
+      <circle cx="64.5" cy="37.5" r="1.5" fill={W} opacity="0.5" />
+      {/* Smile */}
+      <path d="M 52 50 Q 60 56 68 50" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Sharp dark suit over the arrow */}
+      <path d="M 42 60 L 40 154 L 80 154 L 78 60 Z" fill="#0A1E18" opacity="0.88" />
+      <path d="M 52 60 L 58 76 L 46 60" fill="#112820" />
+      <path d="M 68 60 L 62 76 L 74 60" fill="#112820" />
+      {/* Teal tie */}
+      <polygon points="58,60 62,60 61,82 59,82" fill={T} />
     </Wrap>
   )
 }
@@ -458,48 +428,43 @@ function IncomeMaximizer({ size }: { size: number }) {
 function EfficiencyNerd({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Big gear background */}
-      <circle cx="96" cy="20" r="18" fill="none" stroke={T} strokeWidth="2.5" opacity="0.16" />
-      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => {
+      {/* Giant gear — hero, background */}
+      <circle cx="72" cy="88" r="58" fill="none" stroke={T} strokeWidth="4" opacity="0.16" />
+      <circle cx="72" cy="88" r="44" fill="none" stroke={T} strokeWidth="3" opacity="0.1" />
+      <circle cx="72" cy="88" r="26" fill={D} opacity="0.4" />
+      {/* Gear teeth */}
+      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle) => {
         const rad = (angle * Math.PI) / 180
-        const x = 96 + 20 * Math.cos(rad)
-        const y = 20 + 20 * Math.sin(rad)
-        return <rect key={angle} x={x - 3} y={y - 5} width="6" height="10" rx="1" fill={T} opacity="0.16"
-          transform={`rotate(${angle} ${x} ${y})`} />
+        const cx2 = 72 + 56 * Math.cos(rad)
+        const cy2 = 88 + 56 * Math.sin(rad)
+        return <rect key={angle} x={cx2 - 5} y={cy2 - 9} width="10" height="18" rx="2"
+          fill={T} opacity="0.16" transform={`rotate(${angle} ${cx2} ${cy2})`} />
       })}
-      {/* Hair */}
-      <path d="M 36 40 Q 40 22 60 20 Q 80 22 84 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Focused eyes */}
-      <circle cx="50" cy="40" r="4.5" fill={D} />
-      <circle cx="70" cy="40" r="4.5" fill={D} />
-      <circle cx="48" cy="38" r="1.8" fill={W} opacity="0.5" />
-      <circle cx="68" cy="38" r="1.8" fill={W} opacity="0.5" />
-      {/* Straight mouth — focused */}
-      <line x1="52" y1="53" x2="68" y2="53" stroke={D} strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* Character left side */}
+      <Head cx={40} cy={38} r={18} />
+      {/* Focused eyes override */}
+      <circle cx="34" cy="37" r="3.5" fill={D} />
+      <circle cx="46" cy="37" r="3.5" fill={D} />
+      {/* Straight mouth */}
+      <line x1="34" y1="47" x2="46" y2="47" stroke={D} strokeWidth="2.5" strokeLinecap="round" />
       {/* Body */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
-      {/* Clipboard in right hand */}
-      <rect x="80" y="62" width="30" height="42" rx="3" fill={W} opacity="0.92" />
-      <rect x="84" y="58" width="22" height="7" rx="3" fill="#CBD5E1" />
-      <rect x="90" y="56" width="10" height="7" rx="3" fill="#94A3B8" />
-      {/* Checklist */}
-      <rect x="84" y="74" width="6" height="6" rx="1" fill="#22A380" />
-      <path d="M 85 77 L 87.5 80 L 92 74" stroke={W} strokeWidth="1.5" fill="none" />
-      <line x1="93" y1="76" x2="106" y2="76" stroke="#94A3B8" strokeWidth="1.5" />
-      <rect x="84" y="84" width="6" height="6" rx="1" fill="#22A380" />
-      <path d="M 85 87 L 87.5 90 L 92 84" stroke={W} strokeWidth="1.5" fill="none" />
-      <line x1="93" y1="86" x2="106" y2="86" stroke="#94A3B8" strokeWidth="1.5" />
-      <rect x="84" y="94" width="6" height="6" rx="1" fill="none" stroke="#94A3B8" strokeWidth="1" />
-      <line x1="93" y1="96" x2="106" y2="96" stroke="#94A3B8" strokeWidth="1.5" />
-      {/* Right arm holding clipboard */}
-      <rect x="68" y="80" width="14" height="12" rx="6" fill={T} opacity="0.85" />
-      {/* Legs */}
-      <rect x="40" y="104" width="18" height="40" rx="5" fill="#143D30" />
-      <rect x="62" y="104" width="18" height="40" rx="5" fill="#143D30" />
-      <rect x="38" y="140" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="60" y="140" width="22" height="8" rx="4" fill="#0F2E22" />
+      <path d="M 20 56 L 18 130 L 62 130 L 60 56 Z" fill="#1A5C45" />
+
+      {/* Clipboard — bold, right side */}
+      <rect x="64" y="56" width="44" height="66" rx="4" fill={W} opacity="0.92" />
+      <rect x="74" y="50" width="24" height="10" rx="4" fill="#CBD5E1" />
+      <rect x="80" y="48" width="12" height="10" rx="4" fill="#94A3B8" />
+      {/* Checklist items */}
+      {[0, 1, 2].map((i) => (
+        <g key={i}>
+          <rect x="70" y={70 + i * 14} width="8" height="8" rx="1.5"
+            fill={i < 2 ? '#22A380' : 'none'} stroke={i < 2 ? 'none' : '#94A3B8'} strokeWidth="1.5" />
+          {i < 2 && <path d={`M ${71} ${74 + i * 14} L ${74} ${77 + i * 14} L ${79} ${70 + i * 14}`}
+            stroke={W} strokeWidth="2" fill="none" strokeLinecap="round" />}
+          <line x1="82" y1={74 + i * 14} x2="104" y2={74 + i * 14} stroke="#94A3B8" strokeWidth="1.5" />
+        </g>
+      ))}
     </Wrap>
   )
 }
@@ -508,40 +473,36 @@ function EfficiencyNerd({ size }: { size: number }) {
 function PatientInvestor({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Tall growing plant */}
-      <path d="M 96 155 Q 94 118 88 96 Q 84 78 90 58" stroke="#22A380" strokeWidth="4" fill="none" strokeLinecap="round" />
-      <path d="M 90 96 Q 108 84 110 60 Q 96 76 90 96" fill={T} opacity="0.7" />
-      <path d="M 91 116 Q 74 104 73 80 Q 88 96 91 116" fill={T} opacity="0.6" />
-      <path d="M 89 72 Q 102 56 104 36 Q 94 50 89 72" fill="#22A380" opacity="0.5" />
-      <circle cx="90" cy="156" r="5" fill="#1A5C45" />
-      {/* Hair */}
-      <path d="M 36 40 Q 40 22 60 22 Q 80 22 84 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Patient calm eyes */}
-      <circle cx="50" cy="40" r="4.5" fill={D} />
-      <circle cx="70" cy="40" r="4.5" fill={D} />
-      <circle cx="48" cy="38" r="2" fill={W} opacity="0.5" />
-      <circle cx="68" cy="38" r="2" fill={W} opacity="0.5" />
-      {/* Peaceful smile */}
-      <path d="M 51 53 Q 60 59 69 53" stroke={D} strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* Body */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
-      {/* Watering can in left hand */}
-      <rect x="4" y="84" width="26" height="20" rx="5" fill="#22A380" opacity="0.8" />
-      <path d="M 30 92 Q 42 86 42 96" stroke="#22A380" strokeWidth="4" fill="none" strokeLinecap="round" />
-      <rect x="4" y="78" width="18" height="8" rx="3" fill="#1A7A5E" />
+      {/* Massive growing tree — hero */}
+      {/* Trunk */}
+      <rect x="56" y="64" width="14" height="94" rx="6" fill="#22735A" />
+      {/* Canopy layers */}
+      <ellipse cx="74" cy="60" rx="32" ry="26" fill={T} opacity="0.65" />
+      <ellipse cx="82" cy="38" rx="24" ry="20" fill={T} opacity="0.75" />
+      <ellipse cx="72" cy="18" rx="16" ry="14" fill={T} opacity="0.85" />
+      {/* Branch leaves */}
+      <ellipse cx="42" cy="78" rx="18" ry="14" fill={T} opacity="0.55" />
+      <ellipse cx="96" cy="72" rx="16" ry="12" fill={T} opacity="0.5" />
+      {/* Roots hint */}
+      <path d="M 60 156 Q 52 148 36 154" stroke="#22735A" strokeWidth="3" fill="none" />
+      <path d="M 68 156 Q 78 148 94 154" stroke="#22735A" strokeWidth="3" fill="none" />
+
+      {/* Character — small, at base of tree */}
+      <Head cx={34} cy={112} r={14} />
+      {/* Peaceful eyes override */}
+      <circle cx="29" cy="111" r="2.5" fill={D} />
+      <circle cx="39" cy="111" r="2.5" fill={D} />
+      <path d="M 27 118 Q 34 122 41 118" stroke={D} strokeWidth="2" fill="none" strokeLinecap="round" />
+      {/* Small body */}
+      <path d="M 22 126 L 20 156 L 48 156 L 46 126 Z" fill="#1A5C45" />
+      {/* Watering can */}
+      <rect x="4" y="128" width="16" height="14" rx="4" fill="#22A380" opacity="0.8" />
+      <path d="M 20 134 Q 28 130 28 136" stroke="#22A380" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <rect x="4" y="124" width="10" height="6" rx="2" fill="#1A7A5E" />
       {/* Water drops */}
-      <circle cx="44" cy="100" r="3" fill={T} opacity="0.6" />
-      <circle cx="48" cy="106" r="2.5" fill={T} opacity="0.5" />
-      <circle cx="40" cy="106" r="2.5" fill={T} opacity="0.4" />
-      {/* Left arm */}
-      <rect x="6" y="78" width="32" height="12" rx="6" fill={T} opacity="0.85" />
-      {/* Legs */}
-      <rect x="40" y="104" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="62" y="104" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="38" y="142" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="60" y="142" width="22" height="8" rx="4" fill="#0F2E22" />
+      <circle cx="30" cy="139" r="2" fill={T} opacity="0.6" />
+      <circle cx="33" cy="143" r="1.5" fill={T} opacity="0.5" />
+      <circle cx="27" cy="143" r="1.5" fill={T} opacity="0.4" />
     </Wrap>
   )
 }
@@ -550,43 +511,37 @@ function PatientInvestor({ size }: { size: number }) {
 function BlueprintMaker({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Ground: construction site */}
-      <rect x="0" y="150" width="120" height="10" rx="2" fill="#1A4035" />
-      <line x1="0" y1="152" x2="120" y2="152" stroke={G} strokeWidth="1" opacity="0.2" />
-      {/* Head */}
-      <circle cx="60" cy="44" r="24" fill={T} />
+      {/* Blueprint grid — fills the frame */}
+      {[0, 20, 40, 60, 80, 100, 120].map((x) => (
+        <line key={`v${x}`} x1={x} y1="0" x2={x} y2="160" stroke={T} strokeWidth="0.6" opacity="0.08" />
+      ))}
+      {[0, 20, 40, 60, 80, 100, 120, 140, 160].map((y) => (
+        <line key={`h${y}`} x1="0" y1={y} x2="120" y2={y} stroke={T} strokeWidth="0.6" opacity="0.08" />
+      ))}
+      {/* Blueprint drawing in upper right */}
+      <rect x="62" y="10" width="48" height="38" rx="2" fill="none" stroke={T} strokeWidth="1.5" opacity="0.4" />
+      <line x1="72" y1="10" x2="72" y2="48" stroke={T} strokeWidth="1" opacity="0.3" />
+      <line x1="62" y1="28" x2="110" y2="28" stroke={T} strokeWidth="1" opacity="0.3" />
+      <circle cx="86" cy="20" r="6" fill="none" stroke={T} strokeWidth="1.2" opacity="0.4" />
+      <line x1="68" y1="34" x2="110" y2="34" stroke={T} strokeWidth="0.8" opacity="0.25" />
+      <line x1="68" y1="40" x2="100" y2="40" stroke={T} strokeWidth="0.8" opacity="0.25" />
+
+      {/* Character */}
       {/* Hard hat */}
-      <ellipse cx="60" cy="24" rx="34" ry="9" fill={G} />
-      <rect x="34" y="16" width="52" height="18" rx="13" fill={G} opacity="0.95" />
-      <rect x="28" y="29" width="64" height="5" rx="2" fill="#D97706" opacity="0.75" />
+      <ellipse cx="60" cy="22" rx="30" ry="8" fill={G} opacity="0.9" />
+      <rect x="36" y="15" width="48" height="17" rx="11" fill={G} opacity="0.95" />
+      <rect x="30" y="28" width="60" height="4" rx="2" fill="#D97706" opacity="0.75" />
       {/* Pencil behind ear */}
-      <line x1="83" y1="34" x2="88" y2="46" stroke={G} strokeWidth="3.5" strokeLinecap="round" />
-      <polygon points="83,34 81,28 87,30" fill="#D97706" />
-      {/* Eyes — precise and focused */}
-      <circle cx="50" cy="46" r="4.5" fill={D} />
-      <circle cx="70" cy="46" r="4.5" fill={D} />
-      <circle cx="48" cy="44" r="1.8" fill={W} opacity="0.5" />
-      <circle cx="68" cy="44" r="1.8" fill={W} opacity="0.5" />
-      {/* Determined straight mouth */}
-      <line x1="52" y1="57" x2="68" y2="57" stroke={D} strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="82" y1="32" x2="88" y2="42" stroke={G} strokeWidth="4" strokeLinecap="round" />
+      <polygon points="82,32 80,26 86,28" fill="#D97706" />
+      <Head cy={46} hairColor="transparent" />
+      {/* Determined eyes override */}
+      <circle cx="54" cy="45" r="3.5" fill={D} />
+      <circle cx="66" cy="45" r="3.5" fill={D} />
+      <line x1="53" y1="55" x2="67" y2="55" stroke={D} strokeWidth="2.5" strokeLinecap="round" />
       {/* Work jacket */}
-      <rect x="38" y="68" width="44" height="40" rx="8" fill="#1A5C45" />
-      <rect x="50" y="68" width="20" height="14" rx="3" fill="#22A380" opacity="0.4" />
-      {/* Blueprint scroll in hands */}
-      <rect x="4" y="80" width="36" height="26" rx="3" fill="#BFDBFE" opacity="0.88" />
-      <rect x="2" y="80" width="6" height="26" rx="3" fill="#93C5FD" />
-      <rect x="34" y="80" width="6" height="26" rx="3" fill="#93C5FD" />
-      <line x1="10" y1="88" x2="36" y2="88" stroke="#1D4ED8" strokeWidth="1" opacity="0.55" />
-      <line x1="10" y1="92" x2="36" y2="92" stroke="#1D4ED8" strokeWidth="1" opacity="0.55" />
-      <line x1="10" y1="96" x2="26" y2="96" stroke="#1D4ED8" strokeWidth="1" opacity="0.55" />
-      <rect x="10" y="86" width="12" height="8" fill="none" stroke="#1D4ED8" strokeWidth="1" opacity="0.55" />
-      {/* Left arm holding blueprint */}
-      <rect x="4" y="74" width="34" height="12" rx="6" fill={T} opacity="0.85" />
-      {/* Legs */}
-      <rect x="40" y="106" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="62" y="106" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="38" y="144" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="60" y="144" width="22" height="8" rx="4" fill="#0F2E22" />
+      <path d="M 38 66 L 34 158 L 86 158 L 82 66 Z" fill="#1A5C45" />
+      <rect x="46" y="66" width="28" height="14" rx="3" fill={T} opacity="0.35" />
     </Wrap>
   )
 }
@@ -595,45 +550,41 @@ function BlueprintMaker({ size }: { size: number }) {
 function OpenRoadPlanner({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Road in background */}
-      <path d="M 40 160 L 54 120 L 60 110 L 66 120 L 80 160" fill="#0F3D30" opacity="0.6" />
-      <line x1="60" y1="120" x2="60" y2="160" stroke={W} strokeWidth="1.5" strokeDasharray="4 4" opacity="0.2" />
-      {/* Hair */}
-      <path d="M 36 40 Q 40 20 60 20 Q 80 20 84 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Curious bright eyes */}
-      <circle cx="50" cy="40" r="4.5" fill={D} />
-      <circle cx="70" cy="40" r="4.5" fill={D} />
-      <circle cx="48" cy="38" r="2" fill={W} opacity="0.5" />
-      <circle cx="68" cy="38" r="2" fill={W} opacity="0.5" />
-      {/* Planning smile */}
-      <path d="M 51 53 Q 60 59 69 53" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Road vanishing to horizon — hero */}
+      <path d="M 0 160 L 44 80 L 76 80 L 120 160 Z" fill={MG} opacity="0.7" />
+      <path d="M 52 160 L 56 80 L 64 80 L 68 160 Z" fill={D} opacity="0.5" />
+      {/* Dashed center line */}
+      {[90, 104, 118, 132, 146].map((y) => (
+        <rect key={y} x="58" y={y} width="4" height="8" rx="2" fill={W} opacity="0.25" />
+      ))}
+      {/* Horizon glow */}
+      <rect x="0" y="76" width="120" height="6" rx="3" fill={T} opacity="0.1" />
+
+      {/* Character stands on road */}
+      <Head cy={40} />
+      {/* Curious eyes override */}
+      <circle cx="54" cy="39" r="4" fill={D} />
+      <circle cx="66" cy="39" r="4" fill={D} />
+      <circle cx="52.5" cy="37.5" r="1.5" fill={W} opacity="0.5" />
+      <circle cx="64.5" cy="37.5" r="1.5" fill={W} opacity="0.5" />
+      <path d="M 52 50 Q 60 56 68 50" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
       {/* Body */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
+      <path d="M 40 60 L 36 84 L 84 84 L 80 60 Z" fill="#1A5C45" />
       {/* Map in left hand */}
-      <rect x="2" y="74" width="36" height="28" rx="2" fill={G} opacity="0.88" />
-      <path d="M 8 88 Q 20 80 28 86 Q 36 92 38 102" stroke="#92400E" strokeWidth="1.5" fill="none" />
-      <line x1="18" y1="74" x2="18" y2="102" stroke="#D97706" strokeWidth="0.5" opacity="0.5" />
-      <line x1="2" y1="88" x2="38" y2="88" stroke="#D97706" strokeWidth="0.5" opacity="0.5" />
-      <circle cx="26" cy="84" r="4" fill="#EF4444" />
-      <circle cx="26" cy="84" r="2" fill={W} />
-      {/* Left arm */}
-      <rect x="2" y="68" width="36" height="12" rx="6" fill={T} opacity="0.85" />
+      <rect x="4" y="66" width="32" height="26" rx="2" fill={G} opacity="0.88" />
+      <path d="M 10 78 Q 20 70 28 76 Q 36 82 38 90" stroke="#92400E" strokeWidth="1.5" fill="none" />
+      <circle cx="26" cy="74" r="4" fill="#EF4444" />
+      <circle cx="26" cy="74" r="2" fill={W} />
+      <rect x="2" y="62" width="32" height="10" rx="6" fill={T} opacity="0.85" />
       {/* Compass in right hand */}
-      <rect x="82" y="68" width="12" height="26" rx="6" fill={T} opacity="0.85" />
-      <circle cx="92" cy="96" r="18" fill="rgba(6,78,59,0.9)" stroke={T} strokeWidth="2" />
-      <circle cx="92" cy="96" r="12" fill={BG} />
-      <line x1="92" y1="82" x2="92" y2="96" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="92" y1="96" x2="92" y2="108" stroke={W} strokeWidth="2" strokeLinecap="round" />
-      <line x1="80" y1="96" x2="92" y2="96" stroke={W} strokeWidth="2" strokeLinecap="round" />
-      <line x1="92" y1="96" x2="104" y2="96" stroke={W} strokeWidth="2" strokeLinecap="round" />
-      <circle cx="92" cy="96" r="3" fill={W} />
-      {/* Legs */}
-      <rect x="40" y="104" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="62" y="104" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="38" y="142" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="60" y="142" width="22" height="8" rx="4" fill="#0F2E22" />
+      <rect x="84" y="62" width="32" height="10" rx="6" fill={T} opacity="0.85" />
+      <circle cx="100" cy="80" r="16" fill="rgba(6,78,59,0.9)" stroke={T} strokeWidth="2" />
+      <circle cx="100" cy="80" r="10" fill={BG} />
+      <line x1="100" y1="68" x2="100" y2="80" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="100" y1="80" x2="100" y2="90" stroke={W} strokeWidth="2" strokeLinecap="round" />
+      <line x1="90" y1="80" x2="100" y2="80" stroke={W} strokeWidth="2" strokeLinecap="round" />
+      <line x1="100" y1="80" x2="110" y2="80" stroke={W} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="100" cy="80" r="3" fill={W} />
     </Wrap>
   )
 }
@@ -642,39 +593,27 @@ function OpenRoadPlanner({ size }: { size: number }) {
 function MacGyver({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Hair */}
-      <path d="M 36 40 Q 40 22 60 20 Q 80 22 84 40" fill="#1A7A5E" />
-      {/* Head */}
-      <circle cx="60" cy="42" r="24" fill={T} />
-      {/* Resourceful eyes */}
-      <circle cx="50" cy="40" r="4.5" fill={D} />
-      <circle cx="70" cy="40" r="4.5" fill={D} />
-      <circle cx="48" cy="38" r="2" fill={W} opacity="0.5" />
-      <circle cx="68" cy="38" r="2" fill={W} opacity="0.5" />
-      {/* Confident half-smirk */}
-      <path d="M 52 53 Q 62 58 70 53" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      {/* Work shirt */}
-      <rect x="38" y="66" width="44" height="40" rx="8" fill="#1A5C45" />
+      {/* Giant wrench — hero diagonal */}
+      <line x1="24" y1="148" x2="100" y2="20" stroke={W} strokeWidth="10" strokeLinecap="round" opacity="0.85" />
+      <circle cx="100" cy="20" r="22" fill="none" stroke={W} strokeWidth="9" opacity="0.85" />
+      <circle cx="100" cy="20" r="11" fill={BG} />
+      <circle cx="24" cy="148" r="14" fill="none" stroke={W} strokeWidth="7" opacity="0.85" />
+      <circle cx="24" cy="148" r="7" fill={BG} />
+
+      {/* Character */}
+      <Head cy={70} />
+      {/* Confident half-smirk override */}
+      <circle cx="54" cy="69" r="3.5" fill={D} />
+      <circle cx="66" cy="69" r="3.5" fill={D} />
+      <path d="M 54 80 Q 63 85 70 80" stroke={D} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Utility shirt */}
+      <path d="M 40 90 L 36 158 L 84 158 L 80 90 Z" fill="#1A5C45" />
       {/* Utility belt */}
-      <rect x="38" y="100" width="44" height="8" rx="3" fill="#D97706" opacity="0.7" />
-      <rect x="56" y="99" width="10" height="10" rx="2" fill="#D97706" />
-      {/* Big wrench raised in right arm */}
-      <rect x="78" y="62" width="14" height="12" rx="6" fill={T} opacity="0.85" />
-      <line x1="88" y1="62" x2="112" y2="30" stroke={W} strokeWidth="7" strokeLinecap="round" opacity="0.9" />
-      <circle cx="108" cy="24" r="13" fill="none" stroke={W} strokeWidth="6" opacity="0.9" />
-      <circle cx="108" cy="24" r="6" fill={BG} />
-      {/* Duct tape roll on belt */}
-      <circle cx="26" cy="100" r="12" fill="#9CA3AF" opacity="0.7" />
-      <circle cx="26" cy="100" r="7" fill={BG} opacity="0.85" />
-      <circle cx="26" cy="100" r="4" fill="#6B7280" opacity="0.5" />
-      {/* Swiss army knife */}
-      <rect x="8" y="80" width="10" height="26" rx="2" fill="#EF4444" opacity="0.85" />
-      <rect x="8" y="74" width="10" height="10" rx="1" fill="#CBD5E1" opacity="0.9" />
-      {/* Legs */}
-      <rect x="40" y="106" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="62" y="106" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="38" y="144" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="60" y="144" width="22" height="8" rx="4" fill="#0F2E22" />
+      <rect x="36" y="136" width="48" height="8" rx="3" fill="#D97706" opacity="0.7" />
+      <rect x="54" y="134" width="12" height="12" rx="2" fill="#D97706" />
+      {/* Duct tape roll on hip */}
+      <circle cx="24" cy="122" r="12" fill="#6B7280" opacity="0.7" />
+      <circle cx="24" cy="122" r="7" fill={BG} opacity="0.85" />
     </Wrap>
   )
 }
@@ -683,45 +622,39 @@ function MacGyver({ size }: { size: number }) {
 function Wanderer({ size }: { size: number }) {
   return (
     <Wrap size={size}>
-      {/* Stars */}
-      <circle cx="16" cy="16" r="2" fill={W} opacity="0.4" />
-      <circle cx="42" cy="8" r="2" fill={W} opacity="0.4" />
-      <circle cx="74" cy="12" r="2" fill={W} opacity="0.4" />
-      <circle cx="104" cy="20" r="2" fill={W} opacity="0.4" />
-      <circle cx="112" cy="8" r="3" fill={G} opacity="0.5" />
-      <circle cx="30" cy="28" r="1.5" fill={W} opacity="0.3" />
-      {/* Horizon glow */}
-      <path d="M 0 128 Q 30 118 60 122 Q 90 118 120 128" stroke={T} strokeWidth="1" fill="none" opacity="0.14" />
+      {/* Star field */}
+      {[[16, 12], [42, 6], [78, 10], [106, 18], [112, 6], [28, 24], [90, 28]].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={i === 4 ? 3 : 1.8} fill={i === 4 ? G : W} opacity={i === 4 ? 0.5 : 0.35} />
+      ))}
+      {/* Horizon */}
+      <path d="M 0 122 Q 30 114 60 118 Q 90 114 120 122" stroke={T} strokeWidth="1.5" fill="none" opacity="0.2" />
+      {/* Aurora hints */}
+      <path d="M 0 60 Q 40 50 80 58 Q 110 64 120 56" stroke={T} strokeWidth="0.8" fill="none" opacity="0.1" />
+
       {/* Wind-blown hair */}
-      <path d="M 36 44 Q 38 18 58 16 Q 74 12 92 20 Q 100 26 92 38" fill="#1A7A5E" />
-      <path d="M 60 18 Q 84 10 100 20 Q 108 26 100 36" fill={T} opacity="0.45" />
-      {/* Head */}
-      <circle cx="60" cy="44" r="24" fill={T} />
-      {/* Far-off gaze — slight squint looking out */}
-      <ellipse cx="50" cy="42" rx="5" ry="3.5" fill={D} />
-      <ellipse cx="70" cy="42" rx="5" ry="3.5" fill={D} />
-      <circle cx="49" cy="41" r="1.8" fill={W} opacity="0.5" />
-      <circle cx="69" cy="41" r="1.8" fill={W} opacity="0.5" />
-      {/* Content small smile */}
-      <path d="M 53 55 Q 60 60 67 55" stroke={D} strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M 36 42 Q 40 16 58 14 Q 74 10 94 18 Q 102 24 94 36" fill="#1A7A5E" />
+      <path d="M 60 16 Q 84 8 102 18 Q 110 24 102 36" fill={T} opacity="0.4" />
+      <Head cy={46} hairColor="transparent" />
+      {/* Far-off gaze override */}
+      <ellipse cx="54" cy="45" rx="5" ry="3.5" fill={D} />
+      <ellipse cx="66" cy="45" rx="5" ry="3.5" fill={D} />
+      <circle cx="53" cy="43.5" r="1.8" fill={W} opacity="0.45" />
+      <circle cx="65" cy="43.5" r="1.8" fill={W} opacity="0.45" />
+      <path d="M 53 56 Q 60 61 67 56" stroke={D} strokeWidth="2" fill="none" strokeLinecap="round" />
       {/* Jacket */}
-      <rect x="36" y="68" width="48" height="40" rx="8" fill="#0F3D30" />
-      <line x1="48" y1="68" x2="46" y2="108" stroke={T} strokeWidth="2.5" strokeLinecap="round" opacity="0.4" />
-      <line x1="72" y1="68" x2="74" y2="108" stroke={T} strokeWidth="2.5" strokeLinecap="round" opacity="0.4" />
-      {/* Compass in hand */}
-      <rect x="82" y="72" width="12" height="26" rx="6" fill={T} opacity="0.85" />
-      <circle cx="92" cy="102" r="16" fill="rgba(6,78,59,0.9)" stroke={T} strokeWidth="2" />
-      <circle cx="92" cy="102" r="10" fill={BG} />
-      <line x1="92" y1="90" x2="92" y2="102" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="92" y1="102" x2="92" y2="112" stroke={W} strokeWidth="2" strokeLinecap="round" />
-      <line x1="82" y1="102" x2="92" y2="102" stroke={W} strokeWidth="2" strokeLinecap="round" />
-      <line x1="92" y1="102" x2="102" y2="102" stroke={W} strokeWidth="2" strokeLinecap="round" />
-      <circle cx="92" cy="102" r="2.5" fill={W} />
-      {/* Legs */}
-      <rect x="38" y="106" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="64" y="106" width="18" height="42" rx="5" fill="#143D30" />
-      <rect x="36" y="144" width="22" height="8" rx="4" fill="#0F2E22" />
-      <rect x="62" y="144" width="22" height="8" rx="4" fill="#0F2E22" />
+      <path d="M 38 66 L 34 158 L 86 158 L 82 66 Z" fill="#0F3D30" />
+      <line x1="50" y1="66" x2="48" y2="158" stroke={T} strokeWidth="2.5" strokeLinecap="round" opacity="0.35" />
+      <line x1="70" y1="66" x2="72" y2="158" stroke={T} strokeWidth="2.5" strokeLinecap="round" opacity="0.35" />
+      {/* Compass — bold */}
+      <circle cx="92" cy="106" r="20" fill="rgba(6,78,59,0.9)" stroke={T} strokeWidth="2.5" />
+      <circle cx="92" cy="106" r="13" fill={BG} />
+      <line x1="92" y1="90" x2="92" y2="106" stroke="#EF4444" strokeWidth="3" strokeLinecap="round" />
+      <line x1="92" y1="106" x2="92" y2="120" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="78" y1="106" x2="92" y2="106" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="92" y1="106" x2="106" y2="106" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="92" cy="106" r="3.5" fill={W} />
+      {/* Arm holding compass */}
+      <rect x="82" y="72" width="12" height="36" rx="6" fill={T} opacity="0.85" />
     </Wrap>
   )
 }
