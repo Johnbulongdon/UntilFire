@@ -304,17 +304,26 @@ function FireTypeQuizInner() {
         {/* Shareable identity card */}
         <div className="ft-share-card" style={{
           background: C.darkGreen, borderRadius: 20, padding: '40px 32px 32px',
-          textAlign: 'center', marginBottom: 24, position: 'relative', overflow: 'hidden',
+          textAlign: 'center', marginBottom: 24,
         }}>
-          {/* Decorative ring behind emoji */}
-          <div style={{
-            position: 'absolute', top: 24, left: '50%', transform: 'translateX(-50%)',
-            width: 100, height: 100, borderRadius: '50%',
-            background: 'rgba(34,211,165,0.08)', border: '1px solid rgba(34,211,165,0.15)',
-          }} />
-          {/* Emoji */}
-          <div style={{ fontSize: 56, lineHeight: 1, marginBottom: 20, position: 'relative' }}>
-            {result.emoji}
+          {/* Character figure */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+            <div style={{
+              width: 130, height: 130, borderRadius: '50%',
+              border: '2px solid rgba(34,211,165,0.45)',
+              overflow: 'hidden',
+              background: 'rgba(34,211,165,0.07)',
+              boxShadow: '0 0 0 8px rgba(34,211,165,0.06), 0 0 40px rgba(34,211,165,0.2)',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.dicebear.com/9.x/notionists/svg?seed=${code}&backgroundColor=transparent`}
+                alt=""
+                width={130}
+                height={130}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
           </div>
           {/* Code */}
           <div style={{
