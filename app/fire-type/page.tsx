@@ -304,49 +304,49 @@ function FireTypeQuizInner() {
         ) : null}
         {/* Shareable identity card */}
         <div className="ft-share-card" style={{
-          background: C.darkGreen, borderRadius: 20, padding: '36px 32px 28px',
+          background: '#ffffff', borderRadius: 20, padding: '28px 28px 24px',
           textAlign: 'center', marginBottom: 24,
+          boxShadow: '0 4px 32px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
+          border: '1px solid #e5e7eb',
         }}>
-          {/* Character avatar */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-            <div style={{
-              width: 130, height: 130, borderRadius: '50%',
-              border: '2px solid rgba(34,211,165,0.45)',
-              overflow: 'hidden',
-              boxShadow: '0 0 0 8px rgba(34,211,165,0.06), 0 0 40px rgba(34,211,165,0.2)',
-            }}>
-              <FireTypeAvatar code={code} size={130} />
-            </div>
-          </div>
-
-          {/* Code */}
+          {/* Label */}
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 8px' }}>
+            Your FIRE Type
+          </p>
+          {/* HUGE code */}
           <div style={{
-            display: 'inline-block', color: C.teal,
-            fontSize: 'clamp(32px, 9vw, 48px)', fontWeight: 800,
-            letterSpacing: 'clamp(4px, 2vw, 10px)', fontFamily: 'DM Mono, monospace',
-            marginBottom: 12, lineHeight: 1,
+            color: '#059669',
+            fontSize: 'clamp(52px, 14vw, 72px)', fontWeight: 900,
+            letterSpacing: 'clamp(6px, 3vw, 14px)', fontFamily: 'DM Mono, monospace',
+            lineHeight: 1, marginBottom: 4,
           }}>
             {code}
           </div>
           {/* Type name */}
-          <h1 style={{ fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 16px', lineHeight: 1.2 }}>
+          <p style={{ fontSize: 'clamp(14px, 3vw, 17px)', fontWeight: 700, color: '#111827', margin: '0 0 20px', letterSpacing: '-0.01em' }}>
             {result.name}
-          </h1>
-          {/* Shareable quote */}
+          </p>
+          {/* Character in dark panel */}
+          <div style={{
+            background: '#0B3B2A', borderRadius: 16, padding: '24px 24px 16px',
+            display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+            marginBottom: 20, minHeight: 220, overflow: 'hidden',
+          }}>
+            <FireTypeAvatar code={code} size={240} />
+          </div>
+          {/* Quote */}
           <p style={{
-            fontSize: 15, color: C.teal, fontStyle: 'italic', fontWeight: 600,
-            margin: '0 0 20px', lineHeight: 1.5,
+            fontSize: 'clamp(15px, 3.5vw, 18px)', color: '#374151', fontStyle: 'italic',
+            fontWeight: 600, margin: '0 0 12px', lineHeight: 1.5,
           }}>
             &ldquo;{result.quote}&rdquo;
           </p>
-          {/* Divider + tagline */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, margin: 0 }}>
-              {result.tagline}
-            </p>
-          </div>
+          {/* Tagline */}
+          <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, margin: '0 0 16px' }}>
+            {result.tagline}
+          </p>
           {/* Branding */}
-          <div style={{ marginTop: 20, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: 10, color: '#d1d5db', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
             untilfire.com/fire-type
           </div>
         </div>
@@ -435,7 +435,7 @@ export default function FireTypePage() {
           .ft-result-strengths { padding: 18px 16px !important; }
           .ft-cta-box { padding: 20px 16px !important; }
           .ft-share-box { padding: 16px !important; }
-          .ft-share-card { padding: 32px 20px 24px !important; border-radius: 16px !important; }
+          .ft-share-card { padding: 20px 16px 18px !important; border-radius: 16px !important; }
         }
       `}</style>
       <Suspense>
