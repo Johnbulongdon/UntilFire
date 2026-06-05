@@ -4550,6 +4550,18 @@ export default function Dashboard() {
         .dark .uf-sidebar-sub-item.active { color: #22d3a5; }
         .dark .uf-sidebar-sub-item.active::before { background: #22d3a5; }
         @media(min-width: 901px) { .uf-money-section-switch { display: none !important; } }
+        @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
+
+        .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
+        .uf-sidebar-sub-sub-item { display: flex; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
+        .uf-sidebar-sub-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 3px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
+        .uf-sidebar-sub-sub-item:hover { background: rgba(226,232,240,0.5); color: #1E3A2F; }
+        .uf-sidebar-sub-sub-item:hover::before { background: #047857; }
+        .uf-sidebar-sub-sub-item.active { color: #065F46; font-weight: 700; }
+        .uf-sidebar-sub-sub-item.active::before { background: #047857; width: 5px; height: 5px; }
+        .dark .uf-sidebar-sub-sub-item:hover { background: rgba(255,255,255,0.05); color: var(--uf-text); }
+        .dark .uf-sidebar-sub-sub-item.active { color: #22d3a5; }
+        .dark .uf-sidebar-sub-sub-item.active::before { background: #22d3a5; }
 
         select option { background: var(--uf-card); color: var(--uf-text); }
 
@@ -4761,13 +4773,38 @@ export default function Dashboard() {
                         { key: "liabilities", label: "Debts"     },
                         { key: "reports",     label: "Insights"  },
                       ] as { key: TabKey; label: string }[]).map(sub => (
-                        <button
-                          key={sub.key}
-                          className={`uf-sidebar-sub-item ${tab === sub.key ? "active" : ""}`}
-                          onClick={() => openDashboardTab(sub.key)}
-                        >
-                          {sub.label}
-                        </button>
+                        <div key={sub.key}>
+                          <button
+                            className={`uf-sidebar-sub-item ${tab === sub.key ? "active" : ""}`}
+                            onClick={() => {
+                              openDashboardTab(sub.key);
+                              if (sub.key === "cashflow") setCashflowSubTab("cashflow");
+                            }}
+                          >
+                            {sub.label}
+                          </button>
+                          {sub.key === "cashflow" && tab === "cashflow" && (
+                            <div className="uf-sidebar-sub-sub-nav">
+                              {([
+                                { key: "cashflow" as const,   label: "Transactions" },
+                                { key: "categories" as const, label: "Categories"   },
+                                { key: "recurring" as const,  label: "Recurring"    },
+                                { key: "budgets" as const,    label: "Budgets"      },
+                              ]).map(ss => (
+                                <button
+                                  key={ss.key}
+                                  className={`uf-sidebar-sub-sub-item ${cashflowSubTab === ss.key ? "active" : ""}`}
+                                  onClick={() => {
+                                    setCashflowSubTab(ss.key);
+                                    if (ss.key === "categories") setCategoriesKey(k => k + 1);
+                                  }}
+                                >
+                                  {ss.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
@@ -4916,7 +4953,7 @@ export default function Dashboard() {
             {tab === "cashflow" && (
               <div>
                 {/* Cashflow sub-tab nav */}
-                <div style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
+                <div className="uf-cashflow-subtab-switch" style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
                   {(["cashflow", "categories", "recurring", "budgets"] as const).map(t => (
                     <button
                       key={t}
