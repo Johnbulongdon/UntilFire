@@ -45,7 +45,7 @@ function FireTypeQuizInner() {
   const [stage, setStage] = useState<Stage>('intro')
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState<QuizAnswer[]>([])
-  const [result, setResult] = useState<{ code: string; name: string; tagline: string; emoji: string; quote: string } | null>(null)
+  const [result, setResult] = useState<{ code: string; name: string; tagline: string; emoji: string; quote: string; archetype: string; scene: string } | null>(null)
   const [resultOrigin, setResultOrigin] = useState<ResultOrigin>('quiz')
   const [copied, setCopied] = useState(false)
   const [pendingAnswer, setPendingAnswer] = useState<QuizAnswer | null>(null)
@@ -303,28 +303,51 @@ function FireTypeQuizInner() {
         ) : null}
         {/* Shareable identity card */}
         <div className="ft-share-card" style={{
-          background: C.darkGreen, borderRadius: 20, padding: '40px 32px 32px',
-          textAlign: 'center', marginBottom: 24,
+          background: C.darkGreen, borderRadius: 20, padding: '32px 32px 28px',
+          textAlign: 'center', marginBottom: 24, position: 'relative', overflow: 'hidden',
         }}>
-          {/* Character figure */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+          {/* Meme archetype headline */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            background: 'rgba(34,211,165,0.12)', border: '1px solid rgba(34,211,165,0.25)',
+            borderRadius: 99, padding: '5px 14px', marginBottom: 22,
+          }}>
+            <span style={{ fontSize: 15 }}>{result.scene}</span>
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '2px', color: C.teal, textTransform: 'uppercase', fontFamily: 'DM Mono, monospace' }}>
+              {result.archetype}
+            </span>
+          </div>
+
+          {/* Avatar + scene watermark */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, position: 'relative' }}>
+            {/* Scene emoji — giant semi-transparent backdrop */}
             <div style={{
-              width: 130, height: 130, borderRadius: '50%',
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              fontSize: 110, lineHeight: 1, opacity: 0.10,
+              userSelect: 'none', pointerEvents: 'none', zIndex: 0,
+            }}>
+              {result.scene}
+            </div>
+            {/* Character avatar */}
+            <div style={{
+              width: 120, height: 120, borderRadius: '50%',
               border: '2px solid rgba(34,211,165,0.45)',
-              overflow: 'hidden',
+              overflow: 'hidden', position: 'relative', zIndex: 1,
               background: 'rgba(34,211,165,0.07)',
-              boxShadow: '0 0 0 8px rgba(34,211,165,0.06), 0 0 40px rgba(34,211,165,0.2)',
+              boxShadow: '0 0 0 8px rgba(34,211,165,0.06), 0 0 36px rgba(34,211,165,0.2)',
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`https://api.dicebear.com/9.x/notionists/svg?seed=${code}&backgroundColor=transparent`}
                 alt=""
-                width={130}
-                height={130}
+                width={120}
+                height={120}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </div>
           </div>
+
           {/* Code */}
           <div style={{
             display: 'inline-block', color: C.teal,
