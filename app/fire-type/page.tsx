@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
+import { FireTypeAvatar } from './FireTypeAvatar'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Logo from '@/app/components/Logo'
@@ -303,48 +304,18 @@ function FireTypeQuizInner() {
         ) : null}
         {/* Shareable identity card */}
         <div className="ft-share-card" style={{
-          background: C.darkGreen, borderRadius: 20, padding: '32px 32px 28px',
-          textAlign: 'center', marginBottom: 24, position: 'relative', overflow: 'hidden',
+          background: C.darkGreen, borderRadius: 20, padding: '36px 32px 28px',
+          textAlign: 'center', marginBottom: 24,
         }}>
-          {/* Meme archetype headline */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7,
-            background: 'rgba(34,211,165,0.12)', border: '1px solid rgba(34,211,165,0.25)',
-            borderRadius: 99, padding: '5px 14px', marginBottom: 22,
-          }}>
-            <span style={{ fontSize: 15 }}>{result.scene}</span>
-            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '2px', color: C.teal, textTransform: 'uppercase', fontFamily: 'DM Mono, monospace' }}>
-              {result.archetype}
-            </span>
-          </div>
-
-          {/* Avatar + scene watermark */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, position: 'relative' }}>
-            {/* Scene emoji — giant semi-transparent backdrop */}
+          {/* Character avatar */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
             <div style={{
-              position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              fontSize: 110, lineHeight: 1, opacity: 0.10,
-              userSelect: 'none', pointerEvents: 'none', zIndex: 0,
-            }}>
-              {result.scene}
-            </div>
-            {/* Character avatar */}
-            <div style={{
-              width: 120, height: 120, borderRadius: '50%',
+              width: 130, height: 130, borderRadius: '50%',
               border: '2px solid rgba(34,211,165,0.45)',
-              overflow: 'hidden', position: 'relative', zIndex: 1,
-              background: 'rgba(34,211,165,0.07)',
-              boxShadow: '0 0 0 8px rgba(34,211,165,0.06), 0 0 36px rgba(34,211,165,0.2)',
+              overflow: 'hidden',
+              boxShadow: '0 0 0 8px rgba(34,211,165,0.06), 0 0 40px rgba(34,211,165,0.2)',
             }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://api.dicebear.com/9.x/notionists/svg?seed=${code}&backgroundColor=transparent`}
-                alt=""
-                width={120}
-                height={120}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <FireTypeAvatar code={code} size={130} />
             </div>
           </div>
 
