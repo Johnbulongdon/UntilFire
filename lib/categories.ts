@@ -10,6 +10,7 @@ export const EXPENSE_CATEGORIES: CategoryDef[] = [
   { key: "food",          label: "Food",          code: "FD", color: "#f97316", emoji: "🍔" },
   { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5", emoji: "🚗" },
   { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8", emoji: "🏠" },
+  { key: "utilities",     label: "Utilities",     code: "UT", color: "#38bdf8", emoji: "💡" },
   { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9", emoji: "✈️" },
   { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa", emoji: "📱" },
   { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444", emoji: "🏥" },
