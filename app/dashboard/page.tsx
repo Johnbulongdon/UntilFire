@@ -4569,6 +4569,7 @@ export default function Dashboard() {
         .dark .uf-sidebar-sub-item.active::before { background: #22d3a5; }
         @media(min-width: 901px) { .uf-money-section-switch { display: none !important; } }
         @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
+        @media(min-width: 901px) { .uf-freedom-section-switch { display: none !important; } }
 
         .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
         .uf-sidebar-sub-sub-item { display: flex; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
@@ -4826,6 +4827,25 @@ export default function Dashboard() {
                       ))}
                     </div>
                   )}
+                  {isActive && item.key === "fire-calculator" && (
+                    <div className="uf-sidebar-sub-nav">
+                      {([
+                        { label: "Freedom Date", isActive: tab === "fire-calculator" && fireCalcSubTab === "menu",       onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
+                        { label: "Confidence",   isActive: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
+                        { label: "Advanced",     isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
+                        { label: "Lifestyle",    isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
+                        { label: "Learn",        isActive: tab === "learning-hub",                                       onClick: () => openDashboardTab("learning-hub") },
+                      ]).map(sub => (
+                        <button
+                          key={sub.label}
+                          className={`uf-sidebar-sub-item ${sub.isActive ? "active" : ""}`}
+                          onClick={sub.onClick}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -4899,7 +4919,7 @@ export default function Dashboard() {
               </nav>
             )}
             {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub") && (
-              <nav className="uf-section-switch" aria-label="Freedom sections">
+              <nav className="uf-section-switch uf-freedom-section-switch" aria-label="Freedom sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
                   { label: "Confidence", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
