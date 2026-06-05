@@ -12,15 +12,18 @@ import {
 } from "@/lib/categories";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
-  travel:        ["Hotels", "Flights", "Food & Drink", "Transport", "Activities", "Shopping", "Other"],
-  food:          ["Groceries", "Restaurants", "Coffee", "Takeout", "Alcohol", "Other"],
-  transport:     ["Gas", "Parking", "Public Transit", "Ride Share", "Car Maintenance", "Other"],
-  housing:       ["Rent/Mortgage", "Insurance", "Maintenance", "Furnishing", "Other"],
-  utilities:     ["Phone", "Internet", "Electricity", "Water", "Gas", "Other"],
-  subscriptions: ["Streaming", "Software", "Gym", "News", "Health", "Other"],
-  healthcare:    ["Doctor", "Pharmacy", "Dental", "Vision", "Mental Health", "Other"],
-  entertainment: ["Movies", "Events", "Sports", "Games", "Hobbies", "Other"],
-  shopping:      ["Clothing", "Electronics", "Home Goods", "Gifts", "Beauty", "Other"],
+  food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
+  transport:     ["Gas & Fuel", "Parking", "Public Transit", "Ride Share", "Insurance", "Maintenance", "Other"],
+  housing:       ["Rent/Mortgage", "Insurance", "Maintenance", "Furnishing", "Property Tax", "HOA", "Other"],
+  utilities:     ["Phone", "Internet", "Electricity", "Water & Gas", "TV/Cable", "Other"],
+  healthcare:    ["Doctor/GP", "Pharmacy", "Dental", "Vision", "Mental Health", "Insurance", "Other"],
+  shopping:      ["Clothing", "Electronics", "Home Goods", "Sports & Outdoors", "Gifts", "Other"],
+  entertainment: ["Movies & Shows", "Events & Concerts", "Sports", "Games", "Hobbies", "Other"],
+  travel:        ["Flights", "Hotels", "Activities", "Transport", "Food & Drink", "Other"],
+  education:     ["Tuition", "Books & Materials", "Courses", "Other"],
+  subscriptions: ["Streaming", "Software & Apps", "Memberships", "News & Media", "Other"],
+  personal_care: ["Haircut & Salon", "Skincare & Beauty", "Wellness", "Other"],
+  pets:          ["Food & Supplies", "Vet", "Grooming", "Other"],
   work:          ["Equipment", "Software", "Travel", "Training", "Meals", "Other"],
 };
 
