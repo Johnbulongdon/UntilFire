@@ -4539,6 +4539,18 @@ export default function Dashboard() {
         .uf-sidebar-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: inherit; }
         .uf-sidebar-bottom { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--uf-border); display: flex; flex-direction: column; gap: 8px; }
 
+        .uf-sidebar-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 4px; padding: 0 10px 0 28px; }
+        .uf-sidebar-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
+        .uf-sidebar-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
+        .uf-sidebar-sub-item:hover { background: rgba(226,232,240,0.5); color: #1E3A2F; }
+        .uf-sidebar-sub-item:hover::before { background: #047857; }
+        .uf-sidebar-sub-item.active { color: #065F46; font-weight: 800; }
+        .uf-sidebar-sub-item.active::before { background: #047857; width: 6px; height: 6px; }
+        .dark .uf-sidebar-sub-item:hover { background: rgba(255,255,255,0.05); color: var(--uf-text); }
+        .dark .uf-sidebar-sub-item.active { color: #22d3a5; }
+        .dark .uf-sidebar-sub-item.active::before { background: #22d3a5; }
+        @media(min-width: 901px) { .uf-money-section-switch { display: none !important; } }
+
         select option { background: var(--uf-card); color: var(--uf-text); }
 
         .dark .uf-sidebar-item:hover { background: rgba(255,255,255,0.05); color: var(--uf-text); }
@@ -4726,20 +4738,42 @@ export default function Dashboard() {
           <Link href="/" className="uf-sidebar-logo"><Logo variant="light" size={26} /></Link>
 
           <nav className="uf-sidebar-nav">
-            {SIDEBAR_ITEMS.map(item => (
-              <button
-                key={item.key}
-                data-tour-item={item.key}
-                className={`uf-sidebar-item ${(tab === item.key || item.activeTabs?.includes(tab)) ? "active" : ""}`}
-                onClick={() => openDashboardTab(item.key)}
-              >
-                <span className="uf-sidebar-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
-                </span>
-                <span className="uf-nav-label-full">{item.label}</span>
-                <span className="uf-nav-label-mobile">{item.mobileLabel ?? item.label}</span>
-              </button>
-            ))}
+            {SIDEBAR_ITEMS.map(item => {
+              const isActive = tab === item.key || (item.activeTabs?.includes(tab) ?? false);
+              return (
+                <div key={item.key}>
+                  <button
+                    data-tour-item={item.key}
+                    className={`uf-sidebar-item ${isActive ? "active" : ""}`}
+                    onClick={() => openDashboardTab(item.key)}
+                  >
+                    <span className="uf-sidebar-icon">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
+                    </span>
+                    <span className="uf-nav-label-full">{item.label}</span>
+                    <span className="uf-nav-label-mobile">{item.mobileLabel ?? item.label}</span>
+                  </button>
+                  {isActive && item.key === "cashflow" && (
+                    <div className="uf-sidebar-sub-nav">
+                      {([
+                        { key: "cashflow",    label: "Cashflow"  },
+                        { key: "assets",      label: "Net Worth" },
+                        { key: "liabilities", label: "Debts"     },
+                        { key: "reports",     label: "Insights"  },
+                      ] as { key: TabKey; label: string }[]).map(sub => (
+                        <button
+                          key={sub.key}
+                          className={`uf-sidebar-sub-item ${tab === sub.key ? "active" : ""}`}
+                          onClick={() => openDashboardTab(sub.key)}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
 
           <div className="uf-sidebar-bottom">
@@ -4792,7 +4826,7 @@ export default function Dashboard() {
               </div>
             )}
             {(tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports") && (
-              <nav className="uf-section-switch" aria-label="Money sections">
+              <nav className="uf-section-switch uf-money-section-switch" aria-label="Money sections">
                 {([
                   { label: "Cashflow", active: tab === "cashflow", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
                   { label: "Net Worth", active: tab === "assets", onClick: () => openDashboardTab("assets") },
