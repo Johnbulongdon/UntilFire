@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES, formatUSDInCurrency } from "@/lib/currency";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
+import { formatFV } from "@/lib/purchase-impact";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -460,6 +461,9 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
   const [manualItems, setManualItems] = useState<ManualItem[]>([]);
   const [excluded, setExcluded] = useState<string[]>([]);
 
+  const [investYears, setInvestYears] = useState(10);
+  const [investRate, setInvestRate] = useState(7);
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formDesc, setFormDesc] = useState("");
@@ -552,6 +556,29 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
   }, [manualItems, visibleAutoIncome, plaidInflow, rates]);
 
   const monthlyNet = monthlyIn - monthlyOut;
+
+  // Subscription-only monthly spend (across all sources)
+  const monthlySubOut = useMemo(() => {
+    const fromManual = manualItems
+      .filter(i => i.included && i.transaction_type === "expense" && i.category === "subscriptions")
+      .reduce((s, i) => s + toMonthly(toUSD(i.amount, i.currency, rates), i.frequency), 0);
+    const fromAuto = visibleAutoExpenses
+      .filter(r => r.category === "subscriptions")
+      .reduce((s, r) => s + toMonthly(r.avgAmountUSD, r.frequency), 0);
+    const fromPlaid = plaidOutflow
+      .filter(r => r.category === "subscriptions")
+      .reduce((s, r) => s + toMonthly(toUSD(r.amount, r.currency, rates), r.frequency), 0);
+    return fromManual + fromAuto + fromPlaid;
+  }, [manualItems, visibleAutoExpenses, plaidOutflow, rates]);
+
+  // FV of investing monthly subscriptions instead: annuity formula PMT × ((1+r)^n − 1) / r
+  const investedFV = useMemo(() => {
+    if (monthlySubOut <= 0) return 0;
+    const n = investYears * 12;
+    const r = investRate / 100 / 12;
+    if (r === 0) return monthlySubOut * n;
+    return monthlySubOut * (Math.pow(1 + r, n) - 1) / r;
+  }, [monthlySubOut, investYears, investRate]);
 
   // Form actions
   function openAddForm() {
@@ -860,6 +887,83 @@ export default function RecurringTab({ defaultCurrency = "USD", displayCurrency 
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
               {monthlyNet >= 0 ? "surplus each month" : "shortfall each month"}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── What if invested? panel ───────────────────────────────────────── */}
+      {monthlySubOut > 0 && (
+        <div style={{
+          background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16,
+          padding: "22px 24px",
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 6 }}>
+                Subscription opportunity cost
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", marginBottom: 4 }}>
+                What if you invested {fmtDisplay(monthlySubOut)}/mo instead?
+              </div>
+              <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6 }}>
+                Investing your subscription spend compounded over {investYears} years at {investRate}% return.
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>
+                  Years
+                </div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[5, 10, 20, 30].map(y => (
+                    <button
+                      key={y}
+                      onClick={() => setInvestYears(y)}
+                      style={{
+                        padding: "5px 10px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                        border: "1px solid var(--uf-border)", cursor: "pointer",
+                        background: investYears === y ? "#a78bfa" : "var(--uf-surface-2)",
+                        color: investYears === y ? "#fff" : "var(--uf-text-2)",
+                      }}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>
+                  Return %
+                </div>
+                <input
+                  type="number"
+                  value={investRate}
+                  onChange={e => setInvestRate(Math.max(0, Math.min(30, parseFloat(e.target.value) || 0)))}
+                  step="0.5"
+                  min="0"
+                  max="30"
+                  style={{
+                    width: 60, padding: "5px 8px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                    border: "1px solid var(--uf-border)", background: "var(--uf-surface-2)",
+                    color: "var(--uf-text)", textAlign: "center", outline: "none",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Result */}
+          <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid var(--uf-border)", display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 36, fontWeight: 800, color: "#a78bfa", fontFamily: "Manrope, sans-serif", letterSpacing: "-1.5px", lineHeight: 1 }}>
+              {formatFV(investedFV)}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6 }}>
+              in {investYears} years &mdash; vs{" "}
+              <strong style={{ color: "var(--uf-text)" }}>{fmtDisplay(monthlySubOut * investYears * 12)}</strong> spent on subscriptions
             </div>
           </div>
         </div>

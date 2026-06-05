@@ -45,7 +45,7 @@ function FireTypeQuizInner() {
   const [stage, setStage] = useState<Stage>('intro')
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState<QuizAnswer[]>([])
-  const [result, setResult] = useState<{ code: string; name: string; tagline: string } | null>(null)
+  const [result, setResult] = useState<{ code: string; name: string; tagline: string; emoji: string; quote: string } | null>(null)
   const [resultOrigin, setResultOrigin] = useState<ResultOrigin>('quiz')
   const [copied, setCopied] = useState(false)
   const [pendingAnswer, setPendingAnswer] = useState<QuizAnswer | null>(null)
@@ -114,7 +114,7 @@ function FireTypeQuizInner() {
 
   async function handleShare() {
     if (!result) return
-    const text = `I got ${result.code} — ${result.name} on UntilFire.\n\nFind your FIRE Type:\nhttps://www.untilfire.com/fire-type`
+    const text = `${result.emoji} ${result.code} — ${result.name}\n\n"${result.quote}"\n\nFind your FIRE Type:\nhttps://www.untilfire.com/fire-type`
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ text })
@@ -301,17 +301,51 @@ function FireTypeQuizInner() {
             Think this sounds like you? Take the quiz to find your own FIRE Type, or go straight to your FIRE number.
           </div>
         ) : null}
-        {/* Code badge */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-block', background: C.darkGreen, color: C.teal, fontSize: 'clamp(28px, 8vw, 42px)', fontWeight: 800, letterSpacing: 'clamp(2px, 1.5vw, 6px)', padding: '14px clamp(16px, 6vw, 32px)', borderRadius: 14, fontFamily: 'DM Mono, monospace', marginBottom: 16 }}>
+        {/* Shareable identity card */}
+        <div className="ft-share-card" style={{
+          background: C.darkGreen, borderRadius: 20, padding: '40px 32px 32px',
+          textAlign: 'center', marginBottom: 24, position: 'relative', overflow: 'hidden',
+        }}>
+          {/* Decorative ring behind emoji */}
+          <div style={{
+            position: 'absolute', top: 24, left: '50%', transform: 'translateX(-50%)',
+            width: 100, height: 100, borderRadius: '50%',
+            background: 'rgba(34,211,165,0.08)', border: '1px solid rgba(34,211,165,0.15)',
+          }} />
+          {/* Emoji */}
+          <div style={{ fontSize: 56, lineHeight: 1, marginBottom: 20, position: 'relative' }}>
+            {result.emoji}
+          </div>
+          {/* Code */}
+          <div style={{
+            display: 'inline-block', color: C.teal,
+            fontSize: 'clamp(32px, 9vw, 48px)', fontWeight: 800,
+            letterSpacing: 'clamp(4px, 2vw, 10px)', fontFamily: 'DM Mono, monospace',
+            marginBottom: 12, lineHeight: 1,
+          }}>
             {code}
           </div>
-          <h1 style={{ fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 800, color: C.text, letterSpacing: '-0.03em', margin: '0 0 10px' }}>
+          {/* Type name */}
+          <h1 style={{ fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 16px', lineHeight: 1.2 }}>
             {result.name}
           </h1>
-          <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.7, margin: 0, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>
-            {result.tagline}
+          {/* Shareable quote */}
+          <p style={{
+            fontSize: 15, color: C.teal, fontStyle: 'italic', fontWeight: 600,
+            margin: '0 0 20px', lineHeight: 1.5,
+          }}>
+            &ldquo;{result.quote}&rdquo;
           </p>
+          {/* Divider + tagline */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, margin: 0 }}>
+              {result.tagline}
+            </p>
+          </div>
+          {/* Branding */}
+          <div style={{ marginTop: 20, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+            untilfire.com/fire-type
+          </div>
         </div>
 
         {/* Strengths */}
@@ -365,12 +399,12 @@ function FireTypeQuizInner() {
 
         {/* Share */}
         <div className="ft-share-box" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <p style={{ fontSize: 14, color: C.muted, margin: '0 0 14px' }}>Share your FIRE Type</p>
+          <p style={{ fontSize: 13, color: C.muted, margin: '0 0 12px' }}>Screenshot the card above or share your type link</p>
           <button
             onClick={handleShare}
-            style={{ background: '#ffffff', border: `1.5px solid ${C.border}`, borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 700, color: C.text, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}
+            style={{ background: C.darkGreen, color: C.teal, border: 'none', borderRadius: 8, padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Manrope', sans-serif", width: '100%' }}
           >
-            {copied ? '✓ Copied!' : `Share ${code} — ${result.name}`}
+            {copied ? '✓ Copied to clipboard!' : `${result.emoji} Share my FIRE Type →`}
           </button>
         </div>
 
@@ -398,6 +432,7 @@ export default function FireTypePage() {
           .ft-result-strengths { padding: 18px 16px !important; }
           .ft-cta-box { padding: 20px 16px !important; }
           .ft-share-box { padding: 16px !important; }
+          .ft-share-card { padding: 32px 20px 24px !important; border-radius: 16px !important; }
         }
       `}</style>
       <Suspense>

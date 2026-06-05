@@ -124,32 +124,32 @@ export function scoreQuiz(answers: QuizAnswer[]): string {
   return `${resolveLetter("PA")}${resolveLetter("SE")}${resolveLetter("RG")}${resolveLetter("BF")}`;
 }
 
-// All 16 type names and taglines
-const TYPE_NAMES: Record<string, { name: string; tagline: string }> = {
-  PSRB: { name: "The Methodical Architect", tagline: "You build FIRE like a blueprint — secure, systematic, and purposeful." },
-  PSRF: { name: "The Steady Minimalist",    tagline: "Stability and simplicity are your superpowers. You'll reach FIRE by eliminating everything that doesn't serve you." },
-  PSGB: { name: "The Strategic Builder",    tagline: "You want FIRE to feel structured, stable, and useful — not just an exit, but a launchpad." },
-  PSGF: { name: "The Disciplined Escapist", tagline: "You plan carefully but ultimately want complete freedom. Your numbers are solid — your destination is open." },
-  PERB: { name: "The Calculated Opportunist", tagline: "You seek growth but only after you've run the numbers. You bet on upside without ignoring the downside." },
-  PERF: { name: "The Focused Climber",      tagline: "You're ambitious and systematic. You'll maximize every input and walk away when the math says it's time." },
-  PEGB: { name: "The Growth Engineer",      tagline: "You treat FIRE like a portfolio optimization problem — and you're determined to find the winning allocation." },
-  PEGF: { name: "The Ambitious Nomad",      tagline: "You want to grow fast and go free. Systems, income, and optionality are your edge." },
-  ASRB: { name: "The Flexible Craftsman",   tagline: "You stay adaptable and lean. You'll reach FIRE by cutting what doesn't matter and building what does." },
-  ASRF: { name: "The Laid-Back Optimizer",  tagline: "You're efficient without being rigid. FIRE for you means doing less of what you don't love — starting now." },
-  ASGB: { name: "The Adaptive Creator",     tagline: "You grow your way to FIRE and build something meaningful once you're there." },
-  ASGF: { name: "The Easy Rider",           tagline: "You go with the flow but keep your eye on growth. FIRE means full flexibility — no agenda required." },
-  AERB: { name: "The Bold Experimenter",    tagline: "You explore, iterate, and cut losses fast. Your FIRE path looks more like a startup than a spreadsheet." },
-  AERF: { name: "The Free Spirit",          tagline: "Rules are suggestions. You'll find your own route to FIRE and make freedom the whole point." },
-  AEGB: { name: "The Dynamic Builder",      tagline: "You're wired to pursue growth and create. FIRE is less about stopping — more about doing things on your terms." },
-  AEGF: { name: "The Open Adventurer",      tagline: "Expansion, freedom, and adaptability define you. Your FIRE future is wide open — and that's exactly how you want it." },
+// All 16 type names, taglines, emojis, and shareable quotes
+const TYPE_NAMES: Record<string, { name: string; tagline: string; emoji: string; quote: string }> = {
+  PSRB: { name: "The Methodical Architect", tagline: "You build FIRE like a blueprint — secure, systematic, and purposeful.",                                                     emoji: "🏗️", quote: "I don't guess. I build." },
+  PSRF: { name: "The Steady Minimalist",    tagline: "Stability and simplicity are your superpowers. You'll reach FIRE by eliminating everything that doesn't serve you.",         emoji: "⚖️", quote: "Less is the edge." },
+  PSGB: { name: "The Strategic Builder",    tagline: "You want FIRE to feel structured, stable, and useful — not just an exit, but a launchpad.",                                  emoji: "📐", quote: "Stable base. Big ambitions." },
+  PSGF: { name: "The Disciplined Escapist", tagline: "You plan carefully but ultimately want complete freedom. Your numbers are solid — your destination is open.",                emoji: "🗺️", quote: "Solid plan. Open destination." },
+  PERB: { name: "The Calculated Opportunist", tagline: "You seek growth but only after you've run the numbers. You bet on upside without ignoring the downside.",                  emoji: "🎯", quote: "Numbers first. Then the bet." },
+  PERF: { name: "The Focused Climber",      tagline: "You're ambitious and systematic. You'll maximize every input and walk away when the math says it's time.",                   emoji: "🧗", quote: "Maximize the input. Exit on cue." },
+  PEGB: { name: "The Growth Engineer",      tagline: "You treat FIRE like a portfolio optimization problem — and you're determined to find the winning allocation.",               emoji: "⚙️", quote: "Optimize everything. Build the rest." },
+  PEGF: { name: "The Ambitious Nomad",      tagline: "You want to grow fast and go free. Systems, income, and optionality are your edge.",                                        emoji: "🌍", quote: "Grow fast. Stay free." },
+  ASRB: { name: "The Flexible Craftsman",   tagline: "You stay adaptable and lean. You'll reach FIRE by cutting what doesn't matter and building what does.",                     emoji: "🔧", quote: "Lean, sharp, and adaptable." },
+  ASRF: { name: "The Laid-Back Optimizer",  tagline: "You're efficient without being rigid. FIRE for you means doing less of what you don't love — starting now.",                emoji: "😎", quote: "Efficient without being rigid." },
+  ASGB: { name: "The Adaptive Creator",     tagline: "You grow your way to FIRE and build something meaningful once you're there.",                                                emoji: "🌱", quote: "Grow your way there." },
+  ASGF: { name: "The Easy Rider",           tagline: "You go with the flow but keep your eye on growth. FIRE means full flexibility — no agenda required.",                       emoji: "🏄", quote: "Eyes on the horizon." },
+  AERB: { name: "The Bold Experimenter",    tagline: "You explore, iterate, and cut losses fast. Your FIRE path looks more like a startup than a spreadsheet.",                   emoji: "🔬", quote: "Explore. Iterate. Ship." },
+  AERF: { name: "The Free Spirit",          tagline: "Rules are suggestions. You'll find your own route to FIRE and make freedom the whole point.",                               emoji: "🦋", quote: "Rules are suggestions." },
+  AEGB: { name: "The Dynamic Builder",      tagline: "You're wired to pursue growth and create. FIRE is less about stopping — more about doing things on your terms.",            emoji: "⚡", quote: "Always moving. Always building." },
+  AEGF: { name: "The Open Adventurer",      tagline: "Expansion, freedom, and adaptability define you. Your FIRE future is wide open — and that's exactly how you want it.",     emoji: "🧭", quote: "No fixed destination. That's the point." },
 };
 
 export function isValidFireTypeCode(code: string): boolean {
   return Boolean(TYPE_NAMES[code]);
 }
 
-export function getTypeMeta(code: string): { name: string; tagline: string } {
-  return TYPE_NAMES[code] ?? { name: "The FIRE Seeker", tagline: "Your FIRE path is uniquely yours." };
+export function getTypeMeta(code: string): { name: string; tagline: string; emoji: string; quote: string } {
+  return TYPE_NAMES[code] ?? { name: "The FIRE Seeker", tagline: "Your FIRE path is uniquely yours.", emoji: "🔥", quote: "Find your own way." };
 }
 
 // Composable axis copy — each letter contributes a strength and a watch-out
