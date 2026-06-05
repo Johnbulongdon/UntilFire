@@ -16,6 +16,7 @@ import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
+import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE } from "@/lib/fire";
@@ -3826,6 +3827,23 @@ function FireCalcMenuTab({
           </a>
         </div>
       </div>
+
+      {/* Link to public calculators hub */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 4 }}>
+        <span style={{ fontSize: 13, color: "var(--uf-text-3)" }}>More tools:</span>
+        <a
+          href="/calculators"
+          style={{ fontSize: 13, fontWeight: 700, color: "#059669", textDecoration: "none" }}
+        >
+          Browse all calculators →
+        </a>
+        <a
+          href="/calculators/purchase-impact"
+          style={{ fontSize: 13, fontWeight: 700, color: "#f97316", textDecoration: "none" }}
+        >
+          Purchase impact →
+        </a>
+      </div>
     </div>
   );
 }
@@ -5040,12 +5058,20 @@ export default function Dashboard() {
             {tab === "fire-calculator" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 {fireCalcSubTab === "menu" && (
-                  <FireCalcMenuTab
-                    fireAge={fireAge}
-                    onOpenProfile={() => setTab("profile")}
-                    onOpenSimulation={() => setFireCalcSubTab("simulation")}
-                    onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
-                  />
+                  <>
+                    <FireCalcMenuTab
+                      fireAge={fireAge}
+                      onOpenProfile={() => setTab("profile")}
+                      onOpenSimulation={() => setFireCalcSubTab("simulation")}
+                      onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
+                    />
+                    <PurchaseImpactPanel
+                      currentSavings={k401 + rothIRA + taxable + cashSavings}
+                      monthlyContribution={Math.max(income * 12 - monthlyExpenses * 12, 0) / 12}
+                      fireTarget={monthlyExpenses * 12 / withdrawalRate}
+                      annualReturn={growthRate}
+                    />
+                  </>
                 )}
                 {fireCalcSubTab === "goals" && (
                   <GoalsTab

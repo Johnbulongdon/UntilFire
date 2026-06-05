@@ -11,6 +11,13 @@ const CALCULATORS = [
     accent: '#064E3B',
   },
   {
+    href: '/calculators/purchase-impact',
+    name: 'Purchase Impact Calculator',
+    description: 'See the compound value of any purchase at your freedom date and exactly how many days it delays your financial independence.',
+    keyword: 'purchase opportunity cost calculator',
+    accent: '#f97316',
+  },
+  {
     href: '/calculators/4-percent-rule',
     name: 'FIRE Number Calculator',
     description: 'Estimate how much you need invested to retire using the 4% rule and adjustable withdrawal rates.',
