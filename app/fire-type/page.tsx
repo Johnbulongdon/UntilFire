@@ -115,10 +115,12 @@ function FireTypeQuizInner() {
 
   async function handleShare() {
     if (!result) return
+    const shareUrl = `https://www.untilfire.com/fire-type?type=${encodeURIComponent(result.code)}&source=share`
+    const shareText = `${result.emoji} ${result.code} - ${result.name}\n\n"${result.quote}"\n\nFind your FIRE Type:\n${shareUrl}`
     const text = `${result.emoji} ${result.code} — ${result.name}\n\n"${result.quote}"\n\nFind your FIRE Type:\nhttps://www.untilfire.com/fire-type`
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ text })
+        await navigator.share({ title: `${result.code} - ${result.name}`, text: shareText, url: shareUrl })
         trackFireTypeShared({ fireTypeCode: result.code, shareMethod: 'native' })
         return
       } catch {
@@ -126,7 +128,7 @@ function FireTypeQuizInner() {
       }
     }
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(shareText)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
       trackFireTypeShared({ fireTypeCode: result.code, shareMethod: 'clipboard' })
@@ -136,6 +138,27 @@ function FireTypeQuizInner() {
   }
 
   // ── Intro ────────────────────────────────────────────────────────────────
+  function openSocialShare(platform: 'x' | 'facebook' | 'reddit' | 'linkedin' | 'whatsapp' | 'email') {
+    if (!result) return
+    const shareUrl = `https://www.untilfire.com/fire-type?type=${encodeURIComponent(result.code)}&source=share`
+    const text = `${result.emoji} ${result.code} - ${result.name}\n"${result.quote}"`
+    const encodedText = encodeURIComponent(text)
+    const encodedUrl = encodeURIComponent(shareUrl)
+    const urls = {
+      x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodeURIComponent(`${result.code} - ${result.name}`)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`${text}\n${shareUrl}`)}`,
+      email: `mailto:?subject=${encodeURIComponent(`${result.code} - ${result.name}`)}&body=${encodeURIComponent(`${text}\n\n${shareUrl}`)}`,
+    }
+    if (platform === 'email') {
+      window.location.href = urls.email
+      return
+    }
+    window.open(urls[platform], '_blank', 'noopener,noreferrer,width=620,height=520')
+  }
+
   if (stage === 'intro') {
     return (
       <div style={{ background: C.bg, minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
@@ -402,13 +425,21 @@ function FireTypeQuizInner() {
 
         {/* Share */}
         <div className="ft-share-box" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <p style={{ fontSize: 13, color: C.muted, margin: '0 0 12px' }}>Screenshot the card above or share your type link</p>
+          <p style={{ fontSize: 13, color: C.muted, margin: '0 0 14px' }}>Share your FIRE Type card or send a direct type link</p>
           <button
             onClick={handleShare}
             style={{ background: C.darkGreen, color: C.teal, border: 'none', borderRadius: 8, padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Manrope', sans-serif", width: '100%' }}
           >
-            {copied ? '✓ Copied to clipboard!' : `${result.emoji} Share my FIRE Type →`}
+            {copied ? 'Copied to clipboard!' : `${result.emoji} Share my FIRE Type ->`}
           </button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginTop: 12 }}>
+            <button onClick={() => openSocialShare('x')} style={{ background: '#111827', color: '#ffffff', border: 'none', borderRadius: 8, padding: '11px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}>Post on X</button>
+            <button onClick={() => openSocialShare('facebook')} style={{ background: '#1877F2', color: '#ffffff', border: 'none', borderRadius: 8, padding: '11px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}>Facebook</button>
+            <button onClick={() => openSocialShare('linkedin')} style={{ background: '#0A66C2', color: '#ffffff', border: 'none', borderRadius: 8, padding: '11px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}>LinkedIn</button>
+            <button onClick={() => openSocialShare('reddit')} style={{ background: '#FF4500', color: '#ffffff', border: 'none', borderRadius: 8, padding: '11px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}>Reddit</button>
+            <button onClick={() => openSocialShare('whatsapp')} style={{ background: '#25D366', color: '#073B1A', border: 'none', borderRadius: 8, padding: '11px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}>WhatsApp</button>
+            <button onClick={() => openSocialShare('email')} style={{ background: '#FFF7ED', color: '#9A3412', border: '1px solid #FED7AA', borderRadius: 8, padding: '11px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}>Email</button>
+          </div>
         </div>
 
         <p style={{ fontSize: 12, color: C.muted, textAlign: 'center', lineHeight: 1.7 }}>

@@ -23,6 +23,8 @@ import Nav from "@/app/components/landing/Nav";
 import WizardProgress from "@/app/components/landing/WizardProgress";
 import LandingPage from "@/app/components/landing/LandingPage";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
+import { FireTypeAvatar } from "@/app/fire-type/FireTypeAvatar";
+import { getTypeMeta, isValidFireTypeCode } from "@/app/fire-type/quiz-data";
 import {
   CURRENCY_NAMES,
   FALLBACK_RATES,
@@ -46,6 +48,16 @@ type FireIdentity = {
   name: string;
   headline: string;
   description: string;
+};
+
+type FireTypeResult = {
+  code: string;
+  name: string;
+  tagline: string;
+  emoji: string;
+  quote: string;
+  archetype: string;
+  scene: string;
 };
 
 type SavingsBenchmark = {
@@ -147,6 +159,19 @@ function getSavingsBenchmark(cityName: string, savings: number, monthlyTakeHome:
     savingsRate,
     baselineRate: PUBLIC_SAVINGS_RATE_BASELINE,
   };
+}
+
+function readStoredFireType(): FireTypeResult | null {
+  try {
+    const raw = window.localStorage.getItem("uf_fire_type_result");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { code?: string };
+    const code = typeof parsed?.code === "string" ? parsed.code.toUpperCase() : "";
+    if (!isValidFireTypeCode(code)) return null;
+    return { code, ...getTypeMeta(code) };
+  } catch {
+    return null;
+  }
 }
 
 const INCOME_MODES: { key: IncomeMode; label: string; unit: string; hint: string }[] = [
@@ -788,21 +813,32 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
 // -----------------------------------------------------------------------------
 
 function ShareModal({
-  cityName, fireIdentity, benchmark, retireYear, onClose,
+  cityName, fireIdentity, fireTypeResult, benchmark, retireYear, onClose,
 }: {
   cityName: string;
-  fireIdentity: FireIdentity; benchmark: SavingsBenchmark;
+  fireIdentity: FireIdentity;
+  fireTypeResult: FireTypeResult | null;
+  benchmark: SavingsBenchmark;
   retireYear?: number;
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [selectedCard, setSelectedCard] = useState<ShareCardKind>("year");
+  const [nativeShareSupported, setNativeShareSupported] = useState(false);
 
   const cityShort = cityName.split(",")[0] || cityName;
-  const shareUrl = `https://www.untilfire.com/?source=share-${selectedCard}`;
+  useEffect(() => {
+    setNativeShareSupported(typeof navigator !== "undefined" && typeof navigator.share === "function");
+  }, []);
+
   const benchmarkShareBody = benchmark.savingsRate > benchmark.baselineRate
     ? `My savings rate beats the benchmark in ${cityShort}. Find your freedom date at UntilFire.`
     : `I found my FIRE starting point in ${cityShort}. Find your freedom date at UntilFire.`;
+  const shareUrl = selectedCard === "identity"
+    ? (fireTypeResult
+      ? `https://www.untilfire.com/fire-type?source=share-identity&type=${encodeURIComponent(fireTypeResult.code)}`
+      : "https://www.untilfire.com/fire-type?source=share-identity")
+    : `https://www.untilfire.com/?source=share-${selectedCard}`;
   const shareCards: Record<ShareCardKind, { label: string; title: string; body: string; text: string }> = {
     year: {
       label: "Card A · Freedom Year",
@@ -826,24 +862,59 @@ function ShareModal({
     },
   };
   const activeShare = shareCards[selectedCard];
-  const redditTitle = activeShare.title;
+  const effectiveShareTitle = selectedCard === "identity" && fireTypeResult
+    ? `${fireTypeResult.code} · ${fireTypeResult.name}`
+    : activeShare.title;
+  const effectiveShareBody = selectedCard === "identity" && fireTypeResult
+    ? `${fireTypeResult.tagline} Find your FIRE Type at UntilFire.`
+    : activeShare.body;
+  const effectiveShareText = selectedCard === "identity" && fireTypeResult
+    ? `${fireTypeResult.emoji} I'm ${fireTypeResult.code} — ${fireTypeResult.name}\n"${fireTypeResult.quote}"\nFind your FIRE Type at UntilFire.`
+    : activeShare.text;
+  const redditTitle = effectiveShareTitle;
+  const sharePrivacy = selectedCard === "year"
+    ? "Freedom year only · no income or exact number"
+    : selectedCard === "identity" && fireTypeResult
+      ? "Personality result only · no income or FIRE number"
+      : selectedCard === "benchmark"
+        ? "Savings-rate comparison only · no exact income or FIRE number"
+        : "No exact income · no FIRE number · no freedom date";
 
   function copyToClipboard() {
-    navigator.clipboard.writeText(`${activeShare.text}\n${shareUrl}`).then(() => {
+    navigator.clipboard.writeText(`${effectiveShareText}\n${shareUrl}`).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   }
 
-  function openShare(platform: "x" | "facebook" | "reddit" | "linkedin") {
-    const encodedText = encodeURIComponent(activeShare.text);
+  async function nativeShare() {
+    if (!nativeShareSupported) return;
+    try {
+      await navigator.share({
+        title: effectiveShareTitle,
+        text: effectiveShareText,
+        url: shareUrl,
+      });
+    } catch {
+      // user cancelled
+    }
+  }
+
+  function openShare(platform: "x" | "facebook" | "reddit" | "linkedin" | "whatsapp" | "email") {
+    const encodedText = encodeURIComponent(effectiveShareText);
     const encodedUrl = encodeURIComponent(shareUrl);
     const urls = {
       x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
       reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodeURIComponent(redditTitle)}`,
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`${effectiveShareText}\n${shareUrl}`)}`,
+      email: `mailto:?subject=${encodeURIComponent(effectiveShareTitle)}&body=${encodeURIComponent(`${effectiveShareText}\n\n${shareUrl}`)}`,
     };
+    if (platform === "email") {
+      window.location.href = urls.email;
+      return;
+    }
     window.open(urls[platform], "_blank", "noopener,noreferrer,width=620,height=520");
   }
 
@@ -872,16 +943,38 @@ function ShareModal({
         </div>
 
         {/* Preview card */}
-        <div className="uf-share-card">
+        <div className={`uf-share-card uf-share-card-${selectedCard}`}>
           <div className="uf-share-card-brand">
             <Logo variant="dark" size={20} />
           </div>
-          <div className="uf-share-card-label" style={{ textTransform: 'uppercase', letterSpacing: '2px', fontSize: 11 }}>{selectedCard === "year" ? "Freedom Year" : selectedCard === "identity" ? "FIRE Type" : "Benchmark"}</div>
-          <div className="uf-share-card-number" style={{ fontSize: selectedCard === "year" && retireYear ? 42 : 28, lineHeight: 1.1, color: selectedCard === "year" ? '#62FAE3' : undefined }}>{activeShare.title}</div>
-          <div className="uf-share-card-meta" style={{ fontSize: 15, color: selectedCard === "year" ? 'rgba(255,255,255,0.75)' : '#62FAE3', fontWeight: selectedCard === "year" ? 500 : 800, lineHeight: 1.35 }}>{activeShare.body}</div>
-          <div className="uf-share-card-city" style={{ color: 'rgba(255,255,255,0.4)' }}>{selectedCard === "year" ? "Freedom year only · no income or exact number" : "No exact income · no FIRE number · no freedom date"}</div>
+          <div className="uf-share-card-label">{selectedCard === "year" ? "Freedom Year" : selectedCard === "identity" ? "FIRE Type" : "Benchmark"}</div>
+          {selectedCard === "identity" && fireTypeResult ? (
+            <div className="uf-share-card-identity">
+              <div className="uf-share-card-avatar-shell">
+                <div className="uf-share-card-avatar-stage">
+                  <FireTypeAvatar code={fireTypeResult.code} size={176} />
+                </div>
+              </div>
+              <div className="uf-share-card-code">{fireTypeResult.code}</div>
+              <div className="uf-share-card-number">{fireTypeResult.name}</div>
+              <div className="uf-share-card-meta">{fireTypeResult.tagline}</div>
+              <div className="uf-share-card-quote">&ldquo;{fireTypeResult.quote}&rdquo;</div>
+            </div>
+          ) : (
+            <>
+              <div className="uf-share-card-number" style={{ fontSize: selectedCard === "year" && retireYear ? 42 : 28, lineHeight: 1.1, color: selectedCard === "year" ? "#62FAE3" : undefined }}>{effectiveShareTitle}</div>
+              <div className="uf-share-card-meta" style={{ fontSize: 15, color: selectedCard === "year" ? "rgba(255,255,255,0.75)" : "#62FAE3", fontWeight: selectedCard === "year" ? 500 : 800, lineHeight: 1.35 }}>{effectiveShareBody}</div>
+              {selectedCard === "benchmark" ? (
+                <div className="uf-share-card-benchmark-stat">
+                  <span>{benchmark.savingsRate}% saved</span>
+                  <span>{benchmark.baselineRate}% baseline</span>
+                </div>
+              ) : null}
+            </>
+          )}
+          <div className="uf-share-card-city">{sharePrivacy}</div>
           <div className="uf-share-card-divider" />
-          <div className="uf-share-card-url">Find your freedom date {"->"} untilfire.com</div>
+          <div className="uf-share-card-url">{selectedCard === "identity" ? "Find your FIRE Type -> untilfire.com/fire-type" : "Find your freedom date -> untilfire.com"}</div>
         </div>
 
         {/* Platform buttons */}
@@ -910,6 +1003,26 @@ function ShareModal({
             </svg>
             Share on LinkedIn
           </button>
+          <button className="uf-share-btn uf-share-whatsapp" onClick={() => openShare("whatsapp")}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.52 3.48A11.86 11.86 0 0 0 12.07 0C5.5 0 .15 5.35.15 11.92c0 2.1.55 4.15 1.6 5.95L0 24l6.34-1.66a11.86 11.86 0 0 0 5.73 1.47h.01c6.57 0 11.92-5.35 11.92-11.92 0-3.18-1.24-6.17-3.48-8.41Zm-8.45 18.3h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.76.98 1-3.67-.24-.38a9.88 9.88 0 0 1-1.52-5.2c0-5.46 4.44-9.9 9.9-9.9 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.9 6.99c0 5.46-4.44 9.9-9.87 9.9Zm5.42-7.38c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.66.15-.2.3-.76.97-.94 1.17-.17.2-.35.22-.65.08-.3-.15-1.25-.46-2.39-1.46-.88-.78-1.48-1.74-1.65-2.03-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.38-.02-.52-.08-.15-.66-1.6-.9-2.2-.24-.57-.49-.5-.66-.5h-.56c-.2 0-.52.08-.8.38-.27.3-1.05 1.03-1.05 2.52 0 1.48 1.08 2.92 1.23 3.12.15.2 2.12 3.25 5.13 4.56.72.31 1.28.5 1.72.64.72.23 1.37.2 1.88.12.57-.08 1.77-.72 2.01-1.42.25-.69.25-1.29.17-1.42-.07-.13-.27-.2-.56-.35Z" />
+            </svg>
+            Share on WhatsApp
+          </button>
+          <button className="uf-share-btn uf-share-email" onClick={() => openShare("email")}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M1.5 4.5h21a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5h-21A1.5 1.5 0 0 1 0 18V6a1.5 1.5 0 0 1 1.5-1.5Zm.6 2.25 9.9 7.26 9.9-7.26H2.1Zm19.65 10.5V8.04l-9.3 6.82a.75.75 0 0 1-.9 0l-9.3-6.82v9.21h19.5Z" />
+            </svg>
+            Share by Email
+          </button>
+          {nativeShareSupported ? (
+            <button className="uf-share-btn uf-share-more" onClick={nativeShare}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7-4.11A2.99 2.99 0 1 0 15 5a3 3 0 0 0 .04.49l-7 4.11a3 3 0 1 0 0 4.8l7.12 4.18c-.08.23-.12.47-.12.72a3 3 0 1 0 3-3Z" />
+              </svg>
+              More apps
+            </button>
+          ) : null}
           <button className="uf-share-btn uf-share-copy" onClick={copyToClipboard}>
             {copied ? (
               <>
@@ -1045,6 +1158,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const [revealed, setRevealed] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showAssumptions, setShowAssumptions] = useState(false);
+  const [fireTypeResult, setFireTypeResult] = useState<FireTypeResult | null>(null);
 
   // Email capture
   const [emailInput, setEmailInput] = useState("");
@@ -1081,6 +1195,10 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const numRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const belowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setFireTypeResult(readStoredFireType());
+  }, []);
 
   // Run calculating sequence
   useEffect(() => {
@@ -1293,6 +1411,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         <ShareModal
           cityName={city.name}
           fireIdentity={fireIdentity}
+          fireTypeResult={fireTypeResult}
           benchmark={savingsBenchmark}
           retireYear={result.retireYear}
           onClose={() => setShowShare(false)}
@@ -1574,9 +1693,26 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                 <div data-gsap="identity-card" className="uf-reveal-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div aria-hidden style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 70%)", opacity: 0.22, pointerEvents: "none" }} />
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>Your FIRE type</div>
-                  <div style={{ position: "relative" }}>
-                    <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.05 }}>{fireIdentity.name}</div>
-                    <div style={{ marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.45, maxWidth: 320 }}>{fireIdentity.headline}</div>
+                  <div style={{ position: "relative", display: "grid", gridTemplateColumns: fireTypeResult ? "minmax(0, 1fr) 132px" : "1fr", gap: 12, alignItems: "end" }}>
+                    <div>
+                      {fireTypeResult ? (
+                        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.48)", marginBottom: 6 }}>{fireTypeResult.code}</div>
+                      ) : null}
+                      <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.05 }}>{fireTypeResult?.name ?? fireIdentity.name}</div>
+                      <div style={{ marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.45, maxWidth: 320 }}>{fireTypeResult?.tagline ?? fireIdentity.headline}</div>
+                      {fireTypeResult ? (
+                        <div style={{ marginTop: 10, fontSize: 12, color: "#A7F3D0", fontStyle: "italic" }}>&ldquo;{fireTypeResult.quote}&rdquo;</div>
+                      ) : (
+                        <Link href="/fire-type" style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, color: "#A7F3D0", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
+                          Take the FIRE Type quiz -&gt;
+                        </Link>
+                      )}
+                    </div>
+                    {fireTypeResult ? (
+                      <div style={{ justifySelf: "end", width: 132, height: 172, borderRadius: 14, background: "#0B3B2A", display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
+                        <FireTypeAvatar code={fireTypeResult.code} size={132} />
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 {/* Savings benchmark — USD users only (baseline is U.S. BEA rate) */}
@@ -2341,6 +2477,13 @@ export default function HomeClient() {
         .uf-share-card-city { font-size: 12px; color: rgba(255,255,255,0.45); margin-bottom: 16px; }
         .uf-share-card-divider { height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 14px; }
         .uf-share-card-url { font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 0.8px; font-family: var(--font-mono); }
+        .uf-share-card-identity { display: grid; gap: 10px; }
+        .uf-share-card-avatar-shell { display: flex; justify-content: center; margin-bottom: 4px; }
+        .uf-share-card-avatar-stage { width: 190px; max-width: 100%; min-height: 220px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); display: flex; align-items: flex-end; justify-content: center; overflow: hidden; margin: 0 auto; }
+        .uf-share-card-code { font-family: var(--font-mono); font-size: 26px; font-weight: 800; letter-spacing: 0.24em; color: #62FAE3; margin-left: 0.24em; }
+        .uf-share-card-quote { color: rgba(255,255,255,0.82); font-size: 14px; line-height: 1.5; font-style: italic; margin-top: 2px; }
+        .uf-share-card-benchmark-stat { display: inline-flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; color: #D1FAE5; font-size: 12px; font-weight: 700; }
+        .uf-share-card-benchmark-stat span { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 
         /* Platform share buttons */
         .uf-share-btns { display: flex; flex-direction: column; gap: 9px; }
@@ -2353,6 +2496,12 @@ export default function HomeClient() {
         .uf-share-reddit:hover { background: #e03d00; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,69,0,0.35); }
         .uf-share-linkedin { background: #0A66C2; color: #fff; }
         .uf-share-linkedin:hover { background: #0858ad; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(10,102,194,0.35); }
+        .uf-share-whatsapp { background: #25D366; color: #073B1A; }
+        .uf-share-whatsapp:hover { background: #1ebe5b; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,211,102,0.32); }
+        .uf-share-email { background: #FFF7ED; color: #9A3412; border: 1px solid #FED7AA; }
+        .uf-share-email:hover { background: #FFEDD5; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(251,146,60,0.22); }
+        .uf-share-more { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+        .uf-share-more:hover { background: #D1FAE5; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(16,185,129,0.20); }
         .uf-share-copy { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
         .uf-share-copy:hover { color: var(--text); background: #fff; border-color: var(--accent); }
 
