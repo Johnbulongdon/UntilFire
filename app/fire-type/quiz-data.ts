@@ -124,32 +124,32 @@ export function scoreQuiz(answers: QuizAnswer[]): string {
   return `${resolveLetter("PA")}${resolveLetter("SE")}${resolveLetter("RG")}${resolveLetter("BF")}`;
 }
 
-// All 16 type names and taglines
-const TYPE_NAMES: Record<string, { name: string; tagline: string }> = {
-  PSRB: { name: "The Methodical Architect", tagline: "You build FIRE like a blueprint — secure, systematic, and purposeful." },
-  PSRF: { name: "The Steady Minimalist",    tagline: "Stability and simplicity are your superpowers. You'll reach FIRE by eliminating everything that doesn't serve you." },
-  PSGB: { name: "The Strategic Builder",    tagline: "You want FIRE to feel structured, stable, and useful — not just an exit, but a launchpad." },
-  PSGF: { name: "The Disciplined Escapist", tagline: "You plan carefully but ultimately want complete freedom. Your numbers are solid — your destination is open." },
-  PERB: { name: "The Calculated Opportunist", tagline: "You seek growth but only after you've run the numbers. You bet on upside without ignoring the downside." },
-  PERF: { name: "The Focused Climber",      tagline: "You're ambitious and systematic. You'll maximize every input and walk away when the math says it's time." },
-  PEGB: { name: "The Growth Engineer",      tagline: "You treat FIRE like a portfolio optimization problem — and you're determined to find the winning allocation." },
-  PEGF: { name: "The Ambitious Nomad",      tagline: "You want to grow fast and go free. Systems, income, and optionality are your edge." },
-  ASRB: { name: "The Flexible Craftsman",   tagline: "You stay adaptable and lean. You'll reach FIRE by cutting what doesn't matter and building what does." },
-  ASRF: { name: "The Laid-Back Optimizer",  tagline: "You're efficient without being rigid. FIRE for you means doing less of what you don't love — starting now." },
-  ASGB: { name: "The Adaptive Creator",     tagline: "You grow your way to FIRE and build something meaningful once you're there." },
-  ASGF: { name: "The Easy Rider",           tagline: "You go with the flow but keep your eye on growth. FIRE means full flexibility — no agenda required." },
-  AERB: { name: "The Bold Experimenter",    tagline: "You explore, iterate, and cut losses fast. Your FIRE path looks more like a startup than a spreadsheet." },
-  AERF: { name: "The Free Spirit",          tagline: "Rules are suggestions. You'll find your own route to FIRE and make freedom the whole point." },
-  AEGB: { name: "The Dynamic Builder",      tagline: "You're wired to pursue growth and create. FIRE is less about stopping — more about doing things on your terms." },
-  AEGF: { name: "The Open Adventurer",      tagline: "Expansion, freedom, and adaptability define you. Your FIRE future is wide open — and that's exactly how you want it." },
+// All 16 type names, taglines, emojis, shareable quotes, meme archetype labels, scene emojis, rarity, and rank
+const TYPE_NAMES: Record<string, { name: string; tagline: string; emoji: string; quote: string; archetype: string; scene: string; rarity: string; rank: string }> = {
+  PSRB: { name: "The Methodical Architect",   tagline: "You build FIRE like a blueprint — secure, systematic, and purposeful.",                                                     emoji: "🏗️", quote: "I don't guess. I build.",              archetype: "THE BLUEPRINT MAKER",       scene: "🏗️", rarity: "6.2%", rank: "RARE"     },
+  PSRF: { name: "The Steady Minimalist",       tagline: "Stability and simplicity are your superpowers. You'll reach FIRE by eliminating everything that doesn't serve you.",         emoji: "⚖️", quote: "Less is the edge.",                   archetype: "THE MINIMALIST MONK",       scene: "🧘",  rarity: "5.1%", rank: "RARE"     },
+  PSGB: { name: "The Strategic Builder",       tagline: "You want FIRE to feel structured, stable, and useful — not just an exit, but a launchpad.",                                  emoji: "📐", quote: "Stable base. Big ambitions.",           archetype: "THE CHESS PLAYER",          scene: "♟️",  rarity: "7.4%", rank: "UNCOMMON" },
+  PSGF: { name: "The Disciplined Escapist",    tagline: "You plan carefully but ultimately want complete freedom. Your numbers are solid — your destination is open.",                emoji: "🗺️", quote: "Solid plan. Open destination.",         archetype: "THE OPEN-ROAD PLANNER",     scene: "🗺️", rarity: "6.8%", rank: "UNCOMMON" },
+  PERB: { name: "The Calculated Opportunist",  tagline: "You seek growth but only after you've run the numbers. You bet on upside without ignoring the downside.",                  emoji: "🎯", quote: "Numbers first. Then the bet.",           archetype: "THE SPREADSHEET NERD",      scene: "📊",  rarity: "4.3%", rank: "RARE"     },
+  PERF: { name: "The Focused Climber",         tagline: "You're ambitious and systematic. You'll maximize every input and walk away when the math says it's time.",                   emoji: "🧗", quote: "Maximize the input. Exit on cue.",       archetype: "THE INCOME MAXIMIZER",      scene: "📈",  rarity: "5.6%", rank: "RARE"     },
+  PEGB: { name: "The Growth Engineer",         tagline: "You treat FIRE like a portfolio optimization problem — and you're determined to find the winning allocation.",               emoji: "⚙️", quote: "Optimize everything. Build the rest.",    archetype: "THE EFFICIENCY ENGINEER",   scene: "⚙️",  rarity: "3.9%", rank: "ELITE"    },
+  PEGF: { name: "The Ambitious Nomad",         tagline: "You want to grow fast and go free. Systems, income, and optionality are your edge.",                                        emoji: "🌍", quote: "Grow fast. Stay free.",                  archetype: "THE DIGITAL NOMAD",         scene: "✈️",  rarity: "6.0%", rank: "UNCOMMON" },
+  ASRB: { name: "The Flexible Craftsman",      tagline: "You stay adaptable and lean. You'll reach FIRE by cutting what doesn't matter and building what does.",                     emoji: "🔧", quote: "Lean, sharp, and adaptable.",            archetype: "THE RESOURCEFUL MAKER",     scene: "🔧",  rarity: "6.5%", rank: "UNCOMMON" },
+  ASRF: { name: "The Laid-Back Optimizer",     tagline: "You're efficient without being rigid. FIRE for you means doing less of what you don't love — starting now.",                emoji: "😎", quote: "Efficient without being rigid.",         archetype: "THE COOL MINIMALIST",       scene: "😎",  rarity: "7.1%", rank: "COMMON"   },
+  ASGB: { name: "The Adaptive Creator",        tagline: "You grow your way to FIRE and build something meaningful once you're there.",                                                emoji: "🌱", quote: "Grow your way there.",                   archetype: "THE PATIENT INVESTOR",      scene: "🌱",  rarity: "8.0%", rank: "COMMON"   },
+  ASGF: { name: "The Easy Rider",              tagline: "You go with the flow but keep your eye on growth. FIRE means full flexibility — no agenda required.",                       emoji: "🏄", quote: "Eyes on the horizon.",                   archetype: "THE FREE-RANGE INVESTOR",   scene: "🏖️", rarity: "7.7%", rank: "COMMON"   },
+  AERB: { name: "The Bold Experimenter",       tagline: "You explore, iterate, and cut losses fast. Your FIRE path looks more like a startup than a spreadsheet.",                   emoji: "🔬", quote: "Explore. Iterate. Ship.",                archetype: "THE VENTURE TINKERER",      scene: "🔬",  rarity: "4.8%", rank: "RARE"     },
+  AERF: { name: "The Free Spirit",             tagline: "Rules are suggestions. You'll find your own route to FIRE and make freedom the whole point.",                               emoji: "🦋", quote: "Rules are suggestions.",                 archetype: "THE FREE SPIRIT",           scene: "🦋",  rarity: "5.9%", rank: "RARE"     },
+  AEGB: { name: "The Dynamic Builder",         tagline: "You're wired to pursue growth and create. FIRE is less about stopping — more about doing things on your terms.",            emoji: "⚡", quote: "Always moving. Always building.",         archetype: "THE SERIAL BUILDER",        scene: "⚡",  rarity: "5.4%", rank: "RARE"     },
+  AEGF: { name: "The Open Adventurer",         tagline: "Expansion, freedom, and adaptability define you. Your FIRE future is wide open — and that's exactly how you want it.",     emoji: "🦭", quote: "No fixed destination. That's the point.", archetype: "THE WANDERER",              scene: "🦭",  rarity: "6.3%", rank: "UNCOMMON" },
 };
 
 export function isValidFireTypeCode(code: string): boolean {
   return Boolean(TYPE_NAMES[code]);
 }
 
-export function getTypeMeta(code: string): { name: string; tagline: string } {
-  return TYPE_NAMES[code] ?? { name: "The FIRE Seeker", tagline: "Your FIRE path is uniquely yours." };
+export function getTypeMeta(code: string): { name: string; tagline: string; emoji: string; quote: string; archetype: string; scene: string; rarity: string; rank: string } {
+  return TYPE_NAMES[code] ?? { name: "The FIRE Seeker", tagline: "Your FIRE path is uniquely yours.", emoji: "🔥", quote: "Find your own way.", archetype: "THE FIRE SEEKER", scene: "🔥", rarity: "~6%", rank: "UNCOMMON" };
 }
 
 // Composable axis copy — each letter contributes a strength and a watch-out
@@ -174,3 +174,32 @@ export const AXIS_WATCH_OUTS: Record<AxisLetter, string> = {
   B: "You may stay 'one more project' away from true freedom, postponing the actual exit",
   F: "You may resist commitments that compound wealth — some constraints are investments, not cages",
 };
+
+// The four FIRE axes, in code-letter order [PA, SE, RG, BF]
+export const FIRE_AXES: Array<{ key: Axis; left: string; right: string; leftLetter: AxisLetter; rightLetter: AxisLetter }> = [
+  { key: "PA", left: "Planner",  right: "Adventurer", leftLetter: "P", rightLetter: "A" },
+  { key: "SE", left: "Security", right: "Expansion",  leftLetter: "S", rightLetter: "E" },
+  { key: "RG", left: "Reducer",  right: "Grower",     leftLetter: "R", rightLetter: "G" },
+  { key: "BF", left: "Builder",  right: "Freedom",    leftLetter: "B", rightLetter: "F" },
+];
+
+// Returns a 0..1 lean per axis (0 = strong left pole, 1 = strong right pole).
+// Uses real answers when available; falls back to a deterministic value from the code letters.
+export function computeAxisLeans(answers: QuizAnswer[], code: string): number[] {
+  if (answers.length < QUIZ_QUESTIONS.length) {
+    return FIRE_AXES.map((ax, i) => {
+      const letter = code[i] as AxisLetter;
+      return letter === ax.leftLetter ? 0.24 : 0.76;
+    });
+  }
+  return FIRE_AXES.map((ax) => {
+    const axisQs = QUIZ_QUESTIONS.filter((q) => q.axis === ax.key);
+    let sum = 0;
+    axisQs.forEach((q) => {
+      const idx = QUIZ_QUESTIONS.indexOf(q);
+      sum += WEIGHTS[answers[idx]];
+    });
+    // sum: +4 = strong left, -4 = strong right → normalize to 0..1
+    return (4 - sum) / 8;
+  });
+}

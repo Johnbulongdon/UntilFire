@@ -1,16 +1,19 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
+import { FireTypeAvatar } from './FireTypeAvatar'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Logo from '@/app/components/Logo'
 import {
   QUIZ_QUESTIONS,
+  FIRE_AXES,
   scoreQuiz,
   getTypeMeta,
   isValidFireTypeCode,
   AXIS_STRENGTHS,
   AXIS_WATCH_OUTS,
+  computeAxisLeans,
   type AxisLetter,
   type QuizAnswer,
 } from './quiz-data'
@@ -23,6 +26,7 @@ import {
 
 const FIRE_TYPE_STORAGE_KEY = 'uf_fire_type_result'
 
+// Light palette — intro + quiz stages
 const C = {
   bg: '#F7F9FB',
   card: '#ffffff',
@@ -32,6 +36,35 @@ const C = {
   accent: '#059669',
   teal: '#22D3A5',
   darkGreen: '#064E3B',
+}
+
+// Spectrum slider — on-dark only (used in Trading Card and below-fold axis display)
+function Spectrum({ left, right, pos, compact = false }: { left: string; right: string; pos: number; compact?: boolean }) {
+  const leftPole = pos < 0.5
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: compact ? 5 : 7, fontFamily: "'Manrope', sans-serif", fontSize: compact ? 11 : 12.5, fontWeight: 600 }}>
+        <span style={{ color: leftPole ? '#62FAE3' : '#bfe9dd', fontWeight: leftPole ? 800 : 600 }}>{left}</span>
+        <span style={{ color: !leftPole ? '#62FAE3' : '#bfe9dd', fontWeight: !leftPole ? 800 : 600 }}>{right}</span>
+      </div>
+      <div style={{ position: 'relative', height: compact ? 7 : 9, borderRadius: 999, background: 'rgba(255,255,255,.14)' }}>
+        <div style={{
+          position: 'absolute', top: 0, bottom: 0, borderRadius: 999,
+          left: leftPole ? 0 : `${pos * 100}%`,
+          right: leftPole ? `${(1 - pos) * 100}%` : 0,
+          background: '#62FAE3', opacity: 0.9,
+        }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: `${pos * 100}%`,
+          transform: 'translate(-50%,-50%)',
+          width: compact ? 13 : 16, height: compact ? 13 : 16,
+          borderRadius: '50%', background: '#62FAE3',
+          border: `${compact ? 2 : 3}px solid #003527`,
+          boxShadow: '0 1px 3px rgba(0,0,0,.25)',
+        }} />
+      </div>
+    </div>
+  )
 }
 
 // Inner component that uses useSearchParams
@@ -45,7 +78,8 @@ function FireTypeQuizInner() {
   const [stage, setStage] = useState<Stage>('intro')
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState<QuizAnswer[]>([])
-  const [result, setResult] = useState<{ code: string; name: string; tagline: string } | null>(null)
+  const [result, setResult] = useState<{ code: string; name: string; tagline: string; emoji: string; quote: string; archetype: string; scene: string; rarity: string; rank: string } | null>(null)
+  const [leans, setLeans] = useState<number[]>([0.5, 0.5, 0.5, 0.5])
   const [resultOrigin, setResultOrigin] = useState<ResultOrigin>('quiz')
   const [copied, setCopied] = useState(false)
   const [pendingAnswer, setPendingAnswer] = useState<QuizAnswer | null>(null)
@@ -55,6 +89,7 @@ function FireTypeQuizInner() {
     if (!isValidFireTypeCode(sharedType)) return
     const meta = getTypeMeta(sharedType)
     setResult({ code: sharedType, ...meta })
+    setLeans(computeAxisLeans([], sharedType))
     setResultOrigin('shared')
     setStage('result')
     setAnswers([])
@@ -95,6 +130,7 @@ function FireTypeQuizInner() {
         const meta = getTypeMeta(code)
         setAnswers(next)
         setResult({ code, ...meta })
+        setLeans(computeAxisLeans(next, code))
         setResultOrigin('quiz')
         setStage('result')
       }
@@ -114,7 +150,7 @@ function FireTypeQuizInner() {
 
   async function handleShare() {
     if (!result) return
-    const text = `I got ${result.code} — ${result.name} on UntilFire.\n\nFind your FIRE Type:\nhttps://www.untilfire.com/fire-type`
+    const text = `${result.emoji} ${result.code} — ${result.name}\n\n"${result.quote}"\n\nFind your FIRE Type:\nhttps://www.untilfire.com/fire-type`
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ text })
@@ -134,7 +170,7 @@ function FireTypeQuizInner() {
     }
   }
 
-  // ── Intro ────────────────────────────────────────────────────────────────
+  // ── Intro ────────────────────────────────────────────────────────
   if (stage === 'intro') {
     return (
       <div style={{ background: C.bg, minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
@@ -188,7 +224,7 @@ function FireTypeQuizInner() {
     )
   }
 
-  // ── Quiz ─────────────────────────────────────────────────────────────────
+  // ── Quiz ─────────────────────────────────────────────────────────
   if (stage === 'quiz') {
     const q = QUIZ_QUESTIONS[currentQ]
     const progress = ((currentQ) / QUIZ_QUESTIONS.length) * 100
@@ -272,84 +308,199 @@ function FireTypeQuizInner() {
     )
   }
 
-  // ── Result ────────────────────────────────────────────────────────────────
+  // ── Result ──────────────────────────────────────────────────────────
   if (!result) return null
 
   const code = result.code
   const ctaHref = `/?source=fire-type-result&type=${code}&start=onboarding`
   const isSharedResult = resultOrigin === 'shared'
-  // Derive 4 axis letters from the code for composable copy
   const letters = code.split('') as AxisLetter[]
+  const { rarity, rank } = result
+
+  function retake() {
+    setStage('quiz')
+    setAnswers([])
+    setCurrentQ(0)
+    setResult(null)
+    setResultOrigin('quiz')
+    startedRef.current = false
+  }
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
-      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ background: '#001f15', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+
+      {/* Dark nav */}
+      <nav style={{ borderBottom: '1px solid rgba(255,255,255,.1)', padding: '16px 24px', background: 'rgba(0,0,0,.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="light" size={22} />
+          <Logo variant="dark" size={22} />
         </Link>
         <button
-          onClick={() => { setStage('quiz'); setAnswers([]); setCurrentQ(0); setResult(null); setResultOrigin('quiz'); startedRef.current = false }}
-          style={{ background: 'none', border: 'none', color: C.muted, fontSize: 13, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}
+          onClick={retake}
+          style={{ background: 'none', border: 'none', color: '#bfe9dd', fontSize: 13, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}
         >
           {isSharedResult ? 'Take the quiz' : 'Retake quiz'}
         </button>
       </nav>
 
-      <div className="ft-result-pad" style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px 80px' }}>
+      {/* Hero */}
+      <div style={{ background: 'radial-gradient(80% 50% at 50% 0%, rgba(6,95,70,.4), transparent 70%)', padding: '30px 22px 8px', textAlign: 'center' }}>
+        <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: '2px', textTransform: 'uppercase', color: '#62FAE3', marginBottom: 18 }}>
+          {isSharedResult ? 'Their FIRE Type' : 'You got your FIRE type'}
+        </div>
+
         {isSharedResult ? (
-          <div style={{ background: '#ECFDF5', border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', marginBottom: 18, color: C.text, textAlign: 'center', lineHeight: 1.6 }}>
-            Think this sounds like you? Take the quiz to find your own FIRE Type, or go straight to your FIRE number.
+          <div style={{
+            background: 'rgba(98,250,227,.08)', border: '1px solid rgba(98,250,227,.25)',
+            borderRadius: 14, padding: '14px 18px', marginBottom: 18,
+            color: '#bfe9dd', lineHeight: 1.6, maxWidth: 380, margin: '0 auto 18px',
+          }}>
+            Think this sounds like you? Take the quiz to find your own FIRE Type.
           </div>
         ) : null}
-        {/* Code badge */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-block', background: C.darkGreen, color: C.teal, fontSize: 'clamp(28px, 8vw, 42px)', fontWeight: 800, letterSpacing: 'clamp(2px, 1.5vw, 6px)', padding: '14px clamp(16px, 6vw, 32px)', borderRadius: 14, fontFamily: 'DM Mono, monospace', marginBottom: 16 }}>
-            {code}
+
+        {/* ── Trading Card ── */}
+        <div style={{
+          background: 'linear-gradient(160deg,#0a4332 0%, #003527 55%, #04261c 100%)',
+          borderRadius: 18, padding: 9, color: '#fff', position: 'relative', overflow: 'hidden',
+          boxShadow: '0 24px 54px rgba(0,32,21,.5)', maxWidth: 380, margin: '0 auto',
+        }}>
+          {/* holo edge */}
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: 18, padding: 2, pointerEvents: 'none',
+            background: 'linear-gradient(130deg,#62FAE3,#20D4BF 30%,#0a4332 50%,#62FAE3 78%,#34D399)',
+            WebkitMask: 'linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)',
+            WebkitMaskComposite: 'xor',
+            maskComposite: 'exclude',
+            opacity: 0.85,
+          } as React.CSSProperties} />
+
+          <div style={{ border: '1px solid rgba(98,250,227,.35)', borderRadius: 12, padding: '13px 14px 14px' }}>
+            {/* header: code badge + rank / rarity */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{
+                fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: '3px',
+                background: 'rgba(98,250,227,.14)', border: '1px solid rgba(98,250,227,.4)',
+                borderRadius: 8, padding: '3px 10px', color: '#62FAE3',
+              }}>{code}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, letterSpacing: '1px', color: '#62FAE3' }}>
+                <span style={{ fontSize: 13 }}>◆</span>{rank} · {rarity}
+              </span>
+            </div>
+
+            {/* avatar art frame */}
+            <div style={{
+              marginTop: 11, borderRadius: 10, overflow: 'hidden', height: 180,
+              position: 'relative',
+              background: 'radial-gradient(120% 90% at 50% 0%, #065F46 0%, #003527 70%)',
+              border: '1px solid rgba(98,250,227,.18)',
+              display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+            }}>
+              <div style={{
+                position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none',
+                backgroundImage: 'linear-gradient(rgba(98,250,227,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(98,250,227,.10) 1px,transparent 1px)',
+                backgroundSize: '22px 22px',
+              }} />
+              <FireTypeAvatar code={code} size={160} />
+            </div>
+
+            {/* name + archetype */}
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: 21, lineHeight: 1.1 }}>{result.name}</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '1.5px', color: '#62FAE3', textTransform: 'uppercase' }}>{result.archetype}</div>
+            </div>
+
+            {/* stat line — 4 spectrum sliders */}
+            <div style={{ marginTop: 13, background: 'rgba(0,0,0,.22)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, padding: '12px 12px 13px', display: 'flex', flexDirection: 'column', gap: 11 }}>
+              {FIRE_AXES.map((ax, i) => (
+                <Spectrum key={ax.key} left={ax.left} right={ax.right} pos={leans[i]} compact />
+              ))}
+            </div>
+
+            {/* card footer */}
+            <div style={{ marginTop: 11, display: 'flex', justifyContent: 'space-between', fontSize: 9.5, letterSpacing: '1.5px', color: '#7fc3b2', fontWeight: 700 }}>
+              <span>UNTILFIRE · COLLECTIBLE</span><span>SERIES I</span>
+            </div>
           </div>
-          <h1 style={{ fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 800, color: C.text, letterSpacing: '-0.03em', margin: '0 0 10px' }}>
-            {result.name}
-          </h1>
-          <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.7, margin: 0, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>
-            {result.tagline}
-          </p>
         </div>
 
-        {/* Strengths */}
-        <div className="ft-result-strengths" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: C.accent, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 14, margin: '0 0 14px' }}>Your strengths</p>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 10 }}>
-            {letters.map((l) => (
-              <li key={l} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14, color: C.text, lineHeight: 1.5 }}>
-                <span style={{ color: C.accent, fontWeight: 700, flexShrink: 0 }}>✓</span>
-                {AXIS_STRENGTHS[l]}
-              </li>
+        {/* share / action buttons */}
+        <div className="ft-hero-btns" style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 22, paddingBottom: 8 }}>
+          <button
+            onClick={handleShare}
+            style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 14, color: '#001f15', background: '#62FAE3', border: 'none', borderRadius: 10, padding: '11px 22px', cursor: 'pointer' }}
+          >
+            {copied ? '✓ Copied!' : '↗ Share my type'}
+          </button>
+          {isSharedResult ? (
+            <button
+              onClick={retake}
+              style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 14, color: '#fff', background: 'transparent', border: '1.5px solid rgba(255,255,255,.3)', borderRadius: 10, padding: '11px 22px', cursor: 'pointer' }}
+            >
+              Take the quiz
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Below-fold body */}
+      <div className="ft-result-body" style={{ maxWidth: 560, margin: '0 auto', padding: '26px 22px 30px' }}>
+
+        {/* 4-axis spectrums */}
+        <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 16, padding: 24, border: '1px solid rgba(255,255,255,.10)', marginBottom: 18 }}>
+          <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: '#62FAE3', marginBottom: 14 }}>
+            How you scored — the four axes
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {FIRE_AXES.map((ax, i) => (
+              <Spectrum key={ax.key} left={ax.left} right={ax.right} pos={leans[i]} />
             ))}
-          </ul>
+          </div>
         </div>
 
-        {/* Watch-outs */}
-        <div className="ft-result-strengths" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 14px' }}>Watch-outs</p>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 10 }}>
-            {letters.map((l) => (
-              <li key={l} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14, color: C.text, lineHeight: 1.5 }}>
-                <span style={{ color: '#D97706', fontWeight: 700, flexShrink: 0 }}>→</span>
-                {AXIS_WATCH_OUTS[l]}
-              </li>
-            ))}
-          </ul>
+        {/* 2-col strengths + watch-outs */}
+        <div className="ft-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
+          <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 16, padding: 24, border: '1px solid rgba(98,250,227,.3)' }}>
+            <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: '#62FAE3', marginBottom: 14 }}>★ Your strengths</div>
+            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 11 }}>
+              {letters.map(l => (
+                <li key={l} style={{ display: 'flex', gap: 9, fontSize: 13.5, lineHeight: 1.45, color: '#dff3ec' }}>
+                  <span style={{ color: '#62FAE3', fontWeight: 800, flexShrink: 0 }}>{l}</span>
+                  <span>{AXIS_STRENGTHS[l]}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 16, padding: 24, border: '1px solid rgba(255,255,255,.10)' }}>
+            <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: '#62FAE3', marginBottom: 14 }}>⚠ Watch-outs</div>
+            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 11 }}>
+              {letters.map(l => (
+                <li key={l} style={{ display: 'flex', gap: 9, fontSize: 13.5, lineHeight: 1.45, color: '#bfe9dd' }}>
+                  <span style={{ color: '#7fc3b2', fontWeight: 800, flexShrink: 0 }}>{l}</span>
+                  <span>{AXIS_WATCH_OUTS[l]}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        {/* Next move CTA */}
-        <div className="ft-cta-box" style={{ background: C.darkGreen, borderRadius: 16, padding: '28px 24px', marginBottom: 16, textAlign: 'center' }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: C.teal, textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 10px' }}>Your next FIRE move</p>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: '0 0 20px', lineHeight: 1.6 }}>
-            Calculate your actual FIRE number and see which lever gets you there fastest.
+        {/* Rarity band */}
+        <div style={{ background: '#003527', borderRadius: 16, padding: '26px 24px', textAlign: 'center', color: '#fff', marginBottom: 18 }}>
+          <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: '2px', color: '#62FAE3', textTransform: 'uppercase' }}>How rare you are</div>
+          <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: 52, letterSpacing: '-1px', lineHeight: 1.05, marginTop: 6 }}>{rarity}</div>
+          <div style={{ fontSize: 14, color: '#cfeee4', marginTop: 2 }}>of UntilFIRE quiz-takers share your type · {rank}</div>
+        </div>
+
+        {/* CTA */}
+        <div className="ft-cta-box" style={{ background: '#064E3B', borderRadius: 16, padding: '28px 24px', marginBottom: 16, textAlign: 'center' }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#62FAE3', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 10px' }}>Your next FIRE move</p>
+          <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: '-0.4px', color: '#fff', margin: '0 0 8px' }}>Now turn your type into a number.</p>
+          <p style={{ fontSize: 14, color: '#bfe9dd', margin: '0 0 20px', lineHeight: 1.6 }}>
+            See the real FIRE number behind the way you think.
           </p>
           {isSharedResult ? (
             <button
-              onClick={() => { setStage('quiz'); setAnswers([]); setCurrentQ(0); setResult(null); setResultOrigin('quiz'); startedRef.current = false }}
-              style={{ display: 'inline-block', background: 'rgba(255,255,255,0.12)', color: '#ffffff', textDecoration: 'none', borderRadius: 10, padding: '14px 28px', fontSize: 15, fontWeight: 700, width: '100%', boxSizing: 'border-box', border: '1px solid rgba(255,255,255,0.18)', marginBottom: 12, fontFamily: "'Manrope', sans-serif", cursor: 'pointer' }}
+              onClick={retake}
+              style={{ display: 'block', background: 'rgba(255,255,255,.10)', color: '#ffffff', borderRadius: 10, padding: '14px 28px', fontSize: 15, fontWeight: 700, width: '100%', boxSizing: 'border-box', border: '1px solid rgba(255,255,255,.20)', marginBottom: 12, fontFamily: "'Manrope', sans-serif", cursor: 'pointer' }}
             >
               Take the quiz to find my type
             </button>
@@ -357,26 +508,19 @@ function FireTypeQuizInner() {
           <Link
             href={ctaHref}
             onClick={() => trackFireTypeCtaClicked({ fireTypeCode: code, source })}
-            style={{ display: 'inline-block', background: C.teal, color: C.darkGreen, textDecoration: 'none', borderRadius: 10, padding: '14px 28px', fontSize: 15, fontWeight: 700, width: '100%', boxSizing: 'border-box' }}
+            style={{ display: 'block', background: '#62FAE3', color: '#001f15', textDecoration: 'none', borderRadius: 10, padding: '14px 28px', fontSize: 15, fontWeight: 700 }}
           >
-            Now calculate my actual FIRE number →
+            Calculate my actual FIRE number →
           </Link>
         </div>
 
-        {/* Share */}
-        <div className="ft-share-box" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <p style={{ fontSize: 14, color: C.muted, margin: '0 0 14px' }}>Share your FIRE Type</p>
-          <button
-            onClick={handleShare}
-            style={{ background: '#ffffff', border: `1.5px solid ${C.border}`, borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 700, color: C.text, cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}
-          >
-            {copied ? '✓ Copied!' : `Share ${code} — ${result.name}`}
-          </button>
-        </div>
-
-        <p style={{ fontSize: 12, color: C.muted, textAlign: 'center', lineHeight: 1.7 }}>
+        <p style={{ fontSize: 12, color: '#7fc3b2', textAlign: 'center', lineHeight: 1.7 }}>
           Your FIRE Type is a preference-based personality result, not financial advice. Your actual FIRE path depends on your numbers — calculate your FIRE number next.
         </p>
+      </div>
+
+      <div style={{ borderTop: '1px solid rgba(255,255,255,.1)', padding: '16px 22px', textAlign: 'center', fontFamily: "'Manrope', sans-serif", fontSize: 10.5, letterSpacing: '1px', color: '#7fc3b2' }}>
+        © 2026 UNTILFIRE · FINANCIAL INDEPENDENCE THROUGH TRUSTED GROWTH
       </div>
     </div>
   )
@@ -390,14 +534,14 @@ export default function FireTypePage() {
           from { opacity: 0; transform: translateX(28px); }
           to   { opacity: 1; transform: translateX(0); }
         }
-        @media (max-width: 480px) {
+        @media (max-width: 520px) {
           .ft-intro-pad { padding: 40px 16px 60px !important; }
           .ft-quiz-pad { padding: 28px 16px 60px !important; }
           .ft-quiz-card { padding: 24px 18px !important; }
-          .ft-result-pad { padding: 32px 16px 60px !important; }
-          .ft-result-strengths { padding: 18px 16px !important; }
+          .ft-result-body { padding: 20px 16px 50px !important; }
           .ft-cta-box { padding: 20px 16px !important; }
-          .ft-share-box { padding: 16px !important; }
+          .ft-hero-btns { flex-direction: column; align-items: center; padding: 0 16px 8px !important; }
+          .ft-2col { grid-template-columns: 1fr !important; }
         }
       `}</style>
       <Suspense>
