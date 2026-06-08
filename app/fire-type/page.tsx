@@ -251,27 +251,23 @@ function TradingCard({
           background: 'rgba(255,255,255,.82)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Wordmark size={20} />
-            <span
-              style={{
-                display: 'inline-flex',
-                alignSelf: 'flex-start',
-                fontWeight: 800,
-                fontSize: 20,
-                letterSpacing: '0.2em',
-                background: '#F8FAFC',
-                border: '1px solid rgba(15,23,42,.08)',
-                borderRadius: 999,
-                padding: '5px 12px',
-                color: C.textStrong,
-              }}
-            >
-              {result.code}
-            </span>
-          </div>
-          <RarityChip rarity={result.rarity} rank={result.rank} />
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignSelf: 'center',
+              fontWeight: 800,
+              fontSize: 20,
+              letterSpacing: '0.2em',
+              background: '#F8FAFC',
+              border: '1px solid rgba(15,23,42,.08)',
+              borderRadius: 999,
+              padding: '5px 12px',
+              color: C.textStrong,
+            }}
+          >
+            {result.code}
+          </span>
         </div>
 
         <div
@@ -348,15 +344,20 @@ function TradingCard({
             background: '#FCFDFE',
             border: '1px solid rgba(15,23,42,.08)',
             borderRadius: 14,
-            padding: '13px 13px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 11,
+            padding: '18px 18px 20px',
+            textAlign: 'center',
           }}
         >
-          {FIRE_AXES.map((axis, index) => (
-            <Spectrum key={axis.key} left={axis.left} right={axis.right} pos={leans[index]} compact onDark />
-          ))}
+          <div
+            style={{
+              fontSize: 16,
+              lineHeight: 1.6,
+              color: C.textStrong,
+              fontStyle: 'italic',
+            }}
+          >
+            "{result.quote}"
+          </div>
         </div>
 
         <div
