@@ -292,13 +292,13 @@ function TradingCard({
             marginTop: 11,
             borderRadius: 10,
             overflow: 'hidden',
-            height: 180,
+            height: 196,
             position: 'relative',
             background: '#FFFFFF',
             border: '1px solid #E2E8F0',
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'flex-end',
+            alignItems: 'stretch',
           }}
         >
           <div
@@ -319,8 +319,31 @@ function TradingCard({
               background: 'radial-gradient(80% 55% at 50% 100%, rgba(59,109,168,.09), transparent 70%)',
             }}
           />
-          <div style={{ position: 'relative', paddingBottom: 8 }}>
-            <FireTypeAvatar code={result.code} size={160} />
+          <div
+            style={{
+              position: 'relative',
+              flex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'flex-end',
+              padding: '14px 14px 10px',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                left: 18,
+                right: 18,
+                bottom: 0,
+                height: 34,
+                borderTopLeftRadius: 999,
+                borderTopRightRadius: 999,
+                background: 'linear-gradient(180deg, rgba(148,163,184,.18), rgba(148,163,184,.05))',
+              }}
+            />
+            <div style={{ position: 'relative' }}>
+              <FireTypeAvatar code={result.code} size={148} />
+            </div>
           </div>
         </div>
 
