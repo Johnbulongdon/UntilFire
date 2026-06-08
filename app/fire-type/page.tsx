@@ -50,42 +50,20 @@ type ResultMeta = {
 }
 
 function Wordmark({ light = false, size = 22 }: { light?: boolean; size?: number }) {
-  const fg = light ? '#FFFFFF' : C.accentDark
-  const flameBg = light ? C.teal : C.accentDark
-  const flameFill = light ? C.accentDeep : '#FFFFFF'
-
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-      <span
-        style={{
-          width: size,
-          height: size,
-          borderRadius: 6,
-          background: flameBg,
-          display: 'grid',
-          placeItems: 'center',
-          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.08)',
-          flexShrink: 0,
-        }}
-      >
-        <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M12 2C9 7 6 9 6 14a6 6 0 0012 0c0-2-1-4-2.5-6C14 10 14 12 12 12c-1.5 0-2-1.5-1-3 .8-1.2 2-3 2-7z"
-            fill={flameFill}
-          />
-        </svg>
-      </span>
-      <span
-        style={{
-          fontWeight: 800,
-          fontSize: size * 0.82,
-          color: fg,
-          letterSpacing: '-0.3px',
-          lineHeight: 1,
-        }}
-      >
-        UntilFire
-      </span>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'baseline',
+        gap: 0,
+        fontWeight: 800,
+        fontSize: size * 0.82,
+        letterSpacing: '-0.04em',
+        lineHeight: 1,
+      }}
+    >
+      <span style={{ color: light ? '#FFFFFF' : C.textStrong }}>Until</span>
+      <span style={{ color: '#F97316' }}>Fire</span>
     </span>
   )
 }
@@ -242,13 +220,14 @@ function TradingCard({
     <div
       ref={cardRef}
       style={{
-        background: 'linear-gradient(160deg,#0a4332 0%, #003527 55%, #04261c 100%)',
-        borderRadius: 18,
-        padding: 9,
-        color: '#FFFFFF',
+        background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
+        borderRadius: 24,
+        padding: 16,
+        color: C.text,
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: '0 24px 54px rgba(0,32,21,.5)',
+        border: '1px solid rgba(15,23,42,.08)',
+        boxShadow: '0 24px 60px rgba(15,23,42,.14)',
         maxWidth: 380,
         margin: '0 auto',
       }}
@@ -257,45 +236,53 @@ function TradingCard({
         style={{
           position: 'absolute',
           inset: 0,
-          borderRadius: 18,
-          padding: 2,
+          borderRadius: 24,
           pointerEvents: 'none',
-          background: 'linear-gradient(130deg,#62FAE3,#20D4BF 30%,#0a4332 50%,#62FAE3 78%,#34D399)',
-          WebkitMask: 'linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)',
-          WebkitMaskComposite: 'xor',
-          maskComposite: 'exclude',
-          opacity: 0.85,
+          background:
+            'radial-gradient(120% 80% at 50% 0%, rgba(249,115,22,.08), transparent 48%), radial-gradient(120% 90% at 50% 100%, rgba(5,150,105,.08), transparent 52%)',
         }}
       />
 
-      <div style={{ border: '1px solid rgba(98,250,227,.35)', borderRadius: 12, padding: '13px 14px 14px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <span
-            style={{
-              fontWeight: 800,
-              fontSize: 22,
-              letterSpacing: '3px',
-              background: 'rgba(98,250,227,.14)',
-              border: '1px solid rgba(98,250,227,.4)',
-              borderRadius: 8,
-              padding: '3px 10px',
-              color: C.teal,
-            }}
-          >
-            {result.code}
-          </span>
-          <RarityChip rarity={result.rarity} rank={result.rank} dark />
+      <div
+        style={{
+          border: '1px solid rgba(15,23,42,.08)',
+          borderRadius: 18,
+          padding: '16px 16px 18px',
+          background: 'rgba(255,255,255,.82)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Wordmark size={20} />
+            <span
+              style={{
+                display: 'inline-flex',
+                alignSelf: 'flex-start',
+                fontWeight: 800,
+                fontSize: 20,
+                letterSpacing: '0.2em',
+                background: '#F8FAFC',
+                border: '1px solid rgba(15,23,42,.08)',
+                borderRadius: 999,
+                padding: '5px 12px',
+                color: C.textStrong,
+              }}
+            >
+              {result.code}
+            </span>
+          </div>
+          <RarityChip rarity={result.rarity} rank={result.rank} />
         </div>
 
         <div
           style={{
-            marginTop: 11,
-            borderRadius: 10,
+            marginTop: 14,
+            borderRadius: 18,
             overflow: 'hidden',
-            height: 196,
+            height: 270,
             position: 'relative',
             background: '#FFFFFF',
-            border: '1px solid #E2E8F0',
+            border: '1px solid rgba(15,23,42,.08)',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'stretch',
@@ -308,15 +295,16 @@ function TradingCard({
               opacity: 1,
               pointerEvents: 'none',
               backgroundImage:
-                'linear-gradient(rgba(6,95,70,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(6,95,70,.07) 1px,transparent 1px)',
-              backgroundSize: '22px 22px',
+                'linear-gradient(rgba(15,23,42,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.05) 1px,transparent 1px)',
+              backgroundSize: '24px 24px',
             }}
           />
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'radial-gradient(80% 55% at 50% 100%, rgba(59,109,168,.09), transparent 70%)',
+              background:
+                'radial-gradient(76% 48% at 50% 100%, rgba(148,163,184,.18), transparent 68%), linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(248,250,252,.72) 100%)',
             }}
           />
           <div
@@ -326,41 +314,41 @@ function TradingCard({
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'flex-end',
-              padding: '14px 14px 10px',
+              padding: '18px 18px 14px',
             }}
           >
             <div
               style={{
                 position: 'absolute',
-                left: 18,
-                right: 18,
+                left: 26,
+                right: 26,
                 bottom: 0,
-                height: 34,
+                height: 44,
                 borderTopLeftRadius: 999,
                 borderTopRightRadius: 999,
-                background: 'linear-gradient(180deg, rgba(148,163,184,.18), rgba(148,163,184,.05))',
+                background: 'linear-gradient(180deg, rgba(148,163,184,.22), rgba(148,163,184,.06))',
               }}
             />
             <div style={{ position: 'relative' }}>
-              <FireTypeAvatar code={result.code} size={148} zoom={1.14} />
+              <FireTypeAvatar code={result.code} size={182} zoom={1.08} />
             </div>
           </div>
         </div>
 
-        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontWeight: 800, fontSize: 21, lineHeight: 1.1 }}>{result.name}</div>
-          <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '1.5px', color: C.teal, textTransform: 'uppercase' }}>
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 5, textAlign: 'center' }}>
+          <div style={{ fontWeight: 800, fontSize: 26, lineHeight: 1.05, color: C.textStrong }}>{result.name}</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.22em', color: C.accent, textTransform: 'uppercase' }}>
             {result.archetype}
           </div>
         </div>
 
         <div
           style={{
-            marginTop: 13,
-            background: 'rgba(0,0,0,.22)',
-            border: '1px solid rgba(255,255,255,.08)',
-            borderRadius: 10,
-            padding: '12px 12px 13px',
+            marginTop: 16,
+            background: '#FCFDFE',
+            border: '1px solid rgba(15,23,42,.08)',
+            borderRadius: 14,
+            padding: '13px 13px 14px',
             display: 'flex',
             flexDirection: 'column',
             gap: 11,
