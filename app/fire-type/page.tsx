@@ -342,7 +342,7 @@ function TradingCard({
               }}
             />
             <div style={{ position: 'relative' }}>
-              <FireTypeAvatar code={result.code} size={148} />
+              <FireTypeAvatar code={result.code} size={148} zoom={1.14} />
             </div>
           </div>
         </div>

@@ -7,13 +7,14 @@ type FireTypeAvatarProps = {
   code: string
   size?: number
   className?: string
+  zoom?: number
 }
 
 function isFirePersonalityCode(code: string): code is FirePersonalityCode {
   return code in FIRE_PERSONALITY_PROFILES
 }
 
-export function FireTypeAvatar({ code, size = 120, className }: FireTypeAvatarProps) {
+export function FireTypeAvatar({ code, size = 120, className, zoom = 1 }: FireTypeAvatarProps) {
   if (!isFirePersonalityCode(code)) return null
 
   const profile = FIRE_PERSONALITY_PROFILES[code]
@@ -30,14 +31,24 @@ export function FireTypeAvatar({ code, size = 120, className }: FireTypeAvatarPr
         width: size,
         height,
         borderRadius: Math.max(12, Math.round(size * 0.08)),
-        backgroundColor: '#0B3B2A',
-        backgroundImage: `url("${profile.artwork.sheet}")`,
-        backgroundPosition: `${x} ${y}`,
-        backgroundRepeat: 'no-repeat',
-        backgroundSize: '200% 200%',
         boxShadow: '0 18px 40px rgba(0,0,0,0.18)',
         overflow: 'hidden',
+        position: 'relative',
+        backgroundColor: '#FFFFFF',
       }}
-    />
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `url("${profile.artwork.sheet}")`,
+          backgroundPosition: `${x} ${y}`,
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '200% 200%',
+          transform: `scale(${zoom})`,
+          transformOrigin: 'center center',
+        }}
+      />
+    </div>
   )
 }
