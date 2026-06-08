@@ -1,4 +1,4 @@
-import sheet1 from "@/lib/fire-personality-art-sheet-1";
+﻿import sheet1 from "@/lib/fire-personality-art-sheet-1";
 import sheet2 from "@/lib/fire-personality-art-sheet-2";
 import sheet3 from "@/lib/fire-personality-art-sheet-3";
 import sheet4 from "@/lib/fire-personality-art-sheet-4";

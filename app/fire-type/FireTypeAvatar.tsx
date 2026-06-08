@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React from 'react'
 import { FIRE_PERSONALITY_PROFILES, type FirePersonalityCode } from '@/lib/fire-personality'

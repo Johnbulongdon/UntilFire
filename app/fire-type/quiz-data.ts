@@ -1,4 +1,4 @@
-// Pure data and logic for the FIRE Type Quiz. No React dependencies.
+﻿// Pure data and logic for the FIRE Type Quiz. No React dependencies.
 // The quiz produces a 4-letter code: [P|A][S|E][R|G][B|F]
 //   Axis PA: Planner vs Adventurer
 //   Axis SE: Security vs Expansion
