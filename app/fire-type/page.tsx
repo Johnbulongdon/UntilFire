@@ -207,173 +207,87 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
   )
 }
 
-function TradingCard({
+// F · Poster — clean white share card: gray eyebrow, big green code,
+// dark-green name, large full-figure character art (uncropped), italic quote, brand mark.
+function PosterCard({
   result,
-  leans,
   cardRef,
 }: {
   result: ResultMeta
-  leans: number[]
   cardRef?: React.RefObject<HTMLDivElement | null>
 }) {
   return (
     <div
       ref={cardRef}
       style={{
-        background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
-        borderRadius: 24,
-        padding: 16,
+        background: '#FFFFFF',
+        borderRadius: 22,
+        padding: '36px 30px 26px',
         color: C.text,
-        position: 'relative',
-        overflow: 'hidden',
-        border: '1px solid rgba(15,23,42,.08)',
-        boxShadow: '0 24px 60px rgba(15,23,42,.14)',
+        textAlign: 'center',
+        border: `1px solid ${C.border}`,
+        boxShadow: '0 22px 50px rgba(0,32,21,.12)',
         maxWidth: 380,
         margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 24,
-          pointerEvents: 'none',
-          background:
-            'radial-gradient(120% 80% at 50% 0%, rgba(249,115,22,.08), transparent 48%), radial-gradient(120% 90% at 50% 100%, rgba(5,150,105,.08), transparent 52%)',
-        }}
-      />
+      <div style={{ fontWeight: 600, fontSize: 15.5, color: C.muted, letterSpacing: '.2px', whiteSpace: 'nowrap' }}>
+        Your FIRE type is
+      </div>
+      <div style={{ fontWeight: 800, fontSize: 54, letterSpacing: '3px', color: C.accent, marginTop: 14, lineHeight: 1 }}>
+        {result.code}
+      </div>
+      <div style={{ fontWeight: 800, fontSize: 25, color: '#064E3B', marginTop: 12, letterSpacing: '-0.3px', lineHeight: 1.1 }}>
+        {result.name}
+      </div>
 
       <div
         style={{
-          border: '1px solid rgba(15,23,42,.08)',
-          borderRadius: 18,
-          padding: '16px 16px 18px',
-          background: 'rgba(255,255,255,.82)',
+          width: '100%',
+          height: 288,
+          marginTop: 20,
+          borderRadius: 14,
+          overflow: 'hidden',
+          background: '#FFFFFF',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignSelf: 'center',
-              fontWeight: 800,
-              fontSize: 20,
-              letterSpacing: '0.2em',
-              background: '#F8FAFC',
-              border: '1px solid rgba(15,23,42,.08)',
-              borderRadius: 999,
-              padding: '5px 12px',
-              color: C.textStrong,
-            }}
-          >
-            {result.code}
-          </span>
-        </div>
+        <FireTypeAvatar code={result.code} size={216} />
+      </div>
 
-        <div
-          style={{
-            marginTop: 14,
-            borderRadius: 18,
-            overflow: 'hidden',
-            height: 270,
-            position: 'relative',
-            background: '#FFFFFF',
-            border: '1px solid rgba(15,23,42,.08)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'stretch',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              opacity: 1,
-              pointerEvents: 'none',
-              backgroundImage:
-                'linear-gradient(rgba(15,23,42,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.05) 1px,transparent 1px)',
-              backgroundSize: '24px 24px',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background:
-                'radial-gradient(76% 48% at 50% 100%, rgba(148,163,184,.18), transparent 68%), linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(248,250,252,.72) 100%)',
-            }}
-          />
-          <div
-            style={{
-              position: 'relative',
-              flex: 1,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-end',
-              padding: '18px 18px 14px',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                left: 26,
-                right: 26,
-                bottom: 0,
-                height: 44,
-                borderTopLeftRadius: 999,
-                borderTopRightRadius: 999,
-                background: 'linear-gradient(180deg, rgba(148,163,184,.22), rgba(148,163,184,.06))',
-              }}
-            />
-            <div style={{ position: 'relative' }}>
-              <FireTypeAvatar code={result.code} size={182} zoom={1.08} />
-            </div>
-          </div>
-        </div>
+      <div
+        style={{
+          fontStyle: 'italic',
+          fontSize: 17,
+          fontWeight: 500,
+          color: C.mutedSoft,
+          marginTop: 22,
+          lineHeight: 1.4,
+          maxWidth: '90%',
+        }}
+      >
+        <span style={{ color: '#CBD5E1', fontSize: 22, verticalAlign: '-2px', marginRight: 2 }}>“</span>
+        {result.quote}
+        <span style={{ color: '#CBD5E1', fontSize: 22, verticalAlign: '-6px', marginLeft: 2 }}>”</span>
+      </div>
 
-        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 5, textAlign: 'center' }}>
-          <div style={{ fontWeight: 800, fontSize: 26, lineHeight: 1.05, color: C.textStrong }}>{result.name}</div>
-          <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.22em', color: C.accent, textTransform: 'uppercase' }}>
-            {result.archetype}
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            background: '#FCFDFE',
-            border: '1px solid rgba(15,23,42,.08)',
-            borderRadius: 14,
-            padding: '18px 18px 20px',
-            textAlign: 'center',
-          }}
-        >
-          <div
-            style={{
-              fontSize: 16,
-              lineHeight: 1.6,
-              color: C.textStrong,
-              fontStyle: 'italic',
-            }}
-          >
-            "{result.quote}"
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 11,
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: 9.5,
-            letterSpacing: '1.5px',
-            color: '#7fc3b2',
-            fontWeight: 700,
-          }}
-        >
-          <span>UNTILFIRE · COLLECTIBLE</span>
-          <span>SERIES I</span>
-        </div>
+      <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+        <svg width={36} height={36} viewBox="0 0 1024 1024" style={{ borderRadius: 9, display: 'block', flexShrink: 0 }} aria-hidden>
+          <rect width="1024" height="1024" rx="180" fill="#003527" />
+          <path d="M 252 620 A 260 260 0 0 1 772 620 Z" fill="#20D4BF" />
+          <rect x="100" y="615" width="824" height="14" rx="7" fill="#62FAE3" />
+          <line x1="325.6" y1="397.9" x2="287.0" y2="351.9" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
+          <line x1="412.8" y1="347.5" x2="392.3" y2="291.1" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
+          <line x1="512" y1="330" x2="512" y2="270" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
+          <line x1="611.2" y1="347.5" x2="631.7" y2="291.1" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
+          <line x1="698.4" y1="397.9" x2="737.0" y2="351.9" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
+        </svg>
+        <Wordmark size={20} />
       </div>
     </div>
   )
@@ -888,7 +802,7 @@ function FireTypeQuizInner() {
         ) : null}
 
         <div style={{ maxWidth: 380, margin: '0 auto' }}>
-          <TradingCard result={result} leans={leans} cardRef={cardRef} />
+          <PosterCard result={result} cardRef={cardRef} />
         </div>
 
         <div className="ft-hero-btns" style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 22, paddingBottom: 8, flexWrap: 'wrap' }}>
