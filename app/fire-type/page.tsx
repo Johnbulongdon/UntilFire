@@ -63,7 +63,7 @@ function Wordmark({ light = false, size = 22 }: { light?: boolean; size?: number
       }}
     >
       <span style={{ color: light ? '#FFFFFF' : C.textStrong }}>Until</span>
-      <span style={{ color: '#F97316' }}>Fire</span>
+      <span style={{ color: light ? '#FFFFFF' : C.textStrong }}>Fire</span>
     </span>
   )
 }
