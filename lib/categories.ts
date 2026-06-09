@@ -10,11 +10,15 @@ export const EXPENSE_CATEGORIES: CategoryDef[] = [
   { key: "food",          label: "Food",          code: "FD", color: "#f97316", emoji: "🍔" },
   { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5", emoji: "🚗" },
   { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8", emoji: "🏠" },
-  { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9", emoji: "✈️" },
-  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa", emoji: "📱" },
+  { key: "utilities",     label: "Utilities",     code: "UT", color: "#38bdf8", emoji: "💡" },
   { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444", emoji: "🏥" },
-  { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24", emoji: "🎬" },
   { key: "shopping",      label: "Shopping",      code: "SH", color: "#ec4899", emoji: "🛍️" },
+  { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24", emoji: "🎬" },
+  { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9", emoji: "✈️" },
+  { key: "education",     label: "Education",     code: "ED", color: "#84cc16", emoji: "🎓" },
+  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa", emoji: "📱" },
+  { key: "personal_care", label: "Personal Care", code: "PC", color: "#f472b6", emoji: "💆" },
+  { key: "pets",          label: "Pets",          code: "PT", color: "#d97706", emoji: "🐾" },
   { key: "work",          label: "Work",          code: "WK", color: "#6366f1", emoji: "💼" },
   { key: "other",         label: "Other",         code: "OT", color: "#6b7280", emoji: "📦" },
 ];
@@ -35,9 +39,29 @@ export const COLOR_PALETTE = [
 ];
 
 export const EMOJI_PALETTE = [
-  "🍔", "🚗", "🏠", "✈️", "📱", "🏥", "🎬", "🛍️", "💼", "📦",
-  "💵", "💻", "📈", "🎁", "🎓", "🎮", "☕", "💪", "🎵", "🎨",
-  "🐕", "🌴", "⚽", "🍕", "📚", "🎸", "🛒", "🏋️", "🧘", "💈",
+  // Food & Drink
+  "🍔", "🍕", "🍜", "🌮", "🍣", "🥗", "🥐", "🍱", "🍰", "🧆",
+  "🍺", "🍷", "☕", "🧋", "🧃",
+  // Transport
+  "🚗", "🚕", "🚌", "🚲", "🛵", "✈️", "🚁", "⛽", "🚂", "🛞",
+  // Housing & Utilities
+  "🏠", "🏢", "🏡", "🛋️", "🔑", "🛏️", "💡", "🔌", "💧", "📺",
+  "🌐", "📡",
+  // Healthcare & Wellness
+  "🏥", "💊", "🩺", "🦷", "👁️", "🧠", "❤️", "🩹", "💆", "🧘",
+  // Shopping & Personal Care
+  "🛍️", "👕", "👟", "👜", "💍", "🕶️", "💅", "💈", "🧴", "🪥",
+  // Entertainment & Hobbies
+  "🎬", "🎮", "🎵", "🎸", "🎨", "🎭", "🎲", "🎯", "🎧", "🎤",
+  "⚽", "🏋️", "🎾", "🏊", "🧩",
+  // Travel & Nature
+  "🌴", "🏖️", "⛰️", "🗺️", "🧳", "🌏", "🏕️", "🌅",
+  // Education & Work
+  "🎓", "📚", "✏️", "🔬", "📊", "💼", "💻", "🖥️", "📝", "🤝",
+  // Finance & Income
+  "💵", "💰", "📈", "💳", "🏦", "🪙",
+  // Pets & Misc
+  "🐕", "🐈", "🐾", "🐠", "🎁", "📦", "⭐", "🌟",
 ];
 
 // ─── Customization overlay ────────────────────────────────────────────────────

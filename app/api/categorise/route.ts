@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const categories =
       type === "income"
         ? "salary, freelance, investment, gift, other_income"
-        : "food, transport, housing, travel, subscriptions, healthcare, entertainment, shopping, other";
+        : "food, transport, housing, utilities, healthcare, shopping, entertainment, travel, education, subscriptions, personal_care, pets, work, other";
 
     const res = await fetch(OPENROUTER_API_URL, {
       method: "POST",

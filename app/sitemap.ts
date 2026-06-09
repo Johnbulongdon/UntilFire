@@ -82,9 +82,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const articleRoutes: MetadataRoute.Sitemap = learnArticles.map((article) => ({
     url: siteUrl(`/learn/${article.slug}`),
-    lastModified: new Date(article.publishedAt),
+    lastModified: new Date('2026-06-04'),
     changeFrequency: 'monthly' as const,
-    priority: 0.6,
+    priority: 0.65,
   }))
 
   const stageRoutes: MetadataRoute.Sitemap = learnStages.map((stage) => ({
@@ -98,7 +98,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const curatedCityRoutes: MetadataRoute.Sitemap = cityLandingPages.map((page) => ({
     url: siteUrl(`/fire-number/${page.slug}`),
-    lastModified: new Date(),
+    lastModified: new Date('2026-06-04'),
     changeFrequency: 'weekly',
     priority: 0.75,
   }))

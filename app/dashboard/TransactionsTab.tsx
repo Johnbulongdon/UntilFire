@@ -12,14 +12,18 @@ import {
 } from "@/lib/categories";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
-  travel:        ["Hotels", "Flights", "Food & Drink", "Transport", "Activities", "Shopping", "Other"],
-  food:          ["Groceries", "Restaurants", "Coffee", "Takeout", "Alcohol", "Other"],
-  transport:     ["Gas", "Parking", "Public Transit", "Ride Share", "Car Maintenance", "Other"],
-  housing:       ["Rent/Mortgage", "Utilities", "Insurance", "Maintenance", "Furnishing", "Other"],
-  subscriptions: ["Streaming", "Software", "Gym", "News", "Health", "Other"],
-  healthcare:    ["Doctor", "Pharmacy", "Dental", "Vision", "Mental Health", "Other"],
-  entertainment: ["Movies", "Events", "Sports", "Games", "Hobbies", "Other"],
-  shopping:      ["Clothing", "Electronics", "Home Goods", "Gifts", "Beauty", "Other"],
+  food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
+  transport:     ["Gas & Fuel", "Parking", "Public Transit", "Ride Share", "Insurance", "Maintenance", "Other"],
+  housing:       ["Rent/Mortgage", "Insurance", "Maintenance", "Furnishing", "Property Tax", "HOA", "Other"],
+  utilities:     ["Phone", "Internet", "Electricity", "Water & Gas", "TV/Cable", "Other"],
+  healthcare:    ["Doctor/GP", "Pharmacy", "Dental", "Vision", "Mental Health", "Insurance", "Other"],
+  shopping:      ["Clothing", "Electronics", "Home Goods", "Sports & Outdoors", "Gifts", "Other"],
+  entertainment: ["Movies & Shows", "Events & Concerts", "Sports", "Games", "Hobbies", "Other"],
+  travel:        ["Flights", "Hotels", "Activities", "Transport", "Food & Drink", "Other"],
+  education:     ["Tuition", "Books & Materials", "Courses", "Other"],
+  subscriptions: ["Streaming", "Software & Apps", "Memberships", "News & Media", "Other"],
+  personal_care: ["Haircut & Salon", "Skincare & Beauty", "Wellness", "Other"],
+  pets:          ["Food & Supplies", "Vet", "Grooming", "Other"],
   work:          ["Equipment", "Software", "Travel", "Training", "Meals", "Other"],
 };
 
@@ -836,6 +840,7 @@ function TransactionList({
   justAddedId,
   onEdit,
   onDelete,
+  onCategoryChange,
   rates,
   formatAmount,
   catCustomizations,
@@ -846,6 +851,7 @@ function TransactionList({
   justAddedId: string | null;
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
+  onCategoryChange: (tx: Transaction, category: string) => void;
   rates: Record<string, number>;
   formatAmount: (value: number) => string;
   catCustomizations: CatCustomizations;
@@ -853,6 +859,16 @@ function TransactionList({
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
+  const [catPickerTxId, setCatPickerTxId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!catPickerTxId) return;
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest("[data-cat-picker]")) setCatPickerTxId(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [catPickerTxId]);
   const todayYmd = new Date().toISOString().split("T")[0];
   const allCategories = useMemo(() => [...expenseCategories, ...INCOME_CATEGORIES], [expenseCategories]);
 
@@ -976,9 +992,46 @@ function TransactionList({
                         onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLDivElement).style.background = "var(--uf-surface)"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isEditing ? "rgba(16,185,129,0.12)" : "transparent"; }}
                       >
-                        {/* Category chip */}
-                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: chipColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-                          {chipEmoji}
+                        {/* Category chip — click to change */}
+                        <div style={{ position: "relative", flexShrink: 0 }} data-cat-picker>
+                          <button
+                            title="Change category"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (tx.transaction_type === "transfer") return;
+                              setCatPickerTxId(catPickerTxId === tx.id ? null : tx.id);
+                            }}
+                            style={{ width: 36, height: 36, borderRadius: "50%", background: chipColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, border: "none", cursor: tx.transaction_type === "transfer" ? "default" : "pointer", padding: 0, outline: catPickerTxId === tx.id ? `2px solid ${chipColor}` : "none", outlineOffset: 2, transition: "outline 0.1s" }}
+                          >
+                            {chipEmoji}
+                          </button>
+                          {catPickerTxId === tx.id && (
+                            <div
+                              data-cat-picker
+                              style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 200, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.14)", width: 228, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}
+                            >
+                              <div style={{ gridColumn: "1/-1", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
+                                Change category
+                              </div>
+                              {(tx.transaction_type === "income" ? INCOME_CATEGORIES : expenseCategories).map((c) => {
+                                const isCurrent = tx.category === c.key;
+                                const baseC = { color: c.color, emoji: (c as {emoji?: string}).emoji || "📦" };
+                                const { color: cColor, emoji: cEmoji } = resolveDisplay(baseC, catCustomizations, c.key);
+                                return (
+                                  <button
+                                    key={c.key}
+                                    data-cat-picker
+                                    onClick={(e) => { e.stopPropagation(); onCategoryChange(tx, c.key); setCatPickerTxId(null); }}
+                                    style={{ background: isCurrent ? "#ECFDF5" : "transparent", border: `1px solid ${isCurrent ? "#047857" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", transition: "all 0.1s" }}
+                                    title={c.label}
+                                  >
+                                    <div style={{ width: 26, height: 26, borderRadius: "50%", background: cColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{cEmoji}</div>
+                                    <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
 
                         {/* Description + meta */}
@@ -1431,17 +1484,30 @@ function AiReviewModal({
   onSkip,
   onClose,
   onSaveRule,
+  allExpenseCats,
 }: {
   pending: { tx: Transaction; suggestion: "need" | "want"; wasTag?: "need" | "want" }[];
-  onApprove: (tx: Transaction, suggestion: "need" | "want") => void;
-  onApproveAllSameName: (description: string, suggestion: "need" | "want") => void;
-  onApproveAll: (resolved: { tx: Transaction; suggestion: "need" | "want" }[]) => void;
+  onApprove: (tx: Transaction, suggestion: "need" | "want", category?: string) => void;
+  onApproveAllSameName: (description: string, suggestion: "need" | "want", category?: string) => void;
+  onApproveAll: (resolved: { tx: Transaction; suggestion: "need" | "want"; category?: string }[]) => void;
   onSkip: (txId: string) => void;
   onClose: () => void;
   onSaveRule: (category: string, sub_category: string, classification: "need" | "want") => void;
+  allExpenseCats: CustomCategory[];
 }) {
   const [overrides, setOverrides] = useState<Record<string, "need" | "want">>({});
+  const [catOverrides, setCatOverrides] = useState<Record<string, string>>({});
+  const [catPickerTxId, setCatPickerTxId] = useState<string | null>(null);
   const [saveRuleIds, setSaveRuleIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!catPickerTxId) return;
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest("[data-review-cat-picker]")) setCatPickerTxId(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [catPickerTxId]);
   const sameNameCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const { tx } of pending) {
@@ -1475,7 +1541,7 @@ function AiReviewModal({
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button
-              onClick={() => onApproveAll(pending.map(({ tx, suggestion }) => ({ tx, suggestion: overrides[tx.id] ?? suggestion })))}
+              onClick={() => onApproveAll(pending.map(({ tx, suggestion }) => ({ tx, suggestion: overrides[tx.id] ?? suggestion, category: catOverrides[tx.id] })))}
               style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
             >
               Approve all
@@ -1501,8 +1567,53 @@ function AiReviewModal({
                       {tx.currency} {netAmt(tx).toFixed(2)}{tx.refund_amount > 0 ? ` (↩ ${tx.refund_amount.toFixed(2)} refunded)` : ""}
                     </span>
                     <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
-                    <span style={{ fontSize: 11, color: "var(--uf-text-3)", textTransform: "capitalize" }}>
-                      {tx.sub_category ? `${tx.category} / ${tx.sub_category}` : tx.category}
+                    {/* Clickable category badge */}
+                    <span style={{ position: "relative", display: "inline-block" }} data-review-cat-picker>
+                      <button
+                        data-review-cat-picker
+                        onClick={() => setCatPickerTxId(catPickerTxId === tx.id ? null : tx.id)}
+                        title="Change category"
+                        style={{
+                          fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px",
+                          background: catOverrides[tx.id] ? "rgba(34,211,165,0.15)" : "rgba(100,116,139,0.1)",
+                          color: catOverrides[tx.id] ? "#22d3a5" : "var(--uf-text-2)",
+                          border: catOverrides[tx.id] ? "1px solid rgba(34,211,165,0.35)" : "1px solid transparent",
+                          cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 3,
+                        }}
+                      >
+                        {catOverrides[tx.id]
+                          ? (ALL_CATEGORIES.find(c => c.key === catOverrides[tx.id])?.label ?? catOverrides[tx.id])
+                          : (tx.sub_category ? `${tx.category} / ${tx.sub_category}` : tx.category)}
+                        <span style={{ fontSize: 9, opacity: 0.6 }}>✏</span>
+                      </button>
+                      {catPickerTxId === tx.id && (
+                        <div
+                          data-review-cat-picker
+                          style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 300, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", width: 232, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}
+                        >
+                          <div style={{ gridColumn: "1/-1", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
+                            Change category
+                          </div>
+                          {(tx.transaction_type === "income" ? INCOME_CATEGORIES : allExpenseCats).map((c) => {
+                            const activeCat = catOverrides[tx.id] ?? tx.category;
+                            const isCurrent = activeCat === c.key;
+                            const baseC = { color: c.color, emoji: (c as {emoji?: string}).emoji || "📦" };
+                            const { color: cColor, emoji: cEmoji } = resolveDisplay(baseC, {}, c.key);
+                            return (
+                              <button
+                                key={c.key}
+                                data-review-cat-picker
+                                onClick={(e) => { e.stopPropagation(); setCatOverrides(prev => ({ ...prev, [tx.id]: c.key })); setCatPickerTxId(null); }}
+                                style={{ background: isCurrent ? "#ECFDF5" : "transparent", border: `1px solid ${isCurrent ? "#047857" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer" }}
+                                title={c.label}
+                              >
+                                <div style={{ width: 26, height: 26, borderRadius: "50%", background: cColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{cEmoji}</div>
+                                <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </span>
                     {wasTag && (
                       <span style={{ fontSize: 10, color: "var(--uf-text-3)", fontStyle: "italic" }}>
@@ -1556,7 +1667,7 @@ function AiReviewModal({
                       if (saveRuleIds.has(tx.id) && tx.sub_category) {
                         onSaveRule(tx.category, tx.sub_category, effective);
                       }
-                      onApprove(tx, effective);
+                      onApprove(tx, effective, catOverrides[tx.id]);
                     }}
                     style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                   >
@@ -1564,7 +1675,7 @@ function AiReviewModal({
                   </button>
                   {sameNameCount > 1 && (
                     <button
-                      onClick={() => onApproveAllSameName(tx.description, effective)}
+                      onClick={() => onApproveAllSameName(tx.description, effective, catOverrides[tx.id])}
                       style={{ background: "var(--uf-surface-2)", color: "var(--uf-text)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                       title={`Approve all ${sameNameCount} "${tx.description}" as ${effective}`}
                     >
@@ -1799,20 +1910,21 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
   }, []);
 
-  const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want" }[]) => {
-    const updates = toApply.map(({ tx, suggestion }) => ({
+  const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want"; category?: string }[]) => {
+    const updates = toApply.map(({ tx, suggestion, category }) => ({
       id: tx.id,
       tags: [...(tx.tags || []).filter((t) => t !== "need" && t !== "want"), suggestion],
+      category: category ?? tx.category,
     }));
     for (let i = 0; i < updates.length; i += 20) {
       await Promise.all(
-        updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags }).eq("id", u.id))
+        updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags, category: u.category }).eq("id", u.id))
       );
     }
     const updateMap = new Map(updates.map((u) => [u.id, u]));
     setTransactions((prev) => prev.map((t) => {
       const u = updateMap.get(t.id);
-      return u ? { ...t, tags: u.tags } : t;
+      return u ? { ...t, tags: u.tags, category: u.category } : t;
     }));
   }, []);
 
@@ -2012,6 +2124,11 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     if (drawerOpen) setDrawerOpen(false);
   }, [defaultCurrency, drawerOpen]);
 
+  const handleCategoryChange = useCallback(async (tx: Transaction, category: string) => {
+    const { error } = await supabase.from("expenses").update({ category }).eq("id", tx.id);
+    if (!error) setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, category } : t));
+  }, []);
+
   const handleDelete = useCallback(async (tx: Transaction) => {
     if (!window.confirm(`Delete "${tx.description}"?`)) return;
     const { error } = await supabase.from("expenses").delete().eq("id", tx.id);
@@ -2113,6 +2230,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           justAddedId={justAddedId}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onCategoryChange={handleCategoryChange}
           rates={rates}
           formatAmount={fmtDisplay}
           catCustomizations={catCustomizations}
@@ -2161,13 +2279,13 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       {pendingClassifications.length > 0 && (
         <AiReviewModal
           pending={pendingClassifications}
-          onApprove={async (tx, suggestion) => {
-            await applyClassifications([{ tx, suggestion }]);
+          onApprove={async (tx, suggestion, category) => {
+            await applyClassifications([{ tx, suggestion, category }]);
             setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== tx.id));
           }}
-          onApproveAllSameName={async (description, suggestion) => {
+          onApproveAllSameName={async (description, suggestion, category) => {
             const matches = pendingClassifications.filter((p) => p.tx.description.toLowerCase() === description.toLowerCase());
-            await applyClassifications(matches.map((m) => ({ tx: m.tx, suggestion })));
+            await applyClassifications(matches.map((m) => ({ tx: m.tx, suggestion, category })));
             setPendingClassifications((prev) => prev.filter((p) => p.tx.description.toLowerCase() !== description.toLowerCase()));
           }}
           onApproveAll={async (resolved) => {
@@ -2178,6 +2296,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onSkip={(txId) => setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== txId))}
           onClose={() => setPendingClassifications([])}
           onSaveRule={handleSaveRule}
+          allExpenseCats={allExpenseCats}
         />
       )}
 

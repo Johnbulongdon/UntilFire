@@ -3,7 +3,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 
-type Step = "upload" | "map" | "importing" | "done";
+type Step = "upload" | "map" | "review" | "importing" | "done";
 
 type Transaction = {
   date: string;
@@ -32,6 +32,12 @@ type ParsedImportTransaction = {
   currency: string;
   transaction_type: "expense" | "income" | "transfer";
   category: string;
+};
+
+type DuplicateFlag = {
+  rowIndex: number;
+  row: ParsedImportTransaction;
+  existing: { id: string; date: string; amount: number; category: string };
 };
 
 // ─── CSV parsing ───────────────────────────────────────────────────────────────────────────────
@@ -245,7 +251,10 @@ export default function CsvImportModal({
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
   const [error, setError] = useState("");
+  const [duplicateFlags, setDuplicateFlags] = useState<DuplicateFlag[]>([]);
+  const [skipIndices, setSkipIndices] = useState<Set<number>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -400,8 +409,9 @@ export default function CsvImportModal({
   const projectedExpenses = currentExpenses + importedExpenses;
   const projectedNet = projectedIncome - projectedExpenses;
 
-  const handleImport = useCallback(async () => {
+  const handleImport = useCallback(async (skip: Set<number> = new Set()) => {
     const parsed = buildParsedTransactions();
+    const toInsert = parsed.filter((_, i) => !skip.has(i));
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -411,14 +421,14 @@ export default function CsvImportModal({
       return;
     }
 
-    setTotal(parsed.length);
+    setTotal(toInsert.length);
     setProgress(0);
     setStep("importing");
 
     const BATCH = 50;
     let inserted = 0;
-    for (let i = 0; i < parsed.length; i += BATCH) {
-      const batch = parsed.slice(i, i + BATCH).map((tx) => ({
+    for (let i = 0; i < toInsert.length; i += BATCH) {
+      const batch = toInsert.slice(i, i + BATCH).map((tx) => ({
         user_id: session.user.id,
         date: tx.date,
         amount: tx.amount,
@@ -441,9 +451,50 @@ export default function CsvImportModal({
     }
 
     setImportedCount(inserted);
+    setSkippedCount(skip.size);
     setStep("done");
     onImported(inserted);
   }, [buildParsedTransactions, onImported]);
+
+  const handleCheckDuplicates = useCallback(async () => {
+    const parsed = buildParsedTransactions();
+    const dates = parsed.map((r) => r.date).filter(Boolean);
+    if (dates.length === 0) {
+      handleImport(new Set());
+      return;
+    }
+    const minDate = dates.reduce((a, b) => (a < b ? a : b));
+    const maxDate = dates.reduce((a, b) => (a > b ? a : b));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { handleImport(new Set()); return; }
+
+    const { data: existing } = await supabase
+      .from("expenses")
+      .select("id, date, amount, category")
+      .eq("user_id", session.user.id)
+      .gte("date", minDate)
+      .lte("date", maxDate);
+
+    const flags: DuplicateFlag[] = [];
+    for (let i = 0; i < parsed.length; i++) {
+      const row = parsed[i];
+      const match = existing?.find(
+        (e) =>
+          e.date === row.date &&
+          Number(e.amount) === row.amount &&
+          (e.category ?? "").trim().toLowerCase() === (row.category ?? "").trim().toLowerCase()
+      );
+      if (match) flags.push({ rowIndex: i, row, existing: match });
+    }
+
+    if (flags.length > 0) {
+      setDuplicateFlags(flags);
+      setSkipIndices(new Set(flags.map((f) => f.rowIndex)));
+      setStep("review");
+    } else {
+      handleImport(new Set());
+    }
+  }, [buildParsedTransactions, handleImport]);
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "8px 10px", borderRadius: 8,
@@ -496,6 +547,7 @@ export default function CsvImportModal({
             </div>
             {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV exported from your bank</div>}
             {step === "map" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
+            {step === "review" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Review possible duplicates before importing</div>}
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
         </div>
@@ -683,7 +735,7 @@ export default function CsvImportModal({
                 Choose another file
               </button>
               <button
-                onClick={handleImport}
+                onClick={handleCheckDuplicates}
                 disabled={!colDate || !colDesc || !colAmount || parsedTransactions.length === 0}
                 style={{
                   width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
@@ -694,6 +746,86 @@ export default function CsvImportModal({
                 }}
               >
                 Import {parsedTransactions.length} transactions
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === "review" && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#FBBF24", marginBottom: 6 }}>
+                {duplicateFlags.length} possible duplicate{duplicateFlags.length !== 1 ? "s" : ""} found
+              </div>
+              <div style={{ fontSize: 13, color: "#94a3b8" }}>
+                These rows may already exist. Uncheck any you still want to import.
+              </div>
+            </div>
+
+            <div style={{ border: "1px solid #23232d", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: "#1a1a24" }}>
+                    {["Skip", "Date", "Description", "Amount", "Category"].map((h) => (
+                      <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #23232d", whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {duplicateFlags.map(({ rowIndex, row }) => {
+                    const checked = skipIndices.has(rowIndex);
+                    return (
+                      <tr key={rowIndex} style={{ borderBottom: "1px solid #1a1a24", background: checked ? "rgba(251,191,36,0.04)" : undefined }}>
+                        <td style={{ padding: "8px 10px" }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              setSkipIndices((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(rowIndex)) next.delete(rowIndex);
+                                else next.add(rowIndex);
+                                return next;
+                              })
+                            }
+                            style={{ accentColor: "#FBBF24", width: 14, height: 14 }}
+                          />
+                        </td>
+                        <td style={{ padding: "8px 10px", color: "#94a3b8", whiteSpace: "nowrap" }}>{row.date}</td>
+                        <td style={{ padding: "8px 10px", color: "#e2e8f0", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.description}</td>
+                        <td style={{ padding: "8px 10px", color: "#f8fafc", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                          {new Intl.NumberFormat("en-US", { style: "currency", currency: row.currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(row.amount)}
+                        </td>
+                        <td style={{ padding: "8px 10px", color: "#94a3b8" }}>{row.category}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <button
+                onClick={() => handleImport(new Set())}
+                style={{
+                  width: "100%", padding: "12px 0", borderRadius: 10,
+                  border: "1px solid #334155", background: "transparent",
+                  color: "#cbd5e1", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  fontFamily: "Manrope, sans-serif",
+                }}
+              >
+                Import all anyway
+              </button>
+              <button
+                onClick={() => handleImport(skipIndices)}
+                style={{
+                  width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
+                  background: "#059669", color: "#fff",
+                  fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  fontFamily: "Manrope, sans-serif",
+                }}
+              >
+                Skip checked &amp; continue →
               </button>
             </div>
           </>
@@ -718,7 +850,8 @@ export default function CsvImportModal({
           <div style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>
-              {importedCount} transactions imported
+              {importedCount} transaction{importedCount !== 1 ? "s" : ""} imported
+              {skippedCount > 0 ? `, ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""} skipped` : ""}
             </div>
             <div style={{ fontSize: 13, color: "#64748b", marginBottom: 28 }}>
               Categories were auto-detected. Tap any transaction to adjust.

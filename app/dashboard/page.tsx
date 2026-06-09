@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
+  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine, ReferenceDot,
   ComposedChart, Area,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
@@ -16,6 +16,7 @@ import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
+import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE } from "@/lib/fire";
@@ -533,7 +534,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], budgetMode = "manual", histMonthsCount = 0, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -545,17 +546,26 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   recentTransactions?: { date: string; amount: number; currency: string; transaction_type?: string }[];
+  plaidHoldings?: PlaidHolding[];
   budgetMode?: "manual" | "history";
   histMonthsCount?: number;
+  userJoinedAt?: string;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
-  const [showSP500, setShowSP500] = useState(true);
-  const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(true);
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
   const chartMonthTooltipFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }), []);
+
+  // Current unrealized gain from Plaid investment holdings (institution_value - cost_basis)
+  const holdingsUnrealizedGain = useMemo(() => {
+    const withBasis = plaidHoldings.filter(h => h.cost_basis !== null && h.cost_basis > 0 && h.institution_value !== null);
+    if (withBasis.length === 0) return null;
+    const gain = withBasis.reduce((s, h) => s + (h.institution_value ?? 0) - (h.cost_basis ?? 0), 0);
+    return gain > 0 ? Math.round(gain) : null;
+  }, [plaidHoldings]);
 
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -607,13 +617,40 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const investable  = k401 + rothIRA + taxable + totalCash;
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
+
+  const milestones = useMemo(() => {
+    if (fireTarget <= 0) return [] as Array<{ key: string; label: string; value: number; achieved: boolean }>;
+    const fixed = [
+      { key: "start", label: "Journey Started", value: 1 },
+      { key: "10k",   label: "First $10k",       value: 10_000 },
+      { key: "100k",  label: "Six Figures",       value: 100_000 },
+    ];
+    const pct = [
+      { key: "quarter",  label: "Foundation Built", value: fireTarget * 0.25 },
+      { key: "half",     label: "Halfway Free",      value: fireTarget * 0.5  },
+      { key: "approach", label: "On the Approach",   value: fireTarget * 0.75 },
+      { key: "fi",       label: "Work is Optional",  value: fireTarget        },
+    ].filter(m => m.value > 100_000);
+    // Include $1M "2 Comma Club" unless it overlaps closely with a %-based milestone
+    const oneMil = { key: "1m", label: "2 Comma Club", value: 1_000_000 };
+    const tooClose = pct.some(m => Math.abs(m.value - 1_000_000) / 1_000_000 < 0.12);
+    return [...fixed, ...(!tooClose ? [oneMil] : []), ...pct]
+      .sort((a, b) => a.value - b.value)
+      .map(m => ({ ...m, achieved: investable >= m.value }));
+  }, [investable, fireTarget]);
   const rawChartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
   const chartData = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const historyStart = new Date(currentMonth);
-    historyStart.setMonth(historyStart.getMonth() - 3);
+    const maxHistoryStart = new Date(currentMonth);
+    maxHistoryStart.setMonth(maxHistoryStart.getMonth() - 36);
+    const earliestTx = recentTransactions.length > 0
+      ? new Date(recentTransactions[0].date)
+      : null;
+    const historyStart = earliestTx && earliestTx > maxHistoryStart
+      ? new Date(earliestTx.getFullYear(), earliestTx.getMonth(), 1)
+      : maxHistoryStart;
 
     const toMonthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const monthTick = (date: Date) => chartMonthTickFormatter.format(date).replace(" ", " '");
@@ -631,6 +668,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       flowByDay.set(key, (flowByDay.get(key) ?? 0) + signedAmount);
     }
 
+    // Compute unrealized gain from Plaid holdings cost_basis.
+    // Unrealized gain = institution_value - cost_basis within investment holdings only.
+    // These are set below and used for todayEntry
+    let todayContributions: number | null = null;
+    let todayMarketGain: number | null = null;
+
     const historyEntries: Array<{
       key: string;
       label: string;
@@ -639,9 +682,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       projected: number | null;
       yearsOut: number | null;
       phase: "history" | "today" | "projection";
-      Contributions?: number;
-      "Market Growth"?: number;
-      sp500?: number;
+      Contributions?: number | null;
+      "Market Growth"?: number | null;
     }> = [];
 
     if (flowByDay.size > 0) {
@@ -656,6 +698,26 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       }
       points.reverse();
 
+      const startValue = points[0]?.value ?? investable;
+      const cumFlowByMonth = new Map<string, number>();
+      let cumFlow = 0;
+      const fwdCursor = new Date(historyStart);
+      while (fwdCursor <= today) {
+        const dayKey = fwdCursor.toISOString().slice(0, 10);
+        cumFlow += flowByDay.get(dayKey) ?? 0;
+        cumFlowByMonth.set(toMonthKey(fwdCursor), cumFlow);
+        fwdCursor.setDate(fwdCursor.getDate() + 1);
+      }
+
+      // Build a map of actual portfolio values from nwSnapshots (includes unrealized gains).
+      // For each month keep the last snapshot — most up-to-date reading for that period.
+      // Skip snapshots with portfolio_value = 0 (captured before Plaid accounts loaded).
+      const snapByMonth = new Map<string, number>();
+      for (const snap of [...nwSnapshots].sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime())) {
+        const d = new Date(snap.captured_at);
+        if (!Number.isNaN(d.getTime()) && snap.portfolio_value > 0) snapByMonth.set(toMonthKey(d), snap.portfolio_value);
+      }
+
       const monthEndPoints = new Map<string, { date: Date; value: number }>();
       for (const point of points) {
         if (point.date.getFullYear() === today.getFullYear() && point.date.getMonth() === today.getMonth()) continue;
@@ -663,16 +725,29 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       }
 
       historyEntries.push(
-        ...Array.from(monthEndPoints.values()).map((point, index) => ({
-          key: `history-${index}`,
-          label: chartMonthTooltipFormatter.format(point.date),
-          shortLabel: monthTick(point.date),
-          actual: Math.max(0, Math.round(point.value)),
-          projected: null,
-          yearsOut: null,
-          phase: "history" as const,
-        }))
+        ...Array.from(monthEndPoints.values()).map((point, index) => {
+          const monthKey = toMonthKey(point.date);
+          const snapVal = snapByMonth.get(monthKey);
+          const portfolioVal = snapVal !== undefined
+            ? Math.max(0, Math.round(snapVal))
+            : Math.max(0, Math.round(point.value));
+          return {
+            key: `history-${index}`,
+            label: chartMonthTooltipFormatter.format(point.date),
+            shortLabel: monthTick(point.date),
+            actual: portfolioVal,
+            projected: null,
+            yearsOut: null,
+            phase: "history" as const,
+            Contributions: null as number | null,
+            "Market Growth": null as number | null,
+          };
+        })
       );
+
+      const todayCumFlow = cumFlowByMonth.get(toMonthKey(today)) ?? 0;
+      todayContributions = Math.min(investable, Math.round(startValue + todayCumFlow));
+      todayMarketGain = Math.max(0, investable - todayContributions);
     } else {
       const monthEndSnapshots = new Map<string, { date: Date; value: number }>();
       for (const snap of [...nwSnapshots].sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime())) {
@@ -687,12 +762,20 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           key: `history-${index}`,
           label: chartMonthTooltipFormatter.format(snap.date),
           shortLabel: monthTick(snap.date),
-          actual: snap.value,
+          actual: Math.max(0, Math.round(snap.value)),
           projected: null,
           yearsOut: null,
           phase: "history" as const,
+          Contributions: null as number | null,
+          "Market Growth": null as number | null,
         }))
       );
+    }
+
+    // Use exact unrealized gain for today's split when cost_basis data is available
+    if (holdingsUnrealizedGain !== null && holdingsUnrealizedGain > 0) {
+      todayMarketGain = Math.min(investable, holdingsUnrealizedGain);
+      todayContributions = Math.max(0, investable - todayMarketGain);
     }
 
     const todayEntry = {
@@ -703,9 +786,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       projected: investable,
       yearsOut: 0,
       phase: "today" as const,
-      Contributions: rawChartData[0]?.["Contributions"] ?? 0,
-      "Market Growth": rawChartData[0]?.["Market Growth"] ?? 0,
-      sp500: investable,
+      Contributions: todayContributions ?? rawChartData[0]?.["Contributions"] ?? 0,
+      "Market Growth": todayMarketGain ?? rawChartData[0]?.["Market Growth"] ?? 0,
     };
 
     const futureEntries = Array.from({ length: Math.max(0, (rawChartData.length - 1) * 12) }, (_, index) => {
@@ -732,12 +814,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         phase: "projection" as const,
         Contributions: interpolate("Contributions"),
         "Market Growth": interpolate("Market Growth"),
-        sp500: Math.round(investable * Math.pow(1.10, yearsOut)),
       };
     });
 
     return [...historyEntries, todayEntry, ...futureEntries];
-  }, [rawChartData, investable, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates]);
+  }, [rawChartData, investable, holdingsUnrealizedGain, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
 
   // Greeting
@@ -754,6 +835,23 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     const limit = chartPeriod === "5Y" ? 5 : chartPeriod === "15Y" ? 15 : Number.POSITIVE_INFINITY;
     return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
   }, [chartData, chartPeriod]);
+
+  // Milestone bubble markers — first point in periodData where portfolio value crosses each milestone
+  const milestoneDots = useMemo(() => {
+    if (!periodData.length || !milestones.length) return [] as Array<{ shortLabel: string; chartValue: number; label: string; achieved: boolean }>;
+    return milestones
+      .filter(m => m.key !== "start")
+      .flatMap(m => {
+        for (let i = 0; i < periodData.length; i++) {
+          const entry = periodData[i];
+          const val = entry.actual ?? entry.projected ?? 0;
+          if (val >= m.value) {
+            return [{ shortLabel: entry.shortLabel, chartValue: val, label: m.label, achieved: m.achieved }];
+          }
+        }
+        return [];
+      });
+  }, [periodData, milestones]);
 
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
@@ -1150,10 +1248,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </div>
           </div>
 
-          <div className="uf-progress-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14, position: "relative" }}>
+          <div className="uf-progress-metrics" style={{ display: "grid", gridTemplateColumns: holdingsUnrealizedGain !== null ? "repeat(4, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14, position: "relative" }}>
             {[
               { label: "Net worth", value: fmtMoney(currentNetWorth, true), tone: "#FFFFFF" },
               { label: "This month", value: hasActuals ? fmtMoney(actualOrPlannedSavings, true) : fmtMoney(goalContribution, true), tone: actualOrPlannedSavings >= 0 ? "#62FAE3" : "#FCA5A5" },
+              ...(holdingsUnrealizedGain !== null ? [{ label: "Investment gains", value: fmtMoney(holdingsUnrealizedGain, true), tone: "#62FAE3" }] : []),
               { label: "Status", value: statusLabel, tone: "#A7F3D0" },
             ].map((item) => (
               <div key={item.label} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 14, padding: "12px 14px" }}>
@@ -1209,7 +1308,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   const projected = entry?.projected as number | undefined;
                   const contrib = entry?.Contributions as number | undefined;
                   const gains = entry?.["Market Growth"] as number | undefined;
-                  const sp500val = entry?.sp500 as number | undefined;
                   return (
                     <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12, padding: "10px 12px", fontSize: 12, fontFamily: "Manrope, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
                       <div style={{ fontWeight: 800, marginBottom: 6, color: "#F8FAFC" }}>{entry?.label ?? ""}</div>
@@ -1217,7 +1315,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                       {projected !== undefined && projected !== null && !showBreakdown && <div style={{ color: "#62FAE3", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
                       {showBreakdown && contrib !== undefined && <div style={{ color: "#4ADE80", marginBottom: 2 }}>Contributions: {fmtMoney(contrib, true)}</div>}
                       {showBreakdown && gains !== undefined && <div style={{ color: "#62FAE3", marginBottom: 4 }}>Market returns: {fmtMoney(gains, true)}</div>}
-                      {showSP500 && sp500val !== undefined && sp500val !== null && <div style={{ color: "#FDBA74", marginBottom: 4 }}>S&P 500 (10%/yr): {fmtMoney(sp500val, true)}</div>}
                       <div style={{ color: "rgba(255,255,255,0.6)" }}>Target: {fmtMoney(fireTarget, true)}</div>
                     </div>
                   );
@@ -1225,6 +1322,27 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               />
               <ReferenceLine y={fireTarget} stroke="rgba(167,243,208,0.95)" strokeDasharray="5 4" strokeWidth={1.3} />
               <ReferenceLine x={periodData.find((entry) => entry.phase === "today")?.shortLabel} stroke="rgba(255,255,255,0.26)" strokeDasharray="4 4" strokeWidth={1.2} />
+              {milestoneDots.map((dot) => (
+                <ReferenceDot
+                  key={dot.label}
+                  x={dot.shortLabel}
+                  y={dot.chartValue}
+                  r={0}
+                  shape={({ cx, cy }: { cx?: number; cy?: number }) => {
+                    const x = cx ?? 0;
+                    const y = cy ?? 0;
+                    const w = Math.max(dot.label.length * 5.8 + 12, 40);
+                    return (
+                      <g>
+                        <rect x={x - w / 2} y={y - 30} width={w} height={16} rx={4} fill="rgba(8,8,14,0.82)" stroke="rgba(34,211,165,0.55)" strokeWidth={0.8} />
+                        <text x={x} y={y - 18} textAnchor="middle" fill="#22d3a5" fontSize={9} fontWeight={700} fontFamily="Manrope, sans-serif">{dot.label}</text>
+                        <line x1={x} y1={y - 14} x2={x} y2={y - 5} stroke="rgba(34,211,165,0.65)" strokeWidth={1} />
+                        <circle cx={x} cy={y} r={4} fill={dot.achieved ? "rgba(34,211,165,0.25)" : "#22d3a5"} stroke="#22d3a5" strokeWidth={1.5} />
+                      </g>
+                    );
+                  }}
+                />
+              ))}
               <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.88)" strokeWidth={2} connectNulls={false} dot={false} activeDot={{ r: 5, fill: "#FFFFFF" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
               {!showBreakdown && (
                 <Area type="monotone" dataKey="projected" stroke="#62FAE3" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#62FAE3" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
@@ -1234,9 +1352,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   <Area type="monotone" dataKey="Contributions" stroke="#059669" strokeWidth={1.5} fill="url(#contribGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
                   <Area type="monotone" dataKey="Market Growth" stroke="#62FAE3" strokeWidth={1.5} fill="url(#growthGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
                 </>
-              )}
-              {showSP500 && (
-                <Line type="monotone" dataKey="sp500" stroke="#FDBA74" strokeWidth={1.5} strokeDasharray="5 4" dot={false} activeDot={{ r: 4, fill: "#FDBA74" }} isAnimationActive animationBegin={100} animationDuration={1000} animationEasing="ease-out" />
               )}
             </ComposedChart>
           </ResponsiveContainer>
@@ -1274,15 +1389,6 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   Projection
                 </>
               )}
-            </button>
-            {/* S&P 500 toggle */}
-            <button
-              onClick={() => setShowSP500(v => !v)}
-              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "Manrope, sans-serif", background: "none", border: "none", cursor: "pointer", padding: "2px 0", color: showSP500 ? "rgba(255,255,255,0.72)" : "rgba(255,255,255,0.3)", textDecoration: showSP500 ? "none" : "line-through" }}
-              title="Toggle S&P 500 benchmark"
-            >
-              <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="#FDBA74" strokeWidth="1.5" strokeDasharray="4 3" strokeOpacity={showSP500 ? 1 : 0.35} /></svg>
-              S&P 500
             </button>
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", maxWidth: 300 }}>
@@ -3721,6 +3827,23 @@ function FireCalcMenuTab({
           </a>
         </div>
       </div>
+
+      {/* Link to public calculators hub */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 4 }}>
+        <span style={{ fontSize: 13, color: "var(--uf-text-3)" }}>More tools:</span>
+        <a
+          href="/calculators"
+          style={{ fontSize: 13, fontWeight: 700, color: "#059669", textDecoration: "none" }}
+        >
+          Browse all calculators →
+        </a>
+        <a
+          href="/calculators/purchase-impact"
+          style={{ fontSize: 13, fontWeight: 700, color: "#f97316", textDecoration: "none" }}
+        >
+          Purchase impact →
+        </a>
+      </div>
     </div>
   );
 }
@@ -3947,6 +4070,7 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [userJoinedAt, setUserJoinedAt] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
 
@@ -4126,6 +4250,7 @@ export default function Dashboard() {
 
       setUserId(session.user.id);
       setUserEmail(session.user.email ?? "");
+      setUserJoinedAt(session.user.created_at ?? "");
 
       supabase
         .from("profiles")
@@ -4195,7 +4320,7 @@ export default function Dashboard() {
           }
         });
 
-      const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 3, nowD.getDate());
+      const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
       supabase.from("expenses").select("date, amount, currency, transaction_type")
         .eq("user_id", session.user.id)
@@ -4432,6 +4557,31 @@ export default function Dashboard() {
         .uf-sidebar-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: inherit; }
         .uf-sidebar-bottom { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--uf-border); display: flex; flex-direction: column; gap: 8px; }
 
+        .uf-sidebar-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 4px; padding: 0 10px 0 28px; }
+        .uf-sidebar-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
+        .uf-sidebar-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
+        .uf-sidebar-sub-item:hover { background: rgba(226,232,240,0.5); color: #1E3A2F; }
+        .uf-sidebar-sub-item:hover::before { background: #047857; }
+        .uf-sidebar-sub-item.active { color: #065F46; font-weight: 800; }
+        .uf-sidebar-sub-item.active::before { background: #047857; width: 6px; height: 6px; }
+        .dark .uf-sidebar-sub-item:hover { background: rgba(255,255,255,0.05); color: var(--uf-text); }
+        .dark .uf-sidebar-sub-item.active { color: #22d3a5; }
+        .dark .uf-sidebar-sub-item.active::before { background: #22d3a5; }
+        @media(min-width: 901px) { .uf-money-section-switch { display: none !important; } }
+        @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
+        @media(min-width: 901px) { .uf-freedom-section-switch { display: none !important; } }
+
+        .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
+        .uf-sidebar-sub-sub-item { display: flex; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
+        .uf-sidebar-sub-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 3px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
+        .uf-sidebar-sub-sub-item:hover { background: rgba(226,232,240,0.5); color: #1E3A2F; }
+        .uf-sidebar-sub-sub-item:hover::before { background: #047857; }
+        .uf-sidebar-sub-sub-item.active { color: #065F46; font-weight: 700; }
+        .uf-sidebar-sub-sub-item.active::before { background: #047857; width: 5px; height: 5px; }
+        .dark .uf-sidebar-sub-sub-item:hover { background: rgba(255,255,255,0.05); color: var(--uf-text); }
+        .dark .uf-sidebar-sub-sub-item.active { color: #22d3a5; }
+        .dark .uf-sidebar-sub-sub-item.active::before { background: #22d3a5; }
+
         select option { background: var(--uf-card); color: var(--uf-text); }
 
         .dark .uf-sidebar-item:hover { background: rgba(255,255,255,0.05); color: var(--uf-text); }
@@ -4619,20 +4769,86 @@ export default function Dashboard() {
           <Link href="/" className="uf-sidebar-logo"><Logo variant="light" size={26} /></Link>
 
           <nav className="uf-sidebar-nav">
-            {SIDEBAR_ITEMS.map(item => (
-              <button
-                key={item.key}
-                data-tour-item={item.key}
-                className={`uf-sidebar-item ${(tab === item.key || item.activeTabs?.includes(tab)) ? "active" : ""}`}
-                onClick={() => openDashboardTab(item.key)}
-              >
-                <span className="uf-sidebar-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
-                </span>
-                <span className="uf-nav-label-full">{item.label}</span>
-                <span className="uf-nav-label-mobile">{item.mobileLabel ?? item.label}</span>
-              </button>
-            ))}
+            {SIDEBAR_ITEMS.map(item => {
+              const isActive = tab === item.key || (item.activeTabs?.includes(tab) ?? false);
+              return (
+                <div key={item.key}>
+                  <button
+                    data-tour-item={item.key}
+                    className={`uf-sidebar-item ${isActive ? "active" : ""}`}
+                    onClick={() => openDashboardTab(item.key)}
+                  >
+                    <span className="uf-sidebar-icon">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
+                    </span>
+                    <span className="uf-nav-label-full">{item.label}</span>
+                    <span className="uf-nav-label-mobile">{item.mobileLabel ?? item.label}</span>
+                  </button>
+                  {isActive && item.key === "cashflow" && (
+                    <div className="uf-sidebar-sub-nav">
+                      {([
+                        { key: "cashflow",    label: "Cashflow"  },
+                        { key: "assets",      label: "Net Worth" },
+                        { key: "liabilities", label: "Debts"     },
+                        { key: "reports",     label: "Insights"  },
+                      ] as { key: TabKey; label: string }[]).map(sub => (
+                        <div key={sub.key}>
+                          <button
+                            className={`uf-sidebar-sub-item ${tab === sub.key ? "active" : ""}`}
+                            onClick={() => {
+                              openDashboardTab(sub.key);
+                              if (sub.key === "cashflow") setCashflowSubTab("cashflow");
+                            }}
+                          >
+                            {sub.label}
+                          </button>
+                          {sub.key === "cashflow" && tab === "cashflow" && (
+                            <div className="uf-sidebar-sub-sub-nav">
+                              {([
+                                { key: "cashflow" as const,   label: "Transactions" },
+                                { key: "categories" as const, label: "Categories"   },
+                                { key: "recurring" as const,  label: "Recurring"    },
+                                { key: "budgets" as const,    label: "Budgets"      },
+                              ]).map(ss => (
+                                <button
+                                  key={ss.key}
+                                  className={`uf-sidebar-sub-sub-item ${cashflowSubTab === ss.key ? "active" : ""}`}
+                                  onClick={() => {
+                                    setCashflowSubTab(ss.key);
+                                    if (ss.key === "categories") setCategoriesKey(k => k + 1);
+                                  }}
+                                >
+                                  {ss.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {isActive && item.key === "fire-calculator" && (
+                    <div className="uf-sidebar-sub-nav">
+                      {([
+                        { label: "Freedom Date", isActive: tab === "fire-calculator" && fireCalcSubTab === "menu",       onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
+                        { label: "Confidence",   isActive: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
+                        { label: "Advanced",     isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
+                        { label: "Lifestyle",    isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
+                        { label: "Learn",        isActive: tab === "learning-hub",                                       onClick: () => openDashboardTab("learning-hub") },
+                      ]).map(sub => (
+                        <button
+                          key={sub.label}
+                          className={`uf-sidebar-sub-item ${sub.isActive ? "active" : ""}`}
+                          onClick={sub.onClick}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
 
           <div className="uf-sidebar-bottom">
@@ -4685,7 +4901,7 @@ export default function Dashboard() {
               </div>
             )}
             {(tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports") && (
-              <nav className="uf-section-switch" aria-label="Money sections">
+              <nav className="uf-section-switch uf-money-section-switch" aria-label="Money sections">
                 {([
                   { label: "Cashflow", active: tab === "cashflow", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
                   { label: "Net Worth", active: tab === "assets", onClick: () => openDashboardTab("assets") },
@@ -4703,7 +4919,7 @@ export default function Dashboard() {
               </nav>
             )}
             {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub") && (
-              <nav className="uf-section-switch" aria-label="Freedom sections">
+              <nav className="uf-section-switch uf-freedom-section-switch" aria-label="Freedom sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
                   { label: "Confidence", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
@@ -4764,8 +4980,10 @@ export default function Dashboard() {
                 fireAge={fireAge}
                 nwSnapshots={nwSnapshots}
                 recentTransactions={recentTransactions}
+                plaidHoldings={plaidHoldings}
                 budgetMode={budgetMode}
                 histMonthsCount={histMonthsCount}
+                userJoinedAt={userJoinedAt}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
@@ -4773,7 +4991,7 @@ export default function Dashboard() {
             {tab === "cashflow" && (
               <div>
                 {/* Cashflow sub-tab nav */}
-                <div style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
+                <div className="uf-cashflow-subtab-switch" style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
                   {(["cashflow", "categories", "recurring", "budgets"] as const).map(t => (
                     <button
                       key={t}
@@ -4860,12 +5078,20 @@ export default function Dashboard() {
             {tab === "fire-calculator" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 {fireCalcSubTab === "menu" && (
-                  <FireCalcMenuTab
-                    fireAge={fireAge}
-                    onOpenProfile={() => setTab("profile")}
-                    onOpenSimulation={() => setFireCalcSubTab("simulation")}
-                    onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
-                  />
+                  <>
+                    <FireCalcMenuTab
+                      fireAge={fireAge}
+                      onOpenProfile={() => setTab("profile")}
+                      onOpenSimulation={() => setFireCalcSubTab("simulation")}
+                      onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
+                    />
+                    <PurchaseImpactPanel
+                      currentSavings={k401 + rothIRA + taxable + cashSavings}
+                      monthlyContribution={Math.max(income * 12 - monthlyExpenses * 12, 0) / 12}
+                      fireTarget={monthlyExpenses * 12 / withdrawalRate}
+                      annualReturn={growthRate}
+                    />
+                  </>
                 )}
                 {fireCalcSubTab === "goals" && (
                   <GoalsTab

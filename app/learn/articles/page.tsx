@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getLearnArticleMeta, getLearnStage, learnArticles } from '@/lib/learn'
+import { SITE_URL } from '@/lib/site'
 
 export const metadata = {
   title: 'FIRE Articles & Guides | UntilFire',
@@ -18,6 +19,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function ArticlesPage() {
   return (
+    <>
     <main className="uf-hub-page">
       <div className="uf-hub-shell">
         <header className="uf-hub-hero">
@@ -63,5 +65,34 @@ export default function ArticlesPage() {
         </section>
       </div>
     </main>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify([
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: 'FIRE Articles & Guides',
+            description: 'In-depth guides on financial independence, early retirement, the 4% rule, savings rate, Roth IRA strategy, compound interest, and more.',
+            url: `${SITE_URL}/learn/articles`,
+            hasPart: learnArticles.map((article) => ({
+              '@type': 'Article',
+              name: article.title,
+              url: `${SITE_URL}/learn/${article.slug}`,
+            })),
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+              { '@type': 'ListItem', position: 2, name: 'Learn', item: `${SITE_URL}/learn` },
+              { '@type': 'ListItem', position: 3, name: 'Articles', item: `${SITE_URL}/learn/articles` },
+            ],
+          },
+        ]),
+      }}
+    />
+    </>
   )
 }

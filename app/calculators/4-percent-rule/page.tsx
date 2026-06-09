@@ -30,9 +30,9 @@ export default function FourPercentRulePage() {
       <section style={{ background: '#F7F9FB', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18 }}>
           <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 28, letterSpacing: '-0.03em' }}>
-              How to use this FIRE number calculator
-            </h2>
+            <h1 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 28, letterSpacing: '-0.03em' }}>
+              FIRE Number Calculator: How Much Do You Need to Retire?
+            </h1>
             <p style={{ margin: '0 0 12px', color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
               Your FIRE number is the portfolio target that could support your annual spending without traditional work. A common starting point is the 4% rule: annual spending multiplied by 25. For a more conservative early-retirement plan, compare 3%, 3.5%, and 4% withdrawal rates instead of treating one number as final.
             </p>

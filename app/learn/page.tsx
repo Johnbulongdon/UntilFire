@@ -4,8 +4,9 @@ import { getStageArticles, learnStages } from '@/lib/learn'
 import { CITIES, isUS } from '@/lib/fire-data'
 
 export const metadata = {
-  title: 'Learning Hub | UntilFire',
-  description: 'Choose your FIRE stage and get the most relevant articles, calculators, and next steps without getting overwhelmed.',
+  title: 'FIRE Learning Hub — Financial Independence Guides by Stage | UntilFire',
+  description: 'Learn financial independence and early retirement step by step. FIRE guides, calculators, and next steps organized by stage — from the basics to living off your portfolio.',
+  keywords: 'FIRE guides, financial independence learning, early retirement education, FIRE basics, how to reach FIRE, FIRE stages',
   alternates: {
     canonical: 'https://www.untilfire.com/learn',
   },
@@ -20,6 +21,7 @@ const fmt = (n: number) =>
 
 export default function LearnHubPage() {
   return (
+    <>
     <main className="uf-hub-page">
       <div className="uf-hub-shell">
         <header className="uf-hub-hero">
@@ -207,5 +209,33 @@ export default function LearnHubPage() {
         </section>
       </div>
     </main>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify([
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: 'FIRE Learning Hub — Financial Independence Guides by Stage',
+            description: 'FIRE guides and calculators organized by stage: starting out, building momentum, approaching FIRE, and living in FIRE.',
+            url: 'https://www.untilfire.com/learn',
+            hasPart: learnStages.map((stage) => ({
+              '@type': 'WebPage',
+              name: stage.label,
+              url: `https://www.untilfire.com/learn/stages/${stage.id}`,
+            })),
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+              { '@type': 'ListItem', position: 2, name: 'Learn', item: 'https://www.untilfire.com/learn' },
+            ],
+          },
+        ]),
+      }}
+    />
+    </>
   )
 }

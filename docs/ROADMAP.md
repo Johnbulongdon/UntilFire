@@ -133,8 +133,17 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [x] `.env.example` includes `ANTHROPIC_API_KEY`
 - [x] `handleDescriptionBlur` re-enabled — fires on description blur for expense transactions ≥4 chars
 - [x] **AI categorisation is a Pro feature** — gated behind subscription, not available on free tier
-- [ ] Verify production env var `ANTHROPIC_API_KEY` is set in Vercel
-- [ ] QA categorisation accuracy and fallback behavior
+- [x] Verify production env var `ANTHROPIC_API_KEY` is set in Vercel
+- [x] QA categorisation accuracy and fallback behavior
+- [x] AI review modal with per-row overrides and "Approve all" — PR #52
+- [x] Need/want rule per sub-category in Categories tab — PR #49
+- [x] Mismatch detection when setting sub-category rules — PR #51
+
+### Dashboard Polish
+
+- [x] Dark mode persists across page loads — theme script in `<head>`, `useLayoutEffect` for toggle sync (PR #54)
+- [x] Achievement milestones blended into the progress chart as teal pin bubbles
+- [x] Achievement card removed — milestones live only on the chart
 
 ### Distribution Experiments
 
@@ -162,8 +171,8 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [x] **Show the differentiator visually:** above the fold or on the result screen, show example plan impact like "Invest +$300/mo → freedom 1.8 years sooner."
 - [x] **Add trust line near hero/result:** privacy + transparent assumptions. City/tax methodology can appear as proof, but must not become the main promise.
 - [x] **Update retirement-heavy copy:** replace "retire by" where it weakens the broader freedom/work-optional positioning.
-- [ ] **Mobile QA:** complete full no-login calculator flow on mobile viewport and fix layout/CTA issues.
-- [ ] **End-to-end no-login QA:** homepage → calculator → result → adjust inputs → share/save path must work without account creation.
+- [x] **Mobile QA:** complete full no-login calculator flow on mobile viewport — no issues found.
+- [x] **End-to-end no-login QA:** homepage → calculator → result → adjust inputs → share/save path confirmed working.
 
 ### Product Hunt Launch Assets
 
@@ -176,26 +185,41 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 ### Shareability & Conversion
 
-- [ ] Result page should produce a shareable insight without exposing sensitive finances.
-- [ ] Refine `/share` and OG cards around freedom date or city insight, not raw net worth.
-- [ ] Add "save my result" email capture after the reveal, not before the aha moment.
-- [ ] Keep login secondary until after the user has seen value.
-- [ ] Track funnel analytics: hero CTA click, calculator start, each step completion, result reveal, share/save/login clicks.
+- [x] Result page should produce a shareable insight without exposing sensitive finances — "Freedom Year" share card (PR #48).
+- [x] Refine `/share` and OG cards around freedom date or city insight, not raw net worth — Freedom Year card is default (PR #48).
+- [x] Add "save my result" email capture after the reveal, not before the aha moment — plan email via Resend (PR #48).
+- [x] Keep login secondary until after the user has seen value — login page shows personalized freedom year (PR #48).
+- [x] Track funnel analytics: hero CTA click, calculator start, each step completion, result reveal, share/save/login clicks — PostHog events fixed (PR #47).
 
 ### Acceptance Criteria for Launch Readiness
 
-- [ ] A new visitor can understand the product in 5 seconds.
-- [ ] A new visitor can start the calculator in 1 click.
-- [ ] A new visitor can reach a useful result in about 60 seconds.
-- [ ] The result explains the FIRE number, timeline, and a concrete plan.
-- [ ] The page answers "can I trust this?" before users ask.
-- [ ] The launch page has no obvious broken CTA, console error, or mobile layout blocker.
+- [x] A new visitor can understand the product in 5 seconds.
+- [x] A new visitor can start the calculator in 1 click.
+- [x] A new visitor can reach a useful result in about 60 seconds.
+- [x] The result explains the FIRE number, timeline, and a concrete plan.
+- [x] The page answers "can I trust this?" before users ask.
+- [x] The launch page has no obvious broken CTA, console error, or mobile layout blocker — confirmed via mobile QA.
 
 ---
 
 ## Phase 4 — Post-Launch Growth & Early Revenue 📈
 
 *Goal: Convert launch attention into repeat usage, email leads, and first paying customers.*
+
+### Email
+
+- [x] Welcome email via Resend — founder voice, 3 direct points (bank history, forever free, long journey), CTA to dashboard
+- [x] Day-7 retention email via Resend — genuine founder check-in, feedback ask, X/LinkedIn social links
+- [x] Vercel cron (`0 10 * * *`) triggers retention send via `/api/email/retention`
+- [x] Idempotency via `profiles.welcome_email_sent_at` / `day7_email_sent_at` columns
+- [x] Preview route `/api/email/preview?type=welcome|retention&secret=CRON_SECRET`
+
+### SEO
+
+- [x] Homepage title keyword-first: "FIRE Calculator — Find Your Freedom Date in 60 Seconds | UntilFire"
+- [x] `WebSite` + `SearchAction` schema in root layout (sitelinks searchbox eligibility)
+- [x] `CollectionPage` + `BreadcrumbList` JSON-LD on `/learn`, `/learn/articles`, `/learn/stages/[stage]`
+- [x] Sitemap, robots.txt, canonical tags, OG/Twitter fully covered across all public pages
 
 ### Growth
 
