@@ -226,7 +226,6 @@ function PosterCard({
         color: C.text,
         textAlign: 'center',
         border: `1px solid ${C.border}`,
-        boxShadow: '0 22px 50px rgba(0,32,21,.12)',
         maxWidth: 380,
         margin: '0 auto',
         display: 'flex',

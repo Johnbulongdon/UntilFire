@@ -31,7 +31,6 @@ export function FireTypeAvatar({ code, size = 120, className, zoom = 1 }: FireTy
         width: size,
         height,
         borderRadius: Math.max(12, Math.round(size * 0.08)),
-        boxShadow: '0 18px 40px rgba(0,0,0,0.18)',
         overflow: 'hidden',
         position: 'relative',
         backgroundColor: '#FFFFFF',
