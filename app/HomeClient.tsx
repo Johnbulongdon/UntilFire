@@ -1156,6 +1156,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   // Phase 2: number reveal
   const [counting, setCounting] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [landed, setLanded] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [fireTypeResult, setFireTypeResult] = useState<FireTypeResult | null>(null);
@@ -1207,6 +1208,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     setBarPct(0);
     setCounting(false);
     setRevealed(false);
+    setLanded(false);
 
     const calcSteps = [0, 1, 2, 3];
     calcSteps.forEach((i) => {
@@ -1247,6 +1249,20 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
           if (numRef.current) numRef.current.textContent = fmtUSD(Math.round(proxy.val));
         },
         onComplete() {
+          // Land the number: a quick scale-bounce + teal glow as it settles.
+          setLanded(true); // triggers the CSS glow (uf-fire-landed)
+          const el = numRef.current;
+          const reduceMotion = typeof window !== "undefined" && window.matchMedia
+            && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          if (el && !reduceMotion) {
+            gsap.fromTo(el, { scale: 1 }, {
+              keyframes: [
+                { scale: 1.08, duration: 0.16, ease: "power2.out" },
+                { scale: 0.98, duration: 0.12, ease: "power1.inOut" },
+                { scale: 1,    duration: 0.16, ease: "power2.out" },
+              ],
+            });
+          }
           setTimeout(() => setRevealed(true), 220);
         },
       });
@@ -1499,7 +1515,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>
                     FIRE number
                   </div>
-                  <div ref={numRef} className="uf-fire-num" style={{ marginTop: 10, fontSize: "clamp(32px, 4vw, 48px)", lineHeight: 1, fontWeight: 600, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "#fff" }} />
+                  <div ref={numRef} className={`uf-fire-num${landed ? " uf-fire-landed" : ""}`} style={{ marginTop: 10, fontSize: "clamp(32px, 4vw, 48px)", lineHeight: 1, fontWeight: 600, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "#fff", transformOrigin: "left center", willChange: "transform" }} />
                   <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.5)", maxWidth: 260, lineHeight: 1.45 }}>
                     25× annual expenses at the 4% safe withdrawal rate.
                   </div>
@@ -2334,6 +2350,15 @@ export default function HomeClient() {
           50%      { box-shadow: 0 0 0 8px rgba(6,78,59,0.08); }
         }
         .uf-fire-slam { animation: revealSlam 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards, fireGlow 2s ease 0.4s forwards; }
+        @keyframes fireLandGlow {
+          0%   { text-shadow: 0 0 0 rgba(34,211,165,0); }
+          45%  { text-shadow: 0 0 26px rgba(34,211,165,0.6), 0 0 48px rgba(34,211,165,0.28); }
+          100% { text-shadow: 0 0 18px rgba(34,211,165,0.38); }
+        }
+        .uf-fire-landed { animation: fireLandGlow 1.6s ease forwards; }
+        @media (prefers-reduced-motion: reduce) {
+          .uf-fire-landed { animation: none; text-shadow: 0 0 18px rgba(34,211,165,0.34); }
+        }
         .uf-reveal-ring { animation: ringDrift var(--ring-dur,16s) ease-in-out var(--ring-delay,0s) infinite; }
         .uf-stage-chip-anim { animation: chipPulse 3s ease-in-out 1.4s infinite; }
         .uf-section-up { animation: sectionSlideUp 0.65s cubic-bezier(0.22,1,0.36,1) var(--su-delay,0s) both; }
