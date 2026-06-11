@@ -16,7 +16,8 @@ update this file in the same session.
 
 - **All sun imagery is blue/teal (`#22d3a5` family). No orange anywhere in the
   video.** Not in the sunrise, not in copy highlights, not in headlines.
-- Warning/negative accents use red (`#ef4444`) or yellow (`#eab308`), never orange.
+- **No red/orange warning accents either** (confirmed 2026-06-11 for the leaks
+  scene) — negatives are neutral grey; positives/recoveries are teal.
 - Background `#08080e`, cards `#111118`, borders `#23232d`.
 
 ## Logo — hard rules
@@ -26,21 +27,23 @@ update this file in the same session.
 - Always `www.untilfire.com` (never bare `untilfire.com`).
 - No pill/button CTA on the end card.
 
-## Content
+## Content — v8 emotional motion-graphics is the approach (confirmed 2026-06-11)
 
-- **The video must show the real product UI in motion.**
-  - **GUARDRAIL: "the real product" means the logged-in app (dashboard —
-    FIRE overview, plan, transactions, charts), NOT the onboarding
-    calculator wizard.** The wizard may appear only as a brief glimpse
-    (a few seconds) on the way to the app.
-  - **GUARDRAIL: product UI must never be shown as static screenshots.**
-    Use screen recordings where things visibly move — typing, charts
-    drawing in, numbers counting up, scrolling, tab switches, hover
-    states. If a frame of product UI would look identical 0.5s later,
-    it does not belong in the video. No slideshow / PowerPoint feel.
-  - Flow to convey: get in fast → the app does the work with you →
-    freedom date + the next move (matches `docs/ROADMAP.md` Product Hunt
-    demo item).
+- **SUPERSEDED: the "real product UI" requirement.** John's final direction:
+  *"use v8 as a basis, i really liked version 8 … it's not more about the
+  actual dashboard but the emotion it gives."* The video is emotional
+  motion-graphics storytelling about FIRE freedom — NOT dashboard
+  recordings, NOT onboarding screenshots.
+- v8 scene structure to preserve:
+  1. Hook + teal sunrise — "What if work was optional?"
+  2. Compounding bar chart — messy bars shuffle/morph into the growth curve.
+  3. Bank logos — **big logos in a continuously scrolling marquee**
+     (two rows, opposite directions), not a static grid.
+  4. Spending leaks — leaks found, then **animated removal**: rows get
+     struck through and swiped away with teal checks while a
+     "+$X/mo recovered" counter climbs. **No red/orange in this scene** —
+     neutral grey bars, teal for the recovery.
+  5. End card — power copy + teal half-sun + wordmark + www.untilfire.com.
 - Approved copy (long dwell, ≥2s per punchy line):
   - Hook: "What if work was optional? What would you do?"
   - "Don't let money stop you from being a good person."
