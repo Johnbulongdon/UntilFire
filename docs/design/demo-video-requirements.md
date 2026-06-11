@@ -28,10 +28,19 @@ update this file in the same session.
 
 ## Content
 
-- **The video must show the real product UI** — screen-capture style:
-  enter inputs → get freedom date → see the plan (matches the Product Hunt
-  demo item in `docs/ROADMAP.md`). Abstract motion graphics may frame it,
-  but the product itself is the star.
+- **The video must show the real product UI in motion.**
+  - **GUARDRAIL: "the real product" means the logged-in app (dashboard —
+    FIRE overview, plan, transactions, charts), NOT the onboarding
+    calculator wizard.** The wizard may appear only as a brief glimpse
+    (a few seconds) on the way to the app.
+  - **GUARDRAIL: product UI must never be shown as static screenshots.**
+    Use screen recordings where things visibly move — typing, charts
+    drawing in, numbers counting up, scrolling, tab switches, hover
+    states. If a frame of product UI would look identical 0.5s later,
+    it does not belong in the video. No slideshow / PowerPoint feel.
+  - Flow to convey: get in fast → the app does the work with you →
+    freedom date + the next move (matches `docs/ROADMAP.md` Product Hunt
+    demo item).
 - Approved copy (long dwell, ≥2s per punchy line):
   - Hook: "What if work was optional? What would you do?"
   - "Don't let money stop you from being a good person."
