@@ -1,9 +1,9 @@
 /**
- * UntilFire demo video — v14
- * Open: white bg + hook question → question leaves, screen fades to black →
- * "introducing..." → teal sun reveal lights the bg from black to white →
- * logo + wordmark settle → all remaining scenes run on white.
- * 1920x1080 horizontal, 30fps, ~48s.
+ * UntilFire demo video — v15
+ * Open: full black, question words appear one by one → question fades out →
+ * "introducing... UntilFire" on black → full-size logo animates in and its
+ * light turns the bg white → logo + wordmark settle → app showcase on white.
+ * 1920x1080 horizontal, 30fps, ~48.5s.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs';
@@ -211,140 +211,127 @@ function drawBankLogo(c, icon, cx, cy, size, alpha) {
 }
 
 // ── Scene timing ──────────────────────────────────────────────────────────────
-// S0: hook on white  0–240    (8s)  — question leaves, screen fades to dark, hard cut
-// SI: introducing    240–480  (8s)  — dark, "introducing...", logo lights bg white
-// S1: bar chart      450–750  (10s, 30f filmstrip overlap)
-// S2: bank logos     720–990  (9s,  30f filmstrip overlap)
-// S3: leaks          960–1230 (9s,  30f filmstrip overlap)
-// S4: end card       1200–1440(8s,  30f filmstrip overlap)
-const TOTAL     = 1440;
+// S0: question        0–225    (7.5s) — black, words appear in order, fade out
+// SI: introducing     225–495  (9s)   — "introducing... UntilFire", logo lights bg white
+// S1: bar chart       465–765  (10s,  30f filmstrip overlap)
+// S2: bank logos      735–1005 (9s,   30f filmstrip overlap)
+// S3: leaks           975–1245 (9s,   30f filmstrip overlap)
+// S4: end card        1215–1455(8s,   30f filmstrip overlap)
+const TOTAL     = 1455;
 const TRANS_LEN = 30;
 
-const S0_START = 0,    S0_END = 240;
-const SI_START = 240,  SI_END = 480;
-const S1_START = 450,  S1_END = 750;
-const S2_START = 720,  S2_END = 990;
-const S3_START = 960,  S3_END = 1230;
-const S4_START = 1200, S4_END = 1440;
+const S0_START = 0,    S0_END = 225;
+const SI_START = 225,  SI_END = 495;
+const S1_START = 465,  S1_END = 765;
+const S2_START = 735,  S2_END = 1005;
+const S3_START = 975,  S3_END = 1245;
+const S4_START = 1215, S4_END = 1455;
 
-// ── Scene S0: Hook on white — then leaves, fading to dark ────────────────────
+const WHITEISH = [0.96, 0.97, 0.98, 1]; // text on dark
+
+// ── Scene S0: Question on black — words appear one by one ────────────────────
+const Q_SIZE  = 96;
+const Q_LINES = [['What', 'if', 'work'], ['was', 'optional?']];
+
 function drawS0(c, lf) {
-  drawRect(c, 0, 0, W, H, BG, 1);
+  drawRect(c, 0, 0, W, H, BG_DARK, 1);
   drawParticles(c, lf + S0_START);
 
-  // Everything fades out together as the question "leaves"
-  const exitT = easeInOut(progress(lf, 185, 212));
+  // Question fades out as a whole at the end
+  const exitT = easeInOut(progress(lf, 170, 200));
   const keep  = 1 - exitT;
+  if (keep <= 0) return;
 
-  // Large teal sunrise rising from horizon
-  const riseT = easeOut(progress(lf, 0, 110));
-  const sunR  = lerp(0, 240, riseT);
-  const sunY  = H * 0.64;
-  if (sunR > 0) {
-    const pulse = beatPulse(lf, 14);
-    halfSun(c, W/2, sunY, sunR, riseT * 0.85 * keep, pulse * 0.5);
-    drawLine(c, W/2 - sunR*1.8, sunY, W/2 + sunR*1.8, sunY, TEAL, 0.12*riseT*keep, 1.5);
-  }
+  const spaceW = measure(SYNE_XB, Q_SIZE, ' ');
+  let wordIdx = 0;
+  for (let li = 0; li < Q_LINES.length; li++) {
+    const line = Q_LINES[li];
+    const widths = line.map(w => measure(SYNE_XB, Q_SIZE, w));
+    const lineW = widths.reduce((a, b) => a + b, 0) + spaceW * (line.length - 1);
+    let x = W/2 - lineW/2;
+    const baseY = H * 0.42 + li * 116;
 
-  // Main headline
-  const headT = easeOut(progress(lf, 40, 120));
-  if (headT > 0) {
-    drawTextC(c, SYNE_XB, 96, 'What if work', W/2, H*0.2, TEXT, headT * keep);
-    drawTextC(c, SYNE_XB, 96, 'was optional?', W/2, H*0.2 + 116, TEXT, headT * keep);
-  }
-
-  // Teal underline on "optional?"
-  const ulT = easeOut(progress(lf, 75, 135));
-  if (ulT > 0) {
-    const ww = measure(SYNE_XB, 96, 'was optional?');
-    const lx = W/2 - ww/2, uy = H*0.2 + 128;
-    drawLine(c, lx, uy, lx + ww * ulT, uy, TEAL, ulT * keep, 5);
-  }
-
-  // Sub-copy
-  const subT = easeOut(progress(lf, 115, 175));
-  if (subT > 0) {
-    drawTextC(c, DMS_M, 36, 'Most people never find out. UntilFire shows you how close you are.', W/2, H*0.2 + 186, BODY, subT * 0.8 * keep);
-  }
-
-  // Screen fades white → dark, ready for the "introducing" moment
-  const darkT = easeInOut(progress(lf, 208, 238));
-  if (darkT > 0) drawRect(c, 0, 0, W, H, BG_DARK, darkT);
-}
-
-// ── Scene SI: "introducing..." + logo reveal lights the bg white ─────────────
-function drawSI(c, lf) {
-  const SUN_X = W/2, SUN_Y = H/2 + 30;
-
-  // Dark background for the pre-flash portion
-  drawRect(c, 0, 0, W, H, BG_DARK, 1);
-
-  // "introducing..." — appears alone on dark, then leaves before the logo
-  const inT  = easeOut(progress(lf, 10, 35));
-  const outT = easeIn(progress(lf, 75, 95));
-  if (inT > 0 && outT < 1) {
-    const iy = H * 0.5 + (1 - inT) * 16;
-    drawTextC(c, SYNE_B, 56, 'introducing...', W/2, iy, [1, 1, 1, 1], inT * (1 - outT) * 0.92);
-  }
-
-  if (lf >= 60) drawParticles(c, lf + SI_START);
-
-  // Sun rise 90→140
-  const riseT = easeOut(progress(lf, 90, 140));
-  const sunR  = 260 * riseT;
-
-  if (sunR > 0) {
-    const pulse = beatPulse(lf, 14);
-    // Extra large glow as we approach the flash
-    const glowBoost = easeIn(progress(lf, 135, 158));
-    const fullAlpha = riseT * (1 - glowBoost * 0.3);
-    halfSun(c, SUN_X, SUN_Y, sunR, fullAlpha, pulse + glowBoost * 0.8);
-
-    // Secondary wider teal radial glow that builds before flash
-    if (glowBoost > 0) {
-      const bigGlowP = new ck.Paint();
-      const bigShader = ck.Shader.MakeRadialGradient(
-        [SUN_X, SUN_Y], sunR * (3 + glowBoost * 4),
-        [ck.Color4f(TEAL[0], TEAL[1], TEAL[2], 0.35 * glowBoost),
-         ck.Color4f(TEAL[0], TEAL[1], TEAL[2], 0)],
-        null, ck.TileMode.Clamp
-      );
-      bigGlowP.setShader(bigShader);
-      c.drawRect(ck.LTRBRect(0, 0, W, H), bigGlowP);
-      bigGlowP.delete(); bigShader.delete();
+    for (let wi = 0; wi < line.length; wi++) {
+      const t0 = 15 + wordIdx * 16;
+      const wT = easeOut(progress(lf, t0, t0 + 22));
+      if (wT > 0) {
+        const wy = baseY + (1 - wT) * 14;
+        drawText(c, SYNE_XB, Q_SIZE, line[wi], x, wy, WHITEISH, wT * keep);
+      }
+      x += widths[wi] + spaceW;
+      wordIdx++;
     }
   }
 
-  // White flash 155→170: radial white disc from sun outward — lights the bg
-  const flashT = easeIn(progress(lf, 155, 170));
-  if (flashT > 0) {
-    const flashR = Math.sqrt(W*W + H*H) * flashT * 1.1;
-    const flashP = new ck.Paint();
-    const flashShader = ck.Shader.MakeRadialGradient(
-      [SUN_X, SUN_Y], flashR,
-      [ck.Color4f(1, 1, 1, 1),
-       ck.Color4f(1, 1, 1, flashT > 0.6 ? 1 : flashT / 0.6)],
-      null, ck.TileMode.Clamp
-    );
-    flashP.setShader(flashShader);
-    c.drawRect(ck.LTRBRect(0, 0, W, H), flashP);
-    flashP.delete(); flashShader.delete();
+  // Teal underline on "optional?" after it lands
+  const ulT = easeOut(progress(lf, 100, 140));
+  if (ulT > 0) {
+    const ow = measure(SYNE_XB, Q_SIZE, 'optional?');
+    const lw = measure(SYNE_XB, Q_SIZE, 'was optional?');
+    const lx = W/2 + lw/2 - ow, uy = H * 0.42 + 128;
+    drawLine(c, lx, uy, lx + ow * ulT, uy, TEAL, ulT * keep, 5);
+  }
+}
+
+// ── Scene SI: "introducing... UntilFire" + logo light-up to white ────────────
+function drawSI(c, lf) {
+  const SUN_X = W/2, SUN_Y = H/2 + 30;
+
+  drawRect(c, 0, 0, W, H, BG_DARK, 1);
+  if (lf < 200) drawParticles(c, lf + SI_START);
+
+  // "introducing..." then "UntilFire" beneath — both leave before the logo
+  const in1  = easeOut(progress(lf, 10, 35));
+  const in2  = easeOut(progress(lf, 45, 70));
+  const outT = easeIn(progress(lf, 95, 115));
+  if (in1 > 0 && outT < 1) {
+    const iy = H * 0.40 + (1 - in1) * 14;
+    drawTextC(c, SYNE_B, 50, 'introducing...', W/2, iy, WHITEISH, in1 * (1 - outT) * 0.85);
+  }
+  if (in2 > 0 && outT < 1) {
+    const uy = H * 0.40 + 110 + (1 - in2) * 14;
+    drawTextC(c, SYNE_XB, 88, 'UntilFire', W/2, uy, WHITEISH, in2 * (1 - outT));
   }
 
-  // Post-flash: white bg, logo settles to center, wordmark rises in
-  if (lf >= 166) {
-    // Ensure clean white canvas over everything drawn above
+  // Full-size logo animates in 115→165
+  const riseT = easeOut(progress(lf, 115, 165));
+  const sunR  = 260 * riseT;
+
+  // The sun's light turns the bg white — soft radiance expanding 150→200
+  const lightT = easeInOut(progress(lf, 150, 200));
+  if (lightT > 0) {
+    const maxR = Math.sqrt(W*W + H*H) * 1.05;
+    const lr   = lerp(sunR * 1.1, maxR, lightT);
+    const lightP = new ck.Paint();
+    const lightSh = ck.Shader.MakeRadialGradient(
+      [SUN_X, SUN_Y], lr,
+      [ck.Color4f(1, 1, 1, 1), ck.Color4f(1, 1, 1, 1), ck.Color4f(1, 1, 1, 0)],
+      [0, 0.7, 1], ck.TileMode.Clamp
+    );
+    lightP.setShader(lightSh);
+    c.drawRect(ck.LTRBRect(0, 0, W, H), lightP);
+    lightP.delete(); lightSh.delete();
+  }
+
+  // Sun drawn on top so it reads on both dark and white
+  if (sunR > 0 && lf < 200) {
+    const pulse = beatPulse(lf, 14);
+    halfSun(c, SUN_X, SUN_Y, sunR, riseT, pulse * (1 + lightT));
+  }
+
+  // Lit: white bg, logo settles to center, wordmark rises in
+  if (lf >= 200) {
     drawRect(c, 0, 0, W, H, BG, 1);
 
-    // Sun shrinks from full-screen to centred logo mark
-    const settleT = easeOut(progress(lf, 166, 190));
+    // Sun shrinks from full-size to centred logo mark
+    const settleT = easeOut(progress(lf, 200, 224));
     const logoR   = lerp(260, 90, settleT);
     const logoY   = lerp(H/2 + 30, H * 0.44, settleT);
     const pulse   = beatPulse(lf, 14) * (1 - settleT) * 0.6;
-    halfSun(c, SUN_X, logoY, logoR, settleT, pulse);
+    halfSun(c, SUN_X, logoY, logoR, 1, pulse);
 
     // "untilfire" wordmark fades up below the logo
-    const wmT = easeOut(progress(lf, 186, 208));
+    const wmT = easeOut(progress(lf, 220, 242));
     if (wmT > 0) {
       // Rise-up effect: starts 12px below final position
       const wmy = H * 0.44 + 90 + 36 + (1 - wmT) * 12;
