@@ -1,8 +1,9 @@
 /**
- * UntilFire demo video — v13
- * Intro: dark → full-screen teal sun rise → white flash → white bg.
- * All scenes post-flash run on white background.
- * 1920x1080 horizontal, 30fps, ~45s.
+ * UntilFire demo video — v14
+ * Open: white bg + hook question → question leaves, screen fades to black →
+ * "introducing..." → teal sun reveal lights the bg from black to white →
+ * logo + wordmark settle → all remaining scenes run on white.
+ * 1920x1080 horizontal, 30fps, ~48s.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs';
@@ -179,7 +180,7 @@ function halfSun(c, x, y, r, alpha = 1, rayPulse = 0) {
     drawLine(c,
       x + cx*(r*1.15), y + cy*(r*1.15),
       x + cx*(r*1.52 + rayPulse*r*0.2), y + cy*(r*1.52 + rayPulse*r*0.2),
-      TEAL, 0.78 + rayPulse*0.22, r * 0.055
+      TEAL, (0.78 + rayPulse*0.22) * alpha, r * 0.055
     );
   }
 }
@@ -210,40 +211,92 @@ function drawBankLogo(c, icon, cx, cy, size, alpha) {
 }
 
 // ── Scene timing ──────────────────────────────────────────────────────────────
-// SI: logo intro     0–125    (4.2s) — hard cut to S0, no filmstrip
-// S0: hook           125–400  (9.2s)
-// S1: bar chart      370–670  (10s,  30f filmstrip overlap)
-// S2: bank logos     640–910  (9s,   30f filmstrip overlap)
-// S3: leaks          880–1150 (9s,   30f filmstrip overlap)
-// S4: end card       1120–1370(8.3s, 30f filmstrip overlap)
-const TOTAL     = 1370;
+// S0: hook on white  0–240    (8s)  — question leaves, screen fades to dark, hard cut
+// SI: introducing    240–480  (8s)  — dark, "introducing...", logo lights bg white
+// S1: bar chart      450–750  (10s, 30f filmstrip overlap)
+// S2: bank logos     720–990  (9s,  30f filmstrip overlap)
+// S3: leaks          960–1230 (9s,  30f filmstrip overlap)
+// S4: end card       1200–1440(8s,  30f filmstrip overlap)
+const TOTAL     = 1440;
 const TRANS_LEN = 30;
 
-const SI_END  = 125;
-const S0_START = 125, S0_END = 400;
-const S1_START = 370, S1_END = 670;
-const S2_START = 640, S2_END = 910;
-const S3_START = 880, S3_END = 1150;
-const S4_START = 1120,S4_END = 1370;
+const S0_START = 0,    S0_END = 240;
+const SI_START = 240,  SI_END = 480;
+const S1_START = 450,  S1_END = 750;
+const S2_START = 720,  S2_END = 990;
+const S3_START = 960,  S3_END = 1230;
+const S4_START = 1200, S4_END = 1440;
 
-// ── Scene SI: Logo intro ──────────────────────────────────────────────────────
+// ── Scene S0: Hook on white — then leaves, fading to dark ────────────────────
+function drawS0(c, lf) {
+  drawRect(c, 0, 0, W, H, BG, 1);
+  drawParticles(c, lf + S0_START);
+
+  // Everything fades out together as the question "leaves"
+  const exitT = easeInOut(progress(lf, 185, 212));
+  const keep  = 1 - exitT;
+
+  // Large teal sunrise rising from horizon
+  const riseT = easeOut(progress(lf, 0, 110));
+  const sunR  = lerp(0, 240, riseT);
+  const sunY  = H * 0.64;
+  if (sunR > 0) {
+    const pulse = beatPulse(lf, 14);
+    halfSun(c, W/2, sunY, sunR, riseT * 0.85 * keep, pulse * 0.5);
+    drawLine(c, W/2 - sunR*1.8, sunY, W/2 + sunR*1.8, sunY, TEAL, 0.12*riseT*keep, 1.5);
+  }
+
+  // Main headline
+  const headT = easeOut(progress(lf, 40, 120));
+  if (headT > 0) {
+    drawTextC(c, SYNE_XB, 96, 'What if work', W/2, H*0.2, TEXT, headT * keep);
+    drawTextC(c, SYNE_XB, 96, 'was optional?', W/2, H*0.2 + 116, TEXT, headT * keep);
+  }
+
+  // Teal underline on "optional?"
+  const ulT = easeOut(progress(lf, 75, 135));
+  if (ulT > 0) {
+    const ww = measure(SYNE_XB, 96, 'was optional?');
+    const lx = W/2 - ww/2, uy = H*0.2 + 128;
+    drawLine(c, lx, uy, lx + ww * ulT, uy, TEAL, ulT * keep, 5);
+  }
+
+  // Sub-copy
+  const subT = easeOut(progress(lf, 115, 175));
+  if (subT > 0) {
+    drawTextC(c, DMS_M, 36, 'Most people never find out. UntilFire shows you how close you are.', W/2, H*0.2 + 186, BODY, subT * 0.8 * keep);
+  }
+
+  // Screen fades white → dark, ready for the "introducing" moment
+  const darkT = easeInOut(progress(lf, 208, 238));
+  if (darkT > 0) drawRect(c, 0, 0, W, H, BG_DARK, darkT);
+}
+
+// ── Scene SI: "introducing..." + logo reveal lights the bg white ─────────────
 function drawSI(c, lf) {
   const SUN_X = W/2, SUN_Y = H/2 + 30;
 
   // Dark background for the pre-flash portion
   drawRect(c, 0, 0, W, H, BG_DARK, 1);
 
-  // Sun rise 5→55
-  const riseT = easeOut(progress(lf, 5, 55));
-  const sunR  = 260 * riseT;
+  // "introducing..." — appears alone on dark, then leaves before the logo
+  const inT  = easeOut(progress(lf, 10, 35));
+  const outT = easeIn(progress(lf, 75, 95));
+  if (inT > 0 && outT < 1) {
+    const iy = H * 0.5 + (1 - inT) * 16;
+    drawTextC(c, SYNE_B, 56, 'introducing...', W/2, iy, [1, 1, 1, 1], inT * (1 - outT) * 0.92);
+  }
 
-  // Particles (dark bg particles, teal but a bit brighter)
-  if (riseT > 0) drawParticles(c, lf);
+  if (lf >= 60) drawParticles(c, lf + SI_START);
+
+  // Sun rise 90→140
+  const riseT = easeOut(progress(lf, 90, 140));
+  const sunR  = 260 * riseT;
 
   if (sunR > 0) {
     const pulse = beatPulse(lf, 14);
     // Extra large glow as we approach the flash
-    const glowBoost = easeIn(progress(lf, 50, 68));
+    const glowBoost = easeIn(progress(lf, 135, 158));
     const fullAlpha = riseT * (1 - glowBoost * 0.3);
     halfSun(c, SUN_X, SUN_Y, sunR, fullAlpha, pulse + glowBoost * 0.8);
 
@@ -262,8 +315,8 @@ function drawSI(c, lf) {
     }
   }
 
-  // White flash 65→80: radial white disc from sun outward
-  const flashT = easeIn(progress(lf, 65, 80));
+  // White flash 155→170: radial white disc from sun outward — lights the bg
+  const flashT = easeIn(progress(lf, 155, 170));
   if (flashT > 0) {
     const flashR = Math.sqrt(W*W + H*H) * flashT * 1.1;
     const flashP = new ck.Paint();
@@ -279,61 +332,24 @@ function drawSI(c, lf) {
   }
 
   // Post-flash: white bg, logo settles to center, wordmark rises in
-  if (lf >= 76) {
+  if (lf >= 166) {
     // Ensure clean white canvas over everything drawn above
     drawRect(c, 0, 0, W, H, BG, 1);
 
     // Sun shrinks from full-screen to centred logo mark
-    const settleT = easeOut(progress(lf, 76, 100));
+    const settleT = easeOut(progress(lf, 166, 190));
     const logoR   = lerp(260, 90, settleT);
     const logoY   = lerp(H/2 + 30, H * 0.44, settleT);
     const pulse   = beatPulse(lf, 14) * (1 - settleT) * 0.6;
     halfSun(c, SUN_X, logoY, logoR, settleT, pulse);
 
     // "untilfire" wordmark fades up below the logo
-    const wmT = easeOut(progress(lf, 95, 115));
+    const wmT = easeOut(progress(lf, 186, 208));
     if (wmT > 0) {
       // Rise-up effect: starts 12px below final position
       const wmy = H * 0.44 + 90 + 36 + (1 - wmT) * 12;
       drawTextC(c, SYNE_XB, 68, 'untilfire', SUN_X, wmy, TEXT, wmT);
     }
-  }
-}
-
-// ── Scene S0: Hook + headline ─────────────────────────────────────────────────
-function drawS0(c, lf) {
-  drawRect(c, 0, 0, W, H, BG, 1);
-  drawParticles(c, lf + S0_START);
-
-  // Large teal sunrise rising from horizon
-  const riseT = easeOut(progress(lf, 0, 120));
-  const sunR  = lerp(0, 240, riseT);
-  const sunY  = H * 0.64;
-  if (sunR > 0) {
-    const pulse = beatPulse(lf, 14);
-    halfSun(c, W/2, sunY, sunR, riseT * 0.85, pulse * 0.5);
-    drawLine(c, W/2 - sunR*1.8, sunY, W/2 + sunR*1.8, sunY, TEAL, 0.12*riseT, 1.5);
-  }
-
-  // Main headline
-  const headT = easeOut(progress(lf, 50, 160));
-  if (headT > 0) {
-    drawTextC(c, SYNE_XB, 96, 'What if work', W/2, H*0.2, TEXT, headT);
-    drawTextC(c, SYNE_XB, 96, 'was optional?', W/2, H*0.2 + 116, TEXT, headT);
-  }
-
-  // Teal underline on "optional?"
-  const ulT = easeOut(progress(lf, 90, 155));
-  if (ulT > 0) {
-    const ww = measure(SYNE_XB, 96, 'was optional?');
-    const lx = W/2 - ww/2, uy = H*0.2 + 128;
-    drawLine(c, lx, uy, lx + ww * ulT, uy, TEAL, ulT, 5);
-  }
-
-  // Sub-copy
-  const subT = easeOut(progress(lf, 145, 220));
-  if (subT > 0) {
-    drawTextC(c, DMS_M, 36, 'Most people never find out. UntilFire shows you how close you are.', W/2, H*0.2 + 186, BODY, subT * 0.8);
   }
 }
 
@@ -643,13 +659,13 @@ for (let fi = 0; fi < totalFrames; fi++) {
   const f = spotOnly ? spotFrame : fi;
   canvas.clear(ck.Color4f(1, 1, 1, 1));
 
-  // SI ends with a hard cut to S0 — both are white bg so it's seamless
-  if (f < SI_END) {
-    drawSI(canvas, f);
-  } else if (f < S0_END - TRANS_LEN) {
-    drawS0(canvas, f - S0_START);
-  } else if (f < S0_END) {
-    renderWithTransition(canvas, f, drawS0, S0_START, drawS1, S1_START, S0_END - TRANS_LEN, TRANS_LEN);
+  // S0 ends fully dark; SI starts dark — hard cut is seamless
+  if (f < S0_END) {
+    drawS0(canvas, f);
+  } else if (f < SI_END - TRANS_LEN) {
+    drawSI(canvas, f - SI_START);
+  } else if (f < SI_END) {
+    renderWithTransition(canvas, f, drawSI, SI_START, drawS1, S1_START, SI_END - TRANS_LEN, TRANS_LEN);
   } else if (f < S1_END - TRANS_LEN) {
     drawS1(canvas, f - S1_START);
   } else if (f < S1_END) {
