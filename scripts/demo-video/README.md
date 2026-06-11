@@ -1,7 +1,14 @@
 # UntilFire product demo video
 
-40.9s vertical (1080x1920 @ 30fps) product demo, rendered offscreen with
-CanvasKit and encoded with ffmpeg. Cut on a 120 BPM beat grid (beat every
+See `docs/design/demo-video-requirements.md` for the requirement spec
+(horizontal 16:9, no orange, real product UI).
+
+**Current master: `render-h.mjs` — 1920x1080 horizontal**, real product
+screenshots in `shots/` (captured with Playwright against the local dev
+server). `render.mjs` is the older vertical 1080x1920 motion-graphics cut,
+kept for a possible 9:16 social edit.
+
+40.9s @ 30fps, rendered offscreen with CanvasKit and encoded with ffmpeg. Cut on a 120 BPM beat grid (beat every
 15 frames, grid `14 + 15k`) to match the chosen backing track
 (`bg_sound.m4a`, 40.9s — kept outside the repo; pass its path as an argument).
 
