@@ -5,26 +5,29 @@ See `docs/design/demo-video-requirements.md` for the requirement spec
 
 **Current master: `render.mjs` — 1920x1080 horizontal motion graphics.**
 The video is emotional storytelling about FIRE freedom (v8 basis), not
-product screenshots: teal sunrise hook → compounding bar chart shuffle →
-bank-logo marquee → spending-leaks removal → end card.
+product screenshots: black-open question → "introducing... UntilFire" logo
+light-up reveal → compounding bar chart shuffle → bank-logo marquee →
+spending-leaks removal → end card.
 
-41s @ 30fps, rendered offscreen with CanvasKit and encoded with ffmpeg.
+~48.5s @ 30fps, rendered offscreen with CanvasKit and encoded with ffmpeg.
 Cut on a 120 BPM beat grid (beat every 15 frames, grid `14 + 15k`) to match
 the chosen backing track (`bg_sound.m4a`, 40.9s — kept outside the repo;
 binary uploads do not survive container restarts, re-request if missing).
 
-## Scenes (1230 frames total)
+## Scenes (1455 frames total)
 
 | frames     | scene                                                              |
 |------------|--------------------------------------------------------------------|
-| 0–270      | hook ("What if work was optional?") + teal sunrise                  |
-| 240–540    | compounding bar chart, messy→growth shuffle morph                   |
-| 510–780    | 15 real bank/fintech logos, big two-row scrolling marquee           |
-| 750–1020   | spending leaks found, then swiped away (teal checks, $ recovered)   |
-| 990–1230   | end card: power copy, teal half-sun (5 rays), www.untilfire.com     |
+| 0–225      | black, question words appear one by one, then fade out              |
+| 225–495    | "introducing... UntilFire" → logo's light turns the bg white        |
+| 465–765    | compounding bar chart, messy→growth shuffle morph (white bg)        |
+| 735–1005   | 15 real bank/fintech logos, big two-row scrolling marquee           |
+| 975–1245   | spending leaks found, then swiped away (teal checks, $ recovered)   |
+| 1215–1455  | end card: power copy, teal half-sun (5 rays), www.untilfire.com     |
 
-Scenes overlap by 30 frames — a filmstrip pan (exit left, enter right)
-bridges each pair.
+The question scene hard-cuts to the introducing scene (both black at the
+boundary); all later scenes overlap by 30 frames with a filmstrip pan
+(exit left, enter right).
 
 ## Render
 

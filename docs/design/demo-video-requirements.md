@@ -34,8 +34,14 @@ update this file in the same session.
   actual dashboard but the emotion it gives."* The video is emotional
   motion-graphics storytelling about FIRE freedom — NOT dashboard
   recordings, NOT onboarding screenshots.
-- v8 scene structure to preserve:
-  1. Hook + teal sunrise — "What if work was optional?"
+- **Opening sequence (confirmed 2026-06-11, v15):** start on full black; the
+  question "What if work was optional?" appears **word by word in order**,
+  then fades out; "introducing... UntilFire" appears on black; then the
+  full-size logo animates in and **its light turns the bg white** (radiance
+  expanding from the sun, like the rays light it up); logo + wordmark settle;
+  everything after runs on a white background with dark text.
+- v8 scene structure to preserve after the opening:
+  1. Question hook — "What if work was optional?" (black, word-by-word).
   2. Compounding bar chart — messy bars shuffle/morph into the growth curve.
   3. Bank logos — **big logos in a continuously scrolling marquee**
      (two rows, opposite directions), not a static grid.
