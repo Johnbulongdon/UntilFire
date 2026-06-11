@@ -37,12 +37,14 @@ update this file in the same session.
   actual dashboard but the emotion it gives."* The video is emotional
   motion-graphics storytelling about FIRE freedom — NOT dashboard
   recordings, NOT onboarding screenshots.
-- **Opening sequence (confirmed 2026-06-11, v15/v16):** start on full black;
-  the question "What if work was optional?" appears **word by word in order**,
-  then fades out; "introducing... UntilFire" appears on black; then the
-  full-size logo animates in and **its light turns the bg white**. The
-  black→white light must **bloom from 1px at the very center** with a soft
-  falloff — never a pre-sized circle popping in. Logo + wordmark settle;
+- **Opening sequence (confirmed 2026-06-11, v15/v16, refined v18):** start on
+  full black; the question "What if work was optional?" appears **word by
+  word, each word landing exactly on a beat** (v18), then fades out;
+  "introducing... UntilFire" appears on black; then the full-size logo
+  animates in and **its light turns the bg white**. The black→white light
+  must **fan out from the sun as an expanding wavefront** — white core grows
+  from 1px while the soft leading edge stays a fixed-width band (v18; the
+  earlier slow soft blob read as a weird vignette). Logo + wordmark settle;
   everything after runs on a white background with dark text.
 - **The sun's ray beat-pulse is a confirmed keeper** — preserve it in every
   sun, including after the logo settles.
@@ -50,21 +52,30 @@ update this file in the same session.
   the visuals already show (e.g. no "$X/mo → freedom date" overlay on the
   chart, no closing text card on the leaks scene).
 - v8 scene structure to preserve after the opening:
-  1. Question hook — "What if work was optional?" (black, word-by-word).
-  2. Compounding bar chart — bars **wiggle-shuffle** as they reorganize, then
-     split into **two stacked colors: contributions (slate `#94a3b8`) +
-     growth/returns (teal)**, with a small two-dot legend.
+  1. Question hook — "What if work was optional?" (black, word-by-word,
+     each word on a beat).
+  2. Compounding bar chart — **use the v8 scene exactly (confirmed
+     2026-06-11, v18)**: "YOUR MONEY, PLANNED" kicker + "Watch it compound",
+     accelerating bar pops, pronounced shuffle sway into the compound curve
+     with three trimmed stubs, contributions segments (dark teal `#0e6e57`),
+     dimmed-chart **$1.24M reveal**, then the "your contributions — the rest
+     is growth" chip. Only deviation from v8: stubs are neutral slate, not
+     red (palette rule).
   3. Bank logos — **big logos in a continuously scrolling marquee**
      (two rows, opposite directions), not a static grid.
   4. Spending leaks — leaks found, then **animated removal**: rows get
      struck through and swiped away with teal checks while a
      "+$X/mo recovered" counter climbs. **No red/orange in this scene** —
      neutral grey bars, teal for the recovery.
-  5. End card — power copy + teal half-sun + wordmark + www.untilfire.com.
-- Approved copy (long dwell, ≥2s per punchy line):
-  - Hook: "What if work was optional? What would you do?"
-  - "Don't let money stop you from being a good person."
-  - "Let your money hire you to chase your dreams."
+  5. End card (v18) — **smaller** teal half-sun (so copy never crowds the
+     wordmark) + wordmark + www.untilfire.com settle in first; then the
+     power copy **slams in with spring scale, line by line**:
+     "Don't let money stop you" on the 39.81s beat, and the final line
+     "from being a good person." lands at **exactly 41s** — never earlier
+     (waiting copy reads dead).
+- Approved copy:
+  - Hook: "What if work was optional?" (each word on a beat)
+  - End card: "Don't let money stop you / from being a good person."
 - Lead with freedom/work optionality. No city/tax comparisons as the hero.
 
 ## Typography

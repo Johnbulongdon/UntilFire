@@ -107,14 +107,27 @@ function drawTextC(c, tf, size, str, cx, y, col, alpha) {
   const w = measure(tf, size, str);
   drawText(c, tf, size, str, cx - w/2, y, col, alpha);
 }
+function drawTextTracked(c, tf, size, str, cx, y, col, alpha, tracking) {
+  const widths = [...str].map(ch => measure(tf, size, ch));
+  const total = widths.reduce((a, b) => a + b, 0) + tracking * (str.length - 1);
+  let x = cx - total/2;
+  for (let i = 0; i < str.length; i++) {
+    drawText(c, tf, size, str[i], x, y, col, alpha);
+    x += widths[i] + tracking;
+  }
+}
 
 // ── Easing / math ─────────────────────────────────────────────────────────────
 const easeOut   = t => 1 - (1-t)**3;
 const easeIn    = t => t * t * t;
 const easeInOut = t => t < 0.5 ? 4*t**3 : 1 - (-2*t+2)**3/2;
+const springE   = t => t <= 0 ? 0 : t >= 1 ? 1
+  : 2 ** (-10*t) * Math.sin((t*10 - 0.75) * (2*Math.PI) / 3) + 1;
 const clamp     = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp      = (a, b, t) => a + (b-a)*clamp(t, 0, 1);
 function progress(f, start, end) { return clamp((f-start)/(end-start), 0, 1); }
+// in-then-out envelope (v8): eases in over iS→iE, back out over oS→oE
+const ev = (f, iS, iE, eI, oS, oE, eO) => eI(progress(f, iS, iE)) * (1 - eO(progress(f, oS, oE)));
 
 // ── Beat pulse (120 BPM = beat every 15 frames) ───────────────────────────────
 function beatPulse(lf, phase = 14) {
@@ -234,17 +247,16 @@ const S4_START = 1087, S4_END = 1308;
 
 const WHITEISH = [0.96, 0.97, 0.98, 1]; // text on dark
 
-// ── Scene S0: Question on black — words appear one by one ────────────────────
-const Q_SIZE  = 88;
-// Beat at 2.5s = lf 75: second sentence ("What would you do?") is landing
-const Q_LINES = [['What', 'if', 'work'], ['was', 'optional?'], ['What', 'would', 'you', 'do?']];
+// ── Scene S0: Question on black — every word lands exactly on a beat ─────────
+const Q_SIZE  = 96;
+const Q_LINES = [['What', 'if', 'work'], ['was', 'optional?']];
 
 function drawS0(c, lf) {
   drawRect(c, 0, 0, W, H, BG_DARK, 1);
   drawParticles(c, lf + S0_START);
 
-  // Question fades out — scene is only 120f so exit starts at 92
-  const exitT = easeInOut(progress(lf, 92, 116));
+  // Question fades out before the 4s cut
+  const exitT = easeInOut(progress(lf, 96, 118));
   const keep  = 1 - exitT;
   if (keep <= 0) return;
 
@@ -260,14 +272,15 @@ function drawS0(c, lf) {
     const widths = line.map(w => measure(SYNE_XB, Q_SIZE, w));
     const lineW = widths.reduce((a, b) => a + b, 0) + spaceW * (line.length - 1);
     let x = W/2 - lineW/2;
-    const baseY = H * 0.33 + li * 108;
+    const baseY = H * 0.42 + li * 116;
 
     for (let wi = 0; wi < line.length; wi++) {
-      const t0 = 5 + wordIdx * 8;
-      const wT = easeOut(progress(lf, t0, t0 + 18));
+      // word k lands exactly on beat 14+15k — "optional?" hits the 2.5s beat
+      const beat = 14 + wordIdx * 15;
+      const wT = springE(progress(lf, beat - 14, beat));
       if (wT > 0) {
-        const wy = baseY + (1 - wT) * 14;
-        drawText(c, SYNE_XB, Q_SIZE, line[wi], x, wy, WHITEISH, wT * keep);
+        const wy = baseY + (1 - wT) * 16;
+        drawText(c, SYNE_XB, Q_SIZE, line[wi], x, wy, WHITEISH, clamp(wT * 1.4, 0, 1) * keep);
       }
       x += widths[wi] + spaceW;
       wordIdx++;
@@ -275,12 +288,12 @@ function drawS0(c, lf) {
   }
 
   // Teal underline on "optional?" after it lands — alpha rides the beat
-  const ulT = easeOut(progress(lf, 48, 78));
+  const ulT = easeOut(progress(lf, 76, 96));
   if (ulT > 0) {
     const pulse = beatPulse(lf, 14);
     const ow = measure(SYNE_XB, Q_SIZE, 'optional?');
     const lw = measure(SYNE_XB, Q_SIZE, 'was optional?');
-    const lx = W/2 + lw/2 - ow, uy = H * 0.33 + 108 + 14;
+    const lx = W/2 + lw/2 - ow, uy = H * 0.42 + 128;
     drawLine(c, lx, uy, lx + ow * ulT, uy, TEAL, (0.75 + 0.25 * pulse) * ulT * keep, 5);
   }
   c.restore();
@@ -310,16 +323,18 @@ function drawSI(c, lf) {
   const riseT = easeOut(progress(lf, 100, 145));
   const sunR  = 260 * riseT;
 
-  // Light blooms from 1px at the center to the whole page — soft falloff,
-  // no hard circle edge, no pop
+  // Light fans out from the sun as an expanding wavefront: the white core
+  // grows from 1px while the soft leading edge stays a fixed ~340px band —
+  // reads as light sweeping outward, not a static vignette blob
   const lightT = easeInOut(progress(lf, 135, 190));
   if (lightT > 0) {
-    const lr = lerp(1, 2600, lightT);
+    const lr = lerp(1, 3200, lightT);
+    const coreStop = clamp((lr - 340) / lr, 0, 1);
     const lightP = new ck.Paint();
     const lightSh = ck.Shader.MakeRadialGradient(
       [SUN_X, SUN_Y], lr,
       [ck.Color4f(1, 1, 1, 1), ck.Color4f(1, 1, 1, 1), ck.Color4f(1, 1, 1, 0)],
-      [0, 0.45, 1], ck.TileMode.Clamp
+      [0, coreStop, 1], ck.TileMode.Clamp
     );
     lightP.setShader(lightSh);
     c.drawRect(ck.LTRBRect(0, 0, W, H), lightP);
@@ -353,81 +368,114 @@ function drawSI(c, lf) {
   }
 }
 
-// ── Scene S1: Bar chart — wiggle-shuffle into stacked contribution+growth ─────
-const NUM_BARS   = 12;
-const barLabels  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const messyRng   = mulberry32(0xabcdef01);
-const messyH     = Array.from({length: NUM_BARS}, () => 0.12 + messyRng() * 0.55);
-// Stacked model: what you put in grows linearly, returns compound on top
-const contribH   = Array.from({length: NUM_BARS}, (_, i) => 0.06 + 0.50 * (i / 11));
-const returnH    = Array.from({length: NUM_BARS}, (_, i) => 0.28 * Math.pow(i / 11, 1.7));
-const SLATE      = hex('#94a3b8');
+// ── Scene S1: Compounding chart — v8 port, exact animation ─────────────────────
+// Compound model: totalV(x) = 0.42x + 0.82x^2.6 ; YMAX = 1.45 ; totalV(1)=1.24 → $1.24M
+const totalV   = x => 0.42 * x + 0.82 * x ** 2.6;
+const YMAX     = 1.45;
+const NUM_BARS = 12;
+// pop beats: on the grid then accelerating — audible speed-up
+const POPS = [14, 29, 44, 59, 74, 89, 96, 103, 110, 117, 123, 129];
+// messy "unplanned money" heights before the shuffle (v8 seed)
+const messyRng = mulberry32(3);
+const messyH   = Array.from({length: NUM_BARS}, () => 0.22 + messyRng() * 0.46);
+const SLATE    = hex('#94a3b8');
+const CONTRIB  = hex('#0e6e57');   // contributions segment (darker teal, v8)
+const MORPH_S = 140, MORPH_STAG = 4, MORPH_DUR = 26;   // shuffle 140→~210
+const NUM_IN  = 205, NUM_OUT = 242;                     // $1.24M dwell, chart dimmed
+const CHIP_IN = 246;                                    // chip pans out with scene
 
 function drawS1(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
   drawParticles(c, lf + S1_START);
 
-  const CHART_L = W*0.1, CHART_R = W*0.9;
-  const CHART_T = H*0.22, CHART_B = H*0.82;
-  const CW = CHART_R - CHART_L, CH = CHART_B - CHART_T;
-  const gap = CW / NUM_BARS, barW = gap * 0.62;
+  const chX = 160, chY = H * 0.30, chW = W - 320, chH = H * 0.44;
+  const gapR = 0.34;
+  const bw = chW / (NUM_BARS + (NUM_BARS - 1) * gapR);
+  const gap = bw * gapR;
+  const baseY = chY + chH;
 
-  const enterT = easeOut(progress(lf, 0, 40));
-  const morphT = easeInOut(progress(lf, 55, 155));
-  const wt     = morphT;
-  const splitT = easeInOut(progress(lf, 125, 170));  // two colors separate
-  const pulse  = beatPulse(lf, 14);
+  const numW  = ev(lf, NUM_IN, NUM_IN + 10, easeOut, NUM_OUT, NUM_OUT + 8, easeIn);
+  const chipW = easeOut(progress(lf, CHIP_IN, CHIP_IN + 10));
+  const dimT  = numW;   // dim chart only for the big number
 
-  // Headline
-  const headT = easeOut(progress(lf, 0, 40));
-  if (headT > 0) drawTextC(c, SYNE_B, 52, 'Your money compounds.', W/2, H*0.11, TEXT, headT);
+  // small kicker above chart (v8)
+  const kickT = easeOut(progress(lf, 8, 22));
+  if (kickT > 0.01) {
+    drawTextTracked(c, DMM_M, 26, 'YOUR MONEY, PLANNED', W/2, chY - 120, DIM, kickT * 0.9, 6);
+    drawTextC(c, SYNE_B, 52, 'Watch it compound', W/2, chY - 56, TEXT, kickT);
+  }
 
-  // Legend — names the two colors once the split lands
-  const legT = easeOut(progress(lf, 140, 175));
-  if (legT > 0) {
-    const ly = H * 0.165;
-    const items = [[SLATE, 'you invest'], [TEAL, 'growth']];
-    let lx = W/2 - 190;
-    for (const [col, label] of items) {
-      drawCircle(c, lx, ly - 8, 9, col, legT);
-      drawText(c, DMS_M, 26, label, lx + 20, ly, BODY, legT * 0.85);
-      lx += 20 + measure(DMS_M, 26, label) + 56;
+  const lp = new ck.Paint();
+  lp.setAlphaf(1 - 0.7 * dimT);
+  c.saveLayer(lp);
+
+  // grid
+  const gridT = progress(lf, 14, 34);
+  for (let g = 1; g <= 4; g++)
+    drawLine(c, chX, baseY - g/4 * chH, chX + chW, baseY - g/4 * chH, DIM, 0.18 * gridT, 1);
+  drawLine(c, chX, baseY, chX + chW, baseY, DIM, 0.45 * gridT, 1.5);
+
+  for (let i = 0; i < NUM_BARS; i++) {
+    const popT = springE(progress(lf, POPS[i], POPS[i] + 20));
+    if (popT < 0.01) continue;
+
+    const wt = progress(lf, MORPH_S + i * MORPH_STAG, MORPH_S + i * MORPH_STAG + MORPH_DUR);
+    const wte = easeInOut(wt);
+    const isStub = i >= 9;
+
+    // target after shuffle: growth curve for 0–8, trimmed stubs for 9–11
+    const xFrac = (i + 1) / 9;
+    const curveH = isStub ? [0.06, 0.045, 0.03][i - 9] : totalV(xFrac) / YMAX;
+    const hFrac = messyH[i] + (curveH - messyH[i]) * wte;
+
+    // pronounced shuffle sway (v8 — the animation the user liked)
+    const sway = (wt > 0 && wt < 1) ? Math.sin(wt * Math.PI * 4) * 13 * (1 - wt) : 0;
+
+    // beat breathing once settled
+    let hPix = hFrac * chH;
+    if (popT >= 1 && (wt <= 0 || wt >= 1) && !isStub)
+      hPix *= 1 + 0.022 * beatPulse(lf) * (0.6 + 0.4 * Math.sin(i * 1.3));
+
+    const h2 = hPix * popT;
+    const bx = chX + i * (bw + gap) + sway;
+    const topY = baseY - h2;
+
+    // v8 turned the trimmed stubs red; palette rule = no red → neutral slate
+    const grownColor = isStub && wt > 0.5 ? SLATE : TEAL;
+    drawRect(c, bx, topY, bw, h2, grownColor, popT * 0.92, 5);
+
+    // contributions split appears as the curve forms (linear part of model)
+    if (!isStub && wte > 0.05 && h2 > 12) {
+      const contribFrac = (0.42 * xFrac) / totalV(xFrac);
+      const cH = h2 * contribFrac * wte;
+      // chip phase: pulse the contributions segments so the label reads instantly
+      const hl = chipW > 0.01 ? 0.92 + 0.08 * Math.sin((lf + S1_START) * 0.25) : 0.92;
+      drawRect(c, bx, baseY - cH, bw, cH, CONTRIB, popT * hl);
     }
   }
 
-  // Axis + grid lines
-  drawLine(c, CHART_L - 10, CHART_B, CHART_R + 10, CHART_B, DIM, 0.4 * enterT, 1.5);
-  for (let i = 1; i <= 4; i++) {
-    const yp = CHART_B - i/4 * CH;
-    drawLine(c, CHART_L, yp, CHART_R, yp, DIM, 0.15 * enterT, 1);
+  c.restore();
+  lp.delete();
+
+  // — $1.24M reveal (chart dimmed under it) —
+  if (numW > 0.01) {
+    const sh = 1 + 0.05 * beatPulse(lf, 14) * numW;
+    c.save();
+    c.translate(W/2, H * 0.52); c.scale(sh, sh); c.translate(-W/2, -H * 0.52);
+    drawTextC(c, DMM_M, 132, '$1.24M', W/2, H * 0.52, TEAL, numW);
+    drawTextC(c, DMS_R, 38, 'projected by your freedom date', W/2, H * 0.52 + 70, TEXT, numW * 0.75);
+    c.restore();
   }
 
-  for (let i = 0; i < NUM_BARS; i++) {
-    const barInT = easeOut(progress(lf, 4 + i * 3, 30 + i * 3));
-    if (barInT <= 0) continue;
-
-    // Height: messy → stacked total, breathing on the beat, idle bob pre-morph
-    const idleBob = Math.sin(lf * 0.11 + i * 1.7) * 0.012 * (1 - wt);
-    const bh    = lerp(messyH[i] + idleBob, contribH[i] + returnH[i], morphT);
-    const barH  = bh * CH * barInT * (1 + pulse * 0.02);
-
-    // Wiggle-shuffle: a wave of horizontal nudges runs through the bars
-    const wiggle = (wt > 0 && wt < 1)
-      ? Math.sin(wt * Math.PI * 5 - i * 0.7) * 16 * Math.sin(wt * Math.PI)
-      : 0;
-    const bx = CHART_L + i * gap + gap * 0.19 + wiggle;
-    const by = CHART_B - barH;
-    const alpha = (0.7 + 0.3 * morphT) * barInT;
-
-    // Bottom: contributions (slate). Top: compounding returns (teal).
-    const frac = lerp(1, contribH[i] / (contribH[i] + returnH[i]), splitT);
-    const hContrib = barH * frac;
-    drawRect(c, bx, CHART_B - hContrib, barW, hContrib, SLATE, alpha, 5);
-    const hRet = barH - hContrib;
-    if (hRet > 0.5) drawRect(c, bx, by, barW, hRet + 5, TEAL, alpha * splitT, 5);
-
-    drawText(c, DMS_R, 22, barLabels[i],
-      bx + barW/2 - measure(DMS_R, 22, barLabels[i])/2, CHART_B + 32, DIM, 0.55 * barInT);
+  // — contributions legend chip (chart visible, segments pulsing) —
+  if (chipW > 0.01) {
+    const cpy = baseY + 76;
+    const swW = 26;
+    const label = 'your contributions — the rest is growth';
+    const labelW = measure(DMS_M, 32, label);
+    const total = swW + 16 + labelW;
+    drawRect(c, W/2 - total/2, cpy - 22, swW, swW, CONTRIB, chipW, 4);
+    drawText(c, DMS_M, 32, label, W/2 - total/2 + swW + 16, cpy + 2, BODY, chipW);
   }
 }
 
@@ -606,30 +654,38 @@ function drawS4(c, lf) {
   const enterT = easeOut(progress(lf, 0, 45));
   const pulse  = beatPulse(lf, 14);
 
-  // Large teal sunrise
-  if (enterT > 0) halfSun(c, W/2, H*0.52, 210 * enterT, enterT, pulse * 0.5);
-
-  // Power copy — all settle before outro at lf=107
-  const l1T = easeOut(progress(lf, 8, 45));
-  const l2T = easeOut(progress(lf, 24, 60));
-  const l3T = easeOut(progress(lf, 45, 80));
-  if (l1T > 0) drawTextC(c, SYNE_XB, 70, "Don't let money run your life.", W/2, H*0.09, TEXT, l1T);
-  if (l2T > 0) drawTextC(c, SYNE_XB, 70, 'Let your money hire you to', W/2, H*0.09 + 88, TEXT, l2T);
-  if (l3T > 0) drawTextC(c, SYNE_XB, 70, 'chase your dreams.', W/2, H*0.09 + 176, TEAL, l3T);
-
-  // Wordmark + URL
-  const wmT  = easeOut(progress(lf, 50, 80));
-  const urlT = easeOut(progress(lf, 62, 92));
-  if (wmT > 0)  drawTextC(c, SYNE_XB, 52, 'untilfire', W/2, H*0.72, TEXT, wmT);
-  if (urlT > 0) drawTextC(c, DMS_M, 30, 'www.untilfire.com', W/2, H*0.72 + 52, TEAL, urlT * 0.85);
+  // Teal sunrise — smaller so the headline never crowds it
+  if (enterT > 0) halfSun(c, W/2, H*0.56, 135 * enterT, enterT, pulse * 0.5);
 
   // Horizon line expanding from sun
-  const lineT = easeOut(progress(lf, 52, 85));
+  const lineT = easeOut(progress(lf, 30, 65));
   if (lineT > 0) {
-    drawLine(c, W/2 - 230*lineT, H*0.52, W/2 + 230*lineT, H*0.52, TEAL, 0.3*lineT, 2);
+    drawLine(c, W/2 - 170*lineT, H*0.56, W/2 + 170*lineT, H*0.56, TEAL, 0.3*lineT, 2);
   }
 
-  const tagT = easeOut(progress(lf, 74, 104));
+  // Wordmark + URL settle in early, beneath the sun
+  const wmT  = easeOut(progress(lf, 40, 70));
+  const urlT = easeOut(progress(lf, 52, 82));
+  if (wmT > 0)  drawTextC(c, SYNE_XB, 52, 'untilfire', W/2, H*0.78, TEXT, wmT);
+  if (urlT > 0) drawTextC(c, DMS_M, 30, 'www.untilfire.com', W/2, H*0.78 + 52, TEAL, urlT * 0.85);
+
+  // Power copy — line 1 slams on the 39.81s beat (lf=107),
+  // final line lands at exactly 41s (lf=143)
+  const slamLine = (str, t0, y, col) => {
+    const t = springE(progress(lf, t0 - 15, t0));
+    if (t <= 0) return;
+    c.save();
+    c.translate(W/2, y - 26);
+    const s = lerp(1.3, 1, t);
+    c.scale(s, s);
+    c.translate(-W/2, -(y - 26));
+    drawTextC(c, SYNE_XB, 78, str, W/2, y, col, clamp(t * 1.6, 0, 1));
+    c.restore();
+  };
+  slamLine("Don't let money stop you", 107, H*0.14, TEXT);
+  slamLine('from being a good person.', 143, H*0.14 + 96, TEAL);
+
+  const tagT = easeOut(progress(lf, 160, 190));
   if (tagT > 0) drawTextC(c, DMS_R, 26, 'Personal finance that sets you free.', W/2, H*0.91, BODY, tagT * 0.6);
 }
 
