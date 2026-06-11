@@ -1,9 +1,12 @@
 /**
- * UntilFire demo video — v15
- * Open: full black, question words appear one by one → question fades out →
- * "introducing... UntilFire" on black → full-size logo animates in and its
- * light turns the bg white → logo + wordmark settle → app showcase on white.
- * 1920x1080 horizontal, 30fps, ~48.5s.
+ * UntilFire demo video — v16
+ * Music starts at frame 1; total = track length (40.9s), every section ≤ 8s
+ * and always in motion. Black open, question words appear in order →
+ * "introducing... UntilFire" → logo animates in, its light blooms from 1px
+ * at the center to fill the page white → app showcase on white.
+ * Bar chart: bars wiggle-shuffle into a stacked two-color chart
+ * (contributions vs growth) — show, don't tell.
+ * 1920x1080 horizontal, 30fps.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs';
@@ -211,21 +214,22 @@ function drawBankLogo(c, icon, cx, cy, size, alpha) {
 }
 
 // ── Scene timing ──────────────────────────────────────────────────────────────
-// S0: question        0–225    (7.5s) — black, words appear in order, fade out
-// SI: introducing     225–495  (9s)   — "introducing... UntilFire", logo lights bg white
-// S1: bar chart       465–765  (10s,  30f filmstrip overlap)
-// S2: bank logos      735–1005 (9s,   30f filmstrip overlap)
-// S3: leaks           975–1245 (9s,   30f filmstrip overlap)
-// S4: end card        1215–1455(8s,   30f filmstrip overlap)
-const TOTAL     = 1455;
+// Total = music length (40.9s @ 120 BPM); no section over 8s (240f).
+// S0: question        0–195    (6.5s) — black, words appear in order, fade out
+// SI: introducing     195–435  (8s)   — "introducing... UntilFire", light blooms white
+// S1: bar chart       405–645  (8s,   30f filmstrip overlap)
+// S2: bank logos      615–855  (8s,   30f filmstrip overlap)
+// S3: leaks           825–1065 (8s,   30f filmstrip overlap)
+// S4: end card        1035–1227(6.4s, 30f filmstrip overlap)
+const TOTAL     = 1227;
 const TRANS_LEN = 30;
 
-const S0_START = 0,    S0_END = 225;
-const SI_START = 225,  SI_END = 495;
-const S1_START = 465,  S1_END = 765;
-const S2_START = 735,  S2_END = 1005;
-const S3_START = 975,  S3_END = 1245;
-const S4_START = 1215, S4_END = 1455;
+const S0_START = 0,    S0_END = 195;
+const SI_START = 195,  SI_END = 435;
+const S1_START = 405,  S1_END = 645;
+const S2_START = 615,  S2_END = 855;
+const S3_START = 825,  S3_END = 1065;
+const S4_START = 1035, S4_END = 1227;
 
 const WHITEISH = [0.96, 0.97, 0.98, 1]; // text on dark
 
@@ -238,9 +242,14 @@ function drawS0(c, lf) {
   drawParticles(c, lf + S0_START);
 
   // Question fades out as a whole at the end
-  const exitT = easeInOut(progress(lf, 170, 200));
+  const exitT = easeInOut(progress(lf, 150, 175));
   const keep  = 1 - exitT;
   if (keep <= 0) return;
+
+  // Slow zoom drift keeps the hold alive
+  c.save();
+  const drift = 1 + lf * 0.00035;
+  c.translate(W/2, H * 0.47); c.scale(drift, drift); c.translate(-W/2, -H * 0.47);
 
   const spaceW = measure(SYNE_XB, Q_SIZE, ' ');
   let wordIdx = 0;
@@ -252,8 +261,8 @@ function drawS0(c, lf) {
     const baseY = H * 0.42 + li * 116;
 
     for (let wi = 0; wi < line.length; wi++) {
-      const t0 = 15 + wordIdx * 16;
-      const wT = easeOut(progress(lf, t0, t0 + 22));
+      const t0 = 10 + wordIdx * 13;
+      const wT = easeOut(progress(lf, t0, t0 + 20));
       if (wT > 0) {
         const wy = baseY + (1 - wT) * 14;
         drawText(c, SYNE_XB, Q_SIZE, line[wi], x, wy, WHITEISH, wT * keep);
@@ -263,14 +272,16 @@ function drawS0(c, lf) {
     }
   }
 
-  // Teal underline on "optional?" after it lands
-  const ulT = easeOut(progress(lf, 100, 140));
+  // Teal underline on "optional?" after it lands — alpha rides the beat
+  const ulT = easeOut(progress(lf, 80, 115));
   if (ulT > 0) {
+    const pulse = beatPulse(lf, 14);
     const ow = measure(SYNE_XB, Q_SIZE, 'optional?');
     const lw = measure(SYNE_XB, Q_SIZE, 'was optional?');
     const lx = W/2 + lw/2 - ow, uy = H * 0.42 + 128;
-    drawLine(c, lx, uy, lx + ow * ulT, uy, TEAL, ulT * keep, 5);
+    drawLine(c, lx, uy, lx + ow * ulT, uy, TEAL, (0.75 + 0.25 * pulse) * ulT * keep, 5);
   }
+  c.restore();
 }
 
 // ── Scene SI: "introducing... UntilFire" + logo light-up to white ────────────
@@ -281,9 +292,9 @@ function drawSI(c, lf) {
   if (lf < 200) drawParticles(c, lf + SI_START);
 
   // "introducing..." then "UntilFire" beneath — both leave before the logo
-  const in1  = easeOut(progress(lf, 10, 35));
-  const in2  = easeOut(progress(lf, 45, 70));
-  const outT = easeIn(progress(lf, 95, 115));
+  const in1  = easeOut(progress(lf, 8, 30));
+  const in2  = easeOut(progress(lf, 35, 58));
+  const outT = easeIn(progress(lf, 80, 100));
   if (in1 > 0 && outT < 1) {
     const iy = H * 0.40 + (1 - in1) * 14;
     drawTextC(c, SYNE_B, 50, 'introducing...', W/2, iy, WHITEISH, in1 * (1 - outT) * 0.85);
@@ -293,20 +304,20 @@ function drawSI(c, lf) {
     drawTextC(c, SYNE_XB, 88, 'UntilFire', W/2, uy, WHITEISH, in2 * (1 - outT));
   }
 
-  // Full-size logo animates in 115→165
-  const riseT = easeOut(progress(lf, 115, 165));
+  // Full-size logo animates in 100→145
+  const riseT = easeOut(progress(lf, 100, 145));
   const sunR  = 260 * riseT;
 
-  // The sun's light turns the bg white — soft radiance expanding 150→200
-  const lightT = easeInOut(progress(lf, 150, 200));
+  // Light blooms from 1px at the center to the whole page — soft falloff,
+  // no hard circle edge, no pop
+  const lightT = easeInOut(progress(lf, 135, 190));
   if (lightT > 0) {
-    const maxR = Math.sqrt(W*W + H*H) * 1.05;
-    const lr   = lerp(sunR * 1.1, maxR, lightT);
+    const lr = lerp(1, 2600, lightT);
     const lightP = new ck.Paint();
     const lightSh = ck.Shader.MakeRadialGradient(
       [SUN_X, SUN_Y], lr,
       [ck.Color4f(1, 1, 1, 1), ck.Color4f(1, 1, 1, 1), ck.Color4f(1, 1, 1, 0)],
-      [0, 0.7, 1], ck.TileMode.Clamp
+      [0, 0.45, 1], ck.TileMode.Clamp
     );
     lightP.setShader(lightSh);
     c.drawRect(ck.LTRBRect(0, 0, W, H), lightP);
@@ -314,24 +325,24 @@ function drawSI(c, lf) {
   }
 
   // Sun drawn on top so it reads on both dark and white
-  if (sunR > 0 && lf < 200) {
+  if (sunR > 0 && lf < 190) {
     const pulse = beatPulse(lf, 14);
     halfSun(c, SUN_X, SUN_Y, sunR, riseT, pulse * (1 + lightT));
   }
 
   // Lit: white bg, logo settles to center, wordmark rises in
-  if (lf >= 200) {
+  if (lf >= 190) {
     drawRect(c, 0, 0, W, H, BG, 1);
 
     // Sun shrinks from full-size to centred logo mark
-    const settleT = easeOut(progress(lf, 200, 224));
+    const settleT = easeOut(progress(lf, 190, 208));
     const logoR   = lerp(260, 90, settleT);
     const logoY   = lerp(H/2 + 30, H * 0.44, settleT);
-    const pulse   = beatPulse(lf, 14) * (1 - settleT) * 0.6;
+    const pulse   = beatPulse(lf, 14) * 0.6;
     halfSun(c, SUN_X, logoY, logoR, 1, pulse);
 
     // "untilfire" wordmark fades up below the logo
-    const wmT = easeOut(progress(lf, 220, 242));
+    const wmT = easeOut(progress(lf, 204, 222));
     if (wmT > 0) {
       // Rise-up effect: starts 12px below final position
       const wmy = H * 0.44 + 90 + 36 + (1 - wmT) * 12;
@@ -340,69 +351,81 @@ function drawSI(c, lf) {
   }
 }
 
-// ── Scene S1: Bar chart — shuffle → compound growth ───────────────────────────
+// ── Scene S1: Bar chart — wiggle-shuffle into stacked contribution+growth ─────
 const NUM_BARS   = 12;
 const barLabels  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const messyRng   = mulberry32(0xabcdef01);
 const messyH     = Array.from({length: NUM_BARS}, () => 0.12 + messyRng() * 0.55);
-const growthH    = Array.from({length: NUM_BARS}, (_, i) => {
-  const g = Math.pow(1 + 0.08/12, i);
-  return 0.2 + (g - 1) * 1.3;
-});
+// Stacked model: what you put in grows linearly, returns compound on top
+const contribH   = Array.from({length: NUM_BARS}, (_, i) => 0.06 + 0.50 * (i / 11));
+const returnH    = Array.from({length: NUM_BARS}, (_, i) => 0.28 * Math.pow(i / 11, 1.7));
+const SLATE      = hex('#94a3b8');
 
 function drawS1(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
   drawParticles(c, lf + S1_START);
 
   const CHART_L = W*0.1, CHART_R = W*0.9;
-  const CHART_T = H*0.2, CHART_B = H*0.82;
+  const CHART_T = H*0.22, CHART_B = H*0.82;
   const CW = CHART_R - CHART_L, CH = CHART_B - CHART_T;
   const gap = CW / NUM_BARS, barW = gap * 0.62;
 
-  const morphT = easeInOut(progress(lf, 50, 200));
+  const enterT = easeOut(progress(lf, 0, 40));
+  const morphT = easeInOut(progress(lf, 55, 155));
   const wt     = morphT;
-  const sway   = (wt > 0 && wt < 1) ? Math.sin(wt * Math.PI * 4) * 14 * (1 - wt) : 0;
+  const splitT = easeInOut(progress(lf, 125, 170));  // two colors separate
   const pulse  = beatPulse(lf, 14);
-  const textShowT = progress(lf, 195, 245);
-  const dimAlpha  = lerp(1, 0.3, textShowT);
 
   // Headline
-  const headT = easeOut(progress(lf, 0, 55));
-  if (headT > 0) drawTextC(c, SYNE_B, 52, 'Your money compounds. Every month matters.', W/2, H*0.1, TEXT, headT);
+  const headT = easeOut(progress(lf, 0, 40));
+  if (headT > 0) drawTextC(c, SYNE_B, 52, 'Your money compounds.', W/2, H*0.11, TEXT, headT);
 
-  // Chart
-  const layerP = new ck.Paint(); layerP.setAlphaf(dimAlpha);
-  c.saveLayer(layerP); layerP.delete();
+  // Legend — names the two colors once the split lands
+  const legT = easeOut(progress(lf, 140, 175));
+  if (legT > 0) {
+    const ly = H * 0.165;
+    const items = [[SLATE, 'you invest'], [TEAL, 'growth']];
+    let lx = W/2 - 190;
+    for (const [col, label] of items) {
+      drawCircle(c, lx, ly - 8, 9, col, legT);
+      drawText(c, DMS_M, 26, label, lx + 20, ly, BODY, legT * 0.85);
+      lx += 20 + measure(DMS_M, 26, label) + 56;
+    }
+  }
 
   // Axis + grid lines
-  drawLine(c, CHART_L - 10, CHART_B, CHART_R + 10, CHART_B, DIM, 0.4, 1.5);
+  drawLine(c, CHART_L - 10, CHART_B, CHART_R + 10, CHART_B, DIM, 0.4 * enterT, 1.5);
   for (let i = 1; i <= 4; i++) {
     const yp = CHART_B - i/4 * CH;
-    drawLine(c, CHART_L, yp, CHART_R, yp, DIM, 0.15, 1);
+    drawLine(c, CHART_L, yp, CHART_R, yp, DIM, 0.15 * enterT, 1);
   }
 
   for (let i = 0; i < NUM_BARS; i++) {
-    const bh   = lerp(messyH[i], growthH[i], morphT);
-    const barH = bh * CH;
-    const bx   = CHART_L + i * gap + gap * 0.19;
-    const by   = CHART_B - barH + sway * (1 - i/NUM_BARS * 0.4) * (1 - morphT);
-    const alpha = 0.65 + 0.35 * morphT + pulse * 0.1 * (i/NUM_BARS);
-    const barCol = morphT > 0.5 ? TEAL : hex('#94a3b8');
-    drawRect(c, bx, by, barW, barH, barCol, alpha, 5);
-    drawText(c, DMS_R, 22, barLabels[i],
-      bx + barW/2 - measure(DMS_R, 22, barLabels[i])/2, CHART_B + 32, DIM, 0.55);
-  }
-  c.restore();
+    const barInT = easeOut(progress(lf, 4 + i * 3, 30 + i * 3));
+    if (barInT <= 0) continue;
 
-  // Overlay stat
-  const copyT = easeOut(progress(lf, 205, 255));
-  if (copyT > 0) {
-    drawRect(c, W*0.3, H*0.35, W*0.4, 112, CARD, 0.96*copyT, 16);
-    const bp = mkStroke(TEAL, 0.4*copyT, 1.5);
-    c.drawRRect(ck.RRectXY(ck.LTRBRect(W*0.3, H*0.35, W*0.3+W*0.4, H*0.35+112), 16, 16), bp);
-    bp.delete();
-    drawTextC(c, DMM_M, 38, '$847/mo → freedom date', W/2, H*0.35 + 58, TEAL, copyT);
-    drawTextC(c, DMS_R, 24, 'Automatically calculated from your numbers', W/2, H*0.35 + 95, BODY, copyT * 0.7);
+    // Height: messy → stacked total, breathing on the beat, idle bob pre-morph
+    const idleBob = Math.sin(lf * 0.11 + i * 1.7) * 0.012 * (1 - wt);
+    const bh    = lerp(messyH[i] + idleBob, contribH[i] + returnH[i], morphT);
+    const barH  = bh * CH * barInT * (1 + pulse * 0.02);
+
+    // Wiggle-shuffle: a wave of horizontal nudges runs through the bars
+    const wiggle = (wt > 0 && wt < 1)
+      ? Math.sin(wt * Math.PI * 5 - i * 0.7) * 16 * Math.sin(wt * Math.PI)
+      : 0;
+    const bx = CHART_L + i * gap + gap * 0.19 + wiggle;
+    const by = CHART_B - barH;
+    const alpha = (0.7 + 0.3 * morphT) * barInT;
+
+    // Bottom: contributions (slate). Top: compounding returns (teal).
+    const frac = lerp(1, contribH[i] / (contribH[i] + returnH[i]), splitT);
+    const hContrib = barH * frac;
+    drawRect(c, bx, CHART_B - hContrib, barW, hContrib, SLATE, alpha, 5);
+    const hRet = barH - hContrib;
+    if (hRet > 0.5) drawRect(c, bx, by, barW, hRet + 5, TEAL, alpha * splitT, 5);
+
+    drawText(c, DMS_R, 22, barLabels[i],
+      bx + barW/2 - measure(DMS_R, 22, barLabels[i])/2, CHART_B + 32, DIM, 0.55 * barInT);
   }
 }
 
@@ -411,7 +434,7 @@ function drawS2(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
   drawParticles(c, lf + S2_START);
 
-  const headT = easeOut(progress(lf, 0, 55));
+  const headT = easeOut(progress(lf, 0, 40));
   drawTextC(c, SYNE_B, 58, 'Works with your bank.', W/2, H*0.12, TEXT, headT);
   drawTextC(c, DMS_R, 32, 'Connect once, track automatically.', W/2, H*0.12 + 68, BODY, headT * 0.8);
 
@@ -473,7 +496,7 @@ function drawS2(c, lf) {
     p.delete(); sh.delete();
   }
 
-  const tagT = easeOut(progress(lf, 120, 170));
+  const tagT = easeOut(progress(lf, 95, 135));
   if (tagT > 0) drawTextC(c, DMS_M, 30, '15+ banks. 0 manual entries.', W/2, H*0.88, TEAL, tagT);
 }
 
@@ -490,13 +513,13 @@ function drawS3(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
   drawParticles(c, lf + S3_START);
 
-  const headT = easeOut(progress(lf, 0, 50));
+  const headT = easeOut(progress(lf, 0, 38));
   drawTextC(c, SYNE_B, 58, "You're leaking money.", W/2, H*0.1, TEXT, headT);
   drawTextC(c, DMS_R, 32, 'UntilFire finds the drains — and helps you cut them.', W/2, H*0.1 + 68, BODY, headT * 0.8);
 
   const CARD_W2 = 820, CARD_H2 = 492;
-  const CX = W/2 - CARD_W2/2, CY = H*0.23;
-  const cardT = easeOut(progress(lf, 10, 55));
+  const CX = W/2 - CARD_W2/2, CY = H*0.26;
+  const cardT = easeOut(progress(lf, 5, 40));
   if (cardT > 0) {
     drawRect(c, CX, CY, CARD_W2, CARD_H2, CARD, cardT, 20);
     const bp = mkStroke(BORD, cardT, 1.5);
@@ -504,8 +527,8 @@ function drawS3(c, lf) {
     bp.delete();
   }
 
-  const removeStart = i => 125 + i * 22;
-  const REMOVE_LEN  = 25;
+  const removeStart = i => 100 + i * 16;
+  const REMOVE_LEN  = 22;
 
   let recovered = 0;
   for (let i = 0; i < leakItems.length; i++) {
@@ -513,19 +536,21 @@ function drawS3(c, lf) {
   }
 
   // Card header
-  const ctT = easeOut(progress(lf, 30, 70));
+  const ctT = easeOut(progress(lf, 15, 50));
   if (ctT > 0) {
+    const pulse = beatPulse(lf, 14);
     drawText(c, DMS_B, 26, 'Spending Leaks', CX + 28, CY + 46, TEXT, ctT);
     const totalStr = `+$${Math.round(recovered)}/mo recovered`;
     const tw = measure(DMM_M, 26, totalStr);
-    drawText(c, DMM_M, 26, totalStr, CX + CARD_W2 - tw - 28, CY + 46, TEAL, ctT * (recovered > 0.5 ? 1 : 0.4));
+    drawText(c, DMM_M, 26, totalStr, CX + CARD_W2 - tw - 28, CY + 46, TEAL,
+      ctT * (recovered > 0.5 ? 0.85 + 0.15 * pulse : 0.4));
     drawLine(c, CX + 20, CY + 58, CX + CARD_W2 - 20, CY + 58, BORD, ctT, 1.5);
   }
 
   // Rows
   for (let i = 0; i < leakItems.length; i++) {
     const item  = leakItems[i];
-    const rowT  = easeOut(progress(lf, 35 + i * 15, 75 + i * 15));
+    const rowT  = easeOut(progress(lf, 20 + i * 12, 50 + i * 12));
     if (rowT <= 0) continue;
 
     const remT  = easeInOut(progress(lf, removeStart(i), removeStart(i) + REMOVE_LEN));
@@ -569,15 +594,6 @@ function drawS3(c, lf) {
     }
   }
 
-  // Power line
-  const powerT = easeOut(progress(lf, 240, 275));
-  if (powerT > 0) {
-    drawRect(c, W*0.18, H*0.82, W*0.64, 80, CARD, 0.96*powerT, 12);
-    const bp2 = mkStroke(TEAL, 0.4*powerT, 1.5);
-    c.drawRRect(ck.RRectXY(ck.LTRBRect(W*0.18, H*0.82, W*0.18+W*0.64, H*0.82+80), 12, 12), bp2);
-    bp2.delete();
-    drawTextC(c, DMS_M, 28, '+$352/mo back → your freedom date moves 3 years closer', W/2, H*0.82+48, TEAL, powerT);
-  }
 }
 
 // ── Scene S4: End card ────────────────────────────────────────────────────────
@@ -585,33 +601,33 @@ function drawS4(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
   drawParticles(c, lf + S4_START);
 
-  const enterT = easeOut(progress(lf, 0, 70));
+  const enterT = easeOut(progress(lf, 0, 50));
   const pulse  = beatPulse(lf, 14);
 
   // Large teal sunrise
   if (enterT > 0) halfSun(c, W/2, H*0.52, 210 * enterT, enterT, pulse * 0.5);
 
   // Power copy
-  const l1T = easeOut(progress(lf, 40, 100));
-  const l2T = easeOut(progress(lf, 70, 130));
-  const l3T = easeOut(progress(lf, 105, 165));
+  const l1T = easeOut(progress(lf, 20, 65));
+  const l2T = easeOut(progress(lf, 45, 90));
+  const l3T = easeOut(progress(lf, 75, 120));
   if (l1T > 0) drawTextC(c, SYNE_XB, 70, "Don't let money run your life.", W/2, H*0.09, TEXT, l1T);
   if (l2T > 0) drawTextC(c, SYNE_XB, 70, 'Let your money hire you to', W/2, H*0.09 + 88, TEXT, l2T);
   if (l3T > 0) drawTextC(c, SYNE_XB, 70, 'chase your dreams.', W/2, H*0.09 + 176, TEAL, l3T);
 
   // Wordmark + URL
-  const wmT  = easeOut(progress(lf, 145, 190));
-  const urlT = easeOut(progress(lf, 170, 210));
+  const wmT  = easeOut(progress(lf, 110, 145));
+  const urlT = easeOut(progress(lf, 130, 165));
   if (wmT > 0)  drawTextC(c, SYNE_XB, 52, 'untilfire', W/2, H*0.72, TEXT, wmT);
   if (urlT > 0) drawTextC(c, DMS_M, 30, 'www.untilfire.com', W/2, H*0.72 + 52, TEAL, urlT * 0.85);
 
   // Horizon line expanding from sun
-  const lineT = easeOut(progress(lf, 155, 200));
+  const lineT = easeOut(progress(lf, 115, 155));
   if (lineT > 0) {
     drawLine(c, W/2 - 230*lineT, H*0.52, W/2 + 230*lineT, H*0.52, TEAL, 0.3*lineT, 2);
   }
 
-  const tagT = easeOut(progress(lf, 205, 245));
+  const tagT = easeOut(progress(lf, 150, 185));
   if (tagT > 0) drawTextC(c, DMS_R, 26, 'Personal finance that sets you free.', W/2, H*0.91, BODY, tagT * 0.6);
 }
 

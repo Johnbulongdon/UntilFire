@@ -9,21 +9,22 @@ product screenshots: black-open question → "introducing... UntilFire" logo
 light-up reveal → compounding bar chart shuffle → bank-logo marquee →
 spending-leaks removal → end card.
 
-~48.5s @ 30fps, rendered offscreen with CanvasKit and encoded with ffmpeg.
+40.9s @ 30fps — exactly the backing track length, music starts at frame 1.
 Cut on a 120 BPM beat grid (beat every 15 frames, grid `14 + 15k`) to match
 the chosen backing track (`bg_sound.m4a`, 40.9s — kept outside the repo;
 binary uploads do not survive container restarts, re-request if missing).
+No section lasts over 8 seconds, and no hold is ever frozen.
 
-## Scenes (1455 frames total)
+## Scenes (1227 frames total)
 
 | frames     | scene                                                              |
 |------------|--------------------------------------------------------------------|
-| 0–225      | black, question words appear one by one, then fade out              |
-| 225–495    | "introducing... UntilFire" → logo's light turns the bg white        |
-| 465–765    | compounding bar chart, messy→growth shuffle morph (white bg)        |
-| 735–1005   | 15 real bank/fintech logos, big two-row scrolling marquee           |
-| 975–1245   | spending leaks found, then swiped away (teal checks, $ recovered)   |
-| 1215–1455  | end card: power copy, teal half-sun (5 rays), www.untilfire.com     |
+| 0–195      | black, question words appear one by one, then fade out              |
+| 195–435    | "introducing... UntilFire" → light blooms from 1px to white bg      |
+| 405–645    | bar chart wiggle-shuffles into stacked invest(slate)+growth(teal)   |
+| 615–855    | 15 real bank/fintech logos, big two-row scrolling marquee           |
+| 825–1065   | spending leaks found, then swiped away (teal checks, $ recovered)   |
+| 1035–1227  | end card: power copy, teal half-sun (5 rays), www.untilfire.com     |
 
 The question scene hard-cuts to the introducing scene (both black at the
 boundary); all later scenes overlap by 30 frames with a filmstrip pan
@@ -56,11 +57,17 @@ Frames land in `scripts/demo-video/frames/` (gitignored).
 - Always use `www.untilfire.com`.
 - No pill CTA button on the end card.
 - Punchy copy lines must dwell ≥2 seconds.
-- The screen must never freeze — ambient particles, beat pulses, marquee
-  scroll, and slow scale drift keep every hold alive.
-- Never let small text fight a chart: dim the chart (saveLayer) while a
-  big number/label owns the screen.
-- Keep the bar "shuffle" morph (messy bars reorganize into the compound curve).
+- Music starts at frame 1; total video length = track length.
+- No section over 8 seconds; the screen must never freeze — ambient
+  particles, beat pulses, marquee scroll, and slow scale drift keep every
+  hold alive.
+- The sun's ray beat-pulse is a keeper — preserve it in every sun.
+- Black→white transition must bloom from 1px at the center with a soft
+  falloff — never a pre-sized circle popping in.
+- Show, don't tell: no text cards describing what the visuals already show.
+- Keep the bar "shuffle" morph — bars wiggle as they reorganize into the
+  compound curve, then split into two stacked colors:
+  contributions (slate) + growth/returns (teal), with a small legend.
 - Bank logos: big, always in motion (scrolling marquee), not a static grid.
 - Leaks scene: rows are struck through and swiped away with teal checks
   while a "+$X/mo recovered" counter climbs.

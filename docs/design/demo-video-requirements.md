@@ -8,9 +8,12 @@ update this file in the same session.
 ## Format
 
 - **Horizontal 1920x1080 (16:9)** — for YouTube, landing page embed, Product Hunt.
-- 30 fps. ~40s total, cut to the backing track (`bg_sound.m4a`, 120 BPM, 40.9s,
-  beat every 15 frames, grid `14 + 15k`). Music file is provided by John per
-  session (binary uploads do not survive container restarts — re-request if missing).
+- 30 fps. Total = track length (40.9s), cut to the backing track (`bg_sound.m4a`,
+  120 BPM, beat every 15 frames, grid `14 + 15k`). Music file is provided by John
+  per session (binary uploads do not survive container restarts — re-request if missing).
+- **Music starts at frame 1** (confirmed 2026-06-11) — no delayed audio start.
+- **No section over 8 seconds**, and no hold is ever frozen while the user
+  reads — every hold keeps moving (particles, beat pulses, drift, scroll).
 
 ## Palette — hard rules
 
@@ -34,15 +37,23 @@ update this file in the same session.
   actual dashboard but the emotion it gives."* The video is emotional
   motion-graphics storytelling about FIRE freedom — NOT dashboard
   recordings, NOT onboarding screenshots.
-- **Opening sequence (confirmed 2026-06-11, v15):** start on full black; the
-  question "What if work was optional?" appears **word by word in order**,
+- **Opening sequence (confirmed 2026-06-11, v15/v16):** start on full black;
+  the question "What if work was optional?" appears **word by word in order**,
   then fades out; "introducing... UntilFire" appears on black; then the
-  full-size logo animates in and **its light turns the bg white** (radiance
-  expanding from the sun, like the rays light it up); logo + wordmark settle;
+  full-size logo animates in and **its light turns the bg white**. The
+  black→white light must **bloom from 1px at the very center** with a soft
+  falloff — never a pre-sized circle popping in. Logo + wordmark settle;
   everything after runs on a white background with dark text.
+- **The sun's ray beat-pulse is a confirmed keeper** — preserve it in every
+  sun, including after the logo settles.
+- **Show, don't tell (confirmed 2026-06-11):** no text cards describing what
+  the visuals already show (e.g. no "$X/mo → freedom date" overlay on the
+  chart, no closing text card on the leaks scene).
 - v8 scene structure to preserve after the opening:
   1. Question hook — "What if work was optional?" (black, word-by-word).
-  2. Compounding bar chart — messy bars shuffle/morph into the growth curve.
+  2. Compounding bar chart — bars **wiggle-shuffle** as they reorganize, then
+     split into **two stacked colors: contributions (slate `#94a3b8`) +
+     growth/returns (teal)**, with a small two-dot legend.
   3. Bank logos — **big logos in a continuously scrolling marquee**
      (two rows, opposite directions), not a static grid.
   4. Spending leaks — leaks found, then **animated removal**: rows get
