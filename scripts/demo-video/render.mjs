@@ -214,35 +214,37 @@ function drawBankLogo(c, icon, cx, cy, size, alpha) {
 }
 
 // ── Scene timing ──────────────────────────────────────────────────────────────
-// Total = music length (40.9s @ 120 BPM); no section over 8s (240f).
-// S0: question        0–195    (6.5s) — black, words appear in order, fade out
-// SI: introducing     195–435  (8s)   — "introducing... UntilFire", light blooms white
-// S1: bar chart       405–645  (8s,   30f filmstrip overlap)
-// S2: bank logos      615–855  (8s,   30f filmstrip overlap)
-// S3: leaks           825–1065 (8s,   30f filmstrip overlap)
-// S4: end card        1035–1227(6.4s, 30f filmstrip overlap)
-const TOTAL     = 1227;
+// Total = new track length (43.6s). Beat-aligned transitions (30fps):
+//   4s=120  12s=360  20.62s=619  29.11s=873  37.23s=1117  outro=1194  end=1308
+// S0: question        0–120    (4s)   — black, words appear in order, fade out
+// SI: introducing   120–360    (8s)   — "introducing... UntilFire", light blooms white
+// S1: bar chart     330–619    (filmstrip in at 360 = 12s, out at 619 = 20.62s)
+// S2: bank logos    589–873    (filmstrip in at 619 = 20.62s, out at 873 = 29.11s)
+// S3: leaks         843–1117   (filmstrip in at 873 = 29.11s, out at 1117 = 37.23s)
+// S4: end card     1087–1308   (filmstrip in at 1117 = 37.23s, outro at 1194 = 39.81s)
+const TOTAL     = 1308;
 const TRANS_LEN = 30;
 
-const S0_START = 0,    S0_END = 195;
-const SI_START = 195,  SI_END = 435;
-const S1_START = 405,  S1_END = 645;
-const S2_START = 615,  S2_END = 855;
-const S3_START = 825,  S3_END = 1065;
-const S4_START = 1035, S4_END = 1227;
+const S0_START = 0,    S0_END = 120;
+const SI_START = 120,  SI_END = 360;
+const S1_START = 330,  S1_END = 619;
+const S2_START = 589,  S2_END = 873;
+const S3_START = 843,  S3_END = 1117;
+const S4_START = 1087, S4_END = 1308;
 
 const WHITEISH = [0.96, 0.97, 0.98, 1]; // text on dark
 
 // ── Scene S0: Question on black — words appear one by one ────────────────────
-const Q_SIZE  = 96;
-const Q_LINES = [['What', 'if', 'work'], ['was', 'optional?']];
+const Q_SIZE  = 88;
+// Beat at 2.5s = lf 75: second sentence ("What would you do?") is landing
+const Q_LINES = [['What', 'if', 'work'], ['was', 'optional?'], ['What', 'would', 'you', 'do?']];
 
 function drawS0(c, lf) {
   drawRect(c, 0, 0, W, H, BG_DARK, 1);
   drawParticles(c, lf + S0_START);
 
-  // Question fades out as a whole at the end
-  const exitT = easeInOut(progress(lf, 150, 175));
+  // Question fades out — scene is only 120f so exit starts at 92
+  const exitT = easeInOut(progress(lf, 92, 116));
   const keep  = 1 - exitT;
   if (keep <= 0) return;
 
@@ -258,11 +260,11 @@ function drawS0(c, lf) {
     const widths = line.map(w => measure(SYNE_XB, Q_SIZE, w));
     const lineW = widths.reduce((a, b) => a + b, 0) + spaceW * (line.length - 1);
     let x = W/2 - lineW/2;
-    const baseY = H * 0.42 + li * 116;
+    const baseY = H * 0.33 + li * 108;
 
     for (let wi = 0; wi < line.length; wi++) {
-      const t0 = 10 + wordIdx * 13;
-      const wT = easeOut(progress(lf, t0, t0 + 20));
+      const t0 = 5 + wordIdx * 8;
+      const wT = easeOut(progress(lf, t0, t0 + 18));
       if (wT > 0) {
         const wy = baseY + (1 - wT) * 14;
         drawText(c, SYNE_XB, Q_SIZE, line[wi], x, wy, WHITEISH, wT * keep);
@@ -273,12 +275,12 @@ function drawS0(c, lf) {
   }
 
   // Teal underline on "optional?" after it lands — alpha rides the beat
-  const ulT = easeOut(progress(lf, 80, 115));
+  const ulT = easeOut(progress(lf, 48, 78));
   if (ulT > 0) {
     const pulse = beatPulse(lf, 14);
     const ow = measure(SYNE_XB, Q_SIZE, 'optional?');
     const lw = measure(SYNE_XB, Q_SIZE, 'was optional?');
-    const lx = W/2 + lw/2 - ow, uy = H * 0.42 + 128;
+    const lx = W/2 + lw/2 - ow, uy = H * 0.33 + 108 + 14;
     drawLine(c, lx, uy, lx + ow * ulT, uy, TEAL, (0.75 + 0.25 * pulse) * ulT * keep, 5);
   }
   c.restore();
@@ -527,7 +529,7 @@ function drawS3(c, lf) {
     bp.delete();
   }
 
-  const removeStart = i => 100 + i * 16;
+  const removeStart = i => 147 + i * 16;
   const REMOVE_LEN  = 22;
 
   let recovered = 0;
@@ -601,33 +603,33 @@ function drawS4(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
   drawParticles(c, lf + S4_START);
 
-  const enterT = easeOut(progress(lf, 0, 50));
+  const enterT = easeOut(progress(lf, 0, 45));
   const pulse  = beatPulse(lf, 14);
 
   // Large teal sunrise
   if (enterT > 0) halfSun(c, W/2, H*0.52, 210 * enterT, enterT, pulse * 0.5);
 
-  // Power copy
-  const l1T = easeOut(progress(lf, 20, 65));
-  const l2T = easeOut(progress(lf, 45, 90));
-  const l3T = easeOut(progress(lf, 75, 120));
+  // Power copy — all settle before outro at lf=107
+  const l1T = easeOut(progress(lf, 8, 45));
+  const l2T = easeOut(progress(lf, 24, 60));
+  const l3T = easeOut(progress(lf, 45, 80));
   if (l1T > 0) drawTextC(c, SYNE_XB, 70, "Don't let money run your life.", W/2, H*0.09, TEXT, l1T);
   if (l2T > 0) drawTextC(c, SYNE_XB, 70, 'Let your money hire you to', W/2, H*0.09 + 88, TEXT, l2T);
   if (l3T > 0) drawTextC(c, SYNE_XB, 70, 'chase your dreams.', W/2, H*0.09 + 176, TEAL, l3T);
 
   // Wordmark + URL
-  const wmT  = easeOut(progress(lf, 110, 145));
-  const urlT = easeOut(progress(lf, 130, 165));
+  const wmT  = easeOut(progress(lf, 50, 80));
+  const urlT = easeOut(progress(lf, 62, 92));
   if (wmT > 0)  drawTextC(c, SYNE_XB, 52, 'untilfire', W/2, H*0.72, TEXT, wmT);
   if (urlT > 0) drawTextC(c, DMS_M, 30, 'www.untilfire.com', W/2, H*0.72 + 52, TEAL, urlT * 0.85);
 
   // Horizon line expanding from sun
-  const lineT = easeOut(progress(lf, 115, 155));
+  const lineT = easeOut(progress(lf, 52, 85));
   if (lineT > 0) {
     drawLine(c, W/2 - 230*lineT, H*0.52, W/2 + 230*lineT, H*0.52, TEAL, 0.3*lineT, 2);
   }
 
-  const tagT = easeOut(progress(lf, 150, 185));
+  const tagT = easeOut(progress(lf, 74, 104));
   if (tagT > 0) drawTextC(c, DMS_R, 26, 'Personal finance that sets you free.', W/2, H*0.91, BODY, tagT * 0.6);
 }
 
