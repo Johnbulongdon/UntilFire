@@ -368,114 +368,154 @@ function drawSI(c, lf) {
   }
 }
 
-// ── Scene S1: Compounding chart — v8 port, exact animation ─────────────────────
-// Compound model: totalV(x) = 0.42x + 0.82x^2.6 ; YMAX = 1.45 ; totalV(1)=1.24 → $1.24M
-const totalV   = x => 0.42 * x + 0.82 * x ** 2.6;
-const YMAX     = 1.45;
+// ── Scene S1: v8 compound chart — glowing stacked bars on dark ────────────────
+// Rebuilt to the v8 reference frames: dark bg, "you invest" (dark teal) under
+// "your money multiplies" (bright green, glow at the bar tops), Yr labels,
+// $1.24M over the last bar, then "August 2034 / YOUR NEW FREEDOM DATE" with
+// the "3 years sooner" pill + bracket while the last 3 bars dim.
 const NUM_BARS = 12;
-// pop beats: on the grid then accelerating — audible speed-up
-const POPS = [14, 29, 44, 59, 74, 89, 96, 103, 110, 117, 123, 129];
-// messy "unplanned money" heights before the shuffle (v8 seed)
-const messyRng = mulberry32(3);
-const messyH   = Array.from({length: NUM_BARS}, () => 0.22 + messyRng() * 0.46);
-const SLATE    = hex('#94a3b8');
-const CONTRIB  = hex('#0e6e57');   // contributions segment (darker teal, v8)
-const MORPH_S = 140, MORPH_STAG = 4, MORPH_DUR = 26;   // shuffle 140→~210
-const NUM_IN  = 205, NUM_OUT = 242;                     // $1.24M dwell, chart dimmed
-const CHIP_IN = 246;                                    // chip pans out with scene
+const POPS = [14, 29, 44, 59, 74, 86, 95, 103, 110, 116, 121, 126];
+const GRN    = hex('#2be06f');   // bright growth green (v8)
+const INV    = hex('#15684a');   // dark invested segment (v8)
+const DIMBAR = hex('#157a5f');   // dimmed "years you skip" bars
+const totalFrac = i => 0.055 + 0.50 * Math.pow(i / 11, 1.75);
+const invFrac   = i => 0.05 + 0.13 * (i / 11);
+const SLATE = hex('#94a3b8');
+const FD_DIM  = 148;   // last 3 bars dim + bracket/pill
+const HEAD_IN = 163;   // "August 2034" lands on the 16.43s beat
 
 function drawS1(c, lf) {
-  drawRect(c, 0, 0, W, H, BG, 1);
+  drawRect(c, 0, 0, W, H, BG_DARK, 1);
+  // faint teal ambience behind the chart (v8 look)
+  {
+    const p = new ck.Paint();
+    const sh = ck.Shader.MakeRadialGradient(
+      [W * 0.45, H * 0.5], W * 0.55,
+      [ck.Color4f(TEAL[0], TEAL[1], TEAL[2], 0.05), ck.Color4f(TEAL[0], TEAL[1], TEAL[2], 0)],
+      null, ck.TileMode.Clamp
+    );
+    p.setShader(sh);
+    c.drawRect(ck.LTRBRect(0, 0, W, H), p);
+    p.delete(); sh.delete();
+  }
   drawParticles(c, lf + S1_START);
 
-  const chX = 160, chY = H * 0.30, chW = W - 320, chH = H * 0.44;
-  const gapR = 0.34;
+  const chX = W * 0.15, chW = W * 0.70;
+  const baseY = H * 0.80, CH = H * 0.60;
+  const gapR = 0.42;
   const bw = chW / (NUM_BARS + (NUM_BARS - 1) * gapR);
   const gap = bw * gapR;
-  const baseY = chY + chH;
 
-  const numW  = ev(lf, NUM_IN, NUM_IN + 10, easeOut, NUM_OUT, NUM_OUT + 8, easeIn);
-  const chipW = easeOut(progress(lf, CHIP_IN, CHIP_IN + 10));
-  const dimT  = numW;   // dim chart only for the big number
-
-  // small kicker above chart (v8)
-  const kickT = easeOut(progress(lf, 8, 22));
-  if (kickT > 0.01) {
-    drawTextTracked(c, DMM_M, 26, 'YOUR MONEY, PLANNED', W/2, chY - 120, DIM, kickT * 0.9, 6);
-    drawTextC(c, SYNE_B, 52, 'Watch it compound', W/2, chY - 56, TEXT, kickT);
-  }
-
-  const lp = new ck.Paint();
-  lp.setAlphaf(1 - 0.7 * dimT);
-  c.saveLayer(lp);
+  const dimT  = easeInOut(progress(lf, FD_DIM, FD_DIM + 22));
+  const pulse = beatPulse(lf, 14);
 
   // grid
-  const gridT = progress(lf, 14, 34);
-  for (let g = 1; g <= 4; g++)
-    drawLine(c, chX, baseY - g/4 * chH, chX + chW, baseY - g/4 * chH, DIM, 0.18 * gridT, 1);
-  drawLine(c, chX, baseY, chX + chW, baseY, DIM, 0.45 * gridT, 1.5);
+  const gridT = progress(lf, 10, 30);
+  for (let g = 1; g <= 3; g++)
+    drawLine(c, chX - 30, baseY - g/3 * (CH * 0.97), chX + chW + 30, baseY - g/3 * (CH * 0.97), WHITEISH, 0.06 * gridT, 1);
 
   for (let i = 0; i < NUM_BARS; i++) {
     const popT = springE(progress(lf, POPS[i], POPS[i] + 20));
     if (popT < 0.01) continue;
 
-    const wt = progress(lf, MORPH_S + i * MORPH_STAG, MORPH_S + i * MORPH_STAG + MORPH_DUR);
-    const wte = easeInOut(wt);
-    const isStub = i >= 9;
+    const isLate = i >= 9;          // Yr 10–12: the years "3 years sooner" removes
+    const breathe = 1 + 0.018 * pulse * (0.6 + 0.4 * Math.sin(i * 1.3));
+    const tH   = totalFrac(i) * CH * popT * breathe;
+    const invH = Math.min(invFrac(i) * CH * popT, tH);
+    const bx = chX + i * (bw + gap);
+    const cxB = bx + bw / 2;
+    const topY = baseY - tH;
+    const lateAlpha = isLate ? 1 - dimT * 0.999 : 1;
 
-    // target after shuffle: growth curve for 0–8, trimmed stubs for 9–11
-    const xFrac = (i + 1) / 9;
-    const curveH = isStub ? [0.06, 0.045, 0.03][i - 9] : totalV(xFrac) / YMAX;
-    const hFrac = messyH[i] + (curveH - messyH[i]) * wte;
+    // invested segment (dark teal) — dips below the axis like the v8 reflection
+    const reflH = CH * 0.055 * popT;
+    drawRect(c, bx, baseY - invH, bw, invH + reflH, INV, 0.88 * popT * (isLate ? 1 - dimT * 0.55 : 1), 8);
 
-    // pronounced shuffle sway (v8 — the animation the user liked)
-    const sway = (wt > 0 && wt < 1) ? Math.sin(wt * Math.PI * 4) * 13 * (1 - wt) : 0;
+    // bright growth bar on top, glow blob at the tip
+    const gH = tH - invH * 0.55;
+    if (gH > 4 && lateAlpha > 0.001) {
+      drawRect(c, bx, topY, bw, gH, GRN, 0.95 * popT * lateAlpha, 8);
+      const glowP = new ck.Paint();
+      const glowR = bw * 0.85 * (1 + pulse * 0.12);
+      const glowSh = ck.Shader.MakeRadialGradient(
+        [cxB, topY], glowR,
+        [ck.Color4f(GRN[0], GRN[1], GRN[2], 0.50 * popT * lateAlpha), ck.Color4f(GRN[0], GRN[1], GRN[2], 0)],
+        null, ck.TileMode.Clamp
+      );
+      glowP.setShader(glowSh);
+      c.drawCircle(cxB, topY, glowR, glowP);
+      glowP.delete(); glowSh.delete();
+    }
 
-    // beat breathing once settled
-    let hPix = hFrac * chH;
-    if (popT >= 1 && (wt <= 0 || wt >= 1) && !isStub)
-      hPix *= 1 + 0.022 * beatPulse(lf) * (0.6 + 0.4 * Math.sin(i * 1.3));
+    // dimmed flat bar takes over for Yr 10–12 after the freedom-date reveal
+    if (isLate && dimT > 0.001) {
+      drawRect(c, bx, baseY - tH, bw, tH + reflH, DIMBAR, 0.45 * dimT * popT, 8);
+    }
 
-    const h2 = hPix * popT;
-    const bx = chX + i * (bw + gap) + sway;
-    const topY = baseY - h2;
-
-    // v8 turned the trimmed stubs red; palette rule = no red → neutral slate
-    const grownColor = isStub && wt > 0.5 ? SLATE : TEAL;
-    drawRect(c, bx, topY, bw, h2, grownColor, popT * 0.92, 5);
-
-    // contributions split appears as the curve forms (linear part of model)
-    if (!isStub && wte > 0.05 && h2 > 12) {
-      const contribFrac = (0.42 * xFrac) / totalV(xFrac);
-      const cH = h2 * contribFrac * wte;
-      // chip phase: pulse the contributions segments so the label reads instantly
-      const hl = chipW > 0.01 ? 0.92 + 0.08 * Math.sin((lf + S1_START) * 0.25) : 0.92;
-      drawRect(c, bx, baseY - cH, bw, cH, CONTRIB, popT * hl);
+    // Yr labels under bars 1, 3, 6, 9, 12
+    if ([0, 2, 5, 8, 11].includes(i)) {
+      const lbl = `Yr ${i + 1}`;
+      drawText(c, DMS_R, 22, lbl, cxB - measure(DMS_R, 22, lbl)/2, baseY + 96, SLATE, 0.55 * popT);
     }
   }
 
-  c.restore();
-  lp.delete();
+  // axis line
+  drawLine(c, chX - 30, baseY, chX + chW + 30, baseY, WHITEISH, 0.22 * gridT, 2);
 
-  // — $1.24M reveal (chart dimmed under it) —
-  if (numW > 0.01) {
-    const sh = 1 + 0.05 * beatPulse(lf, 14) * numW;
-    c.save();
-    c.translate(W/2, H * 0.52); c.scale(sh, sh); c.translate(-W/2, -H * 0.52);
-    drawTextC(c, DMM_M, 132, '$1.24M', W/2, H * 0.52, TEAL, numW);
-    drawTextC(c, DMS_R, 38, 'projected by your freedom date', W/2, H * 0.52 + 70, TEXT, numW * 0.75);
-    c.restore();
+  // legend (v8): you invest ▪ your money multiplies
+  const legT = easeOut(progress(lf, 55, 80));
+  if (legT > 0.01) {
+    let lx = chX + 14;
+    const ly = baseY - CH * 0.055;
+    for (const [col, label] of [[INV, 'you invest'], [GRN, 'your money multiplies']]) {
+      drawRect(c, lx, ly - 14, 16, 16, col, legT * 0.9, 3);
+      drawText(c, DMS_B, 22, label, lx + 24, ly, SLATE, legT * 0.8);
+      lx += 24 + measure(DMS_B, 22, label) + 30;
+    }
   }
 
-  // — contributions legend chip (chart visible, segments pulsing) —
-  if (chipW > 0.01) {
-    const cpy = baseY + 76;
-    const swW = 26;
-    const label = 'your contributions — the rest is growth';
-    const labelW = measure(DMS_M, 32, label);
-    const total = swW + 16 + labelW;
-    drawRect(c, W/2 - total/2, cpy - 22, swW, swW, CONTRIB, chipW, 4);
-    drawText(c, DMS_M, 32, label, W/2 - total/2 + swW + 16, cpy + 2, BODY, chipW);
+  // $1.24M above the final bar once it lands
+  const numT = easeOut(progress(lf, 132, 150));
+  if (numT > 0.01) {
+    const cx12 = chX + 11 * (bw + gap) + bw / 2;
+    const y12 = baseY - totalFrac(11) * CH;
+    drawTextC(c, DMM_M, 34, '$1.24M', cx12, y12 - 28 - (1 - numT) * 10, TEAL, numT);
+  }
+
+  // "August 2034 / YOUR NEW FREEDOM DATE" slams on the 16.43s beat
+  const headT = springE(progress(lf, HEAD_IN - 15, HEAD_IN));
+  if (headT > 0.01) {
+    c.save();
+    c.translate(W/2, H * 0.115);
+    const s = lerp(1.25, 1, headT);
+    c.scale(s, s);
+    c.translate(-W/2, -H * 0.115);
+    drawTextC(c, SYNE_XB, 92, 'August 2034', W/2, H * 0.115, WHITEISH, clamp(headT * 1.5, 0, 1));
+    c.restore();
+    const kickT = easeOut(progress(lf, HEAD_IN + 2, HEAD_IN + 18));
+    if (kickT > 0.01)
+      drawTextTracked(c, DMS_B, 24, 'YOUR NEW FREEDOM DATE', W/2, H * 0.115 + 62, TEAL, kickT, 4);
+  }
+
+  // "3 years sooner" pill + bracket over the dimmed bars
+  const brT = easeOut(progress(lf, FD_DIM + 18, FD_DIM + 40));
+  if (brT > 0.01) {
+    const xL = chX + 9 * (bw + gap);
+    const xR = chX + 11 * (bw + gap) + bw;
+    const cxP = (xL + xR) / 2;
+    const yBr = baseY - totalFrac(11) * CH - 80;
+    // bracket
+    drawLine(c, lerp(cxP, xL, brT), yBr, lerp(cxP, xR, brT), yBr, TEAL, 0.8 * brT, 3);
+    drawLine(c, xL, yBr - 8, xL, yBr + 8, TEAL, 0.8 * brT, 3);
+    drawLine(c, xR, yBr - 8, xR, yBr + 8, TEAL, 0.8 * brT, 3);
+    // pill
+    const pw = measure(DMS_B, 26, '3 years sooner') + 48;
+    const py = yBr - 46;
+    const pillP = mkStroke(TEAL, 0.85 * brT, 2);
+    c.drawRRect(ck.RRectXY(ck.LTRBRect(cxP - pw/2, py - 22, cxP + pw/2, py + 18), 20, 20), pillP);
+    pillP.delete();
+    drawRect(c, cxP - pw/2, py - 22, pw, 40, TEAL, 0.10 * brT, 20);
+    drawTextC(c, DMS_B, 26, '3 years sooner', cxP, py + 8, TEAL, brT);
   }
 }
 
@@ -488,22 +528,25 @@ function drawS2(c, lf) {
   drawTextC(c, SYNE_B, 58, 'Works with your bank.', W/2, H*0.12, TEXT, headT);
   drawTextC(c, DMS_R, 32, 'Connect once, track automatically.', W/2, H*0.12 + 68, BODY, headT * 0.8);
 
-  const CARD_W = 290, CARD_H = 164, GAP = 24;
+  const CARD_W = 252, CARD_H = 132, GAP = 20;
   const STRIDE = CARD_W + GAP;
-  const LOGO_SIZE = 88;
-  const SPEED = 2.2;
+  const LOGO_SIZE = 64;
   const enterT = easeOut(progress(lf, 12, 65));
   const pulse  = beatPulse(lf, 14);
 
+  // four rows fill the page, alternating directions and speeds
+  const ROW_STEP = CARD_H + 22;
   const rowDefs = [
-    { icons: bankIcons.slice(0, 8),  y: H*0.35, dir: -1 },
-    { icons: bankIcons.slice(8, 15), y: H*0.35 + CARD_H + 30, dir:  1 },
+    { icons: bankIcons.slice(0, 8),                          y: H*0.245,                dir: -1, speed: 2.4 },
+    { icons: bankIcons.slice(8, 15),                         y: H*0.245 + ROW_STEP,     dir:  1, speed: 1.8 },
+    { icons: bankIcons.slice(4, 12),                         y: H*0.245 + ROW_STEP * 2, dir: -1, speed: 2.0 },
+    { icons: [...bankIcons.slice(11, 15), ...bankIcons.slice(0, 4)], y: H*0.245 + ROW_STEP * 3, dir: 1, speed: 2.2 },
   ];
 
   for (const row of rowDefs) {
     const n = row.icons.length;
     const loopW = n * STRIDE;
-    const scroll = ((lf * SPEED * row.dir) % loopW + loopW) % loopW;
+    const scroll = ((lf * row.speed * row.dir) % loopW + loopW) % loopW;
 
     for (let k = -1; k < Math.ceil(W / loopW) + 2; k++) {
       for (let i = 0; i < n; i++) {
@@ -522,11 +565,11 @@ function drawS2(c, lf) {
         c.drawRRect(ck.RRectXY(ck.LTRBRect(-CARD_W/2, -CARD_H/2, CARD_W/2, CARD_H/2), 16, 16), borderP);
         borderP.delete();
 
-        drawBankLogo(c, row.icons[i], 0, -12, LOGO_SIZE, enterT);
+        drawBankLogo(c, row.icons[i], 0, -10, LOGO_SIZE, enterT);
 
         const nm = row.icons[i].name;
-        const nw = measure(DMS_M, 20, nm);
-        drawText(c, DMS_M, 20, nm, -nw/2, CARD_H/2 - 18, BODY, enterT * 0.65);
+        const nw = measure(DMS_M, 18, nm);
+        drawText(c, DMS_M, 18, nm, -nw/2, CARD_H/2 - 14, BODY, enterT * 0.65);
         c.restore();
       }
     }
@@ -542,108 +585,101 @@ function drawS2(c, lf) {
       null, ck.TileMode.Clamp
     );
     p.setShader(sh);
-    c.drawRect(ck.LTRBRect(Math.min(x0,x1), H*0.3, Math.max(x0,x1), H*0.8), p);
+    c.drawRect(ck.LTRBRect(Math.min(x0,x1), H*0.22, Math.max(x0,x1), H*0.86), p);
     p.delete(); sh.delete();
   }
 
   const tagT = easeOut(progress(lf, 95, 135));
-  if (tagT > 0) drawTextC(c, DMS_M, 30, '15+ banks. 0 manual entries.', W/2, H*0.88, TEAL, tagT);
+  if (tagT > 0) drawTextC(c, DMS_M, 30, '15,000+ banks. 0 manual entries.', W/2, H*0.93, TEAL, tagT);
 }
 
-// ── Scene S3: Leaks card — find then swipe away ────────────────────────────────
+// ── Scene S3: Leaks — full-screen chip field, one cross per beat ───────────────
 const leakItems = [
-  { label: 'Streaming services', amount: 47,  pct: 0.72 },
-  { label: 'Unused gym',         amount: 29,  pct: 0.44 },
-  { label: 'Food delivery',      amount: 89,  pct: 0.58 },
-  { label: 'Subscriptions',      amount: 63,  pct: 0.85 },
-  { label: 'Impulse spending',   amount: 124, pct: 0.66 },
-];
+  { label: 'Streaming services', amount: 47 },
+  { label: 'Unused gym',         amount: 29 },
+  { label: 'Food delivery',      amount: 89 },
+  { label: 'Subscriptions',      amount: 63 },
+  { label: 'Impulse buys',       amount: 124 },
+  { label: 'Bank fees',          amount: 18 },
+  { label: 'Unused apps',        amount: 22 },
+  { label: 'Daily takeout',      amount: 96 },
+  { label: 'Old insurance',      amount: 54 },
+  { label: 'Late fees',          amount: 31 },
+];  // total: $573/mo
+const CROSS0 = 74;   // first cross on beat 14+15·4; one chip per beat after
 
 function drawS3(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
   drawParticles(c, lf + S3_START);
 
+  const pulse = beatPulse(lf, 14);
+
   const headT = easeOut(progress(lf, 0, 38));
   drawTextC(c, SYNE_B, 58, "You're leaking money.", W/2, H*0.1, TEXT, headT);
-  drawTextC(c, DMS_R, 32, 'UntilFire finds the drains — and helps you cut them.', W/2, H*0.1 + 68, BODY, headT * 0.8);
+  drawTextC(c, DMS_R, 32, 'UntilFire finds the drains — and cuts them.', W/2, H*0.1 + 68, BODY, headT * 0.8);
 
-  const CARD_W2 = 820, CARD_H2 = 492;
-  const CX = W/2 - CARD_W2/2, CY = H*0.26;
-  const cardT = easeOut(progress(lf, 5, 40));
-  if (cardT > 0) {
-    drawRect(c, CX, CY, CARD_W2, CARD_H2, CARD, cardT, 20);
-    const bp = mkStroke(BORD, cardT, 1.5);
-    c.drawRRect(ck.RRectXY(ck.LTRBRect(CX, CY, CX+CARD_W2, CY+CARD_H2), 20, 20), bp);
-    bp.delete();
-  }
-
-  const removeStart = i => 147 + i * 16;
-  const REMOVE_LEN  = 22;
+  // 5 × 2 chip grid
+  const COLS = 5, CHIP_W = 330, CHIP_H = 120, GAPX = 24, GAPY = 30;
+  const gridW = COLS * CHIP_W + (COLS - 1) * GAPX;
+  const gx0 = W/2 - gridW/2;
+  const gy0 = H * 0.30;
 
   let recovered = 0;
+
   for (let i = 0; i < leakItems.length; i++) {
-    recovered += leakItems[i].amount * easeOut(progress(lf, removeStart(i), removeStart(i) + REMOVE_LEN));
-  }
+    const item = leakItems[i];
+    const col = i % COLS, row = (i / COLS) | 0;
+    const x = gx0 + col * (CHIP_W + GAPX);
+    const y = gy0 + row * (CHIP_H + GAPY);
+    const cx = x + CHIP_W/2;
 
-  // Card header
-  const ctT = easeOut(progress(lf, 15, 50));
-  if (ctT > 0) {
-    const pulse = beatPulse(lf, 14);
-    drawText(c, DMS_B, 26, 'Spending Leaks', CX + 28, CY + 46, TEXT, ctT);
-    const totalStr = `+$${Math.round(recovered)}/mo recovered`;
-    const tw = measure(DMM_M, 26, totalStr);
-    drawText(c, DMM_M, 26, totalStr, CX + CARD_W2 - tw - 28, CY + 46, TEAL,
-      ctT * (recovered > 0.5 ? 0.85 + 0.15 * pulse : 0.4));
-    drawLine(c, CX + 20, CY + 58, CX + CARD_W2 - 20, CY + 58, BORD, ctT, 1.5);
-  }
+    const inT = springE(progress(lf, 12 + i * 4, 32 + i * 4));
+    if (inT < 0.01) continue;
 
-  // Rows
-  for (let i = 0; i < leakItems.length; i++) {
-    const item  = leakItems[i];
-    const rowT  = easeOut(progress(lf, 20 + i * 12, 50 + i * 12));
-    if (rowT <= 0) continue;
-
-    const remT  = easeInOut(progress(lf, removeStart(i), removeStart(i) + REMOVE_LEN));
-    const ry    = CY + 80 + i * 74;
-    const slideX = remT * 80;
-    const rowAlpha = rowT * (1 - remT * 0.65);
+    // cross lands exactly on its beat
+    const beat = CROSS0 + i * 15;
+    const crossT = springE(progress(lf, beat - 10, beat));
+    recovered += item.amount * easeOut(progress(lf, beat - 4, beat + 6));
+    const dead = crossT * 0.62;
 
     c.save();
-    c.clipRect(ck.XYWHRect(CX, ry - 8, CARD_W2, 66), ck.ClipOp.Intersect, true);
-    c.translate(slideX, 0);
+    c.translate(cx, y + CHIP_H/2);
+    c.scale(inT, inT);
+    c.translate(-cx, -(y + CHIP_H/2));
 
-    drawText(c, DMS_M, 24, item.label, CX + 28, ry + 20, TEXT, rowAlpha * 0.9);
-    const amStr = `$${item.amount}`;
-    const amw = measure(DMM_M, 24, amStr);
-    drawText(c, DMM_M, 24, amStr, CX + CARD_W2 - amw - 110, ry + 20, TEXT, rowAlpha * 0.85 * (1 - remT));
+    drawRect(c, x, y, CHIP_W, CHIP_H, CARD, inT * (1 - dead * 0.45), 16);
+    const bp = mkStroke(BORD, inT * (1 - dead * 0.5), 1.5);
+    c.drawRRect(ck.RRectXY(ck.LTRBRect(x, y, x + CHIP_W, y + CHIP_H), 16, 16), bp);
+    bp.delete();
 
-    const BAR_L = CX + 28, BAR_R = CX + CARD_W2 - 110;
-    const BAR_W = BAR_R - BAR_L;
-    drawRect(c, BAR_L, ry + 32, BAR_W, 8, BORD, rowAlpha, 4);
-    const fillW = BAR_W * item.pct * rowT * (1 - remT);
-    if (fillW > 0) drawRect(c, BAR_L, ry + 32, fillW, 8, hex('#94a3b8'), rowAlpha, 4);
+    const txtA = inT * (1 - dead);
+    drawTextC(c, DMS_M, 26, item.label, cx, y + 48, TEXT, txtA);
+    drawTextC(c, DMM_M, 30, `$${item.amount}/mo`, cx, y + 90, BODY, txtA * 0.9);
+
+    // X cross slashes over the chip, landing on the beat
+    if (crossT > 0.01) {
+      const m = 26;
+      const p1 = clamp(crossT * 1.4, 0, 1);   // first slash leads
+      const p2 = clamp(crossT * 1.4 - 0.4, 0, 1);
+      drawLine(c, x + m, y + m, x + m + (CHIP_W - 2*m) * p1, y + m + (CHIP_H - 2*m) * p1, TEAL, 0.9, 5);
+      if (p2 > 0)
+        drawLine(c, x + CHIP_W - m, y + m, x + CHIP_W - m - (CHIP_W - 2*m) * p2, y + m + (CHIP_H - 2*m) * p2, TEAL, 0.9, 5);
+    }
+
     c.restore();
-
-    // Strikethrough
-    if (remT > 0 && remT < 1) {
-      const lw = measure(DMS_M, 24, item.label);
-      drawLine(c, CX + 28 + slideX, ry + 12,
-        CX + 28 + slideX + lw * clamp(remT * 1.6, 0, 1), ry + 12, TEAL, 0.85, 2.5);
-    }
-
-    // Teal check
-    const checkT = easeOut(progress(lf, removeStart(i) + 12, removeStart(i) + REMOVE_LEN + 6));
-    if (checkT > 0) {
-      const ccx = CX + CARD_W2 - 56, ccy = ry + 12;
-      const pop = checkT < 0.7 ? lerp(0, 1.15, checkT/0.7) : lerp(1.15, 1, (checkT-0.7)/0.3);
-      drawCircle(c, ccx, ccy, 15 * pop, TEAL, 0.15 * checkT);
-      const chk = mkStroke(TEAL, checkT, 3.2);
-      c.drawLine(ccx - 6*pop, ccy + 0.5, ccx - 1.5*pop, ccy + 5.5*pop, chk);
-      c.drawLine(ccx - 1.5*pop, ccy + 5.5*pop, ccx + 7*pop, ccy - 5*pop, chk);
-      chk.delete();
-    }
   }
 
+  // recovered counter climbs with every cross
+  const ctT = easeOut(progress(lf, 50, 75));
+  if (ctT > 0.01) {
+    const counterStr = `+$${Math.round(recovered)}/mo`;
+    const sh = 1 + 0.06 * pulse * (recovered > 0.5 ? 1 : 0);
+    c.save();
+    c.translate(W/2, H * 0.82); c.scale(sh, sh); c.translate(-W/2, -H * 0.82);
+    drawTextC(c, DMM_M, 76, counterStr, W/2, H * 0.82, TEAL, ctT * (recovered > 0.5 ? 1 : 0.45));
+    drawTextC(c, DMS_R, 30, 'recovered back into your plan', W/2, H * 0.82 + 48, BODY, ctT * 0.75);
+    c.restore();
+  }
 }
 
 // ── Scene S4: End card ────────────────────────────────────────────────────────
