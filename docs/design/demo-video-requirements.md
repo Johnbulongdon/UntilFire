@@ -37,11 +37,13 @@ update this file in the same session.
   actual dashboard but the emotion it gives."* The video is emotional
   motion-graphics storytelling about FIRE freedom — NOT dashboard
   recordings, NOT onboarding screenshots.
-- **Opening sequence (confirmed 2026-06-11, v15/v16, refined v18):** start on
-  full black; the question "What if work was optional?" appears **word by
+- **Opening sequence (confirmed 2026-06-11, v15/v16, refined v18/v20):** start
+  on full black; the question "What if work was optional?" appears **word by
   word, each word landing exactly on a beat** (v18), then fades out;
-  "introducing... UntilFire" appears on black; then the full-size logo
-  animates in and **its light turns the bg white**. The black→white light
+  "introducing..." appears alone on black — **the name is introduced only
+  once** (v20): no big "UntilFire" text before the logo, the logo + wordmark
+  reveal IS the introduction; then the full-size logo animates in and **its
+  light turns the bg white**. The black→white light
   must **fan out from the sun as an expanding wavefront** — white core grows
   from 1px while the soft leading edge stays a fixed-width band (v18; the
   earlier slow soft blob read as a weird vignette). Logo + wordmark settle;
@@ -54,25 +56,28 @@ update this file in the same session.
 - v8 scene structure to preserve after the opening:
   1. Question hook — "What if work was optional?" (black, word-by-word,
      each word on a beat).
-  2. Compounding bar chart — **use the v8 scene exactly (confirmed
-     2026-06-11, v18)**: "YOUR MONEY, PLANNED" kicker + "Watch it compound",
-     accelerating bar pops, pronounced shuffle sway into the compound curve
-     with three trimmed stubs, contributions segments (dark teal `#0e6e57`),
-     dimmed-chart **$1.24M reveal**, then the "your contributions — the rest
-     is growth" chip. Only deviation from v8: stubs are neutral slate, not
-     red (palette rule).
-  3. Bank logos — **big logos in a continuously scrolling marquee**
-     (two rows, opposite directions), not a static grid.
-  4. Spending leaks — leaks found, then **animated removal**: rows get
-     struck through and swiped away with teal checks while a
-     "+$X/mo recovered" counter climbs. **No red/orange in this scene** —
-     neutral grey bars, teal for the recovery.
-  5. End card (v18) — **smaller** teal half-sun (so copy never crowds the
-     wordmark) + wordmark + www.untilfire.com settle in first; then the
-     power copy **slams in with spring scale, line by line**:
-     "Don't let money stop you" on the 39.81s beat, and the final line
-     "from being a good person." lands at **exactly 41s** — never earlier
-     (waiting copy reads dead).
+  2. Compounding bar chart — v8 dark-bg glowing-bars look (confirmed v19);
+     **the freedom-date moment must NOT read as "lowering the bar"** (v20):
+     after the $1.24M reveal, the 3 tallest bars **slide LEFT 3 year-slots —
+     same height, earlier timeline** — leaving ghost outlines at Yr 10–12
+     under the "3 years sooner" bracket. Never dim/shrink the result; show
+     the same number arriving sooner.
+  3. Bank logos — **big logos in a continuously scrolling marquee** filling
+     the page (4 rows, alternating directions). **Every logo on screen must
+     be unique at any given moment** (v20): disjoint icon sets per row, and
+     each row's loop must be wider than the visible window. 36 icons live in
+     `icons.json`. Tagline: "15,000+ banks. 0 manual entries."
+  4. Spending leaks — a full grid of leak chips; crosses land on an
+     **accelerating rhythm** (first hits on the beat grid, then gaps tighten
+     — v20: a flat one-per-beat pace read as slow/predictable). Crossed
+     chips **fly off-screen** so the field visibly empties, then the
+     "+$X/mo recovered" counter takes center stage. **No red/orange** —
+     teal crosses and recovery.
+  5. End card (v18/v20) — copy **frames the logo, never clusters at the
+     top**: "Don't let money stop you" above the sun (slams on the 39.81s
+     beat), smaller teal half-sun center, "from being a good person." BELOW
+     the sun landing at **exactly 41s** — never earlier (waiting copy reads
+     dead) — then wordmark + www.untilfire.com at the bottom.
 - Approved copy:
   - Hook: "What if work was optional?" (each word on a beat)
   - End card: "Don't let money stop you / from being a good person."

@@ -306,17 +306,13 @@ function drawSI(c, lf) {
   drawRect(c, 0, 0, W, H, BG_DARK, 1);
   if (lf < 200) drawParticles(c, lf + SI_START);
 
-  // "introducing..." then "UntilFire" beneath — both leave before the logo
+  // "introducing..." alone — the logo + wordmark reveal IS the introduction,
+  // so the name is only ever said once
   const in1  = easeOut(progress(lf, 8, 30));
-  const in2  = easeOut(progress(lf, 35, 58));
   const outT = easeIn(progress(lf, 80, 100));
   if (in1 > 0 && outT < 1) {
-    const iy = H * 0.40 + (1 - in1) * 14;
-    drawTextC(c, SYNE_B, 50, 'introducing...', W/2, iy, WHITEISH, in1 * (1 - outT) * 0.85);
-  }
-  if (in2 > 0 && outT < 1) {
-    const uy = H * 0.40 + 110 + (1 - in2) * 14;
-    drawTextC(c, SYNE_XB, 88, 'UntilFire', W/2, uy, WHITEISH, in2 * (1 - outT));
+    const iy = H * 0.47 + (1 - in1) * 14;
+    drawTextC(c, SYNE_B, 56, 'introducing...', W/2, iy, WHITEISH, in1 * (1 - outT) * 0.9);
   }
 
   // Full-size logo animates in 100→145
@@ -371,8 +367,9 @@ function drawSI(c, lf) {
 // ── Scene S1: v8 compound chart — glowing stacked bars on dark ────────────────
 // Rebuilt to the v8 reference frames: dark bg, "you invest" (dark teal) under
 // "your money multiplies" (bright green, glow at the bar tops), Yr labels,
-// $1.24M over the last bar, then "August 2034 / YOUR NEW FREEDOM DATE" with
-// the "3 years sooner" pill + bracket while the last 3 bars dim.
+// $1.24M over the last bar, then "August 2034 / YOUR NEW FREEDOM DATE" —
+// the 3 tallest bars slide LEFT 3 year-slots (same height, earlier timeline)
+// leaving ghost outlines at Yr 10–12 under the "3 years sooner" bracket.
 const NUM_BARS = 12;
 const POPS = [14, 29, 44, 59, 74, 86, 95, 103, 110, 116, 121, 126];
 const GRN    = hex('#2be06f');   // bright growth green (v8)
@@ -406,56 +403,68 @@ function drawS1(c, lf) {
   const bw = chW / (NUM_BARS + (NUM_BARS - 1) * gapR);
   const gap = bw * gapR;
 
-  const dimT  = easeInOut(progress(lf, FD_DIM, FD_DIM + 22));
-  const pulse = beatPulse(lf, 14);
+  // After the freedom-date reveal the 3 tallest bars SLIDE LEFT 3 year-slots —
+  // same height, earlier timeline (you hit the same number sooner, you don't
+  // lower the bar). Ghost outlines stay at Yr 10–12: the years you skip.
+  const shiftT = easeInOut(progress(lf, FD_DIM, FD_DIM + 28));
+  const pulse  = beatPulse(lf, 14);
+  const slotX  = i => chX + i * (bw + gap);
 
   // grid
   const gridT = progress(lf, 10, 30);
   for (let g = 1; g <= 3; g++)
     drawLine(c, chX - 30, baseY - g/3 * (CH * 0.97), chX + chW + 30, baseY - g/3 * (CH * 0.97), WHITEISH, 0.06 * gridT, 1);
 
+  // Yr labels stay fixed on the timeline axis
+  const axisT = progress(lf, 14, 40);
+  for (const i of [0, 2, 5, 8, 11]) {
+    const lbl = `Yr ${i + 1}`;
+    drawText(c, DMS_R, 22, lbl, slotX(i) + bw/2 - measure(DMS_R, 22, lbl)/2, baseY + 96, SLATE, 0.55 * axisT);
+  }
+
   for (let i = 0; i < NUM_BARS; i++) {
     const popT = springE(progress(lf, POPS[i], POPS[i] + 20));
     if (popT < 0.01) continue;
 
-    const isLate = i >= 9;          // Yr 10–12: the years "3 years sooner" removes
+    const isLate     = i >= 9;             // Yr 10–12 bars slide to Yr 7–9
+    const isReplaced = i >= 6 && i <= 8;   // Yr 7–9 bars fade as the tall ones land
     const breathe = 1 + 0.018 * pulse * (0.6 + 0.4 * Math.sin(i * 1.3));
     const tH   = totalFrac(i) * CH * popT * breathe;
     const invH = Math.min(invFrac(i) * CH * popT, tH);
-    const bx = chX + i * (bw + gap);
+    const bx = isLate ? lerp(slotX(i), slotX(i - 3), shiftT) : slotX(i);
     const cxB = bx + bw / 2;
     const topY = baseY - tH;
-    const lateAlpha = isLate ? 1 - dimT * 0.999 : 1;
+    const alpha = isReplaced ? 1 - shiftT : 1;
+    if (alpha < 0.005) continue;
 
     // invested segment (dark teal) — dips below the axis like the v8 reflection
     const reflH = CH * 0.055 * popT;
-    drawRect(c, bx, baseY - invH, bw, invH + reflH, INV, 0.88 * popT * (isLate ? 1 - dimT * 0.55 : 1), 8);
+    drawRect(c, bx, baseY - invH, bw, invH + reflH, INV, 0.88 * popT * alpha, 8);
 
     // bright growth bar on top, glow blob at the tip
     const gH = tH - invH * 0.55;
-    if (gH > 4 && lateAlpha > 0.001) {
-      drawRect(c, bx, topY, bw, gH, GRN, 0.95 * popT * lateAlpha, 8);
+    if (gH > 4) {
+      drawRect(c, bx, topY, bw, gH, GRN, 0.95 * popT * alpha, 8);
       const glowP = new ck.Paint();
       const glowR = bw * 0.85 * (1 + pulse * 0.12);
       const glowSh = ck.Shader.MakeRadialGradient(
         [cxB, topY], glowR,
-        [ck.Color4f(GRN[0], GRN[1], GRN[2], 0.50 * popT * lateAlpha), ck.Color4f(GRN[0], GRN[1], GRN[2], 0)],
+        [ck.Color4f(GRN[0], GRN[1], GRN[2], 0.50 * popT * alpha), ck.Color4f(GRN[0], GRN[1], GRN[2], 0)],
         null, ck.TileMode.Clamp
       );
       glowP.setShader(glowSh);
       c.drawCircle(cxB, topY, glowR, glowP);
       glowP.delete(); glowSh.delete();
     }
+  }
 
-    // dimmed flat bar takes over for Yr 10–12 after the freedom-date reveal
-    if (isLate && dimT > 0.001) {
-      drawRect(c, bx, baseY - tH, bw, tH + reflH, DIMBAR, 0.45 * dimT * popT, 8);
-    }
-
-    // Yr labels under bars 1, 3, 6, 9, 12
-    if ([0, 2, 5, 8, 11].includes(i)) {
-      const lbl = `Yr ${i + 1}`;
-      drawText(c, DMS_R, 22, lbl, cxB - measure(DMS_R, 22, lbl)/2, baseY + 96, SLATE, 0.55 * popT);
+  // ghost outlines left behind at Yr 10–12 — the years you skip
+  if (shiftT > 0.01) {
+    for (let i = 9; i < NUM_BARS; i++) {
+      const tH = totalFrac(i) * CH;
+      const gp = mkStroke(DIMBAR, 0.55 * shiftT, 2);
+      c.drawRRect(ck.RRectXY(ck.LTRBRect(slotX(i), baseY - tH, slotX(i) + bw, baseY), 8, 8), gp);
+      gp.delete();
     }
   }
 
@@ -474,10 +483,10 @@ function drawS1(c, lf) {
     }
   }
 
-  // $1.24M above the final bar once it lands
+  // $1.24M above the final bar — rides left with it to the Yr 9 slot
   const numT = easeOut(progress(lf, 132, 150));
   if (numT > 0.01) {
-    const cx12 = chX + 11 * (bw + gap) + bw / 2;
+    const cx12 = lerp(slotX(11), slotX(8), shiftT) + bw / 2;
     const y12 = baseY - totalFrac(11) * CH;
     drawTextC(c, DMM_M, 34, '$1.24M', cx12, y12 - 28 - (1 - numT) * 10, TEAL, numT);
   }
@@ -497,11 +506,11 @@ function drawS1(c, lf) {
       drawTextTracked(c, DMS_B, 24, 'YOUR NEW FREEDOM DATE', W/2, H * 0.115 + 62, TEAL, kickT, 4);
   }
 
-  // "3 years sooner" pill + bracket over the dimmed bars
+  // "3 years sooner" pill + bracket over the skipped-years ghosts
   const brT = easeOut(progress(lf, FD_DIM + 18, FD_DIM + 40));
   if (brT > 0.01) {
-    const xL = chX + 9 * (bw + gap);
-    const xR = chX + 11 * (bw + gap) + bw;
+    const xL = slotX(9);
+    const xR = slotX(11) + bw;
     const cxP = (xL + xR) / 2;
     const yBr = baseY - totalFrac(11) * CH - 80;
     // bracket
@@ -534,13 +543,15 @@ function drawS2(c, lf) {
   const enterT = easeOut(progress(lf, 12, 65));
   const pulse  = beatPulse(lf, 14);
 
-  // four rows fill the page, alternating directions and speeds
+  // four rows fill the page — disjoint 9-icon sets per row, and each row's
+  // loop (9 × stride = 2448px) is wider than the visible window (2424px),
+  // so no logo can ever appear twice on screen at the same moment
   const ROW_STEP = CARD_H + 22;
   const rowDefs = [
-    { icons: bankIcons.slice(0, 8),                          y: H*0.245,                dir: -1, speed: 2.4 },
-    { icons: bankIcons.slice(8, 15),                         y: H*0.245 + ROW_STEP,     dir:  1, speed: 1.8 },
-    { icons: bankIcons.slice(4, 12),                         y: H*0.245 + ROW_STEP * 2, dir: -1, speed: 2.0 },
-    { icons: [...bankIcons.slice(11, 15), ...bankIcons.slice(0, 4)], y: H*0.245 + ROW_STEP * 3, dir: 1, speed: 2.2 },
+    { icons: bankIcons.slice(0, 9),   y: H*0.245,                dir: -1, speed: 2.4 },
+    { icons: bankIcons.slice(9, 18),  y: H*0.245 + ROW_STEP,     dir:  1, speed: 1.8 },
+    { icons: bankIcons.slice(18, 27), y: H*0.245 + ROW_STEP * 2, dir: -1, speed: 2.0 },
+    { icons: bankIcons.slice(27, 36), y: H*0.245 + ROW_STEP * 3, dir: 1, speed: 2.2 },
   ];
 
   for (const row of rowDefs) {
@@ -593,7 +604,7 @@ function drawS2(c, lf) {
   if (tagT > 0) drawTextC(c, DMS_M, 30, '15,000+ banks. 0 manual entries.', W/2, H*0.93, TEAL, tagT);
 }
 
-// ── Scene S3: Leaks — full-screen chip field, one cross per beat ───────────────
+// ── Scene S3: Leaks — chip field, accelerating crosses, chips fly away ────────
 const leakItems = [
   { label: 'Streaming services', amount: 47 },
   { label: 'Unused gym',         amount: 29 },
@@ -606,7 +617,9 @@ const leakItems = [
   { label: 'Old insurance',      amount: 54 },
   { label: 'Late fees',          amount: 31 },
 ];  // total: $573/mo
-const CROSS0 = 74;   // first cross on beat 14+15·4; one chip per beat after
+// Cross schedule accelerates like the bar pops: first hits on the beat grid,
+// then the gaps tighten (15,15,15,15,12,10,8,7,6) — rhythm builds, never drags
+const CROSS = [59, 74, 89, 104, 119, 131, 141, 149, 156, 162];
 
 function drawS3(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
@@ -625,59 +638,71 @@ function drawS3(c, lf) {
   const gy0 = H * 0.30;
 
   let recovered = 0;
+  let hitKick = 0;   // counter kick from the most recent cross
 
   for (let i = 0; i < leakItems.length; i++) {
     const item = leakItems[i];
     const col = i % COLS, row = (i / COLS) | 0;
     const x = gx0 + col * (CHIP_W + GAPX);
     const y = gy0 + row * (CHIP_H + GAPY);
-    const cx = x + CHIP_W/2;
+    const cx = x + CHIP_W/2, cy = y + CHIP_H/2;
 
     const inT = springE(progress(lf, 12 + i * 4, 32 + i * 4));
     if (inT < 0.01) continue;
 
-    // cross lands exactly on its beat
-    const beat = CROSS0 + i * 15;
+    const beat = CROSS[i];
     const crossT = springE(progress(lf, beat - 10, beat));
     recovered += item.amount * easeOut(progress(lf, beat - 4, beat + 6));
-    const dead = crossT * 0.62;
+    hitKick = Math.max(hitKick, clamp(1 - (lf - beat) / 6, 0, 1) * (lf >= beat - 1 ? 1 : 0));
+
+    // crossed chips don't just sit there — they fly off and the field empties
+    const flyT = easeIn(progress(lf, beat + 8, beat + 26));
+    if (flyT >= 1) continue;
+    const flyDir = col < COLS/2 ? -1 : 1;
 
     c.save();
-    c.translate(cx, y + CHIP_H/2);
-    c.scale(inT, inT);
-    c.translate(-cx, -(y + CHIP_H/2));
+    c.translate(cx + flyDir * flyT * W * 0.45, cy + flyT * H * 0.35);
+    c.rotate(flyDir * flyT * 18, 0, 0);
+    const s = inT * (1 - flyT * 0.35);
+    c.scale(s, s);
+    c.translate(-cx, -cy);
+    const dead = crossT * 0.62;
+    const flyA = 1 - flyT;
 
-    drawRect(c, x, y, CHIP_W, CHIP_H, CARD, inT * (1 - dead * 0.45), 16);
-    const bp = mkStroke(BORD, inT * (1 - dead * 0.5), 1.5);
+    drawRect(c, x, y, CHIP_W, CHIP_H, CARD, inT * (1 - dead * 0.45) * flyA, 16);
+    const bp = mkStroke(BORD, inT * (1 - dead * 0.5) * flyA, 1.5);
     c.drawRRect(ck.RRectXY(ck.LTRBRect(x, y, x + CHIP_W, y + CHIP_H), 16, 16), bp);
     bp.delete();
 
-    const txtA = inT * (1 - dead);
+    const txtA = inT * (1 - dead) * flyA;
     drawTextC(c, DMS_M, 26, item.label, cx, y + 48, TEXT, txtA);
     drawTextC(c, DMM_M, 30, `$${item.amount}/mo`, cx, y + 90, BODY, txtA * 0.9);
 
-    // X cross slashes over the chip, landing on the beat
+    // X cross slashes over the chip
     if (crossT > 0.01) {
       const m = 26;
       const p1 = clamp(crossT * 1.4, 0, 1);   // first slash leads
       const p2 = clamp(crossT * 1.4 - 0.4, 0, 1);
-      drawLine(c, x + m, y + m, x + m + (CHIP_W - 2*m) * p1, y + m + (CHIP_H - 2*m) * p1, TEAL, 0.9, 5);
+      drawLine(c, x + m, y + m, x + m + (CHIP_W - 2*m) * p1, y + m + (CHIP_H - 2*m) * p1, TEAL, 0.9 * flyA, 5);
       if (p2 > 0)
-        drawLine(c, x + CHIP_W - m, y + m, x + CHIP_W - m - (CHIP_W - 2*m) * p2, y + m + (CHIP_H - 2*m) * p2, TEAL, 0.9, 5);
+        drawLine(c, x + CHIP_W - m, y + m, x + CHIP_W - m - (CHIP_W - 2*m) * p2, y + m + (CHIP_H - 2*m) * p2, TEAL, 0.9 * flyA, 5);
     }
 
     c.restore();
   }
 
-  // recovered counter climbs with every cross
+  // recovered counter kicks on every hit, then takes center stage once the
+  // field has emptied
   const ctT = easeOut(progress(lf, 50, 75));
   if (ctT > 0.01) {
+    const finalT = easeInOut(progress(lf, 190, 214));
     const counterStr = `+$${Math.round(recovered)}/mo`;
-    const sh = 1 + 0.06 * pulse * (recovered > 0.5 ? 1 : 0);
+    const cyC = lerp(H * 0.82, H * 0.55, finalT);
+    const sh = (1 + 0.10 * hitKick) * lerp(1, 1.45, finalT);
     c.save();
-    c.translate(W/2, H * 0.82); c.scale(sh, sh); c.translate(-W/2, -H * 0.82);
-    drawTextC(c, DMM_M, 76, counterStr, W/2, H * 0.82, TEAL, ctT * (recovered > 0.5 ? 1 : 0.45));
-    drawTextC(c, DMS_R, 30, 'recovered back into your plan', W/2, H * 0.82 + 48, BODY, ctT * 0.75);
+    c.translate(W/2, cyC); c.scale(sh, sh); c.translate(-W/2, -cyC);
+    drawTextC(c, DMM_M, 76, counterStr, W/2, cyC, TEAL, ctT * (recovered > 0.5 ? 1 : 0.45));
+    drawTextC(c, DMS_R, 30, 'recovered back into your plan', W/2, cyC + 48, BODY, ctT * 0.75);
     c.restore();
   }
 }
@@ -690,23 +715,25 @@ function drawS4(c, lf) {
   const enterT = easeOut(progress(lf, 0, 45));
   const pulse  = beatPulse(lf, 14);
 
-  // Teal sunrise — smaller so the headline never crowds it
-  if (enterT > 0) halfSun(c, W/2, H*0.56, 135 * enterT, enterT, pulse * 0.5);
+  // Teal sunrise — line 1 above it, line 2 below it, so the copy frames the
+  // logo instead of clustering at the top
+  const SUN_Y = H * 0.46;
+  if (enterT > 0) halfSun(c, W/2, SUN_Y, 135 * enterT, enterT, pulse * 0.5);
 
   // Horizon line expanding from sun
   const lineT = easeOut(progress(lf, 30, 65));
   if (lineT > 0) {
-    drawLine(c, W/2 - 170*lineT, H*0.56, W/2 + 170*lineT, H*0.56, TEAL, 0.3*lineT, 2);
+    drawLine(c, W/2 - 170*lineT, SUN_Y, W/2 + 170*lineT, SUN_Y, TEAL, 0.3*lineT, 2);
   }
 
   // Wordmark + URL settle in early, beneath the sun
   const wmT  = easeOut(progress(lf, 40, 70));
   const urlT = easeOut(progress(lf, 52, 82));
-  if (wmT > 0)  drawTextC(c, SYNE_XB, 52, 'untilfire', W/2, H*0.78, TEXT, wmT);
-  if (urlT > 0) drawTextC(c, DMS_M, 30, 'www.untilfire.com', W/2, H*0.78 + 52, TEAL, urlT * 0.85);
+  if (wmT > 0)  drawTextC(c, SYNE_XB, 52, 'untilfire', W/2, H*0.80, TEXT, wmT);
+  if (urlT > 0) drawTextC(c, DMS_M, 30, 'www.untilfire.com', W/2, H*0.80 + 50, TEAL, urlT * 0.85);
 
-  // Power copy — line 1 slams on the 39.81s beat (lf=107),
-  // final line lands at exactly 41s (lf=143)
+  // Power copy — line 1 slams on the 39.81s beat (lf=107) above the sun,
+  // final line lands at exactly 41s (lf=143) below it
   const slamLine = (str, t0, y, col) => {
     const t = springE(progress(lf, t0 - 15, t0));
     if (t <= 0) return;
@@ -718,11 +745,11 @@ function drawS4(c, lf) {
     drawTextC(c, SYNE_XB, 78, str, W/2, y, col, clamp(t * 1.6, 0, 1));
     c.restore();
   };
-  slamLine("Don't let money stop you", 107, H*0.14, TEXT);
-  slamLine('from being a good person.', 143, H*0.14 + 96, TEAL);
+  slamLine("Don't let money stop you", 107, H*0.16, TEXT);
+  slamLine('from being a good person.', 143, H*0.63, TEAL);
 
   const tagT = easeOut(progress(lf, 160, 190));
-  if (tagT > 0) drawTextC(c, DMS_R, 26, 'Personal finance that sets you free.', W/2, H*0.91, BODY, tagT * 0.6);
+  if (tagT > 0) drawTextC(c, DMS_R, 26, 'Personal finance that sets you free.', W/2, H*0.93, BODY, tagT * 0.6);
 }
 
 // ── Filmstrip transition ───────────────────────────────────────────────────────
