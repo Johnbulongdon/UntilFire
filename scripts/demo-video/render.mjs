@@ -304,25 +304,24 @@ function drawSI(c, lf) {
   const SUN_X = W/2, SUN_Y = H/2 + 30;
 
   drawRect(c, 0, 0, W, H, BG_DARK, 1);
-  if (lf < 200) drawParticles(c, lf + SI_START);
+  if (lf < 100) drawParticles(c, lf + SI_START);
 
-  // "introducing..." alone — the logo + wordmark reveal IS the introduction,
-  // so the name is only ever said once
-  const in1  = easeOut(progress(lf, 8, 30));
-  const outT = easeIn(progress(lf, 80, 100));
+  // "introducing..." fades in then out quickly before the logo slams
+  const in1  = easeOut(progress(lf, 5, 22));
+  const outT = easeIn(progress(lf, 28, 43));  // fully gone by lf=43, before sun slams at lf=44
   if (in1 > 0 && outT < 1) {
     const iy = H * 0.47 + (1 - in1) * 14;
     drawTextC(c, SYNE_B, 56, 'introducing...', W/2, iy, WHITEISH, in1 * (1 - outT) * 0.9);
   }
 
-  // Full-size logo animates in 100→145
-  const riseT = easeOut(progress(lf, 100, 145));
-  const sunR  = 260 * riseT;
+  // Logo slams in ON the global beat at lf=59 (frame 179 = 5.97s).
+  // SI_START=120 is a multiple of 15, so beatPulse(lf,14) aligns to the
+  // global grid: peaks at lf ≡ 14 (mod 15) → 14, 29, 44, 59…
+  const riseT = springE(progress(lf, 44, 60));   // springs onto beat at lf=59
+  const sunR  = 260 * clamp(riseT, 0, 1.08);     // allow slight overshoot
 
-  // Light fans out from the sun as an expanding wavefront: the white core
-  // grows from 1px while the soft leading edge stays a fixed ~340px band —
-  // reads as light sweeping outward, not a static vignette blob
-  const lightT = easeInOut(progress(lf, 135, 190));
+  // Light fans out from the sun immediately on the slam beat (lf=59→99)
+  const lightT = easeInOut(progress(lf, 59, 99));
   if (lightT > 0) {
     const lr = lerp(1, 3200, lightT);
     const coreStop = clamp((lr - 340) / lr, 0, 1);
@@ -337,27 +336,24 @@ function drawSI(c, lf) {
     lightP.delete(); lightSh.delete();
   }
 
-  // Sun drawn on top so it reads on both dark and white
-  if (sunR > 0 && lf < 190) {
-    const pulse = beatPulse(lf, 14);
-    halfSun(c, SUN_X, SUN_Y, sunR, riseT, pulse * (1 + lightT));
+  // Sun drawn on top of light; ray pulses hit on the global beat grid
+  if (sunR > 0 && lf < 99) {
+    const pulse = beatPulse(lf, 14);   // peaks at lf=59,74,89 — on the global grid
+    halfSun(c, SUN_X, SUN_Y, sunR, clamp(riseT, 0, 1), pulse * (1 + lightT * 0.5));
   }
 
-  // Lit: white bg, logo settles to center, wordmark rises in
-  if (lf >= 190) {
+  // Lit: white bg, logo settles to centre, wordmark rises in
+  if (lf >= 99) {
     drawRect(c, 0, 0, W, H, BG, 1);
 
-    // Sun shrinks from full-size to centred logo mark
-    const settleT = easeOut(progress(lf, 190, 208));
+    const settleT = easeOut(progress(lf, 99, 117));
     const logoR   = lerp(260, 90, settleT);
     const logoY   = lerp(H/2 + 30, H * 0.44, settleT);
-    const pulse   = beatPulse(lf, 14) * 0.6;
+    const pulse   = beatPulse(lf, 14) * 0.6;   // still on global grid
     halfSun(c, SUN_X, logoY, logoR, 1, pulse);
 
-    // "untilfire" wordmark fades up below the logo
-    const wmT = easeOut(progress(lf, 204, 222));
+    const wmT = easeOut(progress(lf, 114, 132));
     if (wmT > 0) {
-      // Rise-up effect: starts 12px below final position
       const wmy = H * 0.44 + 90 + 36 + (1 - wmT) * 12;
       drawTextC(c, SYNE_XB, 68, 'untilfire', SUN_X, wmy, TEXT, wmT);
     }
@@ -374,11 +370,15 @@ const NUM_BARS = 12;
 const POPS = [14, 29, 44, 59, 74, 86, 95, 103, 110, 116, 121, 126];
 const GRN    = hex('#2be06f');   // bright growth green (v8)
 const INV    = hex('#15684a');   // dark invested segment (v8)
-const DIMBAR = hex('#157a5f');   // dimmed "years you skip" bars
-const totalFrac = i => 0.055 + 0.50 * Math.pow(i / 11, 1.75);
-const invFrac   = i => 0.05 + 0.13 * (i / 11);
+const DIMBAR = hex('#157a5f');   // ghost outline color
+// Original 12-year compound curve
+const totalFrac     = i => 0.055 + 0.50 * Math.pow(i / 11, 1.75);
+const invFrac       = i => 0.05  + 0.13 * (i / 11);
+// "3 years sooner" fast-track curve — same endpoint at i=8 as original at i=11
+const totalFracFast = i => 0.055 + 0.50 * Math.pow(i / 8, 1.75);
+const invFracFast   = i => 0.05  + 0.13 * (i / 8);
 const SLATE = hex('#94a3b8');
-const FD_DIM  = 148;   // last 3 bars dim + bracket/pill
+const FD_DIM  = 148;   // compound-yield morph starts here
 const HEAD_IN = 163;   // "August 2034" lands on the 16.43s beat
 
 function drawS1(c, lf) {
@@ -403,10 +403,10 @@ function drawS1(c, lf) {
   const bw = chW / (NUM_BARS + (NUM_BARS - 1) * gapR);
   const gap = bw * gapR;
 
-  // After the freedom-date reveal the 3 tallest bars SLIDE LEFT 3 year-slots —
-  // same height, earlier timeline (you hit the same number sooner, you don't
-  // lower the bar). Ghost outlines stay at Yr 10–12: the years you skip.
-  const shiftT = easeInOut(progress(lf, FD_DIM, FD_DIM + 28));
+  // After the freedom-date reveal bars morph IN PLACE: the compound yield
+  // changes (steeper path) so bars 0–8 grow taller while bars 9–11 fade to
+  // ghost outlines. Same $1.24M endpoint, 3 years earlier — not lower standards.
+  const shiftT = easeInOut(progress(lf, FD_DIM, FD_DIM + 32));
   const pulse  = beatPulse(lf, 14);
   const slotX  = i => chX + i * (bw + gap);
 
@@ -415,33 +415,45 @@ function drawS1(c, lf) {
   for (let g = 1; g <= 3; g++)
     drawLine(c, chX - 30, baseY - g/3 * (CH * 0.97), chX + chW + 30, baseY - g/3 * (CH * 0.97), WHITEISH, 0.06 * gridT, 1);
 
-  // Yr labels stay fixed on the timeline axis
+  // Yr labels fixed on the timeline axis
   const axisT = progress(lf, 14, 40);
   for (const i of [0, 2, 5, 8, 11]) {
     const lbl = `Yr ${i + 1}`;
     drawText(c, DMS_R, 22, lbl, slotX(i) + bw/2 - measure(DMS_R, 22, lbl)/2, baseY + 96, SLATE, 0.55 * axisT);
   }
 
+  // Draw bars 9–11 ghost outlines first (drawn behind the active bars)
+  if (shiftT > 0.01) {
+    for (let i = 9; i < NUM_BARS; i++) {
+      const tH = totalFrac(i) * CH;
+      const bx = slotX(i);
+      const gp = mkStroke(DIMBAR, 0.55 * shiftT, 2);
+      c.drawRRect(ck.RRectXY(ck.LTRBRect(bx, baseY - tH, bx + bw, baseY), 8, 8), gp);
+      gp.delete();
+    }
+  }
+
   for (let i = 0; i < NUM_BARS; i++) {
     const popT = springE(progress(lf, POPS[i], POPS[i] + 20));
     if (popT < 0.01) continue;
 
-    const isLate     = i >= 9;             // Yr 10–12 bars slide to Yr 7–9
-    const isReplaced = i >= 6 && i <= 8;   // Yr 7–9 bars fade as the tall ones land
-    const breathe = 1 + 0.018 * pulse * (0.6 + 0.4 * Math.sin(i * 1.3));
-    const tH   = totalFrac(i) * CH * popT * breathe;
-    const invH = Math.min(invFrac(i) * CH * popT, tH);
-    const bx = isLate ? lerp(slotX(i), slotX(i - 3), shiftT) : slotX(i);
-    const cxB = bx + bw / 2;
-    const topY = baseY - tH;
-    const alpha = isReplaced ? 1 - shiftT : 1;
+    const isGhost = i >= 9;   // Yr 10–12 fade out as the fast curve takes over
+    const alpha   = isGhost ? 1 - shiftT : 1;
     if (alpha < 0.005) continue;
 
-    // invested segment (dark teal) — dips below the axis like the v8 reflection
+    const breathe = 1 + 0.018 * pulse * (0.6 + 0.4 * Math.sin(i * 1.3));
+    // morph bar heights: bars 0–8 grow to the fast-track curve
+    const tf   = isGhost ? totalFrac(i) : lerp(totalFrac(i), totalFracFast(i), shiftT);
+    const ivf  = isGhost ? invFrac(i)   : lerp(invFrac(i),   invFracFast(i),   shiftT);
+    const tH   = tf * CH * popT * breathe;
+    const invH = Math.min(ivf * CH * popT, tH);
+    const bx   = slotX(i);
+    const cxB  = bx + bw / 2;
+    const topY = baseY - tH;
+
     const reflH = CH * 0.055 * popT;
     drawRect(c, bx, baseY - invH, bw, invH + reflH, INV, 0.88 * popT * alpha, 8);
 
-    // bright growth bar on top, glow blob at the tip
     const gH = tH - invH * 0.55;
     if (gH > 4) {
       drawRect(c, bx, topY, bw, gH, GRN, 0.95 * popT * alpha, 8);
@@ -458,37 +470,18 @@ function drawS1(c, lf) {
     }
   }
 
-  // ghost outlines left behind at Yr 10–12 — the years you skip
-  if (shiftT > 0.01) {
-    for (let i = 9; i < NUM_BARS; i++) {
-      const tH = totalFrac(i) * CH;
-      const gp = mkStroke(DIMBAR, 0.55 * shiftT, 2);
-      c.drawRRect(ck.RRectXY(ck.LTRBRect(slotX(i), baseY - tH, slotX(i) + bw, baseY), 8, 8), gp);
-      gp.delete();
-    }
-  }
-
   // axis line
   drawLine(c, chX - 30, baseY, chX + chW + 30, baseY, WHITEISH, 0.22 * gridT, 2);
 
-  // legend (v8): you invest ▪ your money multiplies
-  const legT = easeOut(progress(lf, 55, 80));
-  if (legT > 0.01) {
-    let lx = chX + 14;
-    const ly = baseY - CH * 0.055;
-    for (const [col, label] of [[INV, 'you invest'], [GRN, 'your money multiplies']]) {
-      drawRect(c, lx, ly - 14, 16, 16, col, legT * 0.9, 3);
-      drawText(c, DMS_B, 22, label, lx + 24, ly, SLATE, legT * 0.8);
-      lx += 24 + measure(DMS_B, 22, label) + 30;
-    }
-  }
-
-  // $1.24M above the final bar — rides left with it to the Yr 9 slot
+  // $1.24M label: starts above Yr 12, slides to Yr 9 as the fast curve grows up
   const numT = easeOut(progress(lf, 132, 150));
   if (numT > 0.01) {
-    const cx12 = lerp(slotX(11), slotX(8), shiftT) + bw / 2;
-    const y12 = baseY - totalFrac(11) * CH;
-    drawTextC(c, DMM_M, 34, '$1.24M', cx12, y12 - 28 - (1 - numT) * 10, TEAL, numT);
+    // totalFracFast(8) == totalFrac(11) == 0.555, so Y stays constant
+    const cx11  = slotX(11) + bw / 2;
+    const cx8   = slotX(8)  + bw / 2;
+    const numCX = lerp(cx11, cx8, shiftT);
+    const numY  = baseY - totalFrac(11) * CH;
+    drawTextC(c, DMM_M, 34, '$1.24M', numCX, numY - 28 - (1 - numT) * 10, TEAL, numT);
   }
 
   // "August 2034 / YOUR NEW FREEDOM DATE" slams on the 16.43s beat
@@ -506,8 +499,8 @@ function drawS1(c, lf) {
       drawTextTracked(c, DMS_B, 24, 'YOUR NEW FREEDOM DATE', W/2, H * 0.115 + 62, TEAL, kickT, 4);
   }
 
-  // "3 years sooner" pill + bracket over the skipped-years ghosts
-  const brT = easeOut(progress(lf, FD_DIM + 18, FD_DIM + 40));
+  // "3 years sooner" pill + bracket over the ghost years (fixed positions 9–11)
+  const brT = easeOut(progress(lf, FD_DIM + 22, FD_DIM + 44));
   if (brT > 0.01) {
     const xL = slotX(9);
     const xR = slotX(11) + bw;
