@@ -130,8 +130,12 @@ function progress(f, start, end) { return clamp((f-start)/(end-start), 0, 1); }
 const ev = (f, iS, iE, eI, oS, oE, eO) => eI(progress(f, iS, iE)) * (1 - eO(progress(f, oS, oE)));
 
 // ── Beat pulse (120 BPM = beat every 15 frames) ───────────────────────────────
-function beatPulse(lf, phase = 14) {
-  const p = (((lf - phase) % 15) + 15) % 15;
+// Pass the GLOBAL frame. The kick/downbeat was measured (onset + bass analysis
+// of bg_sound.m4a) at phase 6 — i.e. beats land on global frames 6 + 15k.
+// (The old phase 14 sat in the low-energy gap between kicks, so the rays
+// pulsed on the offbeat.)
+function beatPulse(gf, phase = 6) {
+  const p = (((gf - phase) % 15) + 15) % 15;
   return Math.max(0, 1 - p/5) ** 2;
 }
 
@@ -255,8 +259,8 @@ function drawS0(c, lf) {
   drawRect(c, 0, 0, W, H, BG_DARK, 1);
   drawParticles(c, lf + S0_START);
 
-  // Question fades out before the 4s cut
-  const exitT = easeInOut(progress(lf, 96, 118));
+  // Question fades out right before the 4s cut (last word lands at lf=81)
+  const exitT = easeInOut(progress(lf, 100, 120));
   const keep  = 1 - exitT;
   if (keep <= 0) return;
 
@@ -275,8 +279,9 @@ function drawS0(c, lf) {
     const baseY = H * 0.42 + li * 116;
 
     for (let wi = 0; wi < line.length; wi++) {
-      // word k lands exactly on beat 14+15k — "optional?" hits the 2.5s beat
-      const beat = 14 + wordIdx * 15;
+      // word k lands exactly on a kick (global beat 6+15k); S0_START=0 so
+      // local == global. Words land on 21,36,51,66,81.
+      const beat = 21 + wordIdx * 15;
       const wT = springE(progress(lf, beat - 14, beat));
       if (wT > 0) {
         const wy = baseY + (1 - wT) * 16;
@@ -287,10 +292,10 @@ function drawS0(c, lf) {
     }
   }
 
-  // Teal underline on "optional?" after it lands — alpha rides the beat
-  const ulT = easeOut(progress(lf, 76, 96));
+  // Teal underline on "optional?" after it lands (lands at lf=81) — alpha rides the beat
+  const ulT = easeOut(progress(lf, 84, 100));
   if (ulT > 0) {
-    const pulse = beatPulse(lf, 14);
+    const pulse = beatPulse(lf + S0_START);
     const ow = measure(SYNE_XB, Q_SIZE, 'optional?');
     const lw = measure(SYNE_XB, Q_SIZE, 'was optional?');
     const lx = W/2 + lw/2 - ow, uy = H * 0.42 + 128;
@@ -307,21 +312,19 @@ function drawSI(c, lf) {
   if (lf < 100) drawParticles(c, lf + SI_START);
 
   // "introducing..." fades in then out quickly before the logo slams
-  const in1  = easeOut(progress(lf, 5, 22));
-  const outT = easeIn(progress(lf, 28, 43));  // fully gone by lf=43, before sun slams at lf=44
+  const in1  = easeOut(progress(lf, 8, 25));
+  const outT = easeIn(progress(lf, 51, 65));  // fully gone by lf=65, before sun slams at lf=66
   if (in1 > 0 && outT < 1) {
     const iy = H * 0.47 + (1 - in1) * 14;
     drawTextC(c, SYNE_B, 56, 'introducing...', W/2, iy, WHITEISH, in1 * (1 - outT) * 0.9);
   }
 
-  // Logo slams in ON the global beat at lf=59 (frame 179 = 5.97s).
-  // SI_START=120 is a multiple of 15, so beatPulse(lf,14) aligns to the
-  // global grid: peaks at lf ≡ 14 (mod 15) → 14, 29, 44, 59…
-  const riseT = springE(progress(lf, 44, 60));   // springs onto beat at lf=59
+  // Logo slams in ON a kick at lf=66 (global frame 186 = 6.2s, phase 6).
+  const riseT = springE(progress(lf, 51, 66));   // springs onto the kick at lf=66
   const sunR  = 260 * clamp(riseT, 0, 1.08);     // allow slight overshoot
 
-  // Light fans out from the sun immediately on the slam beat (lf=59→99)
-  const lightT = easeInOut(progress(lf, 59, 99));
+  // Light fans out from the sun on the slam beat (lf=66→106)
+  const lightT = easeInOut(progress(lf, 66, 106));
   if (lightT > 0) {
     const lr = lerp(1, 3200, lightT);
     const coreStop = clamp((lr - 340) / lr, 0, 1);
@@ -336,23 +339,23 @@ function drawSI(c, lf) {
     lightP.delete(); lightSh.delete();
   }
 
-  // Sun drawn on top of light; ray pulses hit on the global beat grid
-  if (sunR > 0 && lf < 99) {
-    const pulse = beatPulse(lf, 14);   // peaks at lf=59,74,89 — on the global grid
+  // Sun drawn on top of light; ray pulses hit the kick (phase-6 global grid)
+  if (sunR > 0 && lf < 106) {
+    const pulse = beatPulse(lf + SI_START);
     halfSun(c, SUN_X, SUN_Y, sunR, clamp(riseT, 0, 1), pulse * (1 + lightT * 0.5));
   }
 
   // Lit: white bg, logo settles to centre, wordmark rises in
-  if (lf >= 99) {
+  if (lf >= 106) {
     drawRect(c, 0, 0, W, H, BG, 1);
 
-    const settleT = easeOut(progress(lf, 99, 117));
+    const settleT = easeOut(progress(lf, 106, 124));
     const logoR   = lerp(260, 90, settleT);
     const logoY   = lerp(H/2 + 30, H * 0.44, settleT);
-    const pulse   = beatPulse(lf, 14) * 0.6;   // still on global grid
+    const pulse   = beatPulse(lf + SI_START) * 0.6;
     halfSun(c, SUN_X, logoY, logoR, 1, pulse);
 
-    const wmT = easeOut(progress(lf, 114, 132));
+    const wmT = easeOut(progress(lf, 121, 139));
     if (wmT > 0) {
       const wmy = H * 0.44 + 90 + 36 + (1 - wmT) * 12;
       drawTextC(c, SYNE_XB, 68, 'untilfire', SUN_X, wmy, TEXT, wmT);
@@ -367,7 +370,9 @@ function drawSI(c, lf) {
 // the 3 tallest bars slide LEFT 3 year-slots (same height, earlier timeline)
 // leaving ghost outlines at Yr 10–12 under the "3 years sooner" bracket.
 const NUM_BARS = 12;
-const POPS = [14, 29, 44, 59, 74, 86, 95, 103, 110, 116, 121, 126];
+// First 5 bars pop on kicks (local 6,21,36,51,66 — S1_START=330≡0, so on the
+// phase-6 global grid), then the pops accelerate audibly into the curve.
+const POPS = [6, 21, 36, 51, 66, 78, 87, 95, 102, 108, 113, 118];
 const GRN    = hex('#2be06f');   // bright growth green (v8)
 const INV    = hex('#15684a');   // dark invested segment (v8)
 const DIMBAR = hex('#157a5f');   // ghost outline color
@@ -378,8 +383,8 @@ const invFrac       = i => 0.05  + 0.13 * (i / 11);
 const totalFracFast = i => 0.055 + 0.50 * Math.pow(i / 8, 1.75);
 const invFracFast   = i => 0.05  + 0.13 * (i / 8);
 const SLATE = hex('#94a3b8');
-const FD_DIM  = 148;   // compound-yield morph starts here
-const HEAD_IN = 163;   // "August 2034" lands on the 16.43s beat
+const FD_DIM  = 141;   // compound-yield morph starts here (on a kick)
+const HEAD_IN = 156;   // "August 2034" lands on a kick (global 486 ≈ 16.2s)
 
 function drawS1(c, lf) {
   drawRect(c, 0, 0, W, H, BG_DARK, 1);
@@ -407,7 +412,7 @@ function drawS1(c, lf) {
   // changes (steeper path) so bars 0–8 grow taller while bars 9–11 fade to
   // ghost outlines. Same $1.24M endpoint, 3 years earlier — not lower standards.
   const shiftT = easeInOut(progress(lf, FD_DIM, FD_DIM + 32));
-  const pulse  = beatPulse(lf, 14);
+  const pulse  = beatPulse(lf + S1_START);
   const slotX  = i => chX + i * (bw + gap);
 
   // grid
@@ -474,7 +479,7 @@ function drawS1(c, lf) {
   drawLine(c, chX - 30, baseY, chX + chW + 30, baseY, WHITEISH, 0.22 * gridT, 2);
 
   // $1.24M label: starts above Yr 12, slides to Yr 9 as the fast curve grows up
-  const numT = easeOut(progress(lf, 132, 150));
+  const numT = easeOut(progress(lf, 124, 142));
   if (numT > 0.01) {
     // totalFracFast(8) == totalFrac(11) == 0.555, so Y stays constant
     const cx11  = slotX(11) + bw / 2;
@@ -534,7 +539,7 @@ function drawS2(c, lf) {
   const STRIDE = CARD_W + GAP;
   const LOGO_SIZE = 64;
   const enterT = easeOut(progress(lf, 12, 65));
-  const pulse  = beatPulse(lf, 14);
+  const pulse  = beatPulse(lf + S2_START);
 
   // four rows fill the page — disjoint 9-icon sets per row, and each row's
   // loop (9 × stride = 2448px) is wider than the visible window (2424px),
@@ -614,7 +619,9 @@ const leakItems = [
 ];
 const NOTIF_IC = ['#6366f1','#8b5cf6','#475569','#0891b2','#64748b',
                   '#94a3b8','#22d3a5','#1e40af','#334155','#7c3aed'].map(hex);
-const CROSS = [59, 74, 89, 104, 119, 131, 141, 149, 156, 162];
+// Swipes land on kicks then accelerate. S3_START=843≡3 (mod 15), so a local
+// frame sits on the phase-6 global grid when it is ≡3 (mod 15): 63,78,93,108,123.
+const CROSS = [63, 78, 93, 108, 123, 135, 145, 153, 160, 166];
 
 function drawS3(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
@@ -726,7 +733,7 @@ function drawS4(c, lf) {
   drawParticles(c, lf + S4_START);
 
   const enterT = easeOut(progress(lf, 0, 45));
-  const pulse  = beatPulse(lf, 14);
+  const pulse  = beatPulse(lf + S4_START);
 
   // Teal sunrise — line 1 above it, line 2 below it, so the copy frames the
   // logo instead of clustering at the top
