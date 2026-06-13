@@ -379,9 +379,9 @@ const NUM_BARS = 12;
 // bar's visual JUMP then lands on the kick (global 335,350,365…, phase 5).
 // First 5 on the beat, then the pops accelerate audibly into the curve.
 const POPS = [2, 17, 32, 47, 62, 74, 83, 91, 98, 104, 109, 114];
-const GRN    = hex('#2be06f');   // bright growth green (v8)
-const INV    = hex('#15684a');   // dark invested segment (v8)
-const DIMBAR = hex('#157a5f');   // ghost outline color
+const GRN    = hex('#16a34a');   // rich growth green — readable on white bg
+const INV    = hex('#065f46');   // deep teal base — anchors bar on white bg
+const DIMBAR = hex('#cbd5e1');   // ghost outline — clearly faded on white bg
 // Original 12-year compound curve
 const totalFrac     = i => 0.055 + 0.50 * Math.pow(i / 11, 1.75);
 const invFrac       = i => 0.05  + 0.13 * (i / 11);
