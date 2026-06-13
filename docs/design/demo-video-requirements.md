@@ -67,12 +67,17 @@ update this file in the same session.
      be unique at any given moment** (v20): disjoint icon sets per row, and
      each row's loop must be wider than the visible window. 36 icons live in
      `icons.json`. Tagline: "15,000+ banks. 0 manual entries."
-  4. Spending leaks — a full grid of leak chips; crosses land on an
-     **accelerating rhythm** (first hits on the beat grid, then gaps tighten
-     — v20: a flat one-per-beat pace read as slow/predictable). Crossed
-     chips **fly off-screen** so the field visibly empties, then the
-     "+$X/mo recovered" counter takes center stage. **No red/orange** —
-     teal crosses and recovery.
+  4. Spending leaks — a **phone-style notification stack** (confirmed v21;
+     the old "You're leaking money" chip grid with X-crosses read cheap).
+     Each charge is a notification row (app-icon circle, label, sub-line,
+     amount). On each beat the top unresolved card **swipes right and
+     dissolves into teal particles** — like clearing a notification — while
+     the cards below **shift up** to fill the gap. Crosses land on an
+     **accelerating rhythm** (gaps tighten, never a flat one-per-beat pace).
+     Once the stack clears, the "+$X/mo recovered" counter rises to center
+     stage. **No red/orange** — neutral icon colors, teal dissolve + recovery.
+     Header is calm/neutral ("Found while syncing your banks."), not a
+     "you're leaking money" shout.
   5. End card (v18/v20) — copy **frames the logo, never clusters at the
      top**: "Don't let money stop you" above the sun (slams on the 39.81s
      beat), smaller teal half-sun center, "from being a good person." BELOW

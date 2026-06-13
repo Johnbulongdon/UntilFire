@@ -597,105 +597,125 @@ function drawS2(c, lf) {
   if (tagT > 0) drawTextC(c, DMS_M, 30, '15,000+ banks. 0 manual entries.', W/2, H*0.93, TEAL, tagT);
 }
 
-// ── Scene S3: Leaks — chip field, accelerating crosses, chips fly away ────────
+// ── Scene S3: Leaks — phone notification swipe ───────────────────────────────
+// Each charge looks like a phone notification; on the beat it swipes right
+// and dissolves (teal particle burst) while the stack below shifts up.
 const leakItems = [
-  { label: 'Streaming services', amount: 47 },
-  { label: 'Unused gym',         amount: 29 },
-  { label: 'Food delivery',      amount: 89 },
-  { label: 'Subscriptions',      amount: 63 },
-  { label: 'Impulse buys',       amount: 124 },
-  { label: 'Bank fees',          amount: 18 },
-  { label: 'Unused apps',        amount: 22 },
-  { label: 'Daily takeout',      amount: 96 },
-  { label: 'Old insurance',      amount: 54 },
-  { label: 'Late fees',          amount: 31 },
-];  // total: $573/mo
-// Cross schedule accelerates like the bar pops: first hits on the beat grid,
-// then the gaps tighten (15,15,15,15,12,10,8,7,6) — rhythm builds, never drags
+  { label: 'Streaming services', sub: 'Netflix, Spotify, Hulu',    amount: 47  },
+  { label: 'Unused gym',         sub: 'No check-ins in 3 months',  amount: 29  },
+  { label: 'Food delivery',      sub: 'Recurring orders',           amount: 89  },
+  { label: 'Subscriptions',      sub: 'Apps & services',            amount: 63  },
+  { label: 'Impulse buys',       sub: 'Flagged transactions',       amount: 124 },
+  { label: 'Bank fees',          sub: 'Monthly maintenance fee',    amount: 18  },
+  { label: 'Unused apps',        sub: '14 apps, no activity',       amount: 22  },
+  { label: 'Daily takeout',      sub: 'Avg 3× per week',            amount: 96  },
+  { label: 'Old insurance',      sub: 'Duplicate coverage',         amount: 54  },
+  { label: 'Late fees',          sub: 'Preventable charges',        amount: 31  },
+];
+const NOTIF_IC = ['#6366f1','#8b5cf6','#475569','#0891b2','#64748b',
+                  '#94a3b8','#22d3a5','#1e40af','#334155','#7c3aed'].map(hex);
 const CROSS = [59, 74, 89, 104, 119, 131, 141, 149, 156, 162];
 
 function drawS3(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
   drawParticles(c, lf + S3_START);
 
-  const pulse = beatPulse(lf, 14);
+  const CARD_W = 880, CARD_H = 84, STRIDE = 96;
+  const cardX = W / 2 - CARD_W / 2;
+  const stackTop = H * 0.11;
 
-  const headT = easeOut(progress(lf, 0, 38));
-  drawTextC(c, SYNE_B, 58, "You're leaking money.", W/2, H*0.1, TEXT, headT);
-  drawTextC(c, DMS_R, 32, 'UntilFire finds the drains — and cuts them.', W/2, H*0.1 + 68, BODY, headT * 0.8);
+  // Minimal header — feels like a notification center, not a sales pitch
+  const headT = easeOut(progress(lf, 0, 32));
+  if (headT > 0.01)
+    drawTextC(c, DMS_M, 30, 'Found while syncing your banks.', W / 2, H * 0.062, BODY, headT * 0.7);
 
-  // 5 × 2 chip grid
-  const COLS = 5, CHIP_W = 330, CHIP_H = 120, GAPX = 24, GAPY = 30;
-  const gridW = COLS * CHIP_W + (COLS - 1) * GAPX;
-  const gx0 = W/2 - gridW/2;
-  const gy0 = H * 0.30;
+  // Per-card swipe progress (easeIn so it starts fast like a real swipe)
+  const swipes = leakItems.map((_, i) => easeIn(progress(lf, CROSS[i], CROSS[i] + 18)));
 
+  // Accumulate recovered amount + beat-kick for counter
   let recovered = 0;
-  let hitKick = 0;   // counter kick from the most recent cross
-
+  let hitKick = 0;
   for (let i = 0; i < leakItems.length; i++) {
-    const item = leakItems[i];
-    const col = i % COLS, row = (i / COLS) | 0;
-    const x = gx0 + col * (CHIP_W + GAPX);
-    const y = gy0 + row * (CHIP_H + GAPY);
-    const cx = x + CHIP_W/2, cy = y + CHIP_H/2;
-
-    const inT = springE(progress(lf, 12 + i * 4, 32 + i * 4));
-    if (inT < 0.01) continue;
-
-    const beat = CROSS[i];
-    const crossT = springE(progress(lf, beat - 10, beat));
-    recovered += item.amount * easeOut(progress(lf, beat - 4, beat + 6));
-    hitKick = Math.max(hitKick, clamp(1 - (lf - beat) / 6, 0, 1) * (lf >= beat - 1 ? 1 : 0));
-
-    // crossed chips don't just sit there — they fly off and the field empties
-    const flyT = easeIn(progress(lf, beat + 8, beat + 26));
-    if (flyT >= 1) continue;
-    const flyDir = col < COLS/2 ? -1 : 1;
-
-    c.save();
-    c.translate(cx + flyDir * flyT * W * 0.45, cy + flyT * H * 0.35);
-    c.rotate(flyDir * flyT * 18, 0, 0);
-    const s = inT * (1 - flyT * 0.35);
-    c.scale(s, s);
-    c.translate(-cx, -cy);
-    const dead = crossT * 0.62;
-    const flyA = 1 - flyT;
-
-    drawRect(c, x, y, CHIP_W, CHIP_H, CARD, inT * (1 - dead * 0.45) * flyA, 16);
-    const bp = mkStroke(BORD, inT * (1 - dead * 0.5) * flyA, 1.5);
-    c.drawRRect(ck.RRectXY(ck.LTRBRect(x, y, x + CHIP_W, y + CHIP_H), 16, 16), bp);
-    bp.delete();
-
-    const txtA = inT * (1 - dead) * flyA;
-    drawTextC(c, DMS_M, 26, item.label, cx, y + 48, TEXT, txtA);
-    drawTextC(c, DMM_M, 30, `$${item.amount}/mo`, cx, y + 90, BODY, txtA * 0.9);
-
-    // X cross slashes over the chip
-    if (crossT > 0.01) {
-      const m = 26;
-      const p1 = clamp(crossT * 1.4, 0, 1);   // first slash leads
-      const p2 = clamp(crossT * 1.4 - 0.4, 0, 1);
-      drawLine(c, x + m, y + m, x + m + (CHIP_W - 2*m) * p1, y + m + (CHIP_H - 2*m) * p1, TEAL, 0.9 * flyA, 5);
-      if (p2 > 0)
-        drawLine(c, x + CHIP_W - m, y + m, x + CHIP_W - m - (CHIP_W - 2*m) * p2, y + m + (CHIP_H - 2*m) * p2, TEAL, 0.9 * flyA, 5);
-    }
-
-    c.restore();
+    recovered += leakItems[i].amount * easeOut(progress(lf, CROSS[i], CROSS[i] + 8));
+    if (lf >= CROSS[i])
+      hitKick = Math.max(hitKick, clamp(1 - (lf - CROSS[i]) / 6, 0, 1));
   }
 
-  // recovered counter kicks on every hit, then takes center stage once the
-  // field has emptied
-  const ctT = easeOut(progress(lf, 50, 75));
+  // Draw each notification card
+  for (let i = 0; i < leakItems.length; i++) {
+    const item = leakItems[i];
+    const inT = springE(progress(lf, 6 + i * 3, 26 + i * 3));
+    if (inT < 0.01) continue;
+
+    const st = swipes[i];
+
+    // Stack shift: as cards above swipe out, cards below slide up to fill gap
+    let shiftUp = 0;
+    for (let j = 0; j < i; j++) shiftUp += swipes[j] * STRIDE;
+    const baseY = stackTop + i * STRIDE - shiftUp;
+    if (baseY > H + 10 || baseY + CARD_H < -10) continue;
+
+    // Card slides right (fast easeIn), fades as it goes
+    const tx = st * (W * 0.80 + CARD_W * 0.5);
+    const cardAlpha = inT * clamp(1 - st * 1.7, 0, 1);
+
+    if (cardAlpha > 0.01) {
+      c.save();
+      c.translate(tx, 0);
+
+      // subtle elevation shadow
+      drawRect(c, cardX + 2, baseY + 3, CARD_W, CARD_H, BODY, 0.05 * cardAlpha, 16);
+      // card body
+      drawRect(c, cardX, baseY, CARD_W, CARD_H, BG, cardAlpha, 16);
+      // border
+      const bp = mkStroke(BORD, cardAlpha * 0.9, 1.5);
+      c.drawRRect(ck.RRectXY(ck.LTRBRect(cardX, baseY, cardX + CARD_W, baseY + CARD_H), 16, 16), bp);
+      bp.delete();
+
+      // app icon circle + first letter
+      const icX = cardX + 56, icY = baseY + CARD_H / 2;
+      drawCircle(c, icX, icY, 26, NOTIF_IC[i], cardAlpha * 0.85);
+      drawTextC(c, DMS_B, 22, item.label[0], icX, icY + 8, BG, cardAlpha);
+
+      // notification text
+      drawText(c, DMS_M, 28, item.label, cardX + 96, baseY + 32, TEXT, cardAlpha);
+      drawText(c, DMS_R, 20, item.sub,   cardX + 96, baseY + 58, BODY, cardAlpha * 0.5);
+
+      // amount right-aligned
+      const amtStr = `$${item.amount}/mo`;
+      const amtW = measure(DMM_M, 26, amtStr);
+      drawText(c, DMM_M, 26, amtStr, cardX + CARD_W - amtW - 28, baseY + 34, BODY, cardAlpha * 0.85);
+
+      c.restore();
+    }
+
+    // Dissolve: teal particles scatter from the card as it exits
+    if (lf > CROSS[i] && lf <= CROSS[i] + 22) {
+      const dt = lf - CROSS[i];
+      const pRng = mulberry32(i * 8191 + 7);
+      for (let k = 0; k < 10; k++) {
+        const angle = pRng() * Math.PI * 2;
+        const speed = 80 + pRng() * 200;
+        const px = W / 2 + tx * 0.45 + Math.cos(angle) * speed * (dt / 30);
+        const py = baseY + CARD_H / 2 + Math.sin(angle) * speed * (dt / 30) * 0.5;
+        const pr = lerp(4.5, 0.5, dt / 22);
+        const pa = clamp(1 - dt / 22, 0, 1) * 0.88;
+        if (pa > 0.01) drawCircle(c, px, py, pr, TEAL, pa);
+      }
+    }
+  }
+
+  // Counter: appears after 4 cards clear, rises to center stage when all gone
+  const ctT = easeOut(progress(lf, CROSS[3] + 10, CROSS[3] + 35));
   if (ctT > 0.01) {
-    const finalT = easeInOut(progress(lf, 190, 214));
-    const counterStr = `+$${Math.round(recovered)}/mo`;
-    const cyC = lerp(H * 0.82, H * 0.55, finalT);
-    const sh = (1 + 0.10 * hitKick) * lerp(1, 1.45, finalT);
+    const allClearT = easeInOut(progress(lf, CROSS[9] + 20, CROSS[9] + 50));
+    const cyC = lerp(H * 0.88, H * 0.55, allClearT);
+    const sz  = lerp(76, 108, allClearT);
+    const sh  = 1 + 0.09 * hitKick;
     c.save();
-    c.translate(W/2, cyC); c.scale(sh, sh); c.translate(-W/2, -cyC);
-    drawTextC(c, DMM_M, 76, counterStr, W/2, cyC, TEAL, ctT * (recovered > 0.5 ? 1 : 0.45));
-    drawTextC(c, DMS_R, 30, 'recovered back into your plan', W/2, cyC + 48, BODY, ctT * 0.75);
+    c.translate(W / 2, cyC); c.scale(sh, sh); c.translate(-W / 2, -cyC);
+    drawTextC(c, DMM_M, sz, `+$${Math.round(recovered)}/mo`, W / 2, cyC, TEAL, ctT);
+    drawTextC(c, DMS_R, 28, 'recovered back into your plan', W / 2, cyC + sz * 0.65, BODY, ctT * 0.7);
     c.restore();
   }
 }
