@@ -387,20 +387,15 @@ const FD_DIM  = 141;   // compound-yield morph starts here (on a kick)
 const HEAD_IN = 156;   // "August 2034" lands on a kick (global 486 ≈ 16.2s)
 
 function drawS1(c, lf) {
-  drawRect(c, 0, 0, W, H, BG_DARK, 1);
-  // faint teal ambience behind the chart (v8 look)
-  {
-    const p = new ck.Paint();
-    const sh = ck.Shader.MakeRadialGradient(
-      [W * 0.45, H * 0.5], W * 0.55,
-      [ck.Color4f(TEAL[0], TEAL[1], TEAL[2], 0.05), ck.Color4f(TEAL[0], TEAL[1], TEAL[2], 0)],
-      null, ck.TileMode.Clamp
-    );
-    p.setShader(sh);
-    c.drawRect(ck.LTRBRect(0, 0, W, H), p);
-    p.delete(); sh.delete();
-  }
+  drawRect(c, 0, 0, W, H, BG, 1);   // white — matches every post-intro scene
   drawParticles(c, lf + S1_START);
+
+  // header (matches the other white scenes) — leaves before "August 2034" lands
+  const hdT = easeOut(progress(lf, 8, 40)) * (1 - easeIn(progress(lf, 122, 140)));
+  if (hdT > 0.01) {
+    drawTextC(c, SYNE_B, 56, 'Watch it compound.', W/2, H*0.13, TEXT, hdT);
+    drawTextC(c, DMS_R, 30, 'Your money working while you sleep.', W/2, H*0.13 + 60, BODY, hdT * 0.7);
+  }
 
   const chX = W * 0.15, chW = W * 0.70;
   const baseY = H * 0.80, CH = H * 0.60;
@@ -411,14 +406,15 @@ function drawS1(c, lf) {
   // After the freedom-date reveal bars morph IN PLACE: the compound yield
   // changes (steeper path) so bars 0–8 grow taller while bars 9–11 fade to
   // ghost outlines. Same $1.24M endpoint, 3 years earlier — not lower standards.
-  const shiftT = easeInOut(progress(lf, FD_DIM, FD_DIM + 32));
+  // morph eased out over ~48 frames (slower) so the freedom-date payoff breathes
+  const shiftT = easeInOut(progress(lf, FD_DIM, FD_DIM + 48));
   const pulse  = beatPulse(lf + S1_START);
   const slotX  = i => chX + i * (bw + gap);
 
-  // grid
+  // grid (faint dark lines on white)
   const gridT = progress(lf, 10, 30);
   for (let g = 1; g <= 3; g++)
-    drawLine(c, chX - 30, baseY - g/3 * (CH * 0.97), chX + chW + 30, baseY - g/3 * (CH * 0.97), WHITEISH, 0.06 * gridT, 1);
+    drawLine(c, chX - 30, baseY - g/3 * (CH * 0.97), chX + chW + 30, baseY - g/3 * (CH * 0.97), BORD, 0.9 * gridT, 1);
 
   // Yr labels fixed on the timeline axis
   const axisT = progress(lf, 14, 40);
@@ -456,17 +452,21 @@ function drawS1(c, lf) {
     const cxB  = bx + bw / 2;
     const topY = baseY - tH;
 
+    // soft drop shadow grounds the bar on white (depth instead of dark-bg glow)
+    drawRect(c, bx + 3, topY + 6, bw, tH, SLATE, 0.10 * popT * alpha, 8);
+
     const reflH = CH * 0.055 * popT;
-    drawRect(c, bx, baseY - invH, bw, invH + reflH, INV, 0.88 * popT * alpha, 8);
+    drawRect(c, bx, baseY - invH, bw, invH + reflH, INV, 0.92 * popT * alpha, 8);
 
     const gH = tH - invH * 0.55;
     if (gH > 4) {
-      drawRect(c, bx, topY, bw, gH, GRN, 0.95 * popT * alpha, 8);
+      drawRect(c, bx, topY, bw, gH, GRN, 0.97 * popT * alpha, 8);
+      // gentle green halo at the tip rides the beat (subtle on white)
       const glowP = new ck.Paint();
-      const glowR = bw * 0.85 * (1 + pulse * 0.12);
+      const glowR = bw * 0.7 * (1 + pulse * 0.18);
       const glowSh = ck.Shader.MakeRadialGradient(
         [cxB, topY], glowR,
-        [ck.Color4f(GRN[0], GRN[1], GRN[2], 0.50 * popT * alpha), ck.Color4f(GRN[0], GRN[1], GRN[2], 0)],
+        [ck.Color4f(GRN[0], GRN[1], GRN[2], 0.28 * popT * alpha), ck.Color4f(GRN[0], GRN[1], GRN[2], 0)],
         null, ck.TileMode.Clamp
       );
       glowP.setShader(glowSh);
@@ -475,8 +475,8 @@ function drawS1(c, lf) {
     }
   }
 
-  // axis line
-  drawLine(c, chX - 30, baseY, chX + chW + 30, baseY, WHITEISH, 0.22 * gridT, 2);
+  // axis line (dark on white)
+  drawLine(c, chX - 30, baseY, chX + chW + 30, baseY, SLATE, 0.55 * gridT, 2);
 
   // $1.24M label: starts above Yr 12, slides to Yr 9 as the fast curve grows up
   const numT = easeOut(progress(lf, 124, 142));
@@ -497,7 +497,7 @@ function drawS1(c, lf) {
     const s = lerp(1.25, 1, headT);
     c.scale(s, s);
     c.translate(-W/2, -H * 0.115);
-    drawTextC(c, SYNE_XB, 92, 'August 2034', W/2, H * 0.115, WHITEISH, clamp(headT * 1.5, 0, 1));
+    drawTextC(c, SYNE_XB, 92, 'August 2034', W/2, H * 0.115, TEXT, clamp(headT * 1.5, 0, 1));
     c.restore();
     const kickT = easeOut(progress(lf, HEAD_IN + 2, HEAD_IN + 18));
     if (kickT > 0.01)
@@ -505,7 +505,7 @@ function drawS1(c, lf) {
   }
 
   // "3 years sooner" pill + bracket over the ghost years (fixed positions 9–11)
-  const brT = easeOut(progress(lf, FD_DIM + 22, FD_DIM + 44));
+  const brT = easeOut(progress(lf, FD_DIM + 32, FD_DIM + 54));
   if (brT > 0.01) {
     const xL = slotX(9);
     const xR = slotX(11) + bw;
@@ -735,6 +735,11 @@ function drawS4(c, lf) {
   const enterT = easeOut(progress(lf, 0, 45));
   const pulse  = beatPulse(lf + S4_START);
 
+  // Slow push-in keeps the tail alive — never parked once the copy has settled
+  c.save();
+  const drift = 1 + Math.max(0, lf - 40) * 0.00045;
+  c.translate(W/2, H*0.5); c.scale(drift, drift); c.translate(-W/2, -H*0.5);
+
   // Teal sunrise — line 1 above it, line 2 below it, so the copy frames the
   // logo instead of clustering at the top
   const SUN_Y = H * 0.46;
@@ -752,45 +757,55 @@ function drawS4(c, lf) {
   if (wmT > 0)  drawTextC(c, SYNE_XB, 52, 'untilfire', W/2, H*0.80, TEXT, wmT);
   if (urlT > 0) drawTextC(c, DMS_M, 30, 'www.untilfire.com', W/2, H*0.80 + 50, TEAL, urlT * 0.85);
 
-  // Power copy — line 1 slams on the 39.81s beat (lf=107) above the sun,
-  // final line lands at exactly 41s (lf=143) below it
-  const slamLine = (str, t0, y, col) => {
-    const t = springE(progress(lf, t0 - 15, t0));
-    if (t <= 0) return;
+  // Power copy — each line RISES up into place (not a quick flat pop) and
+  // arrives exactly on its beat: line 1 on the 39.81s beat (lf=107) above the
+  // sun, final line at exactly 41s (lf=143) below it. Soft shadow adds depth.
+  const riseLine = (str, t0, y, col) => {
+    const p = progress(lf, t0 - 24, t0);
+    if (p <= 0) return;
+    const e  = easeOut(p);
+    const yo = (1 - e) * 54;            // travels up 54px into place
+    const sc = lerp(0.94, 1, e);
+    const a  = clamp(p * 2.0, 0, 1);
     c.save();
-    c.translate(W/2, y - 26);
-    const s = lerp(1.3, 1, t);
-    c.scale(s, s);
-    c.translate(-W/2, -(y - 26));
-    drawTextC(c, SYNE_XB, 78, str, W/2, y, col, clamp(t * 1.6, 0, 1));
+    c.translate(W/2, y); c.scale(sc, sc); c.translate(-W/2, -y);
+    drawTextC(c, SYNE_XB, 80, str, W/2, y + yo + 4, SLATE, a * 0.16);  // shadow
+    drawTextC(c, SYNE_XB, 80, str, W/2, y + yo,     col,   a);
     c.restore();
   };
-  slamLine("Don't let money stop you", 107, H*0.16, TEXT);
-  slamLine('from being a good person.', 143, H*0.63, TEAL);
+  riseLine("Don't let money stop you", 107, H*0.16, TEXT);
+  riseLine('from being a good person.', 143, H*0.63, TEAL);
 
   const tagT = easeOut(progress(lf, 160, 190));
   if (tagT > 0) drawTextC(c, DMS_R, 26, 'Personal finance that sets you free.', W/2, H*0.93, BODY, tagT * 0.6);
+
+  c.restore();
 }
 
-// ── Filmstrip transition ───────────────────────────────────────────────────────
-function renderWithTransition(c, f, sceneA, aStart, sceneB, bStart, transStart, transLen) {
-  const t  = clamp((f - transStart) / transLen, 0, 1);
-  const et = easeInOut(t);
-  const cut = et * W;
+// ── Bloom cut ────────────────────────────────────────────────────────────────
+// Light-driven transition that echoes the logo bloom: a white bloom grows from
+// centre and peaks (covering the screen) at the midpoint, hiding a hard swap
+// from scene A to scene B, then recedes so B emerges out of the light. All
+// post-intro scenes are white-bg, so the bloom reads as the scene dissolving
+// through light rather than a flash.
+function renderBloomCut(c, f, sceneA, aStart, sceneB, bStart, transStart, transLen) {
+  const t = clamp((f - transStart) / transLen, 0, 1);
+  if (t < 0.5) sceneA(c, f - aStart);
+  else         sceneB(c, f - bStart);
 
-  if (cut < W) {
-    c.save();
-    c.clipRect(ck.XYWHRect(0, 0, W - cut, H), ck.ClipOp.Intersect, true);
-    c.translate(-cut, 0);
-    sceneA(c, f - aStart);
-    c.restore();
-  }
-  if (cut > 0) {
-    c.save();
-    c.clipRect(ck.XYWHRect(W - cut, 0, cut, H), ck.ClipOp.Intersect, true);
-    c.translate(W - cut, 0);
-    sceneB(c, f - bStart);
-    c.restore();
+  const bloom = Math.sin(t * Math.PI);   // 0 → 1 (mid) → 0
+  if (bloom > 0.001) {
+    const maxR = Math.hypot(W, H) * 0.62;
+    const r = maxR * (0.4 + 0.6 * bloom);
+    const p = new ck.Paint();
+    const sh = ck.Shader.MakeRadialGradient(
+      [W/2, H/2], r,
+      [ck.Color4f(1,1,1, bloom), ck.Color4f(1,1,1, bloom), ck.Color4f(1,1,1, 0)],
+      [0, Math.min(0.96, bloom), 1], ck.TileMode.Clamp
+    );
+    p.setShader(sh);
+    c.drawRect(ck.LTRBRect(0, 0, W, H), p);
+    p.delete(); sh.delete();
   }
 }
 
@@ -809,19 +824,19 @@ for (let fi = 0; fi < totalFrames; fi++) {
   } else if (f < SI_END - TRANS_LEN) {
     drawSI(canvas, f - SI_START);
   } else if (f < SI_END) {
-    renderWithTransition(canvas, f, drawSI, SI_START, drawS1, S1_START, SI_END - TRANS_LEN, TRANS_LEN);
+    renderBloomCut(canvas, f, drawSI, SI_START, drawS1, S1_START, SI_END - TRANS_LEN, TRANS_LEN);
   } else if (f < S1_END - TRANS_LEN) {
     drawS1(canvas, f - S1_START);
   } else if (f < S1_END) {
-    renderWithTransition(canvas, f, drawS1, S1_START, drawS2, S2_START, S1_END - TRANS_LEN, TRANS_LEN);
+    renderBloomCut(canvas, f, drawS1, S1_START, drawS2, S2_START, S1_END - TRANS_LEN, TRANS_LEN);
   } else if (f < S2_END - TRANS_LEN) {
     drawS2(canvas, f - S2_START);
   } else if (f < S2_END) {
-    renderWithTransition(canvas, f, drawS2, S2_START, drawS3, S3_START, S2_END - TRANS_LEN, TRANS_LEN);
+    renderBloomCut(canvas, f, drawS2, S2_START, drawS3, S3_START, S2_END - TRANS_LEN, TRANS_LEN);
   } else if (f < S3_END - TRANS_LEN) {
     drawS3(canvas, f - S3_START);
   } else if (f < S3_END) {
-    renderWithTransition(canvas, f, drawS3, S3_START, drawS4, S4_START, S3_END - TRANS_LEN, TRANS_LEN);
+    renderBloomCut(canvas, f, drawS3, S3_START, drawS4, S4_START, S3_END - TRANS_LEN, TRANS_LEN);
   } else {
     drawS4(canvas, f - S4_START);
   }

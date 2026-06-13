@@ -49,19 +49,32 @@ update this file in the same session.
   earlier slow soft blob read as a weird vignette). Logo + wordmark settle;
   everything after runs on a white background with dark text.
 - **The sun's ray beat-pulse is a confirmed keeper** — preserve it in every
-  sun, including after the logo settles.
+  sun, including after the logo settles. **Beat grid is measured, not assumed**
+  (v22): the kick/downbeat of `bg_sound.m4a` lands on global frames `6 + 15k`
+  (120 BPM). Onset + bass-isolated analysis confirms phase 6; the earlier
+  phase-14 grid sat in the gap between kicks, so the rays pulsed on the
+  offbeat. `beatPulse` takes the GLOBAL frame at phase 6; every on-beat event
+  (intro slam, words, bar pops, notification swipes) lands on a kick.
+- **Transitions are bloom cuts** (confirmed v23): a white bloom grows from
+  centre, peaks (covering the screen) at the transition midpoint to hide the
+  scene swap, then recedes so the next scene emerges out of the light —
+  echoing the logo bloom. Not the old mechanical filmstrip pan.
 - **Show, don't tell (confirmed 2026-06-11):** no text cards describing what
   the visuals already show (e.g. no "$X/mo → freedom date" overlay on the
   chart, no closing text card on the leaks scene).
 - v8 scene structure to preserve after the opening:
   1. Question hook — "What if work was optional?" (black, word-by-word,
      each word on a beat).
-  2. Compounding bar chart — v8 dark-bg glowing-bars look (confirmed v19);
-     **the freedom-date moment must NOT read as "lowering the bar"** (v20):
-     after the $1.24M reveal, the 3 tallest bars **slide LEFT 3 year-slots —
-     same height, earlier timeline** — leaving ghost outlines at Yr 10–12
-     under the "3 years sooner" bracket. Never dim/shrink the result; show
-     the same number arriving sooner.
+  2. Compounding bar chart — **white background like every other post-intro
+     scene** (confirmed v23; the dark-bg v8 look clashed tonally and read as
+     two different videos). "Watch it compound." header, green growth bars
+     with dark-teal invested base, soft drop shadow + a gentle green tip-halo
+     on the beat. **The freedom-date moment must NOT read as "lowering the
+     bar"** (v20): after the $1.24M reveal the compound *yield* morphs in
+     place — bars 0–8 grow to a steeper curve hitting the SAME $1.24M while
+     Yr 10–12 fade to ghost outlines under the "3 years sooner" bracket. The
+     morph is **slow enough to breathe** (v23) and holds before the cut.
+     Same number, arriving sooner — never dim/shrink the result.
   3. Bank logos — **big logos in a continuously scrolling marquee** filling
      the page (4 rows, alternating directions). **Every logo on screen must
      be unique at any given moment** (v20): disjoint icon sets per row, and
@@ -78,11 +91,14 @@ update this file in the same session.
      stage. **No red/orange** — neutral icon colors, teal dissolve + recovery.
      Header is calm/neutral ("Found while syncing your banks."), not a
      "you're leaking money" shout.
-  5. End card (v18/v20) — copy **frames the logo, never clusters at the
-     top**: "Don't let money stop you" above the sun (slams on the 39.81s
-     beat), smaller teal half-sun center, "from being a good person." BELOW
-     the sun landing at **exactly 41s** — never earlier (waiting copy reads
-     dead) — then wordmark + www.untilfire.com at the bottom.
+  5. End card (v18/v20/v23) — copy **frames the logo, never clusters at the
+     top**: "Don't let money stop you" above the sun, smaller teal half-sun
+     center, "from being a good person." BELOW the sun, then wordmark +
+     www.untilfire.com at the bottom. Each line **rises up into place** over
+     ~24 frames with a soft drop shadow for depth (v23; the old quick flat
+     pop was hard to read) and arrives exactly on its beat — line 1 on the
+     39.81s beat, final line at **exactly 41s** (never earlier — waiting copy
+     reads dead). A slow push-in keeps the tail alive to the music's end.
 - Approved copy:
   - Hook: "What if work was optional?" (each word on a beat)
   - End card: "Don't let money stop you / from being a good person."
