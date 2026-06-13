@@ -461,8 +461,8 @@ function drawS1(c, lf) {
     // soft drop shadow grounds the bar on white (depth instead of dark-bg glow)
     drawRect(c, bx + 3, topY + 6, bw, tH, SLATE, 0.10 * popT * alpha, 8);
 
-    const reflH = CH * 0.055 * popT;
-    drawRect(c, bx, baseY - invH, bw, invH + reflH, INV, 0.92 * popT * alpha, 8);
+    // invested base sits flush on the axis (no below-line reflection on white bg)
+    drawRect(c, bx, baseY - invH, bw, invH, INV, 0.92 * popT * alpha, 8);
 
     const gH = tH - invH * 0.55;
     if (gH > 4) {
@@ -724,7 +724,9 @@ function drawS3(c, lf) {
     const allClearT = easeInOut(progress(lf, CROSS[9] + 20, CROSS[9] + 50));
     const cyC = lerp(H * 0.88, H * 0.55, allClearT);
     const sz  = lerp(76, 108, allClearT);
-    const sh  = 1 + 0.09 * hitKick;
+    // swipe-kick while cards clear; once settled, the final number rides the beat
+    const beat = beatPulse(lf + S3_START);
+    const sh   = 1 + 0.09 * hitKick + 0.05 * beat * allClearT;
     c.save();
     c.translate(W / 2, cyC); c.scale(sh, sh); c.translate(-W / 2, -cyC);
     drawTextC(c, DMM_M, sz, `+$${Math.round(recovered)}/mo`, W / 2, cyC, TEAL, ctT);
