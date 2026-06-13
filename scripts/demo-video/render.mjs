@@ -130,11 +130,13 @@ function progress(f, start, end) { return clamp((f-start)/(end-start), 0, 1); }
 const ev = (f, iS, iE, eI, oS, oE, eO) => eI(progress(f, iS, iE)) * (1 - eO(progress(f, oS, oE)));
 
 // ── Beat pulse (120 BPM = beat every 15 frames) ───────────────────────────────
-// Pass the GLOBAL frame. The kick/downbeat was measured (onset + bass analysis
-// of bg_sound.m4a) at phase 6 — i.e. beats land on global frames 6 + 15k.
-// (The old phase 14 sat in the low-energy gap between kicks, so the rays
-// pulsed on the offbeat.)
-function beatPulse(gf, phase = 6) {
+// Pass the GLOBAL frame. Folding the bass energy over the beat cycle puts the
+// kick TROUGH at phase 3.9, the ATTACK (steepest rise) at phase 4.7, and the
+// body peak at 7.9 — so the felt downbeat is phase ~5 (global frames 5 + 15k).
+// The pulse peaks on the attack and decays through the kick body.
+// (Spring "pop" events overshoot ~3 frames after their anchor, so they anchor
+//  ~3 frames BEFORE the beat — phase 2 — to land the visual jump on the kick.)
+function beatPulse(gf, phase = 5) {
   const p = (((gf - phase) % 15) + 15) % 15;
   return Math.max(0, 1 - p/5) ** 2;
 }
@@ -313,18 +315,20 @@ function drawSI(c, lf) {
 
   // "introducing..." fades in then out quickly before the logo slams
   const in1  = easeOut(progress(lf, 8, 25));
-  const outT = easeIn(progress(lf, 51, 65));  // fully gone by lf=65, before sun slams at lf=66
+  const outT = easeIn(progress(lf, 50, 62));  // gone by lf=62, just before the slam
   if (in1 > 0 && outT < 1) {
     const iy = H * 0.47 + (1 - in1) * 14;
     drawTextC(c, SYNE_B, 56, 'introducing...', W/2, iy, WHITEISH, in1 * (1 - outT) * 0.9);
   }
 
-  // Logo slams in ON a kick at lf=66 (global frame 186 = 6.2s, phase 6).
-  const riseT = springE(progress(lf, 51, 66));   // springs onto the kick at lf=66
+  // Logo JUMP lands on the kick: the spring is anchored at lf=63 so its
+  // overshoot snaps at lf≈65 (global 185, phase 5), and the bloom fires from
+  // that same kick — so the jump reads exactly on the beat.
+  const riseT = springE(progress(lf, 63, 78));
   const sunR  = 260 * clamp(riseT, 0, 1.08);     // allow slight overshoot
 
-  // Light fans out from the sun on the slam beat (lf=66→106)
-  const lightT = easeInOut(progress(lf, 66, 106));
+  // Light fans out from the sun on the slam kick (lf=65→105)
+  const lightT = easeInOut(progress(lf, 65, 105));
   if (lightT > 0) {
     const lr = lerp(1, 3200, lightT);
     const coreStop = clamp((lr - 340) / lr, 0, 1);
@@ -339,23 +343,23 @@ function drawSI(c, lf) {
     lightP.delete(); lightSh.delete();
   }
 
-  // Sun drawn on top of light; ray pulses hit the kick (phase-6 global grid)
-  if (sunR > 0 && lf < 106) {
+  // Sun drawn on top of light; ray pulses hit the kick (phase-5 global grid)
+  if (sunR > 0 && lf < 105) {
     const pulse = beatPulse(lf + SI_START);
     halfSun(c, SUN_X, SUN_Y, sunR, clamp(riseT, 0, 1), pulse * (1 + lightT * 0.5));
   }
 
   // Lit: white bg, logo settles to centre, wordmark rises in
-  if (lf >= 106) {
+  if (lf >= 105) {
     drawRect(c, 0, 0, W, H, BG, 1);
 
-    const settleT = easeOut(progress(lf, 106, 124));
+    const settleT = easeOut(progress(lf, 105, 123));
     const logoR   = lerp(260, 90, settleT);
     const logoY   = lerp(H/2 + 30, H * 0.44, settleT);
     const pulse   = beatPulse(lf + SI_START) * 0.6;
     halfSun(c, SUN_X, logoY, logoR, 1, pulse);
 
-    const wmT = easeOut(progress(lf, 121, 139));
+    const wmT = easeOut(progress(lf, 120, 138));
     if (wmT > 0) {
       const wmy = H * 0.44 + 90 + 36 + (1 - wmT) * 12;
       drawTextC(c, SYNE_XB, 68, 'untilfire', SUN_X, wmy, TEXT, wmT);
@@ -370,9 +374,11 @@ function drawSI(c, lf) {
 // the 3 tallest bars slide LEFT 3 year-slots (same height, earlier timeline)
 // leaving ghost outlines at Yr 10–12 under the "3 years sooner" bracket.
 const NUM_BARS = 12;
-// First 5 bars pop on kicks (local 6,21,36,51,66 — S1_START=330≡0, so on the
-// phase-6 global grid), then the pops accelerate audibly into the curve.
-const POPS = [6, 21, 36, 51, 66, 78, 87, 95, 102, 108, 113, 118];
+// Bars pop with a spring that overshoots ~3 frames after the anchor, so the
+// anchors sit ~3 frames before the kick (local ≡2 mod15; S1_START=330≡0) — the
+// bar's visual JUMP then lands on the kick (global 335,350,365…, phase 5).
+// First 5 on the beat, then the pops accelerate audibly into the curve.
+const POPS = [2, 17, 32, 47, 62, 74, 83, 91, 98, 104, 109, 114];
 const GRN    = hex('#2be06f');   // bright growth green (v8)
 const INV    = hex('#15684a');   // dark invested segment (v8)
 const DIMBAR = hex('#157a5f');   // ghost outline color
@@ -383,8 +389,8 @@ const invFrac       = i => 0.05  + 0.13 * (i / 11);
 const totalFracFast = i => 0.055 + 0.50 * Math.pow(i / 8, 1.75);
 const invFracFast   = i => 0.05  + 0.13 * (i / 8);
 const SLATE = hex('#94a3b8');
-const FD_DIM  = 141;   // compound-yield morph starts here (on a kick)
-const HEAD_IN = 156;   // "August 2034" lands on a kick (global 486 ≈ 16.2s)
+const FD_DIM  = 140;   // compound-yield morph starts here (on a kick, phase 5)
+const HEAD_IN = 155;   // "August 2034" settles on a kick (global 485, phase 5)
 
 function drawS1(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);   // white — matches every post-intro scene
@@ -479,7 +485,7 @@ function drawS1(c, lf) {
   drawLine(c, chX - 30, baseY, chX + chW + 30, baseY, SLATE, 0.55 * gridT, 2);
 
   // $1.24M label: starts above Yr 12, slides to Yr 9 as the fast curve grows up
-  const numT = easeOut(progress(lf, 124, 142));
+  const numT = easeOut(progress(lf, 123, 141));
   if (numT > 0.01) {
     // totalFracFast(8) == totalFrac(11) == 0.555, so Y stays constant
     const cx11  = slotX(11) + bw / 2;
@@ -619,9 +625,9 @@ const leakItems = [
 ];
 const NOTIF_IC = ['#6366f1','#8b5cf6','#475569','#0891b2','#64748b',
                   '#94a3b8','#22d3a5','#1e40af','#334155','#7c3aed'].map(hex);
-// Swipes land on kicks then accelerate. S3_START=843≡3 (mod 15), so a local
-// frame sits on the phase-6 global grid when it is ≡3 (mod 15): 63,78,93,108,123.
-const CROSS = [63, 78, 93, 108, 123, 135, 145, 153, 160, 166];
+// Swipes flick on kicks then accelerate. S3_START=843≡3 (mod 15), so a local
+// frame sits on the phase-5 global grid when it is ≡2 (mod 15): 62,77,92,107,122.
+const CROSS = [62, 77, 92, 107, 122, 134, 144, 152, 159, 165];
 
 function drawS3(c, lf) {
   drawRect(c, 0, 0, W, H, BG, 1);
