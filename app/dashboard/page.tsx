@@ -5146,7 +5146,7 @@ export default function Dashboard() {
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "expat-fire" && (
               <ExpatFireDashTab
-                portfolioBalance={k401 + rothIRA + taxable + cashSavings}
+                portfolioBalance={k401 + rothIRA + taxable + cashSavings + plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0)}
                 monthlySavings={Math.max(0, income * 12 - Object.entries(expenses).reduce((s, [, v]) => s + (v || 0), 0) * 12) / 12}
                 age={fireAge}
                 cityName={cityName}
