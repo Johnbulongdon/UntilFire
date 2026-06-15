@@ -4737,6 +4737,7 @@ export default function Dashboard() {
           ))}
         </nav>
         <div className="uf-mobile-drawer-actions">
+          <a className="uf-mobile-drawer-link" href="/calculators/expat-fire">Expat FIRE calculator ↗</a>
           <a className="uf-mobile-drawer-link" href="/fire-type?source=dashboard-mobile-menu">FIRE Type quiz →</a>
           <button className="uf-mobile-drawer-item" onClick={() => { setMobileMenuOpen(false); setTourOpen(true); }}>
             <strong>Take a tour</strong>
@@ -4831,9 +4832,9 @@ export default function Dashboard() {
                     <div className="uf-sidebar-sub-nav">
                       {([
                         { label: "Freedom Date", isActive: tab === "fire-calculator" && fireCalcSubTab === "menu",       onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                        { label: "Confidence",   isActive: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
-                        { label: "Advanced",     isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
-                        { label: "Lifestyle",    isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
+                        { label: "Simulate",     isActive: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
+                        { label: "Scenarios",    isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
+                        { label: "Goals",        isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
                         { label: "Learn",        isActive: tab === "learning-hub",                                       onClick: () => openDashboardTab("learning-hub") },
                       ]).map(sub => (
                         <button
@@ -4844,6 +4845,13 @@ export default function Dashboard() {
                           {sub.label}
                         </button>
                       ))}
+                      <a
+                        href="/calculators/expat-fire"
+                        className="uf-sidebar-sub-item"
+                        style={{ textDecoration: "none" }}
+                      >
+                        Expat FIRE ↗
+                      </a>
                     </div>
                   )}
                 </div>
@@ -4922,9 +4930,9 @@ export default function Dashboard() {
               <nav className="uf-section-switch uf-freedom-section-switch" aria-label="Freedom sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                  { label: "Confidence", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
-                  { label: "Advanced", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
-                  { label: "Lifestyle", active: tab === "goals", onClick: () => openDashboardTab("goals") },
+                  { label: "Simulate", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
+                  { label: "Scenarios", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
+                  { label: "Goals", active: tab === "goals", onClick: () => openDashboardTab("goals") },
                   { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
                 ]).map(item => (
                   <button
@@ -4935,6 +4943,13 @@ export default function Dashboard() {
                     {item.label}
                   </button>
                 ))}
+                <a
+                  href="/calculators/expat-fire"
+                  className="uf-section-button"
+                  style={{ textDecoration: "none" }}
+                >
+                  Expat FIRE ↗
+                </a>
               </nav>
             )}
             {tab === "overview" && histMonthsCount >= 1 && (
