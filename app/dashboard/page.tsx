@@ -4575,7 +4575,7 @@ export default function Dashboard() {
         @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
         @media(min-width: 901px) { .uf-freedom-section-switch { display: none !important; } }
 
-        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: calc(100svh - 64px); min-height: 480px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 55%, #ffffff 0%, #eef2f7 75%); }
+        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: calc(100svh - 48px); min-height: 480px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 55%, #ffffff 0%, #eef2f7 75%); }
         .dark .expat-globe-wrap { background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
         @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: calc(100svh - 180px); min-height: 360px; } }
 
