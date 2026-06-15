@@ -7,12 +7,14 @@ This is the always-loaded project context for Claude Code and other AI agents wo
 Before acting on any task:
 
 1. Read the user's latest request first.
-2. Fetch and compare against latest pushed `origin/main`.
-3. Inspect the relevant existing files and patterns before editing.
-4. Load or follow the relevant workflow/skill guidance below.
-5. Make the smallest safe change that satisfies the request.
-6. Run the narrowest useful verification before claiming completion.
-7. If the user asks to push, commit only after verification and push to `main`.
+2. Read `docs/ROADMAP.md` — source of truth for what is built vs planned. Never claim a feature is missing without checking here first.
+3. Read `CHANGELOG.md` — most recent entries show what shipped last. Use this to understand current product state before answering questions or building.
+4. Fetch and compare against latest pushed `origin/main`.
+5. Inspect the relevant existing files and patterns before editing.
+6. Load or follow the relevant workflow/skill guidance below.
+7. Make the smallest safe change that satisfies the request.
+8. Run the narrowest useful verification before claiming completion.
+9. If the user asks to push, commit only after verification and push to `main`.
 
 If any instruction conflicts, stop and call out the conflict instead of guessing.
 
