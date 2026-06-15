@@ -3,8 +3,14 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
+
+const GeoArbitrageGlobe = dynamic(
+  () => import("@/app/components/GeoArbitrageGlobe"),
+  { ssr: false },
+);
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
 import { calcFIRE, calcTakeHome } from "@/lib/fire";
@@ -23,6 +29,7 @@ import Nav from "@/app/components/landing/Nav";
 import WizardProgress from "@/app/components/landing/WizardProgress";
 import LandingPage from "@/app/components/landing/LandingPage";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
+import { CITIES } from "@/lib/fire-data";
 import { FireTypeAvatar } from "@/app/fire-type/FireTypeAvatar";
 import { getTypeMeta, isValidFireTypeCode } from "@/app/fire-type/quiz-data";
 import {
@@ -1142,6 +1149,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   landingSource?: string;
   onAdjust: () => void;
 }) {
+  const router = useRouter();
   const [useRealReturn, setUseRealReturn] = useState(false);
   const marketReturn = useRealReturn ? 0.07 : 0.10;
 
@@ -1850,8 +1858,33 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                 )}
               </div>
 
+              {/* ── GEO-ARBITRAGE GLOBE ── */}
+              {(() => {
+                const matchedCity = CITIES.find((c) => c.name === city.name);
+                const currentCityKey = matchedCity?.key ?? "sf";
+                return (
+                  <div style={{ marginTop: 56, paddingTop: 32, borderTop: "1px solid #e2e8f0" }}>
+                    <div style={{ textAlign: "center", marginBottom: 24 }}>
+                      <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "0 0 8px" }}>
+                        Where else could you retire?
+                      </h2>
+                      <p style={{ color: "#374151", fontSize: 15, margin: 0 }}>
+                        Spin the globe — green cities mean you could FIRE there now.
+                      </p>
+                    </div>
+                    <GeoArbitrageGlobe
+                      monthlySavings={savings}
+                      portfolioBalance={portfolioBalance}
+                      currentAge={currentAge}
+                      currentCityKey={currentCityKey}
+                      onCitySelect={(key) => router.push(`/geo-arbitrage/${key}`)}
+                    />
+                  </div>
+                );
+              })()}
+
               {/* ── FOOTER ACTIONS ── */}
-              <div data-gsap="footer-cta" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center" }}>
+              <div data-gsap="footer-cta" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center", marginTop: 40 }}>
                 <button className="uf-btn-outline" onClick={() => setShowShare(true)}>
                   <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
                   Share result
