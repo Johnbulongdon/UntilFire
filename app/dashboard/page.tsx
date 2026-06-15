@@ -2213,149 +2213,422 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
 }
 
 // ─── Goals Tab ────────────────────────────────────────────────────────────────
-function GoalsPageTab({
-  retirementCityName, retirementCityCol, lifestyleMultiplier, withdrawalRate,
-  displayCurrency, displayRates,
-  onCityChange, onLifestyleChange,
-}: {
-  retirementCityName: string; retirementCityCol: number; lifestyleMultiplier: number; withdrawalRate: number;
-  displayCurrency: string; displayRates: Record<string, number>;
-  onCityChange: (name: string, col: number) => void;
-  onLifestyleChange: (multiplier: number) => void;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Goals</div>
-      <RetirementTargetCard
-        retirementCityName={retirementCityName}
-        retirementCityCol={retirementCityCol}
-        lifestyleMultiplier={lifestyleMultiplier}
-        withdrawalRate={withdrawalRate}
-        displayCurrency={displayCurrency}
-        displayRates={displayRates}
-        onCityChange={onCityChange}
-        onLifestyleChange={onLifestyleChange}
-      />
-    </div>
-  );
-}
 
-// ─── Retirement Target Card ───────────────────────────────────────────────────
-const LIFESTYLE_TIERS = [
-  { label: "Frugal",   icon: "🌱", multiplier: 0.7 },
-  { label: "Standard", icon: "🏡", multiplier: 1.0 },
-  { label: "Lavish",   icon: "💎", multiplier: 1.5 },
+type Goal = {
+  id: string;
+  name: string;
+  emoji: string;
+  target_amount: number;
+  current_saved: number;
+  target_date: string | null;
+  sort_order: number;
+};
+
+type GoalDraft = {
+  name: string;
+  emoji: string;
+  target_amount: string;
+  current_saved: string;
+  target_date: string;
+};
+
+const QUICK_GOAL_PRESETS = [
+  { emoji: "🚗", name: "Car" },
+  { emoji: "🏠", name: "House" },
+  { emoji: "👶", name: "Baby Fund" },
+  { emoji: "⛵", name: "Boat" },
+  { emoji: "✈️", name: "Travel" },
+  { emoji: "📚", name: "Education" },
+  { emoji: "💍", name: "Wedding" },
+  { emoji: "🛠️", name: "Home Reno" },
+  { emoji: "✈️", name: "Private Plane" },
+  { emoji: "💻", name: "Business" },
 ];
 
-function RetirementTargetCard({
-  retirementCityName, retirementCityCol, lifestyleMultiplier, withdrawalRate,
-  displayCurrency, displayRates,
-  onCityChange, onLifestyleChange,
-}: {
-  retirementCityName: string; retirementCityCol: number; lifestyleMultiplier: number; withdrawalRate: number;
-  displayCurrency: string; displayRates: Record<string, number>;
-  onCityChange: (name: string, col: number) => void;
-  onLifestyleChange: (multiplier: number) => void;
-}) {
-  const [citySearch, setCitySearch] = useState(retirementCityName);
-  const [open, setOpen] = useState(false);
-  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
+const EMOJI_PICKER = ["🚗","🏠","👶","⛵","✈️","📚","💍","🛠️","💻","🎯","🏋️","🐶","🌴","🎸","🏕️","💎","🛻","🏡","🎓","🚀","🎁","🌏","🏖️","🍕","🛳️"];
 
-  const filtered = citySearch.length > 0
-    ? CITIES.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 8)
-    : [];
+function GoalsPageTab({ userId }: { userId: string }) {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [draft, setDraft] = useState<GoalDraft>({ name: "", emoji: "🎯", target_amount: "", current_saved: "", target_date: "" });
+  const [saving, setSaving] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  const currentTier = LIFESTYLE_TIERS.find(t => t.multiplier === lifestyleMultiplier) ?? LIFESTYLE_TIERS[1];
-  const targetAnnualSpend = retirementCityCol > 0 ? retirementCityCol * lifestyleMultiplier : 0;
-  const targetFIRENumber  = withdrawalRate > 0 ? targetAnnualSpend / withdrawalRate : 0;
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("goals").select("*").eq("user_id", userId).order("sort_order").then(({ data }) => {
+      setGoals((data as Goal[]) ?? []);
+      setLoading(false);
+    });
+  }, [userId]);
 
-  const handleSelect = (name: string, col: number) => {
-    onCityChange(name, col);
-    setCitySearch(name);
-    setOpen(false);
-  };
+  function openAdd(preset?: { emoji: string; name: string }) {
+    setEditingGoal(null);
+    setDraft({ name: preset?.name ?? "", emoji: preset?.emoji ?? "🎯", target_amount: "", current_saved: "", target_date: "" });
+    setShowEmojiPicker(false);
+    setModalOpen(true);
+  }
 
-  const handleClear = () => {
-    onCityChange("", 0);
-    setCitySearch("");
-    setOpen(false);
-  };
+  function openEdit(g: Goal) {
+    setEditingGoal(g);
+    setDraft({
+      name: g.name,
+      emoji: g.emoji,
+      target_amount: String(g.target_amount),
+      current_saved: String(g.current_saved),
+      target_date: g.target_date ?? "",
+    });
+    setShowEmojiPicker(false);
+    setModalOpen(true);
+  }
+
+  async function handleSave() {
+    if (!draft.name.trim() || !draft.target_amount) return;
+    setSaving(true);
+    const payload = {
+      user_id: userId,
+      name: draft.name.trim(),
+      emoji: draft.emoji,
+      target_amount: parseFloat(draft.target_amount) || 0,
+      current_saved: parseFloat(draft.current_saved) || 0,
+      target_date: draft.target_date || null,
+      sort_order: editingGoal ? editingGoal.sort_order : goals.length,
+    };
+    if (editingGoal) {
+      const { data } = await supabase.from("goals").update(payload).eq("id", editingGoal.id).select().single();
+      if (data) setGoals(prev => prev.map(g => g.id === editingGoal.id ? data as Goal : g));
+    } else {
+      const { data } = await supabase.from("goals").insert(payload).select().single();
+      if (data) setGoals(prev => [...prev, data as Goal]);
+    }
+    setSaving(false);
+    setModalOpen(false);
+  }
+
+  async function handleDelete(id: string) {
+    await supabase.from("goals").delete().eq("id", id);
+    setGoals(prev => prev.filter(g => g.id !== id));
+  }
+
+  function fmtAmt(n: number) {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+    if (n >= 1_000) return `$${Math.round(n).toLocaleString()}`;
+    return `$${Math.round(n)}`;
+  }
+
+  function goalStatus(g: Goal): { label: string; color: string; bg: string } {
+    const pct = g.target_amount > 0 ? g.current_saved / g.target_amount : 0;
+    if (pct >= 1) return { label: "Achieved! 🎉", color: "#059669", bg: "rgba(5,150,105,0.1)" };
+    if (!g.target_date) return { label: `${Math.round(pct * 100)}%`, color: "#22d3a5", bg: "transparent" };
+    const monthsLeft = Math.max(0, (new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30));
+    const needed = (g.target_amount - g.current_saved) / Math.max(monthsLeft, 1);
+    if (monthsLeft <= 0) return { label: "Overdue", color: "#ef4444", bg: "rgba(239,68,68,0.1)" };
+    return { label: `$${Math.round(needed).toLocaleString()}/mo needed`, color: "#f97316", bg: "transparent" };
+  }
+
+  if (loading) return <div style={{ padding: 40, color: "var(--uf-text-muted)", textAlign: "center" }}>Loading…</div>;
 
   return (
-    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Header */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>🎯 Retirement Target</div>
-
-      {/* City search */}
-      <div style={{ position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid var(--uf-border)", borderRadius: 9, padding: "9px 12px", background: "var(--uf-surface)" }}>
-          <span style={{ fontSize: 15 }}>📍</span>
-          <input
-            type="text"
-            value={citySearch}
-            placeholder="Where do you want to retire?"
-            onChange={e => { setCitySearch(e.target.value); setOpen(true); }}
-            onFocus={() => setOpen(true)}
-            style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}
-          />
-          {retirementCityName && (
-            <button onClick={handleClear} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-          )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Syne, sans-serif", letterSpacing: "-0.4px" }}>Goals</div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-muted)", marginTop: 2 }}>Save toward the things that matter</div>
         </div>
-        {open && filtered.length > 0 && (
-          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.2)", zIndex: 50, overflow: "hidden" }}>
-            {filtered.map(c => (
+        <button
+          onClick={() => openAdd()}
+          style={{
+            display: "flex", alignItems: "center", gap: 7,
+            background: "#22d3a5", color: "#003527",
+            border: "none", borderRadius: 10, padding: "9px 18px",
+            fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+          }}
+        >
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add Goal
+        </button>
+      </div>
+
+      {/* Empty state */}
+      {goals.length === 0 && (
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
+          padding: "48px 20px", background: "var(--uf-card)", border: "1px dashed var(--uf-border)",
+          borderRadius: 16, textAlign: "center",
+        }}>
+          <div style={{ fontSize: 40 }}>🎯</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--uf-text)", marginBottom: 6 }}>No goals yet</div>
+            <div style={{ fontSize: 13, color: "var(--uf-text-muted)" }}>Pick something to save toward and track your progress.</div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 420 }}>
+            {QUICK_GOAL_PRESETS.slice(0, 8).map(p => (
               <button
-                key={c.key}
-                onClick={() => handleSelect(c.name, c.col)}
-                style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", display: "flex", gap: 8, alignItems: "center" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#F0FDF4")}
-                onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                key={p.name}
+                onClick={() => openAdd(p)}
+                style={{
+                  background: "var(--uf-surface)", border: "1px solid var(--uf-border)",
+                  borderRadius: 99, padding: "6px 14px", fontSize: 13, fontWeight: 600,
+                  color: "var(--uf-text)", cursor: "pointer", fontFamily: "inherit",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
               >
-                <span>{c.flag}</span>
-                <span style={{ flex: 1 }}>{c.name}</span>
-                <span style={{ fontSize: 11, color: "#94A3B8" }}>{fmtMoney(c.col / 12, true)}/mo</span>
+                {p.emoji} {p.name}
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Lifestyle pills — only shown when a city is selected */}
-      {retirementCityCol > 0 && (
-        <>
-          <div style={{ display: "flex", gap: 8 }}>
-            {LIFESTYLE_TIERS.map(tier => {
-              const monthlySpend = retirementCityCol * tier.multiplier / 12;
-              const active = tier.multiplier === lifestyleMultiplier;
-              return (
+      {/* Goals grid */}
+      {goals.length > 0 && (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+          gap: 16,
+        }}>
+          {goals.map(g => {
+            const pct = g.target_amount > 0 ? Math.min(1, g.current_saved / g.target_amount) : 0;
+            const status = goalStatus(g);
+            const achieved = pct >= 1;
+            return (
+              <div
+                key={g.id}
+                style={{
+                  background: "var(--uf-card)", border: "1px solid var(--uf-border)",
+                  borderRadius: 16, padding: "20px 20px 16px",
+                  display: "flex", flexDirection: "column", gap: 14,
+                  position: "relative",
+                }}
+              >
+                {/* Edit/delete actions */}
+                <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 6 }}>
+                  <button
+                    onClick={() => openEdit(g)}
+                    style={{ background: "none", border: "none", color: "var(--uf-text-muted)", cursor: "pointer", fontSize: 16, padding: 2 }}
+                    title="Edit"
+                  >✏️</button>
+                  <button
+                    onClick={() => handleDelete(g.id)}
+                    style={{ background: "none", border: "none", color: "var(--uf-text-muted)", cursor: "pointer", fontSize: 16, padding: 2 }}
+                    title="Delete"
+                  >🗑️</button>
+                </div>
+
+                {/* Emoji + name */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 56 }}>
+                  <div style={{
+                    fontSize: 28, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--uf-surface)", borderRadius: 12, flexShrink: 0,
+                  }}>{g.emoji}</div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", lineHeight: 1.3 }}>{g.name}</div>
+                    {g.target_date && (
+                      <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 2 }}>
+                        🗓 {new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div>
+                  <div style={{
+                    height: 6, background: "var(--uf-surface)", borderRadius: 99, overflow: "hidden",
+                  }}>
+                    <div style={{
+                      height: "100%", width: `${pct * 100}%`,
+                      background: achieved ? "#059669" : "#22d3a5",
+                      borderRadius: 99, transition: "width 0.4s ease",
+                    }} />
+                  </div>
+                </div>
+
+                {/* Amounts + status */}
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.03em" }}>
+                      {fmtAmt(g.current_saved)}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 1 }}>
+                      of {fmtAmt(g.target_amount)}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, color: status.color,
+                    background: status.bg, borderRadius: 99, padding: "3px 10px",
+                  }}>
+                    {status.label}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Add another card */}
+          <button
+            onClick={() => openAdd()}
+            style={{
+              background: "transparent", border: "1.5px dashed var(--uf-border)",
+              borderRadius: 16, padding: "20px", cursor: "pointer",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: 8, color: "var(--uf-text-muted)", minHeight: 160, fontFamily: "inherit",
+            }}
+          >
+            <span style={{ fontSize: 24 }}>+</span>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Add goal</span>
+          </button>
+        </div>
+      )}
+
+      {/* Add / Edit Modal */}
+      {modalOpen && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setModalOpen(false); }}
+        >
+          <div style={{
+            background: "var(--uf-card)", border: "1px solid var(--uf-border)",
+            borderRadius: 18, padding: "24px 24px 20px", width: "100%", maxWidth: 420,
+            display: "flex", flexDirection: "column", gap: 18,
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Syne, sans-serif" }}>
+              {editingGoal ? "Edit Goal" : "New Goal"}
+            </div>
+
+            {/* Emoji + Name row */}
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ position: "relative" }}>
                 <button
-                  key={tier.label}
-                  onClick={() => onLifestyleChange(tier.multiplier)}
+                  onClick={() => setShowEmojiPicker(v => !v)}
                   style={{
-                    flex: 1, padding: "9px 8px", border: `1.5px solid ${active ? "#059669" : "#E2E8F0"}`,
-                    borderRadius: 9, background: active ? "#F0FDF4" : "var(--uf-surface)",
-                    cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                    width: 52, height: 52, fontSize: 26, background: "var(--uf-surface)",
+                    border: "1.5px solid var(--uf-border)", borderRadius: 12, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
                   }}
-                >
-                  <span style={{ fontSize: 16 }}>{tier.icon}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: active ? "#059669" : "#64748B", fontFamily: "Manrope, sans-serif" }}>{tier.label}</span>
-                  <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(monthlySpend, true)}/mo</span>
-                </button>
-              );
-            })}
-          </div>
+                >{draft.emoji}</button>
+                {showEmojiPicker && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 10,
+                    background: "var(--uf-card)", border: "1px solid var(--uf-border)",
+                    borderRadius: 12, padding: 10,
+                    display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, width: 200,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+                  }}>
+                    {EMOJI_PICKER.map(em => (
+                      <button
+                        key={em}
+                        onClick={() => { setDraft(d => ({ ...d, emoji: em })); setShowEmojiPicker(false); }}
+                        style={{
+                          fontSize: 20, background: "none", border: "none", cursor: "pointer",
+                          borderRadius: 8, padding: 4,
+                        }}
+                      >{em}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="Goal name (e.g. New Car)"
+                value={draft.name}
+                onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+                style={{
+                  flex: 1, height: 52, padding: "0 14px",
+                  background: "var(--uf-surface)", border: "1.5px solid var(--uf-border)",
+                  borderRadius: 12, fontSize: 14, color: "var(--uf-text)", fontFamily: "inherit",
+                  outline: "none",
+                }}
+              />
+            </div>
 
-          {/* Result row */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F0FDF4", borderRadius: 9, padding: "10px 14px" }}>
-            <span style={{ fontSize: 12, color: "#064E3B", fontFamily: "Manrope, sans-serif" }}>
-              {currentTier.icon} {retirementCityName} · {currentTier.label}
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>
-              FIRE target: {fmtMoney(targetFIRENumber, true)}
-            </span>
+            {/* Target amount */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Target Amount</label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--uf-text-muted)", fontSize: 14 }}>$</span>
+                <input
+                  type="number"
+                  placeholder="50,000"
+                  value={draft.target_amount}
+                  onChange={e => setDraft(d => ({ ...d, target_amount: e.target.value }))}
+                  style={{
+                    width: "100%", padding: "11px 14px 11px 26px",
+                    background: "var(--uf-surface)", border: "1.5px solid var(--uf-border)",
+                    borderRadius: 10, fontSize: 14, color: "var(--uf-text)", fontFamily: "inherit",
+                    outline: "none", boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Already saved */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Already Saved</label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--uf-text-muted)", fontSize: 14 }}>$</span>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={draft.current_saved}
+                  onChange={e => setDraft(d => ({ ...d, current_saved: e.target.value }))}
+                  style={{
+                    width: "100%", padding: "11px 14px 11px 26px",
+                    background: "var(--uf-surface)", border: "1.5px solid var(--uf-border)",
+                    borderRadius: 10, fontSize: 14, color: "var(--uf-text)", fontFamily: "inherit",
+                    outline: "none", boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Target date */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Target Date (optional)</label>
+              <input
+                type="date"
+                value={draft.target_date}
+                onChange={e => setDraft(d => ({ ...d, target_date: e.target.value }))}
+                style={{
+                  padding: "11px 14px",
+                  background: "var(--uf-surface)", border: "1.5px solid var(--uf-border)",
+                  borderRadius: 10, fontSize: 14, color: "var(--uf-text)", fontFamily: "inherit",
+                  outline: "none",
+                }}
+              />
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <button
+                onClick={() => setModalOpen(false)}
+                style={{
+                  flex: 1, padding: "11px", background: "var(--uf-surface)",
+                  border: "1px solid var(--uf-border)", borderRadius: 10,
+                  fontSize: 13, fontWeight: 600, color: "var(--uf-text-muted)",
+                  cursor: "pointer", fontFamily: "inherit",
+                }}
+              >Cancel</button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !draft.name.trim() || !draft.target_amount}
+                style={{
+                  flex: 2, padding: "11px", background: "#22d3a5",
+                  border: "none", borderRadius: 10,
+                  fontSize: 13, fontWeight: 700, color: "#003527",
+                  cursor: saving ? "default" : "pointer", fontFamily: "inherit",
+                  opacity: saving || !draft.name.trim() || !draft.target_amount ? 0.6 : 1,
+                }}
+              >{saving ? "Saving…" : editingGoal ? "Save Changes" : "Add Goal"}</button>
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -5132,16 +5405,7 @@ export default function Dashboard() {
               </div>
             )}
             {tab === "goals" && (
-              <GoalsPageTab
-                retirementCityName={retirementCityName}
-                retirementCityCol={retirementCityCol}
-                lifestyleMultiplier={lifestyleMultiplier}
-                withdrawalRate={withdrawalRate}
-                displayCurrency={defaultCurrency}
-                displayRates={rates}
-                onCityChange={(name, col) => { setRetirementCityName(name); setRetirementCityCol(col); }}
-                onLifestyleChange={setLifestyleMultiplier}
-              />
+              <GoalsPageTab userId={userId} />
             )}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
