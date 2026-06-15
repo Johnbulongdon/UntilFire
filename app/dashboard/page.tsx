@@ -4571,6 +4571,9 @@ export default function Dashboard() {
         @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
         @media(min-width: 901px) { .uf-freedom-section-switch { display: none !important; } }
 
+        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: min(calc(100svh - 170px), 820px); min-height: 420px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
+        @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: min(calc(100svh - 210px), 560px); min-height: 320px; } }
+
         .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
         .uf-sidebar-sub-sub-item { display: flex; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
         .uf-sidebar-sub-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 3px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
@@ -5156,5 +5159,127 @@ export default function Dashboard() {
       <FeedbackWidget />
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} source={upgradeSource} />
     </>
+  );
+}
+
+// ─── Expat FIRE dashboard tab ─────────────────────────────────────────────────
+
+function ExpatFireDashTab({
+  portfolioBalance,
+  monthlySavings,
+  age,
+  cityName,
+  onOpenProfile,
+}: {
+  portfolioBalance: number;
+  monthlySavings: number;
+  age: number;
+  cityName: string;
+  onOpenProfile: () => void;
+}) {
+  const [panelOpen, setPanelOpen] = useState(true);
+
+  const currentCityKey = useMemo(() => {
+    const match = CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+    return match?.key ?? "nyc";
+  }, [cityName]);
+
+  function handleCitySelect(key: string) {
+    try {
+      localStorage.setItem("uf_calc_prefill", JSON.stringify({
+        monthlySavings,
+        portfolioBalance,
+        currentAge: age,
+        cityName: cityName || "Dashboard",
+        annualCost: CITIES.find(c => c.key === currentCityKey)?.col ?? 60000,
+      }));
+    } catch {}
+    window.location.href = `/geo-arbitrage/${key}`;
+  }
+
+  function fmt(n: number) {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+    return `$${Math.round(n).toLocaleString()}`;
+  }
+
+  return (
+    <div className="expat-globe-wrap">
+      {/* Full-bleed globe */}
+      <GeoArbitrageGlobe
+        fillContainer
+        monthlySavings={monthlySavings}
+        portfolioBalance={portfolioBalance}
+        currentAge={age}
+        currentCityKey={currentCityKey}
+        onCitySelect={handleCitySelect}
+      />
+
+      {/* Title overlay — top left */}
+      <div style={{ position: "absolute", top: 20, left: 24, zIndex: 10, pointerEvents: "none" }}>
+        <div style={{ fontSize: 10, color: "#22d3a5", fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", marginBottom: 5 }}>
+          Expat FIRE
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", textShadow: "0 2px 16px rgba(0,0,0,0.6)", lineHeight: 1.15 }}>
+          Where else could<br />you retire?
+        </div>
+      </div>
+
+      {/* Panel toggle button */}
+      <button
+        onClick={() => setPanelOpen(v => !v)}
+        style={{
+          position: "absolute", top: 20,
+          right: panelOpen ? 244 : 16,
+          zIndex: 25, transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
+          background: "rgba(8,8,14,0.52)", backdropFilter: "blur(12px)",
+          border: "1px solid rgba(255,255,255,0.14)", borderRadius: 999,
+          padding: "6px 14px", color: "rgba(255,255,255,0.82)", fontSize: 11,
+          fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+          letterSpacing: "0.03em",
+        }}
+      >
+        {panelOpen ? "‹ Hide" : "Stats ›"}
+      </button>
+
+      {/* Collapsible stats panel */}
+      <div style={{
+        position: "absolute", top: 16,
+        right: panelOpen ? 16 : -232,
+        zIndex: 20, width: 220,
+        transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
+        background: "rgba(8,8,14,0.58)", backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255,255,255,0.09)", borderRadius: 16,
+        padding: "16px 14px", display: "flex", flexDirection: "column", gap: 9,
+      }}>
+        <div style={{ fontSize: 9, color: "#22d3a5", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 2 }}>
+          Your snapshot
+        </div>
+        {([
+          { label: "Portfolio", value: fmt(portfolioBalance) },
+          { label: "Monthly savings", value: `${fmt(monthlySavings)}/mo` },
+          { label: "Age", value: String(age) },
+        ] as const).map(({ label, value }) => (
+          <div key={label} style={{
+            background: "rgba(255,255,255,0.055)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 10, padding: "9px 12px",
+          }}>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.42)", fontWeight: 700, textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>{value}</div>
+          </div>
+        ))}
+        <button
+          onClick={onOpenProfile}
+          style={{
+            background: "rgba(34,211,165,0.11)", border: "1px solid rgba(34,211,165,0.22)",
+            borderRadius: 9, padding: "9px 0", color: "#22d3a5",
+            fontSize: 12, fontWeight: 700, cursor: "pointer",
+            fontFamily: "inherit", marginTop: 3, letterSpacing: "0.01em",
+          }}
+        >
+          Edit in Profile →
+        </button>
+      </div>
+    </div>
   );
 }
