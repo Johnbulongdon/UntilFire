@@ -4575,7 +4575,8 @@ export default function Dashboard() {
         @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
         @media(min-width: 901px) { .uf-freedom-section-switch { display: none !important; } }
 
-        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: min(calc(100svh - 170px), 820px); min-height: 420px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
+        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: min(calc(100svh - 170px), 820px); min-height: 420px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 55%, #ffffff 0%, #eef2f7 75%); }
+        .dark .expat-globe-wrap { background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
         @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: min(calc(100svh - 210px), 560px); min-height: 320px; } }
 
         .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
@@ -5150,6 +5151,7 @@ export default function Dashboard() {
                 monthlySavings={Math.max(0, income * 12 - Object.entries(expenses).reduce((s, [, v]) => s + (v || 0), 0) * 12) / 12}
                 age={fireAge}
                 cityName={cityName}
+                isDark={isDark}
                 onOpenProfile={() => openDashboardTab("profile")}
               />
             )}
@@ -5189,15 +5191,48 @@ function ExpatFireDashTab({
   monthlySavings,
   age,
   cityName,
+  isDark,
   onOpenProfile,
 }: {
   portfolioBalance: number;
   monthlySavings: number;
   age: number;
   cityName: string;
+  isDark: boolean;
   onOpenProfile: () => void;
 }) {
   const [panelOpen, setPanelOpen] = useState(true);
+
+  // Overlay chrome adapts to theme: on white space it must read dark, on dark
+  // space it reads light. The globe itself stays a dark-ocean / white-continent
+  // "night earth" in both modes.
+  const ui = isDark
+    ? {
+        title: "#fff",
+        titleShadow: "0 2px 16px rgba(0,0,0,0.6)",
+        panelBg: "rgba(8,8,14,0.58)",
+        panelBorder: "rgba(255,255,255,0.09)",
+        chipBg: "rgba(255,255,255,0.055)",
+        chipBorder: "rgba(255,255,255,0.08)",
+        chipLabel: "rgba(255,255,255,0.42)",
+        chipValue: "#fff",
+        toggleBg: "rgba(8,8,14,0.52)",
+        toggleBorder: "rgba(255,255,255,0.14)",
+        toggleText: "rgba(255,255,255,0.82)",
+      }
+    : {
+        title: "#0f172a",
+        titleShadow: "0 1px 10px rgba(255,255,255,0.7)",
+        panelBg: "rgba(255,255,255,0.72)",
+        panelBorder: "rgba(15,23,42,0.08)",
+        chipBg: "rgba(15,23,42,0.04)",
+        chipBorder: "rgba(15,23,42,0.06)",
+        chipLabel: "rgba(15,23,42,0.45)",
+        chipValue: "#0f172a",
+        toggleBg: "rgba(255,255,255,0.72)",
+        toggleBorder: "rgba(15,23,42,0.1)",
+        toggleText: "rgba(15,23,42,0.7)",
+      };
 
   const currentCityKey = useMemo(() => {
     const match = CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
@@ -5239,7 +5274,7 @@ function ExpatFireDashTab({
         <div style={{ fontSize: 10, color: "#22d3a5", fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", marginBottom: 5 }}>
           Expat FIRE
         </div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", textShadow: "0 2px 16px rgba(0,0,0,0.6)", lineHeight: 1.15 }}>
+        <div style={{ fontSize: 22, fontWeight: 800, color: ui.title, letterSpacing: "-0.03em", textShadow: ui.titleShadow, lineHeight: 1.15 }}>
           Where else could<br />you retire?
         </div>
       </div>
@@ -5251,9 +5286,9 @@ function ExpatFireDashTab({
           position: "absolute", top: 20,
           right: panelOpen ? 244 : 16,
           zIndex: 25, transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
-          background: "rgba(8,8,14,0.52)", backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.14)", borderRadius: 999,
-          padding: "6px 14px", color: "rgba(255,255,255,0.82)", fontSize: 11,
+          background: ui.toggleBg, backdropFilter: "blur(12px)",
+          border: `1px solid ${ui.toggleBorder}`, borderRadius: 999,
+          padding: "6px 14px", color: ui.toggleText, fontSize: 11,
           fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
           letterSpacing: "0.03em",
         }}
@@ -5267,8 +5302,8 @@ function ExpatFireDashTab({
         right: panelOpen ? 16 : -232,
         zIndex: 20, width: 220,
         transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
-        background: "rgba(8,8,14,0.58)", backdropFilter: "blur(20px)",
-        border: "1px solid rgba(255,255,255,0.09)", borderRadius: 16,
+        background: ui.panelBg, backdropFilter: "blur(20px)",
+        border: `1px solid ${ui.panelBorder}`, borderRadius: 16,
         padding: "16px 14px", display: "flex", flexDirection: "column", gap: 9,
       }}>
         <div style={{ fontSize: 9, color: "#22d3a5", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 2 }}>
@@ -5279,12 +5314,12 @@ function ExpatFireDashTab({
           { label: "Age", value: String(age) },
         ] as const).map(({ label, value }) => (
           <div key={label} style={{
-            background: "rgba(255,255,255,0.055)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: ui.chipBg,
+            border: `1px solid ${ui.chipBorder}`,
             borderRadius: 10, padding: "9px 12px",
           }}>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.42)", fontWeight: 700, textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>{value}</div>
+            <div style={{ fontSize: 9, color: ui.chipLabel, fontWeight: 700, textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: ui.chipValue, letterSpacing: "-0.02em" }}>{value}</div>
           </div>
         ))}
         <button

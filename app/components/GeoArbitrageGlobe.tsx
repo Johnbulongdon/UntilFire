@@ -161,14 +161,16 @@ function getPalette(dark: boolean): Palette {
       labelBorder: 'rgba(148,163,184,0.25)',
     };
   }
+  // Light mode: a "night earth" globe — dark ocean, white continents — sitting
+  // on a white page. Only the surrounding space flips white vs. dark mode.
   return {
     panelBg: 'radial-gradient(circle at 50% 40%, #ffffff 0%, #eef2f7 78%)',
     panelBorder: '#e2e8f0',
-    oceanStops: ['#ffffff', '#eaeff5', '#d7dfe9'],
-    oceanDot: 'rgba(100,116,139,0.16)',
-    land: '#1e293b',
-    landStroke: 'rgba(15,23,42,0.3)',
-    limbShade: 'rgba(51,65,85,0.20)',
+    oceanStops: ['#243247', '#141c2a', '#0b1019'],
+    oceanDot: 'rgba(255,255,255,0.09)',
+    land: '#f8fafc',
+    landStroke: null,
+    limbShade: 'rgba(0,0,0,0.42)',
     haloRGB: '100,116,139',
     haloRing: 'rgba(71,85,105,0.22)',
     legend: '#475569',
