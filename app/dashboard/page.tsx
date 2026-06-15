@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
+import dynamic from "next/dynamic";
+const GeoArbitrageGlobe = dynamic(() => import("@/app/components/GeoArbitrageGlobe"), { ssr: false });
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
@@ -64,6 +66,7 @@ type TabKey =
   | "assets"
   | "liabilities"
   | "fire-calculator"
+  | "expat-fire"
   | "goals"
   | "reports"
   | "learning-hub"
@@ -3917,7 +3920,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "fire-calculator",
     label: "Freedom",
-    activeTabs: ["fire-calculator", "goals", "learning-hub"],
+    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub"],
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
 ];
@@ -3989,7 +3992,7 @@ export default function Dashboard() {
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
       "overview", "cashflow", "assets", "liabilities",
-      "fire-calculator", "reports", "learning-hub", "profile",
+      "fire-calculator", "expat-fire", "reports", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
@@ -4234,6 +4237,7 @@ export default function Dashboard() {
     { label: "Accounts / Net Worth", tab: "assets" as TabKey, helper: "Assets, debts, connected accounts" },
     { label: "Insights", tab: "reports" as TabKey, helper: "Monthly spending patterns" },
     { label: "Freedom Date", tab: "fire-calculator" as TabKey, helper: "Result, levers, confidence check" },
+    { label: "Expat FIRE", tab: "expat-fire" as TabKey, helper: "Find cities where you retire sooner" },
     { label: "Profile & Assumptions", tab: "profile" as TabKey, helper: "Age, target, FIRE type, settings" },
     { label: "Learning Hub", tab: "learning-hub" as TabKey, helper: "Guides and explainers" },
   ];
@@ -4697,7 +4701,7 @@ export default function Dashboard() {
         </button>
         <div className="uf-mobile-top-title">
           <strong>UntilFire</strong>
-          <span>{tab === "overview" ? "Home" : tab === "fire-calculator" || tab === "goals" ? "Freedom Date" : tab === "profile" ? "Profile" : "Portfolio"}</span>
+          <span>{tab === "overview" ? "Home" : tab === "fire-calculator" || tab === "goals" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "profile" ? "Profile" : "Portfolio"}</span>
         </div>
         <button
           onClick={toggleDark}
@@ -4737,7 +4741,6 @@ export default function Dashboard() {
           ))}
         </nav>
         <div className="uf-mobile-drawer-actions">
-          <a className="uf-mobile-drawer-link" href="/calculators/expat-fire">Expat FIRE calculator ↗</a>
           <a className="uf-mobile-drawer-link" href="/fire-type?source=dashboard-mobile-menu">FIRE Type quiz →</a>
           <button className="uf-mobile-drawer-item" onClick={() => { setMobileMenuOpen(false); setTourOpen(true); }}>
             <strong>Take a tour</strong>
@@ -4845,13 +4848,12 @@ export default function Dashboard() {
                           {sub.label}
                         </button>
                       ))}
-                      <a
-                        href="/calculators/expat-fire"
-                        className="uf-sidebar-sub-item"
-                        style={{ textDecoration: "none" }}
+                      <button
+                        className={`uf-sidebar-sub-item ${tab === "expat-fire" ? "active" : ""}`}
+                        onClick={() => openDashboardTab("expat-fire")}
                       >
-                        Expat FIRE ↗
-                      </a>
+                        Expat FIRE
+                      </button>
                     </div>
                   )}
                 </div>
@@ -4926,7 +4928,7 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
-            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub") && (
+            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire") && (
               <nav className="uf-section-switch uf-freedom-section-switch" aria-label="Freedom sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
@@ -4934,6 +4936,7 @@ export default function Dashboard() {
                   { label: "Scenarios", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
                   { label: "Goals", active: tab === "goals", onClick: () => openDashboardTab("goals") },
                   { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
+                  { label: "Expat FIRE", active: tab === "expat-fire", onClick: () => openDashboardTab("expat-fire") },
                 ]).map(item => (
                   <button
                     key={item.label}
@@ -4943,13 +4946,6 @@ export default function Dashboard() {
                     {item.label}
                   </button>
                 ))}
-                <a
-                  href="/calculators/expat-fire"
-                  className="uf-section-button"
-                  style={{ textDecoration: "none" }}
-                >
-                  Expat FIRE ↗
-                </a>
               </nav>
             )}
             {tab === "overview" && histMonthsCount >= 1 && (
@@ -5145,6 +5141,15 @@ export default function Dashboard() {
             )}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
+            {tab === "expat-fire" && (
+              <ExpatFireDashTab
+                portfolioBalance={k401 + rothIRA + taxable + cashSavings}
+                monthlySavings={Math.max(0, income * 12 - Object.entries(expenses).reduce((s, [, v]) => s + (v || 0), 0) * 12) / 12}
+                age={fireAge}
+                cityName={cityName}
+                onOpenProfile={() => openDashboardTab("profile")}
+              />
+            )}
             {tab === "profile" && userId && (
               <ProfileTab
                 userId={userId}
@@ -5171,5 +5176,82 @@ export default function Dashboard() {
       <FeedbackWidget />
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} source={upgradeSource} />
     </>
+  );
+}
+
+// ─── Expat FIRE dashboard tab ─────────────────────────────────────────────────
+
+function ExpatFireDashTab({
+  portfolioBalance,
+  monthlySavings,
+  age,
+  cityName,
+  onOpenProfile,
+}: {
+  portfolioBalance: number;
+  monthlySavings: number;
+  age: number;
+  cityName: string;
+  onOpenProfile: () => void;
+}) {
+  const currentCityKey = useMemo(() => {
+    const match = CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+    return match?.key ?? "nyc";
+  }, [cityName]);
+
+  function handleCitySelect(key: string) {
+    try {
+      localStorage.setItem("uf_calc_prefill", JSON.stringify({
+        monthlySavings,
+        portfolioBalance,
+        currentAge: age,
+        cityName: cityName || "Dashboard",
+        annualCost: CITIES.find(c => c.key === currentCityKey)?.col ?? 60000,
+      }));
+    } catch {}
+    window.location.href = `/geo-arbitrage/${key}`;
+  }
+
+  function fmt(n: number) {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+    return `$${Math.round(n).toLocaleString()}`;
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: "#059669", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 10 }}>Expat FIRE</div>
+        <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Where else could you retire?</h2>
+        <p style={{ fontSize: 15, color: "var(--uf-text-2)", margin: 0 }}>Spin the globe — green cities mean you could FIRE there now with your current portfolio.</p>
+      </div>
+
+      {/* Prefilled data chips */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24, alignItems: "center" }}>
+        {[
+          { label: "Portfolio", value: fmt(portfolioBalance) },
+          { label: "Monthly savings", value: `${fmt(monthlySavings)}/mo` },
+          { label: "Age", value: String(age) },
+        ].map(({ label, value }) => (
+          <div key={label} style={{ background: "var(--uf-surface-2)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "8px 14px" }}>
+            <div style={{ fontSize: 10, color: "var(--uf-text-2)", fontWeight: 700, textTransform: "uppercase", marginBottom: 1 }}>{label}</div>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>{value}</div>
+          </div>
+        ))}
+        <button
+          onClick={onOpenProfile}
+          style={{ background: "none", border: "none", color: "#059669", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0 }}
+        >
+          Edit in Profile →
+        </button>
+      </div>
+
+      <GeoArbitrageGlobe
+        monthlySavings={monthlySavings}
+        portfolioBalance={portfolioBalance}
+        currentAge={age}
+        currentCityKey={currentCityKey}
+        onCitySelect={handleCitySelect}
+      />
+    </div>
   );
 }
