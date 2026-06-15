@@ -94,6 +94,22 @@ function dotColor(col: number, portfolioBalance: number): string {
   return '#f87171'; // Not yet
 }
 
+// Indicative whole-years to reach a 25x FIRE target from the current portfolio,
+// contributing `annualContribution` and compounding at a flat real rate. Used
+// only to show the *relative* timing difference between cities, so the exact
+// rate cancels out — both cities use the same assumption.
+const FIRE_GROWTH = 0.05;
+const FIRE_CAP_YEARS = 60;
+function yearsToFire(target: number, portfolio: number, annualContribution: number): number {
+  if (portfolio >= target) return 0;
+  let bal = portfolio;
+  for (let y = 1; y <= FIRE_CAP_YEARS; y++) {
+    bal = bal * (1 + FIRE_GROWTH) + annualContribution;
+    if (bal >= target) return y;
+  }
+  return FIRE_CAP_YEARS;
+}
+
 // ---------------------------------------------------------------------------
 // localStorage helpers
 // ---------------------------------------------------------------------------
@@ -189,6 +205,7 @@ function getPalette(dark: boolean): Palette {
 
 export default function GeoArbitrageGlobe({
   portfolioBalance,
+  monthlySavings,
   currentCityKey,
   onCitySelect,
   fillContainer = false,
@@ -214,12 +231,11 @@ export default function GeoArbitrageGlobe({
 
   // React state for legend / hidden list / hover label / spin pill
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
-  const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(true);
   const [isDark, setIsDark] = useState(false);
-  // Clicking a dot opens an in-place popup (instead of navigating away). x/y are
-  // canvas pixels at click time; spin is paused so it stays anchored to the dot.
-  const [selected, setSelected] = useState<{ city: PlottedCity; x: number; y: number } | null>(null);
+  // Hovering a dot opens an anchored info popup (clicking navigates). x/y are the
+  // dot's canvas pixels; spin pauses while hovering so it stays put.
+  const [hover, setHover] = useState<{ city: PlottedCity; x: number; y: number } | null>(null);
 
   // Track app theme (dark globe in dark mode, light globe in light mode)
   useEffect(() => {
@@ -429,18 +445,18 @@ export default function GeoArbitrageGlobe({
   function resumeSpin() {
     spinningRef.current = true;
     setSpinning(true);
-    setSelected(null); // dot drifts once spinning — drop the popup
+    setHover(null); // dot drifts once spinning — drop the popup
   }
 
   function setZoom(next: number) {
     zoom.current = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next));
   }
 
-  // Zoom from the +/- buttons: pause spin and dismiss any open popup (the dot
-  // moves under it once the globe scales).
+  // Zoom from the +/- buttons: pause spin and dismiss any popup (the dot moves
+  // under it once the globe scales).
   function zoomBy(factor: number) {
     stopSpin();
-    setSelected(null);
+    setHover(null);
     setZoom(zoom.current * factor);
   }
 
@@ -467,6 +483,7 @@ export default function GeoArbitrageGlobe({
     lastPos.current = getEventXY(native);
     isDragging.current = true;
     movedRef.current = false;
+    setHover(null); // a drag will move the dot out from under the popup
     stopSpin(); // touching the globe stops the auto-spin
   }
 
@@ -480,11 +497,12 @@ export default function GeoArbitrageGlobe({
       const dist = Math.hypot(dx, dy);
       setZoom(zoom.current * (dist / pinchDist.current));
       pinchDist.current = dist;
-      if (selected) setSelected(null);
+      if (hover) setHover(null);
       return;
     }
 
-    // Hover label (mouse only, when not dragging)
+    // Hover detection (mouse only, when not dragging): pause spin and anchor the
+    // popup to the dot so it can be read; clicking will open the full comparison.
     if (!isDragging.current && e.type === 'mousemove') {
       const canvas = canvasRef.current;
       if (canvas) {
@@ -492,7 +510,13 @@ export default function GeoArbitrageGlobe({
         const mx = (e as React.MouseEvent).clientX - rect.left;
         const my = (e as React.MouseEvent).clientY - rect.top;
         const found = pickCity(mx, my);
-        setHoverLabel(found ? `${found.flag} ${found.name}` : null);
+        if (found) {
+          if (spinningRef.current) stopSpin();
+          const p = projection([found.lng, found.lat]);
+          setHover(p ? { city: found, x: p[0], y: p[1] } : { city: found, x: mx, y: my });
+        } else {
+          setHover(null);
+        }
       }
     }
 
@@ -501,10 +525,7 @@ export default function GeoArbitrageGlobe({
     const pos = getEventXY(native);
     const dx = pos.x - lastPos.current.x;
     const dy = pos.y - lastPos.current.y;
-    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-      movedRef.current = true;
-      if (selected) setSelected(null); // dragging moves the dot — close the popup
-    }
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) movedRef.current = true;
     lastPos.current = pos;
     const speed = 0.32 / zoom.current; // slower when zoomed in
     rotLng.current += dx * speed;
@@ -518,7 +539,7 @@ export default function GeoArbitrageGlobe({
 
   function onWheel(e: React.WheelEvent) {
     stopSpin();
-    if (selected) setSelected(null);
+    if (hover) setHover(null);
     setZoom(zoom.current * (e.deltaY < 0 ? 1.12 : 0.89));
   }
 
@@ -550,15 +571,8 @@ export default function GeoArbitrageGlobe({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const found = pickCity(mx, my);
-    if (found) {
-      stopSpin(); // freeze so the popup stays anchored to the dot
-      setSelected({ city: found, x: mx, y: my });
-    } else {
-      setSelected(null); // tapping empty ocean dismisses the popup
-    }
+    const found = pickCity(e.clientX - rect.left, e.clientY - rect.top);
+    if (found) onCitySelect(found.key); // click → full comparison
   }
 
   // ---------------------------------------------------------------------------
@@ -585,27 +599,38 @@ export default function GeoArbitrageGlobe({
     backdropFilter: 'blur(4px)',
   };
 
-  // In-place city popup (shared by both render modes). Dark card so it reads on
-  // the dark ocean and on white space alike.
+  // Hover popup (shared by both render modes). Non-interactive so the click
+  // passes through to the dot beneath it. Dark card reads on ocean and white.
   let popupEl: React.ReactNode = null;
-  if (selected) {
-    const c = selected.city;
+  if (hover) {
+    const c = hover.city;
     const ready = portfolioBalance >= c.col * 25;
     const barista = !ready && portfolioBalance >= c.col * 12.5;
     const statusLabel = ready ? 'FIRE ready now' : barista ? 'Barista FIRE' : 'Not yet';
     const statusColor = ready ? '#22d3a5' : barista ? '#fbbf24' : '#f87171';
-    const popupW = 214;
+
+    // Timing vs the user's current city: negative = reach FIRE sooner here.
+    const annualContribution = Math.max(0, monthlySavings) * 12;
+    const baseCity = ALL_CITIES.find((x) => x.key === currentCityKey);
+    const cityYears = yearsToFire(c.col * 25, portfolioBalance, annualContribution);
+    const baseYears = baseCity ? yearsToFire(baseCity.col * 25, portfolioBalance, annualContribution) : cityYears;
+    const delta = cityYears - baseYears;
+    let deltaText: string;
+    let deltaColor: string;
+    if (delta <= -1) { deltaText = `${-delta} yr${-delta > 1 ? 's' : ''} sooner`; deltaColor = '#22d3a5'; }
+    else if (delta >= 1) { deltaText = `${delta} yr${delta > 1 ? 's' : ''} later`; deltaColor = '#f87171'; }
+    else { deltaText = 'Similar timeline'; deltaColor = 'rgba(255,255,255,0.7)'; }
+    const sameCity = baseCity?.key === c.key;
+
+    const popupW = 218;
     const cw = canvasW.current;
-    const above = selected.y > 170;
-    const left = Math.min(Math.max(selected.x, popupW / 2 + 10), Math.max(popupW / 2 + 10, cw - popupW / 2 - 10));
-    const top = selected.y + (above ? -16 : 16);
+    const above = hover.y > 168;
+    const left = Math.min(Math.max(hover.x, popupW / 2 + 10), Math.max(popupW / 2 + 10, cw - popupW / 2 - 10));
+    const top = hover.y + (above ? -16 : 16);
     popupEl = (
       <div
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        onWheel={(e) => e.stopPropagation()}
         style={{
-          position: 'absolute', left, top, width: popupW, zIndex: 40,
+          position: 'absolute', left, top, width: popupW, zIndex: 40, pointerEvents: 'none',
           transform: `translate(-50%, ${above ? '-100%' : '0'})`,
           background: 'rgba(12,14,22,0.95)', backdropFilter: 'blur(10px)',
           border: '1px solid rgba(255,255,255,0.14)', borderRadius: 14,
@@ -613,35 +638,34 @@ export default function GeoArbitrageGlobe({
           color: '#fff', fontFamily: 'inherit',
         }}
       >
-        <button
-          aria-label="Close"
-          onClick={() => setSelected(null)}
-          style={{
-            position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.7)',
-            fontSize: 14, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >×</button>
-        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em', paddingRight: 22 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em' }}>
           {c.flag} {c.name}
         </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 7, fontSize: 11, fontWeight: 700, color: statusColor }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor }} />
           {statusLabel}
         </div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
+        {!sameCity && (
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: 16, fontWeight: 800, color: deltaColor }}>
+              {delta < 0 ? '−' : delta > 0 ? '+' : ''}{Math.abs(delta) >= 1 ? Math.abs(delta) : ''}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: deltaColor }}>
+              {Math.abs(delta) >= 1 ? `yr${Math.abs(delta) > 1 ? 's' : ''} to FIRE` : deltaText}
+            </span>
+          </div>
+        )}
+        {!sameCity && Math.abs(delta) >= 1 && (
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+            {deltaText.includes('sooner') ? 'sooner' : 'later'} than {baseCity?.name ?? 'your city'}
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 8 }}>
           Cost of living ~${Math.round(c.col).toLocaleString()}/yr
         </div>
-        <button
-          onClick={() => onCitySelect(c.key)}
-          style={{
-            marginTop: 11, width: '100%', background: 'rgba(34,211,165,0.14)',
-            border: '1px solid rgba(34,211,165,0.4)', color: '#22d3a5', borderRadius: 9,
-            padding: '8px 0', fontSize: 12.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          See full comparison →
-        </button>
+        <div style={{ fontSize: 10.5, color: '#22d3a5', fontWeight: 700, marginTop: 9, letterSpacing: '0.02em' }}>
+          Click for full comparison →
+        </div>
       </div>
     );
   }
@@ -650,31 +674,17 @@ export default function GeoArbitrageGlobe({
     return (
       <div
         ref={wrapperRef}
-        style={{ width: '100%', height: '100%', position: 'relative', cursor: 'grab', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
+        style={{ width: '100%', height: '100%', position: 'relative', cursor: hover ? 'pointer' : 'grab', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
         onMouseDown={onPointerDown}
         onMouseMove={onPointerMove}
         onMouseUp={onPointerUp}
-        onMouseLeave={onPointerUp}
+        onMouseLeave={() => { onPointerUp(); setHover(null); }}
         onTouchStart={onPointerDown}
         onTouchMove={onPointerMove}
         onTouchEnd={onPointerUp}
         onWheel={onWheel}
       >
         <canvas ref={canvasRef} onClick={onCanvasClick} style={{ display: 'block', flexShrink: 0 }} />
-
-        {/* Hover label */}
-        {hoverLabel && (
-          <div style={{
-            position: 'absolute', bottom: 72, left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(8,8,14,0.88)', color: '#fff',
-            fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 99,
-            pointerEvents: 'none', whiteSpace: 'nowrap',
-            border: '1px solid rgba(148,163,184,0.25)',
-            backdropFilter: 'blur(8px)',
-          }}>
-            {hoverLabel}
-          </div>
-        )}
 
         {/* Legend bottom-center */}
         <div style={{
@@ -723,40 +733,17 @@ export default function GeoArbitrageGlobe({
       >
         <div
           ref={wrapperRef}
-          style={{ width: '100%', aspectRatio: '1', position: 'relative', cursor: 'grab', touchAction: 'none' }}
+          style={{ width: '100%', aspectRatio: '1', position: 'relative', cursor: hover ? 'pointer' : 'grab', touchAction: 'none' }}
           onMouseDown={onPointerDown}
           onMouseMove={onPointerMove}
           onMouseUp={onPointerUp}
-          onMouseLeave={onPointerUp}
+          onMouseLeave={() => { onPointerUp(); setHover(null); }}
           onTouchStart={onPointerDown}
           onTouchMove={onPointerMove}
           onTouchEnd={onPointerUp}
           onWheel={onWheel}
         >
           <canvas ref={canvasRef} onClick={onCanvasClick} style={{ display: 'block' }} />
-
-          {/* Hover label */}
-          {hoverLabel && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 12,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: P.labelBg,
-                color: P.labelText,
-                fontSize: 12,
-                fontWeight: 600,
-                padding: '4px 12px',
-                borderRadius: 99,
-                pointerEvents: 'none',
-                whiteSpace: 'nowrap',
-                border: `1px solid ${P.labelBorder}`,
-              }}
-            >
-              {hoverLabel}
-            </div>
-          )}
 
           {/* Zoom controls */}
           <div
