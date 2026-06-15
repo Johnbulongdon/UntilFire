@@ -1215,6 +1215,20 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         </span>
       </div>
 
+      {/* ── Setup checklist (hidden once all 4 steps done) ─────────────── */}
+      <SetupChecklist
+        income={income}
+        expenses={expenses}
+        k401={k401}
+        rothIRA={rothIRA}
+        taxable={taxable}
+        cashSavings={cashSavings}
+        cityName={cityName}
+        plaidAccounts={plaidAccounts}
+        onTabChange={onTabChange}
+        onOpenOnboarding={onOpenOnboarding}
+      />
+
       {/* ── Hero: chart-led progress card ───────────────────────────────── */}
       <div className="uf-card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(180deg, #064E3B 0%, #022C22 100%)", borderColor: "transparent" }}>
         <div style={{ padding: "22px 22px 0", position: "relative" }}>
