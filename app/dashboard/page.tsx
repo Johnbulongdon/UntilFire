@@ -21,7 +21,7 @@ import ProfileTab from "./ProfileTab";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
-import { monteCarloFIRE } from "@/lib/fire";
+import { monteCarloFIRE, calcFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
 import { CITIES } from "@/lib/fire-data";
 import { trackDashboardFirstView } from "@/lib/analytics";
@@ -5202,6 +5202,7 @@ function ExpatFireDashTab({
   onOpenProfile: () => void;
 }) {
   const [panelOpen, setPanelOpen] = useState(true);
+  const [selectedCityKey, setSelectedCityKey] = useState<string | null>(null);
 
   // Overlay chrome adapts to theme: on white space it must read dark, on dark
   // space it reads light. The globe itself stays a dark-ocean / white-continent
@@ -5240,21 +5241,27 @@ function ExpatFireDashTab({
   }, [cityName]);
 
   function handleCitySelect(key: string) {
-    try {
-      localStorage.setItem("uf_calc_prefill", JSON.stringify({
-        monthlySavings,
-        portfolioBalance,
-        currentAge: age,
-        cityName: cityName || "Dashboard",
-        annualCost: CITIES.find(c => c.key === currentCityKey)?.col ?? 60000,
-      }));
-    } catch {}
-    window.location.href = `/geo-arbitrage/${key}`;
+    setSelectedCityKey(key);
   }
 
   function fmt(n: number) {
     if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
     return `$${Math.round(n).toLocaleString()}`;
+  }
+
+  if (selectedCityKey) {
+    return (
+      <ExpatCityDetail
+        cityKey={selectedCityKey}
+        portfolioBalance={portfolioBalance}
+        monthlySavings={monthlySavings}
+        age={age}
+        currentCityName={cityName || "Your city"}
+        currentCityKey={currentCityKey}
+        isDark={isDark}
+        onBack={() => setSelectedCityKey(null)}
+      />
+    );
   }
 
   return (
@@ -5332,6 +5339,233 @@ function ExpatFireDashTab({
           }}
         >
           Edit in Profile →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Expat city detail (inline, within dashboard shell) ───────────────────────
+
+function ExpatCityDetail({
+  cityKey,
+  portfolioBalance,
+  monthlySavings,
+  age,
+  currentCityName,
+  currentCityKey,
+  isDark,
+  onBack,
+}: {
+  cityKey: string;
+  portfolioBalance: number;
+  monthlySavings: number;
+  age: number;
+  currentCityName: string;
+  currentCityKey: string;
+  isDark: boolean;
+  onBack: () => void;
+}) {
+  const targetCity = CITIES.find(c => c.key === cityKey);
+  const currentCity = CITIES.find(c => c.key === currentCityKey);
+
+  const bg = isDark ? "#08080e" : "#f8fafc";
+  const cardBg = isDark ? "#111118" : "#ffffff";
+  const border = isDark ? "#23232d" : "#E2E8F0";
+  const textPrimary = isDark ? "#ffffff" : "#0F172A";
+  const textSecondary = isDark ? "rgba(255,255,255,0.45)" : "#6B7280";
+
+  if (!targetCity) {
+    return (
+      <div style={{ padding: 40, textAlign: "center", color: textSecondary }}>
+        <p>City not found.</p>
+        <button onClick={onBack} style={{ marginTop: 16, background: "none", border: "none", color: "#22d3a5", cursor: "pointer", fontSize: 14 }}>
+          ← Back to Globe
+        </button>
+      </div>
+    );
+  }
+
+  const currentCol = currentCity?.col ?? 60000;
+  const targetCol = targetCity.col;
+
+  const currentFire = calcFIRE(monthlySavings, currentCol, age || undefined, portfolioBalance);
+  const targetFire = calcFIRE(monthlySavings, targetCol, age || undefined, portfolioBalance);
+
+  const currentYears = currentFire.years;
+  const targetYears = targetFire.years;
+  const yearDiff = Math.abs(currentYears - targetYears);
+  const isFireNow = portfolioBalance >= targetCol * 25;
+  const monthlyDiff = Math.round((currentCol - targetCol) / 12);
+
+  function fmtUSD(n: number): string {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+    if (n >= 1_000) return `$${Math.round(n).toLocaleString()}`;
+    return `$${Math.round(n)}`;
+  }
+
+  function readinessBadge() {
+    if (portfolioBalance >= targetCol * 25) return { label: "FIRE ready", color: "#003527", bg: "#A7F3D0" };
+    if (portfolioBalance >= targetCol * 12.5) return { label: "Barista FIRE", color: "#78350F", bg: "#FEF3C7" };
+    return { label: "Not yet", color: "#991B1B", bg: "#FEE2E2" };
+  }
+
+  const badge = readinessBadge();
+
+  function row(label: string, cur: string, tgt: string) {
+    return (
+      <div key={label} style={{
+        display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
+        padding: "12px 0", borderBottom: `1px solid ${border}`,
+        fontSize: 13, alignItems: "center",
+      }}>
+        <div style={{ color: textSecondary, fontWeight: 500 }}>{label}</div>
+        <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center" }}>{cur}</div>
+        <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center" }}>{tgt}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      background: bg, minHeight: "100%", fontFamily: "DM Sans, sans-serif",
+      overflowY: "auto",
+    }}>
+      {/* Back header */}
+      <div style={{
+        background: cardBg, borderBottom: `1px solid ${border}`,
+        padding: "14px 20px", display: "flex", alignItems: "center", gap: 12,
+        position: "sticky", top: 0, zIndex: 10,
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 14, fontWeight: 600, color: "#22d3a5",
+            display: "flex", alignItems: "center", gap: 6, padding: 0,
+            fontFamily: "inherit",
+          }}
+        >
+          ← Back to Globe
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px 80px" }}>
+        {/* Title */}
+        <h1 style={{
+          fontFamily: "Syne, sans-serif", fontSize: 28, fontWeight: 800,
+          color: textPrimary, margin: "0 0 8px",
+        }}>
+          {targetCity.flag} {targetCity.name}
+        </h1>
+        <div style={{ marginBottom: 24 }}>
+          <span style={{
+            display: "inline-block", padding: "3px 12px", borderRadius: 99,
+            fontSize: 12, fontWeight: 700, color: badge.color, background: badge.bg,
+          }}>
+            {badge.label}
+          </span>
+        </div>
+
+        {/* Hero stat */}
+        {isFireNow ? (
+          <div style={{
+            textAlign: "center", background: isDark ? "rgba(5,150,105,0.1)" : "#F0FDF4",
+            border: "1px solid #A7F3D0", borderRadius: 16, padding: "24px 20px", marginBottom: 24,
+          }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#059669", fontFamily: "Syne, sans-serif" }}>
+              You could FIRE here NOW
+            </div>
+            <div style={{ fontSize: 14, color: isDark ? "#6ee7b7" : "#065F46", marginTop: 8 }}>
+              Your portfolio covers {targetCity.name} expenses at the 4% rule.
+            </div>
+          </div>
+        ) : targetYears < currentYears ? (
+          <div style={{
+            textAlign: "center", background: isDark ? "rgba(34,211,165,0.08)" : "#F0FDF4",
+            border: isDark ? "1px solid rgba(34,211,165,0.25)" : "1px solid #A7F3D0",
+            borderRadius: 16, padding: "24px 20px", marginBottom: 24,
+          }}>
+            <div style={{ fontSize: 42, fontWeight: 800, color: "#22d3a5", fontFamily: "Syne, sans-serif", lineHeight: 1 }}>
+              {yearDiff.toFixed(1)} years sooner
+            </div>
+            <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>
+              by moving to {targetCity.name}
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            textAlign: "center", background: isDark ? "rgba(239,68,68,0.08)" : "#FFF5F5",
+            border: isDark ? "1px solid rgba(239,68,68,0.25)" : "1px solid #FECACA",
+            borderRadius: 16, padding: "24px 20px", marginBottom: 24,
+          }}>
+            <div style={{ fontSize: 42, fontWeight: 800, color: "#ef4444", fontFamily: "Syne, sans-serif", lineHeight: 1 }}>
+              {yearDiff.toFixed(1)} years later
+            </div>
+            <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>
+              {targetCity.name} has a higher cost of living than your current city
+            </div>
+          </div>
+        )}
+
+        {/* Comparison table */}
+        <div style={{
+          background: cardBg, borderRadius: 16, border: `1px solid ${border}`,
+          padding: "0 20px", marginBottom: 20,
+        }}>
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
+            padding: "14px 0 10px", borderBottom: `2px solid ${border}`,
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary }}>Metric</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary, textAlign: "center" }}>Current</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#22d3a5", textAlign: "center" }}>{targetCity.flag} Target</div>
+          </div>
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
+            padding: "12px 0", borderBottom: `1px solid ${border}`,
+            fontSize: 13, alignItems: "center",
+          }}>
+            <div style={{ color: textSecondary, fontWeight: 500 }}>City</div>
+            <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center", fontSize: 12 }}>{currentCityName}</div>
+            <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center", fontSize: 12 }}>{targetCity.name}</div>
+          </div>
+          {row("Annual cost of living", `${fmtUSD(currentCol)}/yr`, `${fmtUSD(targetCol)}/yr`)}
+          {row("FIRE number", fmtUSD(currentFire.fireTarget), fmtUSD(targetFire.fireTarget))}
+          {row("Years to FIRE", `${currentYears.toFixed(1)} yrs`, `${targetYears.toFixed(1)} yrs`)}
+          {row("Freedom year", String(currentFire.retireYear ?? "—"), String(targetFire.retireYear ?? "—"))}
+        </div>
+
+        {/* Monthly impact */}
+        <div style={{
+          background: cardBg, borderRadius: 14, border: `1px solid ${border}`,
+          padding: "16px 20px", marginBottom: 20,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary, marginBottom: 4 }}>
+              Monthly cost impact
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: monthlyDiff >= 0 ? "#059669" : "#ef4444" }}>
+              {monthlyDiff >= 0
+                ? `Moving saves $${Math.abs(monthlyDiff).toLocaleString()}/mo`
+                : `Moving costs $${Math.abs(monthlyDiff).toLocaleString()}/mo more`}
+            </div>
+          </div>
+          <div style={{ fontSize: 28 }}>{targetCity.flag}</div>
+        </div>
+
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          style={{
+            width: "100%", background: "#22d3a5", border: "none",
+            borderRadius: 10, padding: "14px 20px",
+            fontSize: 14, fontWeight: 700, color: "#003527",
+            cursor: "pointer", fontFamily: "inherit", textAlign: "center",
+          }}
+        >
+          ← Back to Globe
         </button>
       </div>
     </div>
