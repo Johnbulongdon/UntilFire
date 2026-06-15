@@ -5276,7 +5276,6 @@ function ExpatFireDashTab({
         </div>
         {([
           { label: "Portfolio", value: fmt(portfolioBalance) },
-          { label: "Monthly savings", value: `${fmt(monthlySavings)}/mo` },
           { label: "Age", value: String(age) },
         ] as const).map(({ label, value }) => (
           <div key={label} style={{
