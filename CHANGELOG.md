@@ -2,6 +2,28 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-06-15
+
+### Added
+- CSV import modal: full column-mapping UI with a step machine (upload → map → review → importing → done), batch insert in chunks of 50
+- CSV import: duplicate detection review step — matches on date + amount only (category excluded because manual and imported entries use different category names)
+- AI transaction categorisation route now calls the Anthropic API server-side; no API key is exposed to the client
+- Dark mode persistence across page loads (PR #54)
+- Achievement milestones rendered as teal pin bubbles directly on the projection chart (standalone achievement card removed)
+- FIRE Type result page: full redesign with Trading Card layout and dark page background
+- FIRE Type avatars: 16 custom illustrated characters per FIRE type, extended to full-body compositions with bold flat art style
+- FIRE Type light-reveal animation with trading card effect
+- FIRE Type share card: clean white Poster design, fully flat (no drop shadows)
+- Animated logo reveal assets and FIRE number landing pop/glow effect (PR #56)
+- Expense categories expanded with Utilities (phone, internet, household bills) and additional sub-categories covering common budgeting patterns
+- Emoji palette for category customisation expanded from ~30 to ~90 options
+- Demo video v26: render script for 43-second UntilFire motion-graphics video
+
+### Changed
+- CSV import duplicate matching updated to drop the category field from the match key, fixing false negatives between manually entered and auto-imported transactions
+- FIRE Type share card content simplified and avatar crop tightened for cleaner framing
+- Wordmark: orange removed from "Fire" text on the FIRE Type page to fix branding inconsistency
+
 ## [Unreleased] - 2026-05-26
 
 ### Changed
