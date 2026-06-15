@@ -52,6 +52,13 @@ const CALCULATORS = [
     keyword: 'APY calculator',
     accent: '#20D4BF',
   },
+  {
+    href: '/calculators/expat-fire',
+    name: 'Expat FIRE Calculator',
+    description: 'Spin the globe to find cities where your savings unlocks early retirement. 392 cities, color-coded by FIRE readiness.',
+    keyword: 'expat FIRE calculator',
+    accent: '#22d3a5',
+  },
 ] as const
 
 export const metadata: Metadata = {
