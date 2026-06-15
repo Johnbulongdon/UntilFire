@@ -1,8 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { geoOrthographic, geoPath, geoDistance } from 'd3-geo';
+import { feature } from 'topojson-client';
+import type { Topology, GeometryCollection } from 'topojson-specification';
+import type { FeatureCollection } from 'geojson';
 import { CITIES } from '@/lib/fire-data';
 import { CITY_COORDS } from '@/lib/city-coords';
+import landTopo from '@/lib/geo/land-110m.json';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,27 +31,57 @@ interface PlottedCity {
 }
 
 // ---------------------------------------------------------------------------
-// Orthographic projection
+// Land geometry (converted once from bundled TopoJSON)
 // ---------------------------------------------------------------------------
 
-function project(
-  lat: number,
-  lng: number,
-  rotLng: number,
-  rotLat: number,
-  cx: number,
-  cy: number,
-  radius: number,
-): { x: number; y: number; z: number } | null {
-  const lngR = ((lng + rotLng) * Math.PI) / 180;
-  const latR = ((lat + rotLat) * Math.PI) / 180;
-  const cosLat = Math.cos(latR);
-  const x = cosLat * Math.sin(lngR);
-  const y = Math.sin(latR);
-  const z = cosLat * Math.cos(lngR);
-  if (z < -0.05) return null;
-  return { x: cx + radius * x, y: cy - radius * y, z };
-}
+const _topo = landTopo as unknown as Topology<{ land: GeometryCollection }>;
+const LAND: FeatureCollection = feature(_topo, _topo.objects.land) as FeatureCollection;
+
+// ---------------------------------------------------------------------------
+// City list from CITIES + CITY_COORDS
+// ---------------------------------------------------------------------------
+
+const ALL_CITIES: PlottedCity[] = CITIES.flatMap((c) => {
+  const coords = CITY_COORDS[c.key];
+  if (!coords) return [];
+  return [{ key: c.key, name: c.name, col: c.col, lat: coords.lat, lng: coords.lng, flag: c.flag }];
+});
+
+// ---------------------------------------------------------------------------
+// Static decoration data (computed once)
+// ---------------------------------------------------------------------------
+
+// Faint dot grid across the sphere (ocean texture; land is painted on top)
+const GRATICULE_POINTS: [number, number][] = (() => {
+  const pts: [number, number][] = [];
+  for (let lat = -78; lat <= 78; lat += 7) {
+    for (let lng = -180; lng < 180; lng += 7) {
+      pts.push([lng, lat]);
+    }
+  }
+  return pts;
+})();
+
+// Halo: a fuzzy band of dots hugging the globe, plus a crisp dotted outline ring
+const HALO_DOTS: { angle: number; rf: number; alpha: number; r: number }[] = (() => {
+  const dots: { angle: number; rf: number; alpha: number; r: number }[] = [];
+  // Several faint concentric bands of dots
+  const bands = [
+    { rf: 1.03, count: 200, alpha: 0.22, r: 0.7 },
+    { rf: 1.07, count: 180, alpha: 0.16, r: 0.7 },
+    { rf: 1.12, count: 150, alpha: 0.10, r: 0.6 },
+    { rf: 1.18, count: 120, alpha: 0.06, r: 0.5 },
+  ];
+  for (const b of bands) {
+    for (let i = 0; i < b.count; i++) {
+      const angle = (i / b.count) * Math.PI * 2;
+      // jitter so it reads as a soft cloud, not a perfect ring
+      const jitter = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+      dots.push({ angle, rf: b.rf + jitter * 0.015, alpha: b.alpha, r: b.r });
+    }
+  }
+  return dots;
+})();
 
 // ---------------------------------------------------------------------------
 // Readiness colour
@@ -78,22 +113,14 @@ function writeHidden(keys: string[]): void {
   localStorage.setItem(LS_KEY, JSON.stringify(keys));
 }
 
-// ---------------------------------------------------------------------------
-// Build city list from CITIES + CITY_COORDS
-// ---------------------------------------------------------------------------
-
-const ALL_CITIES: PlottedCity[] = CITIES.flatMap((c) => {
-  const coords = CITY_COORDS[c.key];
-  if (!coords) return [];
-  return [{ key: c.key, name: c.name, col: c.col, lat: coords.lat, lng: coords.lng, flag: c.flag }];
-});
+const MIN_ZOOM = 0.75;
+const MAX_ZOOM = 4;
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function GeoArbitrageGlobe({
-  monthlySavings: _monthlySavings,
   portfolioBalance,
   currentCityKey,
   onCitySelect,
@@ -101,25 +128,30 @@ export default function GeoArbitrageGlobe({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Globe rotation state (mutable refs to avoid re-renders inside rAF)
-  const rotLng = useRef(0);
-  const rotLat = useRef(20);
+  // Globe state (mutable refs to avoid re-renders inside rAF)
+  const rotLng = useRef(70); // bring the Americas to the front initially
+  const rotLat = useRef(-12);
+  const zoom = useRef(1);
+  const spinningRef = useRef(true);
   const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
-  const autoRotateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pinchDist = useRef<number | null>(null);
   const rafId = useRef<number>(0);
-  const canvasSize = useRef(400);
+  const canvasSize = useRef(420);
+  const movedRef = useRef(false); // distinguish drag from tap
 
-  // React state for legend / hidden list / hover label
+  // Reusable projection instance
+  const projection = useMemo(() => geoOrthographic().clipAngle(90), []);
+
+  // React state for legend / hidden list / hover label / spin pill
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
+  const [spinning, setSpinning] = useState(true);
 
-  // Load hidden list once on mount
   useEffect(() => {
     setHiddenKeys(readHidden());
   }, []);
 
-  // Sync hidden list to localStorage whenever it changes
   useEffect(() => {
     writeHidden(hiddenKeys);
   }, [hiddenKeys]);
@@ -136,112 +168,125 @@ export default function GeoArbitrageGlobe({
 
     const size = canvasSize.current;
     const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+    ctx.clearRect(0, 0, size, size);
+
     const cx = size / 2;
     const cy = size / 2;
-    const radius = size * 0.44;
+    const baseR = size * 0.40;
+    const R = baseR * zoom.current;
 
-    ctx.clearRect(0, 0, size * dpr, size * dpr);
+    projection
+      .scale(R)
+      .translate([cx, cy])
+      .rotate([rotLng.current, rotLat.current]);
 
-    // Globe background (ocean)
+    const center: [number, number] = [-rotLng.current, -rotLat.current];
+
+    // ── Atmosphere halo (behind the globe) ──
+    for (const d of HALO_DOTS) {
+      const rr = R * d.rf;
+      const x = cx + rr * Math.cos(d.angle);
+      const y = cy + rr * Math.sin(d.angle);
+      ctx.beginPath();
+      ctx.arc(x, y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(203,213,225,${d.alpha})`;
+      ctx.fill();
+    }
+    // Crisp dotted outline ring
     ctx.beginPath();
-    ctx.arc(cx * dpr, cy * dpr, radius * dpr, 0, Math.PI * 2);
-    ctx.fillStyle = '#dbeafe';
+    ctx.arc(cx, cy, R * 1.16, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(226,232,240,0.28)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([1, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── Ocean disc (dark sphere with subtle radial sheen) ──
+    const oceanGrad = ctx.createRadialGradient(
+      cx - R * 0.3, cy - R * 0.3, R * 0.1,
+      cx, cy, R,
+    );
+    oceanGrad.addColorStop(0, '#1a1b24');
+    oceanGrad.addColorStop(0.7, '#0e0e15');
+    oceanGrad.addColorStop(1, '#090910');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = oceanGrad;
     ctx.fill();
 
-    // Globe edge
-    ctx.beginPath();
-    ctx.arc(cx * dpr, cy * dpr, radius * dpr, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(15,23,42,0.15)';
-    ctx.lineWidth = 1.5 * dpr;
-    ctx.stroke();
-
-    // Latitude/longitude grid lines (subtle)
-    ctx.strokeStyle = 'rgba(148,163,184,0.25)';
-    ctx.lineWidth = 0.8 * dpr;
-
-    // Draw a few latitude rings
-    for (const lat of [-60, -30, 0, 30, 60]) {
-      const points: { x: number; y: number }[] = [];
-      for (let lng = -180; lng <= 180; lng += 4) {
-        const p = project(lat, lng, rotLng.current, rotLat.current, cx, cy, radius);
-        if (p) points.push({ x: p.x * dpr, y: p.y * dpr });
-      }
-      if (points.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-        ctx.stroke();
-      }
-    }
-
-    // Draw a few longitude lines
-    for (let lng = -150; lng <= 180; lng += 30) {
-      const points: { x: number; y: number }[] = [];
-      for (let lat = -90; lat <= 90; lat += 4) {
-        const p = project(lat, lng, rotLng.current, rotLat.current, cx, cy, radius);
-        if (p) points.push({ x: p.x * dpr, y: p.y * dpr });
-      }
-      if (points.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-        ctx.stroke();
-      }
-    }
-
-    // City dots
-    const hiddenSet = new Set(hiddenKeys);
-
-    for (const city of ALL_CITIES) {
-      if (hiddenSet.has(city.key)) continue;
-
-      const p = project(city.lat, city.lng, rotLng.current, rotLat.current, cx, cy, radius);
+    // ── Faint dot texture on the ocean ──
+    ctx.fillStyle = 'rgba(148,163,184,0.10)';
+    for (const [lng, lat] of GRATICULE_POINTS) {
+      if (geoDistance([lng, lat], center) > Math.PI / 2) continue;
+      const p = projection([lng, lat]);
       if (!p) continue;
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-      const px = p.x * dpr;
-      const py = p.y * dpr;
+    // ── Land masses ──
+    const path = geoPath(projection, ctx);
+    ctx.beginPath();
+    path(LAND);
+    ctx.fillStyle = '#b8bdc8';
+    ctx.fill();
 
-      if (city.key === currentCityKey) {
-        // Current city: white filled dot with teal ring
-        const outerR = 14 * dpr;
-        const innerR = 10 * dpr;
+    // ── Spherical shading: darken the limb for a 3D feel ──
+    const shade = ctx.createRadialGradient(
+      cx - R * 0.35, cy - R * 0.35, R * 0.2,
+      cx, cy, R,
+    );
+    shade.addColorStop(0, 'rgba(0,0,0,0)');
+    shade.addColorStop(0.75, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = shade;
+    ctx.fill();
+
+    // ── City markers ──
+    const hiddenSet = new Set(hiddenKeys);
+    for (const cityItem of ALL_CITIES) {
+      if (hiddenSet.has(cityItem.key)) continue;
+      if (geoDistance([cityItem.lng, cityItem.lat], center) > Math.PI / 2) continue;
+      const p = projection([cityItem.lng, cityItem.lat]);
+      if (!p) continue;
+      const px = p[0];
+      const py = p[1];
+
+      if (cityItem.key === currentCityKey) {
         ctx.beginPath();
-        ctx.arc(px, py, outerR, 0, Math.PI * 2);
+        ctx.arc(px, py, 7, 0, Math.PI * 2);
         ctx.strokeStyle = '#22d3a5';
-        ctx.lineWidth = 2.5 * dpr;
+        ctx.lineWidth = 2;
         ctx.stroke();
-
         ctx.beginPath();
-        ctx.arc(px, py, innerR, 0, Math.PI * 2);
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
       } else {
-        // Regular dot
-        const dotR = 5 * dpr;
         ctx.beginPath();
-        ctx.arc(px, py, dotR, 0, Math.PI * 2);
-        ctx.fillStyle = dotColor(city.col, portfolioBalance);
-        // Slightly lighten dots farther back
-        ctx.globalAlpha = 0.4 + 0.6 * Math.max(0, p.z);
+        ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+        ctx.fillStyle = dotColor(cityItem.col, portfolioBalance);
         ctx.fill();
-        ctx.globalAlpha = 1;
       }
     }
-  }, [portfolioBalance, currentCityKey, hiddenKeys]);
+  }, [projection, portfolioBalance, currentCityKey, hiddenKeys]);
 
   // ---------------------------------------------------------------------------
   // Animation loop
   // ---------------------------------------------------------------------------
 
   const animate = useCallback(() => {
-    if (!isDragging.current) {
-      rotLng.current += 0.15;
+    if (spinningRef.current && !isDragging.current) {
+      rotLng.current -= 0.18;
     }
     draw();
     rafId.current = requestAnimationFrame(animate);
   }, [draw]);
 
-  // Start/stop the loop when component mounts/unmounts
   useEffect(() => {
     rafId.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafId.current);
@@ -273,19 +318,23 @@ export default function GeoArbitrageGlobe({
   }, [draw]);
 
   // ---------------------------------------------------------------------------
-  // Pointer helpers
+  // Interaction
   // ---------------------------------------------------------------------------
 
-  function stopAutoRotate() {
-    isDragging.current = true;
-    if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current);
+  function stopSpin() {
+    if (spinningRef.current) {
+      spinningRef.current = false;
+      setSpinning(false);
+    }
   }
 
-  function resumeAutoRotate() {
-    if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current);
-    autoRotateTimer.current = setTimeout(() => {
-      isDragging.current = false;
-    }, 1500);
+  function resumeSpin() {
+    spinningRef.current = true;
+    setSpinning(true);
+  }
+
+  function setZoom(next: number) {
+    zoom.current = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next));
   }
 
   function getEventXY(e: MouseEvent | TouchEvent): { x: number; y: number } {
@@ -299,87 +348,98 @@ export default function GeoArbitrageGlobe({
   }
 
   function onPointerDown(e: React.MouseEvent | React.TouchEvent) {
-    const pos = getEventXY(e.nativeEvent as MouseEvent | TouchEvent);
-    lastPos.current = pos;
-    stopAutoRotate();
+    const native = e.nativeEvent as MouseEvent | TouchEvent;
+    // Two-finger pinch start
+    if ('touches' in native && native.touches.length === 2) {
+      const dx = native.touches[0].clientX - native.touches[1].clientX;
+      const dy = native.touches[0].clientY - native.touches[1].clientY;
+      pinchDist.current = Math.hypot(dx, dy);
+      stopSpin();
+      return;
+    }
+    lastPos.current = getEventXY(native);
+    isDragging.current = true;
+    movedRef.current = false;
+    stopSpin(); // touching the globe stops the auto-spin
   }
 
   function onPointerMove(e: React.MouseEvent | React.TouchEvent) {
-    // Hover label (mouse only)
+    const native = e.nativeEvent as MouseEvent | TouchEvent;
+
+    // Pinch-to-zoom
+    if ('touches' in native && native.touches.length === 2 && pinchDist.current != null) {
+      const dx = native.touches[0].clientX - native.touches[1].clientX;
+      const dy = native.touches[0].clientY - native.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      setZoom(zoom.current * (dist / pinchDist.current));
+      pinchDist.current = dist;
+      return;
+    }
+
+    // Hover label (mouse only, when not dragging)
     if (!isDragging.current && e.type === 'mousemove') {
       const canvas = canvasRef.current;
       if (canvas) {
         const rect = canvas.getBoundingClientRect();
         const mx = (e as React.MouseEvent).clientX - rect.left;
         const my = (e as React.MouseEvent).clientY - rect.top;
-        const size = canvasSize.current;
-        const cx = size / 2;
-        const cy = size / 2;
-        const radius = size * 0.44;
-        const hiddenSet = new Set(hiddenKeys);
-        let found: string | null = null;
-        let minDist = 20;
-        for (const city of ALL_CITIES) {
-          if (hiddenSet.has(city.key)) continue;
-          const p = project(city.lat, city.lng, rotLng.current, rotLat.current, cx, cy, radius);
-          if (!p) continue;
-          const dist = Math.sqrt((p.x - mx) ** 2 + (p.y - my) ** 2);
-          if (dist < minDist) {
-            minDist = dist;
-            found = `${city.flag} ${city.name}`;
-          }
-        }
-        setHoverLabel(found);
+        const found = pickCity(mx, my);
+        setHoverLabel(found ? `${found.flag} ${found.name}` : null);
       }
     }
 
     if (!isDragging.current) return;
 
-    const pos = getEventXY(e.nativeEvent as MouseEvent | TouchEvent);
+    const pos = getEventXY(native);
     const dx = pos.x - lastPos.current.x;
     const dy = pos.y - lastPos.current.y;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) movedRef.current = true;
     lastPos.current = pos;
-    rotLng.current += dx * 0.4;
-    rotLat.current = Math.max(-60, Math.min(60, rotLat.current - dy * 0.2));
+    const speed = 0.32 / zoom.current; // slower when zoomed in
+    rotLng.current += dx * speed;
+    rotLat.current = Math.max(-80, Math.min(80, rotLat.current - dy * speed));
   }
 
   function onPointerUp() {
-    resumeAutoRotate();
+    isDragging.current = false;
+    pinchDist.current = null;
+  }
+
+  function onWheel(e: React.WheelEvent) {
+    stopSpin();
+    setZoom(zoom.current * (e.deltaY < 0 ? 1.12 : 0.89));
   }
 
   // ---------------------------------------------------------------------------
-  // Click to select city
+  // Picking (hover + click)
   // ---------------------------------------------------------------------------
 
+  function pickCity(mx: number, my: number): PlottedCity | null {
+    const center: [number, number] = [-rotLng.current, -rotLat.current];
+    const hiddenSet = new Set(hiddenKeys);
+    let best: PlottedCity | null = null;
+    let minDist = 18;
+    for (const cityItem of ALL_CITIES) {
+      if (hiddenSet.has(cityItem.key)) continue;
+      if (geoDistance([cityItem.lng, cityItem.lat], center) > Math.PI / 2) continue;
+      const p = projection([cityItem.lng, cityItem.lat]);
+      if (!p) continue;
+      const dist = Math.hypot(p[0] - mx, p[1] - my);
+      if (dist < minDist) {
+        minDist = dist;
+        best = cityItem;
+      }
+    }
+    return best;
+  }
+
   function onCanvasClick(e: React.MouseEvent<HTMLCanvasElement>) {
+    if (movedRef.current) return; // ignore drags
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const size = canvasSize.current;
-    const cx = size / 2;
-    const cy = size / 2;
-    const radius = size * 0.44;
-    const hiddenSet = new Set(hiddenKeys);
-
-    let bestKey: string | null = null;
-    let minDist = 20; // px threshold
-
-    for (const city of ALL_CITIES) {
-      if (hiddenSet.has(city.key)) continue;
-      const p = project(city.lat, city.lng, rotLng.current, rotLat.current, cx, cy, radius);
-      if (!p) continue;
-      const dist = Math.sqrt((p.x - mx) ** 2 + (p.y - my) ** 2);
-      if (dist < minDist) {
-        minDist = dist;
-        bestKey = city.key;
-      }
-    }
-
-    if (bestKey) {
-      onCitySelect(bestKey);
-    }
+    const found = pickCity(e.clientX - rect.left, e.clientY - rect.top);
+    if (found) onCitySelect(found.key);
   }
 
   // ---------------------------------------------------------------------------
@@ -388,51 +448,132 @@ export default function GeoArbitrageGlobe({
 
   const hiddenCount = hiddenKeys.length;
 
+  const zoomBtnStyle: React.CSSProperties = {
+    width: 36,
+    height: 36,
+    borderRadius: '50%',
+    background: 'rgba(20,20,28,0.85)',
+    border: '1px solid rgba(148,163,184,0.3)',
+    color: '#e2e8f0',
+    fontSize: 20,
+    lineHeight: 1,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'inherit',
+    backdropFilter: 'blur(4px)',
+  };
+
   return (
     <div style={{ width: '100%', maxWidth: 560, margin: '0 auto' }}>
-      {/* Globe wrapper */}
+      {/* Dark showcase panel */}
       <div
-        ref={wrapperRef}
-        style={{ width: '100%', aspectRatio: '1', position: 'relative', cursor: 'grab' }}
-        onMouseDown={onPointerDown}
-        onMouseMove={onPointerMove}
-        onMouseUp={onPointerUp}
-        onMouseLeave={onPointerUp}
-        onTouchStart={onPointerDown}
-        onTouchMove={onPointerMove}
-        onTouchEnd={onPointerUp}
+        style={{
+          background: 'radial-gradient(circle at 50% 45%, #0d0d15 0%, #08080e 70%)',
+          borderRadius: 20,
+          border: '1px solid rgba(148,163,184,0.12)',
+          padding: '12px 12px 16px',
+        }}
       >
-        <canvas
-          ref={canvasRef}
-          onClick={onCanvasClick}
-          style={{ display: 'block', borderRadius: '50%' }}
-        />
-        {/* Hover label */}
-        {hoverLabel && (
+        <div
+          ref={wrapperRef}
+          style={{ width: '100%', aspectRatio: '1', position: 'relative', cursor: 'grab', touchAction: 'none' }}
+          onMouseDown={onPointerDown}
+          onMouseMove={onPointerMove}
+          onMouseUp={onPointerUp}
+          onMouseLeave={onPointerUp}
+          onTouchStart={onPointerDown}
+          onTouchMove={onPointerMove}
+          onTouchEnd={onPointerUp}
+          onWheel={onWheel}
+        >
+          <canvas ref={canvasRef} onClick={onCanvasClick} style={{ display: 'block' }} />
+
+          {/* Hover label */}
+          {hoverLabel && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 12,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'rgba(8,8,14,0.9)',
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 600,
+                padding: '4px 12px',
+                borderRadius: 99,
+                pointerEvents: 'none',
+                whiteSpace: 'nowrap',
+                border: '1px solid rgba(148,163,184,0.25)',
+              }}
+            >
+              {hoverLabel}
+            </div>
+          )}
+
+          {/* Zoom controls */}
           <div
             style={{
               position: 'absolute',
-              bottom: 12,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'rgba(15,23,42,0.85)',
-              color: '#fff',
-              fontSize: 12,
-              fontWeight: 600,
-              padding: '4px 12px',
-              borderRadius: 99,
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
+              right: 8,
+              bottom: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
             }}
           >
-            {hoverLabel}
+            <button aria-label="Zoom in" style={zoomBtnStyle} onClick={() => { stopSpin(); setZoom(zoom.current * 1.25); }}>+</button>
+            <button aria-label="Zoom out" style={zoomBtnStyle} onClick={() => { stopSpin(); setZoom(zoom.current * 0.8); }}>−</button>
           </div>
-        )}
+
+          {/* Resume spin pill */}
+          {!spinning && (
+            <button
+              onClick={resumeSpin}
+              style={{
+                position: 'absolute',
+                left: 8,
+                bottom: 8,
+                background: 'rgba(20,20,28,0.85)',
+                border: '1px solid rgba(148,163,184,0.3)',
+                color: '#e2e8f0',
+                fontSize: 12,
+                fontWeight: 600,
+                padding: '6px 12px',
+                borderRadius: 99,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              ↻ Spin
+            </button>
+          )}
+        </div>
+
+        {/* Legend */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 18,
+            marginTop: 4,
+            fontSize: 12,
+            color: '#94a3b8',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span><span style={{ color: '#22d3a5', fontSize: 14 }}>●</span> FIRE ready now</span>
+          <span><span style={{ color: '#fbbf24', fontSize: 14 }}>●</span> Barista FIRE</span>
+          <span><span style={{ color: '#f87171', fontSize: 14 }}>●</span> Not yet</span>
+        </div>
       </div>
 
       {/* Hidden cities button */}
       {hiddenCount > 0 && (
-        <div style={{ textAlign: 'center', marginTop: 8 }}>
+        <div style={{ textAlign: 'center', marginTop: 10 }}>
           <button
             onClick={() => setHiddenKeys([])}
             style={{
@@ -450,29 +591,6 @@ export default function GeoArbitrageGlobe({
           </button>
         </div>
       )}
-
-      {/* Legend */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 20,
-          marginTop: 14,
-          fontSize: 12,
-          color: '#374151',
-          flexWrap: 'wrap',
-        }}
-      >
-        <span>
-          <span style={{ color: '#22d3a5', fontSize: 14 }}>●</span> FIRE ready now
-        </span>
-        <span>
-          <span style={{ color: '#fbbf24', fontSize: 14 }}>●</span> Barista FIRE
-        </span>
-        <span>
-          <span style={{ color: '#f87171', fontSize: 14 }}>●</span> Not yet
-        </span>
-      </div>
     </div>
   );
 }
