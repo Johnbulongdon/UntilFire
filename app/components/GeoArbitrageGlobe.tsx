@@ -117,6 +117,70 @@ const MIN_ZOOM = 0.75;
 const MAX_ZOOM = 4;
 
 // ---------------------------------------------------------------------------
+// Theme palettes — dark globe in dark mode, light globe in light mode
+// ---------------------------------------------------------------------------
+
+interface Palette {
+  panelBg: string;
+  panelBorder: string;
+  oceanStops: [string, string, string];
+  oceanDot: string;
+  land: string;
+  landStroke: string | null;
+  limbShade: string;
+  haloRGB: string;
+  haloRing: string;
+  legend: string;
+  btnBg: string;
+  btnBorder: string;
+  btnText: string;
+  labelBg: string;
+  labelText: string;
+  labelBorder: string;
+}
+
+function getPalette(dark: boolean): Palette {
+  if (dark) {
+    return {
+      panelBg: 'radial-gradient(circle at 50% 45%, #0d0d15 0%, #08080e 70%)',
+      panelBorder: 'rgba(148,163,184,0.12)',
+      oceanStops: ['#1a1b24', '#0e0e15', '#090910'],
+      oceanDot: 'rgba(148,163,184,0.10)',
+      land: '#b8bdc8',
+      landStroke: null,
+      limbShade: 'rgba(0,0,0,0.45)',
+      haloRGB: '203,213,225',
+      haloRing: 'rgba(226,232,240,0.28)',
+      legend: '#94a3b8',
+      btnBg: 'rgba(20,20,28,0.85)',
+      btnBorder: 'rgba(148,163,184,0.3)',
+      btnText: '#e2e8f0',
+      labelBg: 'rgba(8,8,14,0.9)',
+      labelText: '#ffffff',
+      labelBorder: 'rgba(148,163,184,0.25)',
+    };
+  }
+  return {
+    panelBg: 'radial-gradient(circle at 50% 40%, #ffffff 0%, #eef2f7 78%)',
+    panelBorder: '#e2e8f0',
+    oceanStops: ['#ffffff', '#eaeff5', '#d7dfe9'],
+    oceanDot: 'rgba(100,116,139,0.16)',
+    land: '#8893a4',
+    landStroke: 'rgba(71,85,105,0.45)',
+    limbShade: 'rgba(51,65,85,0.20)',
+    haloRGB: '100,116,139',
+    haloRing: 'rgba(71,85,105,0.22)',
+    legend: '#475569',
+    btnBg: 'rgba(255,255,255,0.92)',
+    btnBorder: '#cbd5e1',
+    btnText: '#334155',
+    labelBg: 'rgba(255,255,255,0.95)',
+    labelText: '#0f172a',
+    labelBorder: '#cbd5e1',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -147,6 +211,17 @@ export default function GeoArbitrageGlobe({
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(true);
+  const [isDark, setIsDark] = useState(false);
+
+  // Track app theme (dark globe in dark mode, light globe in light mode)
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains('dark'));
+    const obs = new MutationObserver(() =>
+      setIsDark(document.documentElement.classList.contains('dark')),
+    );
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     setHiddenKeys(readHidden());
@@ -182,6 +257,7 @@ export default function GeoArbitrageGlobe({
       .rotate([rotLng.current, rotLat.current]);
 
     const center: [number, number] = [-rotLng.current, -rotLat.current];
+    const P = getPalette(isDark);
 
     // ── Atmosphere halo (behind the globe) ──
     for (const d of HALO_DOTS) {
@@ -190,33 +266,33 @@ export default function GeoArbitrageGlobe({
       const y = cy + rr * Math.sin(d.angle);
       ctx.beginPath();
       ctx.arc(x, y, d.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(203,213,225,${d.alpha})`;
+      ctx.fillStyle = `rgba(${P.haloRGB},${d.alpha})`;
       ctx.fill();
     }
     // Crisp dotted outline ring
     ctx.beginPath();
     ctx.arc(cx, cy, R * 1.16, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(226,232,240,0.28)';
+    ctx.strokeStyle = P.haloRing;
     ctx.lineWidth = 1;
     ctx.setLineDash([1, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // ── Ocean disc (dark sphere with subtle radial sheen) ──
+    // ── Ocean disc (sphere with subtle radial sheen) ──
     const oceanGrad = ctx.createRadialGradient(
       cx - R * 0.3, cy - R * 0.3, R * 0.1,
       cx, cy, R,
     );
-    oceanGrad.addColorStop(0, '#1a1b24');
-    oceanGrad.addColorStop(0.7, '#0e0e15');
-    oceanGrad.addColorStop(1, '#090910');
+    oceanGrad.addColorStop(0, P.oceanStops[0]);
+    oceanGrad.addColorStop(0.7, P.oceanStops[1]);
+    oceanGrad.addColorStop(1, P.oceanStops[2]);
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, Math.PI * 2);
     ctx.fillStyle = oceanGrad;
     ctx.fill();
 
     // ── Faint dot texture on the ocean ──
-    ctx.fillStyle = 'rgba(148,163,184,0.10)';
+    ctx.fillStyle = P.oceanDot;
     for (const [lng, lat] of GRATICULE_POINTS) {
       if (geoDistance([lng, lat], center) > Math.PI / 2) continue;
       const p = projection([lng, lat]);
@@ -230,17 +306,23 @@ export default function GeoArbitrageGlobe({
     const path = geoPath(projection, ctx);
     ctx.beginPath();
     path(LAND);
-    ctx.fillStyle = '#b8bdc8';
+    ctx.fillStyle = P.land;
     ctx.fill();
+    if (P.landStroke) {
+      ctx.strokeStyle = P.landStroke;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
 
     // ── Spherical shading: darken the limb for a 3D feel ──
     const shade = ctx.createRadialGradient(
       cx - R * 0.35, cy - R * 0.35, R * 0.2,
       cx, cy, R,
     );
-    shade.addColorStop(0, 'rgba(0,0,0,0)');
-    shade.addColorStop(0.75, 'rgba(0,0,0,0)');
-    shade.addColorStop(1, 'rgba(0,0,0,0.45)');
+    const shadeColor = P.limbShade.replace(/[\d.]+\)$/, '0)');
+    shade.addColorStop(0, shadeColor);
+    shade.addColorStop(0.75, shadeColor);
+    shade.addColorStop(1, P.limbShade);
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, Math.PI * 2);
     ctx.fillStyle = shade;
@@ -273,7 +355,7 @@ export default function GeoArbitrageGlobe({
         ctx.fill();
       }
     }
-  }, [projection, portfolioBalance, currentCityKey, hiddenKeys]);
+  }, [projection, portfolioBalance, currentCityKey, hiddenKeys, isDark]);
 
   // ---------------------------------------------------------------------------
   // Animation loop
@@ -447,14 +529,15 @@ export default function GeoArbitrageGlobe({
   // ---------------------------------------------------------------------------
 
   const hiddenCount = hiddenKeys.length;
+  const P = getPalette(isDark);
 
   const zoomBtnStyle: React.CSSProperties = {
     width: 36,
     height: 36,
     borderRadius: '50%',
-    background: 'rgba(20,20,28,0.85)',
-    border: '1px solid rgba(148,163,184,0.3)',
-    color: '#e2e8f0',
+    background: P.btnBg,
+    border: `1px solid ${P.btnBorder}`,
+    color: P.btnText,
     fontSize: 20,
     lineHeight: 1,
     cursor: 'pointer',
@@ -467,12 +550,12 @@ export default function GeoArbitrageGlobe({
 
   return (
     <div style={{ width: '100%', maxWidth: 560, margin: '0 auto' }}>
-      {/* Dark showcase panel */}
+      {/* Showcase panel (themed) */}
       <div
         style={{
-          background: 'radial-gradient(circle at 50% 45%, #0d0d15 0%, #08080e 70%)',
+          background: P.panelBg,
           borderRadius: 20,
-          border: '1px solid rgba(148,163,184,0.12)',
+          border: `1px solid ${P.panelBorder}`,
           padding: '12px 12px 16px',
         }}
       >
@@ -498,15 +581,15 @@ export default function GeoArbitrageGlobe({
                 bottom: 12,
                 left: '50%',
                 transform: 'translateX(-50%)',
-                background: 'rgba(8,8,14,0.9)',
-                color: '#fff',
+                background: P.labelBg,
+                color: P.labelText,
                 fontSize: 12,
                 fontWeight: 600,
                 padding: '4px 12px',
                 borderRadius: 99,
                 pointerEvents: 'none',
                 whiteSpace: 'nowrap',
-                border: '1px solid rgba(148,163,184,0.25)',
+                border: `1px solid ${P.labelBorder}`,
               }}
             >
               {hoverLabel}
@@ -536,9 +619,9 @@ export default function GeoArbitrageGlobe({
                 position: 'absolute',
                 left: 8,
                 bottom: 8,
-                background: 'rgba(20,20,28,0.85)',
-                border: '1px solid rgba(148,163,184,0.3)',
-                color: '#e2e8f0',
+                background: P.btnBg,
+                border: `1px solid ${P.btnBorder}`,
+                color: P.btnText,
                 fontSize: 12,
                 fontWeight: 600,
                 padding: '6px 12px',
@@ -561,7 +644,7 @@ export default function GeoArbitrageGlobe({
             gap: 18,
             marginTop: 4,
             fontSize: 12,
-            color: '#94a3b8',
+            color: P.legend,
             flexWrap: 'wrap',
           }}
         >
