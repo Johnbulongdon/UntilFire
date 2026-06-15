@@ -205,7 +205,8 @@ export default function GeoArbitrageGlobe({
   const lastPos = useRef({ x: 0, y: 0 });
   const pinchDist = useRef<number | null>(null);
   const rafId = useRef<number>(0);
-  const canvasSize = useRef(420);
+  const canvasW = useRef(420);
+  const canvasH = useRef(420);
   const movedRef = useRef(false); // distinguish drag from tap
 
   // Reusable projection instance
@@ -245,14 +246,17 @@ export default function GeoArbitrageGlobe({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const size = canvasSize.current;
+    const w = canvasW.current;
+    const h = canvasH.current;
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
-    ctx.clearRect(0, 0, size, size);
+    ctx.clearRect(0, 0, w, h);
 
-    const cx = size / 2;
-    const cy = size / 2;
-    const baseR = size * 0.40;
+    const cx = w / 2;
+    const cy = h / 2;
+    // Full-bleed mode uses the whole content area so the globe has room to grow
+    // when zoomed; the at-rest size is keyed off the shorter side.
+    const baseR = Math.min(w, h) * (fillContainer ? 0.44 : 0.40);
     const R = baseR * zoom.current;
 
     projection
@@ -359,7 +363,7 @@ export default function GeoArbitrageGlobe({
         ctx.fill();
       }
     }
-  }, [projection, portfolioBalance, currentCityKey, hiddenKeys, isDark]);
+  }, [projection, portfolioBalance, currentCityKey, hiddenKeys, isDark, fillContainer]);
 
   // ---------------------------------------------------------------------------
   // Animation loop
@@ -391,15 +395,17 @@ export default function GeoArbitrageGlobe({
       const entry = entries[0];
       if (!entry) return;
       const { width, height } = entry.contentRect;
-      const size = fillContainer
-        ? Math.min(width, height)
-        : Math.min(width, 560);
-      canvasSize.current = size;
+      // Fill mode: canvas spans the full content area (width × height). Otherwise
+      // a centered square capped at 560px.
+      const w = fillContainer ? width : Math.min(width, 560);
+      const h = fillContainer ? height : w;
+      canvasW.current = w;
+      canvasH.current = h;
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = size * dpr;
-      canvas.height = size * dpr;
-      canvas.style.width = `${size}px`;
-      canvas.style.height = `${size}px`;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
       draw();
     });
     ro.observe(wrapper);
