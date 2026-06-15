@@ -481,8 +481,7 @@ export default function CsvImportModal({
       const match = existing?.find(
         (e) =>
           e.date === row.date &&
-          Number(e.amount) === row.amount &&
-          (e.category ?? "").trim().toLowerCase() === (row.category ?? "").trim().toLowerCase()
+          Number(e.amount) === row.amount
       );
       if (match) flags.push({ rowIndex: i, row, existing: match });
     }
