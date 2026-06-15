@@ -2,6 +2,13 @@
 
 This repository uses `origin/main` as the canonical baseline for all work by default.
 
+## Context — Read Before Starting Any Task
+
+Before making any change or answering any product question:
+
+1. Read `docs/ROADMAP.md` — the source of truth for what is built (`[x]`) vs planned (`[ ]`). Never claim a feature does not exist without checking here first.
+2. Read `CHANGELOG.md` — most recent entries show what shipped last. Use this to understand current product state before building or answering questions.
+
 ## Baseline Rule
 
 Before making any change:

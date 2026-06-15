@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
+import dynamic from "next/dynamic";
+const GeoArbitrageGlobe = dynamic(() => import("@/app/components/GeoArbitrageGlobe"), { ssr: false });
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
@@ -64,6 +66,7 @@ type TabKey =
   | "assets"
   | "liabilities"
   | "fire-calculator"
+  | "expat-fire"
   | "goals"
   | "reports"
   | "learning-hub"
@@ -3917,7 +3920,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "fire-calculator",
     label: "Freedom",
-    activeTabs: ["fire-calculator", "goals", "learning-hub"],
+    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub"],
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
 ];
@@ -3989,7 +3992,7 @@ export default function Dashboard() {
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
       "overview", "cashflow", "assets", "liabilities",
-      "fire-calculator", "reports", "learning-hub", "profile",
+      "fire-calculator", "expat-fire", "reports", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
@@ -4234,6 +4237,7 @@ export default function Dashboard() {
     { label: "Accounts / Net Worth", tab: "assets" as TabKey, helper: "Assets, debts, connected accounts" },
     { label: "Insights", tab: "reports" as TabKey, helper: "Monthly spending patterns" },
     { label: "Freedom Date", tab: "fire-calculator" as TabKey, helper: "Result, levers, confidence check" },
+    { label: "Expat FIRE", tab: "expat-fire" as TabKey, helper: "Find cities where you retire sooner" },
     { label: "Profile & Assumptions", tab: "profile" as TabKey, helper: "Age, target, FIRE type, settings" },
     { label: "Learning Hub", tab: "learning-hub" as TabKey, helper: "Guides and explainers" },
   ];
@@ -4571,9 +4575,6 @@ export default function Dashboard() {
         @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
         @media(min-width: 901px) { .uf-freedom-section-switch { display: none !important; } }
 
-        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: min(calc(100svh - 170px), 820px); min-height: 420px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
-        @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: min(calc(100svh - 210px), 560px); min-height: 320px; } }
-
         .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
         .uf-sidebar-sub-sub-item { display: flex; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
         .uf-sidebar-sub-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 3px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
@@ -4700,7 +4701,7 @@ export default function Dashboard() {
         </button>
         <div className="uf-mobile-top-title">
           <strong>UntilFire</strong>
-          <span>{tab === "overview" ? "Home" : tab === "fire-calculator" || tab === "goals" ? "Freedom Date" : tab === "profile" ? "Profile" : "Portfolio"}</span>
+          <span>{tab === "overview" ? "Home" : tab === "fire-calculator" || tab === "goals" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "profile" ? "Profile" : "Portfolio"}</span>
         </div>
         <button
           onClick={toggleDark}
@@ -4834,9 +4835,9 @@ export default function Dashboard() {
                     <div className="uf-sidebar-sub-nav">
                       {([
                         { label: "Freedom Date", isActive: tab === "fire-calculator" && fireCalcSubTab === "menu",       onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                        { label: "Confidence",   isActive: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
-                        { label: "Advanced",     isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
-                        { label: "Lifestyle",    isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
+                        { label: "Simulate",     isActive: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
+                        { label: "Scenarios",    isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
+                        { label: "Goals",        isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
                         { label: "Learn",        isActive: tab === "learning-hub",                                       onClick: () => openDashboardTab("learning-hub") },
                       ]).map(sub => (
                         <button
@@ -4847,6 +4848,12 @@ export default function Dashboard() {
                           {sub.label}
                         </button>
                       ))}
+                      <button
+                        className={`uf-sidebar-sub-item ${tab === "expat-fire" ? "active" : ""}`}
+                        onClick={() => openDashboardTab("expat-fire")}
+                      >
+                        Expat FIRE
+                      </button>
                     </div>
                   )}
                 </div>
@@ -4921,14 +4928,15 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
-            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub") && (
+            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire") && (
               <nav className="uf-section-switch uf-freedom-section-switch" aria-label="Freedom sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                  { label: "Confidence", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
-                  { label: "Advanced", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
-                  { label: "Lifestyle", active: tab === "goals", onClick: () => openDashboardTab("goals") },
+                  { label: "Simulate", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
+                  { label: "Scenarios", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
+                  { label: "Goals", active: tab === "goals", onClick: () => openDashboardTab("goals") },
                   { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
+                  { label: "Expat FIRE", active: tab === "expat-fire", onClick: () => openDashboardTab("expat-fire") },
                 ]).map(item => (
                   <button
                     key={item.label}
@@ -5133,6 +5141,15 @@ export default function Dashboard() {
             )}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
+            {tab === "expat-fire" && (
+              <ExpatFireDashTab
+                portfolioBalance={k401 + rothIRA + taxable + cashSavings}
+                monthlySavings={Math.max(0, income * 12 - Object.entries(expenses).reduce((s, [, v]) => s + (v || 0), 0) * 12) / 12}
+                age={fireAge}
+                cityName={cityName}
+                onOpenProfile={() => openDashboardTab("profile")}
+              />
+            )}
             {tab === "profile" && userId && (
               <ProfileTab
                 userId={userId}
@@ -5177,8 +5194,6 @@ function ExpatFireDashTab({
   cityName: string;
   onOpenProfile: () => void;
 }) {
-  const [panelOpen, setPanelOpen] = useState(true);
-
   const currentCityKey = useMemo(() => {
     const match = CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
     return match?.key ?? "nyc";
@@ -5203,83 +5218,40 @@ function ExpatFireDashTab({
   }
 
   return (
-    <div className="expat-globe-wrap">
-      {/* Full-bleed globe */}
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: "#059669", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 10 }}>Expat FIRE</div>
+        <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Where else could you retire?</h2>
+        <p style={{ fontSize: 15, color: "var(--uf-text-2)", margin: 0 }}>Spin the globe — green cities mean you could FIRE there now with your current portfolio.</p>
+      </div>
+
+      {/* Prefilled data chips */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24, alignItems: "center" }}>
+        {[
+          { label: "Portfolio", value: fmt(portfolioBalance) },
+          { label: "Monthly savings", value: `${fmt(monthlySavings)}/mo` },
+          { label: "Age", value: String(age) },
+        ].map(({ label, value }) => (
+          <div key={label} style={{ background: "var(--uf-surface-2)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "8px 14px" }}>
+            <div style={{ fontSize: 10, color: "var(--uf-text-2)", fontWeight: 700, textTransform: "uppercase", marginBottom: 1 }}>{label}</div>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>{value}</div>
+          </div>
+        ))}
+        <button
+          onClick={onOpenProfile}
+          style={{ background: "none", border: "none", color: "#059669", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0 }}
+        >
+          Edit in Profile →
+        </button>
+      </div>
+
       <GeoArbitrageGlobe
-        fillContainer
         monthlySavings={monthlySavings}
         portfolioBalance={portfolioBalance}
         currentAge={age}
         currentCityKey={currentCityKey}
         onCitySelect={handleCitySelect}
       />
-
-      {/* Title overlay — top left */}
-      <div style={{ position: "absolute", top: 20, left: 24, zIndex: 10, pointerEvents: "none" }}>
-        <div style={{ fontSize: 10, color: "#22d3a5", fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", marginBottom: 5 }}>
-          Expat FIRE
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", textShadow: "0 2px 16px rgba(0,0,0,0.6)", lineHeight: 1.15 }}>
-          Where else could<br />you retire?
-        </div>
-      </div>
-
-      {/* Panel toggle button */}
-      <button
-        onClick={() => setPanelOpen(v => !v)}
-        style={{
-          position: "absolute", top: 20,
-          right: panelOpen ? 244 : 16,
-          zIndex: 25, transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
-          background: "rgba(8,8,14,0.52)", backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.14)", borderRadius: 999,
-          padding: "6px 14px", color: "rgba(255,255,255,0.82)", fontSize: 11,
-          fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-          letterSpacing: "0.03em",
-        }}
-      >
-        {panelOpen ? "‹ Hide" : "Stats ›"}
-      </button>
-
-      {/* Collapsible stats panel */}
-      <div style={{
-        position: "absolute", top: 16,
-        right: panelOpen ? 16 : -232,
-        zIndex: 20, width: 220,
-        transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
-        background: "rgba(8,8,14,0.58)", backdropFilter: "blur(20px)",
-        border: "1px solid rgba(255,255,255,0.09)", borderRadius: 16,
-        padding: "16px 14px", display: "flex", flexDirection: "column", gap: 9,
-      }}>
-        <div style={{ fontSize: 9, color: "#22d3a5", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 2 }}>
-          Your snapshot
-        </div>
-        {([
-          { label: "Portfolio", value: fmt(portfolioBalance) },
-          { label: "Monthly savings", value: `${fmt(monthlySavings)}/mo` },
-          { label: "Age", value: String(age) },
-        ] as const).map(({ label, value }) => (
-          <div key={label} style={{
-            background: "rgba(255,255,255,0.055)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 10, padding: "9px 12px",
-          }}>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.42)", fontWeight: 700, textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>{value}</div>
-          </div>
-        ))}
-        <button
-          onClick={onOpenProfile}
-          style={{
-            background: "rgba(34,211,165,0.11)", border: "1px solid rgba(34,211,165,0.22)",
-            borderRadius: 9, padding: "9px 0", color: "#22d3a5",
-            fontSize: 12, fontWeight: 700, cursor: "pointer",
-            fontFamily: "inherit", marginTop: 3, letterSpacing: "0.01em",
-          }}
-        >
-          Edit in Profile →
-        </button>
-      </div>
     </div>
   );
 }

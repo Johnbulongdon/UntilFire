@@ -1,5 +1,5 @@
 # UntilFire — Product Roadmap
-Last updated: May 2026
+Last updated: June 2026
 
 ---
 
@@ -145,6 +145,13 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [x] Achievement milestones blended into the progress chart as teal pin bubbles
 - [x] Achievement card removed — milestones live only on the chart
 
+### FIRE Type
+
+- [x] Trading card redesign: full-body illustrated avatar per FIRE type
+- [x] Custom avatar system with 16 meme-archetype characters per type
+- [x] White poster share card replacing the dark trading card
+- [x] Share card drop shadow removed — flat poster design
+
 ### Distribution Experiments
 
 - [x] FIRE Type quiz page at `/fire-type`
@@ -190,6 +197,7 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [x] Add "save my result" email capture after the reveal, not before the aha moment — plan email via Resend (PR #48).
 - [x] Keep login secondary until after the user has seen value — login page shows personalized freedom year (PR #48).
 - [x] Track funnel analytics: hero CTA click, calculator start, each step completion, result reveal, share/save/login clicks — PostHog events fixed (PR #47).
+- [x] Animated logo reveal with FIRE number pop/glow on landing page — PR #56
 
 ### Acceptance Criteria for Launch Readiness
 
@@ -234,7 +242,8 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 ### Product
 
 - [ ] Improve "adjust inputs" flow from result screen
-- [ ] Scenario simulator on reveal screen: save more, earn more, reduce expenses, change city — presented as “moves that bring freedom closer,” not raw calculators
+- [x] Scenario simulator on reveal screen: save more, earn more, reduce expenses, change city — presented as “moves that bring freedom closer,” not raw calculators
+- [x] CSV import for transactions with column mapping, duplicate detection (date + amount), and review step — CsvImportModal.tsx
 - [ ] Better result explanation for beginners: FIRE number, withdrawal rate, assumptions, timeline
 - [ ] Email result summary with top plan step
 - [ ] Dashboard handoff that preserves calculator result and next action
@@ -247,6 +256,13 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [ ] Enforce Pro unlocks only after free value is delivered
 - [ ] Email onboarding sequence: result saved, top move, dashboard reminder, Pro upgrade
 - [ ] Pricing page copy aligned with "plan adviser," not generic dashboard access
+
+### Demo Video
+
+- [x] CanvasKit offscreen renderer for 43s motion-graphics demo video (`scripts/demo-video/render.mjs`)
+- [x] 120 BPM beat-synced animations: compound chart, bank logo marquee, notification swipe leaks scene, end card
+- [x] Bloom-cut transitions between scenes
+- [x] v26: chart colors tuned for white bg, bars flush on axis, recovered counter beats with music
 
 ---
 
