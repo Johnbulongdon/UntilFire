@@ -4228,8 +4228,8 @@ export default function Dashboard() {
   const isMobilePrimaryActive = (key: MobilePrimaryKey) => {
     if (key === "home") return tab === "overview";
     if (key === "money") return tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports";
-    if (key === "freedom") return tab === "fire-calculator";
-    return tab === "profile" || tab === "goals";
+    if (key === "freedom") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "learning-hub";
+    return tab === "profile";
   };
 
   const mobileDrawerItems = [
@@ -4704,7 +4704,7 @@ export default function Dashboard() {
         </button>
         <div className="uf-mobile-top-title">
           <strong>UntilFire</strong>
-          <span>{tab === "overview" ? "Home" : tab === "fire-calculator" || tab === "goals" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "profile" ? "Profile" : "Portfolio"}</span>
+          <span>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
         </div>
         <button
           onClick={toggleDark}
