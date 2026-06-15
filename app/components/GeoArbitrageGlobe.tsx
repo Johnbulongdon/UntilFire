@@ -256,7 +256,7 @@ export default function GeoArbitrageGlobe({
     const cy = h / 2;
     // Full-bleed mode uses the whole content area so the globe has room to grow
     // when zoomed; the at-rest size is keyed off the shorter side.
-    const baseR = Math.min(w, h) * (fillContainer ? 0.44 : 0.40);
+    const baseR = Math.min(w, h) * (fillContainer ? 0.42 : 0.40);
     const R = baseR * zoom.current;
 
     projection

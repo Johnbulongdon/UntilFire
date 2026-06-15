@@ -4575,9 +4575,9 @@ export default function Dashboard() {
         @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
         @media(min-width: 901px) { .uf-freedom-section-switch { display: none !important; } }
 
-        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: min(calc(100svh - 170px), 820px); min-height: 420px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 55%, #ffffff 0%, #eef2f7 75%); }
+        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: calc(100svh - 64px); min-height: 480px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 55%, #ffffff 0%, #eef2f7 75%); }
         .dark .expat-globe-wrap { background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
-        @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: min(calc(100svh - 210px), 560px); min-height: 320px; } }
+        @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: calc(100svh - 180px); min-height: 360px; } }
 
         .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
         .uf-sidebar-sub-sub-item { display: flex; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
