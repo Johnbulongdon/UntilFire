@@ -115,7 +115,7 @@ function writeHidden(keys: string[]): void {
 }
 
 const MIN_ZOOM = 0.75;
-const MAX_ZOOM = 4;
+const MAX_ZOOM = 10;
 
 // ---------------------------------------------------------------------------
 // Theme palettes — dark globe in dark mode, light globe in light mode
@@ -217,6 +217,9 @@ export default function GeoArbitrageGlobe({
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(true);
   const [isDark, setIsDark] = useState(false);
+  // Clicking a dot opens an in-place popup (instead of navigating away). x/y are
+  // canvas pixels at click time; spin is paused so it stays anchored to the dot.
+  const [selected, setSelected] = useState<{ city: PlottedCity; x: number; y: number } | null>(null);
 
   // Track app theme (dark globe in dark mode, light globe in light mode)
   useEffect(() => {
@@ -426,10 +429,19 @@ export default function GeoArbitrageGlobe({
   function resumeSpin() {
     spinningRef.current = true;
     setSpinning(true);
+    setSelected(null); // dot drifts once spinning — drop the popup
   }
 
   function setZoom(next: number) {
     zoom.current = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next));
+  }
+
+  // Zoom from the +/- buttons: pause spin and dismiss any open popup (the dot
+  // moves under it once the globe scales).
+  function zoomBy(factor: number) {
+    stopSpin();
+    setSelected(null);
+    setZoom(zoom.current * factor);
   }
 
   function getEventXY(e: MouseEvent | TouchEvent): { x: number; y: number } {
@@ -468,6 +480,7 @@ export default function GeoArbitrageGlobe({
       const dist = Math.hypot(dx, dy);
       setZoom(zoom.current * (dist / pinchDist.current));
       pinchDist.current = dist;
+      if (selected) setSelected(null);
       return;
     }
 
@@ -488,7 +501,10 @@ export default function GeoArbitrageGlobe({
     const pos = getEventXY(native);
     const dx = pos.x - lastPos.current.x;
     const dy = pos.y - lastPos.current.y;
-    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) movedRef.current = true;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      movedRef.current = true;
+      if (selected) setSelected(null); // dragging moves the dot — close the popup
+    }
     lastPos.current = pos;
     const speed = 0.32 / zoom.current; // slower when zoomed in
     rotLng.current += dx * speed;
@@ -502,6 +518,7 @@ export default function GeoArbitrageGlobe({
 
   function onWheel(e: React.WheelEvent) {
     stopSpin();
+    if (selected) setSelected(null);
     setZoom(zoom.current * (e.deltaY < 0 ? 1.12 : 0.89));
   }
 
@@ -533,8 +550,15 @@ export default function GeoArbitrageGlobe({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const found = pickCity(e.clientX - rect.left, e.clientY - rect.top);
-    if (found) onCitySelect(found.key);
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const found = pickCity(mx, my);
+    if (found) {
+      stopSpin(); // freeze so the popup stays anchored to the dot
+      setSelected({ city: found, x: mx, y: my });
+    } else {
+      setSelected(null); // tapping empty ocean dismisses the popup
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -560,6 +584,67 @@ export default function GeoArbitrageGlobe({
     fontFamily: 'inherit',
     backdropFilter: 'blur(4px)',
   };
+
+  // In-place city popup (shared by both render modes). Dark card so it reads on
+  // the dark ocean and on white space alike.
+  let popupEl: React.ReactNode = null;
+  if (selected) {
+    const c = selected.city;
+    const ready = portfolioBalance >= c.col * 25;
+    const barista = !ready && portfolioBalance >= c.col * 12.5;
+    const statusLabel = ready ? 'FIRE ready now' : barista ? 'Barista FIRE' : 'Not yet';
+    const statusColor = ready ? '#22d3a5' : barista ? '#fbbf24' : '#f87171';
+    const popupW = 214;
+    const cw = canvasW.current;
+    const above = selected.y > 170;
+    const left = Math.min(Math.max(selected.x, popupW / 2 + 10), Math.max(popupW / 2 + 10, cw - popupW / 2 - 10));
+    const top = selected.y + (above ? -16 : 16);
+    popupEl = (
+      <div
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
+        style={{
+          position: 'absolute', left, top, width: popupW, zIndex: 40,
+          transform: `translate(-50%, ${above ? '-100%' : '0'})`,
+          background: 'rgba(12,14,22,0.95)', backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255,255,255,0.14)', borderRadius: 14,
+          boxShadow: '0 18px 44px rgba(0,0,0,0.45)', padding: '12px 13px 13px',
+          color: '#fff', fontFamily: 'inherit',
+        }}
+      >
+        <button
+          aria-label="Close"
+          onClick={() => setSelected(null)}
+          style={{
+            position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.7)',
+            fontSize: 14, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >×</button>
+        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em', paddingRight: 22 }}>
+          {c.flag} {c.name}
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 7, fontSize: 11, fontWeight: 700, color: statusColor }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor }} />
+          {statusLabel}
+        </div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
+          Cost of living ~${Math.round(c.col).toLocaleString()}/yr
+        </div>
+        <button
+          onClick={() => onCitySelect(c.key)}
+          style={{
+            marginTop: 11, width: '100%', background: 'rgba(34,211,165,0.14)',
+            border: '1px solid rgba(34,211,165,0.4)', color: '#22d3a5', borderRadius: 9,
+            padding: '8px 0', fontSize: 12.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          See full comparison →
+        </button>
+      </div>
+    );
+  }
 
   if (fillContainer) {
     return (
@@ -604,8 +689,8 @@ export default function GeoArbitrageGlobe({
 
         {/* Zoom controls */}
         <div style={{ position: 'absolute', right: 16, bottom: 56, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button aria-label="Zoom in" style={zoomBtnStyle} onClick={() => { stopSpin(); setZoom(zoom.current * 1.25); }}>+</button>
-          <button aria-label="Zoom out" style={zoomBtnStyle} onClick={() => { stopSpin(); setZoom(zoom.current * 0.8); }}>−</button>
+          <button aria-label="Zoom in" style={zoomBtnStyle} onClick={() => zoomBy(1.4)}>+</button>
+          <button aria-label="Zoom out" style={zoomBtnStyle} onClick={() => zoomBy(0.71)}>−</button>
         </div>
 
         {/* Spin pill */}
@@ -619,6 +704,8 @@ export default function GeoArbitrageGlobe({
             ↻ Spin
           </button>
         )}
+
+        {popupEl}
       </div>
     );
   }
@@ -682,8 +769,8 @@ export default function GeoArbitrageGlobe({
               gap: 8,
             }}
           >
-            <button aria-label="Zoom in" style={zoomBtnStyle} onClick={() => { stopSpin(); setZoom(zoom.current * 1.25); }}>+</button>
-            <button aria-label="Zoom out" style={zoomBtnStyle} onClick={() => { stopSpin(); setZoom(zoom.current * 0.8); }}>−</button>
+            <button aria-label="Zoom in" style={zoomBtnStyle} onClick={() => zoomBy(1.4)}>+</button>
+            <button aria-label="Zoom out" style={zoomBtnStyle} onClick={() => zoomBy(0.71)}>−</button>
           </div>
 
           {/* Resume spin pill */}
@@ -709,6 +796,8 @@ export default function GeoArbitrageGlobe({
               ↻ Spin
             </button>
           )}
+
+          {popupEl}
         </div>
 
         {/* Legend */}
