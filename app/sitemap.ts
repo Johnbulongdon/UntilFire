@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next'
 import { cityLandingPages } from '@/lib/city-pages'
 import { CITIES, isUS } from '@/lib/fire-data'
 import { statePages } from '@/lib/state-pages'
+import { rankingPagesList } from '@/lib/ranking-pages'
 import { learnArticles, learnStages } from '@/lib/learn'
 import { siteUrl } from '@/lib/site'
 
@@ -120,5 +121,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }))
 
-  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...stateRoutes]
+  const rankingRoutes: MetadataRoute.Sitemap = rankingPagesList.map((page) => ({
+    url: siteUrl(`/fire-number/${page.slug}`),
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }))
+
+  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...stateRoutes, ...rankingRoutes]
 }
