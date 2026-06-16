@@ -4226,19 +4226,19 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   },
   {
     key: "cashflow",
-    label: "Money",
-    activeTabs: ["cashflow", "assets", "liabilities", "reports"],
+    label: "Cashflow",
+    activeTabs: ["cashflow", "reports"],
     svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
   },
   {
     key: "fire-calculator",
-    label: "Freedom",
-    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub"],
+    label: "Plan",
+    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub", "assets", "liabilities"],
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
 ];
 
-type MobilePrimaryKey = "home" | "money" | "freedom" | "profile";
+type MobilePrimaryKey = "home" | "cashflow" | "plan" | "profile";
 
 const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string }[] = [
   {
@@ -4247,13 +4247,13 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
     svg: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
   },
   {
-    key: "money",
-    label: "Money",
+    key: "cashflow",
+    label: "Cashflow",
     svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
   },
   {
-    key: "freedom",
-    label: "Freedom",
+    key: "plan",
+    label: "Plan",
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
   {
@@ -4553,15 +4553,15 @@ export default function Dashboard() {
 
   const openMobilePrimary = (key: MobilePrimaryKey) => {
     if (key === "home") openDashboardTab("overview");
-    if (key === "money") { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); }
-    if (key === "freedom") { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }
+    if (key === "cashflow") { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); }
+    if (key === "plan") { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }
     if (key === "profile") openDashboardTab("profile");
   };
 
   const isMobilePrimaryActive = (key: MobilePrimaryKey) => {
     if (key === "home") return tab === "overview";
-    if (key === "money") return tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports";
-    if (key === "freedom") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "learning-hub";
+    if (key === "cashflow") return tab === "cashflow" || tab === "reports";
+    if (key === "plan") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "learning-hub" || tab === "assets" || tab === "liabilities";
     return tab === "profile";
   };
 
@@ -5131,8 +5131,6 @@ export default function Dashboard() {
                     <div className="uf-sidebar-sub-nav">
                       {([
                         { key: "cashflow",    label: "Cashflow"  },
-                        { key: "assets",      label: "Net Worth" },
-                        { key: "liabilities", label: "Debts"     },
                         { key: "reports",     label: "Insights"  },
                       ] as { key: TabKey; label: string }[]).map(sub => (
                         <div key={sub.key}>
@@ -5178,6 +5176,9 @@ export default function Dashboard() {
                         { label: "Scenarios",    isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
                         { label: "Goals",        isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
                         { label: "Learn",        isActive: tab === "learning-hub",                                       onClick: () => openDashboardTab("learning-hub") },
+                        { label: "Expat FIRE",   isActive: tab === "expat-fire",                                         onClick: () => openDashboardTab("expat-fire") },
+                        { label: "Net Worth",    isActive: tab === "assets",                                             onClick: () => openDashboardTab("assets") },
+                        { label: "Debts",        isActive: tab === "liabilities",                                        onClick: () => openDashboardTab("liabilities") },
                       ]).map(sub => (
                         <button
                           key={sub.label}
@@ -5187,12 +5188,6 @@ export default function Dashboard() {
                           {sub.label}
                         </button>
                       ))}
-                      <button
-                        className={`uf-sidebar-sub-item ${tab === "expat-fire" ? "active" : ""}`}
-                        onClick={() => openDashboardTab("expat-fire")}
-                      >
-                        Expat FIRE
-                      </button>
                     </div>
                   )}
                 </div>
@@ -5249,12 +5244,10 @@ export default function Dashboard() {
                 >×</button>
               </div>
             )}
-            {(tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports") && (
-              <nav className="uf-section-switch uf-money-section-switch" aria-label="Money sections">
+            {(tab === "cashflow" || tab === "reports") && (
+              <nav className="uf-section-switch uf-cashflow-section-switch" aria-label="Cashflow sections">
                 {([
                   { label: "Cashflow", active: tab === "cashflow", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
-                  { label: "Net Worth", active: tab === "assets", onClick: () => openDashboardTab("assets") },
-                  { label: "Debts", active: tab === "liabilities", onClick: () => openDashboardTab("liabilities") },
                   { label: "Insights", active: tab === "reports", onClick: () => openDashboardTab("reports") },
                 ]).map(item => (
                   <button
@@ -5267,8 +5260,8 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
-            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire") && (
-              <nav className="uf-section-switch uf-freedom-section-switch" aria-label="Freedom sections">
+            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire" || tab === "assets" || tab === "liabilities") && (
+              <nav className="uf-section-switch uf-plan-section-switch" aria-label="Plan sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
                   { label: "Simulate", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
@@ -5276,6 +5269,8 @@ export default function Dashboard() {
                   { label: "Goals", active: tab === "goals", onClick: () => openDashboardTab("goals") },
                   { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
                   { label: "Expat FIRE", active: tab === "expat-fire", onClick: () => openDashboardTab("expat-fire") },
+                  { label: "Net Worth", active: tab === "assets", onClick: () => openDashboardTab("assets") },
+                  { label: "Debts", active: tab === "liabilities", onClick: () => openDashboardTab("liabilities") },
                 ]).map(item => (
                   <button
                     key={item.label}
