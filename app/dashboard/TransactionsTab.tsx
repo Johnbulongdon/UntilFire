@@ -702,6 +702,29 @@ function QuickAddForm({
                 );
               })}
             </div>
+            {/* Work cost toggle — independent of need/want */}
+            <button
+              type="button"
+              onClick={() => {
+                const hasWork = draft.tags.includes("work");
+                setField("tags", hasWork ? draft.tags.filter((t) => t !== "work") : [...draft.tags, "work"]);
+              }}
+              style={{
+                alignSelf: "flex-start",
+                background: draft.tags.includes("work") ? "#EEF2FF" : "transparent",
+                border: `1px solid ${draft.tags.includes("work") ? "#6366f1" : "var(--uf-border)"}`,
+                borderRadius: 8,
+                padding: "6px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: draft.tags.includes("work") ? "#4f46e5" : "var(--uf-text-2)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.12s",
+              }}
+            >
+              💼 Work cost
+            </button>
           </div>
         )}
 
