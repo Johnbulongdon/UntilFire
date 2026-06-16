@@ -578,7 +578,57 @@ const US_INTL = new Set([
 ]);
 export function isUS(stateKey: string) { return !US_INTL.has(stateKey); }
 
-// FIRE planner math and the take-home tax engine live in `lib/fire/*` (see
+export const TAX_COUNTRIES: { value: string; label: string; flag: string }[] = [
+  { value: "us",  label: "United States",  flag: "🇺🇸" },
+  { value: "uk",  label: "United Kingdom", flag: "🇬🇧" },
+  { value: "ca",  label: "Canada",         flag: "🇨🇦" },
+  { value: "au",  label: "Australia",      flag: "🇦🇺" },
+  { value: "nz",  label: "New Zealand",    flag: "🇳🇿" },
+  { value: "sg",  label: "Singapore",      flag: "🇸🇬" },
+  { value: "ae",  label: "UAE",            flag: "🇦🇪" },
+  { value: "de",  label: "Germany",        flag: "🇩🇪" },
+  { value: "fr",  label: "France",         flag: "🇫🇷" },
+  { value: "nl",  label: "Netherlands",    flag: "🇳🇱" },
+  { value: "jp",  label: "Japan",          flag: "🇯🇵" },
+  { value: "mx",  label: "Mexico",         flag: "🇲🇽" },
+];
+
+export const TAX_US_STATES: { value: string; label: string }[] = [
+  { value: "al", label: "Alabama" }, { value: "ak", label: "Alaska" },
+  { value: "az", label: "Arizona" }, { value: "ar_us", label: "Arkansas" },
+  { value: "ca", label: "California" }, { value: "co", label: "Colorado" },
+  { value: "ct", label: "Connecticut" }, { value: "de_us", label: "Delaware" },
+  { value: "fl", label: "Florida" }, { value: "ga", label: "Georgia" },
+  { value: "hi", label: "Hawaii" }, { value: "id", label: "Idaho" },
+  { value: "il", label: "Illinois" }, { value: "in_us", label: "Indiana" },
+  { value: "ia", label: "Iowa" }, { value: "ks", label: "Kansas" },
+  { value: "ky", label: "Kentucky" }, { value: "la", label: "Louisiana" },
+  { value: "me", label: "Maine" }, { value: "md", label: "Maryland" },
+  { value: "ma", label: "Massachusetts" }, { value: "mi", label: "Michigan" },
+  { value: "mn", label: "Minnesota" }, { value: "ms", label: "Mississippi" },
+  { value: "mo", label: "Missouri" }, { value: "mt", label: "Montana" },
+  { value: "ne", label: "Nebraska" }, { value: "nv", label: "Nevada" },
+  { value: "nh", label: "New Hampshire" }, { value: "nj", label: "New Jersey" },
+  { value: "nm", label: "New Mexico" }, { value: "nyc", label: "New York (NYC)" },
+  { value: "ny", label: "New York (state)" }, { value: "nc", label: "North Carolina" },
+  { value: "nd", label: "North Dakota" }, { value: "oh", label: "Ohio" },
+  { value: "ok", label: "Oklahoma" }, { value: "or", label: "Oregon" },
+  { value: "pa", label: "Pennsylvania" }, { value: "ri", label: "Rhode Island" },
+  { value: "sc", label: "South Carolina" }, { value: "sd", label: "South Dakota" },
+  { value: "tn", label: "Tennessee" }, { value: "tx", label: "Texas" },
+  { value: "ut", label: "Utah" }, { value: "vt", label: "Vermont" },
+  { value: "va", label: "Virginia" }, { value: "wa", label: "Washington" },
+  { value: "dc", label: "Washington D.C." }, { value: "wv", label: "West Virginia" },
+  { value: "wi", label: "Wisconsin" }, { value: "wy", label: "Wyoming" },
+];
+
+export const TAX_CA_PROVINCES: { value: string; label: string }[] = [
+  { value: "ca_on", label: "Ontario" }, { value: "ca_bc", label: "British Columbia" },
+  { value: "ca_qc", label: "Quebec" }, { value: "ca_ab", label: "Alberta" },
+  { value: "ca_mb", label: "Manitoba" }, { value: "ca_ns", label: "Nova Scotia" },
+];
+
+
 // `lib/fire/strategies/traditional.ts` and `lib/fire/tax/*`). This module is
 // the city/tax dataset only — keeping data and engine separate is what makes
 // the planner swappable without touching the wizard.
