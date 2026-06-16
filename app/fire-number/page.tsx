@@ -145,6 +145,7 @@ export default function FireNumberHubPage() {
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
             {[
+              { title: "Best States for FIRE", desc: "Tax-efficient + affordable states ranked", href: "/fire-number/best-states" },
               { title: "Cheapest Cities", desc: "Lowest cost of living for faster FIRE", href: "/fire-number/cheapest-cities" },
               { title: "Most Expensive Cities", desc: "Plan for high-cost living with exact targets", href: "/fire-number/most-expensive-cities" },
               { title: "No-Income-Tax States", desc: "Nine states where more income becomes savings", href: "/fire-number/no-income-tax-states" },
