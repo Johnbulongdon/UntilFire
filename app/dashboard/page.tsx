@@ -5146,17 +5146,14 @@ export default function Dashboard() {
                           {sub.key === "cashflow" && tab === "cashflow" && (
                             <div className="uf-sidebar-sub-sub-nav">
                               {([
-                                { key: "cashflow" as const,   label: "Transactions" },
-                                { key: "categories" as const, label: "Categories"   },
-                                { key: "recurring" as const,  label: "Recurring"    },
-                                { key: "budgets" as const,    label: "Budgets"      },
+                                { key: "cashflow" as const, label: "Transactions" },
+                                { key: "budgets" as const,  label: "Budget"       },
                               ]).map(ss => (
                                 <button
                                   key={ss.key}
                                   className={`uf-sidebar-sub-sub-item ${cashflowSubTab === ss.key ? "active" : ""}`}
                                   onClick={() => {
                                     setCashflowSubTab(ss.key);
-                                    if (ss.key === "categories") setCategoriesKey(k => k + 1);
                                   }}
                                 >
                                   {ss.label}
@@ -5339,10 +5336,10 @@ export default function Dashboard() {
               <div>
                 {/* Cashflow sub-tab nav */}
                 <div className="uf-cashflow-subtab-switch" style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
-                  {(["cashflow", "categories", "recurring", "budgets"] as const).map(t => (
+                  {(["cashflow", "budgets"] as const).map(t => (
                     <button
                       key={t}
-                      onClick={() => { setCashflowSubTab(t); if (t === "categories") setCategoriesKey(k => k + 1); }}
+                      onClick={() => { setCashflowSubTab(t); }}
                       style={{
                         background: "none", border: "none", padding: "0 0 14px",
                         fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
@@ -5351,7 +5348,7 @@ export default function Dashboard() {
                         borderBottom: `2px solid ${cashflowSubTab === t ? "#047857" : "transparent"}`,
                       }}
                     >
-                      {t === "cashflow" ? "Cashflow" : t === "categories" ? "Categories" : t === "recurring" ? "Recurring" : "Budgets"}
+                      {t === "cashflow" ? "Transactions" : "Budget"}
                     </button>
                   ))}
                 </div>
