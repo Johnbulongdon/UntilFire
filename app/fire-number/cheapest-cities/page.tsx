@@ -159,15 +159,24 @@ export default function CheapestCitiesPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
-              { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },
-              { '@type': 'ListItem', position: 3, name: 'Cheapest Cities', item: 'https://www.untilfire.com/fire-number/cheapest-cities' },
-            ],
-          }),
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+                { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },
+                { '@type': 'ListItem', position: 3, name: 'Cheapest Cities', item: 'https://www.untilfire.com/fire-number/cheapest-cities' },
+              ],
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'Table',
+              name: 'Cheapest US Cities for FIRE',
+              description: 'Ranked list of the 20 cheapest US cities by annual cost of living with FIRE targets',
+              url: 'https://www.untilfire.com/fire-number/cheapest-cities',
+            },
+          ]),
         }}
       />
     </>

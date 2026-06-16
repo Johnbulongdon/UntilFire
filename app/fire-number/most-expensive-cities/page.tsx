@@ -159,15 +159,24 @@ export default function MostExpensiveCitiesPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
-              { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },
-              { '@type': 'ListItem', position: 3, name: 'Most Expensive Cities', item: 'https://www.untilfire.com/fire-number/most-expensive-cities' },
-            ],
-          }),
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+                { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },
+                { '@type': 'ListItem', position: 3, name: 'Most Expensive Cities', item: 'https://www.untilfire.com/fire-number/most-expensive-cities' },
+              ],
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'Table',
+              name: 'Most Expensive US Cities for FIRE',
+              description: 'Ranked list of the 20 most expensive US cities by annual cost of living with FIRE targets',
+              url: 'https://www.untilfire.com/fire-number/most-expensive-cities',
+            },
+          ]),
         }}
       />
     </>

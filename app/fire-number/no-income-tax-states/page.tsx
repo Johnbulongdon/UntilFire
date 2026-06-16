@@ -175,15 +175,39 @@ export default function NoIncomeTaxStatesPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
-              { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },
-              { '@type': 'ListItem', position: 3, name: 'No-Income-Tax States', item: 'https://www.untilfire.com/fire-number/no-income-tax-states' },
-            ],
-          }),
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+                { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },
+                { '@type': 'ListItem', position: 3, name: 'No-Income-Tax States', item: 'https://www.untilfire.com/fire-number/no-income-tax-states' },
+              ],
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: [
+                {
+                  '@type': 'Question',
+                  name: 'Which US states have no income tax?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Nine US states have zero state income tax: Texas, Florida, Nevada, Washington, Tennessee, Wyoming, South Dakota, Alaska, and New Hampshire.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How much can I save with no state income tax?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'On a $100,000 income, avoiding 5% state income tax saves $5,000/year. Over 30 years, that compounds into significant portfolio growth when invested.',
+                  },
+                },
+              ],
+            },
+          ]),
         }}
       />
     </>
