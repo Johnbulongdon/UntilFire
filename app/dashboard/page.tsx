@@ -23,7 +23,7 @@ import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE, calcFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
-import { CITIES } from "@/lib/fire-data";
+import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { trackDashboardFirstView } from "@/lib/analytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -247,18 +247,25 @@ function calcProjection({
   totalDebt, mortgageBalance, mortgageMonthly,
   growthRate = 0.07, withdrawalRate = 0.04, years = 50,
   targetMonthlyExpenses,
+  taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
 }: {
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
   mortgageBalance: number; mortgageMonthly: number;
   growthRate?: number; withdrawalRate?: number; years?: number;
   targetMonthlyExpenses?: number;
+  taxEnabled?: boolean; retirementTaxRate?: number; rothPct?: number;
 }) {
   const annualExpenses       = monthlyExpenses * 12;
   const targetAnnualExpenses = targetMonthlyExpenses != null ? targetMonthlyExpenses * 12 : annualExpenses;
   const annualMortgage = mortgageMonthly * 12;
   const annualSavings  = annualIncome - annualExpenses - annualMortgage;
-  const fireTarget     = targetAnnualExpenses * (1 / withdrawalRate);
+  // When tax is enabled, gross up the withdrawal needed to cover retirement taxes.
+  // Roth / tax-free portion needs no grossing; traditional portion does.
+  const taxGrossup = (taxEnabled && retirementTaxRate > 0)
+    ? ((1 - rothPct / 100) / (1 - Math.min(retirementTaxRate, 0.6)) + rothPct / 100)
+    : 1;
+  const fireTarget     = targetAnnualExpenses * taxGrossup / withdrawalRate;
 
   const k401Contrib    = Math.min(Math.max(annualSavings * 0.4, 0), 23000);
   const rothContrib    = Math.min(Math.max(annualSavings * 0.2, 0), 7000);
@@ -540,7 +547,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -558,6 +565,9 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   userJoinedAt?: string;
   monthlyNeedsExpenses?: number;
   monthlyWorkCosts?: number;
+  taxEnabled?: boolean;
+  retirementTaxRate?: number;
+  rothPct?: number;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -601,7 +611,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     annualIncome: income * 12, monthlyExpenses,
     k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+    taxEnabled, retirementTaxRate, rothPct,
+  }), [income, monthlyExpenses, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses, taxEnabled, retirementTaxRate, rothPct]);
 
   const nextMoveScenarios = useMemo(() => {
     if (!(income > 0 && fireYear !== null)) return null;
@@ -4021,6 +4032,196 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
   );
 }
 
+// ─── Tax Profile Card ─────────────────────────────────────────────────────────
+function TaxProfileCard({
+  cityName, income, monthlyExpenses, withdrawalRate,
+  taxEnabled, setTaxEnabled,
+  retirementTaxRate, setRetirementTaxRate,
+  rothPct, setRothPct,
+  displayCurrency, displayRates,
+}: {
+  cityName: string; income: number; monthlyExpenses: number; withdrawalRate: number;
+  taxEnabled: boolean; setTaxEnabled: (v: boolean) => void;
+  retirementTaxRate: number; setRetirementTaxRate: (v: number) => void;
+  rothPct: number; setRothPct: (v: number) => void;
+  displayCurrency: string; displayRates: Record<string, number>;
+}) {
+  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
+
+  const city = CITIES.find(c => c.name === cityName);
+  const taxInfo = city ? STATE_TAX[city.state] : null;
+  const isUS = city?.flag === "🇺🇸";
+  const stateRate = taxInfo?.rate ?? 0;
+  const ficaRate = isUS ? 0.0765 : 0;
+  const suggestedRetirementRate = taxInfo
+    ? (isUS ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35)) : Math.max(0.05, Math.min(stateRate * 0.75, 0.40)))
+    : 0.15;
+  const jurisdictionLabel = taxInfo
+    ? taxInfo.label.split("—")[0].trim()
+    : cityName ? "Set in Profile" : "No location set";
+
+  function handleToggle() {
+    const next = !taxEnabled;
+    setTaxEnabled(next);
+    if (next && retirementTaxRate === 0.15) {
+      setRetirementTaxRate(suggestedRetirementRate);
+    }
+  }
+
+  const baseFireTarget = monthlyExpenses > 0 && withdrawalRate > 0
+    ? monthlyExpenses * 12 / withdrawalRate
+    : 0;
+  const taxGrossup = taxEnabled && retirementTaxRate > 0
+    ? ((1 - rothPct / 100) / (1 - Math.min(retirementTaxRate, 0.6)) + rothPct / 100)
+    : 1;
+  const adjFireTarget = baseFireTarget * taxGrossup;
+  const delta = adjFireTarget - baseFireTarget;
+
+  return (
+    <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "Manrope, sans-serif" }}>
+            Tax Profile
+          </div>
+          <div style={{ fontSize: 14, color: "var(--uf-text-2)", marginTop: 2, fontFamily: "Manrope, sans-serif" }}>
+            {city?.flag ?? "🌍"} {jurisdictionLabel}
+          </div>
+        </div>
+        <button
+          onClick={handleToggle}
+          style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+            Include taxes
+          </span>
+          <div style={{
+            width: 40, height: 22, borderRadius: 11,
+            background: taxEnabled ? "#059669" : "var(--uf-border)",
+            position: "relative", transition: "background 0.2s",
+          }}>
+            <div style={{
+              width: 18, height: 18, borderRadius: 9, background: "#fff",
+              position: "absolute", top: 2, left: taxEnabled ? 20 : 2,
+              transition: "left 0.2s",
+            }} />
+          </div>
+        </button>
+      </div>
+
+      {/* Off state */}
+      {!taxEnabled && (
+        <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, fontFamily: "Manrope, sans-serif" }}>
+          {taxInfo
+            ? `Jurisdiction detected: ${taxInfo.label}. Enable to see how taxes shift your FIRE number.`
+            : "Set your city in Profile so we can auto-detect your jurisdiction and tax rates."}
+        </div>
+      )}
+
+      {/* Enabled state */}
+      {taxEnabled && (
+        <>
+          {/* Key facts grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {[
+              { label: "State / local income tax", value: `${(stateRate * 100).toFixed(1)}%` },
+              { label: isUS ? "Payroll (FICA) → 0% at FIRE" : "Payroll tax → check locally", value: ficaRate > 0 ? `${(ficaRate * 100).toFixed(1)}%` : "N/A" },
+              { label: isUS ? "Federal income tax" : "Income tax", value: isUS ? "10–37% (brackets)" : "Varies by bracket" },
+              { label: isUS ? "Long-term capital gains" : "Capital gains", value: isUS ? "0–20% (LTCG)" : "Verify locally" },
+            ].map(row => (
+              <div key={row.label} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "10px 12px" }}>
+                <div style={{ fontSize: 10, color: "var(--uf-text-2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "Manrope, sans-serif" }}>
+                  {row.label}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+                  {row.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Editable rates */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
+                Retirement effective rate
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="number" min={0} max={60} step={1}
+                  value={Math.round(retirementTaxRate * 100)}
+                  onChange={e => setRetirementTaxRate(Math.min(0.6, Math.max(0, Number(e.target.value) / 100)))}
+                  style={{
+                    width: 64, padding: "8px 10px", borderRadius: 8,
+                    border: "1px solid var(--uf-border)", background: "var(--uf-surface)",
+                    color: "var(--uf-text)", fontSize: 15, fontWeight: 700, fontFamily: "Manrope, sans-serif",
+                  }}
+                />
+                <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>%</span>
+              </div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+                On withdrawals in retirement (no payroll taxes)
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
+                Roth / tax-free %
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={Math.round(rothPct)}
+                  onChange={e => setRothPct(Math.min(100, Math.max(0, Number(e.target.value))))}
+                  style={{
+                    width: 64, padding: "8px 10px", borderRadius: 8,
+                    border: "1px solid var(--uf-border)", background: "var(--uf-surface)",
+                    color: "var(--uf-text)", fontSize: 15, fontWeight: 700, fontFamily: "Manrope, sans-serif",
+                  }}
+                />
+                <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>%</span>
+              </div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+                Roth IRA, Roth 401k, ISA, tax-free accounts
+              </div>
+            </div>
+          </div>
+
+          {/* Impact summary */}
+          {baseFireTarget > 0 && (
+            <div style={{
+              background: "rgba(5,150,105,0.07)", border: "1px solid rgba(5,150,105,0.18)",
+              borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6,
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#059669", fontFamily: "Manrope, sans-serif" }}>
+                FIRE Number Impact
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Without tax adjustment</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(baseFireTarget, true)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Tax-adjusted FIRE target</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(adjFireTarget, true)}</span>
+              </div>
+              {delta > 500 && (
+                <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+                  +{fmtMoney(delta, true)} extra needed to cover taxes on retirement withdrawals
+                </div>
+              )}
+              {ficaRate > 0 && income > 0 && (
+                <div style={{ fontSize: 12, color: "#059669", marginTop: 2, fontFamily: "Manrope, sans-serif" }}>
+                  Payroll taxes (FICA) drop at FIRE → saves ~{fmtMoney(income * ficaRate, true)}/yr
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── FIRE Calculator Menu Tab ────────────────────────────────────────────────
 function FireCalcMenuTab({
   fireAge,
@@ -4375,6 +4576,9 @@ export default function Dashboard() {
   const [mortgageMonthly, setMortgageMonthly] = useState(0);
   const [growthRate,      setGrowthRate]      = useState(0.07);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
+  const [taxEnabled,        setTaxEnabled]        = useState(false);
+  const [retirementTaxRate, setRetirementTaxRate] = useState(0.15);
+  const [rothPct,           setRothPct]           = useState(0);
   const [cityName,            setCityName]            = useState("");
   const [retirementCityName,  setRetirementCityName]  = useState("");
   const [retirementCityCol,   setRetirementCityCol]   = useState(0);
@@ -4713,6 +4917,9 @@ export default function Dashboard() {
           setRetirementCityName(fp.retirementCityName || "");
           setRetirementCityCol(fp.retirementCityCol || 0);
           setLifestyleMultiplier(fp.lifestyleMultiplier || 1.0);
+          setTaxEnabled(fp.taxEnabled ?? false);
+          setRetirementTaxRate(fp.retirementTaxRate ?? 0.15);
+          setRothPct(fp.rothPct ?? 0);
         } else {
           // New user — no saved budget yet, seed everything from wizard
           if (prefillIncome) setIncome(prefillIncome);
@@ -4766,7 +4973,7 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier };
+      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct };
       const { error: saveError } = await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
@@ -5274,6 +5481,9 @@ export default function Dashboard() {
                 userJoinedAt={userJoinedAt}
                 monthlyNeedsExpenses={histNeedsAvg > 0 ? histNeedsAvg : undefined}
                 monthlyWorkCosts={histWorkAvg > 0 ? histWorkAvg : undefined}
+                taxEnabled={taxEnabled}
+                retirementTaxRate={retirementTaxRate}
+                rothPct={rothPct}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
@@ -5376,6 +5586,20 @@ export default function Dashboard() {
                       onOpenProfile={() => setTab("profile")}
                       onOpenSimulation={() => setFireCalcSubTab("simulation")}
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
+                    />
+                    <TaxProfileCard
+                      cityName={cityName}
+                      income={income}
+                      monthlyExpenses={monthlyExpenses}
+                      withdrawalRate={withdrawalRate}
+                      taxEnabled={taxEnabled}
+                      setTaxEnabled={setTaxEnabled}
+                      retirementTaxRate={retirementTaxRate}
+                      setRetirementTaxRate={setRetirementTaxRate}
+                      rothPct={rothPct}
+                      setRothPct={setRothPct}
+                      displayCurrency={defaultCurrency}
+                      displayRates={rates}
                     />
                     <PurchaseImpactPanel
                       currentSavings={k401 + rothIRA + taxable + cashSavings}
