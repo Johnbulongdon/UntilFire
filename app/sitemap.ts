@@ -63,6 +63,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: siteUrl('/fire-number/fire-by-state'),
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: siteUrl('/learn'),
       lastModified: new Date(),
       changeFrequency: 'weekly',
