@@ -24,6 +24,7 @@ import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE, calcFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
+import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView } from "@/lib/analytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -5813,6 +5814,53 @@ function ExpatFireDashTab({
     return match?.key ?? "nyc";
   }, [cityName]);
 
+  // ── Freedom timeline: fast-forward the projected portfolio and watch cities unlock ──
+  const [timelineYears, setTimelineYears] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(true);
+
+  // Per-city unlock schedule, computed with the same engine as the rest of the
+  // page so a city's "turns green" year matches its years-to-FIRE exactly.
+  const cityUnlocks = useMemo(() => {
+    return CITIES
+      .filter(c => CITY_COORDS[c.key])
+      .map(c => {
+        const r = calcFIRE(monthlySavings, c.col, age || undefined, portfolioBalance);
+        return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
+      })
+      .sort((a, b) => a.years - b.years || a.col - b.col);
+  }, [monthlySavings, portfolioBalance, age]);
+
+  // Run the bar from today to roughly when the bulk of cities have unlocked.
+  const sliderMax = useMemo(() => {
+    const ys = cityUnlocks.map(c => c.years).filter(y => y < 60).sort((a, b) => a - b);
+    if (!ys.length) return 5;
+    const p95 = ys[Math.floor(0.95 * (ys.length - 1))];
+    return Math.min(50, Math.max(5, Math.ceil(p95)));
+  }, [cityUnlocks]);
+
+  useEffect(() => {
+    if (timelineYears > sliderMax) setTimelineYears(sliderMax);
+  }, [sliderMax, timelineYears]);
+
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => {
+      setTimelineYears(y => {
+        if (y >= sliderMax) { setPlaying(false); return sliderMax; }
+        return y + 1;
+      });
+    }, 600);
+    return () => clearInterval(id);
+  }, [playing, sliderMax]);
+
+  const tlYears = Math.min(timelineYears, sliderMax);
+  const tlAnnual = Math.max(0, monthlySavings) * 12;
+  const projectedPortfolio = (portfolioBalance + tlAnnual / 0.10) * Math.pow(1.10, tlYears) - tlAnnual / 0.10;
+  const readyCount = cityUnlocks.filter(c => c.years <= tlYears + 1e-9).length;
+  const projAge = age ? age + tlYears : undefined;
+  const tlThisYear = new Date().getFullYear();
+
   function handleCitySelect(key: string) {
     setSelectedCityKey(key);
   }
@@ -5843,7 +5891,7 @@ function ExpatFireDashTab({
       <GeoArbitrageGlobe
         fillContainer
         monthlySavings={monthlySavings}
-        portfolioBalance={portfolioBalance}
+        portfolioBalance={Math.round(projectedPortfolio)}
         currentAge={age}
         currentCityKey={currentCityKey}
         onCitySelect={handleCitySelect}
@@ -5913,6 +5961,99 @@ function ExpatFireDashTab({
         >
           Edit in Profile →
         </button>
+      </div>
+
+      {/* Freedom timeline — scrub forward to watch cities turn green */}
+      <div style={{
+        position: "absolute", left: "50%", bottom: 14, transform: "translateX(-50%)",
+        zIndex: 22, width: "min(640px, calc(100% - 24px))",
+        background: ui.panelBg, backdropFilter: "blur(20px)",
+        border: `1px solid ${ui.panelBorder}`, borderRadius: 16,
+        padding: timelineOpen ? "12px 14px 14px" : "9px 14px",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ fontSize: 9, color: "#22d3a5", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" }}>
+            Freedom timeline
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#22d3a5" }}>
+            🟢 {readyCount}/{cityUnlocks.length}
+          </span>
+          <div style={{ flex: 1 }} />
+          {timelineOpen && (
+            <button
+              onClick={() => setPlaying(p => !p)}
+              style={{ background: "rgba(34,211,165,0.12)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, padding: "4px 12px", color: "#22d3a5", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              {playing ? "❚❚ Pause" : "▶ Play"}
+            </button>
+          )}
+          <button
+            onClick={() => setTimelineOpen(v => !v)}
+            aria-label={timelineOpen ? "Collapse timeline" : "Expand timeline"}
+            style={{ background: ui.toggleBg, border: `1px solid ${ui.toggleBorder}`, borderRadius: 999, padding: "4px 11px", color: ui.toggleText, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", lineHeight: 1 }}
+          >
+            {timelineOpen ? "⌄" : "⌃"}
+          </button>
+        </div>
+
+        {timelineOpen && (
+          <>
+            {/* Scrubber */}
+            <input
+              type="range"
+              min={0}
+              max={sliderMax}
+              step={1}
+              value={tlYears}
+              onChange={e => { setPlaying(false); setTimelineYears(Number(e.target.value)); }}
+              aria-label="Years from today"
+              style={{ width: "100%", accentColor: "#22d3a5", marginTop: 12, cursor: "pointer" }}
+            />
+
+            {/* Readout */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: ui.chipValue, letterSpacing: "-0.02em" }}>
+                {tlYears === 0 ? "Today" : projAge ? `Age ${projAge}` : `In ${tlYears} ${tlYears === 1 ? "year" : "years"}`}
+              </span>
+              {tlYears > 0 && (
+                <span style={{ fontSize: 12, color: ui.chipLabel, fontWeight: 600 }}>· {tlThisYear + tlYears}</span>
+              )}
+              <span style={{ marginLeft: "auto", fontSize: 12, color: ui.chipLabel, fontWeight: 600 }}>
+                ~{fmt(projectedPortfolio)}
+              </span>
+            </div>
+
+            {/* Ordered milestone strip — which cities turn green first */}
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginTop: 10 }}>
+              {cityUnlocks.slice(0, 16).map(c => {
+                const unlocked = c.years <= tlYears + 1e-9;
+                const badge = c.years < 0.5 ? "now" : projAge ? `age ${c.age}` : `${c.year}`;
+                return (
+                  <div key={c.key} style={{
+                    flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                    padding: "6px 10px", borderRadius: 10, minWidth: 72,
+                    background: unlocked ? "rgba(34,211,165,0.14)" : ui.chipBg,
+                    border: `1px solid ${unlocked ? "rgba(34,211,165,0.30)" : ui.chipBorder}`,
+                  }}>
+                    <span style={{ fontSize: 15, lineHeight: 1 }}>{c.flag}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: unlocked ? "#22d3a5" : ui.chipValue, whiteSpace: "nowrap" }}>
+                      {c.name.split(",")[0]}
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: unlocked ? "#22d3a5" : ui.chipLabel, whiteSpace: "nowrap" }}>
+                      {unlocked ? "🟢 " : ""}{badge}
+                    </span>
+                  </div>
+                );
+              })}
+              {cityUnlocks.length > 16 && (
+                <div style={{ flexShrink: 0, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 11, color: ui.chipLabel, fontWeight: 600 }}>
+                  +{cityUnlocks.length - 16}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
