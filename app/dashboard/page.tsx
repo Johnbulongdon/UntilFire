@@ -2101,26 +2101,87 @@ function SurveyModal({ onSubmit, onDismiss }: {
 }
 
 // ─── Onboarding Modal ─────────────────────────────────────────────────────────
+const ONBOARDING_COUNTRIES: { value: string; label: string; flag: string }[] = [
+  { value: "us",     label: "United States",   flag: "🇺🇸" },
+  { value: "uk",     label: "United Kingdom",  flag: "🇬🇧" },
+  { value: "ca",     label: "Canada",          flag: "🇨🇦" },
+  { value: "au",     label: "Australia",       flag: "🇦🇺" },
+  { value: "nz",     label: "New Zealand",     flag: "🇳🇿" },
+  { value: "sg",     label: "Singapore",       flag: "🇸🇬" },
+  { value: "ae",     label: "UAE",             flag: "🇦🇪" },
+  { value: "de",     label: "Germany",         flag: "🇩🇪" },
+  { value: "fr",     label: "France",          flag: "🇫🇷" },
+  { value: "nl",     label: "Netherlands",     flag: "🇳🇱" },
+  { value: "jp",     label: "Japan",           flag: "🇯🇵" },
+  { value: "mx",     label: "Mexico",          flag: "🇲🇽" },
+];
+const ONBOARDING_US_STATES: { value: string; label: string }[] = [
+  { value: "al", label: "Alabama" }, { value: "ak", label: "Alaska" },
+  { value: "az", label: "Arizona" }, { value: "ar_us", label: "Arkansas" },
+  { value: "ca", label: "California" }, { value: "co", label: "Colorado" },
+  { value: "ct", label: "Connecticut" }, { value: "de_us", label: "Delaware" },
+  { value: "fl", label: "Florida" }, { value: "ga", label: "Georgia" },
+  { value: "hi", label: "Hawaii" }, { value: "id", label: "Idaho" },
+  { value: "il", label: "Illinois" }, { value: "in_us", label: "Indiana" },
+  { value: "ia", label: "Iowa" }, { value: "ks", label: "Kansas" },
+  { value: "ky", label: "Kentucky" }, { value: "la", label: "Louisiana" },
+  { value: "me", label: "Maine" }, { value: "md", label: "Maryland" },
+  { value: "ma", label: "Massachusetts" }, { value: "mi", label: "Michigan" },
+  { value: "mn", label: "Minnesota" }, { value: "ms", label: "Mississippi" },
+  { value: "mo", label: "Missouri" }, { value: "mt", label: "Montana" },
+  { value: "ne", label: "Nebraska" }, { value: "nv", label: "Nevada" },
+  { value: "nh", label: "New Hampshire" }, { value: "nj", label: "New Jersey" },
+  { value: "nm", label: "New Mexico" }, { value: "nyc", label: "New York (NYC)" },
+  { value: "ny", label: "New York (state)" }, { value: "nc", label: "North Carolina" },
+  { value: "nd", label: "North Dakota" }, { value: "oh", label: "Ohio" },
+  { value: "ok", label: "Oklahoma" }, { value: "or", label: "Oregon" },
+  { value: "pa", label: "Pennsylvania" }, { value: "ri", label: "Rhode Island" },
+  { value: "sc", label: "South Carolina" }, { value: "sd", label: "South Dakota" },
+  { value: "tn", label: "Tennessee" }, { value: "tx", label: "Texas" },
+  { value: "ut", label: "Utah" }, { value: "vt", label: "Vermont" },
+  { value: "va", label: "Virginia" }, { value: "wa", label: "Washington" },
+  { value: "dc", label: "Washington D.C." }, { value: "wv", label: "West Virginia" },
+  { value: "wi", label: "Wisconsin" }, { value: "wy", label: "Wyoming" },
+];
+const ONBOARDING_CA_PROVINCES: { value: string; label: string }[] = [
+  { value: "ca_on", label: "Ontario" }, { value: "ca_bc", label: "British Columbia" },
+  { value: "ca_qc", label: "Quebec" }, { value: "ca_ab", label: "Alberta" },
+  { value: "ca_mb", label: "Manitoba" }, { value: "ca_ns", label: "Nova Scotia" },
+];
+
 function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
   defaultCurrency: string;
-  onComplete: (income: number, spending: number, savings: number) => void;
+  onComplete: (income: number, spending: number, savings: number, taxKey: string) => void;
   onDismiss: () => void;
 }) {
   const [incomeMode, setIncomeMode] = useState<"monthly" | "annual">("monthly");
   const [inc, setInc] = useState("");
   const [spend, setSpend] = useState("");
   const [save, setSave] = useState("");
+  const [taxCountry, setTaxCountry] = useState("");
+  const [taxSub, setTaxSub] = useState("");
 
   const toNum = (s: string) => parseFloat(s.replace(/,/g, "")) || 0;
-  const fmt = (s: string) => {
+  const fmtNum = (s: string) => {
     const n = parseFloat(s.replace(/,/g, ""));
     return isNaN(n) ? s : n.toLocaleString();
   };
 
   const monthlyIncome = incomeMode === "annual" ? Math.round(toNum(inc) / 12) : toNum(inc);
 
+  // Resolve STATE_TAX key from country + sub-picker
+  const resolvedTaxKey = taxCountry === "us" ? taxSub
+    : taxCountry === "ca" ? (taxSub || "ca_on")
+    : taxCountry || "";
+
   const handleSubmit = () => {
-    onComplete(monthlyIncome, toNum(spend), toNum(save));
+    onComplete(monthlyIncome, toNum(spend), toNum(save), resolvedTaxKey);
+  };
+
+  const selectStyle: React.CSSProperties = {
+    width: "100%", padding: "11px 14px", border: "1.5px solid #E5E7EB", borderRadius: 10,
+    fontSize: 14, fontWeight: 600, fontFamily: "Manrope, sans-serif", color: "#111827",
+    background: "#fff", outline: "none", cursor: "pointer", appearance: "auto",
   };
 
   const Field = ({ label, hint, value, onChange }: { label: string; hint: string; value: string; onChange: (v: string) => void }) => (
@@ -2133,7 +2194,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
           inputMode="numeric"
           value={value}
           onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
-          onBlur={e => onChange(fmt(e.target.value))}
+          onBlur={e => onChange(fmtNum(e.target.value))}
           placeholder="0"
           style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Manrope, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
           onFocus={e => { e.target.style.borderColor = "#064E3B"; }}
@@ -2144,8 +2205,8 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: "36px 32px 28px", maxWidth: 440, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: "36px 32px 28px", maxWidth: 440, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24, margin: "auto" }}>
         {/* Header */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#20D4BF", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>Welcome to UntilFire</div>
@@ -2157,7 +2218,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
           </div>
         </div>
 
-        {/* Fields */}
+        {/* Financial fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <button
@@ -2183,6 +2244,45 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
           />
           <Field label="Monthly spending" hint="Rent, food, everything — rough total is fine" value={spend} onChange={setSpend} />
           <Field label="Current savings / net worth" hint="Total across accounts and investments — 0 is okay" value={save} onChange={setSave} />
+        </div>
+
+        {/* Tax identity */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4, borderTop: "1px solid #F1F5F9" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>
+              Where do you pay taxes?
+            </div>
+            <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif" }}>optional</span>
+          </div>
+          <div style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif", marginTop: -4, lineHeight: 1.5 }}>
+            Helps us estimate your real FIRE number — taxes change what you actually need to save.
+          </div>
+          <select
+            value={taxCountry}
+            onChange={e => { setTaxCountry(e.target.value); setTaxSub(""); }}
+            style={selectStyle}
+          >
+            <option value="">Select country / region…</option>
+            {ONBOARDING_COUNTRIES.map(c => (
+              <option key={c.value} value={c.value}>{c.flag} {c.label}</option>
+            ))}
+          </select>
+          {taxCountry === "us" && (
+            <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
+              <option value="">Select state…</option>
+              {ONBOARDING_US_STATES.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          )}
+          {taxCountry === "ca" && (
+            <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
+              <option value="">Select province…</option>
+              {ONBOARDING_CA_PROVINCES.map(p => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Actions */}
@@ -5206,10 +5306,25 @@ export default function Dashboard() {
       {onboardingOpen && (
         <OnboardingModal
           defaultCurrency={defaultCurrency}
-          onComplete={(inc, spend, save) => {
+          onComplete={(inc, spend, save, taxKey) => {
             setIncome(inc);
             setExpenses(prev => ({ ...prev, other: spend }));
             setTaxable(save);
+            if (taxKey) {
+              // Find a representative city for this tax jurisdiction and set it as the current city
+              const repCity = CITIES.find(c => c.state === taxKey);
+              if (repCity) setCityName(repCity.name);
+              // Pre-seed retirement tax rate from jurisdiction (user can override in Plan tab)
+              const taxInfo = STATE_TAX[taxKey];
+              if (taxInfo) {
+                const isUS = taxKey.length <= 5 && !taxKey.startsWith("ca_");
+                const stateRate = taxInfo.rate;
+                const suggested = isUS
+                  ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35))
+                  : Math.max(0.05, Math.min(stateRate * 0.75, 0.40));
+                setRetirementTaxRate(suggested);
+              }
+            }
             localStorage.setItem('uf_onboarding_dismissed', '1');
             setOnboardingOpen(false);
           }}
