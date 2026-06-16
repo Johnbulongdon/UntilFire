@@ -428,9 +428,9 @@ export default function ProfileTab({
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
-                  📍 Use "{retirementCitySearchTrimmed}"
+                  📍 Use &quot;{retirementCitySearchTrimmed}&quot;
                   <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
-                    We'll save the city name even if it is not in our estimate list yet.
+                    We&apos;ll save the city name even if it is not in our estimate list yet.
                   </div>
                 </div>
               )}
