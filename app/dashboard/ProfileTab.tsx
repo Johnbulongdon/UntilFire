@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
+import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 
 interface PlaidItem {
@@ -65,12 +65,8 @@ export default function ProfileTab({
 }: Props) {
   const [displayName, setDisplayName] = useState("");
 
-  // Derive initial country/sub from taxKey
-  const usStateValues = new Set(TAX_US_STATES.map(s => s.value));
-  const initCountry = !taxKey ? "" : taxKey.startsWith("ca_") ? "ca" : usStateValues.has(taxKey) ? "us" : taxKey;
-  const initSub = (taxKey.startsWith("ca_") || usStateValues.has(taxKey)) ? taxKey : "";
-  const [taxCountry, setTaxCountry] = useState(initCountry);
-  const [taxSub, setTaxSub] = useState(initSub);
+  const [taxSearch, setTaxSearch] = useState("");
+  const [showTaxDropdown, setShowTaxDropdown] = useState(false);
   const [retirementCitySearch, setRetirementCitySearch] = useState(retirementCityName);
   const [showRetirementCityDropdown, setShowRetirementCityDropdown] = useState(false);
   const [fireProfileSaved, setFireProfileSaved] = useState(false);
@@ -432,9 +428,9 @@ export default function ProfileTab({
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
-                  📍 Use “{retirementCitySearchTrimmed}”
+                  📍 Use "{retirementCitySearchTrimmed}"
                   <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
-                    We’ll save the city name even if it is not in our estimate list yet.
+                    We'll save the city name even if it is not in our estimate list yet.
                   </div>
                 </div>
               )}
@@ -476,53 +472,57 @@ export default function ProfileTab({
 
         {/* Tax home */}
         <label style={labelStyle}>Tax home</label>
-        <p style={{ fontSize: 12, color: "var(--uf-text-2)", margin: "0 0 10px", lineHeight: 1.5 }}>
-          {taxKey && STATE_TAX[taxKey]
-            ? `Detected: ${STATE_TAX[taxKey].label}`
-            : "Where you pay taxes — used to estimate your real FIRE number."}
-        </p>
-        <select
-          value={taxCountry}
-          onChange={e => { setTaxCountry(e.target.value); setTaxSub(""); }}
-          style={{ ...inputStyle, marginBottom: 8 }}
-        >
-          <option value="">Select country / region…</option>
-          {TAX_COUNTRIES.map(c => (
-            <option key={c.value} value={c.value}>{c.flag} {c.label}</option>
-          ))}
-        </select>
-        {taxCountry === "us" && (
-          <select
-            value={taxSub}
-            onChange={e => { setTaxSub(e.target.value); if (e.target.value) { onTaxKeyChange(e.target.value); markFireProfileSaved(); } }}
-            style={{ ...inputStyle, marginBottom: 8 }}
-          >
-            <option value="">Select state…</option>
-            {TAX_US_STATES.map(s => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
+        {taxKey && STATE_TAX[taxKey] && !taxSearch && (
+          <p style={{ fontSize: 12, color: "var(--uf-text-2)", margin: "0 0 8px", lineHeight: 1.5 }}>
+            {STATE_TAX[taxKey].label}
+          </p>
         )}
-        {taxCountry === "ca" && (
-          <select
-            value={taxSub}
-            onChange={e => { setTaxSub(e.target.value); if (e.target.value) { onTaxKeyChange(e.target.value); markFireProfileSaved(); } }}
-            style={{ ...inputStyle, marginBottom: 8 }}
-          >
-            <option value="">Select province…</option>
-            {TAX_CA_PROVINCES.map(p => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </select>
-        )}
-        {taxCountry && taxCountry !== "us" && taxCountry !== "ca" && (
-          <button
-            onClick={() => { onTaxKeyChange(taxCountry); markFireProfileSaved(); }}
-            style={{ ...inputStyle, background: "#F0FDF4", color: "#047857", border: "1.5px solid #BBF7D0", cursor: "pointer", fontWeight: 700, marginBottom: 8, textAlign: "left" as const }}
-          >
-            Save — {TAX_COUNTRIES.find(c => c.value === taxCountry)?.flag} {TAX_COUNTRIES.find(c => c.value === taxCountry)?.label}
-          </button>
-        )}
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <input
+            style={inputStyle}
+            value={taxSearch}
+            onChange={(e) => { setTaxSearch(e.target.value); setShowTaxDropdown(true); }}
+            onFocus={() => setShowTaxDropdown(true)}
+            onBlur={() => setTimeout(() => setShowTaxDropdown(false), 150)}
+            placeholder={taxKey && STATE_TAX[taxKey] ? `Change: ${STATE_TAX[taxKey].label}` : "Search city or state to set tax home…"}
+          />
+          {showTaxDropdown && taxSearch.trim().length >= 2 && (() => {
+            const matches = CITIES.filter(c =>
+              c.name.toLowerCase().includes(taxSearch.trim().toLowerCase()) && c.state && STATE_TAX[c.state]
+            ).slice(0, 8);
+            if (!matches.length) return null;
+            const seen = new Set<string>();
+            const unique = matches.filter(c => { if (seen.has(c.state)) return false; seen.add(c.state); return true; });
+            return (
+              <div style={{
+                position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+                background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto",
+                marginTop: 4,
+              }}>
+                {unique.map((c) => (
+                  <div
+                    key={c.state}
+                    onMouseDown={() => {
+                      onTaxKeyChange(c.state);
+                      setTaxSearch("");
+                      setShowTaxDropdown(false);
+                      markFireProfileSaved();
+                    }}
+                    style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                  >
+                    {c.flag} {c.name}
+                    <span style={{ fontSize: 12, color: "var(--uf-text-2)", marginLeft: 6 }}>
+                      · {STATE_TAX[c.state]?.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", maxWidth: "100%" }}>
           <a
