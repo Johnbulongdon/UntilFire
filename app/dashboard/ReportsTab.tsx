@@ -20,10 +20,15 @@ type RawTx = {
   id: string;
   date: string;
   amount: number;
+  refund_amount: number;
   currency: string;
   category: string;
-  transaction_type: "expense" | "income";
+  transaction_type: "expense" | "income" | "transfer";
 };
+
+// Net expense amount after refunds — mirrors Cashflow (TransactionsTab).
+const netAmt = (t: { amount: number; refund_amount: number }) =>
+  Math.max(0, t.amount - (t.refund_amount || 0));
 
 type MonthSummary = {
   month: string;
@@ -99,7 +104,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       if (!session) { setLoading(false); return; }
       supabase
         .from("expenses")
-        .select("id, date, amount, currency, category, transaction_type")
+        .select("id, date, amount, refund_amount, currency, category, transaction_type")
         .eq("user_id", session.user.id)
         .order("date", { ascending: false })
         .then(({ data }) => {
@@ -118,8 +123,8 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
         .filter(t => t.transaction_type === "income")
         .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
       const expenses = monthTxns
-        .filter(t => t.transaction_type !== "income")
-        .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+        .filter(t => t.transaction_type === "expense")
+        .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
       const net = income - expenses;
       const savingsRate = income > 0 ? (net / income) * 100 : 0;
       return { month, label: fmtMonth(month), income, expenses, net, savingsRate };
@@ -145,7 +150,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
 
   const catTotals = useMemo(() => {
     const periodTxns = transactions.filter(
-      t => t.date >= months[0] && t.transaction_type !== "income"
+      t => t.date >= months[0] && t.transaction_type === "expense"
     );
     return EXPENSE_CATEGORIES.map(cat => {
       const { color, emoji } = resolveDisplay({ color: cat.color, emoji: cat.emoji }, catCustomizations, cat.key);
@@ -155,7 +160,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
         emoji,
         total: periodTxns
           .filter(t => t.category === cat.key)
-          .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+          .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
       };
     })
       .filter(c => c.total > 0)
