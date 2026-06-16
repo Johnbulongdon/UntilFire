@@ -714,7 +714,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   const isCurrentMonth = viewMonth === currentMonth;
 
   const expTxns = useMemo(
-    () => transactions.filter((t) => t.date.startsWith(viewMonth) && t.transaction_type !== "income"),
+    () => transactions.filter((t) => t.date.startsWith(viewMonth) && t.transaction_type === "expense"),
     [transactions, viewMonth]
   );
 

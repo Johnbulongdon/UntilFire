@@ -213,6 +213,9 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>) 
   return rate ? amount / rate : amount;
 };
 
+const netAmt = (t: { amount: number; refund_amount?: number | null }) =>
+  Math.max(0, t.amount - (t.refund_amount || 0));
+
 const normalizePlaidSubtype = (subtype: string | null | undefined) =>
   (subtype ?? "").toLowerCase().replace(/[_-]/g, " ").trim();
 
@@ -4400,6 +4403,7 @@ export default function Dashboard() {
     const monthlyExpenses = Object.entries(expenses)
       .filter(([key]) => !key.startsWith("_"))
       .reduce((sum, [, amount]) => sum + (amount || 0), 0);
+    const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
     const { fireYear, fireTarget } = calcProjection({
       annualIncome: income * 12,
       monthlyExpenses,
@@ -4412,6 +4416,7 @@ export default function Dashboard() {
       mortgageMonthly,
       growthRate,
       withdrawalRate,
+      targetMonthlyExpenses,
     });
     const progress = fireTarget > 0 ? (investable / fireTarget) * 100 : 0;
 
@@ -4419,10 +4424,10 @@ export default function Dashboard() {
     if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return "approaching-fire";
     if (investable > 0 || income > 0) return "building-momentum";
     return "starting-out";
-  }, [cashSavings, expenses, growthRate, income, k401, mortgageBalance, mortgageMonthly, rothIRA, taxable, totalDebt, withdrawalRate]);
-  const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; currency: string; transaction_type?: string }[]>([]);
+  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
+  const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
+  const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
     try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
@@ -4441,7 +4446,7 @@ export default function Dashboard() {
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const byMonth: Record<string, number> = {};
     recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth))
-      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(t.amount, t.currency, rates); });
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
     const vals = Object.values(byMonth);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
   }, [recentTransactions, rates]);
@@ -4462,8 +4467,8 @@ export default function Dashboard() {
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
     rawActuals
-      .filter(e => !e.transaction_type || e.transaction_type === "expense")
-      .forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(e.amount, e.currency, rates); });
+      .filter(e => e.transaction_type === "expense")
+      .forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(netAmt(e), e.currency, rates); });
     return agg;
   }, [rawActuals, rates]);
   const actualIncome = useMemo(
@@ -4475,7 +4480,7 @@ export default function Dashboard() {
   const actualExpenses = useMemo(
     () => rawActuals
       .filter(e => e.transaction_type === "expense")
-      .reduce((s, e) => s + toUSD(e.amount, e.currency, rates), 0),
+      .reduce((s, e) => s + toUSD(netAmt(e), e.currency, rates), 0),
     [rawActuals, rates]
   );
   const prevIncome = useMemo(
@@ -4487,7 +4492,7 @@ export default function Dashboard() {
   const prevExpenses = useMemo(
     () => rawPrevActuals
       .filter(e => e.transaction_type === "expense")
-      .reduce((s, e) => s + toUSD(e.amount, e.currency, rates), 0),
+      .reduce((s, e) => s + toUSD(netAmt(e), e.currency, rates), 0),
     [rawPrevActuals, rates]
   );
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4594,29 +4599,29 @@ export default function Dashboard() {
       const prevD = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1);
       const prevStart = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}-01`;
 
-      supabase.from("expenses").select("category, amount, currency, transaction_type")
+      supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
         .eq("user_id", session.user.id)
         .gte("date", thisStart)
         .lt("date", thisEnd)
         .then(({ data: expData }) => {
           if (expData) {
-            setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
+            setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
           }
         });
 
-      supabase.from("expenses").select("category, amount, currency, transaction_type")
+      supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
         .eq("user_id", session.user.id)
         .gte("date", prevStart)
         .lt("date", thisStart)
         .then(({ data: prevData }) => {
           if (prevData) {
-            setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
+            setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
           }
         });
 
       const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
-      supabase.from("expenses").select("date, amount, currency, transaction_type")
+      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type")
         .eq("user_id", session.user.id)
         .gte("date", historyStart)
         .order("date", { ascending: true })
@@ -4625,6 +4630,7 @@ export default function Dashboard() {
             setRecentTransactions(txData.map(tx => ({
               date: tx.date,
               amount: tx.amount,
+              refund_amount: tx.refund_amount || 0,
               currency: tx.currency ?? "USD",
               transaction_type: tx.transaction_type ?? "expense",
             })));
