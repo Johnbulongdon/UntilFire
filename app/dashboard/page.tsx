@@ -2214,18 +2214,18 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
   const pct = (completedCount / 4) * 100;
 
   return (
-    <div style={{ background: "#111118", border: "1px solid rgba(34,211,165,0.2)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid rgba(34,211,165,0.2)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Manrope, sans-serif" }}>Get started</div>
-          <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "Manrope, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>Get started</div>
+          <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3a5", fontFamily: "Manrope, sans-serif" }}>{Math.round(pct)}%</div>
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: 4, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
+      <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: "#22d3a5", borderRadius: 99, transition: "width 0.4s ease" }} />
       </div>
 
@@ -2233,10 +2233,10 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {steps.map(step => (
           <div key={step.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 18, height: 18, borderRadius: "50%", background: step.done ? "#22d3a5" : "transparent", border: step.done ? "none" : "1.5px solid #374151", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 18, height: 18, borderRadius: "50%", background: step.done ? "#22d3a5" : "transparent", border: step.done ? "none" : "1.5px solid var(--uf-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {step.done && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#08080e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </div>
-            <span style={{ flex: 1, fontSize: 13, color: step.done ? "#6b7280" : "#e2e8f0", fontFamily: "Manrope, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
+            <span style={{ flex: 1, fontSize: 13, color: step.done ? "var(--uf-text-2)" : "var(--uf-text)", fontFamily: "Manrope, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
             {!step.done && (
               <button onClick={step.action} style={{ background: "transparent", border: "none", color: "#22d3a5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0, whiteSpace: "nowrap" }}>
                 {step.cta} →
