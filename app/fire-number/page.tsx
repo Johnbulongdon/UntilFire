@@ -141,13 +141,14 @@ export default function FireNumberHubPage() {
         {/* Ranking links section */}
         <section style={{ marginTop: 48, marginBottom: 40 }}>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", margin: "0 0 20px", letterSpacing: "-0.03em" }}>
-            Compare cities by cost or strategy
+            Compare cities by cost, strategy, or state
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
             {[
               { title: "Cheapest Cities", desc: "Lowest cost of living for faster FIRE", href: "/fire-number/cheapest-cities" },
               { title: "Most Expensive Cities", desc: "Plan for high-cost living with exact targets", href: "/fire-number/most-expensive-cities" },
               { title: "No-Income-Tax States", desc: "Nine states where more income becomes savings", href: "/fire-number/no-income-tax-states" },
+              { title: "FIRE by State", desc: "Compare all 50 states by retirement cost", href: "/fire-number/fire-by-state" },
             ].map((item) => (
               <Link
                 key={item.title}
