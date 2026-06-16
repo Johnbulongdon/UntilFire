@@ -31,6 +31,7 @@ type CustomCategory = { key: string; label: string; code: string; color: string;
 
 const ALL_CATEGORIES = ALL_CATEGORIES_BASE;
 const FALLBACK_RATES = LIB_FALLBACK_RATES;
+const DEFAULT_CAT_KEYS = new Set(EXPENSE_CATEGORIES.map((e) => e.key));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number, currency = "USD") =>
@@ -242,6 +243,10 @@ function QuickAddForm({
   const [newCatEmoji, setNewCatEmoji] = useState("");
   const [showSubForm, setShowSubForm] = useState(false);
   const [newSubLabel, setNewSubLabel] = useState("");
+  const [showDescription, setShowDescription] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [showRefund, setShowRefund] = useState(false);
+  const [showProject, setShowProject] = useState(false);
 
   const categories = draft.transaction_type === "income" ? INCOME_CATEGORIES : draft.transaction_type === "transfer" ? [] : allExpenseCats;
 
@@ -384,40 +389,76 @@ function QuickAddForm({
           </select>
         </div>
 
-        {/* Description */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-            Description
-            {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
-          </label>
-          <input
-            type="text"
-            placeholder={isIncome ? "e.g. Monthly salary, Freelance…" : "e.g. Whole Foods, Uber…"}
-            value={draft.description}
-            onChange={(e) => {
-              const wasAiCategory = draft.aiSuggestion && draft.aiSuggestion === draft.category;
-              setField("description", e.target.value);
-              setField("aiSuggestion", null);
-              if (wasAiCategory) { setField("category", ""); setField("sub_category", ""); }
+        {/* Optional field toggles: Description + Notes */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => setShowDescription((v) => !v)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              background: (showDescription || !!draft.description) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
+              border: `1px solid ${(showDescription || !!draft.description) ? "#6366f1" : "var(--uf-border)"}`,
+              borderRadius: 999, padding: "5px 10px",
+              fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "#6366f1" : "var(--uf-text-2)",
+              cursor: "pointer", fontFamily: "inherit",
             }}
-            onBlur={handleDescriptionBlur}
-            style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
-          />
+          >
+            📝 Description{draft.description ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowNotes((v) => !v)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              background: (showNotes || !!draft.notes) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
+              border: `1px solid ${(showNotes || !!draft.notes) ? "#6366f1" : "var(--uf-border)"}`,
+              borderRadius: 999, padding: "5px 10px",
+              fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "#6366f1" : "var(--uf-text-2)",
+              cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            📌 Notes{draft.notes ? " ✓" : ""}
+          </button>
         </div>
 
+        {/* Description */}
+        {(showDescription || !!draft.description) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Description
+              {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
+            </label>
+            <input
+              type="text"
+              placeholder={isIncome ? "e.g. Monthly salary, Freelance…" : "e.g. Whole Foods, Uber…"}
+              value={draft.description}
+              onChange={(e) => {
+                const wasAiCategory = draft.aiSuggestion && draft.aiSuggestion === draft.category;
+                setField("description", e.target.value);
+                setField("aiSuggestion", null);
+                if (wasAiCategory) { setField("category", ""); setField("sub_category", ""); }
+              }}
+              onBlur={handleDescriptionBlur}
+              style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
+            />
+          </div>
+        )}
+
         {/* Notes */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-            Notes <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
-          </label>
-          <textarea
-            placeholder="Add a note…"
-            value={draft.notes}
-            onChange={(e) => setField("notes", e.target.value)}
-            rows={2}
-            style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.5 }}
-          />
-        </div>
+        {(showNotes || !!draft.notes) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Notes <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+            </label>
+            <textarea
+              placeholder="Add a note…"
+              value={draft.notes}
+              onChange={(e) => setField("notes", e.target.value)}
+              rows={2}
+              style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.5 }}
+            />
+          </div>
+        )}
 
         {/* AI suggestion pill */}
         {showAiPill && (
@@ -456,6 +497,7 @@ function QuickAddForm({
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
               {categories.map((c) => {
                 const isSelected = draft.category === c.key;
+                const isCustom = !DEFAULT_CAT_KEYS.has(c.key);
                 return (
                   <button
                     key={c.key}
@@ -467,8 +509,12 @@ function QuickAddForm({
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer", transition: "all 0.12s",
+                      position: "relative",
                     }}
                   >
+                    {isCustom && (
+                      <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "#f97316", flexShrink: 0 }} title="Custom category" />
+                    )}
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
                   </button>
@@ -608,45 +654,50 @@ function QuickAddForm({
           </div>
         )}
 
-        {/* Need / Want toggle */}
+        {/* Need / Want / Work toggle */}
         {!isIncome && draft.transaction_type === "expense" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-              Need or Want
+              Classify
             </label>
             <div style={{ display: "flex", gap: 6 }}>
-              {(["need", "want", "untagged"] as const).map((option) => {
+              {(["need", "want", "work", "untagged"] as const).map((option) => {
                 const hasNeed = draft.tags.includes("need");
                 const hasWant = draft.tags.includes("want");
-                const isSelected = option === "need" ? hasNeed : option === "want" ? hasWant : !hasNeed && !hasWant;
+                const hasWork = draft.tags.includes("work");
+                const isSelected = option === "need" ? hasNeed : option === "want" ? hasWant : option === "work" ? hasWork : !hasNeed && !hasWant && !hasWork;
+                const bgMap = { need: "#DCFCE7", want: "#FEE2E2", work: "#EEF2FF", untagged: "var(--uf-surface-2)" };
+                const borderMap = { need: "#22d3a5", want: "#f97316", work: "#6366f1", untagged: "var(--uf-border)" };
+                const colorMap = { need: "#059669", want: "#ea580c", work: "#4f46e5", untagged: "var(--uf-text)" };
                 return (
                   <button
                     key={option}
                     type="button"
                     onClick={() => {
-                      if (option === "need") {
-                        setField("tags", hasNeed ? draft.tags.filter((t) => t !== "need") : [...draft.tags.filter((t) => t !== "want"), "need"]);
-                      } else if (option === "want") {
-                        setField("tags", hasWant ? draft.tags.filter((t) => t !== "want") : [...draft.tags.filter((t) => t !== "need"), "want"]);
+                      const base = draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work");
+                      if (option === "untagged") {
+                        setField("tags", base);
+                      } else if (isSelected) {
+                        setField("tags", base);
                       } else {
-                        setField("tags", draft.tags.filter((t) => t !== "need" && t !== "want"));
+                        setField("tags", [...base, option]);
                       }
                     }}
                     style={{
                       flex: 1,
-                      background: isSelected ? (option === "need" ? "#DCFCE7" : option === "want" ? "#FEE2E2" : "var(--uf-surface-2)") : "transparent",
-                      border: `1px solid ${isSelected ? (option === "need" ? "#22d3a5" : option === "want" ? "#f97316" : "var(--uf-border)") : "var(--uf-border)"}`,
+                      background: isSelected ? bgMap[option] : "transparent",
+                      border: `1px solid ${isSelected ? borderMap[option] : "var(--uf-border)"}`,
                       borderRadius: 8,
-                      padding: "9px 12px",
-                      fontSize: 12,
+                      padding: "9px 6px",
+                      fontSize: 11,
                       fontWeight: 700,
-                      color: isSelected ? (option === "need" ? "#059669" : option === "want" ? "#ea580c" : "var(--uf-text)") : "var(--uf-text-2)",
+                      color: isSelected ? colorMap[option] : "var(--uf-text-2)",
                       cursor: "pointer",
                       fontFamily: "inherit",
                       transition: "all 0.12s",
                     }}
                   >
-                    {option === "need" ? "💚 Need" : option === "want" ? "🧡 Want" : "◯ Clear"}
+                    {option === "need" ? "💚 Need" : option === "want" ? "🧡 Want" : option === "work" ? "💼 Work" : "◯ Clear"}
                   </button>
                 );
               })}
@@ -654,11 +705,47 @@ function QuickAddForm({
           </div>
         )}
 
-        {/* Refund */}
+        {/* Optional field toggles: Refund + Project */}
         {draft.transaction_type === "expense" && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setShowRefund((v) => !v)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                background: (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "rgba(245,158,11,0.1)" : "var(--uf-surface-2)",
+                border: `1px solid ${(showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "#f59e0b" : "var(--uf-border)"}`,
+                borderRadius: 999, padding: "5px 10px",
+                fontSize: 11, fontWeight: 700,
+                color: (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "#d97706" : "var(--uf-text-2)",
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              ↩ Refund{draft.refund_amount && parseFloat(draft.refund_amount) > 0 ? " ✓" : ""}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowProject((v) => !v)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                background: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
+                border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#6366f1" : "var(--uf-border)"}`,
+                borderRadius: 999, padding: "5px 10px",
+                fontSize: 11, fontWeight: 700,
+                color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#6366f1" : "var(--uf-text-2)",
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              🏷 Project{draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0 ? " ✓" : ""}
+            </button>
+          </div>
+        )}
+
+        {/* Refund */}
+        {draft.transaction_type === "expense" && (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-              Refund <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional — full or partial</span>
+              Refund <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>full or partial</span>
             </label>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
@@ -696,30 +783,32 @@ function QuickAddForm({
         )}
 
         {/* Project / Event */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-            Project / Event <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
-          </label>
-          {draft.tags.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {draft.tags.map((tag) => (
-                <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#047857" }}>
-                  #{tag}
-                  <button
-                    type="button"
-                    onClick={() => setField("tags", draft.tags.filter((t) => t !== tag))}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "#6EE7B7", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
-                  >×</button>
-                </span>
-              ))}
-            </div>
-          )}
-          <ProjectInput
-            existingTags={existingTags}
-            currentTags={draft.tags}
-            onAdd={(tag) => { if (!draft.tags.includes(tag)) setField("tags", [...draft.tags, tag]); }}
-          />
-        </div>
+        {(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Project / Event <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+            </label>
+            {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").map((tag) => (
+                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#047857" }}>
+                    #{tag}
+                    <button
+                      type="button"
+                      onClick={() => setField("tags", draft.tags.filter((t) => t !== tag))}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#6EE7B7", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <ProjectInput
+              existingTags={existingTags}
+              currentTags={draft.tags}
+              onAdd={(tag) => { if (!draft.tags.includes(tag)) setField("tags", [...draft.tags, tag]); }}
+            />
+          </div>
+        )}
 
         {/* Income category dropdown */}
         {isIncome && (
@@ -859,7 +948,10 @@ function TransactionList({
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
+  const [tagFilter, setTagFilter] = useState<"all" | "need" | "want" | "work">("all");
   const [catPickerTxId, setCatPickerTxId] = useState<string | null>(null);
+  const [swipedId, setSwipedId] = useState<string | null>(null);
+  const touchStartX = useRef<number>(0);
 
   useEffect(() => {
     if (!catPickerTxId) return;
@@ -875,6 +967,9 @@ function TransactionList({
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
+      if (tagFilter !== "all") {
+        if (!(t.tags || []).includes(tagFilter)) return false;
+      }
       if (search) {
         const s = search.toLowerCase();
         const cat = allCategories.find((c) => c.key === t.category);
@@ -886,7 +981,7 @@ function TransactionList({
       }
       return true;
     });
-  }, [transactions, search, filter, allCategories]);
+  }, [transactions, search, filter, tagFilter, allCategories]);
 
   const groups = useMemo(() => {
     const byDate: Record<string, Transaction[]> = {};
@@ -939,19 +1034,53 @@ function TransactionList({
         </div>
       </div>
 
+      {/* Tag filter row */}
+      <div style={{ display: "flex", gap: 6, padding: "8px 18px", borderBottom: "1px solid var(--uf-border)", flexWrap: "wrap" }}>
+        {(["all", "need", "want", "work"] as const).map((tag) => (
+          <button
+            key={tag}
+            onClick={() => setTagFilter(tag)}
+            style={{
+              background: tagFilter === tag
+                ? tag === "need" ? "rgba(34,211,165,0.15)" : tag === "want" ? "rgba(249,115,22,0.15)" : tag === "work" ? "rgba(99,102,241,0.15)" : "#ECFDF5"
+                : "var(--uf-surface-2)",
+              border: `1px solid ${tagFilter === tag
+                ? tag === "need" ? "#22d3a5" : tag === "want" ? "#f97316" : tag === "work" ? "#6366f1" : "#6EE7B7"
+                : "transparent"}`,
+              borderRadius: 999, padding: "4px 12px",
+              fontSize: 11, fontWeight: 600,
+              color: tagFilter === tag
+                ? tag === "need" ? "#22d3a5" : tag === "want" ? "#f97316" : tag === "work" ? "#6366f1" : "#047857"
+                : "var(--uf-text-2)",
+              cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            {tag === "all" ? "All tags" : tag === "need" ? "✓ Need" : tag === "want" ? "✦ Want" : "💼 Work"}
+          </button>
+        ))}
+      </div>
+
       {/* Scrollable list */}
       <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
         {groups.length === 0 ? (
-          <div style={{ padding: "60px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--uf-text-3)", textAlign: "center" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 17 9 13l3 3 7-7" /><path d="M14 6h5v5" />
               </svg>
             </div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: "#064E3B" }}>No transactions yet</div>
-            <div style={{ fontSize: 13, maxWidth: 280 }}>
-              {search ? "Try a different search or clear filters." : "Use the + button to add your first transaction."}
-            </div>
+            {search || tagFilter !== "all" ? (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No matches</div>
+                <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Try clearing the search or tag filter.</div>
+                <button onClick={() => { setSearch(""); setTagFilter("all"); }} style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No transactions this month</div>
+                <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Add them manually or import from your bank&apos;s CSV export.</div>
+              </>
+            )}
           </div>
         ) : (
           groups.map(([date, txns]) => {
@@ -976,21 +1105,41 @@ function TransactionList({
                     const { color: chipColor, emoji: chipEmoji } = resolveDisplay(baseDisplay, catCustomizations, tx.category);
                     const txTags = tx.tags || [];
                     const needOrWant = txTags.includes("need") ? "need" : txTags.includes("want") ? "want" : null;
-                    const displayTags = txTags.filter((t) => t !== "need" && t !== "want").slice(0, 2);
+                    const isWorkCost = txTags.includes("work");
+                    const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work").slice(0, 2);
 
                     return (
+                      <div key={tx.id} style={{ position: "relative", overflow: "hidden" }}>
+                        {/* Swipe-to-delete background */}
+                        {swipedId === tx.id && (
+                          <div
+                            onClick={(e) => { e.stopPropagation(); onDelete(tx); setSwipedId(null); }}
+                            style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 72, background: "#DC2626", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}
+                          >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+                            </svg>
+                          </div>
+                        )}
                       <div
-                        key={tx.id}
-                        onClick={() => onEdit(tx)}
+                        onClick={() => { if (swipedId === tx.id) { setSwipedId(null); return; } onEdit(tx); }}
                         style={{
                           display: "grid", gridTemplateColumns: "36px 1fr auto 28px",
                           gap: 14, alignItems: "center", padding: "12px 20px",
                           borderTop: "1px solid var(--uf-border)", cursor: "pointer",
                           background: isEditing ? "rgba(16,185,129,0.12)" : wasJustAdded ? "rgba(16,185,129,0.08)" : "transparent",
-                          transition: "background 0.12s",
+                          transition: "background 0.12s, transform 0.2s",
+                          transform: swipedId === tx.id ? "translateX(-72px)" : "translateX(0)",
+                          position: "relative", zIndex: 1,
                         }}
-                        onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLDivElement).style.background = "var(--uf-surface)"; }}
+                        onMouseEnter={(e) => { if (!isEditing && swipedId !== tx.id) (e.currentTarget as HTMLDivElement).style.background = "var(--uf-surface)"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isEditing ? "rgba(16,185,129,0.12)" : "transparent"; }}
+                        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+                        onTouchEnd={(e) => {
+                          const dx = touchStartX.current - e.changedTouches[0].clientX;
+                          if (dx > 60) setSwipedId(tx.id);
+                          else if (dx < -20) setSwipedId(null);
+                        }}
                       >
                         {/* Category chip — click to change */}
                         <div style={{ position: "relative", flexShrink: 0 }} data-cat-picker>
@@ -1052,6 +1201,18 @@ function TransactionList({
                                 {needOrWant}
                               </span>
                             )}
+                            {tx.transaction_type === "expense" && isWorkCost && (
+                              <span
+                                style={{
+                                  background: "rgba(99,102,241,0.12)",
+                                  color: "#6366f1",
+                                  border: "none", borderRadius: 999, padding: "1px 8px",
+                                  fontSize: 10, fontWeight: 700, flexShrink: 0,
+                                }}
+                              >
+                                💼 work
+                              </span>
+                            )}
                             {displayTags.map((t) => (
                               <span key={t} style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
                             ))}
@@ -1089,6 +1250,7 @@ function TransactionList({
                             <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
                           </svg>
                         </button>
+                      </div>
                       </div>
                     );
                   })}
@@ -1308,6 +1470,26 @@ function MonthlySummary({
         )}
       </div>
 
+      {/* Work Costs */}
+      {(() => {
+        const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
+        const workTxns = expenseTxns.filter((t) => t.tags?.includes("work"));
+        if (!workTxns.length) return null;
+        const workTotal = workTxns.reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+        return (
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "14px 18px", marginBottom: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>💼 Work Costs</div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-3)" }}>disappears at FIRE</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: "#6366f1", fontFamily: "Manrope, sans-serif" }}>{formatAmount(workTotal)}</span>
+              <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{workTxns.length} transaction{workTxns.length !== 1 ? "s" : ""}</span>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Needs vs Wants */}
       {(() => {
         const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
@@ -1438,16 +1620,24 @@ function Toast({
 }
 
 // ─── Mobile components ────────────────────────────────────────────────────────
-function MobileBar({ onOpen }: { onOpen: () => void }) {
+function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => void }) {
   return (
     <div style={{ display: "none" }} className="cf-mobile-bar">
       <button
         onClick={onOpen}
         aria-label="Add transaction"
-        style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: 999, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+        style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: "999px 0 0 999px", padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
-        Add transaction
+        Add
+      </button>
+      <div style={{ width: 1, background: "rgba(255,255,255,0.2)", flexShrink: 0 }} />
+      <button
+        onClick={onImport}
+        aria-label="Import CSV"
+        style={{ background: "#047857", color: "#fff", border: "none", borderRadius: "0 999px 999px 0", padding: "12px 16px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+      >
+        ↑ CSV
       </button>
     </div>
   );
@@ -1795,7 +1985,11 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
-  const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
+  const allExpenseCats = useMemo(() => {
+    const defaultLabels = new Set(EXPENSE_CATEGORIES.map(c => c.label.toLowerCase()));
+    const uniqueCustom = customCats.filter(c => !defaultLabels.has(c.label.toLowerCase()));
+    return [...EXPENSE_CATEGORIES, ...uniqueCustom];
+  }, [customCats]);
   const allSubCats = useMemo(() => {
     const merged: Record<string, string[]> = { ...SUB_CATEGORIES };
     Object.entries(customSubCats).forEach(([k, extras]) => {
@@ -1898,6 +2092,20 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     () => transactions.filter((t) => t.date.startsWith(viewMonth)),
     [transactions, viewMonth]
   );
+
+  const [stickyY, stickyM] = viewMonth.split("-").map(Number);
+  const monthLabel = new Date(stickyY, stickyM - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const incomeTotal = useMemo(
+    () => monthTxns.filter(t => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
+    [monthTxns, rates]
+  );
+  const expenseTotal = useMemo(
+    () => monthTxns.filter(t => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
+    [monthTxns, rates]
+  );
+  const stickyNet = incomeTotal - expenseTotal;
+  const savingsRate = incomeTotal > 0 ? Math.round((stickyNet / incomeTotal) * 100) : null;
 
   const existingTags = useMemo(
     () => [...new Set(transactions.flatMap((t) => t.tags || []))].sort(),
@@ -2191,17 +2399,44 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         }
       `}</style>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
-        <button
-          onClick={() => setShowImport(true)}
-          style={{
-            padding: "7px 14px", borderRadius: 8, border: "1px solid #23232d",
-            background: "transparent", color: "#94a3b8", fontSize: 12, fontWeight: 600,
-            cursor: "pointer", fontFamily: "Manrope, sans-serif", display: "flex", alignItems: "center", gap: 6,
-          }}
-        >
-          ↑ Import CSV
-        </button>
+      {/* Sticky summary bar */}
+      <div style={{
+        position: "sticky", top: 0, zIndex: 10,
+        background: "var(--uf-card)", borderBottom: "1px solid var(--uf-border)",
+        padding: "10px 20px", marginBottom: 16, display: "flex",
+        alignItems: "center", gap: 12, flexWrap: "wrap",
+      }}>
+        {/* Month navigation */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={handlePrevMonth} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-2)", padding: "4px 6px", borderRadius: 6 }}>‹</button>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", minWidth: 110, textAlign: "center" }}>{monthLabel}</span>
+          <button onClick={handleNextMonth} disabled={viewMonth >= currentMonth} style={{ background: "none", border: "none", cursor: viewMonth >= currentMonth ? "not-allowed" : "pointer", color: viewMonth >= currentMonth ? "var(--uf-text-3)" : "var(--uf-text-2)", padding: "4px 6px", borderRadius: 6 }}>›</button>
+        </div>
+        {/* KPI strip */}
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          {[
+            { label: "Income", value: incomeTotal, color: "#059669" },
+            { label: "Spent", value: expenseTotal, color: "var(--uf-text)" },
+            { label: "Saved", value: stickyNet, color: stickyNet >= 0 ? "#047857" : "#DC2626" },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>{label}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color, fontVariantNumeric: "tabular-nums" }}>{fmtDisplay(value)}</div>
+            </div>
+          ))}
+          {savingsRate !== null && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>Rate</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: savingsRate >= 20 ? "#047857" : savingsRate >= 0 ? "var(--uf-text)" : "#DC2626", fontVariantNumeric: "tabular-nums" }}>{savingsRate}%</div>
+            </div>
+          )}
+        </div>
+        {/* Import CSV button */}
+        <div style={{ marginLeft: "auto" }}>
+          <button onClick={() => setShowImport(true)} style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            <span>↑</span> Import CSV
+          </button>
+        </div>
       </div>
 
       <MonthlySummary
@@ -2255,7 +2490,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         </div>
       </div>
 
-      <MobileBar onOpen={() => { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); setDrawerOpen(true); }} />
+      <MobileBar
+        onOpen={() => { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); setDrawerOpen(true); }}
+        onImport={() => setShowImport(true)}
+      />
       <MobileDrawer open={drawerOpen} onClose={() => { setDrawerOpen(false); if (editingId) handleCancelEdit(); }}>
         <QuickAddForm
           draft={draft}

@@ -213,6 +213,9 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>) 
   return rate ? amount / rate : amount;
 };
 
+const netAmt = (t: { amount: number; refund_amount?: number | null }) =>
+  Math.max(0, t.amount - (t.refund_amount || 0));
+
 const normalizePlaidSubtype = (subtype: string | null | undefined) =>
   (subtype ?? "").toLowerCase().replace(/[_-]/g, " ").trim();
 
@@ -537,7 +540,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -548,11 +551,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   retirementCityCol?: number; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
-  recentTransactions?: { date: string; amount: number; currency: string; transaction_type?: string }[];
+  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[] }[];
   plaidHoldings?: PlaidHolding[];
   budgetMode?: "manual" | "history";
   histMonthsCount?: number;
   userJoinedAt?: string;
+  monthlyNeedsExpenses?: number;
+  monthlyWorkCosts?: number;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -574,9 +579,18 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
 
+  // Emergency fund covers needs only (essentials that remain during an emergency).
+  // Falls back to total expenses when the user hasn't tagged any needs yet.
+  const efMonthlyBase = monthlyNeedsExpenses ?? monthlyExpenses;
+
+  // Work costs disappear at retirement → FIRE target uses adjusted spend.
+  const retirementMonthlyExpenses = monthlyWorkCosts
+    ? Math.max(0, monthlyExpenses - monthlyWorkCosts)
+    : monthlyExpenses;
+
   const targetMonthlyExpenses = retirementCityCol > 0
     ? (retirementCityCol * lifestyleMultiplier) / 12
-    : undefined;
+    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
 
   const plaidAssets = plaidAccounts
     .filter(a => a.type === "depository" || a.type === "investment")
@@ -943,9 +957,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const spendingBarTrackColor = hasActuals ? "#E2E8F0" : "#F1F5F9";
   const investedBalance = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0);
   const availableCash = Math.max(displayCashAssets, 0);
-  const emergencyFundHealthyNow = monthlyExpenses > 0 && (availableCash / monthlyExpenses) >= EMERGENCY_FUND_TARGET_MONTHS;
+  const emergencyFundHealthyNow = efMonthlyBase > 0 && (availableCash / efMonthlyBase) >= EMERGENCY_FUND_TARGET_MONTHS;
   const hasEverHealthyEmergencyFund = useEmergencyFundHistory(emergencyFundHealthyNow);
-  const emergencyFundPlan = getEmergencyFundPlan(availableCash, monthlyExpenses, hasEverHealthyEmergencyFund);
+  const emergencyFundPlan = getEmergencyFundPlan(availableCash, efMonthlyBase, hasEverHealthyEmergencyFund);
+  const efUsingNeedsOnly = monthlyNeedsExpenses != null && monthlyNeedsExpenses > 0;
   const hasInvestmentAccounts = plaidAccounts.some((account) => account.type === "investment") || manualRetirementTotal > 0 || taxable > 0;
   const plannedContributionGap = Math.max(goalContribution - Math.max(actualOrPlannedSavings, 0), 0);
   const investingHeadline = goalContribution > 0
@@ -1059,31 +1074,33 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       });
     };
 
-    if (monthlyExpenses > 0 && emergencyFundPlan.priorityMode === "protect") {
-      const refillAmount = emergencyFundPlan.gapToFloor > 0 ? emergencyFundPlan.gapToFloor : Math.min(emergencyFundPlan.gapToTarget, Math.max(monthlyExpenses * 0.75, 0));
+    if (efMonthlyBase > 0 && emergencyFundPlan.priorityMode === "protect") {
+      const refillAmount = emergencyFundPlan.gapToFloor > 0 ? emergencyFundPlan.gapToFloor : Math.min(emergencyFundPlan.gapToTarget, Math.max(efMonthlyBase * 0.75, 0));
+      const coverageLabel = efUsingNeedsOnly ? "months of essential needs covered" : "months covered";
       addTask(
         `Rebuild your emergency fund by about ${fmtMoney(refillAmount, true)}`,
-        `${emergencyFundPlan.coverageMonths.toFixed(1)} months covered now. Get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor before pushing harder on growth.`,
+        `${emergencyFundPlan.coverageMonths.toFixed(1)} ${coverageLabel} now. Get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor before pushing harder on growth.`,
         0,
         100,
         {
           progressPct: emergencyFundPlan.floorAmount > 0 ? (availableCash / emergencyFundPlan.floorAmount) * 100 : 0,
           progressText: `${emergencyFundPlan.coverageMonths.toFixed(1)} / ${EMERGENCY_FUND_FLOOR_MONTHS.toFixed(1)} mo`,
-          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_FLOOR_MONTHS.toFixed(1)} months covered`,
+          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_FLOOR_MONTHS.toFixed(1)} months of ${efUsingNeedsOnly ? "needs" : "expenses"} covered`,
         },
       );
     }
 
-    if (monthlyExpenses > 0 && emergencyFundPlan.priorityMode === "balance") {
+    if (efMonthlyBase > 0 && emergencyFundPlan.priorityMode === "balance") {
+      const coverageLabel = efUsingNeedsOnly ? "months of essential needs covered" : "months covered";
       addTask(
         `Keep rebuilding your emergency fund toward ${EMERGENCY_FUND_TARGET_MONTHS} months`,
-        `${emergencyFundPlan.coverageMonths.toFixed(1)} months covered now. Keep some money moving into safety while continuing steady investing.`,
+        `${emergencyFundPlan.coverageMonths.toFixed(1)} ${coverageLabel} now. Keep some money moving into safety while continuing steady investing.`,
         0,
         70,
         {
           progressPct: emergencyFundPlan.targetAmount > 0 ? (availableCash / emergencyFundPlan.targetAmount) * 100 : 0,
           progressText: `${emergencyFundPlan.coverageMonths.toFixed(1)} / ${EMERGENCY_FUND_TARGET_MONTHS.toFixed(1)} mo`,
-          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_TARGET_MONTHS.toFixed(1)} months covered`,
+          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_TARGET_MONTHS.toFixed(1)} months of ${efUsingNeedsOnly ? "needs" : "expenses"} covered`,
         },
       );
     }
@@ -1621,6 +1638,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           )}
           <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
+          {monthlyWorkCosts != null && monthlyWorkCosts > 0 && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, padding: "7px 10px", fontSize: 12, color: "#6366f1", fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
+              <span>💼</span>
+              <span>{fmtMoney(monthlyWorkCosts, true)}/mo in work costs drops at FIRE → retirement target: {fmtMoney(retirementMonthlyExpenses * 12 / withdrawalRate, true)}</span>
+            </div>
+          )}
           <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>View categories →</button>
         </div>
 
@@ -2191,18 +2214,18 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
   const pct = (completedCount / 4) * 100;
 
   return (
-    <div style={{ background: "#111118", border: "1px solid rgba(34,211,165,0.2)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid rgba(34,211,165,0.2)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "Manrope, sans-serif" }}>Get started</div>
-          <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "Manrope, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>Get started</div>
+          <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3a5", fontFamily: "Manrope, sans-serif" }}>{Math.round(pct)}%</div>
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: 4, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
+      <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: "#22d3a5", borderRadius: 99, transition: "width 0.4s ease" }} />
       </div>
 
@@ -2210,10 +2233,10 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {steps.map(step => (
           <div key={step.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 18, height: 18, borderRadius: "50%", background: step.done ? "#22d3a5" : "transparent", border: step.done ? "none" : "1.5px solid #374151", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 18, height: 18, borderRadius: "50%", background: step.done ? "#22d3a5" : "transparent", border: step.done ? "none" : "1.5px solid var(--uf-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {step.done && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#08080e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </div>
-            <span style={{ flex: 1, fontSize: 13, color: step.done ? "#6b7280" : "#e2e8f0", fontFamily: "Manrope, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
+            <span style={{ flex: 1, fontSize: 13, color: step.done ? "var(--uf-text-2)" : "var(--uf-text)", fontFamily: "Manrope, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
             {!step.done && (
               <button onClick={step.action} style={{ background: "transparent", border: "none", color: "#22d3a5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0, whiteSpace: "nowrap" }}>
                 {step.cta} →
@@ -2684,11 +2707,12 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [] }: {
+function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0 }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
   displayCurrency: string; displayRates: Record<string, number>;
+  retirementCityCol?: number; lifestyleMultiplier?: number;
   plaidAccounts?: PlaidAccount[];
 }) {
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
@@ -2696,11 +2720,13 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
 
+  const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
+
   const { fireYear, fireTarget } = useMemo(() => calcProjection({
     annualIncome: income * 12, monthlyExpenses,
     k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
-    growthRate, withdrawalRate,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate]);
+    growthRate, withdrawalRate, targetMonthlyExpenses,
+  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
 
   const plaidAssets       = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const plaidLiabilities  = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan").reduce((s, a) => s + (a.balance_current ?? 0), 0);
@@ -4200,19 +4226,19 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   },
   {
     key: "cashflow",
-    label: "Money",
-    activeTabs: ["cashflow", "assets", "liabilities", "reports"],
+    label: "Cashflow",
+    activeTabs: ["cashflow", "reports"],
     svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
   },
   {
     key: "fire-calculator",
-    label: "Freedom",
-    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub"],
+    label: "Plan",
+    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub", "assets", "liabilities"],
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
 ];
 
-type MobilePrimaryKey = "home" | "money" | "freedom" | "profile";
+type MobilePrimaryKey = "home" | "cashflow" | "plan" | "profile";
 
 const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string }[] = [
   {
@@ -4221,13 +4247,13 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
     svg: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
   },
   {
-    key: "money",
-    label: "Money",
+    key: "cashflow",
+    label: "Cashflow",
     svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
   },
   {
-    key: "freedom",
-    label: "Freedom",
+    key: "plan",
+    label: "Plan",
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
   {
@@ -4245,7 +4271,6 @@ export default function Dashboard() {
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -4397,6 +4422,7 @@ export default function Dashboard() {
     const monthlyExpenses = Object.entries(expenses)
       .filter(([key]) => !key.startsWith("_"))
       .reduce((sum, [, amount]) => sum + (amount || 0), 0);
+    const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
     const { fireYear, fireTarget } = calcProjection({
       annualIncome: income * 12,
       monthlyExpenses,
@@ -4409,6 +4435,7 @@ export default function Dashboard() {
       mortgageMonthly,
       growthRate,
       withdrawalRate,
+      targetMonthlyExpenses,
     });
     const progress = fireTarget > 0 ? (investable / fireTarget) * 100 : 0;
 
@@ -4416,10 +4443,10 @@ export default function Dashboard() {
     if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return "approaching-fire";
     if (investable > 0 || income > 0) return "building-momentum";
     return "starting-out";
-  }, [cashSavings, expenses, growthRate, income, k401, mortgageBalance, mortgageMonthly, rothIRA, taxable, totalDebt, withdrawalRate]);
-  const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; currency: string; transaction_type?: string }[]>([]);
+  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
+  const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
+  const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[] }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
     try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
@@ -4438,7 +4465,25 @@ export default function Dashboard() {
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const byMonth: Record<string, number> = {};
     recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth))
-      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(t.amount, t.currency, rates); });
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
+    const vals = Object.values(byMonth);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+  }, [recentTransactions, rates]);
+  const histNeedsAvg = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const byMonth: Record<string, number> = {};
+    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth) && (t.tags || []).includes("need"))
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
+    const vals = Object.values(byMonth);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+  }, [recentTransactions, rates]);
+  const histWorkAvg = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const byMonth: Record<string, number> = {};
+    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth) && (t.tags || []).includes("work"))
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
     const vals = Object.values(byMonth);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
   }, [recentTransactions, rates]);
@@ -4459,8 +4504,8 @@ export default function Dashboard() {
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
     rawActuals
-      .filter(e => !e.transaction_type || e.transaction_type === "expense")
-      .forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(e.amount, e.currency, rates); });
+      .filter(e => e.transaction_type === "expense")
+      .forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(netAmt(e), e.currency, rates); });
     return agg;
   }, [rawActuals, rates]);
   const actualIncome = useMemo(
@@ -4472,7 +4517,7 @@ export default function Dashboard() {
   const actualExpenses = useMemo(
     () => rawActuals
       .filter(e => e.transaction_type === "expense")
-      .reduce((s, e) => s + toUSD(e.amount, e.currency, rates), 0),
+      .reduce((s, e) => s + toUSD(netAmt(e), e.currency, rates), 0),
     [rawActuals, rates]
   );
   const prevIncome = useMemo(
@@ -4484,7 +4529,7 @@ export default function Dashboard() {
   const prevExpenses = useMemo(
     () => rawPrevActuals
       .filter(e => e.transaction_type === "expense")
-      .reduce((s, e) => s + toUSD(e.amount, e.currency, rates), 0),
+      .reduce((s, e) => s + toUSD(netAmt(e), e.currency, rates), 0),
     [rawPrevActuals, rates]
   );
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4502,32 +4547,22 @@ export default function Dashboard() {
   const openDashboardTab = (nextTab: TabKey) => {
     setTab(nextTab);
     if (nextTab !== "fire-calculator") setFireCalcSubTab("menu");
-    setMobileMenuOpen(false);
   };
 
   const openMobilePrimary = (key: MobilePrimaryKey) => {
     if (key === "home") openDashboardTab("overview");
-    if (key === "money") { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); }
-    if (key === "freedom") { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }
+    if (key === "cashflow") { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); }
+    if (key === "plan") { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }
     if (key === "profile") openDashboardTab("profile");
   };
 
   const isMobilePrimaryActive = (key: MobilePrimaryKey) => {
     if (key === "home") return tab === "overview";
-    if (key === "money") return tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports";
-    if (key === "freedom") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "learning-hub";
+    if (key === "cashflow") return tab === "cashflow" || tab === "reports";
+    if (key === "plan") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "learning-hub" || tab === "assets" || tab === "liabilities";
     return tab === "profile";
   };
 
-  const mobileDrawerItems = [
-    { label: "Cashflow & Budget", tab: "cashflow" as TabKey, helper: "Income, spending, savings rate" },
-    { label: "Accounts / Net Worth", tab: "assets" as TabKey, helper: "Assets, debts, connected accounts" },
-    { label: "Insights", tab: "reports" as TabKey, helper: "Monthly spending patterns" },
-    { label: "Freedom Date", tab: "fire-calculator" as TabKey, helper: "Result, levers, confidence check" },
-    { label: "Expat FIRE", tab: "expat-fire" as TabKey, helper: "Find cities where you retire sooner" },
-    { label: "Profile & Assumptions", tab: "profile" as TabKey, helper: "Age, target, FIRE type, settings" },
-    { label: "Learning Hub", tab: "learning-hub" as TabKey, helper: "Guides and explainers" },
-  ];
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -4591,29 +4626,29 @@ export default function Dashboard() {
       const prevD = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1);
       const prevStart = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}-01`;
 
-      supabase.from("expenses").select("category, amount, currency, transaction_type")
+      supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
         .eq("user_id", session.user.id)
         .gte("date", thisStart)
         .lt("date", thisEnd)
         .then(({ data: expData }) => {
           if (expData) {
-            setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
+            setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
           }
         });
 
-      supabase.from("expenses").select("category, amount, currency, transaction_type")
+      supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
         .eq("user_id", session.user.id)
         .gte("date", prevStart)
         .lt("date", thisStart)
         .then(({ data: prevData }) => {
           if (prevData) {
-            setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
+            setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
           }
         });
 
       const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
-      supabase.from("expenses").select("date, amount, currency, transaction_type")
+      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags")
         .eq("user_id", session.user.id)
         .gte("date", historyStart)
         .order("date", { ascending: true })
@@ -4622,8 +4657,10 @@ export default function Dashboard() {
             setRecentTransactions(txData.map(tx => ({
               date: tx.date,
               amount: tx.amount,
+              refund_amount: tx.refund_amount || 0,
               currency: tx.currency ?? "USD",
               transaction_type: tx.transaction_type ?? "expense",
+              tags: tx.tags || [],
             })));
           }
         });
@@ -4980,16 +5017,7 @@ export default function Dashboard() {
       )}
 
       <header className="uf-mobile-topbar" aria-label="Mobile dashboard header">
-        <button
-          className="uf-mobile-menu-button"
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={mobileMenuOpen}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
-        </button>
+        <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="light" size={22} /></Link>
         <div className="uf-mobile-top-title">
           <strong>UntilFire</strong>
           <span>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
@@ -5005,40 +5033,6 @@ export default function Dashboard() {
           }
         </button>
       </header>
-
-      <div
-        className={`uf-mobile-drawer-backdrop ${mobileMenuOpen ? "open" : ""}`}
-        onClick={() => setMobileMenuOpen(false)}
-        aria-hidden={!mobileMenuOpen}
-      />
-      <aside className={`uf-mobile-drawer ${mobileMenuOpen ? "open" : ""}`} aria-label="Mobile menu" aria-hidden={!mobileMenuOpen}>
-        <div className="uf-mobile-drawer-header">
-          <div className="uf-mobile-top-title">
-            <strong>UntilFire</strong>
-            <span>Menu</span>
-          </div>
-          <button className="uf-mobile-drawer-close" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">×</button>
-        </div>
-        <nav className="uf-mobile-drawer-list">
-          {mobileDrawerItems.map(item => (
-            <button
-              key={item.tab}
-              className={`uf-mobile-drawer-item ${tab === item.tab ? "active" : ""}`}
-              onClick={() => openDashboardTab(item.tab)}
-            >
-              <strong>{item.label}</strong>
-              <span>{item.helper}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="uf-mobile-drawer-actions">
-          <a className="uf-mobile-drawer-link" href="/fire-type?source=dashboard-mobile-menu">FIRE Type quiz →</a>
-          <button className="uf-mobile-drawer-item" onClick={() => { setMobileMenuOpen(false); setTourOpen(true); }}>
-            <strong>Take a tour</strong>
-            <span>Quick walkthrough of the dashboard</span>
-          </button>
-        </div>
-      </aside>
 
       <nav className="uf-mobile-bottom-nav" aria-label="Primary mobile navigation">
         {MOBILE_PRIMARY_ITEMS.map(item => {
@@ -5083,8 +5077,6 @@ export default function Dashboard() {
                     <div className="uf-sidebar-sub-nav">
                       {([
                         { key: "cashflow",    label: "Cashflow"  },
-                        { key: "assets",      label: "Net Worth" },
-                        { key: "liabilities", label: "Debts"     },
                         { key: "reports",     label: "Insights"  },
                       ] as { key: TabKey; label: string }[]).map(sub => (
                         <div key={sub.key}>
@@ -5100,17 +5092,14 @@ export default function Dashboard() {
                           {sub.key === "cashflow" && tab === "cashflow" && (
                             <div className="uf-sidebar-sub-sub-nav">
                               {([
-                                { key: "cashflow" as const,   label: "Transactions" },
-                                { key: "categories" as const, label: "Categories"   },
-                                { key: "recurring" as const,  label: "Recurring"    },
-                                { key: "budgets" as const,    label: "Budgets"      },
+                                { key: "cashflow" as const, label: "Transactions" },
+                                { key: "budgets" as const,  label: "Budget"       },
                               ]).map(ss => (
                                 <button
                                   key={ss.key}
                                   className={`uf-sidebar-sub-sub-item ${cashflowSubTab === ss.key ? "active" : ""}`}
                                   onClick={() => {
                                     setCashflowSubTab(ss.key);
-                                    if (ss.key === "categories") setCategoriesKey(k => k + 1);
                                   }}
                                 >
                                   {ss.label}
@@ -5130,6 +5119,9 @@ export default function Dashboard() {
                         { label: "Scenarios",    isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
                         { label: "Goals",        isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
                         { label: "Learn",        isActive: tab === "learning-hub",                                       onClick: () => openDashboardTab("learning-hub") },
+                        { label: "Expat FIRE",   isActive: tab === "expat-fire",                                         onClick: () => openDashboardTab("expat-fire") },
+                        { label: "Net Worth",    isActive: tab === "assets",                                             onClick: () => openDashboardTab("assets") },
+                        { label: "Debts",        isActive: tab === "liabilities",                                        onClick: () => openDashboardTab("liabilities") },
                       ]).map(sub => (
                         <button
                           key={sub.label}
@@ -5139,12 +5131,6 @@ export default function Dashboard() {
                           {sub.label}
                         </button>
                       ))}
-                      <button
-                        className={`uf-sidebar-sub-item ${tab === "expat-fire" ? "active" : ""}`}
-                        onClick={() => openDashboardTab("expat-fire")}
-                      >
-                        Expat FIRE
-                      </button>
                     </div>
                   )}
                 </div>
@@ -5201,12 +5187,10 @@ export default function Dashboard() {
                 >×</button>
               </div>
             )}
-            {(tab === "cashflow" || tab === "assets" || tab === "liabilities" || tab === "reports") && (
-              <nav className="uf-section-switch uf-money-section-switch" aria-label="Money sections">
+            {(tab === "cashflow" || tab === "reports") && (
+              <nav className="uf-section-switch uf-cashflow-section-switch" aria-label="Cashflow sections">
                 {([
                   { label: "Cashflow", active: tab === "cashflow", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
-                  { label: "Net Worth", active: tab === "assets", onClick: () => openDashboardTab("assets") },
-                  { label: "Debts", active: tab === "liabilities", onClick: () => openDashboardTab("liabilities") },
                   { label: "Insights", active: tab === "reports", onClick: () => openDashboardTab("reports") },
                 ]).map(item => (
                   <button
@@ -5219,8 +5203,8 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
-            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire") && (
-              <nav className="uf-section-switch uf-freedom-section-switch" aria-label="Freedom sections">
+            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire" || tab === "assets" || tab === "liabilities") && (
+              <nav className="uf-section-switch uf-plan-section-switch" aria-label="Plan sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
                   { label: "Simulate", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
@@ -5228,6 +5212,8 @@ export default function Dashboard() {
                   { label: "Goals", active: tab === "goals", onClick: () => openDashboardTab("goals") },
                   { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
                   { label: "Expat FIRE", active: tab === "expat-fire", onClick: () => openDashboardTab("expat-fire") },
+                  { label: "Net Worth", active: tab === "assets", onClick: () => openDashboardTab("assets") },
+                  { label: "Debts", active: tab === "liabilities", onClick: () => openDashboardTab("liabilities") },
                 ]).map(item => (
                   <button
                     key={item.label}
@@ -5286,6 +5272,8 @@ export default function Dashboard() {
                 budgetMode={budgetMode}
                 histMonthsCount={histMonthsCount}
                 userJoinedAt={userJoinedAt}
+                monthlyNeedsExpenses={histNeedsAvg > 0 ? histNeedsAvg : undefined}
+                monthlyWorkCosts={histWorkAvg > 0 ? histWorkAvg : undefined}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
@@ -5294,10 +5282,10 @@ export default function Dashboard() {
               <div>
                 {/* Cashflow sub-tab nav */}
                 <div className="uf-cashflow-subtab-switch" style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
-                  {(["cashflow", "categories", "recurring", "budgets"] as const).map(t => (
+                  {(["cashflow", "budgets"] as const).map(t => (
                     <button
                       key={t}
-                      onClick={() => { setCashflowSubTab(t); if (t === "categories") setCategoriesKey(k => k + 1); }}
+                      onClick={() => { setCashflowSubTab(t); }}
                       style={{
                         background: "none", border: "none", padding: "0 0 14px",
                         fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
@@ -5306,7 +5294,7 @@ export default function Dashboard() {
                         borderBottom: `2px solid ${cashflowSubTab === t ? "#047857" : "transparent"}`,
                       }}
                     >
-                      {t === "cashflow" ? "Cashflow" : t === "categories" ? "Categories" : t === "recurring" ? "Recurring" : "Budgets"}
+                      {t === "cashflow" ? "Transactions" : "Budget"}
                     </button>
                   ))}
                 </div>
@@ -5336,6 +5324,8 @@ export default function Dashboard() {
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
+                  retirementCityCol={retirementCityCol}
+                  lifestyleMultiplier={lifestyleMultiplier}
                 />
                 <div style={{ borderTop: "1px solid #E2E8F0" }} />
                 <AssetsTab
