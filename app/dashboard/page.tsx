@@ -4271,7 +4271,6 @@ export default function Dashboard() {
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -4548,7 +4547,6 @@ export default function Dashboard() {
   const openDashboardTab = (nextTab: TabKey) => {
     setTab(nextTab);
     if (nextTab !== "fire-calculator") setFireCalcSubTab("menu");
-    setMobileMenuOpen(false);
   };
 
   const openMobilePrimary = (key: MobilePrimaryKey) => {
@@ -4565,15 +4563,6 @@ export default function Dashboard() {
     return tab === "profile";
   };
 
-  const mobileDrawerItems = [
-    { label: "Cashflow & Budget", tab: "cashflow" as TabKey, helper: "Income, spending, savings rate" },
-    { label: "Accounts / Net Worth", tab: "assets" as TabKey, helper: "Assets, debts, connected accounts" },
-    { label: "Insights", tab: "reports" as TabKey, helper: "Monthly spending patterns" },
-    { label: "Freedom Date", tab: "fire-calculator" as TabKey, helper: "Result, levers, confidence check" },
-    { label: "Expat FIRE", tab: "expat-fire" as TabKey, helper: "Find cities where you retire sooner" },
-    { label: "Profile & Assumptions", tab: "profile" as TabKey, helper: "Age, target, FIRE type, settings" },
-    { label: "Learning Hub", tab: "learning-hub" as TabKey, helper: "Guides and explainers" },
-  ];
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -5028,16 +5017,7 @@ export default function Dashboard() {
       )}
 
       <header className="uf-mobile-topbar" aria-label="Mobile dashboard header">
-        <button
-          className="uf-mobile-menu-button"
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={mobileMenuOpen}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
-        </button>
+        <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="light" size={22} /></Link>
         <div className="uf-mobile-top-title">
           <strong>UntilFire</strong>
           <span>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
@@ -5053,40 +5033,6 @@ export default function Dashboard() {
           }
         </button>
       </header>
-
-      <div
-        className={`uf-mobile-drawer-backdrop ${mobileMenuOpen ? "open" : ""}`}
-        onClick={() => setMobileMenuOpen(false)}
-        aria-hidden={!mobileMenuOpen}
-      />
-      <aside className={`uf-mobile-drawer ${mobileMenuOpen ? "open" : ""}`} aria-label="Mobile menu" aria-hidden={!mobileMenuOpen}>
-        <div className="uf-mobile-drawer-header">
-          <div className="uf-mobile-top-title">
-            <strong>UntilFire</strong>
-            <span>Menu</span>
-          </div>
-          <button className="uf-mobile-drawer-close" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">×</button>
-        </div>
-        <nav className="uf-mobile-drawer-list">
-          {mobileDrawerItems.map(item => (
-            <button
-              key={item.tab}
-              className={`uf-mobile-drawer-item ${tab === item.tab ? "active" : ""}`}
-              onClick={() => openDashboardTab(item.tab)}
-            >
-              <strong>{item.label}</strong>
-              <span>{item.helper}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="uf-mobile-drawer-actions">
-          <a className="uf-mobile-drawer-link" href="/fire-type?source=dashboard-mobile-menu">FIRE Type quiz →</a>
-          <button className="uf-mobile-drawer-item" onClick={() => { setMobileMenuOpen(false); setTourOpen(true); }}>
-            <strong>Take a tour</strong>
-            <span>Quick walkthrough of the dashboard</span>
-          </button>
-        </div>
-      </aside>
 
       <nav className="uf-mobile-bottom-nav" aria-label="Primary mobile navigation">
         {MOBILE_PRIMARY_ITEMS.map(item => {
