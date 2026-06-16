@@ -1985,7 +1985,11 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
-  const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
+  const allExpenseCats = useMemo(() => {
+    const defaultLabels = new Set(EXPENSE_CATEGORIES.map(c => c.label.toLowerCase()));
+    const uniqueCustom = customCats.filter(c => !defaultLabels.has(c.label.toLowerCase()));
+    return [...EXPENSE_CATEGORIES, ...uniqueCustom];
+  }, [customCats]);
   const allSubCats = useMemo(() => {
     const merged: Record<string, string[]> = { ...SUB_CATEGORIES };
     Object.entries(customSubCats).forEach(([k, extras]) => {
