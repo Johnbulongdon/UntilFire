@@ -651,6 +651,29 @@ function QuickAddForm({
                 );
               })}
             </div>
+            {/* Work cost toggle — independent of need/want */}
+            <button
+              type="button"
+              onClick={() => {
+                const hasWork = draft.tags.includes("work");
+                setField("tags", hasWork ? draft.tags.filter((t) => t !== "work") : [...draft.tags, "work"]);
+              }}
+              style={{
+                alignSelf: "flex-start",
+                background: draft.tags.includes("work") ? "#EEF2FF" : "transparent",
+                border: `1px solid ${draft.tags.includes("work") ? "#6366f1" : "var(--uf-border)"}`,
+                borderRadius: 8,
+                padding: "6px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: draft.tags.includes("work") ? "#4f46e5" : "var(--uf-text-2)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.12s",
+              }}
+            >
+              💼 Work cost
+            </button>
           </div>
         )}
 
@@ -976,7 +999,8 @@ function TransactionList({
                     const { color: chipColor, emoji: chipEmoji } = resolveDisplay(baseDisplay, catCustomizations, tx.category);
                     const txTags = tx.tags || [];
                     const needOrWant = txTags.includes("need") ? "need" : txTags.includes("want") ? "want" : null;
-                    const displayTags = txTags.filter((t) => t !== "need" && t !== "want").slice(0, 2);
+                    const isWorkCost = txTags.includes("work");
+                    const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work").slice(0, 2);
 
                     return (
                       <div
@@ -1050,6 +1074,18 @@ function TransactionList({
                                 }}
                               >
                                 {needOrWant}
+                              </span>
+                            )}
+                            {tx.transaction_type === "expense" && isWorkCost && (
+                              <span
+                                style={{
+                                  background: "rgba(99,102,241,0.12)",
+                                  color: "#6366f1",
+                                  border: "none", borderRadius: 999, padding: "1px 8px",
+                                  fontSize: 10, fontWeight: 700, flexShrink: 0,
+                                }}
+                              >
+                                💼 work
                               </span>
                             )}
                             {displayTags.map((t) => (
@@ -1307,6 +1343,26 @@ function MonthlySummary({
           </div>
         )}
       </div>
+
+      {/* Work Costs */}
+      {(() => {
+        const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
+        const workTxns = expenseTxns.filter((t) => t.tags?.includes("work"));
+        if (!workTxns.length) return null;
+        const workTotal = workTxns.reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+        return (
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "14px 18px", marginBottom: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>💼 Work Costs</div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-3)" }}>disappears at FIRE</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: "#6366f1", fontFamily: "Manrope, sans-serif" }}>{formatAmount(workTotal)}</span>
+              <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{workTxns.length} transaction{workTxns.length !== 1 ? "s" : ""}</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Needs vs Wants */}
       {(() => {
