@@ -8,6 +8,7 @@ type Step = "upload" | "map" | "review" | "importing" | "done";
 type Transaction = {
   date: string;
   amount: number;
+  refund_amount?: number;
   currency: string;
   transaction_type: "expense" | "income" | "transfer";
 };
@@ -402,7 +403,7 @@ export default function CsvImportModal({
   const currentMonthTxns = previewMonthKey ? transactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
   const importedMonthTxns = previewMonthKey ? parsedTransactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
   const currentIncome = currentMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const currentExpenses = currentMonthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+  const currentExpenses = currentMonthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(Math.max(0, t.amount - (t.refund_amount || 0)), t.currency, rates), 0);
   const importedIncome = importedMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const importedExpenses = importedMonthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const projectedIncome = currentIncome + importedIncome;
