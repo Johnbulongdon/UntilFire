@@ -242,6 +242,10 @@ function QuickAddForm({
   const [newCatEmoji, setNewCatEmoji] = useState("");
   const [showSubForm, setShowSubForm] = useState(false);
   const [newSubLabel, setNewSubLabel] = useState("");
+  const [showDescription, setShowDescription] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [showRefund, setShowRefund] = useState(false);
+  const [showProject, setShowProject] = useState(false);
 
   const categories = draft.transaction_type === "income" ? INCOME_CATEGORIES : draft.transaction_type === "transfer" ? [] : allExpenseCats;
 
@@ -384,40 +388,76 @@ function QuickAddForm({
           </select>
         </div>
 
-        {/* Description */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-            Description
-            {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
-          </label>
-          <input
-            type="text"
-            placeholder={isIncome ? "e.g. Monthly salary, Freelance…" : "e.g. Whole Foods, Uber…"}
-            value={draft.description}
-            onChange={(e) => {
-              const wasAiCategory = draft.aiSuggestion && draft.aiSuggestion === draft.category;
-              setField("description", e.target.value);
-              setField("aiSuggestion", null);
-              if (wasAiCategory) { setField("category", ""); setField("sub_category", ""); }
+        {/* Optional field toggles: Description + Notes */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => setShowDescription((v) => !v)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              background: (showDescription || !!draft.description) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
+              border: `1px solid ${(showDescription || !!draft.description) ? "#6366f1" : "var(--uf-border)"}`,
+              borderRadius: 999, padding: "5px 10px",
+              fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "#6366f1" : "var(--uf-text-2)",
+              cursor: "pointer", fontFamily: "inherit",
             }}
-            onBlur={handleDescriptionBlur}
-            style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
-          />
+          >
+            📝 Description{draft.description ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowNotes((v) => !v)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              background: (showNotes || !!draft.notes) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
+              border: `1px solid ${(showNotes || !!draft.notes) ? "#6366f1" : "var(--uf-border)"}`,
+              borderRadius: 999, padding: "5px 10px",
+              fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "#6366f1" : "var(--uf-text-2)",
+              cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            📌 Notes{draft.notes ? " ✓" : ""}
+          </button>
         </div>
 
+        {/* Description */}
+        {(showDescription || !!draft.description) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Description
+              {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
+            </label>
+            <input
+              type="text"
+              placeholder={isIncome ? "e.g. Monthly salary, Freelance…" : "e.g. Whole Foods, Uber…"}
+              value={draft.description}
+              onChange={(e) => {
+                const wasAiCategory = draft.aiSuggestion && draft.aiSuggestion === draft.category;
+                setField("description", e.target.value);
+                setField("aiSuggestion", null);
+                if (wasAiCategory) { setField("category", ""); setField("sub_category", ""); }
+              }}
+              onBlur={handleDescriptionBlur}
+              style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 14, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
+            />
+          </div>
+        )}
+
         {/* Notes */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-            Notes <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
-          </label>
-          <textarea
-            placeholder="Add a note…"
-            value={draft.notes}
-            onChange={(e) => setField("notes", e.target.value)}
-            rows={2}
-            style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.5 }}
-          />
-        </div>
+        {(showNotes || !!draft.notes) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Notes <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+            </label>
+            <textarea
+              placeholder="Add a note…"
+              value={draft.notes}
+              onChange={(e) => setField("notes", e.target.value)}
+              rows={2}
+              style={{ width: "100%", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.5 }}
+            />
+          </div>
+        )}
 
         {/* AI suggestion pill */}
         {showAiPill && (
@@ -659,11 +699,47 @@ function QuickAddForm({
           </div>
         )}
 
-        {/* Refund */}
+        {/* Optional field toggles: Refund + Project */}
         {draft.transaction_type === "expense" && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setShowRefund((v) => !v)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                background: (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "rgba(245,158,11,0.1)" : "var(--uf-surface-2)",
+                border: `1px solid ${(showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "#f59e0b" : "var(--uf-border)"}`,
+                borderRadius: 999, padding: "5px 10px",
+                fontSize: 11, fontWeight: 700,
+                color: (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "#d97706" : "var(--uf-text-2)",
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              ↩ Refund{draft.refund_amount && parseFloat(draft.refund_amount) > 0 ? " ✓" : ""}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowProject((v) => !v)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                background: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
+                border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#6366f1" : "var(--uf-border)"}`,
+                borderRadius: 999, padding: "5px 10px",
+                fontSize: 11, fontWeight: 700,
+                color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#6366f1" : "var(--uf-text-2)",
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              🏷 Project{draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0 ? " ✓" : ""}
+            </button>
+          </div>
+        )}
+
+        {/* Refund */}
+        {draft.transaction_type === "expense" && (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-              Refund <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional — full or partial</span>
+              Refund <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>full or partial</span>
             </label>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
@@ -701,30 +777,32 @@ function QuickAddForm({
         )}
 
         {/* Project / Event */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
-            Project / Event <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
-          </label>
-          {draft.tags.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {draft.tags.map((tag) => (
-                <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#047857" }}>
-                  #{tag}
-                  <button
-                    type="button"
-                    onClick={() => setField("tags", draft.tags.filter((t) => t !== tag))}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "#6EE7B7", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
-                  >×</button>
-                </span>
-              ))}
-            </div>
-          )}
-          <ProjectInput
-            existingTags={existingTags}
-            currentTags={draft.tags}
-            onAdd={(tag) => { if (!draft.tags.includes(tag)) setField("tags", [...draft.tags, tag]); }}
-          />
-        </div>
+        {(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
+              Project / Event <span style={{ color: "var(--uf-text-3)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
+            </label>
+            {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").map((tag) => (
+                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#047857" }}>
+                    #{tag}
+                    <button
+                      type="button"
+                      onClick={() => setField("tags", draft.tags.filter((t) => t !== tag))}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#6EE7B7", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <ProjectInput
+              existingTags={existingTags}
+              currentTags={draft.tags}
+              onAdd={(tag) => { if (!draft.tags.includes(tag)) setField("tags", [...draft.tags, tag]); }}
+            />
+          </div>
+        )}
 
         {/* Income category dropdown */}
         {isIncome && (
