@@ -31,6 +31,7 @@ type CustomCategory = { key: string; label: string; code: string; color: string;
 
 const ALL_CATEGORIES = ALL_CATEGORIES_BASE;
 const FALLBACK_RATES = LIB_FALLBACK_RATES;
+const DEFAULT_CAT_KEYS = new Set(EXPENSE_CATEGORIES.map((e) => e.key));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number, currency = "USD") =>
@@ -496,6 +497,7 @@ function QuickAddForm({
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
               {categories.map((c) => {
                 const isSelected = draft.category === c.key;
+                const isCustom = !DEFAULT_CAT_KEYS.has(c.key);
                 return (
                   <button
                     key={c.key}
@@ -507,8 +509,12 @@ function QuickAddForm({
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer", transition: "all 0.12s",
+                      position: "relative",
                     }}
                   >
+                    {isCustom && (
+                      <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "#f97316", flexShrink: 0 }} title="Custom category" />
+                    )}
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
                   </button>
