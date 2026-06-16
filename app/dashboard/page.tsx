@@ -540,7 +540,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -551,11 +551,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   retirementCityCol?: number; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
-  recentTransactions?: { date: string; amount: number; currency: string; transaction_type?: string }[];
+  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[] }[];
   plaidHoldings?: PlaidHolding[];
   budgetMode?: "manual" | "history";
   histMonthsCount?: number;
   userJoinedAt?: string;
+  monthlyNeedsExpenses?: number;
+  monthlyWorkCosts?: number;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
 }) {
@@ -577,9 +579,18 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
 
+  // Emergency fund covers needs only (essentials that remain during an emergency).
+  // Falls back to total expenses when the user hasn't tagged any needs yet.
+  const efMonthlyBase = monthlyNeedsExpenses ?? monthlyExpenses;
+
+  // Work costs disappear at retirement → FIRE target uses adjusted spend.
+  const retirementMonthlyExpenses = monthlyWorkCosts
+    ? Math.max(0, monthlyExpenses - monthlyWorkCosts)
+    : monthlyExpenses;
+
   const targetMonthlyExpenses = retirementCityCol > 0
     ? (retirementCityCol * lifestyleMultiplier) / 12
-    : undefined;
+    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
 
   const plaidAssets = plaidAccounts
     .filter(a => a.type === "depository" || a.type === "investment")
@@ -946,9 +957,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const spendingBarTrackColor = hasActuals ? "#E2E8F0" : "#F1F5F9";
   const investedBalance = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0);
   const availableCash = Math.max(displayCashAssets, 0);
-  const emergencyFundHealthyNow = monthlyExpenses > 0 && (availableCash / monthlyExpenses) >= EMERGENCY_FUND_TARGET_MONTHS;
+  const emergencyFundHealthyNow = efMonthlyBase > 0 && (availableCash / efMonthlyBase) >= EMERGENCY_FUND_TARGET_MONTHS;
   const hasEverHealthyEmergencyFund = useEmergencyFundHistory(emergencyFundHealthyNow);
-  const emergencyFundPlan = getEmergencyFundPlan(availableCash, monthlyExpenses, hasEverHealthyEmergencyFund);
+  const emergencyFundPlan = getEmergencyFundPlan(availableCash, efMonthlyBase, hasEverHealthyEmergencyFund);
+  const efUsingNeedsOnly = monthlyNeedsExpenses != null && monthlyNeedsExpenses > 0;
   const hasInvestmentAccounts = plaidAccounts.some((account) => account.type === "investment") || manualRetirementTotal > 0 || taxable > 0;
   const plannedContributionGap = Math.max(goalContribution - Math.max(actualOrPlannedSavings, 0), 0);
   const investingHeadline = goalContribution > 0
@@ -1062,31 +1074,33 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       });
     };
 
-    if (monthlyExpenses > 0 && emergencyFundPlan.priorityMode === "protect") {
-      const refillAmount = emergencyFundPlan.gapToFloor > 0 ? emergencyFundPlan.gapToFloor : Math.min(emergencyFundPlan.gapToTarget, Math.max(monthlyExpenses * 0.75, 0));
+    if (efMonthlyBase > 0 && emergencyFundPlan.priorityMode === "protect") {
+      const refillAmount = emergencyFundPlan.gapToFloor > 0 ? emergencyFundPlan.gapToFloor : Math.min(emergencyFundPlan.gapToTarget, Math.max(efMonthlyBase * 0.75, 0));
+      const coverageLabel = efUsingNeedsOnly ? "months of essential needs covered" : "months covered";
       addTask(
         `Rebuild your emergency fund by about ${fmtMoney(refillAmount, true)}`,
-        `${emergencyFundPlan.coverageMonths.toFixed(1)} months covered now. Get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor before pushing harder on growth.`,
+        `${emergencyFundPlan.coverageMonths.toFixed(1)} ${coverageLabel} now. Get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor before pushing harder on growth.`,
         0,
         100,
         {
           progressPct: emergencyFundPlan.floorAmount > 0 ? (availableCash / emergencyFundPlan.floorAmount) * 100 : 0,
           progressText: `${emergencyFundPlan.coverageMonths.toFixed(1)} / ${EMERGENCY_FUND_FLOOR_MONTHS.toFixed(1)} mo`,
-          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_FLOOR_MONTHS.toFixed(1)} months covered`,
+          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_FLOOR_MONTHS.toFixed(1)} months of ${efUsingNeedsOnly ? "needs" : "expenses"} covered`,
         },
       );
     }
 
-    if (monthlyExpenses > 0 && emergencyFundPlan.priorityMode === "balance") {
+    if (efMonthlyBase > 0 && emergencyFundPlan.priorityMode === "balance") {
+      const coverageLabel = efUsingNeedsOnly ? "months of essential needs covered" : "months covered";
       addTask(
         `Keep rebuilding your emergency fund toward ${EMERGENCY_FUND_TARGET_MONTHS} months`,
-        `${emergencyFundPlan.coverageMonths.toFixed(1)} months covered now. Keep some money moving into safety while continuing steady investing.`,
+        `${emergencyFundPlan.coverageMonths.toFixed(1)} ${coverageLabel} now. Keep some money moving into safety while continuing steady investing.`,
         0,
         70,
         {
           progressPct: emergencyFundPlan.targetAmount > 0 ? (availableCash / emergencyFundPlan.targetAmount) * 100 : 0,
           progressText: `${emergencyFundPlan.coverageMonths.toFixed(1)} / ${EMERGENCY_FUND_TARGET_MONTHS.toFixed(1)} mo`,
-          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_TARGET_MONTHS.toFixed(1)} months covered`,
+          progressAria: `Emergency fund progress: ${emergencyFundPlan.coverageMonths.toFixed(1)} of ${EMERGENCY_FUND_TARGET_MONTHS.toFixed(1)} months of ${efUsingNeedsOnly ? "needs" : "expenses"} covered`,
         },
       );
     }
@@ -1624,6 +1638,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           )}
           <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
+          {monthlyWorkCosts != null && monthlyWorkCosts > 0 && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, padding: "7px 10px", fontSize: 12, color: "#6366f1", fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
+              <span>💼</span>
+              <span>{fmtMoney(monthlyWorkCosts, true)}/mo in work costs drops at FIRE → retirement target: {fmtMoney(retirementMonthlyExpenses * 12 / withdrawalRate, true)}</span>
+            </div>
+          )}
           <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>View categories →</button>
         </div>
 
@@ -4427,7 +4447,7 @@ export default function Dashboard() {
   }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[] }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
     try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
@@ -4446,6 +4466,24 @@ export default function Dashboard() {
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const byMonth: Record<string, number> = {};
     recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth))
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
+    const vals = Object.values(byMonth);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+  }, [recentTransactions, rates]);
+  const histNeedsAvg = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const byMonth: Record<string, number> = {};
+    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth) && (t.tags || []).includes("need"))
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
+    const vals = Object.values(byMonth);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+  }, [recentTransactions, rates]);
+  const histWorkAvg = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const byMonth: Record<string, number> = {};
+    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth) && (t.tags || []).includes("work"))
       .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
     const vals = Object.values(byMonth);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
@@ -4621,7 +4659,7 @@ export default function Dashboard() {
 
       const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
-      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type")
+      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags")
         .eq("user_id", session.user.id)
         .gte("date", historyStart)
         .order("date", { ascending: true })
@@ -4633,6 +4671,7 @@ export default function Dashboard() {
               refund_amount: tx.refund_amount || 0,
               currency: tx.currency ?? "USD",
               transaction_type: tx.transaction_type ?? "expense",
+              tags: tx.tags || [],
             })));
           }
         });
@@ -5295,6 +5334,8 @@ export default function Dashboard() {
                 budgetMode={budgetMode}
                 histMonthsCount={histMonthsCount}
                 userJoinedAt={userJoinedAt}
+                monthlyNeedsExpenses={histNeedsAvg > 0 ? histNeedsAvg : undefined}
+                monthlyWorkCosts={histWorkAvg > 0 ? histWorkAvg : undefined}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
               />
