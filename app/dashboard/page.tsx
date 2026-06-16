@@ -23,7 +23,7 @@ import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
 import { monteCarloFIRE, calcFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
-import { CITIES, STATE_TAX } from "@/lib/fire-data";
+import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { trackDashboardFirstView } from "@/lib/analytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -2101,54 +2101,6 @@ function SurveyModal({ onSubmit, onDismiss }: {
 }
 
 // ─── Onboarding Modal ─────────────────────────────────────────────────────────
-const ONBOARDING_COUNTRIES: { value: string; label: string; flag: string }[] = [
-  { value: "us",     label: "United States",   flag: "🇺🇸" },
-  { value: "uk",     label: "United Kingdom",  flag: "🇬🇧" },
-  { value: "ca",     label: "Canada",          flag: "🇨🇦" },
-  { value: "au",     label: "Australia",       flag: "🇦🇺" },
-  { value: "nz",     label: "New Zealand",     flag: "🇳🇿" },
-  { value: "sg",     label: "Singapore",       flag: "🇸🇬" },
-  { value: "ae",     label: "UAE",             flag: "🇦🇪" },
-  { value: "de",     label: "Germany",         flag: "🇩🇪" },
-  { value: "fr",     label: "France",          flag: "🇫🇷" },
-  { value: "nl",     label: "Netherlands",     flag: "🇳🇱" },
-  { value: "jp",     label: "Japan",           flag: "🇯🇵" },
-  { value: "mx",     label: "Mexico",          flag: "🇲🇽" },
-];
-const ONBOARDING_US_STATES: { value: string; label: string }[] = [
-  { value: "al", label: "Alabama" }, { value: "ak", label: "Alaska" },
-  { value: "az", label: "Arizona" }, { value: "ar_us", label: "Arkansas" },
-  { value: "ca", label: "California" }, { value: "co", label: "Colorado" },
-  { value: "ct", label: "Connecticut" }, { value: "de_us", label: "Delaware" },
-  { value: "fl", label: "Florida" }, { value: "ga", label: "Georgia" },
-  { value: "hi", label: "Hawaii" }, { value: "id", label: "Idaho" },
-  { value: "il", label: "Illinois" }, { value: "in_us", label: "Indiana" },
-  { value: "ia", label: "Iowa" }, { value: "ks", label: "Kansas" },
-  { value: "ky", label: "Kentucky" }, { value: "la", label: "Louisiana" },
-  { value: "me", label: "Maine" }, { value: "md", label: "Maryland" },
-  { value: "ma", label: "Massachusetts" }, { value: "mi", label: "Michigan" },
-  { value: "mn", label: "Minnesota" }, { value: "ms", label: "Mississippi" },
-  { value: "mo", label: "Missouri" }, { value: "mt", label: "Montana" },
-  { value: "ne", label: "Nebraska" }, { value: "nv", label: "Nevada" },
-  { value: "nh", label: "New Hampshire" }, { value: "nj", label: "New Jersey" },
-  { value: "nm", label: "New Mexico" }, { value: "nyc", label: "New York (NYC)" },
-  { value: "ny", label: "New York (state)" }, { value: "nc", label: "North Carolina" },
-  { value: "nd", label: "North Dakota" }, { value: "oh", label: "Ohio" },
-  { value: "ok", label: "Oklahoma" }, { value: "or", label: "Oregon" },
-  { value: "pa", label: "Pennsylvania" }, { value: "ri", label: "Rhode Island" },
-  { value: "sc", label: "South Carolina" }, { value: "sd", label: "South Dakota" },
-  { value: "tn", label: "Tennessee" }, { value: "tx", label: "Texas" },
-  { value: "ut", label: "Utah" }, { value: "vt", label: "Vermont" },
-  { value: "va", label: "Virginia" }, { value: "wa", label: "Washington" },
-  { value: "dc", label: "Washington D.C." }, { value: "wv", label: "West Virginia" },
-  { value: "wi", label: "Wisconsin" }, { value: "wy", label: "Wyoming" },
-];
-const ONBOARDING_CA_PROVINCES: { value: string; label: string }[] = [
-  { value: "ca_on", label: "Ontario" }, { value: "ca_bc", label: "British Columbia" },
-  { value: "ca_qc", label: "Quebec" }, { value: "ca_ab", label: "Alberta" },
-  { value: "ca_mb", label: "Manitoba" }, { value: "ca_ns", label: "Nova Scotia" },
-];
-
 function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
   defaultCurrency: string;
   onComplete: (income: number, spending: number, savings: number, taxKey: string) => void;
@@ -2263,14 +2215,14 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
             style={selectStyle}
           >
             <option value="">Select country / region…</option>
-            {ONBOARDING_COUNTRIES.map(c => (
+            {TAX_COUNTRIES.map(c => (
               <option key={c.value} value={c.value}>{c.flag} {c.label}</option>
             ))}
           </select>
           {taxCountry === "us" && (
             <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
               <option value="">Select state…</option>
-              {ONBOARDING_US_STATES.map(s => (
+              {TAX_US_STATES.map(s => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
@@ -2278,7 +2230,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
           {taxCountry === "ca" && (
             <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
               <option value="">Select province…</option>
-              {ONBOARDING_CA_PROVINCES.map(p => (
+              {TAX_CA_PROVINCES.map(p => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
             </select>
@@ -5780,6 +5732,20 @@ export default function Dashboard() {
                 lifestyleMultiplier={lifestyleMultiplier}
                 onRetirementCityChange={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
                 onLifestyleChange={setLifestyleMultiplier}
+                taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
+                onTaxKeyChange={(key) => {
+                  const repCity = CITIES.find(c => c.state === key);
+                  if (repCity) setCityName(repCity.name);
+                  const taxInfo = STATE_TAX[key];
+                  if (taxInfo) {
+                    const isUSKey = !key.startsWith("ca_");
+                    const stateRate = taxInfo.rate;
+                    const suggested = isUSKey
+                      ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35))
+                      : Math.max(0.05, Math.min(stateRate * 0.75, 0.40));
+                    setRetirementTaxRate(suggested);
+                  }
+                }}
               />
             )}
           </div>
