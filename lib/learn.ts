@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,123 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'social-security-strategy-for-early-retirees',
+    title: 'Social Security Strategy for Early Retirees: What You Need to Know',
+    description: 'How retiring early affects your Social Security benefit, when to claim for maximum lifetime income, and how to factor Social Security into your FIRE number.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('Social Security and FIRE: a complicated relationship'),
+      p('Social Security is often treated as a afterthought in FIRE planning — something that will show up eventually, but too far away to worry about now. This is a mistake. The decisions you make about early retirement directly affect your Social Security benefit, and the decisions you make about when to claim can change your lifetime income by hundreds of thousands of dollars.'),
+      p('Understanding Social Security matters for FIRE planning at two distinct stages: during the accumulation phase, when early retirement reduces the years you contribute and lowers your future benefit, and in retirement, when you decide whether to claim early, at full retirement age, or late for a larger monthly payment.'),
+      h2('How early retirement affects your Social Security benefit'),
+      p('Social Security calculates your benefit based on your highest 35 years of earnings. Each year of zero earnings counts as a zero in the average. If you retire at 40 with only 18 years of work history, your benefit calculation includes 17 years of zero earnings — significantly reducing your average.'),
+      p('This effect is real but often overstated. Your highest-earning years typically weigh most heavily in the formula, so even a shorter career can produce a meaningful benefit if those peak earning years were high. The Social Security Administration\'s online calculator lets you project your benefit under different retirement scenarios — worth checking before you assume SS is negligible for you.'),
+      h3('Substantial gainful activity and the zero years'),
+      p('If you retire at 40 but do part-time consulting, freelance work, or any paid activity through your 50s, those earnings may fill in some zero years and raise your eventual benefit. Even modest earned income — $20,000 per year for a decade — can noticeably improve your Social Security projection if it replaces zero years in the formula.'),
+      h2('When to claim: the three choices'),
+      p('You can claim Social Security as early as age 62, at your Full Retirement Age (FRA — currently 67 for those born after 1960), or as late as age 70. Each choice has different implications:'),
+      ul([
+        'Claim at 62: you receive payments sooner but at a permanently reduced rate — approximately 30% less than your FRA benefit. If you live into your late 70s or beyond, this is almost always the wrong choice financially.',
+        'Claim at FRA (67): you receive 100% of your calculated benefit. This is the baseline.',
+        'Claim at 70: your benefit increases by 8% per year beyond FRA for every year you delay, up to age 70. A benefit of $2,000 at 67 becomes approximately $2,480 at 70 — a 24% permanent increase.',
+      ]),
+      h2('Break-even analysis for early retirees'),
+      p('The break-even age — the age at which delaying to 70 beats claiming at 67 in cumulative lifetime income — is typically around 82–83. If you expect to live past that age (a reasonable assumption for a healthy 40-year-old retiree), delaying to 70 almost always wins.'),
+      p('For FIRE retirees with substantial portfolios, the strategy is usually: use the portfolio to cover expenses from retirement to age 70, then let Social Security take over a larger portion of monthly spending. This is sometimes called the "bridge" strategy. It converts portfolio withdrawals (which carry market risk) into a government-guaranteed lifetime income stream.'),
+      h2('Social Security\'s role in your FIRE number'),
+      p('The most common way to account for Social Security in FIRE planning is to reduce your portfolio withdrawal need by the expected benefit amount, but only starting at the age you plan to claim. Until then, the portfolio must cover 100% of expenses.'),
+      p('A practical approach: calculate your FIRE number based on full spending (ignoring SS entirely) for conservative planning. Then model Social Security as a stress-test modifier — if SS provides $1,500/month starting at 70, that reduces your required withdrawal rate significantly in the final 20+ years of retirement. The portfolio may actually grow during the SS years rather than declining, providing an additional buffer against longevity risk.'),
+      h2('Is Social Security reliable for FIRE planning?'),
+      p('The Social Security trust fund faces long-term solvency challenges. Current projections suggest the trust fund could be depleted by the mid-2030s, which would trigger automatic benefit reductions of approximately 20–25% unless Congress acts. Political history suggests Congress will act before cuts occur, but the uncertainty is real.'),
+      p('For FIRE planners under 50, a conservative approach is to model Social Security at 75–80% of projected benefits, or to exclude it from the primary FIRE number calculation and treat it as upside. Do not build a plan that requires Social Security to work perfectly in order to survive.'),
+    ],
+  },
+  {
+    slug: 'cash-allocation-and-emergency-fund-in-fire',
+    title: 'Cash Allocation in FIRE: How Much to Keep Out of the Market',
+    description: 'The right amount of cash and short-term reserves for FIRE investors — balancing return drag against the risk of forced selling in a downturn.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('Why cash allocation matters more in retirement'),
+      p('During the accumulation phase, an emergency fund is simple: three to six months of expenses in a high-yield savings account. But in early retirement, cash management becomes more complex. You are no longer adding to the portfolio — you are drawing from it. The sequencing of withdrawals matters enormously, and how much cash you hold directly affects your exposure to sequence-of-returns risk.'),
+      p('The core tension: too little cash forces you to sell investments at market lows to cover living expenses, permanently locking in losses. Too much cash creates a return drag that compounds over decades and meaningfully reduces long-term portfolio survivability.'),
+      h2('The traditional emergency fund in FIRE context'),
+      p('A traditional emergency fund — three to six months of expenses in cash — serves a different purpose in retirement than during accumulation. In retirement, you are drawing regularly from the portfolio anyway. The emergency fund concept shifts toward protecting against large one-time shocks (car replacement, home repair, medical cost) rather than bridging an income gap.'),
+      p('A reasonable cash reserve for early retirees: one year of planned expenses in a high-yield savings account or money market fund. This covers one-time surprises and provides time to liquidate taxable investments in a tax-efficient way if needed, without being forced to sell during an inopportune market moment.'),
+      h2('The bucket strategy: structured cash management'),
+      p('Many FIRE retirees use a bucket strategy to manage cash vs. investment allocation:'),
+      ul([
+        'Bucket 1 (cash): 1–2 years of spending in a high-yield savings account or money market fund. This is what you spend from daily.',
+        'Bucket 2 (short-term bonds): 3–7 years of spending in short-to-medium-term bond funds or CDs. Refills Bucket 1 when needed.',
+        'Bucket 3 (equities): the remainder in diversified stock index funds. Left to grow. Only touched when Bucket 2 needs replenishment after the bond bucket recovers.',
+      ]),
+      p('The logic: equity markets recover over 3–5 year horizons in most historical scenarios. If you have 5–7 years of expenses covered in Buckets 1 and 2, you can ride out most downturns without ever selling equities at a loss. Bucket 3 grows undisturbed during down markets.'),
+      h2('The return drag of holding too much cash'),
+      p('Cash earns less than equities over time — significantly less. Even in a high-yield savings account earning 4–5%, cash underperforms a diversified stock portfolio over any 10+ year horizon. Holding three years of expenses in cash (rather than one year) has a real opportunity cost.'),
+      p('On a $1,500,000 portfolio, the difference between holding 6% in cash ($90,000) vs. 15% in cash ($225,000) is $135,000 earning a low return rather than being invested. Over 20 years at a 5% real return differential, that gap compounds to a material difference in portfolio longevity.'),
+      h2('Replenishment rules: when to refill buckets'),
+      p('The most common bucket refill rule: replenish Bucket 1 from Bucket 2 annually (or when Bucket 1 drops below a target level). Replenish Bucket 2 from Bucket 3 after a recovery — ideally after the stock market has risen from a trough, not during the trough itself.'),
+      p('Some retirees prefer a simpler rule: keep 12 months of expenses in cash at all times; refill after any market calendar year that is positive. This avoids trying to time the market while preventing the cash bucket from dropping to zero.'),
+      h2('High-yield savings vs. money market funds'),
+      p('For the cash bucket, the practical choice is between a high-yield savings account (FDIC insured, slightly lower yield, instant access) and a money market fund (not FDIC insured but backed by extremely short-term government debt, typically slightly higher yield, same-day access).'),
+      p('Treasury bills and short-term Treasury ETFs are another option for the cash bucket: government-backed, highly liquid, and sometimes yielding more than savings accounts. The Schwab Value Advantage Money Fund, Vanguard Treasury Money Market, or a 3-month T-bill ladder all serve this role well. FDIC insurance matters more to some investors than the yield difference — a personal risk tolerance call.'),
+    ],
+  },
+  {
+    slug: 'fire-with-kids-family-financial-independence',
+    title: 'FIRE With Kids: Raising a Family While Pursuing Financial Independence',
+    description: 'How parenthood changes the FIRE timeline, how to handle childcare costs and 529 plans, and how to involve kids in the money conversation without making it a burden.',
+    category: 'Life Planning',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('Parenthood and FIRE: the real arithmetic'),
+      p('Children are expensive. The USDA estimates that raising a child to 18 costs a middle-income family approximately $310,000 — a figure that excludes college costs, which can add another $100,000–$300,000 per child. This is not a reason to avoid having children, but it is a reason to incorporate parenthood into your FIRE planning with clear eyes rather than vague optimism.'),
+      p('The FIRE community has historically skewed young and childless, but a growing cohort of parents are pursuing financial independence on family timelines. The math is harder, the timelines are longer, and the trade-offs are more emotionally charged — but the framework still works. The key is modeling the actual costs, not the average ones.'),
+      h2('How kids change the FIRE timeline'),
+      p('Children affect FIRE through two main channels: they increase spending and they may reduce savings rate during the peak childcare years.'),
+      ul([
+        'Childcare costs: in major urban areas, full-time daycare costs $20,000–$40,000 per year per child. This is the single largest shock to a family\'s budget in the 0–5 age range. A couple with two children in daycare may see their savings rate fall from 40% to near zero for several years.',
+        'Increased baseline spending: food, housing space, clothing, activities, and healthcare costs all scale with family size.',
+        'College savings: even modest 529 contributions ($500/month per child for 18 years) add meaningfully to monthly cash demands.',
+        'Potential income increase: many parents, particularly high earners, find that the pressure of supporting a family drives career advancement and income growth that partially or fully offsets the cost increase.',
+      ]),
+      h2('The childcare years: how to survive them financially'),
+      p('The years from birth to kindergarten are the most financially intense. Several strategies help:'),
+      ul([
+        'Use the Dependent Care FSA: employers often offer a Dependent Care FSA that lets you set aside up to $5,000 per year (per household) in pre-tax dollars for childcare. This saves 20–30% on childcare costs depending on your marginal tax rate.',
+        'Child Tax Credit: the Child Tax Credit ($2,000 per child under 17 in 2024, with income phase-outs) directly reduces your tax bill.',
+        'Negotiate remote work: for the parent who earns less, working from home can reduce childcare needs significantly during the toddler years if flexible hours allow some coverage.',
+        'Consider the timeline honestly: if childcare costs will be high for four years and then fall sharply at school age, model that transition explicitly. The FIRE timeline pause during the childcare years does not mean FIRE is impossible — it means it is delayed.',
+      ]),
+      h2('529 plans and education funding'),
+      p('A 529 plan is a tax-advantaged account specifically for education expenses. Contributions are made with after-tax dollars, but growth and withdrawals for qualified education expenses (tuition, books, room and board) are tax-free. Many states also offer a state income tax deduction on contributions.'),
+      h3('How much to contribute'),
+      p('The right 529 contribution depends on your FIRE goals and your values about funding education. Common approaches:'),
+      ul([
+        'Full-ride target: calculate the projected cost of a four-year public university in 18 years (assuming ~5% annual inflation: ~$120,000–$160,000 in today\'s dollars for in-state public), then back-calculate monthly contributions needed to reach that with typical 529 returns (~6–7% annually). This produces a target of roughly $400–$600 per month per child from birth.',
+        'Partial funding: some FIRE parents target covering 50% of expected costs and expect children to cover the rest through scholarships, work, or loans.',
+        'Community college or trade school path: if your values or your child\'s interests point this direction, the 529 target drops significantly.',
+      ]),
+      p('Important: 529 funds not used for education can be rolled over to a Roth IRA (up to $35,000 lifetime, subject to annual Roth contribution limits) or used for other purposes with a 10% penalty on earnings. Overfunding is recoverable.'),
+      h2('Involving children in money conversations'),
+      p('One of the under-discussed benefits of pursuing FIRE as a parent is the opportunity to model healthy financial behavior. Children who grow up in households where money is discussed openly, where trade-offs are explained, and where saving and investing are treated as normal develop significantly stronger financial literacy than peers from households where money is a source of anxiety or silence.'),
+      p('Practical approaches by age:'),
+      ul([
+        'Ages 5–8: allowance (even small amounts), three jars (spend/save/give), and simple conversations about why you choose to buy some things and not others.',
+        'Ages 9–12: introduce the concept of compound interest with simple examples, explain what you invest in and why (without overwhelming detail), and involve kids in family budget conversations.',
+        'Ages 13–18: show them a real investment account statement, explain the FIRE concept in terms they can aspire to, and encourage them to start investing summer job income.',
+      ]),
+      h2('Adjusting your FIRE number for a family'),
+      p('A family FIRE number is simply built on family spending rather than individual or couple spending. Model the full cost of raising children to independence, not just current costs. Include the childcare years, college, and any expected support in early adulthood. Then add the long-term spending of just the couple in later retirement.'),
+      p('The result is usually a higher number and a longer timeline than the child-free version — but not impossibly so. Many parents reach FIRE in their late 40s or early 50s rather than their 30s or 40s. The payoff is not just financial independence; it is modeling for your children what a life built on intentional financial decisions can look like.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +872,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'social-security-strategy-for-early-retirees': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-social-security', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-social-security',
+      label: 'Factor Social Security into your FIRE number →',
+      source: 'learn-social-security',
+    },
+  },
+  'cash-allocation-and-emergency-fund-in-fire': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire', 'building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/dashboard', label: 'Open Dashboard' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-cash-allocation',
+      label: 'Run your FIRE projection →',
+      source: 'learn-cash-allocation',
+    },
+  },
+  'fire-with-kids-family-financial-independence': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum', 'approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-fire-kids', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-fire-kids',
+      label: 'Calculate your family FIRE number →',
+      source: 'learn-fire-kids',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +926,7 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'fire-with-kids-family-financial-independence',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -809,6 +971,8 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'social-security-strategy-for-early-retirees',
+      'cash-allocation-and-emergency-fund-in-fire',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
