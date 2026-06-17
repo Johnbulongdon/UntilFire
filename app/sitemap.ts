@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next'
 import { cityLandingPages } from '@/lib/city-pages'
 import { CITIES, isUS } from '@/lib/fire-data'
+import { statePages } from '@/lib/state-pages'
+import { rankingPagesList } from '@/lib/ranking-pages'
 import { learnArticles, learnStages } from '@/lib/learn'
 import { siteUrl } from '@/lib/site'
 
@@ -61,6 +63,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: siteUrl('/fire-number/fire-by-state'),
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: siteUrl('/fire-number/best-states'),
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
       url: siteUrl('/learn'),
       lastModified: new Date(),
       changeFrequency: 'weekly',
@@ -112,5 +126,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.65,
     }))
 
-  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes]
+  const stateRoutes: MetadataRoute.Sitemap = statePages.map((page) => ({
+    url: siteUrl(`/fire-number/states/${page.slug}`),
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }))
+
+  const rankingRoutes: MetadataRoute.Sitemap = rankingPagesList.map((page) => ({
+    url: siteUrl(`/fire-number/${page.slug}`),
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }))
+
+  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...stateRoutes, ...rankingRoutes]
 }

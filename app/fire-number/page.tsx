@@ -138,6 +138,42 @@ export default function FireNumberHubPage() {
           </div>
         ))}
 
+        {/* Ranking links section */}
+        <section style={{ marginTop: 48, marginBottom: 40 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", margin: "0 0 20px", letterSpacing: "-0.03em" }}>
+            Compare cities by cost, strategy, or state
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+            {[
+              { title: "Best States for FIRE", desc: "Tax-efficient + affordable states ranked", href: "/fire-number/best-states" },
+              { title: "Cheapest Cities", desc: "Lowest cost of living for faster FIRE", href: "/fire-number/cheapest-cities" },
+              { title: "Most Expensive Cities", desc: "Plan for high-cost living with exact targets", href: "/fire-number/most-expensive-cities" },
+              { title: "No-Income-Tax States", desc: "Nine states where more income becomes savings", href: "/fire-number/no-income-tax-states" },
+              { title: "FIRE by State", desc: "Compare all 50 states by retirement cost", href: "/fire-number/fire-by-state" },
+            ].map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                style={{
+                  textDecoration: "none",
+                  background: "#fff",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 14,
+                  padding: "18px 16px",
+                  transition: "border-color 0.15s",
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", marginBottom: 6 }}>
+                  {item.title}
+                </div>
+                <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.5 }}>
+                  {item.desc}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* FAQ Section */}
         <section style={{ marginTop: 48, background: "#ffffff", border: "1px solid #E2E8F0", borderRadius: 18, padding: "28px 24px" }}>
           <h2 style={{ fontSize: 24, color: "#064E3B", margin: "0 0 18px", letterSpacing: "-0.02em" }}>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { CITIES } from "@/lib/fire-data";
+import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 
 interface PlaidItem {
@@ -39,6 +39,8 @@ interface Props {
   lifestyleMultiplier: number;
   onRetirementCityChange: (name: string, col: number) => void;
   onLifestyleChange: (multiplier: number) => void;
+  taxKey: string;
+  onTaxKeyChange: (key: string) => void;
 }
 
 export default function ProfileTab({
@@ -58,8 +60,15 @@ export default function ProfileTab({
   lifestyleMultiplier,
   onRetirementCityChange,
   onLifestyleChange,
+  taxKey,
+  onTaxKeyChange,
 }: Props) {
   const [displayName, setDisplayName] = useState("");
+
+  const [taxSearch, setTaxSearch] = useState("");
+  const [showTaxDropdown, setShowTaxDropdown] = useState(false);
+  const [currencySearch, setCurrencySearch] = useState("");
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [retirementCitySearch, setRetirementCitySearch] = useState(retirementCityName);
   const [showRetirementCityDropdown, setShowRetirementCityDropdown] = useState(false);
   const [fireProfileSaved, setFireProfileSaved] = useState(false);
@@ -331,32 +340,55 @@ export default function ProfileTab({
         <div style={{ marginTop: 20 }}>
           <label style={labelStyle}>Preferred currencies</label>
           <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 10px" }}>
-            Only checked currencies appear in dropdowns. Leave all unchecked to show every currency.
+            Add currencies to filter dropdowns. Leave empty to show all.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 6 }}>
-            {SUPPORTED_CURRENCIES.map((c) => {
-              const checked = preferredCurrencies.includes(c);
+          {preferredCurrencies.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {preferredCurrencies.map(c => (
+                <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px 3px 8px", borderRadius: 20, background: "#F0FDF4", border: "1px solid #BBF7D0", fontSize: 12, fontWeight: 700, color: "#047857", fontFamily: "DM Mono, monospace" }}>
+                  {c}
+                  <button
+                    onClick={() => toggleCurrency(c)}
+                    style={{ background: "none", border: "none", padding: "0 0 0 2px", cursor: "pointer", color: "#6b7280", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
+                    aria-label={`Remove ${c}`}
+                  >×</button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div style={{ position: "relative" }}>
+            <input
+              style={inputStyle}
+              value={currencySearch}
+              onChange={e => { setCurrencySearch(e.target.value); setShowCurrencyDropdown(true); }}
+              onFocus={() => setShowCurrencyDropdown(true)}
+              onBlur={() => setTimeout(() => setShowCurrencyDropdown(false), 150)}
+              placeholder="Search to add a currency…"
+            />
+            {showCurrencyDropdown && currencySearch.trim().length >= 1 && (() => {
+              const q = currencySearch.trim().toLowerCase();
+              const matches = SUPPORTED_CURRENCIES.filter(c =>
+                !preferredCurrencies.includes(c) &&
+                (c.toLowerCase().includes(q) || (CURRENCY_NAMES[c] || "").toLowerCase().includes(q))
+              ).slice(0, 8);
+              if (!matches.length) return null;
               return (
-                <label key={c} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "5px 8px", borderRadius: 8, background: checked ? "#F0FDF4" : "#F8FAFC", border: `1px solid ${checked ? "#BBF7D0" : "#E2E8F0"}`, transition: "all 0.15s" }}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleCurrency(c)}
-                    style={{ accentColor: "#059669", width: 14, height: 14, flexShrink: 0 }}
-                  />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text)", fontFamily: "DM Mono, monospace" }}>{c}</span>
-                  <span style={{ fontSize: 11, color: "var(--uf-text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{CURRENCY_NAMES[c]}</span>
-                </label>
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto", marginTop: 4 }}>
+                  {matches.map(c => (
+                    <div
+                      key={c}
+                      onMouseDown={() => { toggleCurrency(c); setCurrencySearch(""); setShowCurrencyDropdown(false); }}
+                      style={{ padding: "8px 14px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--uf-border)", display: "flex", alignItems: "center", gap: 8 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "var(--uf-surface)")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "")}
+                    >
+                      <span style={{ fontWeight: 700, fontFamily: "DM Mono, monospace", minWidth: 36 }}>{c}</span>
+                      <span style={{ color: "var(--uf-text-2)", fontSize: 12 }}>{CURRENCY_NAMES[c]}</span>
+                    </div>
+                  ))}
+                </div>
               );
-            })}
-          </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button onClick={() => setPreferredCurrencies([...SUPPORTED_CURRENCIES])} style={{ fontSize: 12, color: "#059669", background: "none", border: "1px solid #D1FAE5", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
-              Select all
-            </button>
-            <button onClick={() => setPreferredCurrencies([])} style={{ fontSize: 12, color: "var(--uf-text-2)", background: "none", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
-              Clear all
-            </button>
+            })()}
           </div>
         </div>
       </div>
@@ -421,9 +453,9 @@ export default function ProfileTab({
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
-                  📍 Use “{retirementCitySearchTrimmed}”
+                  📍 Use &quot;{retirementCitySearchTrimmed}&quot;
                   <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
-                    We’ll save the city name even if it is not in our estimate list yet.
+                    We&apos;ll save the city name even if it is not in our estimate list yet.
                   </div>
                 </div>
               )}
@@ -461,6 +493,60 @@ export default function ProfileTab({
               Rough target: {formatMoney(targetAnnualSpend)}/yr × 25 = {formatMoney(targetFireNumber)}
             </div>
           )}
+        </div>
+
+        {/* Tax home */}
+        <label style={labelStyle}>Tax home</label>
+        {taxKey && STATE_TAX[taxKey] && !taxSearch && (
+          <p style={{ fontSize: 12, color: "var(--uf-text-2)", margin: "0 0 8px", lineHeight: 1.5 }}>
+            {STATE_TAX[taxKey].label}
+          </p>
+        )}
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <input
+            style={inputStyle}
+            value={taxSearch}
+            onChange={(e) => { setTaxSearch(e.target.value); setShowTaxDropdown(true); }}
+            onFocus={() => setShowTaxDropdown(true)}
+            onBlur={() => setTimeout(() => setShowTaxDropdown(false), 150)}
+            placeholder={taxKey && STATE_TAX[taxKey] ? `Change: ${STATE_TAX[taxKey].label}` : "Search city or state to set tax home…"}
+          />
+          {showTaxDropdown && taxSearch.trim().length >= 2 && (() => {
+            const matches = CITIES.filter(c =>
+              c.name.toLowerCase().includes(taxSearch.trim().toLowerCase()) && c.state && STATE_TAX[c.state]
+            ).slice(0, 8);
+            if (!matches.length) return null;
+            const seen = new Set<string>();
+            const unique = matches.filter(c => { if (seen.has(c.state)) return false; seen.add(c.state); return true; });
+            return (
+              <div style={{
+                position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+                background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto",
+                marginTop: 4,
+              }}>
+                {unique.map((c) => (
+                  <div
+                    key={c.state}
+                    onMouseDown={() => {
+                      onTaxKeyChange(c.state);
+                      setTaxSearch("");
+                      setShowTaxDropdown(false);
+                      markFireProfileSaved();
+                    }}
+                    style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                  >
+                    {c.flag} {c.name}
+                    <span style={{ fontSize: 12, color: "var(--uf-text-2)", marginLeft: 6 }}>
+                      · {STATE_TAX[c.state]?.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", maxWidth: "100%" }}>
@@ -578,7 +664,7 @@ export default function ProfileTab({
                 <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)" }}>{item.institution_name}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--uf-text-3)" }}>
-                <span style={{ color: "#059669", fontWeight: 600 }}>● Connected</span>
+                <span style={{ color: "#059669", fontWeight: 600 }}>{"●"} Connected</span>
                 <span>{fmtSynced(item.last_synced_at)}</span>
               </div>
             </div>

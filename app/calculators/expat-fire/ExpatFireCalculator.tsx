@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { CITIES } from '@/lib/fire-data';
+import { CITY_COORDS } from '@/lib/city-coords';
 import { calcFIRE } from '@/lib/fire';
 
 const GeoArbitrageGlobe = dynamic(
@@ -27,6 +28,57 @@ export default function ExpatFireCalculator() {
 
   const currentCity = CITIES.find(c => c.key === cityKey) ?? CITIES[0];
   const result = calcFIRE(savings, currentCity.col, age || undefined, portfolio);
+
+  // ── Freedom timeline ───────────────────────────────────────────────
+  // Fast-forward the projected portfolio and watch each city flip to green.
+  const [timelineYears, setTimelineYears] = useState(0);
+  const [playing, setPlaying] = useState(false);
+
+  // Per-city unlock schedule, computed with the same engine as the headline so
+  // a city's "turns green" year matches its years-to-FIRE exactly. Sorted by
+  // the soonest to unlock — i.e. which cities turn green first.
+  const cityUnlocks = useMemo(() => {
+    return CITIES
+      .filter(c => CITY_COORDS[c.key])
+      .map(c => {
+        const r = calcFIRE(savings, c.col, age || undefined, portfolio);
+        return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
+      })
+      .sort((a, b) => a.years - b.years || a.col - b.col);
+  }, [savings, portfolio, age]);
+
+  // Run the bar from today to roughly when the bulk of cities have unlocked
+  // (95th percentile, so one very expensive outlier doesn't stretch it out).
+  const sliderMax = useMemo(() => {
+    const ys = cityUnlocks.map(c => c.years).filter(y => y < 60).sort((a, b) => a - b);
+    if (!ys.length) return 5;
+    const p95 = ys[Math.floor(0.95 * (ys.length - 1))];
+    return Math.min(50, Math.max(5, Math.ceil(p95)));
+  }, [cityUnlocks]);
+
+  // Keep the playhead inside range if the schedule shifts under it.
+  useEffect(() => {
+    if (timelineYears > sliderMax) setTimelineYears(sliderMax);
+  }, [sliderMax, timelineYears]);
+
+  // Auto-play advances the playhead one year at a time.
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => {
+      setTimelineYears(y => {
+        if (y >= sliderMax) { setPlaying(false); return sliderMax; }
+        return y + 1;
+      });
+    }, 600);
+    return () => clearInterval(id);
+  }, [playing, sliderMax]);
+
+  const t = Math.min(timelineYears, sliderMax);
+  const annualContribution = Math.max(0, savings) * 12;
+  const projectedPortfolio = (portfolio + annualContribution / 0.10) * Math.pow(1.10, t) - annualContribution / 0.10;
+  const readyCount = cityUnlocks.filter(c => c.years <= t + 1e-9).length;
+  const projAge = age ? Number(age) + t : undefined;
+  const thisYear = new Date().getFullYear();
 
   const filtered = citySearch.length > 0
     ? CITIES.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 8)
@@ -154,17 +206,105 @@ export default function ExpatFireCalculator() {
           </div>
         </div>
 
+        {/* Freedom timeline — scrub forward to watch cities turn green */}
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '20px 20px 22px', marginTop: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Freedom timeline
+              </h3>
+              <p style={{ color: '#64748b', fontSize: 13, margin: '2px 0 0', lineHeight: 1.5 }}>
+                Fast-forward to watch cities turn green — and see which unlock first{age ? ', and at what age' : ''}.
+              </p>
+            </div>
+            <button
+              onClick={() => setPlaying(p => !p)}
+              style={{ flexShrink: 0, background: playing ? '#ffffff' : '#059669', color: playing ? '#059669' : '#ffffff', border: '1.5px solid #059669', borderRadius: 99, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              {playing ? '❚❚ Pause' : '▶ Play'}
+            </button>
+          </div>
+
+          {/* Scrubber */}
+          <input
+            type="range"
+            min={0}
+            max={sliderMax}
+            step={1}
+            value={t}
+            onChange={e => { setPlaying(false); setTimelineYears(Number(e.target.value)); }}
+            aria-label="Years from today"
+            style={{ width: '100%', accentColor: '#059669', marginTop: 16, cursor: 'pointer' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 2 }}>
+            <span>Today</span>
+            <span>+{sliderMax} yrs</span>
+          </div>
+
+          {/* Readout */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', fontFamily: 'Syne, sans-serif' }}>
+              {t === 0 ? 'Today' : projAge ? `Age ${projAge}` : `In ${t} ${t === 1 ? 'year' : 'years'}`}
+            </span>
+            {t > 0 && (
+              <span style={{ fontSize: 13, color: '#64748b' }}>
+                {projAge ? `· ${thisYear + t}` : `· ${thisYear}`}
+              </span>
+            )}
+            <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 700, color: '#059669' }}>
+              🟢 {readyCount} of {cityUnlocks.length} cities FIRE-ready
+            </span>
+          </div>
+          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+            Projected portfolio ~{fmt(projectedPortfolio)}
+            {annualContribution > 0 ? ` · assumes you keep saving ${fmt(annualContribution)}/yr` : ''}
+          </div>
+
+          {/* Ordered milestone strip — which cities turn green first */}
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, marginTop: 16 }}>
+            {cityUnlocks.slice(0, 18).map(c => {
+              const unlocked = c.years <= t + 1e-9;
+              const badge = c.years < 0.5 ? 'now' : projAge ? `age ${c.age}` : `${c.year}`;
+              return (
+                <div
+                  key={c.key}
+                  style={{
+                    flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                    padding: '8px 12px', borderRadius: 12, minWidth: 82,
+                    background: unlocked ? '#ecfdf5' : '#f8fafc',
+                    border: `1.5px solid ${unlocked ? '#6ee7b7' : '#e2e8f0'}`,
+                    transition: 'background 0.2s, border-color 0.2s',
+                  }}
+                >
+                  <span style={{ fontSize: 18, lineHeight: 1 }}>{c.flag}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: unlocked ? '#047857' : '#334155', whiteSpace: 'nowrap' }}>
+                    {c.name.split(',')[0]}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: unlocked ? '#059669' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                    {unlocked ? '🟢 ' : ''}{badge}
+                  </span>
+                </div>
+              );
+            })}
+            {cityUnlocks.length > 18 && (
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>
+                +{cityUnlocks.length - 18} more
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Globe */}
         <div style={{ marginTop: 32, marginBottom: 8 }}>
           <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
             Tap a city to compare
           </h2>
           <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 20px' }}>
-            Drag to spin · 🟢 FIRE ready now · 🟡 Barista FIRE · 🔴 Not yet
+            Drag to spin · {t === 0 ? '🟢 FIRE ready now' : `🟢 ${projAge ? `at age ${projAge}` : `in ${t} ${t === 1 ? 'yr' : 'yrs'}`}`} · 🟡 Barista FIRE · 🔴 Not yet
           </p>
           <GeoArbitrageGlobe
             monthlySavings={savings}
-            portfolioBalance={portfolio}
+            portfolioBalance={Math.round(projectedPortfolio)}
             currentAge={age || undefined}
             currentCityKey={cityKey}
             onCitySelect={handleCitySelect}
