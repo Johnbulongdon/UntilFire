@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -629,6 +634,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
     ],
+    primaryCta: {
+      href: '/?source=learn-fire-basics',
+      label: 'Calculate your FIRE number',
+      source: 'learn-fire-basics',
+    },
   },
   'how-much-money-do-i-need-to-retire': {
     primaryStage: 'approaching-fire',
@@ -637,6 +647,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
     ],
+    primaryCta: {
+      href: '/?source=learn-fire-number',
+      label: 'Calculate your FIRE number',
+      source: 'learn-fire-number',
+    },
   },
   'what-is-the-4-percent-rule': {
     primaryStage: 'living-in-fire',
@@ -645,6 +660,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
     ],
+    primaryCta: {
+      href: '/?source=learn-withdrawal-strategy',
+      label: 'Run the 4% rule calculator',
+      source: 'learn-withdrawal-strategy',
+    },
   },
   'why-savings-rate-matters-more-than-income': {
     primaryStage: 'starting-out',
@@ -653,6 +673,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
+    primaryCta: {
+      href: '/calculators/savings-rate?source=learn-savings-rate',
+      label: 'Calculate your savings rate',
+      source: 'learn-savings-rate',
+    },
   },
   'coast-fire-vs-full-fire': {
     primaryStage: 'building-momentum',
@@ -661,6 +686,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
     ],
+    primaryCta: {
+      href: '/calculators/coast-fire?source=learn-coast-fire',
+      label: 'Try the Coast FIRE calculator',
+      source: 'learn-coast-fire',
+    },
   },
   'lean-fire-vs-fat-fire': {
     primaryStage: 'building-momentum',
@@ -669,6 +699,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
     ],
+    primaryCta: {
+      href: '/?source=learn-fire-types',
+      label: 'Calculate your FIRE target',
+      source: 'learn-fire-types',
+    },
   },
   'barista-fire': {
     primaryStage: 'living-in-fire',
@@ -677,6 +712,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
     ],
+    primaryCta: {
+      href: '/calculators/coast-fire?source=learn-barista-fire',
+      label: 'Model your Barista FIRE timeline',
+      source: 'learn-barista-fire',
+    },
   },
   'roth-ira-vs-401k-for-fire': {
     primaryStage: 'building-momentum',
@@ -685,6 +725,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
     ],
+    primaryCta: {
+      href: '/calculators/compound-interest?source=learn-retirement-accounts',
+      label: 'See how tax-advantaged growth compounds',
+      source: 'learn-retirement-accounts',
+    },
   },
   'sequence-of-returns-risk': {
     primaryStage: 'approaching-fire',
@@ -693,6 +738,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
       { href: '/dashboard', label: 'Run Monte Carlo in Dashboard' },
     ],
+    primaryCta: {
+      href: '/?source=learn-sequence-risk',
+      label: 'Stress-test your FIRE plan',
+      source: 'learn-sequence-risk',
+    },
   },
   'how-fire-assumptions-change-your-retirement-date': {
     primaryStage: 'approaching-fire',
@@ -701,6 +751,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
+    primaryCta: {
+      href: '/?source=learn-assumptions',
+      label: 'Adjust your assumptions and recalculate',
+      source: 'learn-assumptions',
+    },
   },
   'compound-interest-and-fire': {
     primaryStage: 'starting-out',
@@ -709,6 +764,11 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
     ],
+    primaryCta: {
+      href: '/calculators/compound-interest?source=learn-compounding',
+      label: 'Visualize your compounding growth',
+      source: 'learn-compounding',
+    },
   },
   'index-funds-101-what-to-invest-in': {
     primaryStage: 'building-momentum',
