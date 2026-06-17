@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,169 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'healthcare-before-medicare-fire-health-insurance',
+    title: 'Healthcare Before Medicare: How Early Retirees Handle Health Insurance',
+    description: 'The most common question about early retirement is healthcare. Here is how FIRE retirees handle health insurance before Medicare eligibility at 65.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('The healthcare gap problem'),
+      p('Medicare starts at 65. If you retire at 45, you have a 20-year gap to fill. This is the single most common concern people have about early retirement — and it is a real one. But it is also very solvable once you understand the options.'),
+      p('The US healthcare system gives early retirees several legitimate paths to coverage. None of them is as simple as an employer plan, but most early retirees find workable solutions, often at lower cost than expected.'),
+      h2('Option 1: ACA Marketplace plans'),
+      p('The Affordable Care Act (ACA) created a marketplace where individuals can buy health insurance directly. For FIRE retirees, this is the primary option.'),
+      p('ACA plans are priced based on income, not age or pre-existing conditions. The key insight: your taxable income in early retirement may be much lower than your actual spending, especially if you are drawing from Roth accounts or have a gap before any portfolio withdrawals kick in. Lower income means higher ACA subsidies.'),
+      ul([
+        'Silver plan subsidies cut premiums significantly for incomes below 400% of the federal poverty level.',
+        'A couple drawing $60,000 per year from a Roth IRA (tax-free) may show $0 in taxable income, qualifying for maximum subsidies.',
+        'Roth conversion ladders and income timing are strategies that FIRE retirees use to stay in subsidy-eligible income bands.',
+      ]),
+      h2('Option 2: COBRA after leaving a job'),
+      p('COBRA lets you continue your employer\'s health plan for 18 months after leaving. It is expensive — you pay the full premium, including what your employer used to pay — but it is temporary continuity. Many early retirees use COBRA while setting up ACA coverage.'),
+      h2('Option 3: Spouse\'s employer plan'),
+      p('If your partner continues working, staying on their employer health plan is often the simplest solution. Many FIRE households use a "one retires, one keeps the benefits" approach during the transition period.'),
+      h2('Option 4: Health sharing ministries'),
+      p('Health sharing ministries are not insurance but operate similarly — members share healthcare costs with each other. They are generally less expensive than ACA plans but come with limitations: pre-existing conditions may be excluded, coverage varies, and consumer protections are weaker than with traditional insurance. Some FIRE communities use them successfully; others have had claims disputes.'),
+      h2('Option 5: Part-time work with benefits'),
+      p('Barista FIRE is partly motivated by healthcare. Part-time work at employers who offer benefits — Starbucks, Trader Joe\'s, REI, and others — can cover health insurance while the portfolio compounds. This is a popular bridge strategy that keeps healthcare costs manageable.'),
+      h2('How to plan for healthcare in FIRE'),
+      ol([
+        'Estimate your expected annual healthcare cost as a separate line item in your spending plan.',
+        'Model ACA subsidy eligibility based on your expected taxable income in retirement.',
+        'Factor in a health savings account (HSA) — it is triple-tax-advantaged and a powerful tool for pre-retirement healthcare saving.',
+        'Plan your Roth conversions and income to stay within subsidy bands when possible.',
+        'Build a healthcare buffer of $10,000–$20,000 in your emergency fund for out-of-pocket maximums.',
+      ]),
+      h2('The Health Savings Account (HSA)'),
+      p('An HSA is the most tax-efficient healthcare savings vehicle available. Contributions are pre-tax, growth is tax-free, and withdrawals for qualified medical expenses are tax-free. After age 65, you can use HSA funds for anything — making it a de facto secondary retirement account.'),
+      p('Maximise HSA contributions while you are on a high-deductible health plan. You can invest HSA funds in index funds and let them compound. Many FIRE planners treat the HSA as a hidden fourth retirement account specifically earmarked for medical costs.'),
+      h2('The bottom line'),
+      p('Healthcare is a solvable problem in early retirement. The solution often involves combining ACA marketplace coverage, income management for subsidy eligibility, HSA savings, and occasionally part-time work with benefits. The key is planning it explicitly rather than hoping it works out.'),
+    ],
+  },
+  {
+    slug: 'geographic-arbitrage-retire-earlier-by-moving',
+    title: 'Geographic Arbitrage: How to Retire Earlier by Moving to a Lower-Cost Location',
+    description: 'Geographic arbitrage is one of the most powerful FIRE accelerators. Moving to a lower-cost city or country can cut your FIRE number by 30–50% and pull your freedom date years forward.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('What is geographic arbitrage?'),
+      p('Geographic arbitrage in a FIRE context means living in a location where your money goes further — either within the US or internationally. Since your FIRE number is 25× your annual spending, cutting your spending by moving to a lower-cost location has an outsized effect on your target portfolio.'),
+      p('If you spend $80,000 per year in San Francisco, your FIRE number is $2,000,000. If you move to a city where you can live comfortably on $50,000 per year, your target drops to $1,250,000. That\'s $750,000 less you need to accumulate — equivalent to shaving years off your timeline.'),
+      h2('Domestic geographic arbitrage'),
+      p('Within the US, cost of living varies dramatically. A household that needs $90,000 per year in New York City might live identically well on $55,000 in Raleigh, NC, or $50,000 in Tulsa, OK.'),
+      ul([
+        'No state income tax states: Florida, Texas, Nevada, Washington, Tennessee, and others keep more of each dollar invested.',
+        'Low-cost metros: cities in the Midwest and Southeast consistently offer low rent, healthcare, and food costs.',
+        'Rural living: outside major metros, property costs and general expenses drop significantly.',
+      ]),
+      p('The trade-offs are real: leaving a high-income city can mean a salary cut if you are still working. The calculation usually involves comparing income loss against spending reduction to determine net impact on FIRE timeline.'),
+      h2('International geographic arbitrage'),
+      p('FIRE communities have long used international moves as an accelerant. Countries in Southeast Asia, Latin America, Eastern Europe, and Southern Europe offer very high quality of life at a fraction of US costs.'),
+      ul([
+        'Portugal: popular FIRE destination. Excellent healthcare, low crime, warm climate, EU travel access. A comfortable life for $30,000–$40,000 per year per couple.',
+        'Mexico (Mexico City, Oaxaca, Merida): proximity to the US, strong expat communities, world-class food, $25,000–$35,000 per year.',
+        'Thailand (Chiang Mai): long-standing FIRE favourite. Low cost, strong expat infrastructure, $20,000–$30,000 per year.',
+        'Colombia (Medellín): year-round spring climate, growing tech and expat scene, $25,000–$35,000 per year.',
+      ]),
+      h2('How to calculate the impact on your FIRE number'),
+      p('The math is simple: take your current annual spending estimate, reduce it by the expected cost drop for your target location, multiply by 25, and compare to your current FIRE target.'),
+      p('Example: current spending $70,000 → FIRE target $1,750,000. Move to a location where spending drops to $45,000 → new FIRE target $1,125,000. The move saves $625,000 in required portfolio — potentially 5–8 years of additional accumulation.'),
+      h2('Important considerations'),
+      ul([
+        'Healthcare abroad: research quality and cost before committing. Many countries offer very affordable private insurance.',
+        'Visa and residency: most countries have retirement or passive income visa options. Portugal\'s D7 visa, Mexico\'s Temporary Resident visa, and others are designed for this.',
+        'Tax treaties: the US taxes citizens on worldwide income regardless of where you live. The Foreign Earned Income Exclusion (FEIE) and Foreign Tax Credit reduce double taxation.',
+        'Return plan: many geo-arb FIRE retirees spend 3–6 months in their target country before committing. A test run reveals real costs vs. assumed costs.',
+      ]),
+      h2('The compounding effect'),
+      p('Geographic arbitrage works in two directions: it shrinks your FIRE number and it makes your portfolio last longer. A $1M portfolio supporting $40,000 per year in withdrawals has a longer runway than one supporting $70,000. The lower-cost location essentially stress-tests your plan against downturns.'),
+    ],
+  },
+  {
+    slug: 'dollar-cost-averaging-why-consistency-beats-timing',
+    title: 'Dollar-Cost Averaging: Why Consistency Beats Market Timing for FIRE',
+    description: 'Dollar-cost averaging is the habit that turns a consistent savings rate into long-term wealth. Here is how it works, why it works, and why you should stop trying to time the market.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('What is dollar-cost averaging?'),
+      p('Dollar-cost averaging (DCA) means investing a fixed amount on a regular schedule — every month, every paycheck — regardless of what the market is doing. Instead of trying to buy at the "right" time, you buy consistently at whatever price happens to be available.'),
+      p('If you invest $500 per month into an index fund, you buy more shares when prices are low and fewer shares when prices are high. Over time, your average cost per share tends to be lower than the average price over the same period — hence "dollar-cost averaging."'),
+      h2('Why market timing fails'),
+      p('Professional fund managers with full-time research teams and multi-million dollar budgets consistently fail to time the market. For individual investors, the challenge is even harder: markets move on news before it is public, emotions cloud judgement during corrections, and missing just a few of the best trading days dramatically reduces lifetime returns.'),
+      p('A study by Putnam Investments found that an investor fully in the S&P 500 from 2003–2022 earned 9.8% annually. An investor who missed just the 10 best days over those 20 years earned only 5.6%. The 10 best days are almost always in or near corrections — when most people are trying to get out.'),
+      h2('The psychological advantage of DCA'),
+      p('Beyond the math, DCA has a powerful psychological benefit: it removes the decision. When markets drop 20%, an investor with automatic contributions does not have to decide whether to buy or wait. The contribution happens automatically. This removes the single biggest risk factor in investing: reactive decision-making during fear.'),
+      p('Automating contributions transforms investing from a series of difficult decisions into a system that runs without you. For FIRE, this is foundational: the investor who contributes consistently through bull and bear markets almost always outperforms the investor who tries to be clever.'),
+      h2('How to implement DCA for FIRE'),
+      ol([
+        'Set a fixed monthly contribution amount based on your savings rate target.',
+        'Automate it — contribute on payday before the money reaches spending accounts.',
+        'Invest in a total market index fund (VTI, VTSAX, or equivalent) so you are diversified from day one.',
+        'Do not check the balance more than quarterly. Weekly checking increases emotional response to short-term noise.',
+        'When markets fall significantly, resist the urge to stop. A 20% correction means index funds are on sale.',
+      ]),
+      h2('Lump sum vs DCA'),
+      p('Research consistently shows that investing a lump sum immediately outperforms DCA about 66% of the time — because markets trend upward over long periods, and DCA delays putting money to work. But for most FIRE planners, this is theoretical: you do not have a large lump sum. You have monthly cash flow. DCA is the practical reality for income-based savers.'),
+      p('If you do receive a windfall — inheritance, bonus, settlement — the research suggests investing it all immediately. The same logic applies to a large tax refund or asset sale. Time in the market beats timing the market.'),
+      h2('DCA and FIRE timeline math'),
+      p('DCA works because of compounding. A $1,000 monthly investment at 7% annual returns becomes $1.2 million over 30 years. At 25 years: $800,000. At 20 years: $500,000. The longer DCA runs uninterrupted, the more powerfully compounding does its work. Starting earlier matters far more than the exact amount invested.'),
+    ],
+  },
+  {
+    slug: '3-fund-portfolio-simple-investing-strategy',
+    title: 'The 3-Fund Portfolio: The Simple Strategy Behind Most FIRE Plans',
+    description: 'The 3-fund portfolio is the simplest implementation of broad diversification. Three index funds, annual rebalancing, and nothing else — this is what most FIRE retirees actually hold.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('What is the 3-fund portfolio?'),
+      p('The 3-fund portfolio holds exactly three index funds: a US total market fund, an international total market fund, and a bond fund. That is it. No sector funds, no alternatives, no stock picks.'),
+      p('The concept was popularised by Vanguard founder John Bogle and has since become the default strategy for the FIRE community. It is backed by decades of research showing that broad diversification plus minimal fees plus time is the dominant investing strategy for most individuals.'),
+      h2('The three funds'),
+      ul([
+        'Total US Market Index — holds all ~3,500 US-listed stocks weighted by market cap. Gives exposure to large, mid, and small companies across all sectors. Ticker examples: VTI (Vanguard ETF), VTSAX (Vanguard mutual fund), FSKAX (Fidelity).',
+        'Total International Index — holds all major developed and emerging market stocks outside the US. Approximately 6,000+ companies across Europe, Asia, and emerging markets. Ticker examples: VXUS (Vanguard ETF), VTIAX (Vanguard mutual fund), FTIHX (Fidelity).',
+        'US Bond Index — holds US government and investment-grade corporate bonds. Provides stability and reduces portfolio volatility. Ticker examples: BND (Vanguard ETF), VBTLX (Vanguard mutual fund), FXNAX (Fidelity).',
+      ]),
+      h2('What allocation?'),
+      p('The classic 3-fund allocation for FIRE accumulation phase is 60% US stocks, 30% international stocks, 10% bonds — for a 90/10 stock/bond split. More aggressive versions go 100% stocks during the early accumulation phase and add bonds as FIRE approaches.'),
+      p('A common rule of thumb: hold your age as a percentage in bonds. At 35, hold 35% bonds. At 50, hold 50% bonds. The FIRE community generally uses a lower bond allocation than traditional retirement advice, since a 40-year-old planning to retire at 55 still has a 50-year horizon ahead.'),
+      h2('Why does this simple strategy work?'),
+      ul([
+        'Diversification: three funds cover roughly 10,000 stocks across the entire global market. No single company or sector can sink you.',
+        'Minimal fees: total expense ratios of 0.03–0.07% versus 0.5–1%+ for actively managed funds.',
+        'No complexity drift: you never need to research individual stocks, evaluate fund managers, or chase performance.',
+        'Rebalancing is trivial: once per year, shift between the three funds to restore target allocation.',
+      ]),
+      h2('How to implement at major brokerages'),
+      p('Every major brokerage offers equivalent 3-fund options:'),
+      ul([
+        'Vanguard: VTI + VXUS + BND (ETFs) or VTSAX + VTIAX + VBTLX (mutual funds)',
+        'Fidelity: FSKAX + FTIHX + FXNAX (mutual funds, zero minimum investment)',
+        'Schwab: SWTSX + SWISX + SWAGX',
+        'Fidelity Zero funds: FZROX + FZILX (0.00% expense ratio, Fidelity-only)',
+      ]),
+      h2('3-fund across multiple account types'),
+      p('Most FIRE investors hold funds across a 401k, Roth IRA, and taxable brokerage. The 3-fund strategy works across all three, but the placement matters:'),
+      ul([
+        'Bonds in tax-advantaged accounts (401k, Roth) — bond interest is taxable; sheltering it inside a tax-advantaged account saves money.',
+        'International in taxable accounts — international funds pay foreign tax credits that are only useful in taxable accounts.',
+        'US total market can go anywhere.',
+      ]),
+      h2('What about target-date funds?'),
+      p('Target-date funds (like Vanguard Target Retirement 2045) are essentially pre-built 3-fund portfolios with automatic rebalancing. They are an excellent option if you want to simplify further. The expense ratios are slightly higher than buying the component funds separately, but the convenience is real. Many 401k plans offer only target-date funds — they are a fine choice.'),
+      h2('The bottom line'),
+      p('The 3-fund portfolio is not exciting. It does not beat the market. It does not require skill, time, or research. What it does: captures nearly all market returns, maintains diversification automatically, and requires about 15 minutes per year to rebalance. For FIRE, that is exactly what you want — a machine that compounds reliably while you focus on income and savings rate.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +918,58 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'healthcare-before-medicare-fire-health-insurance': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/?source=learn-healthcare', label: 'FIRE Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-healthcare',
+      label: 'Model healthcare costs in your FIRE plan',
+      source: 'learn-healthcare',
+    },
+  },
+  'geographic-arbitrage-retire-earlier-by-moving': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/fire-number', label: 'FIRE Number by City' },
+      { href: '/?source=learn-geo-arb', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/fire-number?source=learn-geo-arb',
+      label: 'Compare FIRE targets by city',
+      source: 'learn-geo-arb',
+    },
+  },
+  'dollar-cost-averaging-why-consistency-beats-timing': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/compound-interest?source=learn-dca',
+      label: 'See your consistent contributions compound',
+      source: 'learn-dca',
+    },
+  },
+  '3-fund-portfolio-simple-investing-strategy': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['starting-out'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/?source=learn-3-fund', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-3-fund',
+      label: 'Calculate your FIRE number',
+      source: 'learn-3-fund',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -763,6 +983,7 @@ export const learnStages: LearnStage[] = [
       'what-is-fire-financial-independence-retire-early',
       'why-savings-rate-matters-more-than-income',
       'compound-interest-and-fire',
+      'dollar-cost-averaging-why-consistency-beats-timing',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
     ],
@@ -781,11 +1002,13 @@ export const learnStages: LearnStage[] = [
     whatMattersNow: 'Invest your savings wisely using low-cost index funds. Master your allocation, rebalance annually, and reduce taxes. Combine this with account strategy (401k, Roth) to improve the machine.',
     articleSlugs: [
       'index-funds-101-what-to-invest-in',
+      '3-fund-portfolio-simple-investing-strategy',
       'diversification-why-eggs-in-many-baskets',
       'asset-allocation-stocks-vs-bonds',
       'roth-ira-vs-401k-for-fire',
       'rebalancing-your-portfolio-annually',
       'tax-loss-harvesting-explained',
+      'geographic-arbitrage-retire-earlier-by-moving',
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
@@ -808,6 +1031,7 @@ export const learnStages: LearnStage[] = [
       'how-much-money-do-i-need-to-retire',
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
+      'healthcare-before-medicare-fire-health-insurance',
       'what-is-the-4-percent-rule',
     ],
     calculatorLinks: [
