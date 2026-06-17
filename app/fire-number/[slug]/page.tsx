@@ -114,11 +114,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         url: page.canonicalUrl,
         siteName: 'UntilFire',
         type: 'article',
+        images: [{ url: `/api/og/city/${page.city.key}`, width: 1200, height: 630, alt: `FIRE number for ${page.city.name}` }],
       },
       twitter: {
         card: 'summary_large_image',
         title: page.title,
         description: page.description,
+        images: [`/api/og/city/${page.city.key}`],
       },
     }
   }
@@ -142,6 +144,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: `${data.name} ranks ${ordinal(rank.rank)} out of ${rank.total} US city baselines in UntilFire. Use local cost and tax context to estimate your target and timeline.`,
       url: `https://www.untilfire.com/fire-number/${data.key}`,
       type: 'website',
+      images: [{ url: `/api/og/city/${data.key}`, width: 1200, height: 630, alt: `FIRE number for ${data.name}` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${data.name} FIRE Number Calculator and Cost Guide`,
+      description: `${data.name} FIRE target: ${fmt(data.col * 25)} (based on ${fmt(data.col)}/year local cost of living).`,
+      images: [`/api/og/city/${data.key}`],
     },
   }
 }
