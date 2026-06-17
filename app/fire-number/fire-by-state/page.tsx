@@ -13,6 +13,14 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/fire-by-state' },
   openGraph: {
+    images: [
+      {
+        url: "/api/og/ranking/fire-by-state",
+        width: 1200,
+        height: 630,
+        alt: "FIRE by state comparison",
+      },
+    ],
     title: 'FIRE Number by State | UntilFire',
     description: 'State-by-state comparison of FIRE targets, tax rates, and retirement costs.',
     type: 'website',

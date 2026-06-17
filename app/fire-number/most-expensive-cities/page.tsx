@@ -12,6 +12,14 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/most-expensive-cities' },
   openGraph: {
+    images: [
+      {
+        url: "/api/og/ranking/most-expensive-cities",
+        width: 1200,
+        height: 630,
+        alt: "FIRE ranking for most-expensive-cities",
+      },
+    ],
     title: 'Most Expensive US Cities for FIRE | UntilFire',
     description: 'The 20 most expensive US cities ranked by annual cost of living with FIRE targets.',
     type: 'website',
