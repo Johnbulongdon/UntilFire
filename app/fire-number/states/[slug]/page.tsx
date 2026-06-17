@@ -34,6 +34,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: page.description,
       url: page.canonicalUrl,
       type: 'website',
+      images: [
+        {
+          url: `/api/og/state/${slug}`,
+          width: 1200,
+          height: 630,
+          alt: `FIRE number for ${page.stateName}`,
+        },
+      ],
     },
   }
 }

@@ -16,6 +16,14 @@ export const metadata: Metadata = {
     title: 'Best States for FIRE | UntilFire',
     description: 'Compare US states by tax efficiency and cost of living for early retirement planning.',
     type: 'website',
+    images: [
+      {
+        url: '/api/og/ranking/best-states',
+        width: 1200,
+        height: 630,
+        alt: 'Best states for FIRE',
+      },
+    ],
   },
 }
 

@@ -13,6 +13,14 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/no-income-tax-states' },
   openGraph: {
+    images: [
+      {
+        url: "/api/og/ranking/no-income-tax-states",
+        width: 1200,
+        height: 630,
+        alt: "FIRE ranking for no-income-tax-states",
+      },
+    ],
     title: 'No-Income-Tax States for FIRE | UntilFire',
     description: '9 US states with zero income tax. Compare FIRE targets and living costs for tax-efficient retirement.',
     type: 'website',

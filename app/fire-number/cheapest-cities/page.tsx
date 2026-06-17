@@ -12,6 +12,14 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/cheapest-cities' },
   openGraph: {
+    images: [
+      {
+        url: "/api/og/ranking/cheapest-cities",
+        width: 1200,
+        height: 630,
+        alt: "FIRE ranking for cheapest-cities",
+      },
+    ],
     title: 'Cheapest US Cities for FIRE | UntilFire',
     description: 'The 20 cheapest US cities ranked by cost of living with FIRE targets and tax context.',
     type: 'website',
