@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,161 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'fire-for-freelancers-solo-401k-sep-ira',
+    title: 'FIRE for Freelancers: Solo 401(k), SEP-IRA, and Self-Employed Savings',
+    description: 'Self-employed people have access to retirement accounts that are even more powerful than employer plans. Here is how Solo 401(k)s and SEP-IRAs work, how to handle variable income, and what changes when you have no employer.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('The self-employed FIRE advantage'),
+      p('Working for yourself creates challenges — irregular income, no employer match, self-employment taxes — but it also creates significant retirement savings advantages that most employees cannot access. A self-employed person with a profitable business can shelter far more income from taxes each year than an employee maxing a standard 401(k).'),
+      p('The key accounts are the Solo 401(k) and SEP-IRA. Understanding the difference and choosing the right one for your situation can save tens of thousands of dollars in taxes over a FIRE accumulation timeline.'),
+      h2('Self-employment tax: the overhead'),
+      p('Before getting to the advantages, acknowledge the main disadvantage: self-employment tax. Employees pay 7.65% in FICA taxes (Social Security + Medicare); the employer pays the other 7.65%. Self-employed people pay both halves — 15.3% on net self-employment income up to the Social Security wage base ($168,600 in 2024), plus 2.9% Medicare on income above that.'),
+      p('This 15.3% effective FICA rate is significant. The deduction for half of self-employment taxes (you can deduct the "employer half" as a business expense) partially offsets this, but net self-employment income is still taxed more heavily than equivalent W-2 income. Factor this into FIRE projections when comparing self-employment to salaried work.'),
+      h2('The Solo 401(k): the most powerful option'),
+      p('The Solo 401(k) — also called an Individual 401(k) or Self-Employed 401(k) — is available to self-employed individuals with no full-time employees other than a spouse. It offers two contribution types:'),
+      h3('Employee contributions'),
+      p('As the "employee" of your own business, you can contribute up to $23,000 (2024) as an employee deferral, or $30,500 if age 50+. These can be pre-tax or Roth (if your plan allows Roth contributions — Fidelity and Schwab both support this).'),
+      h3('Employer contributions'),
+      p('As the "employer," you can also make profit-sharing contributions of up to 25% of net self-employment income (20% of net earnings after the SE tax deduction in practice). These are always pre-tax.'),
+      p('The combined employee + employer contribution cannot exceed $69,000 (2024) or $76,500 with catch-up contributions. This ceiling is dramatically higher than a standard 401(k).'),
+      p('Example: Self-employed consultant earning $150,000 net. Employee contribution: $23,000. Employer contribution: 20% × $150,000 = $30,000. Total: $53,000 — vs $23,000 in a standard employer plan. The additional $30,000 in tax-deferred savings is enormous.'),
+      h2('SEP-IRA: the simpler option'),
+      p('A Simplified Employee Pension IRA (SEP-IRA) is easier to set up and administer than a Solo 401(k), but has less flexibility:'),
+      ul([
+        'Contribution limit: 25% of net compensation (20% of net self-employment income), up to $69,000 (2024)',
+        'No employee contribution component — only the employer/owner contribution',
+        'No Roth option — all contributions are pre-tax',
+        'No catch-up contributions for those 50+',
+        'No loan provisions',
+        'Much simpler to open (most brokerages have same-day setup) and no annual filing requirements',
+      ]),
+      p('For someone whose business income generates a large employer contribution percentage, SEP-IRA can shelter just as much as a Solo 401(k). But for moderate-income self-employed workers, the Solo 401(k)\'s employee contribution component allows sheltering more. A freelancer earning $60,000 net can contribute $23,000 as employee deferral + $12,000 as employer contribution via Solo 401(k) = $35,000 total, vs only $12,000 via SEP-IRA.'),
+      h2('Solo 401(k) vs SEP-IRA: how to choose'),
+      ul([
+        'Solo 401(k) wins when: net self-employment income is below ~$200,000 (employee deferral matters); you want Roth option; you want backdoor Roth without pro-rata complications (solo 401k does not count for pro-rata); you are 50+ and want catch-up contributions',
+        'SEP-IRA wins when: you want the simplest possible setup; your income is high and the 20% employer contribution alone maxes the limit; you have business employees (Solo 401(k) is not available with non-spouse employees)',
+      ]),
+      h2('Handling variable income'),
+      p('The core challenge for self-employed FIRE savers is that income varies month-to-month and year-to-year. Strategies:'),
+      ul([
+        'Quarterly estimated taxes: pay 25% of expected annual tax liability each quarter via IRS Form 1040-ES to avoid underpayment penalties; adjust as actual income becomes clearer',
+        'Contribution timing: Solo 401(k) employee deferrals must be made before December 31 of the tax year; employer contributions can be made up to the tax filing deadline (including extensions)',
+        'Variable savings rate: set a percentage-based savings rate rather than a fixed dollar amount so it automatically adjusts with income',
+        'Cash buffer: maintain 3–6 months of business expenses in a separate business account to smooth irregular revenue; do not treat this as personal savings',
+      ]),
+      h2('Quarterly tax system for freelancers'),
+      p('Self-employed people do not have taxes withheld from each paycheck. Instead, you pay estimated taxes quarterly. The safe harbor amounts:'),
+      ul([
+        '100% of prior year\'s tax liability (110% if prior year AGI > $150,000)',
+        '90% of current year\'s expected tax liability',
+      ]),
+      p('Paying the prior-year safe harbor eliminates underpayment penalties regardless of how much you earn this year. This is the simplest approach and is especially valuable when income is unpredictable.'),
+      h2('FIRE number calculation for freelancers'),
+      p('Self-employed FIRE planners need to account for two differences in their FIRE number calculation:'),
+      ul([
+        'Healthcare: no employer plan means full ACA market cost during retirement — budget $10,000–$20,000/year depending on coverage and income',
+        'Reduced Social Security benefits: self-employed income with legitimate business deductions and Solo 401(k) contributions may result in lower reported SE income and lower eventual Social Security benefits; model this honestly',
+      ]),
+    ],
+  },
+  {
+    slug: 'net-worth-milestones-on-the-path-to-fire',
+    title: 'Net Worth Milestones on the Path to FIRE',
+    description: 'Compound growth has distinct phases — slow at first, then dramatically faster. Understanding the milestones helps you stay motivated through the hardest years and recognize when the machine starts working for you.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('Why milestones matter in a long journey'),
+      p('A 20-year path to financial independence is too long to track as a single goal. The human brain is not well-designed to sustain motivation toward a distant outcome that feels equally far away at year two and year twelve. Milestones break the journey into meaningful phases, each with its own character and its own psychology.'),
+      p('The other reason milestones matter: compound growth is nonlinear. The first $100,000 takes far longer to accumulate than the second $100,000. Understanding why — and what changes at each phase — helps you interpret your progress accurately rather than feeling stuck when early progress is slow.'),
+      h2('Milestone 1: The first $10,000'),
+      p('Getting from $0 to $10,000 in invested savings is the most psychologically significant milestone for many people, even though it is the smallest number. It proves that consistent investing is possible for you. It builds the habit. The account balance is large enough to watch it fluctuate with markets — which is the first visceral experience of compound growth.'),
+      p('At 7% annual return, $10,000 becomes $76,000 over 30 years without adding anything. That math starts to feel real with a real balance.'),
+      h2('Milestone 2: The first $100,000'),
+      p('Charlie Munger famously said that the first $100,000 is the hardest to accumulate. This is because compound growth has not yet had time to contribute meaningfully. For most people, the first $100,000 is almost entirely from earned savings — the market adds relatively little. A 7% return on $30,000 is $2,100. On $90,000 it is $6,300. The numbers are real but not yet dramatic.'),
+      p('At this milestone, the character of wealth-building begins to shift. A 10% market return on $100,000 is $10,000 — a meaningful amount. The portfolio starts becoming a co-contributor to wealth rather than just a savings account.'),
+      h2('Milestone 3: $250,000–$500,000 (the momentum zone)'),
+      p('This range is where compound growth becomes undeniable. A 7% annual return on $400,000 is $28,000 — more than many people save from their income each year. For the first time, the portfolio is growing as fast as or faster than your contributions. Wealth is building itself.'),
+      p('This phase also tends to coincide with career mid-points, when income is higher and spending on children, housing, and lifestyle has either stabilized or peaked. The combination of higher income, larger base, and compounding creates the most powerful wealth-building years for many people.'),
+      h2('Milestone 4: Coast FIRE'),
+      p('Coast FIRE is the point where you could stop contributing entirely and your existing portfolio would compound to your full FIRE number by traditional retirement age. This is a significant psychological milestone: you have "won" the accumulation game on the minimum-effort path. Everything you contribute from this point accelerates rather than enables the plan.'),
+      p('The math: if your FIRE number is $1,500,000 at age 65, and you are 40, you need roughly $370,000 invested today (at 7% real return, $370,000 × 4.04 ≈ $1,500,000 over 25 years). Once you cross $370,000, you have reached Coast FIRE.'),
+      h2('Milestone 5: Half your FIRE number'),
+      p('The halfway point is more than symbolic. Due to compound growth, the second half of your FIRE journey typically takes significantly less time than the first half, even if nothing about your savings rate changes. A portfolio of $750,000 growing at 7% generates $52,500 per year — which means it adds nearly $52,500 to itself without any new contributions. Combined with continued savings, the second half of the journey accelerates noticeably.'),
+      h2('Milestone 6: One year of expenses in the portfolio'),
+      p('When your portfolio reaches 25× your annual expenses — your full FIRE number — is the obvious terminal milestone. But some planners celebrate an interim point: when the portfolio first generates enough in returns to cover one year of expenses. At a 7% return and $60,000 in annual spending, this happens when the portfolio reaches $857,000 ($60,000 / 0.07). From this point, a typical year of market returns "pays for" a year of your retirement — even before you retire.'),
+      h2('Milestone 7: Full FIRE number'),
+      p('Your FIRE number is 25× expected annual retirement spending. The portfolio has reached the level where — using the 4% rule — it can theoretically sustain withdrawals indefinitely. This is financial independence. Work becomes optional.'),
+      p('Important: reaching this milestone does not require immediate action. Many people take an additional 6–12 months to validate the number, optimize their transition strategy, and make the psychological shift to the next phase. The milestone matters; the timing of action is a separate decision.'),
+      h2('Using milestones to stay on track'),
+      ul([
+        'Track net worth monthly rather than daily — daily fluctuations add noise without signal',
+        'Celebrate each milestone explicitly — they represent years of discipline that deserve recognition',
+        'Recalculate your FIRE number annually — spending assumptions change, and the target should reflect current plans',
+        'Do not compare absolute numbers with others — the relevant comparison is your own progress against your own plan',
+        'When progress feels slow (often in the $0–$100k range), remember that the slow phase is temporary; the acceleration comes',
+      ]),
+    ],
+  },
+  {
+    slug: 'fire-and-your-partner-aligning-on-financial-independence',
+    title: 'FIRE and Your Partner: How to Align on Financial Independence Together',
+    description: 'FIRE is much easier to achieve as a couple — and much harder if you are not aligned. Here is how to have productive money conversations, handle different timelines, and build a shared plan that works for both of you.',
+    category: 'Mindset',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The dual-income FIRE advantage'),
+      p('Two-income households have an inherent structural advantage in FIRE: each person can contribute to employer retirement plans, doubling tax-advantaged space. Fixed costs (housing, utilities, insurance) are shared between two incomes rather than one. Healthcare coverage from one employer can cover both. The financial math of FIRE is significantly easier for a couple working toward the same goal.'),
+      p('But the "working toward the same goal" part is the key assumption. FIRE couples who are aligned move significantly faster than an aligned individual. FIRE couples who are misaligned — one enthusiastic, one skeptical — often make no progress and build resentment instead. The alignment work is as important as the financial work.'),
+      h2('The money conversation most couples avoid'),
+      p('Many couples share finances for years without ever explicitly discussing what they each want from money and work. "When would you want to stop working if you could?" is a question with profound implications — and most couples have never asked each other directly. Different answers do not necessarily create a problem, but not knowing each other\'s answers creates a silent misalignment that shapes every spending and saving decision without acknowledgment.'),
+      p('Start here: each partner independently writes answers to three questions, then share and discuss:'),
+      ul([
+        'If money were not a constraint, what would your days look like in 10 years?',
+        'What does financial security mean to you — a specific number, a feeling, or something else?',
+        'What are you most reluctant to give up in exchange for a faster FIRE timeline?',
+      ]),
+      p('The answers reveal priorities, fears, and non-negotiables that make financial planning concrete rather than abstract.'),
+      h2('Handling different FIRE timelines'),
+      p('One partner may want to retire at 45; the other may find meaning and identity in their career and prefer to work until 60. This is not a dealbreaker — it is a planning input. Common approaches:'),
+      ul([
+        'The earlier target wins: build the plan around the earlier desired FIRE date; the partner who wants to keep working can continue to do so while FIRE has been achieved',
+        'Individual FIRE dates: each partner models their own target separately and contributes to a joint plan at an agreed level; each reaches FI on their own timeline',
+        'Semi-FIRE as the compromise: one partner reaches FIRE and stops while the other continues working; combined household income covers expenses without portfolio withdrawal, extending runway further',
+        'Coast FIRE for the resistant partner: they keep working in their current role but with a "the portfolio is already sufficient" security mindset rather than the pressure of needing the job',
+      ]),
+      h2('Shared vs separate finances'),
+      p('The question of joint vs. separate accounts is separate from the FIRE alignment question. Couples successfully pursue FIRE with fully joint finances, fully separate finances, and hybrid arrangements. The key is that the FIRE savings targets are met regardless of which account they land in.'),
+      p('A common FIRE-friendly structure: joint account for shared household expenses (mortgage, utilities, food, shared entertainment); individual accounts for personal spending; joint investment accounts for the FIRE portfolio (or individual accounts with agreed-upon contribution targets).'),
+      h2('When one partner is skeptical'),
+      p('The most common FIRE misalignment: one partner discovers FIRE and becomes enthusiastic; the other is skeptical, anxious, or uninterested. This is not a character flaw — it often reflects legitimate concerns about deprivation, uncertainty, or the social cost of being different from peers.'),
+      p('Approaches that help:'),
+      ul([
+        'Start with the "what would your ideal life look like?" conversation rather than the FIRE framework — the framework is a tool, not the goal',
+        'Run the calculator together: seeing the actual timeline often makes the abstract concrete and addresses the "is this even possible?" skepticism',
+        'Agree on a pilot period rather than a permanent commitment: "let\'s try living on $X/month for 6 months and see how it feels" is more acceptable than "let\'s change our lifestyle forever"',
+        'Identify the one or two expenses the skeptical partner genuinely values and protect them explicitly in the budget — showing flexibility reduces the feeling of being controlled',
+        'Focus on optionality: "we\'re building savings so that we have choices" is less threatening than "we\'re planning to retire at 40"',
+      ]),
+      h2('Planning practically: the joint FIRE plan'),
+      ul([
+        'Calculate the combined FIRE number: use total household spending (not individual)',
+        'Track combined savings rate: total saved across both partners / total household income',
+        'Agree on the investment structure: who manages what, at what institutions, reviewed how often',
+        'Set shared milestones: celebrate together at each net worth milestone',
+        'Review the plan annually: life changes, and the plan should change with it',
+      ]),
+      h2('The income gap between partners'),
+      p('When one partner earns significantly more than the other, the FIRE math can create resentment if not handled thoughtfully. The higher earner may feel they are doing more of the financial work; the lower earner may feel less ownership over the plan. A proportional contribution model — each partner contributes the same percentage of their income rather than the same dollar amount — often feels fairer and preserves both partners\' sense of agency.'),
+      p('The lower-earning partner\'s non-financial contributions also matter: career flexibility, childcare, household management, emotional support. A FIRE plan that works for both partners is one where both contributions — financial and non-financial — are acknowledged and valued.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +910,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'fire-for-freelancers-solo-401k-sep-ira': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['starting-out'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-freelance-fire', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate',
+      label: 'Calculate Your Self-Employed Rate',
+      source: 'learn-freelance-fire',
+    },
+  },
+  'net-worth-milestones-on-the-path-to-fire': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/?source=learn-milestones', label: 'FIRE Calculator' },
+      { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-milestones',
+      label: 'See Your FIRE Milestones',
+      source: 'learn-net-worth-milestones',
+    },
+  },
+  'fire-and-your-partner-aligning-on-financial-independence': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/?source=learn-fire-couples', label: 'FIRE Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-fire-couples',
+      label: 'Run Your Joint FIRE Number',
+      source: 'learn-fire-couples',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +964,8 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'net-worth-milestones-on-the-path-to-fire',
+      'fire-and-your-partner-aligning-on-financial-independence',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -789,6 +990,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'fire-for-freelancers-solo-401k-sep-ira',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
