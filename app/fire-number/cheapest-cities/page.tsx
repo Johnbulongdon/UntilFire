@@ -135,24 +135,42 @@ export default function CheapestCitiesPage() {
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
             Retire earlier in one of these cities
           </h2>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 20px' }}>
-            Use the FIRE calculator to model your exact timeline in any of these affordable cities.
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 24px' }}>
+            Use the FIRE calculator to model your exact timeline, or log in to track your actual progress.
           </p>
-          <Link
-            href="/?source=cheapest-cities"
-            style={{
-              display: 'inline-block',
-              background: '#22d3a5',
-              color: '#064E3B',
-              padding: '12px 28px',
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 800,
-              textDecoration: 'none',
-            }}
-          >
-            Calculate your FIRE date
-          </Link>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+            <Link
+              href="/?source=cheapest-cities"
+              style={{
+                display: 'inline-block',
+                background: '#22d3a5',
+                color: '#064E3B',
+                padding: '12px 28px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 800,
+                textDecoration: 'none',
+              }}
+            >
+              Calculate your FIRE date
+            </Link>
+            <Link
+              href="/dashboard"
+              style={{
+                display: 'inline-block',
+                background: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '12px 28px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 800,
+                textDecoration: 'none',
+                border: '1px solid rgba(255,255,255,0.3)',
+              }}
+            >
+              Go to dashboard
+            </Link>
+          </div>
         </div>
       </div>
 

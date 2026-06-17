@@ -151,24 +151,42 @@ export default function NoIncomeTaxStatesPage() {
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
             Model your FIRE date in a no-tax state
           </h2>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 20px' }}>
-            Use the FIRE calculator to see how zero state income tax accelerates your path to financial independence.
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 24px' }}>
+            Use the FIRE calculator to see how zero state income tax accelerates your path, or log in to track your actual savings.
           </p>
-          <Link
-            href="/?source=no-tax-states"
-            style={{
-              display: 'inline-block',
-              background: '#22d3a5',
-              color: '#064E3B',
-              padding: '12px 28px',
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 800,
-              textDecoration: 'none',
-            }}
-          >
-            Start the calculator
-          </Link>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+            <Link
+              href="/?source=no-tax-states"
+              style={{
+                display: 'inline-block',
+                background: '#22d3a5',
+                color: '#064E3B',
+                padding: '12px 28px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 800,
+                textDecoration: 'none',
+              }}
+            >
+              Start the calculator
+            </Link>
+            <Link
+              href="/dashboard"
+              style={{
+                display: 'inline-block',
+                background: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '12px 28px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 800,
+                textDecoration: 'none',
+                border: '1px solid rgba(255,255,255,0.3)',
+              }}
+            >
+              Go to dashboard
+            </Link>
+          </div>
         </div>
       </div>
 
