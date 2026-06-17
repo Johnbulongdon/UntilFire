@@ -96,6 +96,39 @@ export default function FireNumberHubPage() {
           </div>
         </div>
 
+        {/* Browse by Region */}
+        <section style={{ marginBottom: 52 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#064E3B", margin: "0 0 14px", letterSpacing: "-0.03em" }}>
+            Browse by US region
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+            {[
+              { slug: "northeast", name: "Northeast", desc: "ME, VT, NH, MA, CT, RI, NY, NJ, PA, MD, DC" },
+              { slug: "southeast", name: "Southeast", desc: "VA, NC, SC, GA, FL, AL, MS, TN, LA, AR" },
+              { slug: "midwest", name: "Midwest", desc: "OH, MI, IN, IL, WI, MN, IA, MO, ND, NE, KS" },
+              { slug: "southwest", name: "Southwest", desc: "TX, OK, NM, AZ" },
+              { slug: "mountain-west", name: "Mountain West", desc: "CO, WY, MT, ID, UT, NV" },
+              { slug: "west-coast", name: "West Coast", desc: "CA, OR, WA, AK, HI" },
+            ].map((r) => (
+              <Link
+                key={r.slug}
+                href={`/fire-number/regions/${r.slug}`}
+                style={{
+                  textDecoration: "none",
+                  background: "#fff",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 12,
+                  padding: "16px 18px",
+                  transition: "border-color 0.15s",
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#064E3B", marginBottom: 5 }}>{r.name} →</div>
+                <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.5 }}>{r.desc}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* City grid by state */}
         {sortedStates.map((stateName) => (
           <div key={stateName} style={{ marginBottom: 40 }}>

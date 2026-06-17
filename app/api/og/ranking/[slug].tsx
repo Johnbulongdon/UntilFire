@@ -30,6 +30,12 @@ const rankings: Record<string, { title: string; subtitle: string; color: string 
     subtitle: 'Compare FIRE targets across all 50 states',
     color: '#22d3a5',
   },
+  'region-northeast': { title: 'FIRE in the Northeast', subtitle: 'High cost, high income — can FIRE happen here?', color: '#c4b5fd' },
+  'region-southeast': { title: 'FIRE in the Southeast', subtitle: 'Lower taxes, lower costs, warmer weather', color: '#22d3a5' },
+  'region-midwest': { title: 'FIRE in the Midwest', subtitle: 'Underrated value. Quiet wealth-building.', color: '#22d3a5' },
+  'region-southwest': { title: 'FIRE in the Southwest', subtitle: 'Sun, sprawl, and no-tax momentum.', color: '#f97316' },
+  'region-mountain-west': { title: 'FIRE in the Mountain West', subtitle: 'Outdoor lifestyle, moderate cost, growing hubs.', color: '#22d3a5' },
+  'region-west-coast': { title: 'FIRE on the West Coast', subtitle: 'High cost, but high income potential too.', color: '#f97316' },
 };
 
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
@@ -45,6 +51,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   if (slug === 'no-income-tax-states') count = 9;
   if (slug === 'best-states') count = 10;
   if (slug === 'fire-by-state') count = 50;
+  if (slug.startsWith('region-')) count = 0;
 
   return new ImageResponse(
     (
@@ -97,7 +104,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               letterSpacing: '0.05em',
             }}
           >
-            RANKING: {count} CITIES/STATES
+            {slug.startsWith('region-') ? 'US REGION GUIDE' : `RANKING: ${count} CITIES/STATES`}
           </div>
 
           {/* Main title */}

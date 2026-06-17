@@ -3,6 +3,7 @@ import { cityLandingPages } from '@/lib/city-pages'
 import { CITIES, isUS } from '@/lib/fire-data'
 import { statePages } from '@/lib/state-pages'
 import { rankingPagesList } from '@/lib/ranking-pages'
+import { regionSlugs } from '@/lib/regions'
 import { learnArticles, learnStages } from '@/lib/learn'
 import { siteUrl } from '@/lib/site'
 
@@ -140,5 +141,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }))
 
-  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...stateRoutes, ...rankingRoutes]
+  const regionRoutes: MetadataRoute.Sitemap = regionSlugs.map((slug) => ({
+    url: siteUrl(`/fire-number/regions/${slug}`),
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }))
+
+  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...stateRoutes, ...rankingRoutes, ...regionRoutes]
 }
