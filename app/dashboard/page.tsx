@@ -84,7 +84,7 @@ type EmergencyFundPriorityMode = "protect" | "balance" | "grow";
 
 const EMERGENCY_FUND_HISTORY_KEY = "uf_emergency_fund_healthy_once_v1";
 const EMERGENCY_FUND_FLOOR_MONTHS = 1.5;
-const EMERGENCY_FUND_TARGET_MONTHS = 4;
+const EMERGENCY_FUND_TARGET_MONTHS = 6;
 
 function useEmergencyFundHistory(isHealthyNow: boolean) {
   const [hasEverHealthy, setHasEverHealthy] = useState(false);
@@ -2891,6 +2891,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const bankAssets = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment");
   const bankAssetsTotal = bankAssets.reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const [hideZeroAssets, setHideZeroAssets] = useState(true);
+  const [efCalcOpen, setEfCalcOpen] = useState(false);
   const visibleAssets = hideZeroAssets ? bankAssets.filter(a => (a.balance_current ?? 0) !== 0) : bankAssets;
   const hiddenAssetCount = bankAssets.length - visibleAssets.length;
 
@@ -3096,6 +3097,37 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 <div style={{ fontSize: 15, fontWeight: 800, color: s.color ?? "#19181E", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
               </div>
             ))}
+          </div>
+
+          {/* How is this calculated? */}
+          <div style={{ marginBottom: 10 }}>
+            <button
+              onClick={() => setEfCalcOpen(o => !o)}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "#64748B", fontFamily: "Manrope, sans-serif" }}
+              aria-expanded={efCalcOpen}
+            >
+              <span style={{ fontSize: 11, display: "inline-block", transform: efCalcOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>▶</span>
+              How is this calculated?
+            </button>
+            {efCalcOpen && (
+              <div style={{ marginTop: 10, background: "rgba(255,255,255,0.7)", border: "1px solid rgba(148,163,184,0.22)", borderRadius: 10, padding: "14px 16px", fontSize: 13, color: "#475569", fontFamily: "Manrope, sans-serif", lineHeight: 1.7 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px 16px", marginBottom: 10, fontVariantNumeric: "tabular-nums" }}>
+                  <span>Monthly essential expenses</span>
+                  <span style={{ fontWeight: 700, color: "#0F172A", textAlign: "right" }}>{fmtMoney(monthlyExpenses)}</span>
+                  <span>× {EMERGENCY_FUND_TARGET_MONTHS} months (target)</span>
+                  <span style={{ fontWeight: 700, color: "#0F172A", textAlign: "right" }}>{fmtMoney(efTarget)}</span>
+                  <span>× {EMERGENCY_FUND_FLOOR_MONTHS} months (floor)</span>
+                  <span style={{ fontWeight: 700, color: "#0F172A", textAlign: "right" }}>{fmtMoney(efFloor)}</span>
+                  <span>Your current reserve</span>
+                  <span style={{ fontWeight: 700, color: "#0F172A", textAlign: "right" }}>{fmtMoney(emergencyFundBalance)} <span style={{ fontWeight: 500, color: "#64748B" }}>({monthsCovered.toFixed(1)} mo)</span></span>
+                </div>
+                <div style={{ borderTop: "1px solid rgba(148,163,184,0.2)", paddingTop: 10, fontSize: 12, color: "#64748B" }}>
+                  <strong style={{ color: "#475569" }}>Why 6 months?</strong> Standard financial advice ranges from 3–6 months. UntilFire uses 6 months as the target because it covers a typical job search plus a buffer for unexpected costs like medical bills or home repairs — and because staying on your FIRE path requires more cushion, not less, when markets are volatile.
+                  <br /><br />
+                  <strong style={{ color: "#475569" }}>Floor (1.5 months):</strong> The minimum safety net before extra cash should go toward investing. Below this, rebuilding the buffer takes priority.
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Progress bar */}
