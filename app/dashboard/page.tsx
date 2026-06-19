@@ -3521,16 +3521,41 @@ type SimScenario = {
   holdings: SimHolding[];
 };
 
-const SIM_TICKER_COLORS = ["#16A06A", "#14B8A6", "#6366F1", "#F59E0B", "#0EA5E9", "#8B5CF6", "#334155"];
+const SIM_TICKER_COLORS = ["#16A06A", "#14B8A6", "#6366F1", "#F59E0B", "#0EA5E9", "#8B5CF6", "#334155", "#EC4899", "#10B981", "#F43F5E"];
 
+// Ticker picker for the edit-holdings modal. `ret` is an illustrative modeled
+// 1-year return (historical CAGR), not advice. Keep tickers uppercase.
 const SIM_TICKER_LIBRARY: Record<string, { name: string; ret: number; color: string }> = {
-  VOO:  { name: "Vanguard S&P 500 ETF",   ret: 24.2, color: "#16A06A" },
-  BND:  { name: "Vanguard Total Bond",     ret: 2.1,  color: "#334155" },
-  VT:   { name: "Vanguard Total World",    ret: 18.9, color: "#6366F1" },
-  QQQ:  { name: "Invesco Nasdaq-100 ETF",  ret: 31.5, color: "#14B8A6" },
-  SCHD: { name: "Schwab US Dividend",      ret: 9.8,  color: "#0EA5E9" },
-  VYM:  { name: "Vanguard High Div Yield", ret: 8.4,  color: "#8B5CF6" },
-  VXUS: { name: "Vanguard Total Intl",     ret: 12.1, color: "#F59E0B" },
+  VOO:   { name: "Vanguard S&P 500 ETF",            ret: 24.2, color: "#16A06A" },
+  VTI:   { name: "Vanguard Total Stock Market ETF",  ret: 23.8, color: "#15A05F" },
+  SPY:   { name: "SPDR S&P 500 ETF",                ret: 24.1, color: "#22C55E" },
+  IVV:   { name: "iShares Core S&P 500 ETF",        ret: 24.2, color: "#16A06A" },
+  SCHB:  { name: "Schwab US Broad Market ETF",       ret: 23.7, color: "#15A05F" },
+  QQQ:   { name: "Invesco Nasdaq-100 ETF",           ret: 31.5, color: "#14B8A6" },
+  XLK:   { name: "Technology Select Sector SPDR",    ret: 29.0, color: "#0D9488" },
+  SOXX:  { name: "iShares Semiconductor ETF",        ret: 35.0, color: "#0EA5E9" },
+  ARKK:  { name: "ARK Innovation ETF",               ret: 18.0, color: "#38BDF8" },
+  VT:    { name: "Vanguard Total World Stock ETF",   ret: 18.9, color: "#6366F1" },
+  VXUS:  { name: "Vanguard Total Intl Stock ETF",    ret: 12.1, color: "#F59E0B" },
+  VEA:   { name: "Vanguard Developed Markets ETF",   ret: 11.2, color: "#FB923C" },
+  VWO:   { name: "Vanguard Emerging Markets ETF",    ret: 10.4, color: "#FBBF24" },
+  EFA:   { name: "iShares MSCI EAFE ETF",            ret: 11.0, color: "#FB923C" },
+  BND:   { name: "Vanguard Total Bond Market ETF",   ret: 2.1,  color: "#334155" },
+  AGG:   { name: "iShares Core US Aggregate Bond",   ret: 2.0,  color: "#475569" },
+  BNDX:  { name: "Vanguard Total Intl Bond ETF",     ret: 3.2,  color: "#64748B" },
+  SCHD:  { name: "Schwab US Dividend Equity ETF",    ret: 9.8,  color: "#0EA5E9" },
+  VIG:   { name: "Vanguard Dividend Appreciation",   ret: 16.5, color: "#0284C7" },
+  VYM:   { name: "Vanguard High Dividend Yield ETF", ret: 8.4,  color: "#8B5CF6" },
+  VNQ:   { name: "Vanguard Real Estate ETF",         ret: 11.8, color: "#A855F7" },
+  GLD:   { name: "SPDR Gold Trust",                  ret: 26.3, color: "#EAB308" },
+  IWM:   { name: "iShares Russell 2000 ETF",         ret: 11.5, color: "#EC4899" },
+  AVUV:  { name: "Avantis US Small Value ETF",       ret: 14.0, color: "#DB2777" },
+  AAPL:  { name: "Apple Inc.",                       ret: 20.0, color: "#6366F1" },
+  MSFT:  { name: "Microsoft Corp.",                  ret: 14.0, color: "#4F46E5" },
+  NVDA:  { name: "NVIDIA Corp.",                     ret: 70.0, color: "#16A06A" },
+  GOOGL: { name: "Alphabet Inc.",                    ret: 35.0, color: "#EF4444" },
+  AMZN:  { name: "Amazon.com Inc.",                  ret: 30.0, color: "#F97316" },
+  TSLA:  { name: "Tesla Inc.",                       ret: 40.0, color: "#E11D48" },
 };
 
 const SIM_INITIAL_SCENARIOS: SimScenario[] = [
@@ -3646,7 +3671,9 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
   function addRow() {
     const t = ((newTicker || "").trim().toUpperCase() || "NEW").slice(0, 5);
     const known = SIM_TICKER_LIBRARY[t];
-    const color = known?.color ?? SIM_TICKER_COLORS[draft.length % SIM_TICKER_COLORS.length];
+    const used = new Set(draft.map(h => h.color));
+    let color = known?.color ?? SIM_TICKER_COLORS[draft.length % SIM_TICKER_COLORS.length];
+    if (used.has(color)) color = SIM_TICKER_COLORS.find(c => !used.has(c)) ?? color;
     setDraft(d => d.concat([{ ticker: t, name: known?.name ?? "New holding", pct: 0, ret: known?.ret ?? 10.0, color }]));
     setNewTicker("");
   }
@@ -3664,6 +3691,16 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
     };
     setScenarios(prev => prev.concat([sc]));
     setSelected(n); setEditingIdx(n); setDraft(sc.holdings.map(h => ({ ...h }))); setNewTicker(""); setModalOpen(true);
+  }
+  function removeScenario(i: number) {
+    if (scenarios.length <= 1) return;
+    const newLen = scenarios.length - 1;
+    setScenarios(prev => prev.filter((_, idx) => idx !== i));
+    setSelected(prevSel => {
+      const s = i < prevSel ? prevSel - 1 : (i === prevSel ? Math.min(prevSel, newLen - 1) : prevSel);
+      return Math.max(0, Math.min(s, newLen - 1));
+    });
+    if (editingIdx === i) { setModalOpen(false); setEditingIdx(null); }
   }
 
   const railTot = (s: SimScenario) => s.holdings.reduce((a, h) => a + (h.pct || 0), 0) || 1;
@@ -3737,10 +3774,15 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
             const border = isSel ? `2px solid ${GREEN}` : (i === 0 ? "1px solid #BFE6D2" : "1px solid var(--uf-border)");
             const tag = i === 0 ? "YOUR PLAN" : (isSel ? "COMPARING" : "");
             return (
-              <div key={i} onClick={() => openEdit(i)} style={{ background: "var(--uf-card)", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all .15s", border, boxShadow: isSel ? "0 4px 14px rgba(22,160,106,0.14)" : "none" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)" }}>{s.name}</div>
-                  {tag && <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "#E7F6EE", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
+              <div key={i} onClick={() => setSelected(i)} style={{ background: "var(--uf-card)", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all .15s", border, boxShadow: isSel ? "0 4px 14px rgba(22,160,106,0.14)" : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    {tag && <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "#E7F6EE", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
+                    {scenarios.length > 1 && (
+                      <button onClick={e => { e.stopPropagation(); removeScenario(i); }} title="Remove scenario" aria-label={`Remove ${s.name}`} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 16, lineHeight: 1, padding: 0, width: 16, textAlign: "center" }}>×</button>
+                    )}
+                  </div>
                 </div>
                 <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 2 }}>{s.risk}</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 12 }}>
@@ -3750,10 +3792,10 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                 <div style={{ display: "flex", height: 7, borderRadius: 9999, overflow: "hidden", marginTop: 12, gap: 2 }}>
                   {s.holdings.map((h, j) => <div key={j} style={{ width: `${(h.pct || 0) / tot * 100}%`, background: h.color }} />)}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11, fontWeight: 700, color: GREEN }}>
+                <button onClick={e => { e.stopPropagation(); openEdit(i); }} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11, fontWeight: 700, color: GREEN, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", width: "fit-content" }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.2"><path d="M4 14l6-6 1.5 1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 6h4v4" strokeLinecap="round" strokeLinejoin="round" /><path d="M18 6l-6 6" strokeLinecap="round" /></svg>
-                  Tap to edit holdings
-                </div>
+                  Edit holdings
+                </button>
               </div>
             );
           })}
@@ -3916,7 +3958,10 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               ))}
 
               <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                <input type="text" value={newTicker} onChange={e => setNewTicker(e.target.value)} onKeyDown={e => { if (e.key === "Enter") addRow(); }} placeholder="Add ticker…" style={{ flex: 1, border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 14px", fontSize: 14, color: "var(--uf-text)", outline: "none", background: "var(--uf-card)" }} />
+                <input type="text" list="sim-ticker-list" value={newTicker} onChange={e => setNewTicker(e.target.value)} onKeyDown={e => { if (e.key === "Enter") addRow(); }} placeholder="Add ticker (e.g. VTI)…" autoComplete="off" style={{ flex: 1, border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 14px", fontSize: 14, color: "var(--uf-text)", outline: "none", background: "var(--uf-card)" }} />
+                <datalist id="sim-ticker-list">
+                  {Object.entries(SIM_TICKER_LIBRARY).map(([t, info]) => <option key={t} value={t}>{info.name}</option>)}
+                </datalist>
                 <button onClick={addRow} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, width: 46, fontSize: 22, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
               </div>
               <div style={{ fontSize: 11.5, color: "var(--uf-text-3)", marginTop: 12, fontStyle: "italic" }}>Returns model 1-year historical CAGR. Past performance doesn&apos;t guarantee future results.</div>
