@@ -548,7 +548,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, monthlyWantsExpenses, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, onTabChange, onOpenOnboarding }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -566,6 +566,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   userJoinedAt?: string;
   monthlyNeedsExpenses?: number;
   monthlyWorkCosts?: number;
+  monthlyWantsExpenses?: number;
   taxEnabled?: boolean;
   retirementTaxRate?: number;
   rothPct?: number;
@@ -1723,6 +1724,72 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           </div>
         </div>
       </div>
+
+      {/* ── Spend breakdown & emergency safety ───────────────────────────── */}
+      {monthlyExpenses > 0 && (
+        <div>
+          <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>How your month breaks down</div>
+              <button onClick={() => onTabChange?.("cashflow")} style={{ background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>Tag your spending →</button>
+            </div>
+
+            {(() => {
+              const rows = [
+                { key: "need", label: "Needs", emoji: "💚", color: "#22d3a5", amount: monthlyNeedsExpenses, note: "Counts toward your safety net" },
+                { key: "want", label: "Wants", emoji: "🧡", color: "#f97316", amount: monthlyWantsExpenses, note: "Left out — easy to pause in a crunch" },
+                { key: "work", label: "Work costs", emoji: "💼", color: "#6366f1", amount: monthlyWorkCosts, note: "Left out — drops away at FIRE" },
+              ].filter((r) => r.amount != null && r.amount > 0);
+              if (rows.length === 0) {
+                return (
+                  <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
+                    Tag your spending as <strong style={{ color: "#059669" }}>Need</strong>, <strong style={{ color: "#ea580c" }}>Want</strong>, or <strong style={{ color: "#4f46e5" }}>Work</strong> in Cashflow. We&apos;ll size your emergency fund on essential needs only — so wants and work costs don&apos;t inflate your target.
+                  </div>
+                );
+              }
+              const taggedTotal = rows.reduce((s, r) => s + (r.amount || 0), 0);
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {rows.map((r) => (
+                    <div key={r.key}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5, fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
+                        <span style={{ color: "var(--uf-text-2)" }}>{r.emoji} {r.label} <span style={{ color: "var(--uf-text-3)" }}>· {r.note}</span></span>
+                        <span style={{ color: "var(--uf-text)", fontWeight: 800 }}>{fmtMoney(r.amount || 0, true)}/mo</span>
+                      </div>
+                      <div style={{ height: 8, background: "var(--uf-surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ width: `${taggedTotal > 0 ? ((r.amount || 0) / taggedTotal) * 100 : 0}%`, height: "100%", background: r.color, borderRadius: 999 }} />
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ fontSize: 12, color: "var(--uf-text-3)", fontFamily: "Manrope, sans-serif" }}>Averaged from your tracked spending in full past months.</div>
+                </div>
+              );
+            })()}
+
+            <div style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Emergency fund target</div>
+                <span style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", fontWeight: 600 }}>{emergencyFundPlan.coverageMonths.toFixed(1)} {efUsingNeedsOnly ? "months of needs" : "months"} covered now</span>
+              </div>
+              <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
+                {efUsingNeedsOnly
+                  ? `${EMERGENCY_FUND_TARGET_MONTHS} months of essential needs (${fmtMoney(efMonthlyBase, true)}/mo). Wants and work costs are left out, so your target reflects what you'd truly need in a crisis.`
+                  : `${EMERGENCY_FUND_TARGET_MONTHS} months of your total expenses (${fmtMoney(efMonthlyBase, true)}/mo). Tag spending as Need / Want / Work in Cashflow to base this on essentials only — usually a smaller, more realistic target.`}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Floor · {EMERGENCY_FUND_FLOOR_MONTHS} mo</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(emergencyFundPlan.floorAmount, true)}</div>
+                </div>
+                <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Target · {EMERGENCY_FUND_TARGET_MONTHS} mo</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(emergencyFundPlan.targetAmount, true)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -4636,6 +4703,15 @@ export default function Dashboard() {
     const vals = Object.values(byMonth);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
   }, [recentTransactions, rates]);
+  const histWantsAvg = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const byMonth: Record<string, number> = {};
+    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth) && (t.tags || []).includes("want"))
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
+    const vals = Object.values(byMonth);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+  }, [recentTransactions, rates]);
   const histMonthsCount = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -5441,6 +5517,7 @@ export default function Dashboard() {
                 userJoinedAt={userJoinedAt}
                 monthlyNeedsExpenses={histNeedsAvg > 0 ? histNeedsAvg : undefined}
                 monthlyWorkCosts={histWorkAvg > 0 ? histWorkAvg : undefined}
+                monthlyWantsExpenses={histWantsAvg > 0 ? histWantsAvg : undefined}
                 taxEnabled={taxEnabled}
                 retirementTaxRate={retirementTaxRate}
                 rothPct={rothPct}
