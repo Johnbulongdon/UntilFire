@@ -3510,578 +3510,425 @@ function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Investment Simulations Tab ──────────────────────────────────────────────
-type DCAFreq = "weekly" | "bi-weekly" | "monthly" | "annually";
-
-interface DCASimRow {
-  year: number;
-  portfolio: number;
-  contributions: number;
-  growth: number;
-  real: number;
-}
-
-type Holding = {
-  ticker: string;
+type SimHolding = { ticker: string; name: string; pct: number; ret: number; color: string };
+type GeoMix = { na: number; eu: number; ap: number; em: number };
+type GeoRegion = keyof GeoMix;
+type SimScenario = {
   name: string;
-  cagr: number;
-  weight: number;
-  custom?: boolean;
+  risk: string;
+  geo: GeoMix;
+  stats: { vol: string; sharpe: string; dd: string; beta: string };
+  holdings: SimHolding[];
 };
 
-const ETF_DATA: Record<string, { name: string; cagr: number; category: string; stddev: number; maxDD: number }> = {
-  VOO:  { name: "Vanguard S&P 500 ETF",            cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
-  VTI:  { name: "Vanguard Total Stock Market ETF",  cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
-  SPY:  { name: "SPDR S&P 500 ETF",                cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
-  IVV:  { name: "iShares Core S&P 500 ETF",        cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
-  SCHB: { name: "Schwab US Broad Market ETF",       cagr: 0.107, category: "US Equity",         stddev: 0.16, maxDD: 0.57 },
-  QQQ:  { name: "Invesco Nasdaq-100 ETF",           cagr: 0.183, category: "US Growth",         stddev: 0.22, maxDD: 0.83 },
-  ARKK: { name: "ARK Innovation ETF",               cagr: 0.035, category: "US Growth",         stddev: 0.55, maxDD: 0.75 },
-  VT:   { name: "Vanguard Total World Stock ETF",   cagr: 0.092, category: "Global Equity",     stddev: 0.16, maxDD: 0.55 },
-  VXUS: { name: "Vanguard Total Intl Stock ETF",    cagr: 0.059, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
-  VEA:  { name: "Vanguard Developed Markets ETF",   cagr: 0.071, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
-  VWO:  { name: "Vanguard Emerging Markets ETF",    cagr: 0.037, category: "Emerging Markets",  stddev: 0.22, maxDD: 0.65 },
-  EFA:  { name: "iShares MSCI EAFE ETF",            cagr: 0.076, category: "Intl Equity",       stddev: 0.17, maxDD: 0.57 },
-  BND:  { name: "Vanguard Total Bond Market ETF",   cagr: 0.017, category: "US Bonds",          stddev: 0.05, maxDD: 0.20 },
-  AGG:  { name: "iShares Core US Aggregate Bond",   cagr: 0.015, category: "US Bonds",          stddev: 0.05, maxDD: 0.20 },
-  BNDX: { name: "Vanguard Total Intl Bond ETF",     cagr: 0.008, category: "Intl Bonds",        stddev: 0.05, maxDD: 0.22 },
-  SCHD: { name: "Schwab US Dividend Equity ETF",    cagr: 0.112, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
-  VIG:  { name: "Vanguard Dividend Appreciation",   cagr: 0.111, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
-  VYM:  { name: "Vanguard High Dividend Yield ETF", cagr: 0.095, category: "US Dividend",       stddev: 0.14, maxDD: 0.40 },
-  VNQ:  { name: "Vanguard Real Estate ETF",         cagr: 0.087, category: "Real Estate",       stddev: 0.20, maxDD: 0.70 },
-  GLD:  { name: "SPDR Gold Trust",                  cagr: 0.085, category: "Commodities",       stddev: 0.16, maxDD: 0.42 },
-  IWM:  { name: "iShares Russell 2000 ETF",         cagr: 0.090, category: "US Small Cap",      stddev: 0.22, maxDD: 0.59 },
-  AVUV: { name: "Avantis US Small Value ETF",       cagr: 0.150, category: "US Small Value",    stddev: 0.22, maxDD: 0.55 },
-  XLK:  { name: "Technology Select Sector SPDR",    cagr: 0.204, category: "Sector – Tech",     stddev: 0.22, maxDD: 0.57 },
-  SOXX: { name: "iShares Semiconductor ETF",        cagr: 0.220, category: "Sector – Semi",     stddev: 0.30, maxDD: 0.65 },
-  AAPL: { name: "Apple Inc.",                        cagr: 0.220, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
-  MSFT: { name: "Microsoft Corp.",                   cagr: 0.220, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
-  NVDA: { name: "NVIDIA Corp.",                      cagr: 0.500, category: "Individual Stock", stddev: 0.60, maxDD: 0.66 },
-  GOOGL:{ name: "Alphabet Inc.",                     cagr: 0.150, category: "Individual Stock", stddev: 0.28, maxDD: 0.55 },
-  AMZN: { name: "Amazon.com Inc.",                   cagr: 0.160, category: "Individual Stock", stddev: 0.30, maxDD: 0.56 },
-  TSLA: { name: "Tesla Inc.",                        cagr: 0.270, category: "Individual Stock", stddev: 0.65, maxDD: 0.73 },
+const SIM_TICKER_COLORS = ["#16A06A", "#14B8A6", "#6366F1", "#F59E0B", "#0EA5E9", "#8B5CF6", "#334155"];
+
+const SIM_TICKER_LIBRARY: Record<string, { name: string; ret: number; color: string }> = {
+  VOO:  { name: "Vanguard S&P 500 ETF",   ret: 24.2, color: "#16A06A" },
+  BND:  { name: "Vanguard Total Bond",     ret: 2.1,  color: "#334155" },
+  VT:   { name: "Vanguard Total World",    ret: 18.9, color: "#6366F1" },
+  QQQ:  { name: "Invesco Nasdaq-100 ETF",  ret: 31.5, color: "#14B8A6" },
+  SCHD: { name: "Schwab US Dividend",      ret: 9.8,  color: "#0EA5E9" },
+  VYM:  { name: "Vanguard High Div Yield", ret: 8.4,  color: "#8B5CF6" },
+  VXUS: { name: "Vanguard Total Intl",     ret: 12.1, color: "#F59E0B" },
 };
 
-const HOLDING_PALETTE = ["#059669", "#22d3a5", "#818cf8", "#f97316", "#fbbf24", "#ef4444", "#a78bfa", "#06b6d4"];
+const SIM_INITIAL_SCENARIOS: SimScenario[] = [
+  { name: "Current Plan", risk: "Balanced 70/30", geo: { na: 62, eu: 16, ap: 14, em: 8 }, stats: { vol: "13.1%", sharpe: "0.71", dd: "-18.2%", beta: "0.88" },
+    holdings: [
+      { ticker: "VOO", name: "Vanguard S&P 500 ETF", pct: 60, ret: 24.2, color: "#16A06A" },
+      { ticker: "BND", name: "Vanguard Total Bond",  pct: 20, ret: 2.1,  color: "#334155" },
+      { ticker: "VT",  name: "Vanguard Total World", pct: 20, ret: 18.9, color: "#6366F1" },
+    ] },
+  { name: "Aggressive Growth", risk: "High Growth 90/10", geo: { na: 78, eu: 9, ap: 9, em: 4 }, stats: { vol: "19.8%", sharpe: "0.68", dd: "-31.4%", beta: "1.18" },
+    holdings: [
+      { ticker: "QQQ", name: "Invesco Nasdaq-100 ETF", pct: 80, ret: 31.5, color: "#14B8A6" },
+      { ticker: "VT",  name: "Vanguard Total World",   pct: 20, ret: 18.9, color: "#6366F1" },
+    ] },
+  { name: "Conservative Income", risk: "Capital Preservation", geo: { na: 74, eu: 14, ap: 8, em: 4 }, stats: { vol: "8.4%", sharpe: "0.79", dd: "-9.8%", beta: "0.61" },
+    holdings: [
+      { ticker: "BND",  name: "Vanguard Total Bond",  pct: 50, ret: 2.1,  color: "#334155" },
+      { ticker: "VOO",  name: "Vanguard S&P 500 ETF", pct: 30, ret: 24.2, color: "#16A06A" },
+      { ticker: "SCHD", name: "Schwab US Dividend",   pct: 20, ret: 9.8,  color: "#0EA5E9" },
+    ] },
+  { name: "Dividend Focus", risk: "Income Tilt", geo: { na: 58, eu: 20, ap: 14, em: 8 }, stats: { vol: "10.2%", sharpe: "0.83", dd: "-12.1%", beta: "0.74" },
+    holdings: [
+      { ticker: "SCHD", name: "Schwab US Dividend",      pct: 50, ret: 9.8,  color: "#0EA5E9" },
+      { ticker: "VYM",  name: "Vanguard High Div Yield", pct: 30, ret: 8.4,  color: "#8B5CF6" },
+      { ticker: "VXUS", name: "Vanguard Total Intl",     pct: 20, ret: 12.1, color: "#F59E0B" },
+    ] },
+];
 
-type Scenario = {
-  id: "A" | "B" | "C";
-  label: string;
-  color: string;
-  holdings: Holding[];
-  initialAmount: number;
-  dcaAmount: number;
-  dcaFrequency: DCAFreq;
-  years: number;
-  glideEnabled: boolean;
-  glideCurrentAge: number;
-  glideRetirementAge: number;
-  glideStartStock: number;
-  glideEndStock: number;
-};
-
-function calcDCAProjection({
-  initialAmount, dcaAmount, dcaFrequency, years, holdings, includeInflation,
-  glideEnabled, currentAge, retirementAge, startStockPct, endStockPct,
-}: {
-  initialAmount: number; dcaAmount: number; dcaFrequency: DCAFreq; years: number;
-  holdings: Holding[]; includeInflation: boolean;
-  glideEnabled?: boolean; currentAge?: number; retirementAge?: number;
-  startStockPct?: number; endStockPct?: number;
-}): DCASimRow[] {
-  const STOCK_RETURN = 0.107;
-  const BOND_RETURN = 0.017;
-  const periods: Record<DCAFreq, number> = { weekly: 52, "bi-weekly": 26, monthly: 12, annually: 1 };
-  const annualContrib = dcaAmount * periods[dcaFrequency];
-  const inflation = 0.03;
-  const totalGlideYears = (retirementAge ?? 60) - (currentAge ?? 30);
-
-  const rows: DCASimRow[] = [];
-  let portfolio = initialAmount;
-  let totalContrib = initialAmount;
-
-  rows.push({ year: 0, portfolio: Math.round(portfolio), contributions: Math.round(totalContrib), growth: 0, real: Math.round(portfolio) });
-
-  for (let y = 1; y <= years; y++) {
-    let r: number;
-    if (glideEnabled && totalGlideYears > 0) {
-      const t = Math.min(y, totalGlideYears) / totalGlideYears;
-      const stockFrac = ((startStockPct ?? 80) - ((startStockPct ?? 80) - (endStockPct ?? 40)) * t) / 100;
-      r = stockFrac * STOCK_RETURN + (1 - stockFrac) * BOND_RETURN;
-    } else {
-      r = holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
+// Dot-grid world map — ellipse "blobs" tagged by region, sampled on a 64×32 grid.
+const SIM_GEO_MAP: { x: number; y: number; region: GeoRegion }[] = (() => {
+  const E: [number, number, number, number, GeoRegion][] = [
+    [13, 9, 6, 5, "na"], [7, 7, 2.6, 1.7, "na"], [16, 14.5, 2.4, 1.9, "na"],
+    [19, 19, 2.4, 3, "em"], [21, 24, 1.9, 2.7, "em"],
+    [33, 9, 3.3, 2.1, "eu"],
+    [35, 17, 4, 5, "em"], [37, 21, 2.2, 2, "em"], [39, 13, 2, 1.6, "em"],
+    [46, 6, 12, 2, "ap"], [48, 11, 7, 3.2, "ap"], [44, 14.5, 2, 2, "em"], [51, 16.5, 2.4, 1.5, "em"], [49.5, 12.5, 2.4, 1.8, "em"],
+    [55, 23, 3, 2, "ap"],
+  ];
+  const dots: { x: number; y: number; region: GeoRegion }[] = [];
+  for (let gx = 0; gx < 64; gx++) {
+    for (let gy = 0; gy < 32; gy++) {
+      let reg: GeoRegion | null = null;
+      for (const e of E) { const dx = (gx - e[0]) / e[2], dy = (gy - e[1]) / e[3]; if (dx * dx + dy * dy <= 1) { reg = e[4]; break; } }
+      if (reg) dots.push({ x: gx, y: gy, region: reg });
     }
-    portfolio = portfolio * (1 + r) + annualContrib * (1 + r / 2);
-    totalContrib += annualContrib;
-    const growth = Math.max(0, portfolio - totalContrib);
-    const real = includeInflation ? portfolio / Math.pow(1 + inflation, y) : portfolio;
-    rows.push({ year: y, portfolio: Math.round(portfolio), contributions: Math.round(totalContrib), growth: Math.round(growth), real: Math.round(real) });
   }
-  return rows;
+  return dots;
+})();
+
+function simDonut(holdings: { pct: number; color: string }[], r: number) {
+  const tot = holdings.reduce((a, h) => a + (h.pct || 0), 0) || 1;
+  const circ = 2 * Math.PI * r;
+  let cum = 0;
+  return holdings.map(h => {
+    const frac = (h.pct || 0) / tot;
+    const d = frac * circ;
+    const seg = { c: h.color, dash: `${d.toFixed(2)} ${(circ - d).toFixed(2)}`, offset: (-cum).toFixed(2), barW: `${(frac * 100).toFixed(2)}%` };
+    cum += d;
+    return seg;
+  });
 }
-
-function calcPortfolioRisk(holdings: Holding[]): { volatility: number; maxDrawdown: number; sharpe: number; assetClasses: string[] } {
-  const RISK_FREE = 0.04;
-  let blendedReturn = 0;
-  let weightedVol = 0;
-  let weightedDD = 0;
-  const classes = new Set<string>();
-  for (const h of holdings) {
-    const w = h.weight / 100;
-    const etf = ETF_DATA[h.ticker];
-    blendedReturn += w * h.cagr;
-    weightedVol += w * (etf?.stddev ?? 0.18);
-    weightedDD += w * (etf?.maxDD ?? 0.50);
-    classes.add(etf?.category ?? "Other");
-  }
-  const sharpe = weightedVol > 0 ? (blendedReturn - RISK_FREE) / weightedVol : 0;
-  return { volatility: weightedVol, maxDrawdown: weightedDD, sharpe, assetClasses: [...classes] };
+function simWeightedRet(h: { pct: number; ret: number }[]) {
+  const tot = h.reduce((a, x) => a + (x.pct || 0), 0) || 1;
+  return h.reduce((a, x) => a + (x.pct || 0) * x.ret, 0) / tot;
 }
-
-function diversificationLabel(classes: string[]): { label: string; color: string } {
-  const n = classes.length;
-  if (n >= 4) return { label: "Well Diversified", color: "#059669" };
-  if (n === 3) return { label: "Diversified", color: "#0ea5e9" };
-  if (n === 2) return { label: "Moderate", color: "#f59e0b" };
-  return { label: "Concentrated", color: "#ef4444" };
+function simFmtPct(n: number) { return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`; }
+function simSeries(seed: number, target: number, n: number) {
+  let v = 0, r = seed % 233280;
+  const out = [0];
+  for (let i = 1; i < n; i++) { r = (r * 9301 + 49297) % 233280; const rnd = r / 233280; v += 0.8 + (rnd - 0.4) * 3.4; out.push(v); }
+  const last = out[out.length - 1] || 1;
+  return out.map(x => +(x * (target / last)).toFixed(2));
 }
-
-function riskProfileLabel(volatility: number): { label: string; color: string } {
-  if (volatility < 0.10) return { label: "Conservative", color: "#059669" };
-  if (volatility < 0.16) return { label: "Moderate", color: "#0ea5e9" };
-  if (volatility < 0.22) return { label: "Aggressive", color: "#f59e0b" };
-  return { label: "High Risk", color: "#ef4444" };
+function simPts(s: number[], w: number, h: number, mx: number) {
+  return s.map((val, i) => { const x = (i / (s.length - 1)) * w; const y = h - (Math.max(val, -10) / mx) * (h - 16) - 8; return `${x.toFixed(1)},${y.toFixed(1)}`; }).join(" ");
 }
+function simArea(p: string, w: number, h: number) { return `M0,${h} L${p.split(" ").join(" L")} L${w},${h} Z`; }
+function simEndpt(s: number[], w: number, h: number, mx: number) { const val = s[s.length - 1]; return { x: w, y: h - (Math.max(val, -10) / mx) * (h - 16) - 8 }; }
+function simGeoColor(w: number) { if (w >= 40) return "#0E7A4E"; if (w >= 13) return "#36A877"; if (w >= 6) return "#82CDA6"; if (w >= 2) return "#B7E2CB"; return "#DCEFE4"; }
 
-type PlanCardProps = {
-  s: Scenario;
-  updateScenario: (id: "A" | "B" | "C", patch: Partial<Omit<Scenario, "id">>) => void;
-  updateHoldings: (id: "A" | "B" | "C", updater: (h: Holding[]) => Holding[]) => void;
-};
-
-function PlanCard({ s, updateScenario, updateHoldings }: PlanCardProps) {
-  const [tickerInput, setTickerInput] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  const blendedReturn = s.holdings.reduce((acc, h) => acc + (h.weight / 100) * h.cagr, 0);
-  const suggestions = tickerInput.length >= 1
-    ? Object.entries(ETF_DATA)
-        .filter(([ticker, info]) =>
-          !s.holdings.find(h => h.ticker === ticker) &&
-          (ticker.startsWith(tickerInput.toUpperCase()) ||
-           info.name.toLowerCase().includes(tickerInput.toLowerCase()))
-        )
-        .slice(0, 6)
-    : [];
-
-  function addHolding(ticker: string) {
-    const upper = ticker.toUpperCase().trim();
-    if (!upper || s.holdings.find(h => h.ticker === upper)) { setTickerInput(""); setShowDropdown(false); return; }
-    const info = ETF_DATA[upper];
-    const newH: Holding = info
-      ? { ticker: upper, name: info.name, cagr: info.cagr, weight: 0 }
-      : { ticker: upper, name: upper, cagr: 0.07, weight: 0, custom: true };
-    updateHoldings(s.id, hs => {
-      const next = [...hs, newH];
-      const w = Math.floor(100 / next.length);
-      const rem = 100 - w * next.length;
-      return next.map((h, i) => ({ ...h, weight: i === 0 ? w + rem : w }));
-    });
-    setTickerInput("");
-    setShowDropdown(false);
-  }
-
-  function removeHolding(ticker: string) {
-    updateHoldings(s.id, hs => {
-      const next = hs.filter(h => h.ticker !== ticker);
-      if (next.length === 0) return hs;
-      const total = next.reduce((sum, h) => sum + h.weight, 0);
-      if (total === 0) {
-        const w = Math.floor(100 / next.length);
-        return next.map((h, i) => ({ ...h, weight: i === 0 ? 100 - w * (next.length - 1) : w }));
-      }
-      const rebalanced = next.map(h => ({ ...h, weight: Math.round((h.weight / total) * 100) }));
-      const diff = 100 - rebalanced.reduce((sum, h) => sum + h.weight, 0);
-      if (diff !== 0) rebalanced[0] = { ...rebalanced[0], weight: rebalanced[0].weight + diff };
-      return rebalanced;
-    });
-  }
-
-  function updateWeight(ticker: string, val: number) {
-    updateHoldings(s.id, hs => {
-      const clamped = Math.max(0, Math.min(100, val));
-      const idx = hs.findIndex(h => h.ticker === ticker);
-      if (idx === -1) return hs;
-      const delta = clamped - hs[idx].weight;
-      const others = hs.filter((_, i) => i !== idx);
-      const totalOthers = others.reduce((sum, h) => sum + h.weight, 0);
-      const next = hs.map((h, i) => {
-        if (i === idx) return { ...h, weight: clamped };
-        if (totalOthers === 0) return { ...h, weight: Math.floor((100 - clamped) / others.length) };
-        return { ...h, weight: Math.max(0, Math.round(h.weight - delta * (h.weight / totalOthers))) };
-      });
-      const sum = next.reduce((acc, h) => acc + h.weight, 0);
-      if (sum !== 100 && next.length > 1) {
-        const fixIdx = next.findIndex((h, i) => i !== idx && h.weight > 0);
-        if (fixIdx !== -1) next[fixIdx] = { ...next[fixIdx], weight: Math.max(0, next[fixIdx].weight + (100 - sum)) };
-      }
-      return next;
-    });
-  }
-
-  function updateCagr(ticker: string, cagr: number) {
-    updateHoldings(s.id, hs => hs.map(h => h.ticker === ticker ? { ...h, cagr } : h));
-  }
-
-  return (
-    <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, minWidth: 260 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-        <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 800, fontSize: 15, color: "#19181E" }}>{s.label}</span>
-        {!s.glideEnabled && (
-          <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: s.color }}>{(blendedReturn * 100).toFixed(1)}%/yr</span>
-        )}
-      </div>
-
-      <FieldRow label="Starting Amount">
-        <NumberInput value={s.initialAmount} onChange={v => updateScenario(s.id, { initialAmount: v })} />
-      </FieldRow>
-
-      <FieldRow label="DCA Amount">
-        <div style={{ display: "flex", gap: 6 }}>
-          <NumberInput value={s.dcaAmount} onChange={v => updateScenario(s.id, { dcaAmount: v })} />
-          <select
-            value={s.dcaFrequency}
-            onChange={e => updateScenario(s.id, { dcaFrequency: e.target.value as DCAFreq })}
-            style={{ background: "#F1F5F9", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 8px", color: "#19181E", fontSize: 12, fontFamily: "inherit", cursor: "pointer", outline: "none", flexShrink: 0 }}
-          >
-            <option value="weekly">Wkly</option>
-            <option value="bi-weekly">Bi-wk</option>
-            <option value="monthly">Mo</option>
-            <option value="annually">Yr</option>
-          </select>
-        </div>
-      </FieldRow>
-
-      <FieldRow label={`Horizon: ${s.years} yrs`}>
-        <input type="range" min={5} max={40} step={1} value={s.years}
-          onChange={e => updateScenario(s.id, { years: Number(e.target.value) })}
-          style={{ width: "100%", accentColor: s.color }} />
-      </FieldRow>
-
-      <button
-        onClick={() => updateScenario(s.id, { glideEnabled: !s.glideEnabled })}
-        style={{ width: "100%", padding: "7px 0", borderRadius: 8, border: `1.5px solid ${s.glideEnabled ? s.color : "#E2E8F0"}`, background: s.glideEnabled ? s.color + "18" : "#F1F5F9", color: s.glideEnabled ? s.color : "#64748B", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}
-      >
-        {s.glideEnabled ? "✓ " : ""}Age Glide
-      </button>
-
-      {s.glideEnabled && (
-        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>Shifts stock/bond from today → retirement. Overrides holdings.</div>
-          <FieldRow label="Current Age"><NumberInput value={s.glideCurrentAge} onChange={v => updateScenario(s.id, { glideCurrentAge: v })} /></FieldRow>
-          <FieldRow label="Retirement Age"><NumberInput value={s.glideRetirementAge} onChange={v => updateScenario(s.id, { glideRetirementAge: v })} /></FieldRow>
-          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Stocks today: {s.glideStartStock}%</div>
-          <input type="range" min={0} max={100} value={s.glideStartStock} onChange={e => updateScenario(s.id, { glideStartStock: +e.target.value })} style={{ width: "100%", accentColor: s.color }} />
-          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Stocks at retirement: {s.glideEndStock}%</div>
-          <input type="range" min={0} max={100} value={s.glideEndStock} onChange={e => updateScenario(s.id, { glideEndStock: +e.target.value })} style={{ width: "100%", accentColor: s.color }} />
-          <div style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>Stocks @ 10.7%/yr · Bonds @ 1.7%/yr</div>
-        </div>
-      )}
-
-      <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Holdings</div>
-
-        <div style={{ display: "flex", height: 5, borderRadius: 3, overflow: "hidden", marginBottom: 10 }}>
-          {s.holdings.filter(h => h.ticker).map((h, i) => (
-            <div key={h.ticker} style={{ width: `${h.weight}%`, background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], transition: "width 0.2s" }} />
-          ))}
-        </div>
-
-        {s.holdings.filter(h => h.ticker).map((h, i) => (
-          <div key={h.ticker} style={{ display: "flex", flexDirection: "column", gap: 5, paddingBottom: 8, borderBottom: "1px solid #F8FAFC" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ background: HOLDING_PALETTE[i % HOLDING_PALETTE.length], color: "#fff", borderRadius: 4, padding: "2px 6px", fontSize: 10, fontWeight: 800, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>{h.ticker}</span>
-              <span style={{ fontSize: 11, color: "#64748B", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
-              {!h.custom && ETF_DATA[h.ticker] && (
-                <>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#059669", flexShrink: 0 }}>{(h.cagr * 100).toFixed(1)}%</span>
-                  <span style={{ fontSize: 9, color: "#94A3B8", flexShrink: 0 }}>±{(ETF_DATA[h.ticker].stddev * 100).toFixed(0)}%</span>
-                </>
-              )}
-              <button onClick={() => removeHolding(h.ticker)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
-            </div>
-            {h.custom && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 10, color: "#94A3B8" }}>Return %:</span>
-                <input type="number" min={0} max={100} step={0.1} value={(h.cagr * 100).toFixed(1)}
-                  onChange={e => updateCagr(h.ticker, Number(e.target.value) / 100)}
-                  style={{ width: 52, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 5, padding: "2px 5px", fontSize: 11, color: "#19181E", fontFamily: "inherit" }} />
-              </div>
-            )}
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input type="range" min={0} max={100} step={1} value={h.weight}
-                onChange={e => updateWeight(h.ticker, Number(e.target.value))}
-                style={{ flex: 1, accentColor: HOLDING_PALETTE[i % HOLDING_PALETTE.length] }} />
-              <input type="number" min={0} max={100} value={h.weight}
-                onChange={e => updateWeight(h.ticker, Number(e.target.value))}
-                style={{ width: 40, background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 5, padding: "2px 5px", fontSize: 11, color: "#19181E", fontFamily: "inherit", textAlign: "right" }} />
-              <span style={{ fontSize: 11, color: "#94A3B8" }}>%</span>
-            </div>
-          </div>
-        ))}
-
-        <div style={{ position: "relative", marginTop: 6 }}>
-          <div style={{ display: "flex", gap: 5 }}>
-            <input type="text" value={tickerInput} placeholder="Add ticker…"
-              onChange={e => { setTickerInput(e.target.value); setShowDropdown(true); }}
-              onFocus={() => setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-              onKeyDown={e => { if (e.key === "Enter") addHolding(tickerInput); }}
-              style={{ flex: 1, background: "var(--uf-surface-2)", border: "1.5px solid var(--uf-border)", borderRadius: 7, padding: "6px 8px", fontSize: 12, color: "var(--uf-text)", fontFamily: "DM Mono, monospace", outline: "none" }} />
-            <button onClick={() => addHolding(tickerInput)} style={{ background: s.color, border: "none", borderRadius: 7, padding: "6px 12px", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>+</button>
-          </div>
-          {showDropdown && suggestions.length > 0 && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.2)", zIndex: 50, marginTop: 3, overflow: "hidden" }}>
-              {suggestions.map(([ticker, info]) => (
-                <button key={ticker} onMouseDown={() => addHolding(ticker)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 10px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderBottom: "1px solid var(--uf-border)" }}>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 11, color: "var(--uf-text)", minWidth: 40 }}>{ticker}</span>
-                  <span style={{ fontSize: 11, color: "var(--uf-text-2)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.name}</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#059669" }}>{(info.cagr * 100).toFixed(1)}%</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <p style={{ margin: "6px 0 0", fontSize: 10, color: "#CBD5E1", fontStyle: "italic" }}>
-          Based on 10-yr historical CAGR. Past returns don&apos;t guarantee future results.
-        </p>
-      </div>
-    </div>
-  );
-}
+const SIM_GROWTH_RANGES = [
+  { key: "1Y", years: 1, title: "1 Year", labels: ["Jul", "Sep", "Nov", "Jan", "Mar", "Jun"] },
+  { key: "5Y", years: 5, title: "5 Years", labels: ["Y1", "Y2", "Y3", "Y4", "Y5", "Now"] },
+  { key: "Max", years: 10, title: "10 Years", labels: ["Y1", "Y3", "Y5", "Y7", "Y9", "Now"] },
+] as const;
+function simCompound(ret1y: number, years: number) { return (Math.pow(1 + ret1y / 100, years) - 1) * 100; }
 
 function InvestSimTab({ onBack }: { onBack: () => void }) {
-  const PLAN_DEFAULTS = {
-    initialAmount: 10000, dcaAmount: 500, dcaFrequency: "monthly" as DCAFreq,
-    years: 20, glideEnabled: false,
-    glideCurrentAge: 30, glideRetirementAge: 60, glideStartStock: 80, glideEndStock: 40,
-  };
+  const GREEN = "#16A06A", GREEN_TEXT = "#15A05F", RED = "#DC2626";
 
-  const [inflation, setInflation] = useState(false);
-
-  const [scenarios, setScenarios] = useState<Scenario[]>([
-    { id: "A", label: "Plan A", color: "#059669", ...PLAN_DEFAULTS, holdings: [
-      { ticker: "VOO", name: "Vanguard S&P 500 ETF",      cagr: 0.107, weight: 60 },
-      { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
-      { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 20 },
-    ]},
-    { id: "B", label: "Plan B", color: "#818cf8", ...PLAN_DEFAULTS, holdings: [
-      { ticker: "QQQ", name: "Invesco Nasdaq-100 ETF",     cagr: 0.183, weight: 80 },
-      { ticker: "BND", name: "Vanguard Total Bond Market", cagr: 0.017, weight: 20 },
-    ]},
-    { id: "C", label: "Plan C", color: "#f97316", ...PLAN_DEFAULTS, holdings: [
-      { ticker: "VT",  name: "Vanguard Total World Stock", cagr: 0.092, weight: 100 },
-    ]},
-  ]);
-
-  function updateScenario(id: "A" | "B" | "C", patch: Partial<Omit<Scenario, "id">>) {
-    setScenarios(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
-  }
-
-  function updateHoldings(id: "A" | "B" | "C", updater: (h: Holding[]) => Holding[]) {
-    setScenarios(prev => prev.map(s => s.id === id ? { ...s, holdings: updater(s.holdings) } : s));
-  }
-
-  const scenarioRisks = useMemo(
-    () => scenarios.map(s => ({ id: s.id, ...calcPortfolioRisk(s.holdings) })),
-    [scenarios]
+  const [scenarios, setScenarios] = useState<SimScenario[]>(
+    () => SIM_INITIAL_SCENARIOS.map(s => ({ ...s, geo: { ...s.geo }, stats: { ...s.stats }, holdings: s.holdings.map(h => ({ ...h })) }))
   );
+  const [selected, setSelected] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [draft, setDraft] = useState<SimHolding[]>([]);
+  const [newTicker, setNewTicker] = useState("");
+  const [growthRange, setGrowthRange] = useState<"1Y" | "5Y" | "Max">("1Y");
 
-  const { chartData, scenarioFinals } = useMemo(() => {
-    const projections = scenarios.map(s =>
-      calcDCAProjection({
-        initialAmount: s.initialAmount, dcaAmount: s.dcaAmount,
-        dcaFrequency: s.dcaFrequency, years: s.years,
-        holdings: s.holdings, includeInflation: inflation,
-        glideEnabled: s.glideEnabled, currentAge: s.glideCurrentAge,
-        retirementAge: s.glideRetirementAge, startStockPct: s.glideStartStock,
-        endStockPct: s.glideEndStock,
-      })
-    );
-    const maxYears = Math.max(...scenarios.map(s => s.years));
-    const data = Array.from({ length: maxYears + 1 }, (_, i) => {
-      const point: Record<string, number> = { year: i };
-      scenarios.forEach((s, si) => {
-        const rows = projections[si];
-        point[s.id] = rows[Math.min(i, rows.length - 1)].portfolio;
-      });
-      return point;
-    });
-    const finals = scenarios.map((s, si) => {
-      const last = projections[si].at(-1)!;
-      return { id: s.id, final: last.portfolio, contributed: last.contributions };
-    });
-    return { chartData: data, scenarioFinals: finals };
-  }, [scenarios, inflation]);
+  const base = scenarios[0];
+  const sel = scenarios[selected] ?? base;
+  const bench = "S&P 500";
 
-  const fmtK = (n: number) => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : `$${n}`;
+  function openEdit(i: number) {
+    setSelected(i); setEditingIdx(i); setDraft(scenarios[i].holdings.map(h => ({ ...h }))); setNewTicker(""); setModalOpen(true);
+  }
+  function closeModal() { setModalOpen(false); }
+  function updatePct(k: number, val: number) {
+    setDraft(d => d.map((h, i) => i === k ? { ...h, pct: Math.max(0, Math.min(100, Math.round(val || 0))) } : h));
+  }
+  function removeRow(k: number) { setDraft(d => d.filter((_, i) => i !== k)); }
+  function addRow() {
+    const t = ((newTicker || "").trim().toUpperCase() || "NEW").slice(0, 5);
+    const known = SIM_TICKER_LIBRARY[t];
+    const color = known?.color ?? SIM_TICKER_COLORS[draft.length % SIM_TICKER_COLORS.length];
+    setDraft(d => d.concat([{ ticker: t, name: known?.name ?? "New holding", pct: 0, ret: known?.ret ?? 10.0, color }]));
+    setNewTicker("");
+  }
+  function save() {
+    if (editingIdx == null) return;
+    const idx = editingIdx;
+    setScenarios(prev => prev.map((s, i) => i === idx ? { ...s, holdings: draft.map(h => ({ ...h })) } : s));
+    setModalOpen(false);
+  }
+  function newScenario() {
+    const n = scenarios.length;
+    const sc: SimScenario = {
+      name: `New Scenario ${n}`, risk: "Custom mix", geo: { ...base.geo },
+      stats: { vol: "—", sharpe: "—", dd: "—", beta: "—" }, holdings: base.holdings.map(h => ({ ...h })),
+    };
+    setScenarios(prev => prev.concat([sc]));
+    setSelected(n); setEditingIdx(n); setDraft(sc.holdings.map(h => ({ ...h }))); setNewTicker(""); setModalOpen(true);
+  }
 
+  const railTot = (s: SimScenario) => s.holdings.reduce((a, h) => a + (h.pct || 0), 0) || 1;
+
+  const mapDots = SIM_GEO_MAP.map(d => ({ cx: d.x, cy: d.y, color: simGeoColor(sel.geo[d.region]) }));
+  const mapLegend = ([
+    { label: "North America", pct: sel.geo.na },
+    { label: "Europe", pct: sel.geo.eu },
+    { label: "Asia-Pacific", pct: sel.geo.ap },
+    { label: "Emerging Mkts", pct: sel.geo.em },
+  ]).map(r => ({ label: r.label, pct: `${r.pct}%`, c: simGeoColor(r.pct) }));
+
+  const range = SIM_GROWTH_RANGES.find(r => r.key === growthRange) ?? SIM_GROWTH_RANGES[0];
+  const baseRet = simCompound(simWeightedRet(base.holdings), range.years);
+  const selRet = simCompound(simWeightedRet(sel.holdings), range.years);
+  const benchRet = simCompound(24.2, range.years);
+  const N = 40;
+  const mx = Math.max(32, Math.max(Math.abs(baseRet), Math.abs(selRet), Math.abs(benchRet)) * 1.25);
+  const GW = 840, GH = 196;
+  const gBase = simPts(simSeries(11, baseRet, N), GW, GH, mx);
+  const sSel = simSeries(selected * 7 + 5, selRet, N);
+  const gSel = simPts(sSel, GW, GH, mx);
+  const gSelArea = simArea(gSel, GW, GH);
+  const gSp = simPts(simSeries(23, benchRet, N), GW, GH, mx);
+  const gSelEnd = simEndpt(sSel, GW, GH, mx);
+
+  const draftScn = editingIdx != null ? scenarios[editingIdx] : null;
+  const draftName = draftScn ? draftScn.name : "";
+  const draftTotal = draft.reduce((a, h) => a + (h.pct || 0), 0);
+  const draftRet = draft.length ? simWeightedRet(draft) : 0;
+  const draftDonut = simDonut(draft, 1);
+
+  const uppercaseLabel: React.CSSProperties = { fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-3)" };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <button onClick={onBack} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#64748B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+    <>
+      <style>{`
+        .uf-scn-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 22px; }
+        .uf-scn-grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+        .uf-scn-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .uf-scn-modal-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 900px) {
+          .uf-scn-head { flex-direction: column; align-items: stretch; }
+          .uf-scn-grid { grid-template-columns: 1fr; }
+          .uf-scn-cols { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
+      <button onClick={onBack} style={{ background: "none", border: "none", color: "var(--uf-text-3)", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, fontFamily: "inherit", marginBottom: 10 }}>
         ← Back to Calculator
       </button>
-      <div>
-        <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 20, fontWeight: 700, color: "#19181E", margin: "0 0 4px" }}>Investment Simulations</h2>
-        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>Each plan has its own contribution settings and holdings. Compare strategies side-by-side.</p>
-      </div>
 
-      {/* 3 Plan Cards */}
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
-        {scenarios.map(s => <PlanCard key={s.id} s={s} updateScenario={updateScenario} updateHoldings={updateHoldings} />)}
-      </div>
-
-      {/* Chart */}
-      <div className="uf-card">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15 }}>Portfolio Growth Comparison</div>
-          <button
-            onClick={() => setInflation(v => !v)}
-            style={{ padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, border: `1.5px solid ${inflation ? "#059669" : "#E2E8F0"}`, background: inflation ? "#05966915" : "#F1F5F9", color: inflation ? "#059669" : "#64748B", cursor: "pointer", fontFamily: "inherit" }}
-          >
-            {inflation ? "✓ " : ""}Inflation-adjusted (3%)
-          </button>
+      <div className="uf-scn-head">
+        <div>
+          <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 27, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.5px" }}>Investment Simulations</div>
+          <div style={{ fontSize: 15, color: "var(--uf-text-2)", marginTop: 4 }}>Compare strategies side-by-side. Click a scenario to adjust its holdings.</div>
         </div>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-            <XAxis dataKey="year" tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} label={{ value: "Year", position: "insideBottom", offset: -2, fontSize: 11, fill: "#94A3B8" }} />
-            <YAxis tickLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} tickFormatter={v => fmtK(v as number)} width={60} />
-            <Tooltip
-              formatter={(value: unknown, name: unknown) => [`$${(value as number).toLocaleString()}`, String(name ?? "")]}
-              labelFormatter={l => `Year ${l}`}
-              contentStyle={{ borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 12 }}
-            />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line type="monotone" dataKey="A" name="Plan A" stroke="#059669" strokeWidth={2.5} dot={false} />
-            <Line type="monotone" dataKey="B" name="Plan B" stroke="#818cf8" strokeWidth={2.5} dot={false} />
-            <Line type="monotone" dataKey="C" name="Plan C" stroke="#f97316" strokeWidth={2.5} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <button onClick={newScenario} style={{ flexShrink: 0, background: GREEN, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 1px 2px rgba(22,160,106,0.3)" }}>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> New Scenario
+        </button>
       </div>
 
-      {/* Summary cards — per-plan final value at their own horizon */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-        {scenarioFinals.map((sf, i) => {
-          const s = scenarios[i];
-          return (
-            <div key={sf.id} className="uf-card" style={{ textAlign: "center", padding: "16px 12px" }}>
-              <div style={{ fontSize: 11, color: s.color, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: "Manrope, sans-serif" }}>{fmtK(sf.final)}</div>
-              <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>after {s.years} yrs</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>Contributed: {fmtK(sf.contributed)}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Risk & Return Comparison */}
-      <div className="uf-card" style={{ padding: "16px 20px" }}>
-        <div style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Risk &amp; Return Comparison</div>
-        <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 16 }}>
-          Volatility estimated from historical data (assumes full correlation between holdings — conservative upper bound).
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, marginBottom: 8 }}>
-          <div />
-          {scenarios.map(s => (
-            <div key={s.id} style={{ fontSize: 12, fontWeight: 700, color: s.color, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {s.label}
-            </div>
-          ))}
-        </div>
-
-        {([
-          {
-            label: "Annual Return",
-            values: scenarios.map(s => `${(s.holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0) * 100).toFixed(1)}%`),
-            bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) > parseFloat(b) ? a : b)),
-          },
-          {
-            label: "Volatility (est.)",
-            values: scenarioRisks.map(r => `${(r.volatility * 100).toFixed(1)}%`),
-            bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) < parseFloat(b) ? a : b)),
-          },
-          {
-            label: "Sharpe Ratio",
-            values: scenarioRisks.map(r => r.sharpe.toFixed(2)),
-            bestFn: (vals: string[]) => vals.indexOf(vals.reduce((a, b) => parseFloat(a) > parseFloat(b) ? a : b)),
-          },
-          {
-            label: "Max Drawdown (est.)",
-            values: scenarioRisks.map(r => `-${(r.maxDrawdown * 100).toFixed(0)}%`),
-            bestFn: (vals: string[]) => { const nums = vals.map(v => Math.abs(parseFloat(v))); return nums.indexOf(Math.min(...nums)); },
-          },
-          {
-            label: "Asset Classes",
-            values: scenarioRisks.map(r => { const d = diversificationLabel(r.assetClasses); return `${r.assetClasses.length} · ${d.label}`; }),
-            bestFn: (vals: string[]) => { const counts = vals.map(v => parseInt(v)); return counts.indexOf(Math.max(...counts)); },
-          },
-        ] as { label: string; values: string[]; bestFn: (v: string[]) => number }[]).map(({ label, values, bestFn }) => {
-          const bestIdx = bestFn(values);
-          return (
-            <div key={label} style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, padding: "8px 0", borderBottom: "1px solid #F1F5F9" }}>
-              <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, display: "flex", alignItems: "center" }}>{label}</div>
-              {values.map((v, i) => (
-                <div key={i} style={{ fontSize: 13, fontWeight: bestIdx === i ? 800 : 600, color: bestIdx === i ? scenarios[i].color : "#475569", textAlign: "center", background: bestIdx === i ? scenarios[i].color + "12" : "transparent", borderRadius: 6, padding: "3px 6px" }}>
-                  {v}{bestIdx === i && <span style={{ marginLeft: 4, fontSize: 10 }}>★</span>}
-                </div>
-              ))}
-            </div>
-          );
-        })}
-
-        <div style={{ display: "grid", gridTemplateColumns: "140px repeat(3, 1fr)", gap: 8, marginTop: 12 }}>
-          <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, display: "flex", alignItems: "center" }}>Risk Profile</div>
-          {scenarioRisks.map(r => {
-            const rp = riskProfileLabel(r.volatility);
+      <div className="uf-scn-grid">
+        {/* rail */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ ...uppercaseLabel, paddingLeft: 2 }}>Your Scenarios</div>
+          {scenarios.map((s, i) => {
+            const ret = simWeightedRet(s.holdings);
+            const tot = railTot(s);
+            const isSel = i === selected;
+            const border = isSel ? `2px solid ${GREEN}` : (i === 0 ? "1px solid #BFE6D2" : "1px solid var(--uf-border)");
+            const tag = i === 0 ? "YOUR PLAN" : (isSel ? "COMPARING" : "");
             return (
-              <div key={r.id} style={{ textAlign: "center" }}>
-                <span style={{ background: rp.color + "18", color: rp.color, borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{rp.label}</span>
+              <div key={i} onClick={() => openEdit(i)} style={{ background: "var(--uf-card)", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all .15s", border, boxShadow: isSel ? "0 4px 14px rgba(22,160,106,0.14)" : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)" }}>{s.name}</div>
+                  {tag && <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "#E7F6EE", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 2 }}>{s.risk}</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 12 }}>
+                  <div style={{ fontSize: 21, fontWeight: 800, color: ret >= 0 ? GREEN_TEXT : RED, letterSpacing: "-0.4px" }}>{simFmtPct(ret)}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--uf-text-3)" }}>1Y return</div>
+                </div>
+                <div style={{ display: "flex", height: 7, borderRadius: 9999, overflow: "hidden", marginTop: 12, gap: 2 }}>
+                  {s.holdings.map((h, j) => <div key={j} style={{ width: `${(h.pct || 0) / tot * 100}%`, background: h.color }} />)}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11, fontWeight: 700, color: GREEN }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.2"><path d="M4 14l6-6 1.5 1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 6h4v4" strokeLinecap="round" strokeLinejoin="round" /><path d="M18 6l-6 6" strokeLinecap="round" /></svg>
+                  Tap to edit holdings
+                </div>
               </div>
             );
           })}
         </div>
 
-        {(() => {
-          const bestSharpeIdx = scenarioRisks.reduce((bi, r, i) => r.sharpe > scenarioRisks[bi].sharpe ? i : bi, 0);
-          const lowestVolIdx = scenarioRisks.reduce((bi, r, i) => r.volatility < scenarioRisks[bi].volatility ? i : bi, 0);
-          const bestRetIdx = scenarios.reduce((bi, s, i) => {
-            const r = s.holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0);
-            const rb = scenarios[bi].holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0);
-            return r > rb ? i : bi;
-          }, 0);
-          return (
-            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "#475569" }}>
-                <span style={{ color: scenarios[bestSharpeIdx].color, fontWeight: 700 }}>🏆 Best risk-adjusted return:</span>{" "}
-                {scenarios[bestSharpeIdx].label} (Sharpe {scenarioRisks[bestSharpeIdx].sharpe.toFixed(2)}) — highest return per unit of risk
+        {/* comparison panel */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
+          <div className="uf-scn-cols">
+            {[{ s: base, who: "YOUR PLAN", whoColor: "var(--uf-text-3)", idx: 0 }, { s: sel, who: selected === 0 ? "YOUR PLAN" : "COMPARING", whoColor: GREEN, idx: selected }].map((col, ci) => {
+              const ret = simWeightedRet(col.s.holdings);
+              const tot = railTot(col.s);
+              const donut = simDonut(col.s.holdings, 44);
+              const stats = [{ l: "1Y Return", v: simFmtPct(ret) }, { l: "Volatility", v: col.s.stats.vol }, { l: "Sharpe", v: col.s.stats.sharpe }, { l: "Max DD", v: col.s.stats.dd }];
+              return (
+                <div key={ci} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: "20px 22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ ...uppercaseLabel, color: col.whoColor }}>{col.who}</div>
+                    <div onClick={() => openEdit(col.idx)} style={{ fontSize: 11, fontWeight: 700, color: GREEN, cursor: "pointer" }}>Edit</div>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", marginTop: 4 }}>{col.s.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 14 }}>
+                    <svg width="118" height="118" viewBox="0 0 120 120" style={{ flexShrink: 0 }}>
+                      <g transform="rotate(-90 60 60)">
+                        {donut.map((seg, k) => <circle key={k} cx="60" cy="60" r="44" fill="none" stroke={seg.c} strokeWidth="18" strokeDasharray={seg.dash} strokeDashoffset={seg.offset} />)}
+                      </g>
+                      <text x="60" y="57" textAnchor="middle" style={{ fontFamily: "Manrope, sans-serif", fontSize: 11, fontWeight: 800, fill: "var(--uf-text)" }}>1Y</text>
+                      <text x="60" y="70" textAnchor="middle" style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 800, fill: ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(ret)}</text>
+                    </svg>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                      {col.s.holdings.map((h, k) => (
+                        <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 9, height: 9, borderRadius: 3, background: h.color, flexShrink: 0 }} />
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text)", flex: 1 }}>{h.ticker}</div>
+                          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{`${((h.pct || 0) / tot * 100).toFixed(0)}%`}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--uf-border)", border: "1px solid var(--uf-border)", borderRadius: 9, overflow: "hidden", marginTop: 16 }}>
+                    {stats.map((st, k) => (
+                      <div key={k} style={{ background: "var(--uf-card)", padding: "11px 14px" }}>
+                        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, color: "var(--uf-text-3)", marginBottom: 3 }}>{st.l}</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "var(--uf-text)" }}>{st.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* world map */}
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: "20px 22px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, gap: 16, flexWrap: "wrap" }}>
+              <div>
+                <div style={uppercaseLabel}>Geographic Diversification</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", marginTop: 3 }}>Where {sel.name} is invested</div>
               </div>
-              <div style={{ fontSize: 12, color: "#475569" }}>
-                <span style={{ color: scenarios[lowestVolIdx].color, fontWeight: 700 }}>🛡️ Lowest volatility:</span>{" "}
-                {scenarios[lowestVolIdx].label} ({(scenarioRisks[lowestVolIdx].volatility * 100).toFixed(1)}% est. annual vol)
-              </div>
-              <div style={{ fontSize: 12, color: "#475569" }}>
-                <span style={{ color: scenarios[bestRetIdx].color, fontWeight: 700 }}>📈 Highest raw return:</span>{" "}
-                {scenarios[bestRetIdx].label} ({(scenarios[bestRetIdx].holdings.reduce((a: number, h: Holding) => a + (h.weight / 100) * h.cagr, 0) * 100).toFixed(1)}%/yr) — highest return but with more risk
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                {mapLegend.map((r, k) => (
+                  <div key={k} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <div style={{ width: 11, height: 11, borderRadius: 3, background: r.c }} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text)" }}>{r.label}</span>
+                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 800, color: "var(--uf-text)" }}>{r.pct}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          );
-        })()}
+            <svg viewBox="0 0 64 32" preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "auto", display: "block" }}>
+              {mapDots.map((d, k) => <circle key={k} cx={d.cx} cy={d.cy} r="0.36" fill={d.color} />)}
+            </svg>
+          </div>
+
+          {/* growth */}
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: "20px 22px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 12, flexWrap: "wrap" }}>
+              <div style={uppercaseLabel}>Modeled Growth · {range.title}</div>
+              <div style={{ display: "flex", gap: 4, background: "var(--uf-surface-2)", borderRadius: 9999, padding: 3 }}>
+                {SIM_GROWTH_RANGES.map(r => (
+                  <div key={r.key} onClick={() => setGrowthRange(r.key)} style={{ padding: "5px 14px", borderRadius: 9999, background: growthRange === r.key ? GREEN : "transparent", color: growthRange === r.key ? "#fff" : "var(--uf-text-2)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{r.key}</div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 18, marginBottom: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#64748B" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your Plan</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: GREEN }} /><span style={{ fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{sel.name}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{simFmtPct(selRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#CBD5E1" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{bench}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{simFmtPct(benchRet)}</span></div>
+            </div>
+            <svg width="100%" viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none" style={{ display: "block", height: 196 }}>
+              <line x1="0" y1="52" x2={GW} y2="52" stroke="var(--uf-border)" />
+              <line x1="0" y1="100" x2={GW} y2="100" stroke="var(--uf-border)" />
+              <line x1="0" y1="148" x2={GW} y2="148" stroke="var(--uf-border)" />
+              <path d={gSelArea} fill="rgba(22,160,106,0.07)" />
+              <polyline points={gSp} fill="none" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="5 4" />
+              <polyline points={gBase} fill="none" stroke="#64748B" strokeWidth="2" />
+              <polyline points={gSel} fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+              <circle cx={gSelEnd.x} cy={gSelEnd.y} r="4" fill={GREEN} />
+            </svg>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+              {range.labels.map((l, k) => <span key={k} style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{l}</span>)}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* edit modal */}
+      {modalOpen && (
+        <div onClick={closeModal} style={{ position: "fixed", inset: 0, background: "rgba(15,23,20,0.45)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--uf-card)", borderRadius: 16, width: 580, maxWidth: "100%", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,0.28)" }}>
+            <div style={{ position: "sticky", top: 0, background: "var(--uf-card)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "24px 26px 16px", borderBottom: "1px solid var(--uf-border)" }}>
+              <div>
+                <div style={uppercaseLabel}>Edit Holdings</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", marginTop: 3 }}>{draftName}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={uppercaseLabel}>Projected 1Y</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: GREEN_TEXT, letterSpacing: "-0.4px" }}>{simFmtPct(draftRet)}</div>
+              </div>
+            </div>
+            <div style={{ padding: "18px 26px 6px" }}>
+              <div className="uf-scn-modal-2" style={{ marginBottom: 18 }}>
+                <div>
+                  <div style={{ ...uppercaseLabel, letterSpacing: "0.7px", marginBottom: 6 }}>Starting Amount</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--uf-surface-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 14px" }}>
+                    <span style={{ color: "var(--uf-text-3)", fontWeight: 700 }}>$</span><span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)" }}>10,000</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ ...uppercaseLabel, letterSpacing: "0.7px", marginBottom: 6 }}>Monthly Contribution</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--uf-surface-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 14px" }}>
+                    <span style={{ color: "var(--uf-text-3)", fontWeight: 700 }}>$</span><span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)" }}>500</span><span style={{ marginLeft: "auto", fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600 }}>/mo</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <div style={uppercaseLabel}>Holdings</div>
+                <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 800, color: draftTotal === 100 ? GREEN_TEXT : "#E0902B" }}>Total {draftTotal}%</div>
+              </div>
+              <div style={{ height: 7, borderRadius: 9999, background: "var(--uf-surface-2)", overflow: "hidden", display: "flex", marginBottom: 6 }}>
+                {draftDonut.map((g, k) => <div key={k} style={{ width: g.barW, background: g.c }} />)}
+              </div>
+
+              {draft.map((h, k) => (
+                <div key={k} style={{ padding: "13px 0", borderBottom: "1px solid var(--uf-border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ background: h.color, color: "#fff", fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 800, padding: "4px 7px", borderRadius: 5, letterSpacing: "0.3px", minWidth: 42, textAlign: "center" }}>{h.ticker}</span>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--uf-text)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
+                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: h.ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(h.ret)}</span>
+                    <div onClick={() => removeRow(k)} style={{ cursor: "pointer", color: "var(--uf-text-3)", fontSize: 18, lineHeight: 1, width: 18, textAlign: "center" }}>×</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 10 }}>
+                    <input type="range" min={0} max={100} value={h.pct} onChange={e => updatePct(k, Number(e.target.value))} style={{ flex: 1, accentColor: GREEN, height: 4, cursor: "pointer" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <input type="number" min={0} max={100} value={h.pct} onChange={e => updatePct(k, Number(e.target.value))} style={{ width: 56, border: "1px solid var(--uf-border)", borderRadius: 8, padding: "7px 9px", fontSize: 14, fontWeight: 700, color: "var(--uf-text)", textAlign: "right", outline: "none", background: "var(--uf-card)" }} />
+                      <span style={{ fontSize: 13, color: "var(--uf-text-3)", fontWeight: 600 }}>%</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <input type="text" value={newTicker} onChange={e => setNewTicker(e.target.value)} onKeyDown={e => { if (e.key === "Enter") addRow(); }} placeholder="Add ticker…" style={{ flex: 1, border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 14px", fontSize: 14, color: "var(--uf-text)", outline: "none", background: "var(--uf-card)" }} />
+                <button onClick={addRow} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, width: 46, fontSize: 22, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--uf-text-3)", marginTop: 12, fontStyle: "italic" }}>Returns model 1-year historical CAGR. Past performance doesn&apos;t guarantee future results.</div>
+            </div>
+            <div style={{ position: "sticky", bottom: 0, background: "var(--uf-card)", display: "flex", justifyContent: "flex-end", gap: 10, padding: "16px 26px", borderTop: "1px solid var(--uf-border)" }}>
+              <button onClick={closeModal} style={{ background: "var(--uf-card)", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 20px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+              <button onClick={save} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
