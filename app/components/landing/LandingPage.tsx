@@ -906,6 +906,19 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://stackdirectory.com/product/untilfire"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://stackdirectory.com/assets/images/badge.png"
+              alt="Stack Directory"
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
