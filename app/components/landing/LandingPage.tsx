@@ -880,6 +880,20 @@ function FooterSection() {
             Startup Fast
           </a>
           <a
+            href="https://startupfa.me/s/untilfire?utm_source=www.untilfire.com"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://startupfa.me/badges/featured-badge-small.webp"
+              alt="UntilFire - Featured on Startup Fame"
+              width={224}
+              height={36}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://tooldynamo.com/tools/untilfire"
             target="_blank"
             rel="noreferrer noopener"
