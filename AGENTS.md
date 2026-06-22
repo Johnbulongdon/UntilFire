@@ -8,6 +8,7 @@ Before making any change or answering any product question:
 
 1. Read `docs/ROADMAP.md` — the source of truth for what is built (`[x]`) vs planned (`[ ]`). Never claim a feature does not exist without checking here first.
 2. Read `CHANGELOG.md` — most recent entries show what shipped last. Use this to understand current product state before building or answering questions.
+3. Before directory submissions, backlink outreach, guest posts, or SEO promotion, read `docs/marketing/BACKLINK_LEDGER.md` and update it in the same session.
 
 ## Baseline Rule
 
