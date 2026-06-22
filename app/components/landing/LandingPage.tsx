@@ -871,6 +871,14 @@ function FooterSection() {
         {/* Bottom */}
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 12, color: C.green700, fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
           <span>© 2026 UntilFire</span>
+          <a
+            href="https://startupfa.st"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ color: C.green800, fontWeight: 700, textDecoration: "none" }}
+          >
+            Startup Fast
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
