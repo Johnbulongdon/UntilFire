@@ -985,6 +985,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://fazier.com/"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=launched&theme=light"
+              alt="Launched on Fazier"
+              width={105}
+              height={55}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
