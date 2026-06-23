@@ -919,6 +919,48 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://startups.fm/startups/untilfire"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://startups.fm/badge/untilfire"
+              alt="Featured on Startups.fm"
+              width={240}
+              height={63}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://startupspotlight.co/startup/untilfire"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://startupspotlight.co/api/badge/cmqpzklis000e15nktsharpa4?variant=dark&v=2"
+              alt="Featured on StartupSpotlight"
+              width={248}
+              height={48}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://firstlook.tools"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://firstlook.tools/badge/badge_transparent.svg"
+              alt="Featured on First Look"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
