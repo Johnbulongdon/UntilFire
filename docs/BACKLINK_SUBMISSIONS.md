@@ -102,6 +102,7 @@ Notes:
   - form is already advanced to the free-plan step with the product data preserved
   - live page currently shows: `A dofollow backlink to our site was not found on your website.`
   - badge/link has now been added to the repo footer using `https://firstlook.tools/badge/badge_transparent.svg`
+  - footer markup is aligned to FirstLook's own copied embed HTML because their verifier may be exact-string based
   - this site deploys from GitHub, so FirstLook will not verify the backlink until the footer change is pushed and live on `https://www.untilfire.com`
 
 ### Startup Ranking
