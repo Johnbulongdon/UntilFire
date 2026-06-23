@@ -999,6 +999,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://marketingdb.live"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://marketingdb.live/badge.svg"
+              alt="MarketingDB Badge"
+              width={160}
+              height={48}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
