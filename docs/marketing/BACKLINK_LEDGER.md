@@ -2,6 +2,8 @@
 
 This is the authoritative coordination log for UntilFire directory submissions, backlinks, guest posts, and SEO outreach. Read it before starting related work so separate sessions do not duplicate submissions.
 
+Current prepared batch: `docs/marketing/BACKLINK_SUBMISSION_PACK_2026-06-22.md`
+
 Last full audit: 2026-06-22
 
 ## Session Rules
@@ -14,6 +16,7 @@ Last full audit: 2026-06-22
 6. Keep unsolicited SEO spam separate from intentional or earned backlinks. Do not report spam domains as backlink wins.
 7. Use ISO dates (`YYYY-MM-DD`). If the exact date is unknown, use the most precise known month and explain it in Notes.
 8. Set Owner/session to a person, Codex thread, or `Unknown (pre-ledger)` so follow-up work has an accountable source.
+9. If a platform assigns a launch or publication date, record the date, time, and timezone exactly as shown and change the status to `scheduled`. Use `Unknown` when the schedule is inaccessible; never infer it.
 
 ## Status Vocabulary
 
@@ -24,6 +27,7 @@ Last full audit: 2026-06-22
 | `live-redirect` | Live listing whose website button goes through the directory's redirect endpoint. |
 | `live-unverified` | Live listing exists, but the external link or its follow attributes have not been technically verified. |
 | `submitted` | Submission was made and has evidence, but the final backlink is not confirmed. |
+| `scheduled` | The submission was accepted and the platform assigned a future launch or publication date. |
 | `pending` | The platform explicitly reports that review or publication is pending. |
 | `removed` | A previously observed listing now returns 404 or can no longer be located. |
 | `rejected` | The platform explicitly rejected the submission. |
@@ -54,15 +58,18 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 
 ## Submitted or Public, Backlink Not Confirmed
 
-| Platform | Status | Submitted date | Submission or public URL | Owner/session | Last checked | Notes / next action |
-| --- | --- | --- | --- | --- | --- | --- |
-| Microlaunch | `submitted` | 2026-05-28 | https://microlaunch.net/p/untilfire | Unknown (pre-ledger) | 2026-06-22 | Public page exists and embedded data says `submitted`; a clickable external backlink was not confirmed. Check again after launch status changes. |
-| Startup Spotlight | `pending` | 2026-06-23 | https://startupspotlight.co/startup/untilfire | Codex backlink session | 2026-06-23 | Google auth completed; free submission route landed at `/submitted/untilfire`; footer badge added and issued with startup ID `cmqpzklis000e15nktsharpa4`. |
-| FirstLook.tools | `pending` | 2026-06-23 | https://firstlook.tools/submit | Codex backlink session | 2026-06-23 | Google auth completed; free plan submitted after footer badge/backlink verification. Dashboard showed `UntilFire`, status `Pending Review`, plan `Free`. |
-| StartupBase | `pending` | 2026-06-23 | https://startupbase.io/products/untilfire-2 | Codex backlink session | 2026-06-23 | Free queue submission completed; page showed `Pending Review` and `Verified product`; footer badge added and verified. DR 53 via FrogDR. |
-| The Startup Project | `submitted` | 2026-06-23 | https://startupproject.org/submit-startup/ | Codex backlink session | 2026-06-23 | Success message shown: `Your startup has been submitted! We'll review it and notify you once your listing is live.` A backlink may be required after approval. |
-| Wired Business | `submitted` | 2026-06-23 | https://wired.business | Codex backlink session | 2026-06-23 | Direct multipart submission completed; footer badge added. No public listing URL was confirmed. Site-claimed DR 73. |
-| MarketingDB | `pending` | 2026-06-23 | https://marketingdb.live/submit/success?name=UntilFire&slug=untilfire | Codex backlink session | 2026-06-23 | Free badge submission completed and badge verification passed; success page said `Nice work — you're in the queue`. Public slug `https://marketingdb.live/project/untilfire` returns 404 until approval. DR 58 via FrogDR. |
+| Platform | Status | Submitted date | Assigned launch date | Submission or public URL | Owner/session | Last checked | Notes / next action |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Microlaunch | `submitted` | 2026-05-28 | Unknown | https://microlaunch.net/p/untilfire | Unknown (pre-ledger) | 2026-06-22 | Public page exists and embedded data says `submitted`; a clickable external backlink was not confirmed. Check again after launch status changes. |
+| Product Hunt | `submitted` | Unknown (user confirmed submission) | Unknown - Product Hunt account access required | Not currently accessible | John | 2026-06-22 | User-confirmed submission. Verify the assigned launch date and submission URL in an authenticated Product Hunt session. |
+| Launching Next | `submitted` | 2026-06-24 | Unknown - publication is email-confirmed if accepted | https://www.launchingnext.com/thanks/?i=138403 | Codex backlink acquisition | 2026-06-24 | Free submission accepted; confirmation page title was "Submission Received". Optional $99 upgrade was not selected and newsletter opt-in was omitted. Check email for publication decision. |
+| Uneed | `pending` | Unknown - already present in waiting line | Unknown - Uneed account access required | https://www.uneed.best/api/tools/check-and-scrape?url=https%3A%2F%2Fwww.untilfire.com%2F&slug=untilfire | Unknown (pre-ledger) | 2026-06-24 | Uneed preview API returned `exists: true`, `existsField: slug`, and `existsLocation: waiting_line`; no account was created and no duplicate submission was attempted. Verify schedule/public listing from the account that owns the queued product. |
+| Startup Spotlight | `pending` | 2026-06-23 | Unknown | https://startupspotlight.co/startup/untilfire | Codex backlink session | 2026-06-23 | Google auth completed; free submission route landed at `/submitted/untilfire`; footer badge added and issued with startup ID `cmqpzklis000e15nktsharpa4`. |
+| FirstLook.tools | `pending` | 2026-06-23 | Unknown | https://firstlook.tools/submit | Codex backlink session | 2026-06-23 | Google auth completed; free plan submitted after footer badge/backlink verification. Dashboard showed `UntilFire`, status `Pending Review`, plan `Free`. |
+| StartupBase | `pending` | 2026-06-23 | Unknown | https://startupbase.io/products/untilfire-2 | Codex backlink session | 2026-06-23 | Free queue submission completed; page showed `Pending Review` and `Verified product`; footer badge added and verified. DR 53 via FrogDR. |
+| The Startup Project | `submitted` | 2026-06-23 | Unknown | https://startupproject.org/submit-startup/ | Codex backlink session | 2026-06-23 | Success message shown: `Your startup has been submitted! We'll review it and notify you once your listing is live.` A backlink may be required after approval. |
+| Wired Business | `submitted` | 2026-06-23 | Unknown | https://wired.business | Codex backlink session | 2026-06-23 | Direct multipart submission completed; footer badge added. No public listing URL was confirmed. Site-claimed DR 73. |
+| MarketingDB | `pending` | 2026-06-23 | Unknown | https://marketingdb.live/submit/success?name=UntilFire&slug=untilfire | Codex backlink session | 2026-06-23 | Free badge submission completed and badge verification passed; success page said `Nice work - you're in the queue`. Public slug `https://marketingdb.live/project/untilfire` returns 404 until approval. DR 58 via FrogDR. |
 
 ## Removed or Unverifiable Listings
 
@@ -76,12 +83,9 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 
 | Platform | Status | Owner/session | Last checked | Evidence / next action |
 | --- | --- | --- | --- | --- |
-| Product Hunt | `not-submitted` | Unassigned | 2026-06-22 | Repository roadmap still treats launch as planned; prepared launch copy is not submission evidence. |
-| BetaList | `not-submitted` | Unassigned | 2026-06-22 | No repository or public listing evidence found. |
+| BetaList | `not-submitted` | Codex backlink acquisition | 2026-06-22 | Submission redirects to account sign-in. Free-tier and publication timing were not visible without an account; defer until the higher-confidence free batch is complete. |
 | Indie Hackers | `not-submitted` | Unassigned | 2026-06-22 | No repository or public listing evidence found. |
 | Hacker News | `not-submitted` | Unassigned | 2026-06-22 | Launch copy exists, but no submitted Show HN page was found. |
-| Launching Next | `not-submitted` | Codex backlink session | 2026-06-23 | Free form is filled and staged, but not submitted. Blocked on anti-spam math challenge `2+3`; solve only after explicit user confirmation. DR 50 via FrogDR. |
-| Uneed | `not-submitted` | Unassigned | 2026-06-22 | No repository or public listing evidence found. |
 | StartupLibrary | `not-submitted` | Codex backlink session | 2026-06-23 | Google auth completed and form prefilled; blocked on required logo upload. DR 31 via VerifiedDR. |
 | Fazier | `not-submitted` | Codex backlink session | 2026-06-23 | Google auth completed, required comments done, product URL entered, badge verified, first form step completed; blocked on required logo/gallery uploads. DR 82 via FrogDR. |
 | LaunchIgniter | `not-submitted` | Codex backlink session | 2026-06-23 | Google auth/profile completed and product staged from Peerlist import; blocked on anti-spam math verification `7 - 6`; solve only after explicit user confirmation. DR 75 via FrogDR. |
@@ -99,11 +103,11 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 
 ## Guest Posts and Editorial Outreach
 
-No verified guest-post pitch, editorial outreach email, acceptance, or publication was found in the repository or public scan as of 2026-06-22. Add each pitch immediately when sent, including the publication, contact role, pitch date, topic, status, and evidence URL or message reference. Do not store passwords, access tokens, or private email contents in this file.
+As of 2026-06-24, one guest-post topic request has been submitted and no guest-post acceptance or publication has been verified. Add each pitch immediately when sent, including the publication, contact role, pitch date, topic, status, and evidence URL or message reference. Do not store passwords, access tokens, or private email contents in this file.
 
 | Publication | Status | Contact role | Pitch date | Topic | Owner/session | Evidence | Follow-up date | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| _None recorded_ | - | - | - | - | - | - | - | - |
+| Think Save Retire | `submitted` | Editorial team | 2026-06-24 | The FIRE lever leaderboard: what moves a 25-year-old's freedom date by 1, 5, or 10 years | Codex backlink acquisition | https://saraht059109.typeform.com/to/Q2X6eb | 2026-07-08 | Typeform topic request submitted; confirmation screen displayed the Typeform completion CTA. Pitch proposed an original, data-backed FIRE lever comparison and accepted editorial link discretion, including possible `nofollow`. Wait for topic approval before drafting the full article. |
 
 ## New Entry Template
 
@@ -112,6 +116,7 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 - Platform or publication
 - Status from the vocabulary in this document
 - Submission date
+- Assigned launch or publication date, time, and timezone when supplied
 - Submission receipt or live URL
 - UntilFire target URL
 - Owner/session
@@ -123,5 +128,10 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 
 | Date | Owner/session | Change |
 | --- | --- | --- |
-| 2026-06-22 | Codex backlink audit | Initial repository, public web, live-page, and authenticated Ahrefs reconciliation. |
+| 2026-06-24 | Codex backlink acquisition | Submitted the Think Save Retire guest-post topic request through Typeform and scheduled a 2026-07-08 follow-up if no reply is received. |
+| 2026-06-24 | Codex backlink acquisition | Checked Uneed's submit preview API; UntilFire already exists in the waiting line, so the ledger was updated to `pending` without creating an account or duplicate submission. |
+| 2026-06-24 | Codex backlink acquisition | Submitted UntilFire to Launching Next free queue; recorded confirmation URL `https://www.launchingnext.com/thanks/?i=138403` and left assigned publication date as unknown pending email decision. |
 | 2026-06-23 | Codex backlink session | Recorded new submissions, badge-verification status, and manual blockers for Startup Spotlight, FirstLook, StartupBase, The Startup Project, Wired Business, Noonlaunch, MarketingDB, Launching Next, StartupLibrary, Fazier, LaunchIgniter, Sidehunt, StartupOG, StartupTrusted, and MakerHunt. |
+| 2026-06-22 | Codex backlink acquisition | Qualified Uneed, Launching Next, and Think Save Retire for the first free batch; deferred BetaList and StartupBase pending account-gated details; rejected Fazier's reciprocal-link free tier. |
+| 2026-06-22 | Codex backlink acquisition | Corrected Product Hunt to user-confirmed `submitted`; added `scheduled` status and exact assigned launch-date tracking. |
+| 2026-06-22 | Codex backlink audit | Initial repository, public web, live-page, and authenticated Ahrefs reconciliation. |
