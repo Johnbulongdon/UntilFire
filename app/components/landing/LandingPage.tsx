@@ -959,6 +959,18 @@ function FooterSection() {
               height={54}
             />
           </a>
+          <a
+            href="https://wired.business"
+            target="_blank"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://wired.business/badge0-dark.svg"
+              alt="Featured on Wired Business"
+              width={200}
+              height={54}
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
