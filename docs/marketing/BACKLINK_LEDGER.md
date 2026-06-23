@@ -47,6 +47,7 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 | Startup Fame | `live-nofollow` | Unknown | https://startupfa.me/s/untilfire | Direct UntilFire links use `rel="nofollow"` | Unknown (pre-ledger) | 2026-06-22 | Listing reported verified on 2026-06-22. |
 | SaaSHub | `live-nofollow` | Unknown | https://www.saashub.com/untilfire | Website link uses `rel="nofollow"` | Unknown (pre-ledger) | 2026-06-22 | Public product profile is live. |
 | Shipstry | `live-nofollow` | 2026-05-23 | https://shipstry.com/product/until-fire/9Uz_LZDfN8 | Ahrefs: 2 links to target, 0 dofollow | Unknown (pre-ledger) | 2026-06-22 | Public product listing is live. |
+| Noonlaunch | `live-nofollow` | 2026-06-23 | https://noonlaunch.com/product/untilfire | Website button points to `https://www.untilfire.com/?ref=noonlaunch` with `rel="nofollow noopener"` | Codex backlink session | 2026-06-23 | Free launch submitted for 2026-06-24; page is public while pending launch/review. DR 25 via FrogDR. |
 | Reddit - r/financialindependence | `live-nofollow` | 2026-05-20 | https://www.reddit.com/r/financialindependence/comments/1tigher/weekly_selfpromotion_thread_wednesday_may_20_2026/ | Community/UGC link | Little_Tomorrow_9250 | 2026-06-22 | Weekly self-promotion thread submission. |
 | Reddit - r/SavingMoney | `live-nofollow` | 2026-05 | https://www.reddit.com/r/SavingMoney/comments/1tfos1s/best_budgeting_app_that_actually_helped_you_save/ | Community/UGC link | Community mention | 2026-06-22 | Recommendation mentions UntilFire calculators. |
 | Reddit - r/AppsWebappsFullstack | `live-nofollow` | 2026-03 | https://www.reddit.com/r/AppsWebappsFullstack/comments/1tf2z84/drop_your_startup_ill_check_every_single_one_and/ | Community/UGC link | Unknown (pre-ledger) | 2026-06-22 | UntilFire appears in a "Drop Your Startup" discussion. |
@@ -56,6 +57,12 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 | Platform | Status | Submitted date | Submission or public URL | Owner/session | Last checked | Notes / next action |
 | --- | --- | --- | --- | --- | --- | --- |
 | Microlaunch | `submitted` | 2026-05-28 | https://microlaunch.net/p/untilfire | Unknown (pre-ledger) | 2026-06-22 | Public page exists and embedded data says `submitted`; a clickable external backlink was not confirmed. Check again after launch status changes. |
+| Startup Spotlight | `pending` | 2026-06-23 | https://startupspotlight.co/startup/untilfire | Codex backlink session | 2026-06-23 | Google auth completed; free submission route landed at `/submitted/untilfire`; footer badge added and issued with startup ID `cmqpzklis000e15nktsharpa4`. |
+| FirstLook.tools | `pending` | 2026-06-23 | https://firstlook.tools/submit | Codex backlink session | 2026-06-23 | Google auth completed; free plan submitted after footer badge/backlink verification. Dashboard showed `UntilFire`, status `Pending Review`, plan `Free`. |
+| StartupBase | `pending` | 2026-06-23 | https://startupbase.io/products/untilfire-2 | Codex backlink session | 2026-06-23 | Free queue submission completed; page showed `Pending Review` and `Verified product`; footer badge added and verified. DR 53 via FrogDR. |
+| The Startup Project | `submitted` | 2026-06-23 | https://startupproject.org/submit-startup/ | Codex backlink session | 2026-06-23 | Success message shown: `Your startup has been submitted! We'll review it and notify you once your listing is live.` A backlink may be required after approval. |
+| Wired Business | `submitted` | 2026-06-23 | https://wired.business | Codex backlink session | 2026-06-23 | Direct multipart submission completed; footer badge added. No public listing URL was confirmed. Site-claimed DR 73. |
+| MarketingDB | `pending` | 2026-06-23 | https://marketingdb.live/submit/success?name=UntilFire&slug=untilfire | Codex backlink session | 2026-06-23 | Free badge submission completed and badge verification passed; success page said `Nice work — you're in the queue`. Public slug `https://marketingdb.live/project/untilfire` returns 404 until approval. DR 58 via FrogDR. |
 
 ## Removed or Unverifiable Listings
 
@@ -73,8 +80,15 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 | BetaList | `not-submitted` | Unassigned | 2026-06-22 | No repository or public listing evidence found. |
 | Indie Hackers | `not-submitted` | Unassigned | 2026-06-22 | No repository or public listing evidence found. |
 | Hacker News | `not-submitted` | Unassigned | 2026-06-22 | Launch copy exists, but no submitted Show HN page was found. |
-| Launching Next | `not-submitted` | Unassigned | 2026-06-22 | No repository or public listing evidence found. |
+| Launching Next | `not-submitted` | Codex backlink session | 2026-06-23 | Free form is filled and staged, but not submitted. Blocked on anti-spam math challenge `2+3`; solve only after explicit user confirmation. DR 50 via FrogDR. |
 | Uneed | `not-submitted` | Unassigned | 2026-06-22 | No repository or public listing evidence found. |
+| StartupLibrary | `not-submitted` | Codex backlink session | 2026-06-23 | Google auth completed and form prefilled; blocked on required logo upload. DR 31 via VerifiedDR. |
+| Fazier | `not-submitted` | Codex backlink session | 2026-06-23 | Google auth completed, required comments done, product URL entered, badge verified, first form step completed; blocked on required logo/gallery uploads. DR 82 via FrogDR. |
+| LaunchIgniter | `not-submitted` | Codex backlink session | 2026-06-23 | Google auth/profile completed and product staged from Peerlist import; blocked on anti-spam math verification `7 - 6`; solve only after explicit user confirmation. DR 75 via FrogDR. |
+| Sidehunt | `not-submitted` | Codex backlink session | 2026-06-23 | Google auth completed and nofollow-free path selected; blocked on required logo/preview uploads and 400-word description. DR 33 via FrogDR. |
+| StartupOG | `not-submitted` | Codex backlink session | 2026-06-23 | Free badge path exists, but form requires logo and 1-5 screenshot uploads. DR not verified by FrogDR; a public Reddit claim cites DR 11. |
+| StartupTrusted | `not-submitted` | Codex backlink session | 2026-06-23 | Form was accessible after auth, but final step only offered paid plans (`$11 Pro` / `$19 Featured`). DR 48 via FrogDR. |
+| MakerHunt | `not-submitted` | Codex backlink session | 2026-06-23 | Skipped because the submission surface is explicitly for AI projects; UntilFire should not be mispositioned as AI-first. DR 34 via FrogDR. |
 
 ## Spam and Links to Ignore
 
@@ -110,3 +124,4 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 | Date | Owner/session | Change |
 | --- | --- | --- |
 | 2026-06-22 | Codex backlink audit | Initial repository, public web, live-page, and authenticated Ahrefs reconciliation. |
+| 2026-06-23 | Codex backlink session | Recorded new submissions, badge-verification status, and manual blockers for Startup Spotlight, FirstLook, StartupBase, The Startup Project, Wired Business, Noonlaunch, MarketingDB, Launching Next, StartupLibrary, Fazier, LaunchIgniter, Sidehunt, StartupOG, StartupTrusted, and MakerHunt. |

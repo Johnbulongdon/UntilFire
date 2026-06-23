@@ -69,6 +69,56 @@ Notes:
   - the site says a backlink to the live listing is required to maintain the listing after approval
   - the site also advertises a future `Featured on The Startup Project` badge once the listing is live
 
+### StartupBase
+- URL: `https://startupbase.io/products/untilfire-2`
+- Status: submitted and pending review
+- DR: 53/100 (FrogDR)
+- Auth: completed in Chrome
+- Payment: not used
+- Submission mode: free queue with badge verification
+- Badge status: added to site footer and verified
+- Notes:
+  - public page exists at `https://startupbase.io/products/untilfire-2`
+  - page status showed `Pending Review` and `Verified product`
+
+### Wired Business
+- URL: `https://wired.business`
+- Status: submitted
+- DR: 73/100 (site-claimed)
+- Auth: not required
+- Payment: not used
+- Submission mode: direct multipart form submission
+- Badge status: added to site footer
+- Notes:
+  - submission completed successfully
+  - no public listing URL was confirmed during submission
+
+### Noonlaunch
+- URL: `https://noonlaunch.com/product/untilfire`
+- Status: public page created, pending launch/review
+- DR: 25/100 (FrogDR)
+- Auth: completed via Google in Chrome
+- Payment: submitted on the free launch plan
+- Submission mode: free launch
+- Notes:
+  - submission success page: `https://noonlaunch.com/submit/success/406`
+  - public page exists at `https://noonlaunch.com/product/untilfire`
+  - launch date selected: 2026-06-24
+  - website link points to `https://www.untilfire.com/?ref=noonlaunch` with `rel="nofollow noopener"`
+
+### MarketingDB
+- URL: `https://marketingdb.live/submit/success?name=UntilFire&slug=untilfire`
+- Status: submitted and pending review
+- DR: 58/100 (FrogDR)
+- Auth: completed via Google in Chrome
+- Payment: submitted on the free badge plan
+- Submission mode: free listing with badge verification
+- Badge status: added to site footer, deployed, and verified by MarketingDB
+- Notes:
+  - success page said `Nice work — you're in the queue`
+  - pending listing slug is `https://marketingdb.live/project/untilfire`
+  - direct public page currently returns 404 until approval; page copy says approved listings become public and indexed
+
 ## Already Done / Previously Confirmed
 
 ### Public or confirmed pages
@@ -80,7 +130,6 @@ Notes:
 
 ### Submitted earlier in the campaign
 - Tool Dynamo: user completed manually
-- Launching Next: submitted
 - Awesome FinTech: submitted
 - DevPages: submitted
 - HowLaunch: submitted
@@ -90,6 +139,62 @@ Notes:
 - Shipit.buzz: product page exists
 
 ## Needs Auth / Manual Follow-Up
+
+### Launching Next
+- URL: `https://www.launchingnext.com/submit/`
+- Status: staged, not submitted
+- DR: 50/100 (FrogDR)
+- Auth: not required
+- Payment: not used; free submission available, with optional $99 fast-track on the next page
+- Notes:
+  - form is filled with UntilFire product copy, `John NG`, and `ash@untilfire.com`
+  - newsletter opt-in was unchecked
+  - blocked on anti-spam math challenge: `Quick Check: What is 2+3?`
+  - per browser safety rules, submit only after explicit user confirmation to solve the quick-check
+
+### Fazier
+- URL: `https://fazier.com/launch-new`
+- Status: authenticated and partially completed, blocked on media uploads
+- DR: 82/100 (FrogDR)
+- Auth: completed via Google in Chrome
+- Payment: not used
+- Notes:
+  - required community comments were completed
+  - product URL was entered and the footer badge verification passed
+  - first product-information step was completed
+  - blocked on required square logo and gallery image uploads because Chrome extension file upload is disabled
+
+### LaunchIgniter
+- URL: `https://launchigniter.com/submit`
+- Status: authenticated, profile completed, product staged; not submitted
+- DR: 75/100 (FrogDR)
+- Auth: completed via Google in Chrome
+- Payment: not used
+- Notes:
+  - guaranteed launch path is paid (`$12` Basic / `$15` Pro)
+  - free submission flow imported media from Peerlist and has UntilFire copy staged
+  - blocked on anti-spam math verification: `7 - 6 = ?`
+  - per browser safety rules, submit only after explicit user confirmation to solve the verification
+
+### Sidehunt
+- URL: `https://sidehunt.io/submit`
+- Status: authenticated and free nofollow path selected, not submitted
+- DR: 33/100 (FrogDR)
+- Auth: completed via Google in Chrome
+- Payment: not used
+- Notes:
+  - `Nofollow Launch` was selected to avoid a badge for a default nofollow link
+  - blocked on required logo and preview-image uploads plus a 400-word description requirement
+
+### StartupOG
+- URL: `https://startupog.com/submit-your-product`
+- Status: checked, not submitted
+- DR: not verified by FrogDR; a public Reddit claim cites `DR 11`
+- Auth: not required for page access
+- Payment: not used
+- Notes:
+  - free plan requires a StartupOG badge
+  - form requires logo upload and 1-5 screenshot uploads, so it is blocked by the current Chrome file-upload limitation
 
 ### StartupDirectory.net
 - URL: `https://startupdirectory.net/submit`
@@ -202,11 +307,30 @@ Notes:
 ### StartupTrusted
 - URL: `https://startuptrusted.com/`
 - Status: paid only
-- DR: not re-checked this round
+- DR: 48/100 (FrogDR)
+- Notes:
+  - the product form was accessible after auth and the copy was corrected
+  - final step only offered paid plans (`$11 Pro` / `$19 Featured`), so no zero-budget submission was made
+
+### MakerHunt
+- URL: `https://makerhunt.io/`
+- Status: skipped as not suitable
+- DR: 34/100 (FrogDR)
+- Notes:
+  - the submission surface is explicitly for AI projects
+  - skipped to avoid mispositioning UntilFire as an AI tool
 
 ## Follow-Up Items
 
 - Prioritize manual sign-in follow-up for:
   - StartupDirectory.net
   - FirstLook.tools
-- Check whether Startup Spotlight approves the pending review now that the badge is live.
+- Complete the staged anti-spam submissions only after explicit user confirmation:
+  - Launching Next: `2+3`
+  - LaunchIgniter: `7 - 6`
+- Enable Chrome extension file access before upload-blocked submissions:
+  - Fazier
+  - StartupLibrary
+  - Sidehunt
+  - StartupOG
+- Check whether Startup Spotlight, StartupBase, Noonlaunch, MarketingDB, and FirstLook approve their pending reviews.
