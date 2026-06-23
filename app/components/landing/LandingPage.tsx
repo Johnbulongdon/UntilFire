@@ -971,6 +971,20 @@ function FooterSection() {
               height={54}
             />
           </a>
+          <a
+            href="https://startupbase.io/products/untilfire-2?utm_source=startupbase&utm_medium=badge&utm_campaign=launch-badge-light"
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://statics.startupbase.io/site/badges/launched-on-sb.svg"
+              alt="Launched on StartupBase"
+              width={255}
+              height={55}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
