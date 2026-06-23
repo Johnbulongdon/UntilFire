@@ -57,6 +57,18 @@ Notes:
   - badge issued with startup ID `cmqpzklis000e15nktsharpa4`
   - free listing remains under manual review until approval email arrives
 
+### The Startup Project
+- URL: `https://startupproject.org/submit-startup/`
+- Status: submitted
+- DR: not independently verified in this round; one third-party submission guide cites `DR 16`
+- Auth: not required
+- Payment: not used
+- Submission mode: free submission
+- Notes:
+  - success message shown: `Your startup has been submitted! We'll review it and notify you once your listing is live.`
+  - the site says a backlink to the live listing is required to maintain the listing after approval
+  - the site also advertises a future `Featured on The Startup Project` badge once the listing is live
+
 ## Already Done / Previously Confirmed
 
 ### Public or confirmed pages
@@ -102,6 +114,18 @@ Notes:
   - free submission succeeded after the live footer badge/backlink was deployed on `https://www.untilfire.com`
   - FirstLook dashboard now shows `UntilFire` with status `Pending Review` and plan `Free`
   - badge/link lives in the site footer using FirstLook's published transparent badge embed
+
+### StartupLibrary
+- URL: `https://startuplibrary.net/dashboard?tab=submit`
+- Status: authenticated and prefilled, blocked only on logo upload
+- DR: 31/100 on VerifiedDR (`https://verifieddr.com/website/startuplibrary-net`)
+- Auth: completed via Google in Chrome
+- Payment: not used yet
+- Notes:
+  - public marketing copy says every listing gets a permanent dofollow backlink from day one
+  - submission form is prefilled with name, URL, tagline, description, and `Fintech` category
+  - current blocking step is the required logo upload (`Square logo, max 5MB`)
+  - the next action is to upload a local logo file and continue the 2-step free submission flow
 
 ### Startup Ranking
 - URL: `https://www.startupranking.com/`
