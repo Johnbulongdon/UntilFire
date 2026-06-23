@@ -93,17 +93,15 @@ Notes:
 
 ### FirstLook.tools
 - URL: `https://firstlook.tools/submit`
-- Status: authenticated and ready for free submission, pending live backlink verification
+- Status: submitted, pending review
 - DR: 57/100 (surfaced in the live `frogdr.com` badge used on the submit page)
 - Auth: completed via Google in Chrome
-- Payment: free submission exists, paid upgrades also exist
+- Payment: submitted on the free plan
 - Notes:
   - page states free submissions are reviewed within 72 hours
-  - form is already advanced to the free-plan step with the product data preserved
-  - live page currently shows: `A dofollow backlink to our site was not found on your website.`
-  - badge/link has now been added to the repo footer using `https://firstlook.tools/badge/badge_transparent.svg`
-  - footer markup is aligned to FirstLook's own copied embed HTML because their verifier may be exact-string based
-  - this site deploys from GitHub, so FirstLook will not verify the backlink until the footer change is pushed and live on `https://www.untilfire.com`
+  - free submission succeeded after the live footer badge/backlink was deployed on `https://www.untilfire.com`
+  - FirstLook dashboard now shows `UntilFire` with status `Pending Review` and plan `Free`
+  - badge/link lives in the site footer using FirstLook's published transparent badge embed
 
 ### Startup Ranking
 - URL: `https://www.startupranking.com/`
