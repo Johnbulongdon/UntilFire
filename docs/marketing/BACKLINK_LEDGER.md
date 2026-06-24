@@ -124,6 +124,19 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 | Productivity Directory | `not-submitted` | Codex backlink acquisition | 2026-06-24 | Submit path requires login/Google auth and includes CAPTCHA signals. No account flow was used. |
 | PayOnceApps | `not-submitted` | Codex backlink acquisition | 2026-06-24 | Submit path requires login. No account flow was used. |
 | Netted | `not-submitted` | Codex backlink acquisition | 2026-06-24 | Editorial contact only and submission guidance says most B2B pitches are not a fit. Excluded rather than sending a weak pitch. |
+| Helperg | `not-submitted` | Codex backlink acquisition | 2026-06-24 | Free no-account/no-CAPTCHA form was visible at https://helperg.com/submit-startup/, but direct POSTs to both the submit path and the exact form action `/submit-startup/?success=1` returned 404. Likely broken Netlify form handler; manual browser retry only if desired. |
+| Hunt Startup | `not-submitted` | Codex backlink acquisition | 2026-06-24 | https://huntstartup.com/submit redirects to the auth/create-account page. No account was created. |
+| FoundrList | `not-submitted` | Codex backlink acquisition | 2026-06-24 | Submit page loads Google identity/account flow and includes paid/listing language. Skipped under the no-account/no-paid rule. |
+| Startup Inspire | `not-submitted` | Codex backlink acquisition | 2026-06-24 | Submit paths `https://www.startupinspire.com/submit` and `/submit-startup/` redirected to `/404`; backlinks.fyi submission URL appears stale. |
+| Tapscape | `not-submitted` | Codex backlink acquisition | 2026-06-24 | `https://www.tapscape.com/submit-app/` redirected to `/submit-app-review/`; static page exposed only search/login/account/paid signals and no clean submit form. |
+| Startup Tracker | `not-submitted` | Codex backlink acquisition | 2026-06-24 | `https://startuptracker.io/add` rendered a Not Found page; the `/crowdsourcing/` JS flow exposed a POST API, but public API calls returned `ST-401000: Unauthorized`. No auth bypass attempted. |
+| SimilarSiteSearch | `not-submitted` | Codex backlink acquisition | 2026-06-24 | `https://www.similarsitesearch.com/submit` returned 404. Treat backlinks.fyi submission URL as stale. |
+| Launched | `not-submitted` | Codex backlink acquisition | 2026-06-24 | `https://launched.io/SubmitStartup` failed TLS certificate trust from this environment. Manual browser check only if the certificate issue resolves. |
+| Tekpon | `not-submitted` | Codex backlink acquisition | 2026-06-24 | `https://tekpon.com/get-listed/` requires account/sign-in and a paid/Stripe listing flow. No free no-account path found. |
+| LaunchDirectories | `not-submitted` | Codex backlink acquisition | 2026-06-24 | Site is a directory-of-directories/submission-service page rather than an appropriate product listing target for UntilFire. Not submitted. |
+| All Startups | `not-submitted` | Codex backlink acquisition | 2026-06-24 | `https://www.allstartups.info/Startups/Submit` failed TLS certificate trust from this environment. No submission. |
+| The Startup Pitch | `not-submitted` | Codex backlink acquisition | 2026-06-24 | `https://www.thestartuppitch.com/pitch/` failed TLS certificate trust from this environment. No submission. |
+| Crazy About Startups | `not-submitted` | Codex backlink acquisition | 2026-06-24 | `https://www.crazyaboutstartups.com/submit-your-startup/` returned HTTP 503. No submission. |
 
 ## Spam and Links to Ignore
 
@@ -159,6 +172,7 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 
 | Date | Owner/session | Change |
 | --- | --- | --- |
+| 2026-06-24 | Codex backlink acquisition | Screened another general startup-directory batch after SaaSRow/The Startup INC. No extra clean submissions succeeded; Helperg had a broken form endpoint, Startup Inspire/SimilarSiteSearch were stale, Startup Tracker required API auth, and Hunt Startup/FoundrList/Tekpon were account/paid-gated. |
 | 2026-06-24 | Codex backlink acquisition | Submitted free/no-CAPTCHA/no-account opportunities to SaaSRow and The Startup INC; checked additional live targets and recorded manual blockers for Tiny Startups, Startup Benchmarks, Apprater, TechPluto, Startups Gallery, and Cloudflare/account-gated directories. |
 | 2026-06-24 | Codex backlink acquisition | Checked an additional free/high-DR directory batch after the Launching Next and Think Save Retire submissions. No new backlink was claimed: SourceForge and Business-Software.com are actionable but require CAPTCHA approval; Startup88 is prepared but Typeform timed out; Webwiki, AllMyFaves, Website Hunt, Serchen, F6S, StartupBuffer, StartupRanking, and StartupStash were blocked by CAPTCHA/challenge/account gates. |
 | 2026-06-24 | Codex backlink acquisition | Submitted the Think Save Retire guest-post topic request through Typeform and scheduled a 2026-07-08 follow-up if no reply is received. |
