@@ -872,12 +872,19 @@ function FooterSection() {
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 12, color: C.green700, fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
           <span>© 2026 UntilFire</span>
           <a
-            href="https://startupfa.st"
+            href="https://startupfa.st/projects/untilfire"
             target="_blank"
-            rel="noreferrer noopener"
-            style={{ color: C.green800, fontWeight: 700, textDecoration: "none" }}
+            rel="noopener"
+            title="Featured on Startup Fast"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
           >
-            Startup Fast
+            <img
+              src="https://startupfa.st/badge-light.png"
+              alt="Featured on Startup Fast"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
           </a>
           <a
             href="https://startupfa.me/s/untilfire?utm_source=www.untilfire.com"
