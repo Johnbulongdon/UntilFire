@@ -1020,6 +1020,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://kittylaunch.com/p/untilfire"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://kittylaunch.com/api/public/badges/launch_badge.svg?theme=light&name=UntilFire"
+              width={280}
+              alt="UntilFire on KittyLaunch"
+              data-kittylaunch-badge="1"
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
