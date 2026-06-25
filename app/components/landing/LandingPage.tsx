@@ -875,14 +875,13 @@ function FooterSection() {
             href="https://startupfa.st/projects/untilfire"
             target="_blank"
             rel="noopener"
-            title="Featured on Startup Fast"
+            title="Startup Fast Top 1 Daily Winner"
             style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
           >
             <img
-              src="https://startupfa.st/badge-light.png"
-              alt="Featured on Startup Fast"
-              width={200}
-              height={54}
+              src="https://startupfa.st/images/badges/top1-dark.svg"
+              alt="Startup Fast Top 1 Daily Winner"
+              style={{ width: 195, height: "auto" }}
               loading="lazy"
             />
           </a>
