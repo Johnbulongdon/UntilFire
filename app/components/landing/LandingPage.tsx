@@ -1007,6 +1007,18 @@ function FooterSection() {
             />
           </a>
           <a
+            href="https://noonlaunch.com/product/untilfire"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://noonlaunch.com/badges/untilfire.svg"
+              alt="Featured on Noonlaunch"
+              width={200}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://marketingdb.live"
             target="_blank"
             rel="noreferrer noopener"
