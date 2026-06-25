@@ -84,7 +84,7 @@ type EmergencyFundPriorityMode = "protect" | "balance" | "grow";
 
 const EMERGENCY_FUND_HISTORY_KEY = "uf_emergency_fund_healthy_once_v1";
 const EMERGENCY_FUND_FLOOR_MONTHS = 1.5;
-const EMERGENCY_FUND_TARGET_MONTHS = 4;
+const EMERGENCY_FUND_TARGET_MONTHS = 6;
 
 function useEmergencyFundHistory(isHealthyNow: boolean) {
   const [hasEverHealthy, setHasEverHealthy] = useState(false);
@@ -2891,6 +2891,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const bankAssets = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment");
   const bankAssetsTotal = bankAssets.reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const [hideZeroAssets, setHideZeroAssets] = useState(true);
+  const [efCalcOpen, setEfCalcOpen] = useState(false);
   const visibleAssets = hideZeroAssets ? bankAssets.filter(a => (a.balance_current ?? 0) !== 0) : bankAssets;
   const hiddenAssetCount = bankAssets.length - visibleAssets.length;
 
@@ -3096,6 +3097,37 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 <div style={{ fontSize: 15, fontWeight: 800, color: s.color ?? "#19181E", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
               </div>
             ))}
+          </div>
+
+          {/* How is this calculated? */}
+          <div style={{ marginBottom: 10 }}>
+            <button
+              onClick={() => setEfCalcOpen(o => !o)}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "#64748B", fontFamily: "Manrope, sans-serif" }}
+              aria-expanded={efCalcOpen}
+            >
+              <span style={{ fontSize: 11, display: "inline-block", transform: efCalcOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>▶</span>
+              How is this calculated?
+            </button>
+            {efCalcOpen && (
+              <div style={{ marginTop: 10, background: "rgba(255,255,255,0.7)", border: "1px solid rgba(148,163,184,0.22)", borderRadius: 10, padding: "14px 16px", fontSize: 13, color: "#475569", fontFamily: "Manrope, sans-serif", lineHeight: 1.7 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px 16px", marginBottom: 10, fontVariantNumeric: "tabular-nums" }}>
+                  <span>Monthly essential expenses</span>
+                  <span style={{ fontWeight: 700, color: "#0F172A", textAlign: "right" }}>{fmtMoney(monthlyExpenses)}</span>
+                  <span>× {EMERGENCY_FUND_TARGET_MONTHS} months (target)</span>
+                  <span style={{ fontWeight: 700, color: "#0F172A", textAlign: "right" }}>{fmtMoney(efTarget)}</span>
+                  <span>× {EMERGENCY_FUND_FLOOR_MONTHS} months (floor)</span>
+                  <span style={{ fontWeight: 700, color: "#0F172A", textAlign: "right" }}>{fmtMoney(efFloor)}</span>
+                  <span>Your current reserve</span>
+                  <span style={{ fontWeight: 700, color: "#0F172A", textAlign: "right" }}>{fmtMoney(emergencyFundBalance)} <span style={{ fontWeight: 500, color: "#64748B" }}>({monthsCovered.toFixed(1)} mo)</span></span>
+                </div>
+                <div style={{ borderTop: "1px solid rgba(148,163,184,0.2)", paddingTop: 10, fontSize: 12, color: "#64748B" }}>
+                  <strong style={{ color: "#475569" }}>Why 6 months?</strong> Standard financial advice ranges from 3–6 months. UntilFire uses 6 months as the target because it covers a typical job search plus a buffer for unexpected costs like medical bills or home repairs — and because staying on your FIRE path requires more cushion, not less, when markets are volatile.
+                  <br /><br />
+                  <strong style={{ color: "#475569" }}>Floor (1.5 months):</strong> The minimum safety net before extra cash should go toward investing. Below this, rebuilding the buffer takes priority.
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Progress bar */}
@@ -3974,6 +4006,196 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
         </div>
       )}
     </>
+  );
+}
+
+// ─── Tax Profile Card ─────────────────────────────────────────────────────────
+function TaxProfileCard({
+  cityName, income, monthlyExpenses, withdrawalRate,
+  taxEnabled, setTaxEnabled,
+  retirementTaxRate, setRetirementTaxRate,
+  rothPct, setRothPct,
+  displayCurrency, displayRates,
+}: {
+  cityName: string; income: number; monthlyExpenses: number; withdrawalRate: number;
+  taxEnabled: boolean; setTaxEnabled: (v: boolean) => void;
+  retirementTaxRate: number; setRetirementTaxRate: (v: number) => void;
+  rothPct: number; setRothPct: (v: number) => void;
+  displayCurrency: string; displayRates: Record<string, number>;
+}) {
+  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
+
+  const city = CITIES.find(c => c.name === cityName);
+  const taxInfo = city ? STATE_TAX[city.state] : null;
+  const isUS = city?.flag === "🇺🇸";
+  const stateRate = taxInfo?.rate ?? 0;
+  const ficaRate = isUS ? 0.0765 : 0;
+  const suggestedRetirementRate = taxInfo
+    ? (isUS ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35)) : Math.max(0.05, Math.min(stateRate * 0.75, 0.40)))
+    : 0.15;
+  const jurisdictionLabel = taxInfo
+    ? taxInfo.label.split("—")[0].trim()
+    : cityName ? "Set in Profile" : "No location set";
+
+  function handleToggle() {
+    const next = !taxEnabled;
+    setTaxEnabled(next);
+    if (next && retirementTaxRate === 0.15) {
+      setRetirementTaxRate(suggestedRetirementRate);
+    }
+  }
+
+  const baseFireTarget = monthlyExpenses > 0 && withdrawalRate > 0
+    ? monthlyExpenses * 12 / withdrawalRate
+    : 0;
+  const taxGrossup = taxEnabled && retirementTaxRate > 0
+    ? ((1 - rothPct / 100) / (1 - Math.min(retirementTaxRate, 0.6)) + rothPct / 100)
+    : 1;
+  const adjFireTarget = baseFireTarget * taxGrossup;
+  const delta = adjFireTarget - baseFireTarget;
+
+  return (
+    <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "Manrope, sans-serif" }}>
+            Tax Profile
+          </div>
+          <div style={{ fontSize: 14, color: "var(--uf-text-2)", marginTop: 2, fontFamily: "Manrope, sans-serif" }}>
+            {city?.flag ?? "🌍"} {jurisdictionLabel}
+          </div>
+        </div>
+        <button
+          onClick={handleToggle}
+          style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+            Include taxes
+          </span>
+          <div style={{
+            width: 40, height: 22, borderRadius: 11,
+            background: taxEnabled ? "#059669" : "var(--uf-border)",
+            position: "relative", transition: "background 0.2s",
+          }}>
+            <div style={{
+              width: 18, height: 18, borderRadius: 9, background: "#fff",
+              position: "absolute", top: 2, left: taxEnabled ? 20 : 2,
+              transition: "left 0.2s",
+            }} />
+          </div>
+        </button>
+      </div>
+
+      {/* Off state */}
+      {!taxEnabled && (
+        <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, fontFamily: "Manrope, sans-serif" }}>
+          {taxInfo
+            ? `Jurisdiction detected: ${taxInfo.label}. Enable to see how taxes shift your FIRE number.`
+            : "Set your city in Profile so we can auto-detect your jurisdiction and tax rates."}
+        </div>
+      )}
+
+      {/* Enabled state */}
+      {taxEnabled && (
+        <>
+          {/* Key facts grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {[
+              { label: "State / local income tax", value: `${(stateRate * 100).toFixed(1)}%` },
+              { label: isUS ? "Payroll (FICA) → 0% at FIRE" : "Payroll tax → check locally", value: ficaRate > 0 ? `${(ficaRate * 100).toFixed(1)}%` : "N/A" },
+              { label: isUS ? "Federal income tax" : "Income tax", value: isUS ? "10–37% (brackets)" : "Varies by bracket" },
+              { label: isUS ? "Long-term capital gains" : "Capital gains", value: isUS ? "0–20% (LTCG)" : "Verify locally" },
+            ].map(row => (
+              <div key={row.label} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "10px 12px" }}>
+                <div style={{ fontSize: 10, color: "var(--uf-text-2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "Manrope, sans-serif" }}>
+                  {row.label}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+                  {row.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Editable rates */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
+                Retirement effective rate
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="number" min={0} max={60} step={1}
+                  value={Math.round(retirementTaxRate * 100)}
+                  onChange={e => setRetirementTaxRate(Math.min(0.6, Math.max(0, Number(e.target.value) / 100)))}
+                  style={{
+                    width: 64, padding: "8px 10px", borderRadius: 8,
+                    border: "1px solid var(--uf-border)", background: "var(--uf-surface)",
+                    color: "var(--uf-text)", fontSize: 15, fontWeight: 700, fontFamily: "Manrope, sans-serif",
+                  }}
+                />
+                <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>%</span>
+              </div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+                On withdrawals in retirement (no payroll taxes)
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
+                Roth / tax-free %
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={Math.round(rothPct)}
+                  onChange={e => setRothPct(Math.min(100, Math.max(0, Number(e.target.value))))}
+                  style={{
+                    width: 64, padding: "8px 10px", borderRadius: 8,
+                    border: "1px solid var(--uf-border)", background: "var(--uf-surface)",
+                    color: "var(--uf-text)", fontSize: 15, fontWeight: 700, fontFamily: "Manrope, sans-serif",
+                  }}
+                />
+                <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>%</span>
+              </div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+                Roth IRA, Roth 401k, ISA, tax-free accounts
+              </div>
+            </div>
+          </div>
+
+          {/* Impact summary */}
+          {baseFireTarget > 0 && (
+            <div style={{
+              background: "rgba(5,150,105,0.07)", border: "1px solid rgba(5,150,105,0.18)",
+              borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6,
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#059669", fontFamily: "Manrope, sans-serif" }}>
+                FIRE Number Impact
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Without tax adjustment</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(baseFireTarget, true)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Tax-adjusted FIRE target</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(adjFireTarget, true)}</span>
+              </div>
+              {delta > 500 && (
+                <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+                  +{fmtMoney(delta, true)} extra needed to cover taxes on retirement withdrawals
+                </div>
+              )}
+              {ficaRate > 0 && income > 0 && (
+                <div style={{ fontSize: 12, color: "#059669", marginTop: 2, fontFamily: "Manrope, sans-serif" }}>
+                  Payroll taxes (FICA) drop at FIRE → saves ~{fmtMoney(income * ficaRate, true)}/yr
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
