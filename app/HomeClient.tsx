@@ -1152,8 +1152,9 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const router = useRouter();
   const [useRealReturn, setUseRealReturn] = useState(false);
   const marketReturn = useRealReturn ? 0.07 : 0.10;
+  const planningAge = currentAge ?? 30;
 
-  const result = calcFIRE(savings, city.col, currentAge, portfolioBalance, marketReturn);
+  const result = calcFIRE(savings, city.col, planningAge, portfolioBalance, marketReturn);
   const takeHome = income;
 
   // Phase 1: calculating steps
@@ -1193,7 +1194,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
           portfolioBalance,
         }),
       });
-      saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency });
+      saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
       setEmailSubmitted(true);
     } catch {
       setEmailSubmitted(true);
@@ -1204,6 +1205,9 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const numRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const belowRef = useRef<HTMLDivElement>(null);
+  const isLocalRevealPreview = typeof window !== "undefined"
+    && process.env.NODE_ENV === "development"
+    && new URLSearchParams(window.location.search).get("previewReveal") === "1";
 
   useEffect(() => {
     setFireTypeResult(readStoredFireType());
@@ -1211,6 +1215,16 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   // Run calculating sequence
   useEffect(() => {
+    if (isLocalRevealPreview) {
+      setCalcPhase(false);
+      setActiveSteps([0, 1, 2, 3]);
+      setBarPct(100);
+      setCounting(true);
+      setRevealed(true);
+      setLanded(true);
+      return;
+    }
+
     setCalcPhase(true);
     setActiveSteps([]);
     setBarPct(0);
@@ -1232,7 +1246,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
       setCalcPhase(false);
       setCounting(true);
     }, calcSteps.length * 620 + 800);
-  }, []);
+  }, [isLocalRevealPreview]);
 
   // GSAP hero entrance + count-up
   useEffect(() => {
@@ -1291,6 +1305,37 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     return () => ctx.revert();
   }, [revealed]);
 
+  // Scroll reveal for the longer story sections below the first result.
+  useEffect(() => {
+    if (!revealed || !belowRef.current) return;
+
+    const items = Array.from(belowRef.current.querySelectorAll<HTMLElement>(".uf-scroll-reveal"));
+    if (items.length === 0) return;
+
+    const reduceMotion = typeof window !== "undefined" && window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion || typeof IntersectionObserver === "undefined") {
+      items.forEach((item) => item.classList.add("is-visible"));
+      return;
+    }
+
+    items.forEach((item, index) => {
+      item.style.setProperty("--uf-reveal-delay", `${Math.min(index * 80, 320)}ms`);
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -12% 0px", threshold: 0.16 });
+
+    items.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, [revealed]);
+
   // Fire the reveal funnel event exactly once per mount, when the projection
   // is fully settled. Done inside an effect so the event is tied to the
   // user-visible reveal, not the initial render.
@@ -1310,10 +1355,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const [extraSavings, setExtraSavings] = useState(500);
 
-  const d1 = calcFIRE(savings + Math.round(city.col * 0.2 / 12), city.col, currentAge, portfolioBalance, marketReturn);
-  const d2 = calcFIRE(savings + 416, city.col, currentAge, portfolioBalance, marketReturn);
-  const d3 = calcFIRE(savings + income * 0.1 / 12, city.col, currentAge, portfolioBalance, marketReturn);
-  const d4 = calcFIRE(savings + extraSavings, city.col, currentAge, portfolioBalance, marketReturn);
+  const d3 = calcFIRE(savings + income * 0.1 / 12, city.col, planningAge, portfolioBalance, marketReturn);
+  const d4 = calcFIRE(savings + extraSavings, city.col, planningAge, portfolioBalance, marketReturn);
 
   // Next-move guidance helpers
   const getNextMoveGuidance = () => {
@@ -1333,7 +1376,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
     // COL optimization move
     const colMove = Math.round(city.col * 0.05 / 12);
-    const dCol = calcFIRE(savings + colMove, city.col, currentAge, portfolioBalance, marketReturn);
+    const dCol = calcFIRE(savings + colMove, city.col, planningAge, portfolioBalance, marketReturn);
     const colYears = result.years - dCol.years;
     if (colYears > 0.5 && colMove > 50) {
       moves.push({
@@ -1346,7 +1389,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
     // Small consistent win
     const smallWin = 250;
-    const dSmall = calcFIRE(savings + smallWin, city.col, currentAge, portfolioBalance, marketReturn);
+    const dSmall = calcFIRE(savings + smallWin, city.col, planningAge, portfolioBalance, marketReturn);
     const smallYears = result.years - dSmall.years;
     if (smallYears > 0.25) {
       moves.push({
@@ -1398,6 +1441,31 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     { label: "Freedom date mapped", done: true },
     { label: isAlreadyFire ? "Next chapter awaits" : "Monthly move ready", done: !isAlreadyFire },
   ];
+  const bridgeAge = isAlreadyFire ? planningAge : Math.max(planningAge, Math.round(planningAge + d4.years));
+  const baseAge = result.age ?? Math.round(planningAge + result.years);
+  const bridgeYearsEarlierLabel = savedYears > 0 ? `${monthlyMoveLabel} earlier` : "Timeline ready";
+  const traditionalRetirementAge = Math.max(65, planningAge + 1, bridgeAge + 1);
+  const runwayBaseAge = Math.max(baseAge, traditionalRetirementAge);
+  const runwayImprovedAge = Math.min(Math.max(bridgeAge, planningAge + 1), runwayBaseAge);
+  const runwaySpan = Math.max(1, runwayBaseAge - planningAge);
+  const runwayYearsEarlier = Math.max(0, runwayBaseAge - runwayImprovedAge);
+  const runwayYearsEarlierLabel = runwayYearsEarlier > 0 ? `${runwayYearsEarlier} years earlier` : bridgeYearsEarlierLabel;
+  const runwayBarAges = Array.from({ length: runwaySpan + 1 }, (_, i) => planningAge + i);
+  const runwayBars = runwayBarAges.map(age => {
+    const baseProgress = Math.min(1, Math.max(0, (age - planningAge) / runwaySpan));
+    const planProgress = Math.min(1, Math.max(0, (age - planningAge) / Math.max(1, runwayImprovedAge - planningAge)));
+    const isKeyTick = age === planningAge || age === runwayImprovedAge || age === runwayBaseAge;
+    const isFiveYearTick = age % 5 === 0;
+    return {
+      age,
+      basePct: Math.round(10 + Math.pow(baseProgress, 1.65) * 90),
+      planPct: Math.round(10 + Math.pow(planProgress, 1.38) * 90),
+      hasPlan: age <= runwayImprovedAge,
+      isPlanTarget: age === runwayImprovedAge,
+      isBaseTarget: age === runwayBaseAge,
+      showAgeLabel: isKeyTick || isFiveYearTick,
+    };
+  });
   const chartData = useMemo(() => {
     const r = marketReturn;
     const annualBase = savings * 12;
@@ -1463,9 +1531,107 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
       {/* PHASE 2 — reveal */}
       {!calcPhase && (
         <div className="uf-number-phase">
+          {/* Interactive Bridge preview */}
+          <div ref={heroRef} className="uf-bridge-hero">
+            <div aria-hidden className="uf-bridge-aurora uf-bridge-aurora-a" />
+            <div aria-hidden className="uf-bridge-aurora uf-bridge-aurora-b" />
+            <div aria-hidden className="uf-bridge-gridwash" />
+            {revealed && (
+              <div className="uf-confetti" aria-hidden="true">
+                <span /><span /><span /><span /><span /><span /><span /><span />
+                <span /><span /><span /><span /><span /><span /><span /><span />
+                <span /><span /><span /><span /><span /><span /><span /><span />
+              </div>
+            )}
+
+            <div className="uf-bridge-inner">
+              <div data-gsap="chip" className="uf-bridge-chip" style={{ opacity: 0 }}>
+                <span className="uf-bridge-chip-dot" />
+                Your plan is ready
+              </div>
+
+              <div className="uf-bridge-layout">
+                <section className="uf-bridge-result">
+                  <div data-gsap="date-label" className="uf-bridge-kicker" style={{ opacity: 0 }}>
+                    Work optional target
+                  </div>
+                  <div data-gsap="date-date" className="uf-bridge-age-row" style={{ opacity: 0 }}>
+                    <div>
+                      <div className="uf-bridge-age">{isAlreadyFire ? "Now" : bridgeAge}</div>
+                      <div className="uf-bridge-age-label">{isAlreadyFire ? "Work is already optional" : "Work optional age"}</div>
+                    </div>
+                  </div>
+                  <div data-gsap="date-sub" className="uf-bridge-subline" style={{ opacity: 0 }}>
+                    {isAlreadyFire
+                      ? `Your portfolio can cover the estimated cost of living in ${city.name}.`
+                      : `${yearsLabel} from now in ${city.name}.`}
+                  </div>
+
+                  <div className="uf-bridge-runway" aria-label="Timeline showing the same FIRE target reached earlier">
+                    <div className="uf-bridge-big-chart" role="img" aria-label={`Your plan reaches the same FIRE target at age ${bridgeAge}, while the traditional path reaches it at age ${runwayBaseAge}.`}>
+                      <div className="uf-bridge-chart-head">
+                        <div className="uf-bridge-runway-copy">
+                          <span>Compound runway</span>
+                          <strong>{runwayYearsEarlierLabel}</strong>
+                        </div>
+                      </div>
+
+                      <div className="uf-bridge-chart-plot">
+                        <div className="uf-bridge-target-rail" />
+                        <div className="uf-bridge-column-strip">
+                          {runwayBars.map(bar => (
+                            <div
+                              key={bar.age}
+                              className={`uf-bridge-column${bar.isPlanTarget ? " is-plan-target" : ""}${bar.isBaseTarget ? " is-base-target" : ""}${!bar.hasPlan ? " is-future" : ""}`}
+                            >
+                              <div className="uf-bridge-column-bars">
+                                <span className="uf-bridge-base-column" style={{ height: `${bar.basePct}%` }} />
+                                {bar.hasPlan && (
+                                  <span className="uf-bridge-plan-column" style={{ height: `${bar.planPct}%` }} />
+                                )}
+                                {bar.isPlanTarget && (
+                                  <span className="uf-bridge-chart-flag">Age {bridgeAge}</span>
+                                )}
+                                {bar.isBaseTarget && (
+                                  <span className="uf-bridge-chart-flag is-base">Age {runwayBaseAge}</span>
+                                )}
+                              </div>
+                              <span className="uf-bridge-age-tick">{bar.showAgeLabel ? bar.age : ""}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <aside data-gsap="fire-right" className="uf-bridge-action" style={{ opacity: 0 }}>
+                  <div data-gsap="milestone" className="uf-bridge-move-card">
+                    <span>Save this plan</span>
+                    <strong>{fmtUSD(result.fireTarget ?? 0)}</strong>
+                    <p>
+                      Track the monthly actions that make age {bridgeAge} realistic.
+                    </p>
+                  </div>
+
+                  <Link
+                    data-gsap="milestone"
+                    href="/login"
+                    className="uf-bridge-save"
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                  >
+                    Save plan and track monthly
+                  </Link>
+                  <div data-gsap="milestone" className="uf-bridge-trust">
+                    Free account. Private numbers. No credit card.
+                  </div>
+                </aside>
+              </div>
+            </div>
+          </div>
 
           {/* ── GREEN GRADIENT HERO ── */}
-          <div ref={heroRef} style={{ position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #059669 0%, #003527 100%)", color: "#fff", padding: "clamp(32px, 5vw, 64px) clamp(20px, 4vw, 56px) clamp(28px, 4vw, 56px)", marginBottom: 0, borderRadius: "16px 16px 0 0" }}>
+          <div style={{ display: "none", position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #059669 0%, #003527 100%)", color: "#fff", padding: "clamp(32px, 5vw, 64px) clamp(20px, 4vw, 56px) clamp(28px, 4vw, 56px)", marginBottom: 0, borderRadius: "16px 16px 0 0" }}>
             {/* Decorative circles */}
             <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "18s", ["--ring-delay" as string]: "0s", ["--ring-lo" as string]: "0.06", ["--ring-hi" as string]: "0.14", position: "absolute", top: -200, right: -80, width: 560, height: 560, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.08)", pointerEvents: "none" }} />
             <div aria-hidden className="uf-reveal-ring" style={{ ["--ring-dur" as string]: "13s", ["--ring-delay" as string]: "2.5s", ["--ring-lo" as string]: "0.05", ["--ring-hi" as string]: "0.12", position: "absolute", top: -100, right: 20, width: 380, height: 380, borderRadius: "50%", border: "1px solid rgba(34,211,165,0.06)", pointerEvents: "none" }} />
@@ -1523,7 +1689,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>
                     FIRE number
                   </div>
-                  <div ref={numRef} className={`uf-fire-num${landed ? " uf-fire-landed" : ""}`} style={{ marginTop: 10, fontSize: "clamp(32px, 4vw, 48px)", lineHeight: 1, fontWeight: 600, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "#fff", transformOrigin: "left center", willChange: "transform" }} />
+                  <div className={`uf-fire-num${landed ? " uf-fire-landed" : ""}`} style={{ marginTop: 10, fontSize: "clamp(32px, 4vw, 48px)", lineHeight: 1, fontWeight: 600, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "#fff", transformOrigin: "left center", willChange: "transform" }} />
                   <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.5)", maxWidth: 260, lineHeight: 1.45 }}>
                     25× annual expenses at the 4% safe withdrawal rate.
                   </div>
@@ -1556,7 +1722,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     href="/login"
                     className="uf-automate-btn"
                     style={{ display: "block", marginTop: 18, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none", opacity: 0 }}
-                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency })}
                   >
                     Save my plan →
                   </Link>
@@ -1598,8 +1764,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
           {/* ── CHART + MONTHLY MOVE ── */}
           {revealed && (
-            <div ref={belowRef}>
-              <div data-gsap="chart-section" style={{ background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
+            <div ref={belowRef} className="uf-reveal-continuation">
+              <div data-gsap="chart-section" style={{ display: "none", background: "#F8FAFC", padding: "clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px)", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
                 <div className="uf-chart-move-grid" style={isAlreadyFire ? { gridTemplateColumns: "1fr" } : undefined}>
                   {/* Chart card */}
                   <div className="uf-reveal-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, paddingBottom: 16, boxShadow: "0 24px 40px -28px rgba(15,23,42,0.14)" }}>
@@ -1622,7 +1788,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                       </div>
                     </div>
                     <div style={{ marginTop: 8 }}>
-                      <FireGrowthChart data={chartData} extraSavings={extraSavings} baseRetireYear={result.retireYear} boostedRetireYear={d4.retireYear} currentAge={currentAge} />
+                      <FireGrowthChart data={chartData} extraSavings={extraSavings} baseRetireYear={result.retireYear} boostedRetireYear={d4.retireYear} currentAge={planningAge} />
                     </div>
                   </div>
 
@@ -1696,7 +1862,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                           href="/login"
                           className="uf-automate-btn"
                           style={{ display: "block", marginTop: 22, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none" }}
-                          onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                          onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency })}
                         >
                           Save my plan →
                         </Link>
@@ -1712,9 +1878,9 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               </div>
 
               {/* ── IDENTITY ROW ── */}
-              <div className="uf-identity-grid" style={{ marginBottom: 16 }}>
+              <div className="uf-identity-grid uf-scroll-reveal" style={{ marginBottom: 16 }}>
                 {/* FIRE type — dark green */}
-                <div data-gsap="identity-card" className="uf-reveal-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div data-gsap="identity-card" className="uf-reveal-card uf-unified-card uf-fire-type-result-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div aria-hidden style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 70%)", opacity: 0.22, pointerEvents: "none" }} />
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22D3A5" }}>Your FIRE type</div>
                   <div style={{ position: "relative", display: "grid", gridTemplateColumns: fireTypeResult ? "minmax(0, 1fr) 132px" : "1fr", gap: 12, alignItems: "end" }}>
@@ -1733,7 +1899,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                       )}
                     </div>
                     {fireTypeResult ? (
-                      <div style={{ justifySelf: "end", width: 132, height: 172, borderRadius: 14, background: "#0B3B2A", display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
+                      <div className="uf-unified-avatar-shell" style={{ justifySelf: "end", width: 132, height: 172, borderRadius: 14, background: "#0B3B2A", display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" }}>
                         <FireTypeAvatar code={fireTypeResult.code} size={132} />
                       </div>
                     ) : null}
@@ -1741,12 +1907,12 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                 </div>
                 {/* Savings benchmark — USD users only (baseline is U.S. BEA rate) */}
                 {currency === "USD" ? (
-                  <div data-gsap="identity-card" className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div data-gsap="identity-card" className="uf-reveal-card uf-unified-card uf-savings-benchmark-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Savings rate benchmark</div>
                     <div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                        <div style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsMultiple}×</div>
-                        <div style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>ahead of the U.S. average</div>
+                        <div className="uf-unified-stat" style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsMultiple}×</div>
+                        <div className="uf-unified-stat-label" style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>ahead of the U.S. average</div>
                       </div>
                       <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
                         You save <b style={{ color: "#0F172A" }}>{savingsRatePct}%</b> of take-home, vs. <b style={{ color: "#0F172A" }}>{PUBLIC_SAVINGS_RATE_BASELINE}%</b> U.S. avg.
@@ -1754,12 +1920,12 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     </div>
                   </div>
                 ) : (
-                  <div data-gsap="identity-card" className="uf-reveal-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div data-gsap="identity-card" className="uf-reveal-card uf-unified-card uf-savings-benchmark-card" style={{ background: "#F9FAFB", border: "1px solid #E2E8F0", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#059669" }}>Your savings rate</div>
                     <div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                        <div style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsRatePct}%</div>
-                        <div style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>of take-home</div>
+                        <div className="uf-unified-stat" style={{ fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 700, color: "#003527", letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{savingsRatePct}%</div>
+                        <div className="uf-unified-stat-label" style={{ fontSize: 14, color: "#0F172A", fontWeight: 600 }}>of take-home</div>
                       </div>
                       <div style={{ marginTop: 8, fontSize: 12, color: "#6B7280" }}>
                         {savingsRatePct >= 20 ? "Strong savings rate — compounding is doing real work for you." : savingsRatePct >= 10 ? "Solid foundation. Pushing toward 20% accelerates your timeline significantly." : "Every percentage point here moves your freedom date closer."}
@@ -1770,7 +1936,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               </div>
 
               {/* ── STAGE-SPECIFIC NEXT STEPS ── */}
-              <div data-gsap="decision-card" className="uf-reveal-card" style={{ background: isAlreadyFire ? "#003527" : "#F8FAFC", border: `1px solid ${isAlreadyFire ? "rgba(34,211,165,0.2)" : "#E2E8F0"}`, borderRadius: 16, padding: "clamp(16px, 2vw, 24px)", marginBottom: 16 }}>
+              <div data-gsap="decision-card" className="uf-reveal-card uf-unified-card uf-next-step-card" style={{ background: isAlreadyFire ? "#003527" : "#F8FAFC", border: `1px solid ${isAlreadyFire ? "rgba(34,211,165,0.2)" : "#E2E8F0"}`, borderRadius: 16, padding: "clamp(16px, 2vw, 24px)", marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: isAlreadyFire ? "#22D3A5" : "#059669", marginBottom: 12 }}>
                   {isAlreadyFire ? "You've done it" : fireStage === "ignition" ? "Your first priority" : fireStage === "momentum" ? "Your acceleration focus" : "Your protection priority"}
                 </div>
@@ -1799,7 +1965,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               </div>
 
               {/* ── HOW THIS WAS CALCULATED ── */}
-              <div style={{ marginBottom: 16, borderRadius: 12, border: "1px solid #E2E8F0", background: "#fff", overflow: "hidden" }}>
+              <div className="uf-assumptions-card uf-scroll-reveal" style={{ display: "none", marginBottom: 16, borderRadius: 12, border: "1px solid #E2E8F0", background: "#fff", overflow: "hidden" }}>
                 <button
                   onClick={() => setShowAssumptions(a => !a)}
                   style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
@@ -1863,8 +2029,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                 const matchedCity = CITIES.find((c) => c.name === city.name);
                 const currentCityKey = matchedCity?.key ?? "sf";
                 return (
-                  <div style={{ marginTop: 56, paddingTop: 32, borderTop: "1px solid #e2e8f0" }}>
-                    <div style={{ textAlign: "center", marginBottom: 24 }}>
+                  <div className="uf-geo-section uf-scroll-reveal">
+                    <div className="uf-geo-copy" style={{ textAlign: "center", marginBottom: 24 }}>
                       <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "0 0 8px" }}>
                         Where else could you retire?
                       </h2>
@@ -1872,19 +2038,22 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                         Spin the globe — green cities mean you could FIRE there now.
                       </p>
                     </div>
-                    <GeoArbitrageGlobe
-                      monthlySavings={savings}
-                      portfolioBalance={portfolioBalance}
-                      currentAge={currentAge}
-                      currentCityKey={currentCityKey}
-                      onCitySelect={(key) => router.push(`/geo-arbitrage/${key}`)}
-                    />
+                    <div className="uf-geo-stage">
+                      <GeoArbitrageGlobe
+                        monthlySavings={savings}
+                        portfolioBalance={portfolioBalance}
+                        currentAge={planningAge}
+                        currentCityKey={currentCityKey}
+                        onCitySelect={(key) => router.push(`/geo-arbitrage/${key}`)}
+                        fillContainer
+                      />
+                    </div>
                   </div>
                 );
               })()}
 
               {/* ── FOOTER ACTIONS ── */}
-              <div data-gsap="footer-cta" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center", marginTop: 40 }}>
+              <div data-gsap="footer-cta" className="uf-reveal-footer-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center", marginTop: 40 }}>
                 <button className="uf-btn-outline" onClick={() => setShowShare(true)}>
                   <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
                   Share result
@@ -1896,6 +2065,9 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               <p className="uf-disclaimer">
                 Estimate only. Not financial advice. Based on {useRealReturn ? "7% real return (inflation-adjusted)" : "10% nominal return (historical S&P 500 average)"}.
               </p>
+              <div className="uf-method-disclosure" aria-label="Calculation summary">
+                Calculated with 25x annual expenses, {fmtUSD(city.col)}/yr in {city.name}, and {useRealReturn ? "7% real" : "10% nominal"} return.
+              </div>
             </div>
           )}
         </div>
@@ -1925,6 +2097,12 @@ export default function HomeClient() {
   const [landingSource, setLandingSourceState] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.toggle("uf-result-mode", screen === "reveal");
+    return () => document.body.classList.remove("uf-result-mode");
+  }, [screen]);
+
+  useEffect(() => {
     const urlParams = typeof window !== "undefined"
       ? new URLSearchParams(window.location.search)
       : null;
@@ -1934,6 +2112,26 @@ export default function HomeClient() {
       setAcquisitionSource(sourceFromUrl);
     }
     setLandingSourceState(nextSource);
+    if (process.env.NODE_ENV === "development" && urlParams?.get("previewReveal") === "1") {
+      const previewCity = CITIES.find((c) => c.key === (urlParams.get("city") ?? "austin")) ?? CITIES[0];
+      const previewIncome = Number(urlParams.get("income") ?? 140000);
+      const previewSavings = Number(urlParams.get("savings") ?? 3500);
+      const previewAge = Number(urlParams.get("age") ?? 28);
+      const previewPortfolio = Number(urlParams.get("portfolio") ?? 30000);
+      setCityState({
+        name: previewCity.name,
+        col: previewCity.col,
+        stateKey: previewCity.state,
+        isCustom: false,
+      });
+      setCurrency("USD");
+      setIncome(previewIncome);
+      setSavings(previewSavings);
+      setCurrentAge(previewAge);
+      setPortfolioBalance(previewPortfolio);
+      setScreen("reveal");
+      return;
+    }
     if (urlParams?.get("start") === "onboarding") {
       setScreen("city");
     }
@@ -2401,6 +2599,886 @@ export default function HomeClient() {
           animation: automateShimmer 2.6s linear infinite;
           color: #003527 !important; border: none !important;
         }
+        .uf-bridge-hero {
+          position: relative;
+          overflow: hidden;
+          color: #fff;
+          border-radius: 22px 22px 0 0;
+          padding: clamp(24px, 4vw, 54px);
+          background:
+            radial-gradient(circle at 88% 0%, rgba(68,221,255,0.26), transparent 30%),
+            radial-gradient(circle at 8% 100%, rgba(184,255,75,0.16), transparent 36%),
+            linear-gradient(135deg, #071624 0%, #063d32 57%, #03110f 100%);
+          isolation: isolate;
+        }
+        .uf-bridge-aurora {
+          position: absolute;
+          border-radius: 999px;
+          filter: blur(8px);
+          pointer-events: none;
+          opacity: 0.7;
+          z-index: 0;
+          animation: bridgeAurora 8s ease-in-out infinite;
+        }
+        .uf-bridge-aurora-a {
+          width: 320px;
+          height: 320px;
+          right: -110px;
+          top: -120px;
+          background: radial-gradient(circle, rgba(68,221,255,0.34), transparent 66%);
+        }
+        .uf-bridge-aurora-b {
+          width: 360px;
+          height: 360px;
+          left: -140px;
+          bottom: -180px;
+          background: radial-gradient(circle, rgba(184,255,75,0.22), transparent 68%);
+          animation-delay: -3s;
+        }
+        .uf-bridge-gridwash {
+          position: absolute;
+          inset: -30%;
+          background:
+            linear-gradient(115deg, transparent 0 44%, rgba(255,255,255,0.12) 47%, transparent 51%),
+            repeating-linear-gradient(90deg, transparent 0 32px, rgba(255,255,255,0.045) 33px 34px);
+          opacity: 0.45;
+          transform: rotate(-8deg);
+          pointer-events: none;
+          z-index: 0;
+        }
+        .uf-bridge-inner {
+          position: relative;
+          z-index: 1;
+          max-width: 1180px;
+          margin: 0 auto;
+        }
+        .uf-bridge-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 11px;
+          margin-bottom: 24px;
+          border: 1px solid rgba(184,255,75,0.28);
+          border-radius: 999px;
+          background: rgba(184,255,75,0.1);
+          color: #d9ffb8;
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .uf-bridge-chip-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #b8ff4b;
+          box-shadow: 0 0 18px rgba(184,255,75,0.75);
+        }
+        .uf-bridge-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+          gap: clamp(20px, 3vw, 34px);
+          align-items: stretch;
+        }
+        .uf-bridge-result {
+          min-width: 0;
+        }
+        .uf-bridge-kicker {
+          color: rgba(255,255,255,0.58);
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        .uf-bridge-age-row {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          margin-top: 10px;
+        }
+        .uf-bridge-age {
+          font-size: clamp(72px, 12vw, 148px);
+          line-height: 0.82;
+          font-weight: 950;
+          letter-spacing: -0.09em;
+          text-shadow: 0 24px 70px rgba(0,0,0,0.26);
+        }
+        .uf-bridge-age-label {
+          margin-top: 10px;
+          color: rgba(255,255,255,0.72);
+          font-size: clamp(16px, 2vw, 21px);
+          font-weight: 750;
+          letter-spacing: -0.02em;
+        }
+        .uf-bridge-age-delta {
+          display: grid;
+          gap: 4px;
+          justify-items: end;
+          border: 1px solid rgba(184,255,75,0.3);
+          border-radius: 999px;
+          padding: 10px 14px;
+          background: rgba(184,255,75,0.1);
+          color: #d9ffb8;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+        .uf-bridge-age-delta small {
+          color: rgba(255,255,255,0.55);
+          font-size: 11px;
+          font-weight: 700;
+        }
+        .uf-bridge-subline {
+          max-width: 660px;
+          margin-top: 18px;
+          color: rgba(255,255,255,0.7);
+          font-size: clamp(14px, 2vw, 18px);
+          line-height: 1.5;
+        }
+        .uf-bridge-runway {
+          position: relative;
+          height: clamp(150px, 22vw, 250px);
+          display: flex;
+          align-items: end;
+          gap: clamp(8px, 1.2vw, 14px);
+          margin-top: clamp(24px, 4vw, 42px);
+          padding: clamp(16px, 2vw, 24px) clamp(12px, 2vw, 20px) 14px;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 24px;
+          background: rgba(255,255,255,0.07);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 60px rgba(0,0,0,0.18);
+          overflow: hidden;
+        }
+        .uf-bridge-scanline {
+          position: absolute;
+          left: 14px;
+          right: 14px;
+          top: 50%;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, rgba(68,221,255,0.95), transparent);
+          box-shadow: 0 0 24px rgba(68,221,255,0.65);
+          opacity: 0.82;
+          animation: bridgeScan 3.1s ease-in-out infinite;
+        }
+        .uf-bridge-bar {
+          position: relative;
+          flex: 1;
+          min-width: 0;
+          border-radius: 10px 10px 4px 4px;
+          background: linear-gradient(180deg, #b8ff4b 0%, #22d3a5 42%, #057a56 100%);
+          box-shadow: 0 0 24px rgba(34,211,165,0.32);
+          transform-origin: bottom;
+          animation: bridgeBarRise 0.72s cubic-bezier(0.22,1,0.36,1) var(--bar-delay,0s) both;
+        }
+        .uf-bridge-bar.future {
+          background: rgba(255,255,255,0.055);
+          border: 1px solid rgba(255,255,255,0.22);
+          box-shadow: none;
+        }
+        .uf-bridge-runway-labels {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          margin-top: 10px;
+          color: rgba(255,255,255,0.62);
+          font-size: 11px;
+          font-weight: 750;
+        }
+        .uf-bridge-runway-labels .muted {
+          color: rgba(255,255,255,0.32);
+        }
+        .uf-bridge-action {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .uf-bridge-target-card,
+        .uf-bridge-move-card,
+        .uf-bridge-control {
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 22px;
+          background: rgba(255,255,255,0.09);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        .uf-bridge-target-card {
+          padding: 18px;
+        }
+        .uf-bridge-target-card > span,
+        .uf-bridge-move-card > span {
+          display: block;
+          color: rgba(255,255,255,0.55);
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+        .uf-bridge-target-num {
+          margin-top: 8px;
+          color: #fff;
+          font-size: clamp(30px, 4vw, 46px);
+          line-height: 1;
+          font-weight: 900;
+          letter-spacing: -0.055em;
+          font-variant-numeric: tabular-nums;
+        }
+        .uf-bridge-target-card small {
+          display: block;
+          margin-top: 9px;
+          color: rgba(255,255,255,0.5);
+          line-height: 1.4;
+        }
+        .uf-bridge-move-card {
+          padding: 18px;
+          background:
+            radial-gradient(circle at 88% 12%, rgba(255,194,71,0.22), transparent 30%),
+            rgba(255,255,255,0.09);
+        }
+        .uf-bridge-move-card strong {
+          display: block;
+          margin-top: 9px;
+          color: #d9ffb8;
+          font-size: clamp(22px, 2.6vw, 32px);
+          line-height: 0.98;
+          letter-spacing: -0.06em;
+        }
+        .uf-bridge-move-card p {
+          margin: 10px 0 0;
+          color: rgba(255,255,255,0.68);
+          font-size: 13px;
+          line-height: 1.45;
+        }
+        .uf-bridge-control {
+          padding: 15px;
+          background: rgba(255,255,255,0.92);
+          color: #0f172a;
+        }
+        .uf-bridge-control-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          font-size: 13px;
+          font-weight: 850;
+        }
+        .uf-bridge-control-head strong {
+          color: #059669;
+          white-space: nowrap;
+        }
+        .uf-bridge-control input {
+          width: 100%;
+          margin-top: 12px;
+          accent-color: #22d3a5;
+        }
+        .uf-bridge-save {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 52px;
+          border-radius: 16px;
+          color: #003527;
+          background: linear-gradient(90deg, #b8ff4b 0%, #62fae3 50%, #22d3a5 100%);
+          background-size: 180% auto;
+          box-shadow: 0 18px 38px rgba(34,211,165,0.24);
+          font-size: 15px;
+          font-weight: 950;
+          text-decoration: none;
+          animation: automateShimmer 3s linear infinite;
+        }
+        .uf-bridge-trust {
+          color: rgba(255,255,255,0.5);
+          font-size: 11px;
+          font-weight: 700;
+          text-align: center;
+        }
+        @keyframes bridgeBarRise {
+          from { opacity: 0; transform: scaleY(0.28) translateY(12px); }
+          to { opacity: 1; transform: scaleY(1) translateY(0); }
+        }
+        @keyframes bridgeScan {
+          0%,100% { opacity: 0.35; transform: translateY(-34px); }
+          50% { opacity: 1; transform: translateY(34px); }
+        }
+        @keyframes bridgeAurora {
+          0%,100% { transform: translate3d(0,0,0) scale(1); opacity: 0.55; }
+          50% { transform: translate3d(-10px,8px,0) scale(1.08); opacity: 0.85; }
+        }
+        .uf-bridge-hero {
+          color: #102033;
+          border: 1px solid #dbe7df;
+          border-radius: 24px 24px 0 0;
+          padding: clamp(18px, 3vw, 34px);
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,252,249,0.98)),
+            radial-gradient(circle at 88% 12%, rgba(34,211,165,0.14), transparent 26%);
+          box-shadow: 0 24px 54px rgba(15, 23, 42, 0.08);
+        }
+        .uf-bridge-aurora,
+        .uf-bridge-gridwash {
+          display: none;
+        }
+        .uf-bridge-chip {
+          margin-bottom: 18px;
+          border-color: #bfe8d4;
+          background: #effaf4;
+          color: #047857;
+          letter-spacing: 0.11em;
+        }
+        .uf-bridge-chip-dot {
+          background: #059669;
+          box-shadow: 0 0 0 4px rgba(5,150,105,0.12);
+        }
+        .uf-bridge-layout {
+          grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.15fr) minmax(280px, 0.8fr);
+          gap: 16px;
+          align-items: stretch;
+        }
+        .uf-bridge-layout::before {
+          content: "";
+          display: block;
+          grid-column: 2;
+          grid-row: 1;
+          border: 1px solid #dbe7df;
+          border-radius: 22px;
+          background: linear-gradient(180deg, #ffffff, #f4fbf7);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+        }
+        .uf-bridge-result {
+          display: grid;
+          align-content: start;
+          border: 1px solid #0b4b38;
+          border-radius: 22px;
+          padding: clamp(18px, 2.5vw, 28px);
+          color: #fff;
+          background:
+            radial-gradient(circle at 90% 12%, rgba(34,211,165,0.18), transparent 32%),
+            linear-gradient(145deg, #073f32 0%, #052b24 100%);
+          box-shadow: 0 20px 42px rgba(5, 45, 35, 0.18);
+        }
+        .uf-bridge-kicker {
+          color: rgba(255,255,255,0.58);
+          font-size: 11px;
+          letter-spacing: 0.16em;
+        }
+        .uf-bridge-age {
+          font-size: clamp(64px, 9vw, 116px);
+          font-weight: 900;
+          text-shadow: none;
+        }
+        .uf-bridge-age-label {
+          color: rgba(255,255,255,0.72);
+          font-size: 16px;
+          font-weight: 700;
+        }
+        .uf-bridge-age-delta {
+          border-color: rgba(167,243,208,0.38);
+          background: rgba(167,243,208,0.12);
+          color: #a7f3d0;
+        }
+        .uf-bridge-subline {
+          color: rgba(255,255,255,0.7);
+          font-size: 14px;
+        }
+        .uf-bridge-runway {
+          grid-column: 2;
+          grid-row: 1;
+          align-self: stretch;
+          height: auto;
+          min-height: 100%;
+          margin: 0;
+          padding: 34px 24px 28px;
+          border-color: transparent;
+          background: transparent;
+          box-shadow: none;
+        }
+        .uf-bridge-runway::before {
+          content: "Compound runway";
+          position: absolute;
+          top: 18px;
+          left: 24px;
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.13em;
+          text-transform: uppercase;
+        }
+        .uf-bridge-scanline {
+          display: none;
+        }
+        .uf-bridge-bar {
+          border-radius: 9px 9px 3px 3px;
+          background: linear-gradient(180deg, #22d3a5 0%, #059669 100%);
+          box-shadow: 0 12px 26px rgba(5,150,105,0.2);
+        }
+        .uf-bridge-bar.future {
+          background: #ffffff;
+          border: 1px dashed #cbd5e1;
+        }
+        .uf-bridge-runway-labels {
+          grid-column: 2;
+          grid-row: 1;
+          align-self: end;
+          z-index: 2;
+          padding: 0 24px 10px;
+          margin: 0;
+          color: #64748b;
+        }
+        .uf-bridge-action {
+          gap: 10px;
+        }
+        .uf-bridge-target-card,
+        .uf-bridge-move-card,
+        .uf-bridge-control {
+          border-color: #dbe7df;
+          background: #fff;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        }
+        .uf-bridge-target-card > span,
+        .uf-bridge-move-card > span {
+          color: #64748b;
+          font-size: 10px;
+          letter-spacing: 0.13em;
+        }
+        .uf-bridge-target-num {
+          color: #052e24;
+          font-size: clamp(28px, 3vw, 38px);
+        }
+        .uf-bridge-target-card small {
+          color: #64748b;
+        }
+        .uf-bridge-move-card {
+          background: #f0fdf4;
+          border-color: #bbf7d0;
+        }
+        .uf-bridge-move-card strong {
+          color: #065f46;
+          font-size: clamp(21px, 2.2vw, 28px);
+          line-height: 1.05;
+        }
+        .uf-bridge-move-card p {
+          color: #475569;
+        }
+        .uf-bridge-control {
+          color: #102033;
+        }
+        .uf-bridge-save {
+          min-height: 50px;
+          border-radius: 14px;
+          color: #fff;
+          background: #052e24;
+          box-shadow: 0 14px 28px rgba(5, 46, 36, 0.18);
+          animation: none;
+        }
+        .uf-bridge-trust {
+          color: #64748b;
+        }
+        .uf-bridge-layout {
+          grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+          align-items: stretch;
+        }
+        .uf-bridge-layout::before {
+          display: none;
+        }
+        .uf-bridge-result {
+          display: block;
+        }
+        .uf-bridge-runway {
+          height: 230px;
+          min-height: 0;
+          margin-top: 28px;
+          padding: 34px 24px 26px;
+          border: 1px solid rgba(255,255,255,0.14);
+          border-radius: 20px;
+          background: rgba(255,255,255,0.08);
+        }
+        .uf-bridge-runway::before {
+          color: rgba(255,255,255,0.46);
+        }
+        .uf-bridge-runway-labels {
+          display: flex;
+          padding: 0;
+          margin-top: 10px;
+          color: rgba(255,255,255,0.62);
+        }
+        .uf-screen.uf-reveal-screen {
+          width: 100%;
+          max-width: none;
+          padding: 0;
+        }
+        .uf-bridge-hero {
+          min-height: calc(100svh - 58px);
+          display: flex;
+          align-items: center;
+          border: 0;
+          border-radius: 0;
+          padding: clamp(34px, 5vw, 84px);
+          color: #fff;
+          background:
+            linear-gradient(90deg, rgba(3,16,14,0.96) 0%, rgba(3,16,14,0.86) 42%, rgba(3,16,14,0.48) 100%),
+            radial-gradient(circle at 74% 26%, rgba(34,211,165,0.22), transparent 28%),
+            radial-gradient(circle at 86% 78%, rgba(184,255,75,0.10), transparent 34%),
+            linear-gradient(135deg, #03100e 0%, #073f32 54%, #0b1b18 100%);
+          box-shadow: none;
+        }
+        .uf-bridge-inner {
+          width: min(1320px, 100%);
+        }
+        .uf-bridge-chip {
+          border-color: rgba(167,243,208,0.28);
+          background: rgba(167,243,208,0.08);
+          color: #a7f3d0;
+        }
+        .uf-bridge-layout {
+          grid-template-columns: minmax(0, 1.48fr) minmax(260px, 0.52fr);
+          gap: clamp(28px, 5vw, 72px);
+          align-items: center;
+        }
+        .uf-bridge-result {
+          border: 0;
+          padding: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .uf-bridge-kicker {
+          color: rgba(255,255,255,0.64);
+        }
+        .uf-bridge-age {
+          font-size: clamp(88px, 13vw, 186px);
+          letter-spacing: -0.1em;
+        }
+        .uf-bridge-age-label {
+          font-size: clamp(18px, 2.2vw, 28px);
+        }
+        .uf-bridge-subline {
+          max-width: 700px;
+          color: rgba(255,255,255,0.72);
+          font-size: clamp(15px, 1.6vw, 20px);
+        }
+        .uf-bridge-runway {
+          display: block;
+          height: clamp(250px, 26vw, 360px);
+          margin-top: clamp(30px, 5vw, 56px);
+          padding: clamp(20px, 2.4vw, 30px);
+          border: 1px solid rgba(255,255,255,0.13);
+          border-radius: 26px;
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.105), rgba(255,255,255,0.045)),
+            rgba(255,255,255,0.055);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 80px rgba(0,0,0,0.24);
+          backdrop-filter: blur(16px);
+        }
+        .uf-bridge-runway::before {
+          content: none;
+        }
+        .uf-bridge-runway-copy {
+          display: flex;
+          justify-content: space-between;
+          gap: 18px;
+          align-items: baseline;
+          margin-bottom: 10px;
+        }
+        .uf-bridge-runway-copy span {
+          color: rgba(255,255,255,0.56);
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+        .uf-bridge-runway-copy strong {
+          color: #d9ffb8;
+          font-size: clamp(14px, 1.6vw, 18px);
+          letter-spacing: -0.02em;
+        }
+        .uf-bridge-timeline {
+          width: 100%;
+          height: calc(100% - 54px);
+          min-height: 170px;
+          overflow: visible;
+        }
+        .uf-bridge-target-line {
+          stroke: rgba(255,255,255,0.24);
+          stroke-width: 1.2;
+          stroke-dasharray: 3 4;
+        }
+        .uf-bridge-path-base,
+        .uf-bridge-path-boost {
+          fill: none;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .uf-bridge-path-base {
+          stroke: rgba(255,255,255,0.38);
+          stroke-width: 2.4;
+          stroke-dasharray: 5 5;
+        }
+        .uf-bridge-path-boost {
+          stroke: #22d3a5;
+          stroke-width: 4.2;
+          filter: drop-shadow(0 0 5px rgba(34,211,165,0.55));
+        }
+        .uf-bridge-marker-base {
+          stroke: rgba(255,255,255,0.24);
+          stroke-width: 1;
+          stroke-dasharray: 3 4;
+        }
+        .uf-bridge-marker-boost {
+          stroke: rgba(34,211,165,0.72);
+          stroke-width: 1.3;
+        }
+        .uf-bridge-axis-label,
+        .uf-bridge-target-label {
+          fill: rgba(255,255,255,0.54);
+          font-size: 5px;
+          font-weight: 800;
+        }
+        .uf-bridge-axis-label-boost {
+          fill: #a7f3d0;
+          text-anchor: middle;
+        }
+        .uf-bridge-axis-label-base {
+          text-anchor: end;
+        }
+        .uf-bridge-runway-legend {
+          display: flex;
+          gap: 18px;
+          flex-wrap: wrap;
+          color: rgba(255,255,255,0.58);
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .uf-bridge-runway-legend span {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+        }
+        .uf-bridge-runway-legend i {
+          display: inline-block;
+          width: 22px;
+          height: 0;
+          border-top: 2px dashed rgba(255,255,255,0.42);
+        }
+        .uf-bridge-runway-legend i.boost {
+          border-top: 3px solid #22d3a5;
+        }
+        .uf-bridge-action {
+          gap: 14px;
+        }
+        .uf-bridge-target-card,
+        .uf-bridge-move-card,
+        .uf-bridge-control {
+          border-color: rgba(255,255,255,0.14);
+          background: rgba(255,255,255,0.10);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 24px 60px rgba(0,0,0,0.20);
+          backdrop-filter: blur(18px);
+        }
+        .uf-bridge-target-card > span,
+        .uf-bridge-move-card > span {
+          color: rgba(255,255,255,0.56);
+        }
+        .uf-bridge-target-num {
+          color: #fff;
+        }
+        .uf-bridge-target-card small,
+        .uf-bridge-move-card p {
+          color: rgba(255,255,255,0.62);
+        }
+        .uf-bridge-move-card {
+          background: rgba(5,150,105,0.18);
+        }
+        .uf-bridge-move-card strong {
+          color: #d9ffb8;
+        }
+        .uf-bridge-control {
+          color: #fff;
+          background: rgba(255,255,255,0.12);
+        }
+        .uf-bridge-control-head strong {
+          color: #a7f3d0;
+        }
+        .uf-bridge-save {
+          color: #03221a;
+          background: #d9ffb8;
+          box-shadow: 0 18px 40px rgba(184,255,75,0.18);
+        }
+        .uf-bridge-trust {
+          color: rgba(255,255,255,0.54);
+        }
+        .uf-bridge-timeline,
+        .uf-bridge-runway-legend {
+          display: none;
+        }
+        .uf-bridge-runway {
+          height: clamp(440px, 42vw, 600px);
+          padding: clamp(22px, 3vw, 40px);
+        }
+        .uf-bridge-big-chart {
+          position: relative;
+          display: grid;
+          grid-template-rows: auto minmax(0, 1fr);
+          gap: clamp(22px, 3vw, 36px);
+          height: 100%;
+          min-height: 0;
+        }
+        .uf-bridge-chart-head {
+          display: block;
+        }
+        .uf-bridge-runway-copy {
+          display: grid;
+          gap: 8px;
+          align-items: start;
+          margin-bottom: 0;
+        }
+        .uf-bridge-runway-copy strong {
+          color: #d9ffb8;
+          font-size: clamp(30px, 4vw, 58px);
+          line-height: 0.9;
+          letter-spacing: -0.07em;
+        }
+        .uf-bridge-chart-plot {
+          position: relative;
+          min-height: 0;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: clamp(20px, 2.4vw, 30px);
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.095), rgba(255,255,255,0.025)),
+            radial-gradient(circle at 50% 0%, rgba(217,255,184,0.13), transparent 34%),
+            rgba(2, 21, 18, 0.34);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+        }
+        .uf-bridge-chart-plot::before {
+          content: "";
+          position: absolute;
+          inset: 18px 18px 34px;
+          border-radius: 22px;
+          background:
+            linear-gradient(to top, rgba(255,255,255,0.045) 1px, transparent 1px) 0 0 / 100% 33.333%;
+          mask-image: linear-gradient(180deg, rgba(0,0,0,0.54), rgba(0,0,0,0.12));
+          pointer-events: none;
+        }
+        .uf-bridge-target-rail {
+          position: absolute;
+          top: 24px;
+          left: 22px;
+          right: 22px;
+          z-index: 1;
+          height: 1px;
+          background: linear-gradient(90deg, rgba(217,255,184,0), rgba(217,255,184,0.5), rgba(217,255,184,0));
+        }
+        .uf-bridge-column-strip {
+          position: absolute;
+          inset: 44px 22px 34px;
+          z-index: 2;
+          display: flex;
+          align-items: stretch;
+          gap: clamp(2px, 0.42vw, 5px);
+        }
+        .uf-bridge-column {
+          position: relative;
+          flex: 1 1 0;
+          min-width: 0;
+          display: grid;
+          grid-template-rows: minmax(0, 1fr) auto;
+          gap: 10px;
+        }
+        .uf-bridge-column-bars {
+          position: relative;
+          min-height: 0;
+          height: 100%;
+        }
+        .uf-bridge-base-column,
+        .uf-bridge-plan-column {
+          position: absolute;
+          left: 50%;
+          bottom: 0;
+          transform: translateX(-50%);
+          display: block;
+          will-change: height;
+        }
+        .uf-bridge-base-column {
+          width: 78%;
+          border: 1px solid rgba(255,255,255,0.20);
+          border-radius: 999px 999px 4px 4px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.055));
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.13);
+          opacity: 0.52;
+        }
+        .uf-bridge-plan-column {
+          z-index: 2;
+          width: 58%;
+          border-radius: 999px 999px 4px 4px;
+          background: linear-gradient(180deg, #d9ffb8 0%, #22d3a5 38%, #059669 100%);
+          box-shadow: 0 18px 34px rgba(34,211,165,0.18), 0 0 22px rgba(217,255,184,0.12), inset 0 1px 0 rgba(255,255,255,0.28);
+        }
+        .uf-bridge-column.is-future .uf-bridge-base-column {
+          opacity: 0.3;
+        }
+        .uf-bridge-column.is-plan-target .uf-bridge-plan-column,
+        .uf-bridge-column.is-base-target .uf-bridge-base-column {
+          height: 100% !important;
+        }
+        .uf-bridge-column.is-base-target .uf-bridge-base-column {
+          border-color: rgba(255,255,255,0.34);
+          opacity: 0.62;
+        }
+        .uf-bridge-plan-column::before,
+        .uf-bridge-base-column::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: linear-gradient(90deg, rgba(255,255,255,0.26), transparent 38%, rgba(255,255,255,0.08));
+          opacity: 0.58;
+          pointer-events: none;
+        }
+        .uf-bridge-chart-flag {
+          position: absolute;
+          left: 50%;
+          top: -2px;
+          z-index: 4;
+          transform: translate(-50%, -100%);
+          padding: 4px 7px;
+          border: 0;
+          border-radius: 999px;
+          background: rgba(217,255,184,0.16);
+          color: #d9ffb8;
+          font-size: 8px;
+          font-weight: 950;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          white-space: nowrap;
+          box-shadow: none;
+        }
+        .uf-bridge-chart-flag.is-base {
+          background: rgba(255,255,255,0.10);
+          color: rgba(255,255,255,0.42);
+        }
+        .uf-bridge-age-tick {
+          min-height: 11px;
+          font-size: 9px;
+          font-weight: 850;
+          line-height: 1;
+          color: rgba(255,255,255,0.36);
+          text-align: center;
+        }
+        .uf-bridge-column.is-plan-target .uf-bridge-age-tick {
+          color: #a7f3d0;
+          font-weight: 950;
+        }
+        .uf-bridge-action {
+          max-width: 330px;
+          justify-self: end;
+        }
+        .uf-bridge-move-card {
+          padding: 24px;
+          background: rgba(255,255,255,0.085);
+        }
+        .uf-bridge-move-card strong {
+          font-size: clamp(28px, 3vw, 42px);
+          line-height: 0.95;
+          letter-spacing: -0.07em;
+        }
+        .uf-bridge-move-card p {
+          max-width: 22ch;
+        }
 
         .uf-fire-hero {
           text-align: center;
@@ -2616,6 +3694,155 @@ export default function HomeClient() {
         }
         /* card padding adapts across breakpoints */
         .uf-reveal-card { padding: clamp(14px, 2.5vw, 24px); }
+        .uf-reveal-continuation {
+          margin: 0;
+          padding: clamp(22px, 4vw, 56px);
+          color: #fff;
+          background:
+            linear-gradient(180deg, rgba(3,16,14,0.98) 0%, rgba(5,43,36,0.98) 44%, rgba(3,16,14,0.98) 100%),
+            radial-gradient(circle at 18% 16%, rgba(34,211,165,0.12), transparent 30%),
+            radial-gradient(circle at 86% 70%, rgba(217,255,184,0.08), transparent 34%);
+          border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .uf-reveal-continuation .uf-identity-grid {
+          gap: 16px;
+        }
+        .uf-reveal-continuation .uf-unified-card,
+        .uf-reveal-continuation .uf-assumptions-card {
+          color: #fff !important;
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.105), rgba(255,255,255,0.045)),
+            rgba(255,255,255,0.055) !important;
+          border: 1px solid rgba(255,255,255,0.13) !important;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 28px 64px rgba(0,0,0,0.22) !important;
+          backdrop-filter: blur(16px);
+        }
+        .uf-reveal-continuation .uf-unified-card div,
+        .uf-reveal-continuation .uf-unified-card p,
+        .uf-reveal-continuation .uf-unified-card span,
+        .uf-reveal-continuation .uf-next-step-card div,
+        .uf-reveal-continuation .uf-assumptions-card div,
+        .uf-reveal-continuation .uf-assumptions-card span {
+          color: rgba(255,255,255,0.70) !important;
+        }
+        .uf-reveal-continuation .uf-unified-card div[style*="text-transform"],
+        .uf-reveal-continuation .uf-next-step-card div[style*="text-transform"],
+        .uf-reveal-continuation .uf-assumptions-card span[style*="text-transform"] {
+          color: #a7f3d0 !important;
+        }
+        .uf-reveal-continuation .uf-unified-card .uf-unified-stat,
+        .uf-reveal-continuation .uf-unified-stat,
+        .uf-reveal-continuation .uf-unified-card div[style*="font-size: 30"],
+        .uf-reveal-continuation .uf-next-step-card strong,
+        .uf-reveal-continuation .uf-assumptions-card strong {
+          color: #d9ffb8 !important;
+        }
+        .uf-reveal-continuation .uf-unified-card .uf-unified-stat-label,
+        .uf-reveal-continuation .uf-unified-stat-label,
+        .uf-reveal-continuation .uf-unified-card b {
+          color: #fff !important;
+        }
+        .uf-reveal-continuation .uf-unified-avatar-shell {
+          background: rgba(3,16,14,0.58) !important;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10) !important;
+        }
+        .uf-reveal-continuation .uf-scroll-reveal {
+          opacity: 0;
+          transform: translateY(30px) scale(0.985);
+          transition:
+            opacity 720ms cubic-bezier(.2,.8,.2,1) var(--uf-reveal-delay, 0ms),
+            transform 720ms cubic-bezier(.2,.8,.2,1) var(--uf-reveal-delay, 0ms);
+          will-change: opacity, transform;
+        }
+        .uf-reveal-continuation .uf-scroll-reveal.is-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        .uf-reveal-continuation .uf-assumptions-card button {
+          color: #fff !important;
+          background: rgba(255,255,255,0.025) !important;
+        }
+        .uf-reveal-continuation .uf-assumptions-card [style*="borderTop"],
+        .uf-reveal-continuation .uf-assumptions-card [style*="border-top"] {
+          border-color: rgba(255,255,255,0.10) !important;
+        }
+        .uf-reveal-continuation .uf-geo-section {
+          position: relative;
+          isolation: isolate;
+          margin: clamp(48px, 7vw, 96px) auto 0;
+          padding: clamp(26px, 5vw, 58px) 0 clamp(12px, 3vw, 32px);
+          overflow: visible;
+          border: 0 !important;
+        }
+        .uf-reveal-continuation .uf-geo-section::before {
+          content: "";
+          position: absolute;
+          z-index: -1;
+          inset: 0 50%;
+          width: min(960px, 94vw);
+          transform: translateX(-50%);
+          border-radius: 999px;
+          background:
+            radial-gradient(circle at 50% 48%, rgba(34,211,165,0.22), rgba(34,211,165,0.08) 26%, transparent 60%),
+            linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+          filter: blur(2px);
+          opacity: 0.95;
+          pointer-events: none;
+        }
+        .uf-reveal-continuation .uf-geo-copy {
+          position: relative;
+          z-index: 2;
+          width: min(720px, 100%);
+          margin: 0 auto clamp(6px, 1vw, 10px) !important;
+        }
+        .uf-reveal-continuation .uf-geo-section h2 {
+          color: #fff !important;
+          font-size: clamp(32px, 5vw, 64px) !important;
+          line-height: 0.98 !important;
+          letter-spacing: -0.07em !important;
+        }
+        .uf-reveal-continuation .uf-geo-section p,
+        .uf-reveal-continuation .uf-disclaimer {
+          color: rgba(255,255,255,0.58) !important;
+        }
+        .uf-reveal-continuation .uf-geo-stage {
+          position: relative;
+          z-index: 1;
+          width: min(900px, 92vw);
+          height: clamp(390px, 42vw, 590px);
+          margin: clamp(-12px, -1vw, -4px) auto 0;
+          border: 0;
+          background:
+            radial-gradient(circle at 50% 50%, rgba(217,255,184,0.08), transparent 42%),
+            radial-gradient(circle at 50% 58%, rgba(34,211,165,0.10), transparent 48%);
+          mask-image: radial-gradient(ellipse 62% 58% at 50% 52%, #000 0 58%, rgba(0,0,0,0.68) 72%, transparent 88%);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .uf-reveal-continuation .uf-scroll-reveal {
+            opacity: 1;
+            transform: none;
+            transition: none;
+          }
+        }
+        body.uf-result-mode .uf-home-seo-shell {
+          display: none !important;
+        }
+        .uf-method-disclosure {
+          width: min(760px, 100%);
+          margin: 10px auto 0;
+          text-align: center;
+          color: rgba(255,255,255,0.42);
+          font-size: 12px;
+          line-height: 1.45;
+        }
+        .uf-reveal-continuation .uf-btn-outline {
+          color: #d9ffb8 !important;
+          background: rgba(255,255,255,0.07) !important;
+          border-color: rgba(217,255,184,0.24) !important;
+        }
+        .uf-reveal-continuation .uf-btn-outline svg path {
+          stroke: #d9ffb8 !important;
+        }
         /* footer buttons row */
         .uf-footer-btns { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
 
@@ -2625,11 +3852,49 @@ export default function HomeClient() {
         }
         /* 900px — chart stacks above monthly move */
         @media (max-width: 900px) {
+          .uf-bridge-layout { grid-template-columns: 1fr; }
+          .uf-bridge-layout::before { display: none; }
+          .uf-bridge-runway {
+            grid-column: auto;
+            grid-row: auto;
+            height: 460px;
+            min-height: 0;
+            border: 1px solid rgba(255,255,255,0.13);
+            border-radius: 20px;
+            background: rgba(255,255,255,0.07);
+          }
+          .uf-bridge-runway-labels {
+            grid-column: auto;
+            grid-row: auto;
+            padding: 0;
+            margin-top: -8px;
+          }
+          .uf-bridge-action { display: flex; max-width: none; justify-self: stretch; }
+          .uf-bridge-save, .uf-bridge-trust { grid-column: 1 / -1; }
           .uf-chart-move-grid { grid-template-columns: 1fr; }
           .uf-decision-grid { grid-template-columns: repeat(2, 1fr); }
         }
         /* 640px — hero stacks, identity stacks */
         @media (max-width: 640px) {
+          .uf-bridge-hero { border-radius: 18px 18px 0 0; padding: 22px 16px; }
+          .uf-bridge-age-row { display: block; }
+          .uf-bridge-age-delta { display: inline-grid; justify-items: start; margin-top: 14px; }
+          .uf-bridge-action { display: flex; }
+          .uf-bridge-runway { height: 430px; padding: 18px; }
+          .uf-bridge-runway-copy { display: block; }
+          .uf-bridge-runway-copy strong { display: block; margin-top: 6px; }
+          .uf-bridge-chart-head {
+            display: grid;
+            gap: 12px;
+          }
+          .uf-bridge-chart-plot { border-radius: 20px; }
+          .uf-bridge-chart-plot::before { inset: 18px 10px 36px; }
+          .uf-bridge-target-rail { left: 12px; right: 12px; }
+          .uf-bridge-column-strip { inset: 52px 10px 34px; gap: 1.5px; }
+          .uf-bridge-base-column { width: 82%; border-radius: 999px 999px 3px 3px; }
+          .uf-bridge-plan-column { width: 66%; border-radius: 999px 999px 3px 3px; }
+          .uf-bridge-chart-flag { padding: 4px 6px; font-size: 8px; letter-spacing: 0.05em; }
+          .uf-bridge-age-tick { font-size: 8px; transform: rotate(-32deg); transform-origin: top center; }
           .uf-reveal-hero-grid { grid-template-columns: 1fr; gap: 24px; }
           .uf-reveal-hero-right { padding-left: 0; border-left: none; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.14); }
           .uf-identity-grid { grid-template-columns: 1fr; }

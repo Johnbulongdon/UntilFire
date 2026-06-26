@@ -233,8 +233,7 @@ export default function GeoArbitrageGlobe({
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
   const [spinning, setSpinning] = useState(true);
   const [isDark, setIsDark] = useState(false);
-  // Hovering a dot opens an anchored info popup (clicking navigates). x/y are the
-  // dot's canvas pixels; spin pauses while hovering so it stays put.
+  // Hovering a dot opens an anchored info popup without interrupting the spin.
   const [hover, setHover] = useState<{ city: PlottedCity; x: number; y: number } | null>(null);
 
   // Track app theme (dark globe in dark mode, light globe in light mode)
@@ -410,14 +409,10 @@ export default function GeoArbitrageGlobe({
     const canvas = canvasRef.current;
     if (!wrapper || !canvas) return;
 
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      const { width, height } = entry.contentRect;
-      // Fill mode: canvas spans the full content area (width × height). Otherwise
-      // a centered square capped at 560px.
+    const applyCanvasSize = (width: number, height: number) => {
       const w = fillContainer ? width : Math.min(width, 560);
       const h = fillContainer ? height : w;
+      if (w <= 0 || h <= 0) return;
       canvasW.current = w;
       canvasH.current = h;
       const dpr = window.devicePixelRatio || 1;
@@ -426,6 +421,18 @@ export default function GeoArbitrageGlobe({
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
       draw();
+    };
+
+    const initialRect = wrapper.getBoundingClientRect();
+    applyCanvasSize(initialRect.width, initialRect.height || initialRect.width);
+
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      // Fill mode: canvas spans the full content area (width × height). Otherwise
+      // a centered square capped at 560px.
+      applyCanvasSize(width, height);
     });
     ro.observe(wrapper);
     return () => ro.disconnect();
@@ -501,8 +508,7 @@ export default function GeoArbitrageGlobe({
       return;
     }
 
-    // Hover detection (mouse only, when not dragging): pause spin and anchor the
-    // popup to the dot so it can be read; clicking will open the full comparison.
+    // Hover detection is read-only: it should not stop the ambient spin.
     if (!isDragging.current && e.type === 'mousemove') {
       const canvas = canvasRef.current;
       if (canvas) {
@@ -511,7 +517,6 @@ export default function GeoArbitrageGlobe({
         const my = (e as React.MouseEvent).clientY - rect.top;
         const found = pickCity(mx, my);
         if (found) {
-          if (spinningRef.current) stopSpin();
           const p = projection([found.lng, found.lat]);
           setHover(p ? { city: found, x: p[0], y: p[1] } : { city: found, x: mx, y: my });
         } else {

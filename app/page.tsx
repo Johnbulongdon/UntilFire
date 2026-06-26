@@ -61,6 +61,7 @@ export default function Home() {
       <HomeClient />
 
       <section
+        className="uf-home-seo-shell"
         aria-label="About the UntilFire FIRE calculator"
         style={{
           background: "#F7F9FB",
