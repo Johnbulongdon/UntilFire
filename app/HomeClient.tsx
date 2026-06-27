@@ -1253,13 +1253,18 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     if (!counting || !heroRef.current) return;
     const target = result.fireTarget;
     const ctx = gsap.context(() => {
+      const reduceMotion = typeof window !== "undefined" && window.matchMedia
+        && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-      tl.fromTo('[data-gsap="chip"]',       { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.45 })
-        .fromTo('[data-gsap="date-label"]', { opacity: 0, y: 14  }, { opacity: 1, y: 0, duration: 0.55 }, "-=0.25")
-        .fromTo('[data-gsap="date-date"]',  { opacity: 0, y: 30  }, { opacity: 1, y: 0, duration: 0.7  }, "-=0.4")
-        .fromTo('[data-gsap="date-sub"]',   { opacity: 0         }, { opacity: 1,        duration: 0.5  }, "-=0.3")
-        .fromTo('[data-gsap="fire-right"]', { opacity: 0, x: 22  }, { opacity: 1, x: 0, duration: 0.65 }, "<-=0.45")
-        .fromTo('[data-gsap="milestone"]',  { opacity: 0, y: 8   }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.07 }, "-=0.25");
+      tl.fromTo('[data-gsap="chip"]', { opacity: 0, y: -12, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.42 })
+        .fromTo('[data-gsap="date-label"]', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.42 }, "-=0.12")
+        .fromTo('[data-gsap="date-date"]', { opacity: 0, y: 46, scale: 0.92, filter: "blur(8px)" }, { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: reduceMotion ? 0.01 : 0.78, ease: "back.out(1.08)" }, "-=0.18")
+        .fromTo('[data-gsap="date-sub"]', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.36")
+        .fromTo('[data-gsap="runway-copy"]', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.46 }, "-=0.18")
+        .fromTo('[data-gsap="runway-plot"]', { opacity: 0, y: 26, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.58 }, "-=0.34")
+        .fromTo('.uf-bridge-column-bars', { opacity: 0, y: 18, scaleY: 0.42, transformOrigin: "bottom center" }, { opacity: 1, y: 0, scaleY: 1, duration: reduceMotion ? 0.01 : 0.95, ease: "elastic.out(1, 0.72)", stagger: { amount: 0.08, from: "start" } }, "-=0.2")
+        .fromTo('[data-gsap="fire-right"]', { opacity: 0, x: 26, scale: 0.98 }, { opacity: 1, x: 0, scale: 1, duration: 0.62 }, "-=0.78")
+        .fromTo('[data-gsap="milestone"]', { opacity: 0, y: 12, scale: 0.98 }, { opacity: 1, y: 0, scale: 1, duration: 0.42, stagger: 0.06 }, "-=0.3");
 
       const proxy = { val: 0 };
       gsap.to(proxy, {
@@ -1300,7 +1305,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
       tl.fromTo('[data-gsap="chart-section"]', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.65 })
         .fromTo('[data-gsap="identity-card"]',  { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.55, stagger: 0.1 }, "-=0.3")
         .fromTo('[data-gsap="decision-card"]',  { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.06 }, "-=0.25")
-        .fromTo('[data-gsap="footer-cta"]',     { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
+        .fromTo('[data-gsap="footer-cta"]',     { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15")
+        .set('[data-gsap="decision-card"], [data-gsap="footer-cta"]', { clearProps: "transform" });
     }, belowRef);
     return () => ctx.revert();
   }, [revealed]);
@@ -1334,6 +1340,56 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
     items.forEach((item) => observer.observe(item));
     return () => observer.disconnect();
+  }, [revealed]);
+
+  // Lightweight scroll-linked depth so the result page keeps moving after the
+  // initial reveal. Uses CSS variables to avoid fighting existing transforms.
+  useEffect(() => {
+    if (!revealed || !belowRef.current || typeof window === "undefined") return;
+    const root = belowRef.current;
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      root.style.setProperty("--uf-scroll-progress", "0");
+      root.querySelectorAll<HTMLElement>("[data-motion-depth]").forEach((item) => {
+        item.style.setProperty("--uf-motion-y", "0px");
+      });
+      return;
+    }
+
+    let raf = 0;
+    const items = Array.from(root.querySelectorAll<HTMLElement>("[data-motion-depth]"));
+    const updateMotion = () => {
+      raf = 0;
+      const viewportH = Math.max(1, window.innerHeight);
+      const rootRect = root.getBoundingClientRect();
+      const rootProgress = Math.max(0, Math.min(1, (viewportH - rootRect.top) / (viewportH + rootRect.height)));
+      root.style.setProperty("--uf-scroll-progress", rootProgress.toFixed(3));
+      root.style.setProperty("--uf-glow-a-x", `${(20 + rootProgress * 28).toFixed(1)}%`);
+      root.style.setProperty("--uf-glow-a-y", `${(18 + rootProgress * 18).toFixed(1)}%`);
+      root.style.setProperty("--uf-glow-b-x", `${(88 - rootProgress * 22).toFixed(1)}%`);
+      root.style.setProperty("--uf-glow-b-y", `${(72 - rootProgress * 16).toFixed(1)}%`);
+
+      items.forEach((item) => {
+        const depth = Number(item.dataset.motionDepth ?? 0.5);
+        const rect = item.getBoundingClientRect();
+        const centerDelta = ((rect.top + rect.height / 2) - viewportH / 2) / viewportH;
+        const clamped = Math.max(-1, Math.min(1, centerDelta));
+        item.style.setProperty("--uf-motion-y", `${(-clamped * depth * 34).toFixed(1)}px`);
+      });
+    };
+    const requestUpdate = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(updateMotion);
+    };
+
+    updateMotion();
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+    window.addEventListener("resize", requestUpdate);
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", requestUpdate);
+      window.removeEventListener("resize", requestUpdate);
+    };
   }, [revealed]);
 
   // Fire the reveal funnel event exactly once per mount, when the projection
@@ -1570,14 +1626,15 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   <div className="uf-bridge-runway" aria-label="Timeline showing the same FIRE target reached earlier">
                     <div className="uf-bridge-big-chart" role="img" aria-label={`Your plan reaches the same FIRE target at age ${bridgeAge}, while the traditional path reaches it at age ${runwayBaseAge}.`}>
                       <div className="uf-bridge-chart-head">
-                        <div className="uf-bridge-runway-copy">
+                        <div data-gsap="runway-copy" className="uf-bridge-runway-copy">
                           <span>Compound runway</span>
-                          <strong>{runwayYearsEarlierLabel}</strong>
+                          <strong className="uf-motion-magic">{runwayYearsEarlierLabel}</strong>
                         </div>
                       </div>
 
-                      <div className="uf-bridge-chart-plot">
+                      <div data-gsap="runway-plot" className="uf-bridge-chart-plot">
                         <div className="uf-bridge-target-rail" />
+                        <div className="uf-bridge-chart-sweep" aria-hidden="true" />
                         <div className="uf-bridge-column-strip">
                           {runwayBars.map(bar => (
                             <div
@@ -1878,7 +1935,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               </div>
 
               {/* ── IDENTITY ROW ── */}
-              <div className="uf-identity-grid uf-scroll-reveal" style={{ marginBottom: 16 }}>
+              <div className="uf-identity-grid uf-scroll-reveal uf-motion-depth" data-motion-depth="0.45" style={{ marginBottom: 16 }}>
                 {/* FIRE type — dark green */}
                 <div data-gsap="identity-card" className="uf-reveal-card uf-unified-card uf-fire-type-result-card" style={{ position: "relative", overflow: "hidden", background: "#003527", color: "#fff", borderRadius: 18, minHeight: 140, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div aria-hidden style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: 99, background: "radial-gradient(circle, #22D3A5 0%, transparent 70%)", opacity: 0.22, pointerEvents: "none" }} />
@@ -1936,7 +1993,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               </div>
 
               {/* ── STAGE-SPECIFIC NEXT STEPS ── */}
-              <div data-gsap="decision-card" className="uf-reveal-card uf-unified-card uf-next-step-card" style={{ background: isAlreadyFire ? "#003527" : "#F8FAFC", border: `1px solid ${isAlreadyFire ? "rgba(34,211,165,0.2)" : "#E2E8F0"}`, borderRadius: 16, padding: "clamp(16px, 2vw, 24px)", marginBottom: 16 }}>
+              <div data-gsap="decision-card" className="uf-reveal-card uf-unified-card uf-next-step-card uf-motion-depth" data-motion-depth="0.34" style={{ background: isAlreadyFire ? "#003527" : "#F8FAFC", border: `1px solid ${isAlreadyFire ? "rgba(34,211,165,0.2)" : "#E2E8F0"}`, borderRadius: 16, padding: "clamp(16px, 2vw, 24px)", marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: isAlreadyFire ? "#22D3A5" : "#059669", marginBottom: 12 }}>
                   {isAlreadyFire ? "You've done it" : fireStage === "ignition" ? "Your first priority" : fireStage === "momentum" ? "Your acceleration focus" : "Your protection priority"}
                 </div>
@@ -2029,7 +2086,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                 const matchedCity = CITIES.find((c) => c.name === city.name);
                 const currentCityKey = matchedCity?.key ?? "sf";
                 return (
-                  <div className="uf-geo-section uf-scroll-reveal">
+                  <div className="uf-geo-section uf-scroll-reveal uf-motion-depth" data-motion-depth="0.62">
                     <div className="uf-geo-copy" style={{ textAlign: "center", marginBottom: 24 }}>
                       <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "0 0 8px" }}>
                         Where else could you retire?
@@ -2053,7 +2110,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
               })()}
 
               {/* ── FOOTER ACTIONS ── */}
-              <div data-gsap="footer-cta" className="uf-reveal-footer-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center", marginTop: 40 }}>
+              <div data-gsap="footer-cta" className="uf-reveal-footer-actions uf-motion-depth" data-motion-depth="0.26" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center", marginTop: 40 }}>
                 <button className="uf-btn-outline" onClick={() => setShowShare(true)}>
                   <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M9 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.3 5.7l3.4-2M4.3 6.3l3.4 2" stroke="#0F172A" strokeWidth="1.1" strokeLinecap="round"/></svg>
                   Share result
@@ -2645,6 +2702,7 @@ export default function HomeClient() {
           transform: rotate(-8deg);
           pointer-events: none;
           z-index: 0;
+          animation: bridgeGridDrift 12s ease-in-out infinite;
         }
         .uf-bridge-inner {
           position: relative;
@@ -2900,6 +2958,25 @@ export default function HomeClient() {
         @keyframes bridgeAurora {
           0%,100% { transform: translate3d(0,0,0) scale(1); opacity: 0.55; }
           50% { transform: translate3d(-10px,8px,0) scale(1.08); opacity: 0.85; }
+        }
+        @keyframes bridgeGridDrift {
+          0%,100% { transform: translate3d(-18px,-8px,0) rotate(-8deg); opacity: 0.34; }
+          50% { transform: translate3d(18px,10px,0) rotate(-8deg); opacity: 0.5; }
+        }
+        @keyframes bridgeChartSweep {
+          0% { opacity: 0; transform: translateX(-120%) skewX(-12deg); }
+          18% { opacity: 0.55; }
+          62% { opacity: 0.18; }
+          100% { opacity: 0; transform: translateX(120%) skewX(-12deg); }
+        }
+        @keyframes bridgeMagicFlash {
+          0% { filter: drop-shadow(0 0 0 rgba(217,255,184,0)); transform: translateY(0) scale(1); }
+          32% { filter: drop-shadow(0 0 22px rgba(217,255,184,0.62)); transform: translateY(-1px) scale(1.025); }
+          100% { filter: drop-shadow(0 0 10px rgba(34,211,165,0.22)); transform: translateY(0) scale(1); }
+        }
+        @keyframes bridgeSurfaceFloat {
+          0%,100% { transform: translate3d(0,0,0); }
+          50% { transform: translate3d(0,-6px,0); }
         }
         .uf-bridge-hero {
           color: #102033;
@@ -3332,6 +3409,16 @@ export default function HomeClient() {
           line-height: 0.9;
           letter-spacing: -0.07em;
         }
+        .uf-motion-magic {
+          display: inline-block;
+          background: linear-gradient(90deg, #d9ffb8 0%, #62fae3 48%, #fff7b8 68%, #d9ffb8 100%);
+          background-size: 220% auto;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent !important;
+          animation: bridgeMagicFlash 1.55s cubic-bezier(0.22,1,0.36,1) 1.05s both, automateShimmer 4.6s linear 1.7s infinite;
+          transform-origin: left center;
+        }
         .uf-bridge-chart-plot {
           position: relative;
           min-height: 0;
@@ -3343,6 +3430,15 @@ export default function HomeClient() {
             radial-gradient(circle at 50% 0%, rgba(217,255,184,0.13), transparent 34%),
             rgba(2, 21, 18, 0.34);
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+        }
+        .uf-bridge-chart-sweep {
+          position: absolute;
+          z-index: 3;
+          inset: 28px -28% 38px;
+          background: linear-gradient(90deg, transparent 0%, rgba(98,250,227,0.02) 22%, rgba(217,255,184,0.22) 50%, rgba(98,250,227,0.02) 74%, transparent 100%);
+          mix-blend-mode: screen;
+          pointer-events: none;
+          animation: bridgeChartSweep 4.2s cubic-bezier(0.22,1,0.36,1) 1.05s infinite;
         }
         .uf-bridge-chart-plot::before {
           content: "";
@@ -3383,6 +3479,8 @@ export default function HomeClient() {
           position: relative;
           min-height: 0;
           height: 100%;
+          transform-origin: bottom center;
+          will-change: transform, opacity;
         }
         .uf-bridge-base-column,
         .uf-bridge-plan-column {
@@ -3695,6 +3793,13 @@ export default function HomeClient() {
         /* card padding adapts across breakpoints */
         .uf-reveal-card { padding: clamp(14px, 2.5vw, 24px); }
         .uf-reveal-continuation {
+          --uf-scroll-progress: 0;
+          --uf-glow-a-x: 20%;
+          --uf-glow-a-y: 18%;
+          --uf-glow-b-x: 88%;
+          --uf-glow-b-y: 72%;
+          position: relative;
+          isolation: isolate;
           margin: 0;
           padding: clamp(22px, 4vw, 56px);
           color: #fff;
@@ -3703,6 +3808,17 @@ export default function HomeClient() {
             radial-gradient(circle at 18% 16%, rgba(34,211,165,0.12), transparent 30%),
             radial-gradient(circle at 86% 70%, rgba(217,255,184,0.08), transparent 34%);
           border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .uf-reveal-continuation::before {
+          content: "";
+          position: absolute;
+          z-index: -1;
+          inset: 0;
+          background:
+            radial-gradient(circle at var(--uf-glow-a-x) var(--uf-glow-a-y), rgba(98,250,227,0.13), transparent 28%),
+            radial-gradient(circle at var(--uf-glow-b-x) var(--uf-glow-b-y), rgba(217,255,184,0.11), transparent 32%);
+          opacity: 0.9;
+          pointer-events: none;
         }
         .uf-reveal-continuation .uf-identity-grid {
           gap: 16px;
@@ -3747,16 +3863,64 @@ export default function HomeClient() {
           box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10) !important;
         }
         .uf-reveal-continuation .uf-scroll-reveal {
+          --uf-reveal-y: 30px;
+          --uf-reveal-scale: 0.985;
+          --uf-motion-y: 0px;
           opacity: 0;
-          transform: translateY(30px) scale(0.985);
+          transform: translate3d(0, calc(var(--uf-reveal-y) + var(--uf-motion-y)), 0) scale(var(--uf-reveal-scale));
           transition:
             opacity 720ms cubic-bezier(.2,.8,.2,1) var(--uf-reveal-delay, 0ms),
             transform 720ms cubic-bezier(.2,.8,.2,1) var(--uf-reveal-delay, 0ms);
           will-change: opacity, transform;
         }
         .uf-reveal-continuation .uf-scroll-reveal.is-visible {
+          --uf-reveal-y: 0px;
+          --uf-reveal-scale: 1;
           opacity: 1;
-          transform: translateY(0) scale(1);
+        }
+        .uf-motion-depth {
+          --uf-motion-y: 0px;
+          will-change: transform;
+        }
+        .uf-reveal-footer-actions.uf-motion-depth,
+        .uf-next-step-card.uf-motion-depth {
+          transform: translate3d(0, var(--uf-motion-y), 0);
+          transition: transform 180ms ease-out;
+        }
+        .uf-reveal-continuation .uf-unified-avatar-shell {
+          animation: bridgeSurfaceFloat 5.2s ease-in-out 0.45s infinite;
+        }
+        .uf-reveal-continuation .uf-unified-card,
+        .uf-reveal-continuation .uf-next-step-card,
+        .uf-bridge-move-card,
+        .uf-bridge-save,
+        .uf-reveal-continuation .uf-btn-outline {
+          transition:
+            transform 220ms cubic-bezier(0.22,1,0.36,1),
+            border-color 220ms ease,
+            box-shadow 220ms ease,
+            background-position 280ms ease;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .uf-reveal-continuation .uf-unified-card:hover,
+          .uf-bridge-move-card:hover {
+            transform: translate3d(0,-6px,0) scale(1.01);
+            border-color: rgba(217,255,184,0.28) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 34px 76px rgba(0,0,0,0.3), 0 0 0 1px rgba(217,255,184,0.06) !important;
+          }
+          .uf-next-step-card.uf-motion-depth:hover {
+            transform: translate3d(0, calc(var(--uf-motion-y) - 5px), 0) scale(1.006);
+            border-color: rgba(217,255,184,0.28) !important;
+          }
+          .uf-bridge-save:hover,
+          .uf-reveal-continuation .uf-btn-outline:hover {
+            transform: translate3d(0,-3px,0);
+            box-shadow: 0 22px 52px rgba(34,211,165,0.24);
+          }
+          .uf-bridge-save:active,
+          .uf-reveal-continuation .uf-btn-outline:active {
+            transform: translate3d(0,0,0) scale(0.985);
+          }
         }
         .uf-reveal-continuation .uf-assumptions-card button {
           color: #fff !important;
@@ -3822,6 +3986,23 @@ export default function HomeClient() {
             opacity: 1;
             transform: none;
             transition: none;
+          }
+          .uf-motion-depth,
+          .uf-reveal-footer-actions.uf-motion-depth,
+          .uf-next-step-card.uf-motion-depth {
+            transform: none !important;
+          }
+          .uf-bridge-aurora,
+          .uf-bridge-gridwash,
+          .uf-bridge-chart-sweep,
+          .uf-motion-magic,
+          .uf-reveal-continuation .uf-unified-avatar-shell,
+          .uf-bridge-save,
+          .uf-automate-btn {
+            animation: none !important;
+          }
+          .uf-bridge-chart-sweep {
+            display: none;
           }
         }
         body.uf-result-mode .uf-home-seo-shell {

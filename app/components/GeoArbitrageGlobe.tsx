@@ -284,6 +284,7 @@ export default function GeoArbitrageGlobe({
 
     const center: [number, number] = [-rotLng.current, -rotLat.current];
     const P = getPalette(isDark);
+    const markerTime = performance.now() / 1000;
 
     // ── Atmosphere halo (behind the globe) ──
     for (const d of HALO_DOTS) {
@@ -363,11 +364,14 @@ export default function GeoArbitrageGlobe({
       if (!p) continue;
       const px = p[0];
       const py = p[1];
+      const markerPulse = (Math.sin(markerTime * 2.35 + cityItem.lng * 0.03 + cityItem.lat * 0.05) + 1) / 2;
+      const isReady = portfolioBalance >= cityItem.col * 25;
+      const isBarista = !isReady && portfolioBalance >= cityItem.col * 12.5;
 
       if (cityItem.key === currentCityKey) {
         ctx.beginPath();
-        ctx.arc(px, py, 7, 0, Math.PI * 2);
-        ctx.strokeStyle = '#22d3a5';
+        ctx.arc(px, py, 7 + markerPulse * 2.2, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(34,211,165,${0.74 - markerPulse * 0.26})`;
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.beginPath();
@@ -375,8 +379,16 @@ export default function GeoArbitrageGlobe({
         ctx.fillStyle = '#ffffff';
         ctx.fill();
       } else {
+        if (isReady || isBarista) {
+          ctx.beginPath();
+          ctx.arc(px, py, 4.4 + markerPulse * 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = isReady
+            ? `rgba(34,211,165,${0.16 - markerPulse * 0.06})`
+            : `rgba(251,191,36,${0.14 - markerPulse * 0.05})`;
+          ctx.fill();
+        }
         ctx.beginPath();
-        ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+        ctx.arc(px, py, 3.1 + markerPulse * 0.25, 0, Math.PI * 2);
         ctx.fillStyle = dotColor(cityItem.col, portfolioBalance);
         ctx.fill();
       }
@@ -634,9 +646,11 @@ export default function GeoArbitrageGlobe({
     const top = hover.y + (above ? -16 : 16);
     popupEl = (
       <div
+        className="uf-geo-popup"
         style={{
+          ["--uf-popup-y" as string]: above ? '-100%' : '0px',
           position: 'absolute', left, top, width: popupW, zIndex: 40, pointerEvents: 'none',
-          transform: `translate(-50%, ${above ? '-100%' : '0'})`,
+          transform: 'translate(-50%, var(--uf-popup-y))',
           background: 'rgba(12,14,22,0.95)', backdropFilter: 'blur(10px)',
           border: '1px solid rgba(255,255,255,0.14)', borderRadius: 14,
           boxShadow: '0 18px 44px rgba(0,0,0,0.45)', padding: '12px 13px 13px',
@@ -679,6 +693,7 @@ export default function GeoArbitrageGlobe({
     return (
       <div
         ref={wrapperRef}
+        className="uf-geo-globe-wrap"
         style={{ width: '100%', height: '100%', position: 'relative', cursor: hover ? 'pointer' : 'grab', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
         onMouseDown={onPointerDown}
         onMouseMove={onPointerMove}
@@ -689,6 +704,35 @@ export default function GeoArbitrageGlobe({
         onTouchEnd={onPointerUp}
         onWheel={onWheel}
       >
+        <style jsx global>{`
+          @keyframes ufGeoPopupIn {
+            from { opacity: 0; transform: translate(-50%, calc(var(--uf-popup-y) + 10px)) scale(0.96); filter: blur(4px); }
+            to { opacity: 1; transform: translate(-50%, var(--uf-popup-y)) scale(1); filter: blur(0); }
+          }
+          .uf-geo-popup {
+            animation: ufGeoPopupIn 180ms cubic-bezier(0.22,1,0.36,1) both;
+            transform-origin: 50% var(--uf-popup-y);
+          }
+          .uf-geo-globe-wrap button {
+            transition: transform 180ms cubic-bezier(0.22,1,0.36,1), box-shadow 180ms ease, border-color 180ms ease;
+          }
+          @media (hover: hover) and (pointer: fine) {
+            .uf-geo-globe-wrap button:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 12px 28px rgba(0,0,0,0.22);
+            }
+          }
+          .uf-geo-globe-wrap button:active {
+            transform: scale(0.96);
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .uf-geo-popup,
+            .uf-geo-globe-wrap button {
+              animation: none !important;
+              transition: none !important;
+            }
+          }
+        `}</style>
         <canvas ref={canvasRef} onClick={onCanvasClick} style={{ display: 'block', flexShrink: 0 }} />
 
         {/* Legend bottom-center */}
@@ -738,6 +782,7 @@ export default function GeoArbitrageGlobe({
       >
         <div
           ref={wrapperRef}
+          className="uf-geo-globe-wrap"
           style={{ width: '100%', aspectRatio: '1', position: 'relative', cursor: hover ? 'pointer' : 'grab', touchAction: 'none' }}
           onMouseDown={onPointerDown}
           onMouseMove={onPointerMove}
@@ -748,6 +793,35 @@ export default function GeoArbitrageGlobe({
           onTouchEnd={onPointerUp}
           onWheel={onWheel}
         >
+          <style jsx global>{`
+            @keyframes ufGeoPopupIn {
+              from { opacity: 0; transform: translate(-50%, calc(var(--uf-popup-y) + 10px)) scale(0.96); filter: blur(4px); }
+              to { opacity: 1; transform: translate(-50%, var(--uf-popup-y)) scale(1); filter: blur(0); }
+            }
+            .uf-geo-popup {
+              animation: ufGeoPopupIn 180ms cubic-bezier(0.22,1,0.36,1) both;
+              transform-origin: 50% var(--uf-popup-y);
+            }
+            .uf-geo-globe-wrap button {
+              transition: transform 180ms cubic-bezier(0.22,1,0.36,1), box-shadow 180ms ease, border-color 180ms ease;
+            }
+            @media (hover: hover) and (pointer: fine) {
+              .uf-geo-globe-wrap button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 28px rgba(0,0,0,0.22);
+              }
+            }
+            .uf-geo-globe-wrap button:active {
+              transform: scale(0.96);
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .uf-geo-popup,
+              .uf-geo-globe-wrap button {
+                animation: none !important;
+                transition: none !important;
+              }
+            }
+          `}</style>
           <canvas ref={canvasRef} onClick={onCanvasClick} style={{ display: 'block' }} />
 
           {/* Zoom controls */}
