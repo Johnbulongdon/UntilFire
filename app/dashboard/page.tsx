@@ -85,6 +85,7 @@ type EmergencyFundPriorityMode = "protect" | "balance" | "grow";
 const EMERGENCY_FUND_HISTORY_KEY = "uf_emergency_fund_healthy_once_v1";
 const EMERGENCY_FUND_FLOOR_MONTHS = 1.5;
 const EMERGENCY_FUND_TARGET_MONTHS = 4;
+const EMERGENCY_FUND_BUDGET_NEED_KEYS = ["housing", "food", "transport", "healthcare"] as const;
 
 function useEmergencyFundHistory(isHealthyNow: boolean) {
   const [hasEverHealthy, setHasEverHealthy] = useState(false);
@@ -2866,7 +2867,7 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, monthlyExpenses = 0, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false }: {
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -2878,7 +2879,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   plaidAccounts?: PlaidAccount[];
   onUpgradeClick?: () => void;
   onRefreshAccounts?: () => void;
-  monthlyExpenses?: number;
+  emergencyFundMonthlyBase?: number;
   plaidHoldings?: PlaidHolding[];
   plaidSecurities?: Record<string, PlaidSecurity>;
   holdingsNeedsReconnect?: string[];
@@ -2983,9 +2984,9 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
       .reduce((s, a) => s + (a.balance_current ?? 0), 0),
   };
   const brokerageCashExcluded = connectedBreakdown.brokerageCash > 0;
-  const emergencyFundHealthyNow = monthlyExpenses > 0 && (emergencyFundBalance / monthlyExpenses) >= EMERGENCY_FUND_TARGET_MONTHS;
+  const emergencyFundHealthyNow = emergencyFundMonthlyBase > 0 && (emergencyFundBalance / emergencyFundMonthlyBase) >= EMERGENCY_FUND_TARGET_MONTHS;
   const hasEverHealthyEmergencyFund = useEmergencyFundHistory(emergencyFundHealthyNow);
-  const emergencyFundPlan = getEmergencyFundPlan(emergencyFundBalance, monthlyExpenses, hasEverHealthyEmergencyFund);
+  const emergencyFundPlan = getEmergencyFundPlan(emergencyFundBalance, emergencyFundMonthlyBase, hasEverHealthyEmergencyFund);
   const efFloor = emergencyFundPlan.floorAmount;
   const efTarget = emergencyFundPlan.targetAmount;
   const efPct = emergencyFundPlan.progressToTargetPct;
@@ -3051,7 +3052,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
       )}
 
       {/* ── Emergency Fund card ──────────────────────────────────────────── */}
-      {monthlyExpenses > 0 && (
+      {emergencyFundMonthlyBase > 0 && (
         <div className="uf-card" style={{
           background: emergencyFundPlan.state === "healthy" ? "rgba(5,150,105,0.04)" : emergencyFundPlan.state === "fragile" ? "rgba(245,158,11,0.04)" : emergencyFundPlan.state === "rebuilding" ? "rgba(14,165,233,0.05)" : "rgba(220,38,38,0.04)",
           border: `1px solid ${emergencyFundPlan.state === "healthy" ? "rgba(5,150,105,0.2)" : emergencyFundPlan.state === "fragile" ? "rgba(245,158,11,0.25)" : emergencyFundPlan.state === "rebuilding" ? "rgba(14,165,233,0.22)" : "rgba(220,38,38,0.2)"}`,
@@ -3059,7 +3060,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <span style={{ fontSize: 16 }}>🛡️</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Fund</span>
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748B", fontWeight: 500 }}>{EMERGENCY_FUND_FLOOR_MONTHS} month floor · {EMERGENCY_FUND_TARGET_MONTHS} month target</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748B", fontWeight: 500 }}>{EMERGENCY_FUND_FLOOR_MONTHS} month floor · {EMERGENCY_FUND_TARGET_MONTHS} month needs target</span>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
@@ -4650,6 +4651,11 @@ export default function Dashboard() {
     const scale = histExpensesAvg / currentTotal;
     return { ...expenses, ...Object.fromEntries(numericEntries.map(([k, v]) => [k, Math.round((v as number) * scale)])) };
   }, [budgetMode, histExpensesAvg, expenses]);
+  const manualEmergencyNeeds = useMemo(
+    () => EMERGENCY_FUND_BUDGET_NEED_KEYS.reduce((sum, key) => sum + (effectiveExpenses[key] || 0), 0),
+    [effectiveExpenses],
+  );
+  const emergencyFundMonthlyBase = histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds;
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
     rawActuals
@@ -5439,7 +5445,7 @@ export default function Dashboard() {
                 budgetMode={budgetMode}
                 histMonthsCount={histMonthsCount}
                 userJoinedAt={userJoinedAt}
-                monthlyNeedsExpenses={histNeedsAvg > 0 ? histNeedsAvg : undefined}
+                monthlyNeedsExpenses={emergencyFundMonthlyBase > 0 ? emergencyFundMonthlyBase : undefined}
                 monthlyWorkCosts={histWorkAvg > 0 ? histWorkAvg : undefined}
                 taxEnabled={taxEnabled}
                 retirementTaxRate={retirementTaxRate}
@@ -5511,7 +5517,7 @@ export default function Dashboard() {
                   plaidAccounts={plaidAccounts}
                   onRefreshAccounts={refreshPlaidAccounts}
                   onUpgradeClick={() => { setUpgradeSource("plaid_limit"); setUpgradeOpen(true); }}
-                  monthlyExpenses={monthlyExpenses}
+                  emergencyFundMonthlyBase={emergencyFundMonthlyBase}
                   plaidHoldings={plaidHoldings}
                   plaidSecurities={plaidSecurities}
                   holdingsNeedsReconnect={holdingsNeedsReconnect}

@@ -20,6 +20,7 @@
     "test:achieved-fire-reveal": "node scripts/verify-achieved-fire-reveal.mjs",
     "test:fire-type-cta": "node scripts/verify-fire-type-cta-starts-onboarding.mjs",
     "test:hysa-empty-state": "node scripts/verify-hysa-empty-state-card.mjs",
+    "test:emergency-fund-needs": "node scripts/verify-emergency-fund-needs-only.mjs",
     "test:revenue-funnel": "node scripts/verify-revenue-funnel-instrumentation.mjs",
     "test:holdings-mobile-layout": "node scripts/verify-holdings-mobile-layout.mjs",
     "test:profile-single-location": "node scripts/verify-profile-single-location-card.mjs",
