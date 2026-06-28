@@ -21,6 +21,19 @@ assert(
 );
 
 assert(
+  source.includes('const EMERGENCY_FUND_TARGET_MONTHS = 6;') &&
+    !source.includes('const EMERGENCY_FUND_TARGET_MONTHS = 4;'),
+  'emergency fund target is the normal six-month reserve'
+);
+
+assert(
+  source.includes('const EMERGENCY_FUND_MONTH_MARKS = Array.from({ length: EMERGENCY_FUND_TARGET_MONTHS }, (_, index) => index + 1);') &&
+    source.includes('function EmergencyFundProgressBar') &&
+    source.includes('{month}mo'),
+  'emergency fund progress bars show month marks from one month through target'
+);
+
+assert(
   source.includes('Safety runway') &&
     source.includes('Months of essential expenses covered') &&
     source.includes('Excludes wants and work costs'),

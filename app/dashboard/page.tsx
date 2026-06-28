@@ -84,8 +84,9 @@ type EmergencyFundPriorityMode = "protect" | "balance" | "grow";
 
 const EMERGENCY_FUND_HISTORY_KEY = "uf_emergency_fund_healthy_once_v1";
 const EMERGENCY_FUND_FLOOR_MONTHS = 1.5;
-const EMERGENCY_FUND_TARGET_MONTHS = 4;
+const EMERGENCY_FUND_TARGET_MONTHS = 6;
 const EMERGENCY_FUND_BUDGET_NEED_KEYS = ["housing", "food", "transport", "healthcare"] as const;
+const EMERGENCY_FUND_MONTH_MARKS = Array.from({ length: EMERGENCY_FUND_TARGET_MONTHS }, (_, index) => index + 1);
 
 function useEmergencyFundHistory(isHealthyNow: boolean) {
   const [hasEverHealthy, setHasEverHealthy] = useState(false);
@@ -165,6 +166,63 @@ function getEmergencyFundPlan(balance: number, monthlyExpenses: number, hasEverH
     gapToTarget: Math.max(targetAmount - balance, 0),
     progressToTargetPct: targetAmount > 0 ? Math.min(100, (balance / targetAmount) * 100) : 0,
   };
+}
+
+function getEmergencyFundStateColor(state: EmergencyFundState) {
+  return state === "healthy" ? "#059669" : state === "fragile" ? "#F59E0B" : state === "rebuilding" ? "#0EA5E9" : "#DC2626";
+}
+
+function EmergencyFundProgressBar({ progressPct, state, height = 8 }: { progressPct: number; state: EmergencyFundState; height?: number }) {
+  const barColor = getEmergencyFundStateColor(state);
+
+  return (
+    <div style={{ position: "relative", paddingBottom: 20 }}>
+      <div style={{ position: "relative", height, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+        <div style={{
+          height: "100%",
+          borderRadius: 99,
+          width: `${Math.min(100, Math.max(0, progressPct))}%`,
+          background: barColor,
+          transition: "width 0.4s ease",
+        }} />
+        {EMERGENCY_FUND_MONTH_MARKS.map(month => (
+          <span
+            key={`tick-${month}`}
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: `${(month / EMERGENCY_FUND_TARGET_MONTHS) * 100}%`,
+              top: 0,
+              bottom: 0,
+              width: 1,
+              background: "rgba(15,23,42,0.22)",
+              transform: "translateX(-50%)",
+            }}
+          />
+        ))}
+      </div>
+      {EMERGENCY_FUND_MONTH_MARKS.map(month => (
+        <span
+          key={`label-${month}`}
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: `${(month / EMERGENCY_FUND_TARGET_MONTHS) * 100}%`,
+            top: height + 4,
+            transform: month === EMERGENCY_FUND_TARGET_MONTHS ? "translateX(-100%)" : "translateX(-50%)",
+            fontSize: 10,
+            lineHeight: 1,
+            color: "#64748B",
+            fontWeight: 700,
+            fontFamily: "Manrope, sans-serif",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {month}mo
+        </span>
+      ))}
+    </div>
+  );
 }
 
 const LEARNING_STAGES: { id: LearnStageId; label: string; whatMattersNow: string }[] = [
@@ -1476,14 +1534,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               <span>{fmtMoney(availableCash, true)} reserve</span>
               <span>{EMERGENCY_FUND_TARGET_MONTHS}mo target</span>
             </div>
-            <div style={{ height: 8, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 999, overflow: "hidden", marginBottom: 12 }}>
-              <div style={{
-                width: `${emergencyFundPlan.progressToTargetPct}%`,
-                height: "100%",
-                borderRadius: 999,
-                background: emergencyFundPlan.state === "healthy" ? "#059669" : emergencyFundPlan.state === "fragile" ? "#F59E0B" : emergencyFundPlan.state === "rebuilding" ? "#0EA5E9" : "#DC2626",
-              }} />
-            </div>
+            <EmergencyFundProgressBar progressPct={emergencyFundPlan.progressToTargetPct} state={emergencyFundPlan.state} />
             <button
               onClick={() => onTabChange?.("assets")}
               style={{ border: "1px solid var(--uf-border)", background: "var(--uf-surface)", color: "var(--uf-text)", borderRadius: 10, padding: "9px 12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif", width: "100%" }}
@@ -3152,15 +3203,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             Need-tagged transactions if available; otherwise core budget needs. Wants and work costs are excluded.
           </div>
 
-          {/* Progress bar */}
-          <div style={{ height: 6, background: "#F1F5F9", borderRadius: 99, overflow: "hidden", marginBottom: 10 }}>
-            <div style={{
-              height: "100%", borderRadius: 99,
-              width: `${efPct}%`,
-              background: emergencyFundPlan.state === "healthy" ? "#059669" : emergencyFundPlan.state === "fragile" ? "#F59E0B" : emergencyFundPlan.state === "rebuilding" ? "#0EA5E9" : "#DC2626",
-              transition: "width 0.4s ease",
-            }} />
-          </div>
+          <EmergencyFundProgressBar progressPct={efPct} state={emergencyFundPlan.state} height={6} />
 
           {/* Status badge */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: hasHysa ? 0 : 12 }}>
