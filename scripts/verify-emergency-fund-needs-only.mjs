@@ -21,6 +21,13 @@ assert(
 );
 
 assert(
+  source.includes('Safety runway') &&
+    source.includes('Months of essential expenses covered') &&
+    source.includes('Excludes wants and work costs'),
+  'overview home shows a standalone needs-only emergency fund card'
+);
+
+assert(
   source.includes('monthlyNeedsExpenses={emergencyFundMonthlyBase > 0 ? emergencyFundMonthlyBase : undefined}'),
   'overview emergency fund task uses the shared needs-only base'
 );
@@ -39,6 +46,12 @@ assert(
 assert(
   source.includes('getEmergencyFundPlan(emergencyFundBalance, emergencyFundMonthlyBase, hasEverHealthyEmergencyFund)'),
   'assets emergency fund card calculates target from needs-only monthly base'
+);
+
+assert(
+  source.includes('Essential monthly needs') &&
+    source.includes('Need-tagged transactions if available; otherwise core budget needs.'),
+  'assets emergency fund card labels the needs-only calculation method'
 );
 
 assert(

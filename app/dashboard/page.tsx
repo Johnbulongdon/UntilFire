@@ -1445,6 +1445,55 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       </div>
 
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
+      {efMonthlyBase > 0 && (
+        <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                Safety runway
+              </div>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 800,
+                padding: "5px 10px",
+                borderRadius: 999,
+                background: emergencyFundPlan.state === "healthy" ? "#DCFCE7" : emergencyFundPlan.state === "fragile" ? "#FEF3C7" : emergencyFundPlan.state === "rebuilding" ? "#E0F2FE" : "#FEE2E2",
+                color: emergencyFundPlan.state === "healthy" ? "#166534" : emergencyFundPlan.state === "fragile" ? "#92400E" : emergencyFundPlan.state === "rebuilding" ? "#075985" : "#991B1B",
+                fontFamily: "Manrope, sans-serif",
+              }}>
+                {emergencyFundPlan.stateLabel}
+              </span>
+            </div>
+            <div style={{ fontSize: "clamp(30px, 5vw, 42px)", fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.04em", lineHeight: 1 }}>
+              {emergencyFundPlan.coverageMonths.toFixed(1)} months
+            </div>
+            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.55 }}>
+              Months of essential expenses covered. Excludes wants and work costs so job-loss planning stays realistic.
+            </div>
+          </div>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8, fontSize: 12, color: "var(--uf-text-2)", fontWeight: 700 }}>
+              <span>{fmtMoney(availableCash, true)} reserve</span>
+              <span>{EMERGENCY_FUND_TARGET_MONTHS}mo target</span>
+            </div>
+            <div style={{ height: 8, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 999, overflow: "hidden", marginBottom: 12 }}>
+              <div style={{
+                width: `${emergencyFundPlan.progressToTargetPct}%`,
+                height: "100%",
+                borderRadius: 999,
+                background: emergencyFundPlan.state === "healthy" ? "#059669" : emergencyFundPlan.state === "fragile" ? "#F59E0B" : emergencyFundPlan.state === "rebuilding" ? "#0EA5E9" : "#DC2626",
+              }} />
+            </div>
+            <button
+              onClick={() => onTabChange?.("assets")}
+              style={{ border: "1px solid var(--uf-border)", background: "var(--uf-surface)", color: "var(--uf-text)", borderRadius: 10, padding: "9px 12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif", width: "100%" }}
+            >
+              Review reserve
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="uf-overview-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
@@ -1491,7 +1540,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Best way to move your date
               </div>
-              {monthlyExpenses > 0 && (
+              {efMonthlyBase > 0 && (
                 <span style={{
                   fontSize: 11,
                   fontWeight: 800,
@@ -1506,10 +1555,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               )}
             </div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
-              {monthlyExpenses > 0 ? emergencyFundPlan.headline : "Top 3 tasks right now"}
+              {efMonthlyBase > 0 ? emergencyFundPlan.headline : "Top 3 tasks right now"}
             </div>
             <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>
-              {monthlyExpenses > 0 ? emergencyFundPlan.guidance : "Focus on the next few actions most likely to protect or improve your freedom date."}
+              {efMonthlyBase > 0 ? emergencyFundPlan.guidance : "Focus on the next few actions most likely to protect or improve your freedom date."}
             </div>
           </div>
           {topTasks.length > 0 ? (
@@ -3086,9 +3135,10 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           </div>
 
           {/* Three-stat row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 8 }}>
             {[
               { label: "Current Reserve", value: fmtMoney(emergencyFundBalance), color: emergencyFundPlan.state === "healthy" ? "#059669" : emergencyFundPlan.state === "rebuilding" ? "#0369A1" : "#19181E" },
+              { label: "Essential monthly needs", value: fmtMoney(emergencyFundMonthlyBase) },
               { label: `Floor · ${EMERGENCY_FUND_FLOOR_MONTHS} months`, value: fmtMoney(efFloor) },
               { label: `Target · ${EMERGENCY_FUND_TARGET_MONTHS} months`, value: fmtMoney(efTarget) },
             ].map(s => (
@@ -3097,6 +3147,9 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 <div style={{ fontSize: 15, fontWeight: 800, color: s.color ?? "#19181E", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
               </div>
             ))}
+          </div>
+          <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.45, marginBottom: 14 }}>
+            Need-tagged transactions if available; otherwise core budget needs. Wants and work costs are excluded.
           </div>
 
           {/* Progress bar */}
