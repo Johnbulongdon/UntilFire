@@ -2,20 +2,14 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         google()
-        // Aliyun mirror for Maven Central — avoids 403 blocks in HK/China
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/gradle-plugins' }
-        mavenCentral()
+        maven { url 'https://repo1.maven.org/maven2/' }
     }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
-        // Aliyun mirror for Maven Central — avoids 403 blocks in HK/China
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        mavenCentral()
+        maven { url 'https://repo1.maven.org/maven2/' }
     }
 }
 
