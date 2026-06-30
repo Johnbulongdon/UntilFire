@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // Find or create Stripe customer
     const { data: sub } = await supabaseAdmin
       .from("subscriptions")
-      .select("stripe_customer_id")
+      .select("stripe_customer_id, stripe_subscription_id")
       .eq("user_id", user.id)
       .single();
 
@@ -37,6 +37,9 @@ export async function POST(req: NextRequest) {
 
     const origin = req.headers.get("origin") || "https://www.untilfire.com";
 
+    // First-time subscribers get a 30-day free trial
+    const isFirstTimeSubscriber = !sub?.stripe_subscription_id;
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
@@ -45,6 +48,9 @@ export async function POST(req: NextRequest) {
       cancel_url: `${origin}/dashboard`,
       metadata: { supabase_user_id: user.id },
       allow_promotion_codes: true,
+      ...(isFirstTimeSubscriber && {
+        subscription_data: { trial_period_days: 30 },
+      }),
     });
 
     return NextResponse.json({ url: session.url, priceId: STRIPE_PRO_PRICE_ID });

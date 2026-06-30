@@ -134,6 +134,56 @@ export function buildWelcomeEmail(): string {
   );
 }
 
+// ─── Trial reminder email ─────────────────────────────────────────────────────
+
+export function buildTrialReminderEmail(trialEndDate: string): string {
+  const hero = heroCard(
+    "Your free trial",
+    `Your trial ends on ${trialEndDate}.`,
+    "No surprise charges &#8212; just a heads-up so you know what&#39;s coming and can decide."
+  );
+
+  const details = sectionCard(`
+    ${sectionLabel("What happens next")}
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      ${bulletRow(
+        "Your card will be charged $4.99/month",
+        "On ${trialEndDate}, your Pro subscription starts automatically at $4.99 per month. Cancel any time before then from your account settings to avoid being charged."
+          .replace("${trialEndDate}", trialEndDate)
+      )}
+      ${bulletRow(
+        "Everything you&#39;ve set up stays intact",
+        "Your FIRE plan, cashflow data, and projections are all saved. Nothing changes in the product &#8212; Pro continues seamlessly."
+      )}
+      ${bulletRow(
+        "Cancel in one click if it&#39;s not for you",
+        "Go to your profile &rsaquo; Billing to manage or cancel. No questions asked.",
+        true
+      )}
+    </table>
+  `);
+
+  const value = sectionCard(`
+    ${sectionLabel("What Pro gives you")}
+    <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.75">
+      Unlimited bank connections, auto-imported transactions, full cashflow tracking, and a live FIRE projection that updates as your finances do.
+    </p>
+    <p style="margin:0;font-size:14px;color:#6B7280;line-height:1.75">
+      If you&#39;ve been using the dashboard this month, you&#39;ve already seen what Pro does &#8212; it keeps doing exactly that.
+    </p>
+    <p style="margin:20px 0 0;font-size:14px;color:#6B7280;line-height:1.7;border-top:1px solid #F0F4F1;padding-top:20px">
+      &#8212; John, founder of UntilFire
+    </p>
+  `);
+
+  const cta = ctaBlock(`${SITE}/dashboard/profile?source=trial-reminder-email`, "Manage your subscription");
+
+  return base(
+    `Your UntilFire free trial ends ${trialEndDate} &#8212; here&#39;s what to expect.`,
+    hero + details + value + cta
+  );
+}
+
 // ─── Retention email (day 7) ──────────────────────────────────────────────────
 
 export function buildRetentionEmail(): string {

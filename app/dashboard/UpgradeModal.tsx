@@ -71,12 +71,19 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>🔓</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Upgrade to Pro</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#047857", marginTop: 8 }}>
-            $4.99
-            <span style={{ fontSize: 16, fontWeight: 600, color: "#64748B" }}>/month</span>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Try Pro free for 30 days</div>
+          <div style={{
+            display: "inline-block", marginTop: 10, padding: "4px 14px",
+            background: "#D1FAE5", borderRadius: 99,
+            fontSize: 13, fontWeight: 700, color: "#065F46",
+          }}>
+            First month free
           </div>
-          <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 4 }}>Cancel anytime</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: "#047857", marginTop: 10 }}>
+            $4.99
+            <span style={{ fontSize: 16, fontWeight: 600, color: "#64748B" }}>/month after</span>
+          </div>
+          <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 4 }}>Cancel anytime — no charge today</div>
         </div>
 
         {/* Features */}
@@ -110,7 +117,7 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
             cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "Opening Stripe…" : "Subscribe now →"}
+          {loading ? "Opening Stripe…" : "Start free month →"}
         </button>
         <button
           onClick={onClose}

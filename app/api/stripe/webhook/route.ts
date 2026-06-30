@@ -3,6 +3,8 @@ import { adminClient } from "@/lib/supabase-admin";
 import { getStripe } from "@/lib/stripe";
 import Stripe from "stripe";
 import { trackCheckoutSucceededServer } from "@/lib/analytics-server";
+import { Resend } from "resend";
+import { buildTrialReminderEmail } from "@/lib/email-html";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +99,57 @@ export async function POST(req: NextRequest) {
         .from("subscriptions")
         .update({ status: "inactive", plan: "free", updated_at: new Date().toISOString() })
         .eq("stripe_customer_id", customerId);
+      break;
+    }
+
+    case "customer.subscription.trial_will_end": {
+      // Stripe fires this 3 days before the trial ends
+      const sub = event.data.object as Stripe.Subscription;
+      const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+
+      const { data: existing } = await supabaseAdmin
+        .from("subscriptions")
+        .select("user_id")
+        .eq("stripe_customer_id", customerId)
+        .single();
+
+      if (!existing) break;
+
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("trial_reminder_sent_at")
+        .eq("user_id", existing.user_id)
+        .single();
+
+      if (profile?.trial_reminder_sent_at) break;
+
+      const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(existing.user_id);
+      if (!authUser?.email) break;
+
+      const trialEndDate = new Date((sub as any).trial_end * 1000).toLocaleDateString("en-US", {
+        month: "long", day: "numeric", year: "numeric",
+      });
+
+      if (process.env.RESEND_API_KEY) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const { error: sendError } = await resend.emails.send({
+          from: "UntilFire <hello@untilfire.com>",
+          to: authUser.email,
+          subject: `Your free trial ends on ${trialEndDate} — here's what happens next`,
+          html: buildTrialReminderEmail(trialEndDate),
+        });
+        if (sendError) {
+          console.error("[webhook] trial_will_end Resend error:", sendError);
+          break;
+        }
+      }
+
+      await supabaseAdmin
+        .from("profiles")
+        .upsert(
+          { user_id: existing.user_id, trial_reminder_sent_at: new Date().toISOString() },
+          { onConflict: "user_id" },
+        );
       break;
     }
   }
