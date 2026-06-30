@@ -679,16 +679,26 @@ function PricingSection({ onStart }: { onStart: () => void }) {
           <Reveal delay={0.16}>
             <div style={{ position: "relative", background: C.green900, color: "#fff", borderRadius: 18, padding: 28, boxShadow: "0 20px 48px rgba(0,53,39,0.22)" }}>
               <div style={{ position: "absolute", top: -10, right: 20, background: C.teal, color: C.green900, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                Most helpful
+                First month free
               </div>
               <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.teal }}>Pro</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
                 <span style={{ fontSize: 42, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>$4.99</span>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>/mo</span>
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>/mo after</span>
               </div>
-              <p style={{ margin: "8px 0 18px", fontSize: 14, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>
-                Deeper guidance and connected progress.
+              <p style={{ margin: "8px 0 12px", fontSize: 14, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>
+                First 30 days free. Deeper guidance and connected progress.
               </p>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8,
+                background: "rgba(34,211,165,0.12)", border: "1px solid rgba(34,211,165,0.35)",
+                borderRadius: 8, padding: "9px 12px", marginBottom: 6,
+              }}>
+                <span style={{ fontSize: 14, flexShrink: 0 }}>✉️</span>
+                <span style={{ fontSize: 13, color: C.teal, fontWeight: 600, lineHeight: 1.4 }}>
+                  We&apos;ll email you 3 days before your trial ends.
+                </span>
+              </div>
               {[
                 "Everything in Free",
                 "Ranked next moves by time saved",
@@ -702,7 +712,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
                 </div>
               ))}
               <Link href="/login" style={{ display: "block", marginTop: 20, width: "100%", height: 44, lineHeight: "44px", background: C.teal, color: C.green900, border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "center", textDecoration: "none" }}>
-                Start Pro trial
+                Start free month →
               </Link>
             </div>
           </Reveal>
@@ -710,7 +720,7 @@ function PricingSection({ onStart }: { onStart: () => void }) {
 
         <Reveal delay={0.2}>
           <p style={{ margin: "20px auto 0", maxWidth: 480, textAlign: "center", fontSize: 12, color: C.muted }}>
-            Pro includes Stripe billing. Cancel anytime from your dashboard.
+            First 30 days free — no charge today. Then $4.99/mo. Cancel anytime.
           </p>
         </Reveal>
       </div>

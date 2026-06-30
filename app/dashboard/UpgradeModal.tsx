@@ -84,6 +84,16 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
             <span style={{ fontSize: 16, fontWeight: 600, color: "#64748B" }}>/month after</span>
           </div>
           <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 4 }}>Cancel anytime — no charge today</div>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, justifyContent: "center",
+            background: "#F0FDF4", border: "1px solid #BBF7D0",
+            borderRadius: 8, padding: "9px 14px", marginTop: 12,
+          }}>
+            <span style={{ fontSize: 15, flexShrink: 0 }}>✉️</span>
+            <span style={{ fontSize: 13, color: "#065F46", fontWeight: 600 }}>
+              We&apos;ll email you 3 days before your trial ends.
+            </span>
+          </div>
         </div>
 
         {/* Features */}
