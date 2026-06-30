@@ -71,13 +71,13 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>🔓</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Try Pro free for 30 days</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Try Pro free for 3 months</div>
           <div style={{
             display: "inline-block", marginTop: 10, padding: "4px 14px",
             background: "#D1FAE5", borderRadius: 99,
             fontSize: 13, fontWeight: 700, color: "#065F46",
           }}>
-            First month free
+            3 months free
           </div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#047857", marginTop: 10 }}>
             $4.99
@@ -127,7 +127,7 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
             cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "Opening Stripe…" : "Start free month →"}
+          {loading ? "Opening Stripe…" : "Start 3 months free →"}
         </button>
         <button
           onClick={onClose}

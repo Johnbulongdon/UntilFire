@@ -207,7 +207,7 @@ export default function PricingPage() {
               textTransform: "uppercase",
             }}
           >
-            First month free
+            3 months free
           </span>
 
           <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
@@ -217,7 +217,7 @@ export default function PricingPage() {
             <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>$4.99</span>
             <span style={{ fontSize: 15, color: "#6b7280", marginLeft: 4 }}>/month after</span>
           </div>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>First 30 days free — no charge today. Cancel anytime.</p>
+          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>First 3 months free — no charge today. Cancel anytime.</p>
 
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -255,7 +255,7 @@ export default function PricingPage() {
               fontFamily: "Manrope, sans-serif",
             }}
           >
-            Start free month →
+            Start 3 months free →
           </Link>
         </div>
       </div>
