@@ -623,13 +623,13 @@ export default function ProfileTab({
               onClick={onUpgradeClick}
               style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
             >
-              Upgrade to Pro
+              Try 3 months free
             </button>
           )}
         </div>
         {subscription?.plan !== "pro" && (
           <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10, marginBottom: 0 }}>
-            Unlock unlimited bank connections and priority access to the AI adviser.
+            First 3 months free — then $4.99/mo. Unlimited bank connections and priority AI access.
           </p>
         )}
       </div>

@@ -196,8 +196,8 @@ export default function PricingPage() {
               top: -13,
               left: "50%",
               transform: "translateX(-50%)",
-              background: "#059669",
-              color: "#fff",
+              background: "#22d3a5",
+              color: "#064E3B",
               fontSize: 11,
               fontWeight: 800,
               padding: "3px 12px",
@@ -207,7 +207,7 @@ export default function PricingPage() {
               textTransform: "uppercase",
             }}
           >
-            Most popular
+            3 months free
           </span>
 
           <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
@@ -215,14 +215,25 @@ export default function PricingPage() {
           </div>
           <div style={{ marginBottom: 8 }}>
             <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>$4.99</span>
-            <span style={{ fontSize: 15, color: "#6b7280", marginLeft: 4 }}>/month</span>
+            <span style={{ fontSize: 15, color: "#6b7280", marginLeft: 4 }}>/month after</span>
           </div>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 28px" }}>Cancel anytime. No long-term commitment.</p>
+          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>First 3 months free — no charge today. Cancel anytime.</p>
+
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "#0f2a1f", border: "1px solid #059669",
+            borderRadius: 8, padding: "10px 12px", marginBottom: 24,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>✉️</span>
+            <span style={{ fontSize: 13, color: "#22d3a5", fontWeight: 600, lineHeight: 1.4 }}>
+              We&apos;ll email you 3 days before your trial ends.
+            </span>
+          </div>
 
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
             {PRO_FEATURES.map((f) => (
               <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#d1d5db" }}>
-                <span style={{ color: "#059669", fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
+                <span style={{ color: "#22d3a5", fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
                 {f}
               </li>
             ))}
@@ -244,7 +255,7 @@ export default function PricingPage() {
               fontFamily: "Manrope, sans-serif",
             }}
           >
-            Get started →
+            Start 3 months free →
           </Link>
         </div>
       </div>

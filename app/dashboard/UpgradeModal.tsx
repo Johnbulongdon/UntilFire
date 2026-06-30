@@ -71,19 +71,29 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>🔓</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Try Pro free for 30 days</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#064E3B" }}>Try Pro free for 3 months</div>
           <div style={{
             display: "inline-block", marginTop: 10, padding: "4px 14px",
             background: "#D1FAE5", borderRadius: 99,
             fontSize: 13, fontWeight: 700, color: "#065F46",
           }}>
-            First month free
+            3 months free
           </div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#047857", marginTop: 10 }}>
             $4.99
             <span style={{ fontSize: 16, fontWeight: 600, color: "#64748B" }}>/month after</span>
           </div>
           <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 4 }}>Cancel anytime — no charge today</div>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, justifyContent: "center",
+            background: "#F0FDF4", border: "1px solid #BBF7D0",
+            borderRadius: 8, padding: "9px 14px", marginTop: 12,
+          }}>
+            <span style={{ fontSize: 15, flexShrink: 0 }}>✉️</span>
+            <span style={{ fontSize: 13, color: "#065F46", fontWeight: 600 }}>
+              We&apos;ll email you 3 days before your trial ends.
+            </span>
+          </div>
         </div>
 
         {/* Features */}
@@ -117,7 +127,7 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
             cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "Opening Stripe…" : "Start free month →"}
+          {loading ? "Opening Stripe…" : "Start 3 months free →"}
         </button>
         <button
           onClick={onClose}

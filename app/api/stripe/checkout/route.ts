@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const origin = req.headers.get("origin") || "https://www.untilfire.com";
 
-    // First-time subscribers get a 30-day free trial
+    // First-time subscribers get a 90-day free trial (3 months)
     const isFirstTimeSubscriber = !sub?.stripe_subscription_id;
 
     const session = await stripe.checkout.sessions.create({
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       metadata: { supabase_user_id: user.id },
       allow_promotion_codes: true,
       ...(isFirstTimeSubscriber && {
-        subscription_data: { trial_period_days: 30 },
+        subscription_data: { trial_period_days: 90 },
       }),
     });
 
