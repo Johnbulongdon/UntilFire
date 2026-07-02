@@ -1682,6 +1682,37 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   <div data-gsap="milestone" className="uf-bridge-trust">
                     Free account. Private numbers. No credit card.
                   </div>
+                  {!emailSubmitted ? (
+                    <form data-gsap="milestone" onSubmit={handleEmailCapture}>
+                      <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                        <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.14)" }} />
+                        <span style={{ margin: "0 10px", fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 600 }}>or get it by email</span>
+                        <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.14)" }} />
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <input
+                          type="email"
+                          placeholder="your@email.com"
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          style={{ flex: 1, minWidth: 0, height: 40, borderRadius: 10, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 13, padding: "0 12px", fontFamily: "inherit", outline: "none" }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={emailSubmitting || !emailInput.includes("@")}
+                          style={{ height: 40, borderRadius: 10, border: "none", background: "rgba(34,211,165,0.25)", color: "#22D3A5", fontSize: 13, fontWeight: 700, padding: "0 14px", cursor: emailSubmitting || !emailInput.includes("@") ? "not-allowed" : "pointer", opacity: !emailInput.includes("@") ? 0.5 : 1, whiteSpace: "nowrap" }}
+                        >
+                          {emailSubmitting ? "…" : "Send →"}
+                        </button>
+                      </div>
+                      <div style={{ marginTop: 6, fontSize: 10, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>No spam. No account needed.</div>
+                    </form>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(34,211,165,0.1)", border: "1px solid rgba(34,211,165,0.2)" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#22D3A5" }}>✓ Saved — check your inbox</div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>Log in anytime to track monthly progress</div>
+                    </div>
+                  )}
                 </aside>
               </div>
             </div>
@@ -2108,6 +2139,61 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                   </div>
                 );
               })()}
+
+              {/* ── CLOSING SAVE ── */}
+              <div className="uf-scroll-reveal" style={{ position: "relative", overflow: "hidden", background: "#003527", borderRadius: 18, padding: "clamp(28px, 4vw, 44px) clamp(20px, 3vw, 40px)", marginTop: 40, textAlign: "center" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#22D3A5" }}>
+                  {isAlreadyFire ? "Work is already optional" : `Your work-optional age: ${bridgeAge}`}
+                </div>
+                <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: "clamp(22px, 3vw, 30px)", fontWeight: 800, color: "#fff", margin: "10px 0 8px", letterSpacing: "-0.02em" }}>
+                  Don&apos;t lose this plan.
+                </h2>
+                <p style={{ margin: "0 auto", maxWidth: 440, fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.65)" }}>
+                  {isAlreadyFire
+                    ? "Save it free to model withdrawals and track your runway from here."
+                    : "Save it free and track the monthly moves that bring that date closer."}
+                </p>
+                <div style={{ marginTop: 22, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                  <Link
+                    href="/login"
+                    className="uf-bridge-save"
+                    style={{ padding: "0 32px" }}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                  >
+                    Save plan and track monthly
+                  </Link>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>Free account. Private numbers. No credit card.</div>
+                  {!emailSubmitted ? (
+                    <form onSubmit={handleEmailCapture} style={{ width: "min(360px, 100%)", marginTop: 6 }}>
+                      <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                        <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.14)" }} />
+                        <span style={{ margin: "0 10px", fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 600 }}>or get it by email</span>
+                        <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.14)" }} />
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <input
+                          type="email"
+                          placeholder="your@email.com"
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          style={{ flex: 1, minWidth: 0, height: 40, borderRadius: 10, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 13, padding: "0 12px", fontFamily: "inherit", outline: "none" }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={emailSubmitting || !emailInput.includes("@")}
+                          style={{ height: 40, borderRadius: 10, border: "none", background: "rgba(34,211,165,0.25)", color: "#22D3A5", fontSize: 13, fontWeight: 700, padding: "0 14px", cursor: emailSubmitting || !emailInput.includes("@") ? "not-allowed" : "pointer", opacity: !emailInput.includes("@") ? 0.5 : 1, whiteSpace: "nowrap" }}
+                        >
+                          {emailSubmitting ? "…" : "Send →"}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div style={{ marginTop: 6, padding: "10px 18px", borderRadius: 10, background: "rgba(34,211,165,0.1)", border: "1px solid rgba(34,211,165,0.2)" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#22D3A5" }}>✓ Saved — check your inbox</div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* ── FOOTER ACTIONS ── */}
               <div data-gsap="footer-cta" className="uf-reveal-footer-actions uf-motion-depth" data-motion-depth="0.26" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, justifyContent: "center", marginTop: 40 }}>
@@ -2549,7 +2635,6 @@ export default function HomeClient() {
           .uf-nav-dots { margin-left: auto; }
           .uf-nav-actions { display: none; }
           .uf-hero-inner { grid-template-columns: 1fr; padding: 48px 24px 48px; gap: 32px; }
-          .uf-hero-preview { display: none; }
           .uf-hero .uf-h1 { font-size: 36px; }
           .uf-hero-strip { padding: 16px 24px; flex-wrap: wrap; gap: 16px; }
           .uf-goals-grid { grid-template-columns: 1fr; }

@@ -272,15 +272,89 @@ function HeroSection({ onStart }: { onStart: () => void }) {
           </p>
         </div>
 
-        {/* Trust band with financial institution logos */}
-        <div style={{
-          marginTop: 40,
-          opacity: mounted ? 1 : 0,
-          transform: mounted ? "none" : "translateY(10px)",
-          transition: "opacity 0.7s ease 0.75s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.75s",
-          width: "100%",
-          maxWidth: 720,
+      </div>
+
+      {/* Animated freedom date preview */}
+      <div
+        className="uf-hero-preview"
+        role="button"
+        tabIndex={0}
+        aria-label="See your own freedom date — start the calculator"
+        onClick={onStart}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onStart(); } }}
+        style={{
+          position: "relative", margin: "60px auto 0", width: "min(680px, calc(100vw - 48px))",
+          cursor: "pointer",
+          opacity: mounted ? 1 : 0, transform: mounted ? "translateY(0)" : "translateY(30px)",
+          transition: "opacity 0.9s ease 0.55s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.55s",
+        }}
+      >
+        <div className="uf-hero-preview-card" style={{
+          background: C.green900, borderRadius: 20, padding: "28px 32px 32px",
+          boxShadow: "0 32px 64px rgba(0,53,39,0.22), 0 8px 20px rgba(0,53,39,0.12)",
+          position: "relative", overflow: "hidden",
         }}>
+          {/* Subtle gradient overlay */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+            background: "linear-gradient(135deg, rgba(98,250,227,0.08) 0%, transparent 60%)",
+            pointerEvents: "none",
+          }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <span className="uf-hero-preview-cta" style={{
+              position: "absolute", top: 0, right: 0,
+              fontSize: 12, fontWeight: 700, color: C.teal,
+              padding: "6px 12px", borderRadius: 999,
+              background: "rgba(98,250,227,0.12)", border: "1px solid rgba(98,250,227,0.3)",
+              whiteSpace: "nowrap",
+            }}>
+              See yours →
+            </span>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.teal }}>
+              Your freedom date
+            </div>
+            <div className="uf-hero-preview-date" style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 16 }}>
+              <div className="uf-hero-preview-month-wrap" style={{
+                display: "flex", alignItems: "baseline", gap: 4,
+                animation: "heroDateReveal 0.8s ease-out 1.2s both",
+              }}>
+                <span className="uf-hero-preview-month" style={{ fontSize: 58, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
+                  March
+                </span>
+              </div>
+              <span className="uf-hero-preview-year" style={{ fontSize: 58, fontWeight: 800, color: C.teal, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                2037
+              </span>
+            </div>
+            <p style={{ marginTop: 14, fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, maxWidth: 320 }}>
+              When work becomes optional based on your current plan.
+            </p>
+            <div className="uf-hero-preview-move" style={{
+              marginTop: 20, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.1)",
+              display: "flex", alignItems: "center", gap: 14,
+            }}>
+              <span className="uf-hero-preview-move-label" style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>Top move</span>
+              <span className="uf-hero-preview-move-badge" style={{
+                fontSize: 14, fontWeight: 700, color: "#fff",
+                padding: "6px 14px", background: "rgba(98,250,227,0.15)",
+                borderRadius: 999, border: "1px solid rgba(98,250,227,0.25)",
+              }}>
+                Increase 401(k) contribution — saves 2 years
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trust band with financial institution logos */}
+      <div style={{
+        position: "relative", zIndex: 4,
+        margin: "48px auto 90px",
+        width: "min(720px, calc(100vw - 48px))",
+        opacity: mounted ? 1 : 0,
+        transform: mounted ? "none" : "translateY(10px)",
+        transition: "opacity 0.7s ease 0.9s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.9s",
+      }}>
           <p style={{
             margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
             textTransform: "uppercase", color: C.muted, textAlign: "center",
@@ -298,12 +372,12 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             {/* Fade masks */}
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: 40,
-              background: `linear-gradient(90deg, ${C.paper} 0%, transparent 100%)`,
+              background: `linear-gradient(90deg, ${C.mint} 0%, transparent 100%)`,
               zIndex: 2, pointerEvents: "none",
             }} />
             <div style={{
               position: "absolute", right: 0, top: 0, bottom: 0, width: 40,
-              background: `linear-gradient(-90deg, ${C.paper} 0%, transparent 100%)`,
+              background: `linear-gradient(-90deg, ${C.mint} 0%, transparent 100%)`,
               zIndex: 2, pointerEvents: "none",
             }} />
 
@@ -360,61 +434,6 @@ function HeroSection({ onStart }: { onStart: () => void }) {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Animated freedom date preview */}
-      <div aria-hidden className="uf-hero-preview" style={{
-        position: "relative", margin: "60px auto 0", width: "min(680px, calc(100vw - 48px))",
-        opacity: mounted ? 1 : 0, transform: mounted ? "translateY(0)" : "translateY(30px)",
-        transition: "opacity 0.9s ease 0.55s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.55s",
-      }}>
-        <div className="uf-hero-preview-card" style={{
-          background: C.green900, borderRadius: 20, padding: "28px 32px 32px",
-          boxShadow: "0 32px 64px rgba(0,53,39,0.22), 0 8px 20px rgba(0,53,39,0.12)",
-          position: "relative", overflow: "hidden",
-        }}>
-          {/* Subtle gradient overlay */}
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-            background: "linear-gradient(135deg, rgba(98,250,227,0.08) 0%, transparent 60%)",
-            pointerEvents: "none",
-          }} />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.teal }}>
-              Your freedom date
-            </div>
-            <div className="uf-hero-preview-date" style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 16 }}>
-              <div className="uf-hero-preview-month-wrap" style={{
-                display: "flex", alignItems: "baseline", gap: 4,
-                animation: "heroDateReveal 0.8s ease-out 1.2s both",
-              }}>
-                <span className="uf-hero-preview-month" style={{ fontSize: 58, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
-                  March
-                </span>
-              </div>
-              <span className="uf-hero-preview-year" style={{ fontSize: 58, fontWeight: 800, color: C.teal, letterSpacing: "-0.02em", lineHeight: 1 }}>
-                2037
-              </span>
-            </div>
-            <p style={{ marginTop: 14, fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, maxWidth: 320 }}>
-              When work becomes optional based on your current plan.
-            </p>
-            <div className="uf-hero-preview-move" style={{
-              marginTop: 20, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.1)",
-              display: "flex", alignItems: "center", gap: 14,
-            }}>
-              <span className="uf-hero-preview-move-label" style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>Top move</span>
-              <span className="uf-hero-preview-move-badge" style={{
-                fontSize: 14, fontWeight: 700, color: "#fff",
-                padding: "6px 14px", background: "rgba(98,250,227,0.15)",
-                borderRadius: 999, border: "1px solid rgba(98,250,227,0.25)",
-              }}>
-                Increase 401(k) contribution — saves 2 years
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Bottom fade */}
       <div aria-hidden style={{
