@@ -1055,6 +1055,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://saascity.io/live/untilfire"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://saascity.io/badges/featured-dark.svg"
+              alt="Featured on SaaSCity"
+              width={150}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
