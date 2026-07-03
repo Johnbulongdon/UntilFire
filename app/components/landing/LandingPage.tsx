@@ -1069,6 +1069,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://twelve.tools"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://twelve.tools/badge0-dark.svg"
+              alt="Featured on Twelve Tools"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
