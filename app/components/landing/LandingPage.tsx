@@ -1,802 +1,400 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Logo from "@/app/components/Logo";
-
-const C = {
-  green900: "#003527",
-  green800: "#064E3B",
-  green700: "#065F46",
-  green600: "#047857",
-  green100: "#D1FAE5",
-  green50: "#ECFDF5",
-  teal: "#62FAE3",
-  teal500: "#20D4BF",
-  paper: "#fafdfb",
-  paperWarm: "#f6f9f4",
-  cream: "#f3faf6",
-  mint: "#d6efe2",
-  mintDeep: "#b9e3d0",
-  border: "#E2E8F0",
-  borderSoft: "rgba(0,53,39,0.10)",
-  text: "#003527",
-  body: "#19181E",
-  muted: "#64748B",
-  faint: "#94A3B8",
-};
+import { CITIES } from "@/lib/fire-data";
+import { peekCalculatorPrefill } from "@/lib/journey";
 
 const F = "'Manrope', sans-serif";
+const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
+const MONO = "'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 
-/* ── Scroll-reveal hook ──────────────────────────────────────────────── */
-function useReveal(threshold = 0.14) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); io.disconnect(); } },
-      { threshold, rootMargin: "0px 0px -5% 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [threshold]);
-  return { ref, visible };
+/* Same core assumptions as the calculator: 7% growth, 25x annual spending. */
+const GROWTH_MONTHLY = 0.07 / 12;
+function monthsToTarget(startBalance: number, monthlySave: number, target: number): number {
+  let bal = startBalance;
+  let m = 0;
+  while (bal < target && m < 1200) {
+    bal = bal * (1 + GROWTH_MONTHLY) + monthlySave;
+    m += 1;
+  }
+  return m;
 }
 
-function Reveal({
-  children,
-  delay = 0,
-  dir = "up",
-  style = {},
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  dir?: "up" | "left" | "right" | "fade";
-  style?: React.CSSProperties;
-}) {
-  const { ref, visible } = useReveal();
-  const translate =
-    dir === "up" ? "translateY(28px)" :
-    dir === "left" ? "translateX(-24px)" :
-    dir === "right" ? "translateX(24px)" : "none";
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-  return (
-    <div
-      ref={ref}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "none" : translate,
-        transition: `opacity 0.55s ease ${delay}s, transform 0.55s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
+function futureDate(monthsFromNow: number): Date {
+  const d = new Date();
+  d.setMonth(d.getMonth() + monthsFromNow);
+  return d;
+}
+
+/* Example household shown in the interactive sections, labeled as such in the UI. */
+const EX_SPEND_MONTHLY = 3000;
+const EX_TARGET = EX_SPEND_MONTHLY * 12 * 25;
+const EX_PORTFOLIO = 300000;
+const EX_SLIDER_DEFAULT = 1500;
+
+/* World section example: what a $1M portfolio covers today, per real city data. */
+const WORLD_PORTFOLIO = 1000000;
+const WORLD_SAVE_MONTHLY = 2000;
+const WORLD_CITY_KEYS = ["chiangmai", "mexicocity", "lisbon", "tokyo", "london", "sf"];
+
+function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: number, markers: { location: [number, number]; size: number }[], startPhi: number) {
+  useEffect(() => {
+    let cancelled = false;
+    let raf = 0;
+    let visObserver: IntersectionObserver | null = null;
+    let globe: { update: (state: { phi: number }) => void; destroy: () => void } | null = null;
+    let phi = startPhi;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    import("cobe").then(({ default: createGlobe }) => {
+      if (cancelled || !canvasRef.current) return;
+      globe = createGlobe(canvasRef.current, {
+        devicePixelRatio: 2,
+        width: size * 2,
+        height: size * 2,
+        phi,
+        theta: 0.22,
+        dark: 1,
+        diffuse: 1.2,
+        mapSamples: 24000,
+        mapBrightness: 8,
+        baseColor: [0.18, 0.5, 0.42],
+        markerColor: [0.38, 0.98, 0.89],
+        glowColor: [0.1, 0.4, 0.34],
+        markers,
+      });
+      if (!reduceMotion) {
+        let onscreen = true;
+        const spin = () => {
+          if (onscreen) {
+            phi += 0.0028;
+            globe?.update({ phi });
+          }
+          raf = requestAnimationFrame(spin);
+        };
+        raf = requestAnimationFrame(spin);
+        // Pause rendering while the canvas is offscreen: keeps scrolling
+        // smooth and saves battery — two live globes share one page.
+        visObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => { onscreen = entry.isIntersecting; });
+        });
+        if (canvasRef.current) visObserver.observe(canvasRef.current);
+      }
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      visObserver?.disconnect();
+      if (globe) globe.destroy();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }
 
 /* ── Nav ─────────────────────────────────────────────────────────────── */
-function LandingNav({ onStart }: { onStart: () => void }) {
-  const [scrolled, setScrolled] = useState(false);
-  const [isCompact, setIsCompact] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 760px)");
-    const syncCompact = () => setIsCompact(media.matches);
-    syncCompact();
-
-    if (typeof media.addEventListener === "function") {
-      media.addEventListener("change", syncCompact);
-      return () => media.removeEventListener("change", syncCompact);
-    }
-
-    media.addListener(syncCompact);
-    return () => media.removeListener(syncCompact);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
+function Nav7({ onStart }: { onStart: () => void }) {
   return (
-    <header style={{
-      position: "fixed", top: 0, left: 0, right: 0, height: isCompact ? 60 : 64,
-      display: "flex", alignItems: "center", justifyContent: "space-between", padding: isCompact ? "0 16px" : "0 24px",
-      background: scrolled ? "rgba(250,253,251,0.92)" : "transparent",
-      backdropFilter: scrolled ? "blur(12px)" : "none",
-      borderBottom: scrolled ? `1px solid ${C.borderSoft}` : "none",
-      zIndex: 50, transition: "background 0.3s, border-color 0.3s",
-      gap: isCompact ? 12 : 24,
-    }}>
-      <div style={{ flex: "0 1 auto", minWidth: 0 }}>
-        <Logo variant="light" size={isCompact ? 24 : 26} />
-      </div>
-
-      {!isCompact ? (
-        <nav style={{ display: "flex", gap: 24, flex: "0 0 auto" }}>
-          <a href="#how" style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: scrolled ? C.muted : C.green900, textDecoration: "none" }}>
-            How it works
-          </a>
-          <a href="#pricing" style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: scrolled ? C.muted : C.green900, textDecoration: "none" }}>
-            Pricing
-          </a>
-        </nav>
-      ) : null}
-
-      <button
-        onClick={onStart}
-        style={{
-          height: isCompact ? 34 : 36,
-          padding: isCompact ? "0 16px" : "0 18px",
-          background: C.green900,
-          color: "#fff",
-          border: "none",
-          borderRadius: 9999,
-          fontFamily: F,
-          fontWeight: 700,
-          fontSize: isCompact ? 12 : 13,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-          flexShrink: 0,
-        }}
-      >
-        Get started
-      </button>
+    <header className="uf7-nav">
+      <Logo variant="dark" size={26} />
+      <nav className="uf7-nav-links">
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <button className="uf7-nav-cta" onClick={onStart}>Get started</button>
     </header>
   );
 }
 
-const TRUST_LOGOS = [
-  { name: "Chase", file: "chase.jpg" },
-  { name: "Fidelity", file: "fidelity.jpg" },
-  { name: "Vanguard", file: "vanguard.jpg" },
-  { name: "Schwab", file: "schwab.jpg" },
-  { name: "Bank of America", file: "bank-of-america.jpg" },
-  { name: "Wells Fargo", file: "wells-fargo.jpg" },
-  { name: "SoFi", file: "sofi.jpg" },
-  { name: "Robinhood", file: "robinhood.jpg" },
-  { name: "Amex", file: "amex.jpg" },
-  { name: "Citi", file: "citi.jpg" },
-  { name: "US Bank", file: "us-bank.jpg" },
-  { name: "Discover", file: "discover.jpg" },
-];
+/* ── Countdown to the second birth ───────────────────────────────────── */
+function Countdown7() {
+  const [now, setNow] = useState<Date | null>(null);
+  const [target, setTarget] = useState<Date>(() => new Date(2037, 2, 15));
+  const [personal, setPersonal] = useState(false);
 
-/* ── Hero section ────────────────────────────────────────────────────── */
-function HeroSection({ onStart }: { onStart: () => void }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    const prefill = peekCalculatorPrefill();
+    if (prefill && typeof prefill.retireYear === "number" && prefill.retireYear > new Date().getFullYear()) {
+      setTarget(new Date(prefill.retireYear, 6, 1));
+      setPersonal(true);
+    }
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  let days = "—";
+  let clock = "--:--:--";
+  if (now) {
+    const ms = Math.max(0, target.getTime() - now.getTime());
+    days = Math.floor(ms / 86400000).toLocaleString();
+    const rem = ms % 86400000;
+    clock = pad(Math.floor(rem / 3600000)) + ":" + pad(Math.floor((rem % 3600000) / 60000)) + ":" + pad(Math.floor((rem % 60000) / 1000));
+  }
+  return (
+    <div className="uf7-countdown">
+      {personal ? "Your second birth in " : "Second birth in "}
+      <b>{days}</b> days · <b>{clock}</b>
+    </div>
+  );
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────── */
+function Hero7({ onStart }: { onStart: () => void }) {
+  const dawnRef = useRef<HTMLCanvasElement | null>(null);
+  useCobeGlobe(dawnRef, 1400, [
+    { location: [18.79, 98.98], size: 0.06 },
+    { location: [38.72, -9.14], size: 0.06 },
+    { location: [19.43, -99.13], size: 0.06 },
+    { location: [51.51, -0.13], size: 0.05 },
+    { location: [35.68, 139.69], size: 0.05 },
+    { location: [1.35, 103.82], size: 0.05 },
+  ], 4.2);
 
   return (
-    <section style={{
-      position: "relative", minHeight: "100vh", overflow: "hidden",
-      background: `linear-gradient(180deg, ${C.paper} 0%, ${C.cream} 45%, ${C.mint} 85%, ${C.mintDeep} 100%)`,
-    }}>
-      {/* Subtle animated background elements */}
-      <div aria-hidden style={{
-        position: "absolute", top: "15%", left: "50%", transform: "translateX(-50%)",
-        width: 900, height: 500, borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(98,250,227,0.12) 0%, transparent 65%)",
-        pointerEvents: "none",
-        opacity: mounted ? 1 : 0,
-        transition: "opacity 1.2s ease 0.3s",
-      }} />
-      <div aria-hidden style={{
-        position: "absolute", top: "28%", right: "8%",
-        width: 180, height: 180, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(6,78,59,0.06) 0%, transparent 70%)",
-        pointerEvents: "none",
-        animation: mounted ? "heroOrbFloat 8s ease-in-out infinite" : "none",
-      }} />
-      <div aria-hidden style={{
-        position: "absolute", top: "45%", left: "5%",
-        width: 120, height: 120, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(32,212,191,0.08) 0%, transparent 70%)",
-        pointerEvents: "none",
-        animation: mounted ? "heroOrbFloat 12s ease-in-out 2s infinite" : "none",
-      }} />
-
-      {/* Content */}
-      <div className="uf-hero-content" style={{
-        position: "relative", top: 0, left: 0, right: 0,
-        display: "flex", flexDirection: "column", alignItems: "center",
-        textAlign: "center", padding: "120px 24px 80px", zIndex: 4,
-        maxWidth: 900, margin: "0 auto",
-      }}>
-        {/* Single clear headline */}
-        <h1 style={{
-          margin: 0, fontFamily: F, fontWeight: 800,
-          fontSize: "clamp(48px, 10vw, 96px)", lineHeight: 1,
-          letterSpacing: "-0.05em", color: C.green900,
-          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(24px)",
-          transition: "opacity 0.7s ease 0.12s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.12s",
-        }}>
-          Make work
-          <br />
-          <span style={{
-            display: "block",
-            marginTop: 8,
-            opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(20px)",
-            transition: "opacity 0.7s ease 0.28s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.28s",
-          }}>
-            <span style={{ color: C.green700 }}>optional</span>.
-          </span>
-        </h1>
-
-        {/* Supporting copy */}
-        <p style={{
-          margin: "40px 0 0", maxWidth: 520, fontSize: 19, lineHeight: 1.6,
-          color: C.body, fontWeight: 500, fontFamily: F,
-          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
-          transition: "opacity 0.7s ease 0.48s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.48s",
-        }}>
-          See the date when work can become optional, understand what moves it
-          closer, and take your first step with confidence.
-        </p>
-
-        {/* Single primary CTA */}
-        <div style={{
-          marginTop: 44,
-          opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(12px)",
-          transition: "opacity 0.7s ease 0.62s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.62s",
-        }}>
-          <button
-            onClick={onStart}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 10,
-              height: 62, padding: "0 36px",
-              background: C.green900, color: "#fff",
-              border: "none", borderRadius: 9999,
-              fontFamily: F, fontWeight: 700, fontSize: 18,
-              cursor: "pointer", whiteSpace: "nowrap",
-              boxShadow: "0 12px 36px rgba(0,53,39,0.25)",
-              transition: "transform 0.2s, box-shadow 0.2s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 18px 48px rgba(0,53,39,0.32)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 12px 36px rgba(0,53,39,0.25)"; }}
-          >
-            See my freedom date
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M6 13.5L11 9L6 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <p style={{
-            marginTop: 16, fontSize: 13, color: C.muted, fontWeight: 500,
-            opacity: mounted ? 1 : 0,
-            transition: "opacity 0.6s ease 0.82s",
-          }}>
-            No account needed · Numbers stay private · Takes 60 seconds
-          </p>
-        </div>
-
+    <section className="uf7-hero" style={{ ["--uf7hue" as string]: "0deg" }}>
+      <div className="uf7-blob uf7-hb1" />
+      <div className="uf7-blob uf7-hb2" />
+      <div className="uf7-blob uf7-hb3" />
+      <div className="uf7-blob uf7-hb4" />
+      <div className="uf7-dawn-glow" aria-hidden />
+      <div className="uf7-dawn" aria-hidden>
+        <canvas ref={dawnRef} style={{ width: "100%", height: "100%" }} />
       </div>
 
-      {/* Animated freedom date preview */}
-      <div
-        className="uf-hero-preview"
-        role="button"
-        tabIndex={0}
-        aria-label="See your own freedom date — start the calculator"
-        onClick={onStart}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onStart(); } }}
-        style={{
-          position: "relative", margin: "60px auto 0", width: "min(680px, calc(100vw - 48px))",
-          cursor: "pointer",
-          opacity: mounted ? 1 : 0, transform: mounted ? "translateY(0)" : "translateY(30px)",
-          transition: "opacity 0.9s ease 0.55s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.55s",
-        }}
-      >
-        <div className="uf-hero-preview-card" style={{
-          background: C.green900, borderRadius: 20, padding: "28px 32px 32px",
-          boxShadow: "0 32px 64px rgba(0,53,39,0.22), 0 8px 20px rgba(0,53,39,0.12)",
-          position: "relative", overflow: "hidden",
-        }}>
-          {/* Subtle gradient overlay */}
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-            background: "linear-gradient(135deg, rgba(98,250,227,0.08) 0%, transparent 60%)",
-            pointerEvents: "none",
-          }} />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <span className="uf-hero-preview-cta" style={{
-              position: "absolute", top: 0, right: 0,
-              fontSize: 12, fontWeight: 700, color: C.teal,
-              padding: "6px 12px", borderRadius: 999,
-              background: "rgba(98,250,227,0.12)", border: "1px solid rgba(98,250,227,0.3)",
-              whiteSpace: "nowrap",
-            }}>
-              See yours →
-            </span>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.teal }}>
-              Your freedom date
-            </div>
-            <div className="uf-hero-preview-date" style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 16 }}>
-              <div className="uf-hero-preview-month-wrap" style={{
-                display: "flex", alignItems: "baseline", gap: 4,
-                animation: "heroDateReveal 0.8s ease-out 1.2s both",
-              }}>
-                <span className="uf-hero-preview-month" style={{ fontSize: 58, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
-                  March
-                </span>
-              </div>
-              <span className="uf-hero-preview-year" style={{ fontSize: 58, fontWeight: 800, color: C.teal, letterSpacing: "-0.02em", lineHeight: 1 }}>
-                2037
-              </span>
-            </div>
-            <p style={{ marginTop: 14, fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, maxWidth: 320 }}>
-              When work becomes optional based on your current plan.
-            </p>
-            <div className="uf-hero-preview-move" style={{
-              marginTop: 20, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.1)",
-              display: "flex", alignItems: "center", gap: 14,
-            }}>
-              <span className="uf-hero-preview-move-label" style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>Top move</span>
-              <span className="uf-hero-preview-move-badge" style={{
-                fontSize: 14, fontWeight: 700, color: "#fff",
-                padding: "6px 14px", background: "rgba(98,250,227,0.15)",
-                borderRadius: 999, border: "1px solid rgba(98,250,227,0.25)",
-              }}>
-                Increase 401(k) contribution — saves 2 years
-              </span>
-            </div>
-          </div>
-        </div>
+      <div className="uf7-ticker" aria-label="Model assumptions">
+        <span className="uf7-t-item"><span className="uf7-ldot" /> LIVE</span><span className="uf7-tsep">/</span>
+        <span className="uf7-t-item"><b>{CITIES.length}</b> cities tracked</span><span className="uf7-tsep">/</span>
+        <span className="uf7-t-item"><b>25×</b> rule · <b>4%</b> SWR</span><span className="uf7-tsep">/</span>
+        <span className="uf7-t-item"><b>7%</b> growth model</span>
       </div>
 
-      {/* Trust band with financial institution logos */}
-      <div style={{
-        position: "relative", zIndex: 4,
-        margin: "48px auto 90px",
-        width: "min(720px, calc(100vw - 48px))",
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? "none" : "translateY(10px)",
-        transition: "opacity 0.7s ease 0.9s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.9s",
-      }}>
-          <p style={{
-            margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
-            textTransform: "uppercase", color: C.muted, textAlign: "center",
-          }}>
-            Securely connects to 14,000+ banks & brokerages
-          </p>
-
-          {/* Animated logo strip */}
-          <div style={{
-            marginTop: 18,
-            position: "relative",
-            overflow: "hidden",
-            width: "100%",
-          }}>
-            {/* Fade masks */}
-            <div style={{
-              position: "absolute", left: 0, top: 0, bottom: 0, width: 40,
-              background: `linear-gradient(90deg, ${C.mint} 0%, transparent 100%)`,
-              zIndex: 2, pointerEvents: "none",
-            }} />
-            <div style={{
-              position: "absolute", right: 0, top: 0, bottom: 0, width: 40,
-              background: `linear-gradient(-90deg, ${C.mint} 0%, transparent 100%)`,
-              zIndex: 2, pointerEvents: "none",
-            }} />
-
-            {/* Scrolling logos */}
-            <div className="uf-trust-logos" style={{
-              display: "flex", gap: 16, alignItems: "center",
-              animation: "trustScroll 30s linear infinite",
-              width: "max-content",
-            }}>
-              {TRUST_LOGOS.map((logo) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={logo.name}
-                  src={`/app-icons/${logo.file}`}
-                  alt={logo.name}
-                  width={36}
-                  height={36}
-                  style={{ borderRadius: 8, objectFit: "cover", opacity: 0.8, flexShrink: 0 }}
-                />
-              ))}
-              {/* Duplicate for seamless loop */}
-              {TRUST_LOGOS.map((logo) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={logo.name + "-dup"}
-                  src={`/app-icons/${logo.file}`}
-                  alt=""
-                  aria-hidden
-                  width={36}
-                  height={36}
-                  style={{ borderRadius: 8, objectFit: "cover", opacity: 0.8, flexShrink: 0 }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Subtle trust cues */}
-          <div style={{
-            marginTop: 20, display: "flex", justifyContent: "center", gap: 24,
-            flexWrap: "wrap",
-          }}>
-            {[
-              { icon: "🔒", text: "Bank-level encryption" },
-              { icon: "👁", text: "Read-only access" },
-              { icon: "🔐", text: "Your data stays yours" },
-            ].map(({ icon, text }) => (
-              <span key={text} style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                fontSize: 11, color: C.muted, fontWeight: 500,
-              }}>
-                <span style={{ fontSize: 12, opacity: 0.6 }}>{icon}</span>
-                {text}
-              </span>
-            ))}
-          </div>
-        </div>
-
-      {/* Bottom fade */}
-      <div aria-hidden style={{
-        position: "absolute", left: 0, right: 0, bottom: 0, height: 140,
-        background: `linear-gradient(to bottom, rgba(185,227,208,0) 0%, ${C.mintDeep} 100%)`,
-        zIndex: 3, pointerEvents: "none",
-      }} />
-
-      <style>{`
-        @keyframes heroOrbFloat {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-20px) scale(1.05); }
-        }
-        @keyframes heroDateReveal {
-          0% { opacity: 0; transform: translateX(-20px); }
-          100% { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes trustScroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @media (max-width: 760px) {
-          .uf-nav {
-            height: 72px !important;
-            padding: 0 18px !important;
-            background: rgba(250,253,251,0.96) !important;
-            border-bottom: 1px solid rgba(0,53,39,0.10) !important;
-            backdrop-filter: blur(16px) !important;
-          }
-          .uf-nav-links { display: none !important; }
-          .uf-nav-actions { display: none !important; }
-          .uf-hero-content {
-            padding: 100px 20px 48px !important;
-          }
-          .uf-hero-content h1 {
-            font-size: clamp(40px, 14vw, 64px) !important;
-          }
-          .uf-hero-content > p {
-            font-size: 16px !important;
-            max-width: 300px !important;
-            margin-top: 28px !important;
-          }
-          .uf-hero-content > div > button {
-            height: 54px !important;
-            font-size: 16px !important;
-            padding: 0 28px !important;
-          }
-          .uf-trust-logos {
-            gap: 28px !important;
-          }
-          .uf-trust-logos span {
-            font-size: 12px !important;
-          }
-          .uf-hero-preview {
-            width: calc(100vw - 32px) !important;
-            margin-top: 44px !important;
-          }
-          .uf-hero-preview-card {
-            padding: 24px 20px 24px !important;
-            border-radius: 18px !important;
-          }
-          .uf-hero-preview-date {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 6px !important;
-          }
-          .uf-hero-preview-month,
-          .uf-hero-preview-year {
-            font-size: 44px !important;
-          }
-          .uf-hero-preview-move {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 10px !important;
-          }
-          .uf-hero-preview-move-label {
-            font-size: 12px !important;
-          }
-          .uf-hero-preview-move-badge {
-            width: 100% !important;
-            box-sizing: border-box !important;
-            border-radius: 18px !important;
-            white-space: normal !important;
-            line-height: 1.45 !important;
-            padding: 10px 14px !important;
-          }
-        }
-      `}</style>
+      <div className="uf7-eyebrow">Finance your freedom</div>
+      <h1 className="uf7-h1">You are born <i>twice</i>.</h1>
+      <p className="uf7-note">
+        Once, into the grind. The second time, the day work becomes optional — and the
+        world becomes something to explore, not survive. UntilFire plans the years in between.
+      </p>
+      <Countdown7 />
+      <button className="uf7-cta" onClick={onStart}>
+        Find my second birthday <span className="uf7-arrow">→</span>
+      </button>
+      <p className="uf7-micro">Free · No account · Numbers stay private</p>
     </section>
   );
 }
 
-/* ── How It Works ────────────────────────────────────────────────────── */
-function HowSection() {
-  return (
-    <section id="how" style={{
-      position: "relative", background: "#fff", padding: "100px 24px 80px",
-      borderRadius: "28px 28px 0 0", marginTop: -28, zIndex: 3,
-    }}>
-      <div style={{ maxWidth: 960, margin: "0 auto" }}>
-        <div style={{ textAlign: "center" }}>
-          <Reveal>
-            <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(36px, 6vw, 68px)", lineHeight: 1, letterSpacing: "-0.04em", color: C.green900 }}>
-              From today&apos;s numbers<br />to a clear next step.
-            </h2>
-          </Reveal>
-          <Reveal delay={0.12}>
-            <p style={{ margin: "20px auto 0", maxWidth: 480, fontSize: 17, lineHeight: 1.6, color: C.body, fontWeight: 500 }}>
-              UntilFire shows where you stand, what matters now, and what to do
-              next — so you can move toward work optionality with confidence.
-            </p>
-          </Reveal>
-        </div>
-
-        {/* Three steps - horizontal on desktop */}
-        <div style={{ marginTop: 64, display: "flex", flexDirection: "column", gap: 32 }}>
-          {[
-            { n: "1", t: "See your freedom date", s: "Enter a few numbers. Get the date when work becomes optional.", accent: false },
-            { n: "2", t: "Understand what moves it", s: "See which changes shorten your timeline the most.", accent: true },
-            { n: "3", t: "Take your first step", s: "Get one clear action you can act on today.", accent: false },
-          ].map((s, i) => (
-            <Reveal key={s.n} delay={i * 0.12}>
-              <div style={{
-                display: "grid", gridTemplateColumns: "auto 1fr", gap: 24,
-                padding: "24px 28px",
-                background: s.accent ? C.green900 : C.paperWarm,
-                borderRadius: 16, border: `1px solid ${s.accent ? C.green900 : C.border}`,
-                alignItems: "center",
-              }}>
-                <div style={{
-                  fontFamily: F, fontSize: 48, fontWeight: 800,
-                  color: s.accent ? C.teal : C.green700,
-                  letterSpacing: "-0.02em", lineHeight: 1,
-                }}>
-                  {s.n}
-                </div>
-                <div>
-                  <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", color: s.accent ? "#fff" : C.green900 }}>
-                    {s.t}
-                  </div>
-                  <div style={{ marginTop: 6, fontSize: 15, lineHeight: 1.55, color: s.accent ? "rgba(255,255,255,0.75)" : C.body }}>
-                    {s.s}
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── Why UntilFire ───────────────────────────────────────────────────── */
-function WhySection() {
-  return (
-    <section id="why" style={{ background: C.paperWarm, padding: "80px 24px 80px", borderTop: `1px solid ${C.border}` }}>
-      <div style={{ maxWidth: 960, margin: "0 auto" }}>
-        <div style={{ textAlign: "center" }}>
-          <Reveal>
-            <h2 style={{ margin: 0, fontFamily: F, fontWeight: 700, fontSize: "clamp(32px, 5vw, 52px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: C.green900 }}>
-              Not just a calculator.<br />
-              <span style={{ fontWeight: 800 }}>A clearer path.</span>
-            </h2>
-          </Reveal>
-          <Reveal delay={0.12}>
-            <p style={{ margin: "16px auto 0", maxWidth: 440, fontSize: 16, lineHeight: 1.6, color: C.body, fontWeight: 500 }}>
-              UntilFire helps you understand where you stand, what to change,
-              and how to keep moving forward.
-            </p>
-          </Reveal>
-        </div>
-
-        {/* Two column benefit cards */}
-        <div style={{ marginTop: 56, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
-          {[
-            {
-              t: "Designed for one outcome",
-              s: "Every feature is built to help you reach work optionality — from your first calculation to monthly progress.",
-            },
-            {
-              t: "Start before you commit",
-              s: "See your freedom date and first next move without creating an account. Upgrade when you want ongoing tracking.",
-            },
-            {
-              t: "Focus on what matters",
-              s: "Skip the noise. UntilFire surfaces the moves that move your date the most — based on your numbers.",
-            },
-            {
-              t: "A living plan",
-              s: "Life changes. Your plan adapts. UntilFire keeps the path clear as your situation evolves.",
-            },
-          ].map((card, i) => (
-            <Reveal key={card.t} delay={i * 0.08}>
-              <div style={{
-                padding: "22px 24px",
-                background: "#fff", borderRadius: 14, border: `1px solid ${C.border}`,
-              }}>
-                <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.01em", color: C.green900, marginBottom: 8 }}>
-                  {card.t}
-                </div>
-                <div style={{ fontSize: 14, lineHeight: 1.6, color: C.body }}>
-                  {card.s}
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── Pricing ─────────────────────────────────────────────────────────── */
-function PricingSection({ onStart }: { onStart: () => void }) {
-  return (
-    <section id="pricing" style={{ background: "#fff", padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
-      <div style={{ maxWidth: 880, margin: "0 auto" }}>
-        <div style={{ textAlign: "center" }}>
-          <Reveal>
-            <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(34px, 5vw, 56px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: C.green900 }}>
-              Start free.<br />Upgrade for more depth.
-            </h2>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p style={{ margin: "16px auto 0", maxWidth: 420, fontSize: 16, lineHeight: 1.6, color: C.body, fontWeight: 500 }}>
-              See your freedom date and first move without an account. Go Pro when you want deeper guidance and ongoing tracking.
-            </p>
-          </Reveal>
-        </div>
-
-        <div style={{ marginTop: 48, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
-          {/* Free */}
-          <Reveal delay={0.08}>
-            <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 18, padding: 28 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.muted }}>Free</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
-                <span style={{ fontSize: 42, fontWeight: 800, color: C.green900, letterSpacing: "-0.02em" }}>$0</span>
-              </div>
-              <p style={{ margin: "8px 0 18px", fontSize: 14, color: C.body, lineHeight: 1.5 }}>
-                Your freedom date and first next move.
-              </p>
-              {[
-                "Freedom date calculation",
-                "One clear next move",
-                "Decision sliders",
-                "Shareable result card",
-                "1 bank + 1 brokerage sync",
-              ].map(f => (
-                <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", fontSize: 13, color: C.body }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" style={{ marginTop: 1, flexShrink: 0 }}><path d="M2.5 7l2.5 2.5 6-6" stroke={C.green700} strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>
-                  {f}
-                </div>
-              ))}
-              <button onClick={onStart} style={{ marginTop: 20, width: "100%", height: 44, background: "#fff", color: C.green900, border: `1.5px solid ${C.green900}`, borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-                See my freedom date
-              </button>
-            </div>
-          </Reveal>
-
-          {/* Pro */}
-          <Reveal delay={0.16}>
-            <div style={{ position: "relative", background: C.green900, color: "#fff", borderRadius: 18, padding: 28, boxShadow: "0 20px 48px rgba(0,53,39,0.22)" }}>
-              <div style={{ position: "absolute", top: -10, right: 20, background: C.teal, color: C.green900, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                3 months free
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.teal }}>Pro</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
-                <span style={{ fontSize: 42, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>$4.99</span>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>/mo after</span>
-              </div>
-              <p style={{ margin: "8px 0 12px", fontSize: 14, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>
-                First 3 months free. Deeper guidance and connected progress.
-              </p>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: "rgba(34,211,165,0.12)", border: "1px solid rgba(34,211,165,0.35)",
-                borderRadius: 8, padding: "9px 12px", marginBottom: 6,
-              }}>
-                <span style={{ fontSize: 14, flexShrink: 0 }}>✉️</span>
-                <span style={{ fontSize: 13, color: C.teal, fontWeight: 600, lineHeight: 1.4 }}>
-                  We&apos;ll email you 3 days before your trial ends.
-                </span>
-              </div>
-              {[
-                "Everything in Free",
-                "Ranked next moves by time saved",
-                "Action plan from your spending",
-                "Unlimited bank & brokerage sync",
-                "Progress tracking & reports",
-              ].map(f => (
-                <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", fontSize: 13, color: "rgba(255,255,255,0.9)" }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" style={{ marginTop: 1, flexShrink: 0 }}><path d="M2.5 7l2.5 2.5 6-6" stroke={C.teal} strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>
-                  {f}
-                </div>
-              ))}
-              <Link href="/login" style={{ display: "block", marginTop: 20, width: "100%", height: 44, lineHeight: "44px", background: C.teal, color: C.green900, border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "center", textDecoration: "none" }}>
-                Start 3 months free →
-              </Link>
-            </div>
-          </Reveal>
-        </div>
-
-        <Reveal delay={0.2}>
-          <p style={{ margin: "20px auto 0", maxWidth: 480, textAlign: "center", fontSize: 12, color: C.muted }}>
-            First 3 months free — no charge today. Then $4.99/mo. Cancel anytime.
-          </p>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-/* ── Stories ─────────────────────────────────────────────────────────── */
-function StoriesSection() {
-  const insights = [
-    {
-      quote: "Seeing the date change when I adjusted my savings — that was the moment it clicked.",
-      context: "Beta user",
-    },
-    {
-      quote: "I use 3 apps and a spreadsheet. None of them tell me if I'm actually on track.",
-      context: "Beta survey",
-    },
-    {
-      quote: "Finally an app that tells me what to do, not just where my money went.",
-      context: "Beta user",
-    },
+/* ── How it works ────────────────────────────────────────────────────── */
+function How7() {
+  const steps = [
+    { n: "01", t: "See your freedom date", d: "Enter a few numbers. Get the date when work becomes optional." },
+    { n: "02", t: "Understand what moves it", d: "See which changes shorten your timeline the most." },
+    { n: "03", t: "Take your first step", d: "Get one clear action you can act on today." },
   ];
-
   return (
-    <section id="stories" style={{ background: "#fff", padding: "80px 24px 80px", borderTop: `1px solid ${C.border}` }}>
-      <div style={{ maxWidth: 880, margin: "0 auto" }}>
-        <Reveal>
-          <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(32px, 5vw, 52px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: C.green900, textAlign: "center" }}>
-            What early users say
-          </h2>
-        </Reveal>
-
-        <div style={{ marginTop: 48, display: "grid", gap: 20 }}>
-          {insights.map((t, i) => (
-            <Reveal key={i} delay={i * 0.1}>
-              <div style={{
-                background: C.paperWarm, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24,
-                display: "flex", flexDirection: "column",
-              }}>
-                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: C.green900, fontWeight: 500, fontStyle: "italic" }}>
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: C.muted }}>
-                  — {t.context}
-                </div>
+    <section className="uf7-block" id="how" style={{ ["--uf7hue" as string]: "24deg" }}>
+      <div className="uf7-blob uf7-glow-l" />
+      <div className="uf7-wrap">
+        <div className="uf7-sec-eyebrow uf7-rv">How it works</div>
+        <h2 className="uf7-statement uf7-rv">Three steps between you and <em>your date</em>.</h2>
+        <div className="uf7-rows">
+          {steps.map((s) => (
+            <div className="uf7-row uf7-rv" key={s.n}>
+              <div className="uf7-row-n">{s.n}</div>
+              <div>
+                <h3>{s.t}</h3>
+                <p>{s.d}</p>
               </div>
-            </Reveal>
+            </div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Try it: slider moves the date (real compounding, example household) ── */
+function TryIt7() {
+  const [save, setSave] = useState(EX_SLIDER_DEFAULT);
+  const baselineMonths = useMemo(() => monthsToTarget(EX_PORTFOLIO, EX_SLIDER_DEFAULT, EX_TARGET), []);
+  const months = useMemo(() => monthsToTarget(EX_PORTFOLIO, save, EX_TARGET), [save]);
+  const d = futureDate(months);
+  const savedYears = (baselineMonths - months) / 12;
+
+  return (
+    <section className="uf7-block uf7-center" style={{ ["--uf7hue" as string]: "44deg" }}>
+      <div className="uf7-blob uf7-glow-r" />
+      <div className="uf7-wrap">
+        <div className="uf7-sec-eyebrow uf7-rv">Try it</div>
+        <h2 className="uf7-statement uf7-rv">Move one number.<br />Watch <em>years</em> fall away.</h2>
+        <div className="uf7-slider-stage uf7-rv">
+          <div className="uf7-live-date">{MONTHS[d.getMonth()]} <span className="uf7-year">{d.getFullYear()}</span></div>
+          <div className="uf7-saves">
+            {savedYears > 0.08 ? `↑ that move saves ${savedYears.toFixed(1)} years` : savedYears < -0.08 ? `↓ ${Math.abs(savedYears).toFixed(1)} years later` : " "}
+          </div>
+          <div className="uf7-slider-row">
+            <div className="uf7-slider-label"><span>Monthly savings</span><strong>${save.toLocaleString()}/mo</strong></div>
+            <input
+              type="range"
+              min={500}
+              max={3000}
+              step={100}
+              value={save}
+              onChange={(e) => setSave(+e.target.value)}
+              aria-label="Monthly savings"
+            />
+            <div className="uf7-slider-foot">Example household — spending $3,000/mo with $300K invested. Same math as the calculator.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── The compound gap: one chart, bars vs drift ──────────────────────── */
+function CompoundGap7() {
+  const y0 = new Date().getFullYear();
+  const bars = useMemo(() => Array.from({ length: 26 }, (_, i) => Math.max(3, Math.pow(i / 25, 1.9) * 88)), []);
+  return (
+    <section className="uf7-block" style={{ ["--uf7hue" as string]: "62deg" }}>
+      <div className="uf7-blob uf7-glow-l" />
+      <div className="uf7-wrap">
+        <div className="uf7-sec-eyebrow uf7-rv">The compound gap</div>
+        <h2 className="uf7-statement uf7-rv">Your money compounds.<br />A plan makes it <em>count</em>.</h2>
+        <div className="uf7-runway uf7-rv">
+          <div className="uf7-target-line" />
+          <div className="uf7-target-tag">Your FIRE target</div>
+          <svg className="uf7-drift" viewBox="0 0 800 320" preserveAspectRatio="none" aria-hidden>
+            <path d="M0,312 C260,300 520,268 800,210" fill="none" stroke="rgba(255,255,255,0.38)" strokeWidth="2.5" strokeDasharray="6 8" vectorEffect="non-scaling-stroke" />
+            <circle cx="794" cy="211" r="5" fill="rgba(255,255,255,0.5)" />
+          </svg>
+          {bars.map((h, i) => (
+            <div className="uf7-bar" key={i} style={{ height: `${h}%` }} />
+          ))}
+          <div className="uf7-chart-note uf7-cn-plan">With a plan — {y0 + 11}</div>
+          <div className="uf7-chart-leader" />
+          <div className="uf7-chart-note uf7-cn-base">Drifting — {y0 + 18}</div>
+        </div>
+        <div className="uf7-runway-axis">
+          <span>{y0}</span><span>{y0 + 4}</span><span>{y0 + 9}</span><span>{y0 + 13}</span><span>{y0 + 18}</span>
+        </div>
+        <p className="uf7-earlier uf7-rv">Same savings, guided monthly: <em>{y0 + 11} instead of {y0 + 18}</em>.</p>
+      </div>
+    </section>
+  );
+}
+
+/* ── The world: globe + real city numbers ────────────────────────────── */
+function World7() {
+  const globeRef = useRef<HTMLCanvasElement | null>(null);
+  useCobeGlobe(globeRef, 440, [
+    { location: [18.79, 98.98], size: 0.07 },
+    { location: [19.43, -99.13], size: 0.07 },
+    { location: [38.72, -9.14], size: 0.07 },
+    { location: [35.68, 139.69], size: 0.05 },
+    { location: [51.51, -0.13], size: 0.05 },
+    { location: [37.77, -122.42], size: 0.05 },
+  ], 2.2);
+
+  const rows = useMemo(() => {
+    return WORLD_CITY_KEYS
+      .map((key) => CITIES.find((c) => c.key === key))
+      .filter((c): c is (typeof CITIES)[number] => Boolean(c))
+      .map((c) => {
+        const target = c.col * 25;
+        const ready = target <= WORLD_PORTFOLIO;
+        const year = ready ? null : futureDate(monthsToTarget(WORLD_PORTFOLIO, WORLD_SAVE_MONTHLY, target)).getFullYear();
+        return { name: c.name.split(",")[0], col: c.col, ready, year };
+      });
+  }, []);
+
+  return (
+    <section className="uf7-block" style={{ ["--uf7hue" as string]: "92deg" }}>
+      <div className="uf7-blob uf7-glow-r" />
+      <div className="uf7-stars" aria-hidden />
+      <div className="uf7-wrap uf7-wrap-wide">
+        <div className="uf7-sec-eyebrow uf7-rv">Where will you live it?</div>
+        <h2 className="uf7-statement uf7-rv">Your second life comes with a <em>world</em>.</h2>
+        <div className="uf7-globe-grid">
+          <div className="uf7-globe-stage uf7-rv">
+            <canvas ref={globeRef} style={{ width: "100%", height: "100%" }} />
+          </div>
+          <div className="uf7-rv">
+            {rows.map((r) => (
+              <div className="uf7-city-row" key={r.name}>
+                <span className="uf7-city">{r.name}</span>
+                <span className="uf7-cost">${r.col.toLocaleString()}/yr</span>
+                <span className={r.ready ? "uf7-status uf7-ready" : "uf7-status uf7-later"}>
+                  {r.ready ? "✓ FIRE ready" : r.year}
+                </span>
+              </div>
+            ))}
+            <div className="uf7-globe-foot">
+              Real cost-of-living estimates from our {CITIES.length}-city dataset. Status shown for a $1M portfolio today.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Pricing: editorial columns ──────────────────────────────────────── */
+function Pricing7({ onStart }: { onStart: () => void }) {
+  return (
+    <section className="uf7-block" id="pricing" style={{ ["--uf7hue" as string]: "52deg" }}>
+      <div className="uf7-blob uf7-glow-l" />
+      <div className="uf7-wrap">
+        <div className="uf7-sec-eyebrow uf7-center uf7-rv">Pricing</div>
+        <h2 className="uf7-statement uf7-center uf7-rv">Start free. <i>Stay</i> for the plan.</h2>
+        <div className="uf7-price-cols">
+          <div className="uf7-pcol uf7-rv">
+            <div className="uf7-tier">Free</div>
+            <div className="uf7-amount">$0</div>
+            <ul>
+              <li>Freedom date calculation</li>
+              <li>One clear next move</li>
+              <li>Decision sliders</li>
+              <li>Shareable result card</li>
+            </ul>
+            <button className="uf7-free-cta" onClick={onStart}>Find my second birthday</button>
+          </div>
+          <div className="uf7-pcol uf7-rv">
+            <div className="uf7-tier">Pro</div>
+            <div className="uf7-amount">$4.99 <small>/mo after trial</small></div>
+            <span className="uf7-trial-note">Three months free</span>
+            <ul>
+              <li>Everything in Free</li>
+              <li>Ranked next moves by time saved</li>
+              <li>Action plan from your spending</li>
+              <li>Unlimited bank &amp; brokerage sync</li>
+              <li>Progress tracking &amp; reports</li>
+            </ul>
+            <button className="uf7-pro-cta" onClick={onStart}>Start free trial</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Quote ───────────────────────────────────────────────────────────── */
+function Quote7() {
+  return (
+    <section className="uf7-block uf7-center" style={{ ["--uf7hue" as string]: "30deg" }}>
+      <div className="uf7-wrap">
+        <div className="uf7-quote-mark uf7-rv">“</div>
+        <p className="uf7-big-quote uf7-rv">Seeing the date change when I adjusted my savings — that was the moment it <i>clicked</i>.</p>
+        <div className="uf7-attr uf7-rv">Beta user</div>
       </div>
     </section>
   );
 }
 
 /* ── FAQ ─────────────────────────────────────────────────────────────── */
-function FAQSection() {
+function Faq7() {
   const faqs = [
     {
       q: "What is a freedom date?",
@@ -815,28 +413,18 @@ function FAQSection() {
       a: "No. UntilFire is planning software that helps you understand scenarios and tradeoffs. It does not replace a licensed financial adviser.",
     },
   ];
-
   return (
-    <section id="faq" style={{ background: C.paperWarm, padding: "80px 24px", borderTop: `1px solid ${C.border}` }}>
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <Reveal>
-          <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(32px, 5vw, 48px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: C.green900, textAlign: "center" }}>
-            Common questions
-          </h2>
-        </Reveal>
-
-        <div style={{ marginTop: 40, display: "grid", gap: 12 }}>
-          {faqs.map((faq, i) => (
-            <Reveal key={faq.q} delay={i * 0.06}>
-              <details style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 22px" }}>
-                <summary style={{ cursor: "pointer", fontFamily: F, fontSize: 16, fontWeight: 700, color: C.green900, letterSpacing: "-0.01em" }}>
-                  {faq.q}
-                </summary>
-                <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.65, color: C.body }}>
-                  {faq.a}
-                </p>
-              </details>
-            </Reveal>
+    <section className="uf7-block" id="faq" style={{ ["--uf7hue" as string]: "14deg" }}>
+      <div className="uf7-blob uf7-glow-l" />
+      <div className="uf7-wrap">
+        <div className="uf7-sec-eyebrow uf7-rv">FAQ</div>
+        <h2 className="uf7-statement uf7-rv">Good <i>questions</i>.</h2>
+        <div className="uf7-faq-list">
+          {faqs.map((f, i) => (
+            <details className="uf7-rv" key={f.q} open={i === 0}>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
           ))}
         </div>
       </div>
@@ -844,37 +432,28 @@ function FAQSection() {
   );
 }
 
-/* ── Closing CTA ─────────────────────────────────────────────────────── */
-function ClosingSection({ onStart }: { onStart: () => void }) {
+/* ── Closing ─────────────────────────────────────────────────────────── */
+function Closing7({ onStart }: { onStart: () => void }) {
   return (
-    <section style={{ background: `linear-gradient(180deg, #fff 0%, ${C.mint} 100%)`, padding: "100px 24px 120px", overflow: "hidden" }}>
-      <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center" }}>
-        <Reveal>
-          <h2 style={{ margin: 0, fontFamily: F, fontWeight: 800, fontSize: "clamp(34px, 6vw, 56px)", lineHeight: 1.06, letterSpacing: "-0.03em", color: C.green900 }}>
-            One step toward<br />work optionality.
-          </h2>
-        </Reveal>
-        <Reveal delay={0.12}>
-          <p style={{ margin: "16px 0 0", maxWidth: 360, fontSize: 16, lineHeight: 1.6, color: C.body, fontWeight: 500, marginLeft: "auto", marginRight: "auto" }}>
-            See your freedom date today. No account required.
-          </p>
-        </Reveal>
-        <Reveal delay={0.22}>
-          <div style={{ marginTop: 36 }}>
-            <button onClick={onStart} style={{ height: 56, padding: "0 32px", background: C.green900, color: "#fff", border: "none", borderRadius: 9999, fontFamily: F, fontWeight: 700, fontSize: 17, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 12px 32px rgba(0,53,39,0.22)" }}>
-              See my freedom date →
-            </button>
-          </div>
-        </Reveal>
+    <section className="uf7-block uf7-closing" style={{ ["--uf7hue" as string]: "0deg" }}>
+      <div className="uf7-blob uf7-close-a" />
+      <div className="uf7-blob uf7-close-b" />
+      <div className="uf7-wrap">
+        <h2 className="uf7-closing-h uf7-rv">Your second life<br />is <i>waiting</i>.</h2>
+        <p className="uf7-closing-sub uf7-rv">Find your second birthday — free, no login, about 60 seconds.</p>
+        <button className="uf7-cta uf7-rv" onClick={onStart} style={{ marginTop: 38 }}>
+          Find my second birthday <span className="uf7-arrow">→</span>
+        </button>
       </div>
     </section>
   );
 }
 
+
 /* ── Footer ──────────────────────────────────────────────────────────── */
 function FooterSection() {
   return (
-    <footer style={{ background: C.mint, padding: "48px 24px 32px" }}>
+    <footer style={{ background: "#030d0a", borderTop: "1px solid rgba(255,255,255,0.08)", padding: "48px 24px 32px" }}>
       <div style={{ maxWidth: 800, margin: "0 auto" }}>
         {/* Links */}
         <div style={{ display: "flex", justifyContent: "center", gap: 28, flexWrap: "wrap", marginBottom: 32 }}>
@@ -884,21 +463,21 @@ function FooterSection() {
             ["Pricing", "#pricing"],
             ["FAQ", "#faq"],
           ].map(([label, href]) => (
-            <a key={label} href={href} style={{ fontSize: 14, fontWeight: 600, color: C.green900, textDecoration: "none" }}>{label}</a>
+            <a key={label} href={href} style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.72)", textDecoration: "none" }}>{label}</a>
           ))}
         </div>
 
         {/* Wordmark */}
         <div style={{
           fontFamily: F, fontWeight: 800, fontSize: "clamp(56px, 14vw, 140px)", lineHeight: 0.85,
-          letterSpacing: "-0.05em", textAlign: "center", color: C.green900,
-          opacity: 0.25,
+          letterSpacing: "-0.05em", textAlign: "center", color: "#ffffff",
+          opacity: 0.08,
         }}>
           untilfire
         </div>
 
         {/* Bottom */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 12, color: C.green700, fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 12, color: "rgba(255,255,255,0.45)", fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
           <span>© 2026 UntilFire</span>
           <a
             href="https://startupfa.st/projects/untilfire"
@@ -951,6 +530,20 @@ function FooterSection() {
               src="https://stackdirectory.com/assets/images/badge.png"
               alt="Stack Directory"
               height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://launchstag.com"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://launchstag.com/badge-dark.svg"
+              alt="Featured on Launchstag"
+              width={198}
+              height={62}
               loading="lazy"
             />
           </a>
@@ -1081,19 +674,279 @@ function FooterSection() {
   );
 }
 
-/* ── Root ────────────────────────────────────────────────────────────── */
+
+
+const CSS7 = `
+  .uf7-root { background: #04110c; color: #fff; overflow-x: hidden; }
+  .uf7-root * { box-sizing: border-box; }
+  .uf7-grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 40;
+    opacity: 0.45; mix-blend-mode: overlay;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.55"/></svg>');
+  }
+  .uf7-blob { position: absolute; border-radius: 50%; filter: blur(90px) hue-rotate(calc(var(--uf7hue, 0deg) + var(--uf7shue, 0deg))); pointer-events: none; }
+  @keyframes uf7drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px,34px) scale(1.09); } }
+  @keyframes uf7drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-44px,-28px) scale(1.06); } }
+  @media (prefers-reduced-motion: reduce) {
+    .uf7-blob { animation: none !important; }
+    .uf7-rv { opacity: 1 !important; transform: none !important; }
+  }
+  .uf7-rv { opacity: 0; transform: translateY(26px); transition: opacity 0.75s ease, transform 0.75s cubic-bezier(0.22,1,0.36,1); }
+  .uf7-rv.uf7-vis { opacity: 1; transform: none; }
+
+  .uf7-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    background: rgba(4,17,12,0.5); backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .uf7-nav-links { display: flex; gap: 26px; }
+  .uf7-nav-links a { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.72); text-decoration: none; }
+  .uf7-nav-cta {
+    padding: 9px 18px; border-radius: 2px; border: none; cursor: pointer;
+    font-family: ${F}; font-size: 13px; font-weight: 700; color: #04110c; background: rgba(255,255,255,0.92);
+  }
+
+  .uf7-hero {
+    position: relative; min-height: 100vh; overflow: hidden; text-align: center;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 150px 24px 220px;
+    background: radial-gradient(1100px 700px at 50% 118%, #0a2f22 0%, transparent 60%), #04110c;
+  }
+  .uf7-hb1 { width: 820px; height: 660px; top: -240px; left: -180px; background: radial-gradient(circle at 40% 40%, rgba(34,211,165,0.58), transparent 65%); animation: uf7drift1 24s ease-in-out infinite; }
+  .uf7-hb2 { width: 760px; height: 660px; top: -160px; right: -240px; background: radial-gradient(circle at 55% 45%, rgba(79,70,229,0.40), transparent 65%); animation: uf7drift2 30s ease-in-out infinite; }
+  .uf7-hb3 { width: 620px; height: 560px; bottom: -220px; left: 6%; background: radial-gradient(circle at 50% 50%, rgba(98,250,227,0.3), transparent 65%); animation: uf7drift2 34s ease-in-out infinite reverse; }
+  .uf7-hb4 { width: 540px; height: 500px; bottom: -160px; right: 4%; background: radial-gradient(circle at 50% 50%, rgba(30,64,175,0.28), transparent 62%); animation: uf7drift1 38s ease-in-out infinite reverse; }
+  .uf7-dawn {
+    position: absolute; z-index: 2; left: 50%; bottom: calc(-0.80 * min(1400px, 170vw)); transform: translateX(-50%);
+    width: min(1400px, 170vw); aspect-ratio: 1; pointer-events: none;
+  }
+  .uf7-dawn-glow {
+    position: absolute; z-index: 1; left: 50%; bottom: -8%; transform: translateX(-50%);
+    width: min(1100px, 140vw); height: 380px; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 100%, rgba(98,250,227,0.34) 0%, rgba(34,211,165,0.14) 42%, transparent 70%);
+    filter: blur(28px) hue-rotate(calc(var(--uf7hue, 0deg) + var(--uf7shue, 0deg)));
+  }
+  .uf7-ticker {
+    position: absolute; top: 58px; left: 0; right: 0; z-index: 5;
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+    gap: 8px 26px; padding: 11px 20px;
+    border-top: 1px solid rgba(255,255,255,0.09); border-bottom: 1px solid rgba(255,255,255,0.09);
+    font-family: ${MONO};
+    font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(255,255,255,0.5); font-variant-numeric: tabular-nums;
+  }
+  .uf7-ticker b { color: rgba(255,255,255,0.9); font-weight: 500; }
+  .uf7-t-item { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .uf7-tsep { opacity: 0.3; }
+  .uf7-ldot { width: 7px; height: 7px; border-radius: 99px; background: #62fae3; box-shadow: 0 0 10px rgba(98,250,227,0.9); animation: uf7breathe 2.4s ease-in-out infinite; }
+  @keyframes uf7breathe { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .uf7-ldot { animation: none; } }
+
+  .uf7-eyebrow { position: relative; z-index: 4; font-size: 12px; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; color: #62fae3; }
+  .uf7-h1 {
+    position: relative; z-index: 4; margin: 18px 0 0; font-family: ${SERIF}; font-weight: 400;
+    font-size: clamp(48px, 7.4vw, 88px); line-height: 1.04; letter-spacing: -0.02em;
+    color: rgba(255,255,255,0.96); text-shadow: 0 3px 60px rgba(0,0,0,0.4);
+  }
+  .uf7-h1 i { font-style: italic; }
+  .uf7-note { position: relative; z-index: 4; margin: 26px auto 0; max-width: 520px; font-size: 16px; line-height: 1.6; font-weight: 500; color: rgba(255,255,255,0.75); }
+  .uf7-countdown {
+    position: relative; z-index: 4; margin-top: 20px;
+    font-family: ${MONO};
+    font-size: clamp(12px, 1.6vw, 16px); letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums;
+  }
+  .uf7-countdown b { color: #62fae3; font-weight: 500; }
+  .uf7-cta {
+    position: relative; z-index: 4; margin-top: 36px;
+    display: inline-flex; align-items: center; gap: 10px;
+    height: 60px; padding: 0 38px; border-radius: 2px; cursor: pointer;
+    background: rgba(5,14,11,0.72); border: 1px solid rgba(255,255,255,0.22);
+    backdrop-filter: blur(14px); color: #fff; font-family: ${F}; font-size: 17px; font-weight: 700;
+    box-shadow: 0 0 0 1px rgba(98,250,227,0.12), 0 0 44px rgba(34,211,165,0.32), 0 18px 40px rgba(0,0,0,0.4);
+  }
+  .uf7-arrow { color: #62fae3; }
+  .uf7-micro { position: relative; z-index: 4; margin-top: 16px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); }
+
+  .uf7-block { position: relative; overflow: hidden; padding: 110px 24px; background: #04110c; }
+  .uf7-wrap { position: relative; z-index: 4; max-width: 920px; margin: 0 auto; }
+  .uf7-wrap-wide { max-width: 1040px; }
+  .uf7-center { text-align: center; }
+  .uf7-sec-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.26em; text-transform: uppercase; color: #62fae3; }
+  .uf7-statement { margin: 18px 0 0; font-family: ${SERIF}; font-weight: 400; font-size: clamp(28px, 4.4vw, 46px); line-height: 1.2; letter-spacing: -0.02em; }
+  .uf7-statement em, .uf7-statement i { font-style: italic; }
+  .uf7-statement em { color: #62fae3; }
+  .uf7-glow-l { width: 640px; height: 520px; top: -180px; left: -260px; background: radial-gradient(circle, rgba(34,211,165,0.18), transparent 62%); animation: uf7drift1 36s ease-in-out infinite; }
+  .uf7-glow-r { width: 700px; height: 560px; top: -160px; right: -280px; background: radial-gradient(circle, rgba(79,70,229,0.2), transparent 62%); animation: uf7drift2 40s ease-in-out infinite; }
+
+  .uf7-rows { margin-top: 60px; }
+  .uf7-row { display: grid; grid-template-columns: 110px 1fr; gap: 28px; align-items: baseline; padding: 32px 0; border-top: 1px solid rgba(255,255,255,0.14); }
+  .uf7-row:last-child { border-bottom: 1px solid rgba(255,255,255,0.14); }
+  .uf7-row-n { font-family: ${SERIF}; font-size: clamp(38px, 5vw, 54px); color: rgba(98,250,227,0.85); line-height: 1; }
+  .uf7-row h3 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.015em; }
+  .uf7-row p { margin: 8px 0 0; font-size: 15px; line-height: 1.65; color: rgba(255,255,255,0.68); max-width: 460px; }
+
+  .uf7-slider-stage { margin-top: 64px; }
+  .uf7-live-date { font-family: ${SERIF}; font-size: clamp(52px, 8vw, 96px); line-height: 1; letter-spacing: -0.02em; text-shadow: 0 4px 60px rgba(34,211,165,0.3); }
+  .uf7-year { color: #62fae3; }
+  .uf7-saves { margin-top: 14px; font-size: 14px; font-weight: 700; color: #62fae3; min-height: 20px; }
+  .uf7-slider-row { margin: 44px auto 0; max-width: 560px; }
+  .uf7-slider-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.68); margin-bottom: 14px; }
+  .uf7-slider-label strong { color: #fff; font-variant-numeric: tabular-nums; }
+  .uf7-slider-row input[type="range"] { width: 100%; appearance: none; -webkit-appearance: none; height: 3px; border-radius: 99px; background: linear-gradient(90deg, #22d3a5, rgba(255,255,255,0.15)); outline: none; }
+  .uf7-slider-row input[type="range"]::-webkit-slider-thumb {
+    appearance: none; -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%;
+    background: #62fae3; border: 3px solid #04110c;
+    box-shadow: 0 0 0 1px rgba(98,250,227,0.6), 0 0 24px rgba(98,250,227,0.55); cursor: pointer;
+  }
+  .uf7-slider-row input[type="range"]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #62fae3; border: 3px solid #04110c;
+    box-shadow: 0 0 0 1px rgba(98,250,227,0.6), 0 0 24px rgba(98,250,227,0.55); cursor: pointer;
+  }
+  .uf7-slider-foot { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.42); }
+
+  .uf7-runway { margin-top: 70px; position: relative; height: 320px; display: flex; align-items: flex-end; gap: 6px; }
+  .uf7-bar { flex: 1; border-radius: 3px 3px 1px 1px; background: linear-gradient(180deg, rgba(98,250,227,0.95), rgba(34,211,165,0.25)); transform-origin: bottom; }
+  .uf7-target-line { position: absolute; left: 0; right: 0; top: 12%; border-top: 2px dashed rgba(98,250,227,0.5); }
+  .uf7-target-tag { position: absolute; right: 0; top: 12%; transform: translateY(-130%); font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #62fae3; }
+  .uf7-drift { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .uf7-chart-note { position: absolute; white-space: nowrap; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; }
+  .uf7-cn-plan { top: -12%; right: 0; color: #62fae3; }
+  .uf7-cn-base { top: 56%; right: 0; color: rgba(255,255,255,0.48); }
+  .uf7-chart-leader { position: absolute; top: -5%; right: 10px; height: 13%; width: 1px; background: rgba(98,250,227,0.45); }
+  .uf7-runway-axis { display: flex; justify-content: space-between; margin-top: 14px; font-family: ${MONO}; font-size: 11px; color: rgba(255,255,255,0.45); }
+  .uf7-earlier { margin-top: 34px; font-family: ${SERIF}; font-size: clamp(22px, 3vw, 30px); }
+  .uf7-earlier em { color: #62fae3; font-style: italic; }
+
+  .uf7-stars {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0.7;
+    background-image:
+      radial-gradient(1.2px 1.2px at 12% 22%, rgba(255,255,255,0.7), transparent 100%),
+      radial-gradient(1px 1px at 28% 64%, rgba(255,255,255,0.45), transparent 100%),
+      radial-gradient(1.4px 1.4px at 43% 12%, rgba(255,255,255,0.6), transparent 100%),
+      radial-gradient(1px 1px at 61% 38%, rgba(255,255,255,0.4), transparent 100%),
+      radial-gradient(1.3px 1.3px at 74% 70%, rgba(255,255,255,0.55), transparent 100%),
+      radial-gradient(1px 1px at 87% 18%, rgba(255,255,255,0.5), transparent 100%),
+      radial-gradient(1.1px 1.1px at 52% 86%, rgba(255,255,255,0.4), transparent 100%),
+      radial-gradient(1.3px 1.3px at 8% 78%, rgba(255,255,255,0.5), transparent 100%);
+  }
+  .uf7-globe-grid { margin-top: 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+  .uf7-globe-stage { position: relative; aspect-ratio: 1; width: min(440px, 100%); justify-self: center; }
+  .uf7-city-row { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: baseline; padding: 17px 0; border-top: 1px solid rgba(255,255,255,0.14); }
+  .uf7-city-row:last-of-type { border-bottom: 1px solid rgba(255,255,255,0.14); }
+  .uf7-city { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .uf7-cost { font-size: 14px; color: rgba(255,255,255,0.68); font-variant-numeric: tabular-nums; }
+  .uf7-status { font-family: ${MONO}; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; }
+  .uf7-ready { color: #62fae3; }
+  .uf7-later { color: rgba(255,255,255,0.45); }
+  .uf7-globe-foot { margin-top: 22px; font-size: 12.5px; color: rgba(255,255,255,0.5); }
+
+  .uf7-price-cols { margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; }
+  .uf7-pcol { padding: 8px 44px 8px 0; }
+  .uf7-pcol + .uf7-pcol { border-left: 1px solid rgba(255,255,255,0.14); padding: 8px 0 8px 44px; }
+  .uf7-tier { font-size: 13px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+  .uf7-amount { margin-top: 14px; font-family: ${SERIF}; font-size: clamp(40px, 5vw, 56px); line-height: 1; }
+  .uf7-amount small { font-size: 15px; color: rgba(255,255,255,0.68); font-family: ${F}; font-weight: 600; }
+  .uf7-trial-note { display: block; margin-top: 12px; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #62fae3; }
+  .uf7-pcol ul { margin: 26px 0 0; padding: 0; list-style: none; }
+  .uf7-pcol li { font-size: 14.5px; line-height: 1.5; color: rgba(255,255,255,0.78); padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.07); }
+  .uf7-pcol li:first-child { border-top: none; }
+  .uf7-pro-cta { margin-top: 28px; display: inline-block; padding: 14px 34px; border-radius: 2px; border: none; cursor: pointer; font-size: 14.5px; font-weight: 800; color: #04110c; background: linear-gradient(90deg, #b8ffe9, #62fae3 50%, #22d3a5); box-shadow: 0 14px 34px rgba(34,211,165,0.26); font-family: ${F}; }
+  .uf7-free-cta { margin-top: 28px; display: inline-block; padding: 13px 30px; border-radius: 2px; cursor: pointer; font-size: 14.5px; font-weight: 700; color: #fff; background: rgba(5,14,11,0.6); border: 1px solid rgba(255,255,255,0.22); font-family: ${F}; }
+
+  .uf7-quote-mark { font-family: ${SERIF}; font-size: 90px; line-height: 0.4; color: rgba(98,250,227,0.5); }
+  .uf7-big-quote { margin: 34px auto 0; font-family: ${SERIF}; font-size: clamp(26px, 4vw, 40px); line-height: 1.3; max-width: 780px; }
+  .uf7-attr { margin-top: 30px; font-size: 12px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+
+  .uf7-faq-list { margin-top: 56px; }
+  .uf7-faq-list details { border-top: 1px solid rgba(255,255,255,0.14); padding: 24px 4px; }
+  .uf7-faq-list details:last-child { border-bottom: 1px solid rgba(255,255,255,0.14); }
+  .uf7-faq-list summary { cursor: pointer; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  .uf7-faq-list summary::-webkit-details-marker { display: none; }
+  .uf7-faq-list summary::after { content: "+"; color: #62fae3; font-size: 22px; font-weight: 500; }
+  .uf7-faq-list details[open] summary::after { content: "–"; }
+  .uf7-faq-list details p { margin: 14px 0 0; font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.68); max-width: 640px; }
+
+  .uf7-closing { text-align: center; padding: 150px 24px 160px; }
+  .uf7-closing-h { margin: 0; font-family: ${SERIF}; font-weight: 400; font-size: clamp(40px, 6.6vw, 68px); line-height: 1.06; letter-spacing: -0.02em; }
+  .uf7-closing-sub { margin: 22px auto 0; max-width: 420px; font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.68); }
+  .uf7-close-a { width: 760px; height: 560px; bottom: -260px; left: 50%; transform: translateX(-58%); background: radial-gradient(circle, rgba(34,211,165,0.28), transparent 62%); animation: uf7drift1 30s ease-in-out infinite; }
+  .uf7-close-b { width: 560px; height: 480px; bottom: -200px; right: -160px; background: radial-gradient(circle, rgba(79,70,229,0.28), transparent 62%); animation: uf7drift2 34s ease-in-out infinite; }
+
+  @media (max-width: 760px) {
+    .uf7-nav-links { display: none; }
+    .uf7-hero { padding: 130px 20px 190px; }
+    .uf7-block { padding: 88px 20px; }
+    .uf7-row { grid-template-columns: 60px 1fr; gap: 18px; padding: 28px 0; }
+    .uf7-globe-grid { grid-template-columns: 1fr; gap: 40px; }
+    .uf7-runway { height: 220px; gap: 3px; }
+    .uf7-price-cols { grid-template-columns: 1fr; }
+    .uf7-pcol { padding: 8px 0 40px; }
+    .uf7-pcol + .uf7-pcol { border-left: none; border-top: 1px solid rgba(255,255,255,0.14); padding: 40px 0 8px; }
+  }
+`;
+
+/* ── Page ────────────────────────────────────────────────────────────── */
 export default function LandingPage({ onStart }: { onStart: () => void }) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const items = Array.from(root.querySelectorAll<HTMLElement>(".uf7-rv"));
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let io: IntersectionObserver | null = null;
+    if (reduceMotion || typeof IntersectionObserver === "undefined") {
+      items.forEach((el) => el.classList.add("uf7-vis"));
+    } else {
+      io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("uf7-vis");
+          io?.unobserve(entry.target);
+        });
+      }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
+      items.forEach((el) => io?.observe(el));
+    }
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        const p = max > 0 ? window.scrollY / max : 0;
+        root.style.setProperty("--uf7shue", (p * 26).toFixed(1) + "deg");
+        ticking = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      io?.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   return (
-    <div style={{ fontFamily: F, overflowX: "hidden" }}>
-      <LandingNav onStart={onStart} />
-      <HeroSection onStart={onStart} />
-      <HowSection />
-      <WhySection />
-      <PricingSection onStart={onStart} />
-      <StoriesSection />
-      <FAQSection />
-      <ClosingSection onStart={onStart} />
+    <div ref={rootRef} className="uf7-root" style={{ fontFamily: F }}>
+      <div className="uf7-grain" aria-hidden />
+      <Nav7 onStart={onStart} />
+      <Hero7 onStart={onStart} />
+      <How7 />
+      <TryIt7 />
+      <CompoundGap7 />
+      <World7 />
+      <Pricing7 onStart={onStart} />
+      <Quote7 />
+      <Faq7 />
+      <Closing7 onStart={onStart} />
       <FooterSection />
+      <style>{CSS7}</style>
     </div>
   );
 }
