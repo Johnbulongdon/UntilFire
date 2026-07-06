@@ -210,11 +210,6 @@ function Hero7({ onStart }: { onStart: () => void }) {
             ))}
           </div>
         </div>
-        <div className="uf7-trust-cues">
-          <span>🔒 Bank-level encryption</span>
-          <span>👁 Read-only access</span>
-          <span>🔐 Your data stays yours</span>
-        </div>
       </div>
     </section>
   );
@@ -793,18 +788,15 @@ const CSS7 = `
     margin: 0; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.14em;
     text-transform: uppercase; color: rgba(255,255,255,0.42); text-align: center;
   }
-  .uf7-trust-strip { position: relative; overflow: hidden; margin-top: 18px; width: 100%; }
-  .uf7-trust-strip::before, .uf7-trust-strip::after {
-    content: ""; position: absolute; top: 0; bottom: 0; width: 48px; z-index: 2; pointer-events: none;
+  .uf7-trust-strip {
+    position: relative; overflow: hidden; margin-top: 18px; width: 100%;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
   }
-  .uf7-trust-strip::before { left: 0; background: linear-gradient(90deg, #04110c 0%, transparent 100%); }
-  .uf7-trust-strip::after { right: 0; background: linear-gradient(-90deg, #04110c 0%, transparent 100%); }
   .uf7-trust-track { display: flex; gap: 16px; align-items: center; width: max-content; animation: uf7trustScroll 30s linear infinite; }
   @media (prefers-reduced-motion: reduce) { .uf7-trust-track { animation: none; } }
   @keyframes uf7trustScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
   .uf7-trust-logo { border-radius: 8px; object-fit: cover; opacity: 0.75; flex-shrink: 0; filter: grayscale(0.15); }
-  .uf7-trust-cues { margin-top: 20px; display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
-  .uf7-trust-cues span { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.5); }
 
   .uf7-block { position: relative; overflow: hidden; padding: 110px 24px; background: #04110c; }
   .uf7-wrap { position: relative; z-index: 4; max-width: 920px; margin: 0 auto; }
