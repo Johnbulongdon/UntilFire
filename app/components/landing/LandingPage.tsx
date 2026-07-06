@@ -40,6 +40,21 @@ const WORLD_PORTFOLIO = 1000000;
 const WORLD_SAVE_MONTHLY = 2000;
 const WORLD_CITY_KEYS = ["chiangmai", "mexicocity", "lisbon", "tokyo", "london", "sf"];
 
+const TRUST_LOGOS = [
+  { name: "Chase", file: "chase.jpg" },
+  { name: "Fidelity", file: "fidelity.jpg" },
+  { name: "Vanguard", file: "vanguard.jpg" },
+  { name: "Schwab", file: "schwab.jpg" },
+  { name: "Bank of America", file: "bank-of-america.jpg" },
+  { name: "Wells Fargo", file: "wells-fargo.jpg" },
+  { name: "SoFi", file: "sofi.jpg" },
+  { name: "Robinhood", file: "robinhood.jpg" },
+  { name: "Amex", file: "amex.jpg" },
+  { name: "Citi", file: "citi.jpg" },
+  { name: "US Bank", file: "us-bank.jpg" },
+  { name: "Discover", file: "discover.jpg" },
+];
+
 function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: number, markers: { location: [number, number]; size: number }[], startPhi: number) {
   useEffect(() => {
     let cancelled = false;
@@ -164,13 +179,6 @@ function Hero7({ onStart }: { onStart: () => void }) {
         <canvas ref={dawnRef} style={{ width: "100%", height: "100%" }} />
       </div>
 
-      <div className="uf7-ticker" aria-label="Model assumptions">
-        <span className="uf7-t-item"><span className="uf7-ldot" /> LIVE</span><span className="uf7-tsep">/</span>
-        <span className="uf7-t-item"><b>{CITIES.length}</b> cities tracked</span><span className="uf7-tsep">/</span>
-        <span className="uf7-t-item"><b>25×</b> rule · <b>4%</b> SWR</span><span className="uf7-tsep">/</span>
-        <span className="uf7-t-item"><b>7%</b> growth model</span>
-      </div>
-
       <div className="uf7-eyebrow">Finance your freedom</div>
       <h1 className="uf7-h1">You are born <i>twice</i>.</h1>
       <p className="uf7-note">
@@ -182,6 +190,32 @@ function Hero7({ onStart }: { onStart: () => void }) {
         Find my second birthday <span className="uf7-arrow">→</span>
       </button>
       <p className="uf7-micro">Free · No account · Numbers stay private</p>
+
+      <div className="uf7-trust">
+        <p className="uf7-trust-label">Securely connects to 14,000+ banks &amp; brokerages</p>
+        <div className="uf7-trust-strip">
+          <div className="uf7-trust-track">
+            {[...TRUST_LOGOS, ...TRUST_LOGOS].map((logo, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={logo.name + i}
+                src={`/app-icons/${logo.file}`}
+                alt={i < TRUST_LOGOS.length ? logo.name : ""}
+                aria-hidden={i >= TRUST_LOGOS.length}
+                width={36}
+                height={36}
+                className="uf7-trust-logo"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        </div>
+        <div className="uf7-trust-cues">
+          <span>🔒 Bank-level encryption</span>
+          <span>👁 Read-only access</span>
+          <span>🔐 Your data stays yours</span>
+        </div>
+      </div>
     </section>
   );
 }
@@ -728,22 +762,6 @@ const CSS7 = `
     background: radial-gradient(ellipse at 50% 100%, rgba(98,250,227,0.34) 0%, rgba(34,211,165,0.14) 42%, transparent 70%);
     filter: blur(28px) hue-rotate(calc(var(--uf7hue, 0deg) + var(--uf7shue, 0deg)));
   }
-  .uf7-ticker {
-    position: absolute; top: 58px; left: 0; right: 0; z-index: 5;
-    display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
-    gap: 8px 26px; padding: 11px 20px;
-    border-top: 1px solid rgba(255,255,255,0.09); border-bottom: 1px solid rgba(255,255,255,0.09);
-    font-family: ${MONO};
-    font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
-    color: rgba(255,255,255,0.5); font-variant-numeric: tabular-nums;
-  }
-  .uf7-ticker b { color: rgba(255,255,255,0.9); font-weight: 500; }
-  .uf7-t-item { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
-  .uf7-tsep { opacity: 0.3; }
-  .uf7-ldot { width: 7px; height: 7px; border-radius: 99px; background: #62fae3; box-shadow: 0 0 10px rgba(98,250,227,0.9); animation: uf7breathe 2.4s ease-in-out infinite; }
-  @keyframes uf7breathe { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-  @media (prefers-reduced-motion: reduce) { .uf7-ldot { animation: none; } }
-
   .uf7-eyebrow { position: relative; z-index: 4; font-size: 12px; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; color: #62fae3; }
   .uf7-h1 {
     position: relative; z-index: 4; margin: 18px 0 0; font-family: ${SERIF}; font-weight: 400;
@@ -769,6 +787,24 @@ const CSS7 = `
   }
   .uf7-arrow { color: #62fae3; }
   .uf7-micro { position: relative; z-index: 4; margin-top: 16px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); }
+
+  .uf7-trust { position: relative; z-index: 4; margin-top: 44px; width: 100%; max-width: 720px; }
+  .uf7-trust-label {
+    margin: 0; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.14em;
+    text-transform: uppercase; color: rgba(255,255,255,0.42); text-align: center;
+  }
+  .uf7-trust-strip { position: relative; overflow: hidden; margin-top: 18px; width: 100%; }
+  .uf7-trust-strip::before, .uf7-trust-strip::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 48px; z-index: 2; pointer-events: none;
+  }
+  .uf7-trust-strip::before { left: 0; background: linear-gradient(90deg, #04110c 0%, transparent 100%); }
+  .uf7-trust-strip::after { right: 0; background: linear-gradient(-90deg, #04110c 0%, transparent 100%); }
+  .uf7-trust-track { display: flex; gap: 16px; align-items: center; width: max-content; animation: uf7trustScroll 30s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .uf7-trust-track { animation: none; } }
+  @keyframes uf7trustScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  .uf7-trust-logo { border-radius: 8px; object-fit: cover; opacity: 0.75; flex-shrink: 0; filter: grayscale(0.15); }
+  .uf7-trust-cues { margin-top: 20px; display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+  .uf7-trust-cues span { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.5); }
 
   .uf7-block { position: relative; overflow: hidden; padding: 110px 24px; background: #04110c; }
   .uf7-wrap { position: relative; z-index: 4; max-width: 920px; margin: 0 auto; }
