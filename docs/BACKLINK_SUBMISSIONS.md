@@ -1,6 +1,6 @@
 # Backlink Submission Log
 
-Last updated: 2026-06-23
+Last updated: 2026-07-07
 
 This file tracks directory submissions for `https://www.untilfire.com`.
 
@@ -118,6 +118,47 @@ Notes:
   - success page said `Nice work — you're in the queue`
   - pending listing slug is `https://marketingdb.live/project/untilfire`
   - direct public page currently returns 404 until approval; page copy says approved listings become public and indexed
+
+## Badge Added Directly (Submission Details Unconfirmed)
+
+Badge embeds for these were provided directly (not run through the agent submission flow above), so DR and dofollow status are unconfirmed. Live in the site footer as of 2026-07-07.
+
+### Launchstag
+- URL: `https://launchstag.com`
+- Status: badge added to site footer
+- DR: not verified
+- Auth: n/a
+- Payment: unknown
+- Notes:
+  - badge markup only; no listing URL, DR, or dofollow status confirmed
+
+### SaaS City
+- URL: `https://saascity.io/live/untilfire`
+- Status: badge added to site footer
+- DR: not verified
+- Auth: n/a
+- Payment: unknown
+- Notes:
+  - badge markup only; no listing URL, DR, or dofollow status confirmed
+
+### LaunchBuff
+- URL: `https://launchbuff.com`
+- Status: badge added to site footer
+- DR: not verified
+- Auth: n/a
+- Payment: unknown
+- Notes:
+  - badge markup only; no listing URL, DR, or dofollow status confirmed
+
+### StartupList.ing
+- URL: `https://startuplist.ing/p/xoooie?utm_source=www.untilfire.com`
+- Status: badge added to site footer
+- DR: not verified
+- Auth: n/a
+- Payment: unknown
+- Notes:
+  - **dofollow status not yet confirmed** — compare against Noonlaunch (confirmed `nofollow`) and StartupLibrary (claims permanent dofollow) once checked
+  - badge markup only; no DR confirmed
 
 ## Already Done / Previously Confirmed
 
@@ -334,3 +375,4 @@ Notes:
   - Sidehunt
   - StartupOG
 - Check whether Startup Spotlight, StartupBase, Noonlaunch, MarketingDB, and FirstLook approve their pending reviews.
+- Confirm dofollow status and DR for the directly-added badges: Launchstag, SaaS City, LaunchBuff, StartupList.ing.
