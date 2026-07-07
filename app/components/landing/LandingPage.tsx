@@ -591,6 +591,21 @@ function FooterSection() {
             />
           </a>
           <a
+            href="https://launchbuff.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Featured on LaunchBuff"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://launchbuff.com/badge-featured-dark.svg"
+              alt="Featured on LaunchBuff"
+              width={256}
+              height={80}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://startups.fm/startups/untilfire"
             target="_blank"
             rel="noreferrer noopener"
