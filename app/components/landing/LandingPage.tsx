@@ -606,6 +606,20 @@ function FooterSection() {
             />
           </a>
           <a
+            href="https://startuplist.ing/p/xoooie?utm_source=www.untilfire.com"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://startuplist.ing/badges/dark-normal.svg"
+              alt="Featured on StartupList.ing"
+              width={171}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://startups.fm/startups/untilfire"
             target="_blank"
             rel="noreferrer noopener"
