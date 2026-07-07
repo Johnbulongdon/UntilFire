@@ -247,18 +247,18 @@ const CURRENCY_FLAG: Partial<Record<SupportedCurrency, string>> = {
 
 const CURRENCY_CONFETTI_COLORS: Record<string, string[]> = {
   USD: ["#B22234", "#FFFFFF", "#3C3B6E", "#B22234", "#FFFFFF", "#3C3B6E"],
-  EUR: ["#003399", "#FFCC00", "#003399", "#FFCC00", "#FFFFFF"],
+  EUR: ["#003399", "#62FAE3", "#003399", "#62FAE3", "#FFFFFF"],
   GBP: ["#CF142B", "#FFFFFF", "#00247D", "#CF142B", "#FFFFFF"],
   CAD: ["#FF0000", "#FFFFFF", "#FF0000", "#FFFFFF"],
-  AUD: ["#00008B", "#FF0000", "#FFFFFF", "#FFCC00", "#00008B"],
+  AUD: ["#00008B", "#FF0000", "#FFFFFF", "#62FAE3", "#00008B"],
   SGD: ["#EF3340", "#FFFFFF", "#EF3340", "#FFFFFF"],
-  INR: ["#FF9933", "#FFFFFF", "#138808", "#000080"],
+  INR: ["#22D3A5", "#FFFFFF", "#138808", "#000080"],
   JPY: ["#FFFFFF", "#BC002D", "#FFFFFF", "#BC002D"],
   CHF: ["#FF0000", "#FFFFFF", "#FF0000", "#FFFFFF"],
   NZD: ["#00247D", "#CC142B", "#FFFFFF", "#000000", "#CC142B"],
 };
 
-const DEFAULT_CONFETTI_COLORS = ["#62FAE3", "#9FE870", "#FDE68A", "#FCA5A5", "#A7F3D0"];
+const DEFAULT_CONFETTI_COLORS = ["#62FAE3", "#22D3A5", "#A7F3D0", "#FFFFFF", "#B8FFE9"];
 
 const CONFETTI_POSITIONS = [
   { left: "3%", x: "-160px", r: "-200deg", delay: "0.00s" },
@@ -1258,11 +1258,11 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
       tl.fromTo('[data-gsap="chip"]', { opacity: 0, y: -12, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.42 })
         .fromTo('[data-gsap="date-label"]', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.42 }, "-=0.12")
-        .fromTo('[data-gsap="date-date"]', { opacity: 0, y: 46, scale: 0.92, filter: "blur(8px)" }, { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: reduceMotion ? 0.01 : 0.78, ease: "back.out(1.08)" }, "-=0.18")
+        .fromTo('[data-gsap="date-date"]', { opacity: 0, y: 46, scale: 0.92, filter: "blur(8px)" }, { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: reduceMotion ? 0.01 : 0.78, ease: "power3.out" }, "-=0.18")
         .fromTo('[data-gsap="date-sub"]', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.36")
         .fromTo('[data-gsap="runway-copy"]', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.46 }, "-=0.18")
         .fromTo('[data-gsap="runway-plot"]', { opacity: 0, y: 26, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.58 }, "-=0.34")
-        .fromTo('.uf-bridge-column-bars', { opacity: 0, y: 18, scaleY: 0.42, transformOrigin: "bottom center" }, { opacity: 1, y: 0, scaleY: 1, duration: reduceMotion ? 0.01 : 0.95, ease: "elastic.out(1, 0.72)", stagger: { amount: 0.08, from: "start" } }, "-=0.2")
+        .fromTo('.uf-bridge-column-bars', { opacity: 0, y: 18, scaleY: 0.42, transformOrigin: "bottom center" }, { opacity: 1, y: 0, scaleY: 1, duration: reduceMotion ? 0.01 : 0.72, ease: "power3.out", stagger: 0 }, "-=0.2")
         .fromTo('[data-gsap="fire-right"]', { opacity: 0, x: 26, scale: 0.98 }, { opacity: 1, x: 0, scale: 1, duration: 0.62 }, "-=0.78")
         .fromTo('[data-gsap="milestone"]', { opacity: 0, y: 12, scale: 0.98 }, { opacity: 1, y: 0, scale: 1, duration: 0.42, stagger: 0.06 }, "-=0.3");
 
@@ -2749,7 +2749,7 @@ export default function HomeClient() {
           padding: clamp(24px, 4vw, 54px);
           background:
             radial-gradient(circle at 88% 0%, rgba(68,221,255,0.26), transparent 30%),
-            radial-gradient(circle at 8% 100%, rgba(184,255,75,0.16), transparent 36%),
+            radial-gradient(circle at 8% 100%, rgba(98,250,227,0.16), transparent 36%),
             linear-gradient(135deg, #071624 0%, #063d32 57%, #03110f 100%);
           isolation: isolate;
         }
@@ -2774,7 +2774,7 @@ export default function HomeClient() {
           height: 360px;
           left: -140px;
           bottom: -180px;
-          background: radial-gradient(circle, rgba(184,255,75,0.22), transparent 68%);
+          background: radial-gradient(circle, rgba(98,250,227,0.22), transparent 68%);
           animation-delay: -3s;
         }
         .uf-bridge-gridwash {
@@ -2801,10 +2801,10 @@ export default function HomeClient() {
           gap: 8px;
           padding: 7px 11px;
           margin-bottom: 24px;
-          border: 1px solid rgba(184,255,75,0.28);
+          border: 1px solid rgba(98,250,227,0.28);
           border-radius: 999px;
-          background: rgba(184,255,75,0.1);
-          color: #d9ffb8;
+          background: rgba(98,250,227,0.1);
+          color: #62fae3;
           font-size: 11px;
           font-weight: 850;
           letter-spacing: 0.12em;
@@ -2814,8 +2814,8 @@ export default function HomeClient() {
           width: 8px;
           height: 8px;
           border-radius: 50%;
-          background: #b8ff4b;
-          box-shadow: 0 0 18px rgba(184,255,75,0.75);
+          background: #62fae3;
+          box-shadow: 0 0 18px rgba(98,250,227,0.75);
         }
         .uf-bridge-layout {
           display: grid;
@@ -2858,11 +2858,11 @@ export default function HomeClient() {
           display: grid;
           gap: 4px;
           justify-items: end;
-          border: 1px solid rgba(184,255,75,0.3);
+          border: 1px solid rgba(98,250,227,0.3);
           border-radius: 999px;
           padding: 10px 14px;
-          background: rgba(184,255,75,0.1);
-          color: #d9ffb8;
+          background: rgba(98,250,227,0.1);
+          color: #62fae3;
           font-weight: 900;
           white-space: nowrap;
         }
@@ -2908,7 +2908,7 @@ export default function HomeClient() {
           flex: 1;
           min-width: 0;
           border-radius: 10px 10px 4px 4px;
-          background: linear-gradient(180deg, #b8ff4b 0%, #22d3a5 42%, #057a56 100%);
+          background: linear-gradient(180deg, #62fae3 0%, #22d3a5 42%, #057a56 100%);
           box-shadow: 0 0 24px rgba(34,211,165,0.32);
           transform-origin: bottom;
           animation: bridgeBarRise 0.72s cubic-bezier(0.22,1,0.36,1) var(--bar-delay,0s) both;
@@ -2973,13 +2973,13 @@ export default function HomeClient() {
         .uf-bridge-move-card {
           padding: 18px;
           background:
-            radial-gradient(circle at 88% 12%, rgba(255,194,71,0.22), transparent 30%),
+            radial-gradient(circle at 88% 12%, rgba(98,250,227,0.10), transparent 30%),
             rgba(255,255,255,0.09);
         }
         .uf-bridge-move-card strong {
           display: block;
           margin-top: 9px;
-          color: #d9ffb8;
+          color: #62fae3;
           font-size: clamp(22px, 2.6vw, 32px);
           line-height: 0.98;
           letter-spacing: -0.06em;
@@ -3018,7 +3018,7 @@ export default function HomeClient() {
           min-height: 52px;
           border-radius: 16px;
           color: #003527;
-          background: linear-gradient(90deg, #b8ff4b 0%, #62fae3 50%, #22d3a5 100%);
+          background: linear-gradient(90deg, #62fae3 0%, #62fae3 50%, #22d3a5 100%);
           background-size: 180% auto;
           box-shadow: 0 18px 38px rgba(34,211,165,0.24);
           font-size: 15px;
@@ -3055,8 +3055,8 @@ export default function HomeClient() {
           100% { opacity: 0; transform: translateX(120%) skewX(-12deg); }
         }
         @keyframes bridgeMagicFlash {
-          0% { filter: drop-shadow(0 0 0 rgba(217,255,184,0)); transform: translateY(0) scale(1); }
-          32% { filter: drop-shadow(0 0 22px rgba(217,255,184,0.62)); transform: translateY(-1px) scale(1.025); }
+          0% { filter: drop-shadow(0 0 0 rgba(98,250,227,0)); transform: translateY(0) scale(1); }
+          32% { filter: drop-shadow(0 0 22px rgba(98,250,227,0.62)); transform: translateY(-1px) scale(1.025); }
           100% { filter: drop-shadow(0 0 10px rgba(34,211,165,0.22)); transform: translateY(0) scale(1); }
         }
         @keyframes bridgeSurfaceFloat {
@@ -3276,7 +3276,7 @@ export default function HomeClient() {
           background:
             linear-gradient(90deg, rgba(3,16,14,0.96) 0%, rgba(3,16,14,0.86) 42%, rgba(3,16,14,0.48) 100%),
             radial-gradient(circle at 74% 26%, rgba(34,211,165,0.22), transparent 28%),
-            radial-gradient(circle at 86% 78%, rgba(184,255,75,0.10), transparent 34%),
+            radial-gradient(circle at 86% 78%, rgba(98,250,227,0.10), transparent 34%),
             linear-gradient(135deg, #03100e 0%, #073f32 54%, #0b1b18 100%);
           box-shadow: none;
         }
@@ -3345,7 +3345,7 @@ export default function HomeClient() {
           text-transform: uppercase;
         }
         .uf-bridge-runway-copy strong {
-          color: #d9ffb8;
+          color: #62fae3;
           font-size: clamp(14px, 1.6vw, 18px);
           letter-spacing: -0.02em;
         }
@@ -3446,7 +3446,7 @@ export default function HomeClient() {
           background: rgba(5,150,105,0.18);
         }
         .uf-bridge-move-card strong {
-          color: #d9ffb8;
+          color: #62fae3;
         }
         .uf-bridge-control {
           color: #fff;
@@ -3457,8 +3457,8 @@ export default function HomeClient() {
         }
         .uf-bridge-save {
           color: #03221a;
-          background: #d9ffb8;
-          box-shadow: 0 18px 40px rgba(184,255,75,0.18);
+          background: #62fae3;
+          box-shadow: 0 18px 40px rgba(98,250,227,0.18);
         }
         .uf-bridge-trust {
           color: rgba(255,255,255,0.54);
@@ -3489,14 +3489,14 @@ export default function HomeClient() {
           margin-bottom: 0;
         }
         .uf-bridge-runway-copy strong {
-          color: #d9ffb8;
+          color: #62fae3;
           font-size: clamp(30px, 4vw, 58px);
           line-height: 0.9;
           letter-spacing: -0.07em;
         }
         .uf-motion-magic {
           display: inline-block;
-          background: linear-gradient(90deg, #d9ffb8 0%, #62fae3 48%, #fff7b8 68%, #d9ffb8 100%);
+          background: linear-gradient(90deg, #62fae3 0%, #62fae3 48%, #B8FFE9 68%, #62fae3 100%);
           background-size: 220% auto;
           -webkit-background-clip: text;
           background-clip: text;
@@ -3512,7 +3512,7 @@ export default function HomeClient() {
           border-radius: clamp(20px, 2.4vw, 30px);
           background:
             linear-gradient(180deg, rgba(255,255,255,0.095), rgba(255,255,255,0.025)),
-            radial-gradient(circle at 50% 0%, rgba(217,255,184,0.13), transparent 34%),
+            radial-gradient(circle at 50% 0%, rgba(98,250,227,0.13), transparent 34%),
             rgba(2, 21, 18, 0.34);
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
         }
@@ -3520,7 +3520,7 @@ export default function HomeClient() {
           position: absolute;
           z-index: 3;
           inset: 28px -28% 38px;
-          background: linear-gradient(90deg, transparent 0%, rgba(98,250,227,0.02) 22%, rgba(217,255,184,0.22) 50%, rgba(98,250,227,0.02) 74%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(98,250,227,0.02) 22%, rgba(98,250,227,0.22) 50%, rgba(98,250,227,0.02) 74%, transparent 100%);
           mix-blend-mode: screen;
           pointer-events: none;
           animation: bridgeChartSweep 4.2s cubic-bezier(0.22,1,0.36,1) 1.05s infinite;
@@ -3542,7 +3542,7 @@ export default function HomeClient() {
           right: 22px;
           z-index: 1;
           height: 1px;
-          background: linear-gradient(90deg, rgba(217,255,184,0), rgba(217,255,184,0.5), rgba(217,255,184,0));
+          background: linear-gradient(90deg, rgba(98,250,227,0), rgba(98,250,227,0.5), rgba(98,250,227,0));
         }
         .uf-bridge-column-strip {
           position: absolute;
@@ -3588,8 +3588,8 @@ export default function HomeClient() {
           z-index: 2;
           width: 58%;
           border-radius: 999px 999px 4px 4px;
-          background: linear-gradient(180deg, #d9ffb8 0%, #22d3a5 38%, #059669 100%);
-          box-shadow: 0 18px 34px rgba(34,211,165,0.18), 0 0 22px rgba(217,255,184,0.12), inset 0 1px 0 rgba(255,255,255,0.28);
+          background: linear-gradient(180deg, #62fae3 0%, #22d3a5 38%, #059669 100%);
+          box-shadow: 0 18px 34px rgba(34,211,165,0.18), 0 0 22px rgba(98,250,227,0.12), inset 0 1px 0 rgba(255,255,255,0.28);
         }
         .uf-bridge-column.is-future .uf-bridge-base-column {
           opacity: 0.3;
@@ -3621,8 +3621,8 @@ export default function HomeClient() {
           padding: 4px 7px;
           border: 0;
           border-radius: 999px;
-          background: rgba(217,255,184,0.16);
-          color: #d9ffb8;
+          background: rgba(98,250,227,0.16);
+          color: #62fae3;
           font-size: 8px;
           font-weight: 950;
           letter-spacing: 0.08em;
@@ -3676,7 +3676,7 @@ export default function HomeClient() {
           isolation: isolate;
         }
         .uf-fire-hero-celebrate { border: 1px solid rgba(159,232,112,0.34); }
-        .uf-celebration-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; margin-bottom: 14px; border-radius: 999px; background: rgba(159,232,112,0.14); border: 1px solid rgba(159,232,112,0.28); color: #D9FFB8; font-size: 12px; font-weight: 800; letter-spacing: 0.01em; animation: celebrationPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
+        .uf-celebration-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; margin-bottom: 14px; border-radius: 999px; background: rgba(159,232,112,0.14); border: 1px solid rgba(159,232,112,0.28); color: #62FAE3; font-size: 12px; font-weight: 800; letter-spacing: 0.01em; animation: celebrationPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
         .uf-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
         .uf-confetti span {
           position: absolute; top: 8px;
@@ -3685,29 +3685,29 @@ export default function HomeClient() {
           animation: confettiFall var(--dur,1.9s) ease-out var(--delay,0s) forwards;
         }
         .uf-confetti span:nth-child(1)  { left:3%;  background:#62FAE3; --x:-280px; --r:-210deg; --delay:.02s; --w:6px;  --h:11px; }
-        .uf-confetti span:nth-child(2)  { left:9%;  background:#FDE68A; --x:-200px; --r:170deg;  --delay:.30s; --br:50%; --w:10px; --h:10px; }
-        .uf-confetti span:nth-child(3)  { left:15%; background:#9FE870; --x:-140px; --r:-150deg; --delay:.06s; }
+        .uf-confetti span:nth-child(2)  { left:9%;  background:#A7F3D0; --x:-200px; --r:170deg;  --delay:.30s; --br:50%; --w:10px; --h:10px; }
+        .uf-confetti span:nth-child(3)  { left:15%; background:#A7F3D0; --x:-140px; --r:-150deg; --delay:.06s; }
         .uf-confetti span:nth-child(4)  { left:21%; background:#22D3A5; --x: -90px; --r:200deg;  --delay:.40s; --br:2px; --w:11px; --h:6px; }
-        .uf-confetti span:nth-child(5)  { left:27%; background:#FCA5A5; --x: -44px; --r:-180deg; --delay:.10s; --br:50%; --w:9px;  --h:9px; }
-        .uf-confetti span:nth-child(6)  { left:33%; background:#FDE68A; --x:   8px; --r:160deg;  --delay:.48s; --w:7px;  --h:13px; }
+        .uf-confetti span:nth-child(5)  { left:27%; background:#B8FFE9; --x: -44px; --r:-180deg; --delay:.10s; --br:50%; --w:9px;  --h:9px; }
+        .uf-confetti span:nth-child(6)  { left:33%; background:#A7F3D0; --x:   8px; --r:160deg;  --delay:.48s; --w:7px;  --h:13px; }
         .uf-confetti span:nth-child(7)  { left:39%; background:#62FAE3; --x:  52px; --r:-200deg; --delay:.14s; --br:2px; --w:12px; --h:6px; }
-        .uf-confetti span:nth-child(8)  { left:45%; background:#9FE870; --x:  86px; --r:230deg;  --delay:.52s; }
+        .uf-confetti span:nth-child(8)  { left:45%; background:#A7F3D0; --x:  86px; --r:230deg;  --delay:.52s; }
         .uf-confetti span:nth-child(9)  { left:51%; background:#fff;    --x: 108px; --r:-170deg; --delay:.04s; --br:50%; --w:7px;  --h:7px;  --dur:1.6s; }
-        .uf-confetti span:nth-child(10) { left:57%; background:#FCA5A5; --x: 134px; --r:190deg;  --delay:.36s; }
+        .uf-confetti span:nth-child(10) { left:57%; background:#B8FFE9; --x: 134px; --r:190deg;  --delay:.36s; }
         .uf-confetti span:nth-child(11) { left:63%; background:#22D3A5; --x: 164px; --r:-220deg; --delay:.08s; --br:2px; --w:9px;  --h:6px; }
-        .uf-confetti span:nth-child(12) { left:69%; background:#FDE68A; --x: 200px; --r:180deg;  --delay:.44s; --br:50%; --w:11px; --h:11px; }
-        .uf-confetti span:nth-child(13) { left:75%; background:#9FE870; --x: 238px; --r:-160deg; --delay:.12s; }
+        .uf-confetti span:nth-child(12) { left:69%; background:#A7F3D0; --x: 200px; --r:180deg;  --delay:.44s; --br:50%; --w:11px; --h:11px; }
+        .uf-confetti span:nth-child(13) { left:75%; background:#A7F3D0; --x: 238px; --r:-160deg; --delay:.12s; }
         .uf-confetti span:nth-child(14) { left:81%; background:#62FAE3; --x: 268px; --r:200deg;  --delay:.56s; --br:2px; --w:13px; --h:5px; }
-        .uf-confetti span:nth-child(15) { left:87%; background:#FCA5A5; --x: 298px; --r:-240deg; --delay:.16s; --br:50%; --w:8px;  --h:8px; }
-        .uf-confetti span:nth-child(16) { left:93%; background:#FDE68A; --x: 320px; --r:170deg;  --delay:.60s; }
+        .uf-confetti span:nth-child(15) { left:87%; background:#B8FFE9; --x: 298px; --r:-240deg; --delay:.16s; --br:50%; --w:8px;  --h:8px; }
+        .uf-confetti span:nth-child(16) { left:93%; background:#A7F3D0; --x: 320px; --r:170deg;  --delay:.60s; }
         .uf-confetti span:nth-child(17) { left:6%;  background:#22D3A5; --x:-260px; --r:190deg;  --delay:.75s; --br:50%; --w:9px;  --h:9px; }
-        .uf-confetti span:nth-child(18) { left:18%; background:#FDE68A; --x:-160px; --r:-160deg; --delay:.82s; }
+        .uf-confetti span:nth-child(18) { left:18%; background:#A7F3D0; --x:-160px; --r:-160deg; --delay:.82s; }
         .uf-confetti span:nth-child(19) { left:30%; background:#62FAE3; --x: -70px; --r:210deg;  --delay:.68s; --br:2px; --w:10px; --h:6px; }
-        .uf-confetti span:nth-child(20) { left:42%; background:#FCA5A5; --x:  28px; --r:-200deg; --delay:.88s; --br:50%; --w:8px;  --h:8px; }
-        .uf-confetti span:nth-child(21) { left:55%; background:#9FE870; --x: 118px; --r:170deg;  --delay:.74s; }
+        .uf-confetti span:nth-child(20) { left:42%; background:#B8FFE9; --x:  28px; --r:-200deg; --delay:.88s; --br:50%; --w:8px;  --h:8px; }
+        .uf-confetti span:nth-child(21) { left:55%; background:#A7F3D0; --x: 118px; --r:170deg;  --delay:.74s; }
         .uf-confetti span:nth-child(22) { left:67%; background:#fff;    --x: 188px; --r:-220deg; --delay:.94s; --br:2px; --w:11px; --h:7px; }
         .uf-confetti span:nth-child(23) { left:79%; background:#22D3A5; --x: 256px; --r:190deg;  --delay:.80s; --br:50%; --w:9px;  --h:9px; }
-        .uf-confetti span:nth-child(24) { left:91%; background:#FDE68A; --x: 308px; --r:-170deg; --delay:1.0s; }
+        .uf-confetti span:nth-child(24) { left:91%; background:#A7F3D0; --x: 308px; --r:-170deg; --delay:1.0s; }
         .uf-fire-hero > *:not(.uf-confetti) { position: relative; z-index: 1; }
         .uf-fire-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--teal-bright); margin-bottom: 18px; }
         .uf-fire-num {
@@ -3730,7 +3730,7 @@ export default function HomeClient() {
         .uf-result-milestone { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2E8F0; color: #475569; font-size: 12px; font-weight: 800; text-align: center; box-shadow: 0 1px 4px rgba(15,23,42,0.04); }
         .uf-result-milestone-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: #ECFDF5; color: #047857; font-size: 12px; flex: 0 0 auto; }
         .uf-result-milestone.active { background: #F7FEE7; border-color: #BEF264; color: #365314; }
-        .uf-result-milestone.active .uf-result-milestone-icon { background: #9FE870; color: #163300; }
+        .uf-result-milestone.active .uf-result-milestone-icon { background: #A7F3D0; color: #163300; }
         .uf-benchmark-card, .uf-identity-card { background: #FFFFFF; border: 1px solid #DDEFE3; border-radius: 18px; padding: 18px; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(15,23,42,0.05); animation: cardLiftIn 0.55s cubic-bezier(0.22,1,0.36,1) 0.08s both; }
         .uf-benchmark-card { background: linear-gradient(135deg, #F7FEE7 0%, #FFFFFF 72%); border-color: #BEF264; }
         .uf-identity-card { background: linear-gradient(135deg, #F0FDFA 0%, #FFFFFF 72%); border-color: #99F6E4; }
@@ -3891,7 +3891,7 @@ export default function HomeClient() {
           background:
             linear-gradient(180deg, rgba(3,16,14,0.98) 0%, rgba(5,43,36,0.98) 44%, rgba(3,16,14,0.98) 100%),
             radial-gradient(circle at 18% 16%, rgba(34,211,165,0.12), transparent 30%),
-            radial-gradient(circle at 86% 70%, rgba(217,255,184,0.08), transparent 34%);
+            radial-gradient(circle at 86% 70%, rgba(98,250,227,0.08), transparent 34%);
           border-top: 1px solid rgba(255,255,255,0.08);
         }
         .uf-reveal-continuation::before {
@@ -3901,7 +3901,7 @@ export default function HomeClient() {
           inset: 0;
           background:
             radial-gradient(circle at var(--uf-glow-a-x) var(--uf-glow-a-y), rgba(98,250,227,0.13), transparent 28%),
-            radial-gradient(circle at var(--uf-glow-b-x) var(--uf-glow-b-y), rgba(217,255,184,0.11), transparent 32%);
+            radial-gradient(circle at var(--uf-glow-b-x) var(--uf-glow-b-y), rgba(98,250,227,0.11), transparent 32%);
           opacity: 0.9;
           pointer-events: none;
         }
@@ -3936,7 +3936,7 @@ export default function HomeClient() {
         .uf-reveal-continuation .uf-unified-card div[style*="font-size: 30"],
         .uf-reveal-continuation .uf-next-step-card strong,
         .uf-reveal-continuation .uf-assumptions-card strong {
-          color: #d9ffb8 !important;
+          color: #62fae3 !important;
         }
         .uf-reveal-continuation .uf-unified-card .uf-unified-stat-label,
         .uf-reveal-continuation .uf-unified-stat-label,
@@ -3990,12 +3990,12 @@ export default function HomeClient() {
           .uf-reveal-continuation .uf-unified-card:hover,
           .uf-bridge-move-card:hover {
             transform: translate3d(0,-6px,0) scale(1.01);
-            border-color: rgba(217,255,184,0.28) !important;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 34px 76px rgba(0,0,0,0.3), 0 0 0 1px rgba(217,255,184,0.06) !important;
+            border-color: rgba(98,250,227,0.28) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 34px 76px rgba(0,0,0,0.3), 0 0 0 1px rgba(98,250,227,0.06) !important;
           }
           .uf-next-step-card.uf-motion-depth:hover {
             transform: translate3d(0, calc(var(--uf-motion-y) - 5px), 0) scale(1.006);
-            border-color: rgba(217,255,184,0.28) !important;
+            border-color: rgba(98,250,227,0.28) !important;
           }
           .uf-bridge-save:hover,
           .uf-reveal-continuation .uf-btn-outline:hover {
@@ -4062,7 +4062,7 @@ export default function HomeClient() {
           margin: clamp(-12px, -1vw, -4px) auto 0;
           border: 0;
           background:
-            radial-gradient(circle at 50% 50%, rgba(217,255,184,0.08), transparent 42%),
+            radial-gradient(circle at 50% 50%, rgba(98,250,227,0.08), transparent 42%),
             radial-gradient(circle at 50% 58%, rgba(34,211,165,0.10), transparent 48%);
           mask-image: radial-gradient(ellipse 62% 58% at 50% 52%, #000 0 58%, rgba(0,0,0,0.68) 72%, transparent 88%);
         }
@@ -4102,12 +4102,128 @@ export default function HomeClient() {
           line-height: 1.45;
         }
         .uf-reveal-continuation .uf-btn-outline {
-          color: #d9ffb8 !important;
+          color: #62fae3 !important;
           background: rgba(255,255,255,0.07) !important;
-          border-color: rgba(217,255,184,0.24) !important;
+          border-color: rgba(98,250,227,0.24) !important;
         }
         .uf-reveal-continuation .uf-btn-outline svg path {
-          stroke: #d9ffb8 !important;
+          stroke: #62fae3 !important;
+        }
+        /* Landing-style reveal polish: calm uf7 palette, no orange/yellow accent family. */
+        .uf-bridge-hero {
+          background:
+            radial-gradient(1100px 700px at 50% 118%, #0a2f22 0%, transparent 60%),
+            radial-gradient(820px 560px at 12% -10%, rgba(98,250,227,0.16), transparent 62%),
+            #04110c;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .uf-bridge-aurora {
+          opacity: 0.28;
+          filter: blur(86px);
+          animation-duration: 28s;
+        }
+        .uf-bridge-gridwash {
+          opacity: 0.16;
+          animation: none;
+          background: repeating-linear-gradient(90deg, transparent 0 40px, rgba(255,255,255,0.035) 41px 42px);
+        }
+        .uf-bridge-chip,
+        .uf-bridge-age-delta {
+          border-color: rgba(98,250,227,0.28);
+          background: rgba(98,250,227,0.09);
+          color: #62FAE3;
+        }
+        .uf-bridge-chip-dot {
+          background: #62FAE3;
+          box-shadow: 0 0 18px rgba(98,250,227,0.45);
+        }
+        .uf-bridge-age,
+        .uf-bridge-runway-copy strong {
+          font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+          font-weight: 400;
+          letter-spacing: -0.035em;
+          text-shadow: 0 4px 60px rgba(34,211,165,0.24);
+        }
+        .uf-motion-magic {
+          background: none;
+          -webkit-background-clip: initial;
+          background-clip: initial;
+          color: #62FAE3 !important;
+          animation: none;
+        }
+        .uf-bridge-chart-sweep {
+          opacity: 0.18;
+          animation: none;
+          background: linear-gradient(90deg, transparent, rgba(98,250,227,0.16), transparent);
+        }
+        .uf-bridge-chart-plot,
+        .uf-bridge-runway,
+        .uf-bridge-move-card,
+        .uf-reveal-continuation .uf-unified-card,
+        .uf-reveal-continuation .uf-next-step-card,
+        .uf-reveal-continuation .uf-assumptions-card {
+          border-color: rgba(255,255,255,0.14) !important;
+          background: rgba(255,255,255,0.055) !important;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 44px rgba(0,0,0,0.16) !important;
+          backdrop-filter: none;
+        }
+        .uf-bridge-plan-column {
+          background: linear-gradient(180deg, #B8FFE9 0%, #62FAE3 36%, #22D3A5 100%);
+          box-shadow: 0 14px 28px rgba(34,211,165,0.16), inset 0 1px 0 rgba(255,255,255,0.24);
+        }
+        .uf-bridge-base-column {
+          background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.045));
+        }
+        .uf-bridge-chart-flag,
+        .uf-reveal-continuation .uf-btn-outline {
+          color: #62FAE3 !important;
+          border-color: rgba(98,250,227,0.24) !important;
+          background: rgba(98,250,227,0.08) !important;
+        }
+        .uf-bridge-save {
+          background: linear-gradient(90deg, #B8FFE9, #62FAE3 50%, #22D3A5) !important;
+          color: #04110c !important;
+          box-shadow: 0 14px 34px rgba(34,211,165,0.22) !important;
+          animation: none !important;
+        }
+        .uf-reveal-continuation {
+          background:
+            radial-gradient(1100px 700px at 50% -10%, rgba(10,47,34,0.72), transparent 60%),
+            #04110c;
+        }
+        .uf-reveal-continuation::before {
+          opacity: 0.42;
+          background: radial-gradient(circle at 50% 0%, rgba(98,250,227,0.12), transparent 38%);
+        }
+        .uf-reveal-continuation .uf-unified-avatar-shell {
+          animation: none;
+        }
+        .uf-reveal-continuation .uf-scroll-reveal {
+          --uf-reveal-y: 22px;
+          transition-duration: 640ms;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .uf-reveal-continuation .uf-unified-card:hover,
+          .uf-bridge-move-card:hover,
+          .uf-next-step-card.uf-motion-depth:hover {
+            transform: translate3d(0,-2px,0) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 20px 48px rgba(0,0,0,0.2) !important;
+          }
+          .uf-bridge-save:hover,
+          .uf-reveal-continuation .uf-btn-outline:hover {
+            transform: translate3d(0,-2px,0);
+            box-shadow: 0 16px 38px rgba(34,211,165,0.20) !important;
+          }
+        }
+        .uf-confetti span:nth-child(odd) { background: #62FAE3 !important; }
+        .uf-confetti span:nth-child(even) { background: #A7F3D0 !important; }
+        .uf-confetti span:nth-child(3n) { background: #22D3A5 !important; }
+        .uf-confetti span:nth-child(5n) { background: #FFFFFF !important; }
+        body.uf-result-mode { overflow-x: hidden; }
+        @media (max-width: 640px) {
+          .uf-reveal-continuation .uf-geo-section { overflow: clip; }
+          .uf-reveal-continuation .uf-geo-stage { width: 100%; height: clamp(350px, 92vw, 470px); }
         }
         /* footer buttons row */
         .uf-footer-btns { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
