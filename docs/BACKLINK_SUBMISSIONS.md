@@ -167,7 +167,7 @@ Badge embeds for these were provided directly (not run through the agent submiss
 - AlternativeTo: public page exists at `https://alternativeto.net/software/untilfire/about/`
 - DevHub: public page exists at `https://devhub.best/projects/untilfire`
 - Startup Fame: public page exists at `https://startupfa.me/s/untilfire`
-- Uneed: queued/listed at `https://www.uneed.best/tool/untilfire`
+- Uneed: listed at `https://www.uneed.best/tool/untilfire`; POTD3 (Product of the Day) badge added to site footer 2026-07-07 — dofollow status not independently verified
 
 ### Submitted earlier in the campaign
 - Tool Dynamo: user completed manually
