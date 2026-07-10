@@ -117,6 +117,148 @@ async function parseXLSX(file: File): Promise<{ headers: string[]; rows: string[
   return { headers, rows };
 }
 
+// ─── PDF (bank/credit-card statement) parsing ──────────────────────────────────────────────────
+// A PDF has no real columns — each transaction row is reconstructed from the raw text layout
+// instead: a row starts on a line beginning with a date, ends with the transaction amount, and
+// may have up to one continuation line of extra description (e.g. a device ID or exchange rate)
+// directly below it. Anything past that (page footers, T&Cs, repeated headers) is not part of
+// the table and is ignored rather than merged in.
+const PDF_MONTH_ABBR: Record<string, number> = {
+  JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12,
+};
+const PDF_DATE_TOKEN_AT_START = /^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}[A-Z]{3}\d{0,4}|\d{1,2}-[A-Z]{3}-\d{2,4})\b/i;
+const PDF_STATEMENT_DATE = /(\d{1,2})\s+([A-Z]{3})\s+(\d{4})/;
+const PDF_STOP_MARKERS = [/REWARDCASH SUMMARY/i, /TRANSACTION SUMMARY/i, /FEES AND CHARGES SUMMARY/i, /FINANCE CHARGE SUMMARY/i, /^\*{5,}/];
+const PDF_MAX_CONTINUATION_LINES = 1;
+
+function pdfMatchLeadingDateTokens(line: string): { tokens: string[]; rest: string } | null {
+  let rest = line;
+  const tokens: string[] = [];
+  for (let i = 0; i < 2; i++) {
+    const m = rest.match(PDF_DATE_TOKEN_AT_START);
+    if (!m) break;
+    tokens.push(m[0]);
+    rest = rest.slice(m[0].length).trim();
+  }
+  if (tokens.length === 0) return null;
+  return { tokens, rest };
+}
+
+function pdfExtractTrailingAmount(text: string): { amount: number; isCredit: boolean; matchStart: number } | null {
+  const m = text.match(/([\d,]+\.\d{2})\s*(CR)?\s*$/i);
+  if (!m || m.index === undefined) return null;
+  return { amount: parseFloat(m[1].replace(/,/g, "")), isCredit: !!m[2], matchStart: m.index };
+}
+
+function pdfDateTokenToISO(tok: string, refYear: number, refMonth: number): string | null {
+  const t = tok.toUpperCase();
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return t;
+  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) {
+    const [, mm, dd, yy] = m;
+    const year = yy.length === 2 ? 2000 + Number(yy) : Number(yy);
+    return `${year}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+  }
+  m = t.match(/^(\d{1,2})([A-Z]{3})(\d{2,4})?$/);
+  if (m) {
+    const [, dd, mon, yy] = m;
+    const monthNum = PDF_MONTH_ABBR[mon];
+    if (!monthNum) return null;
+    let year = yy ? (yy.length === 2 ? 2000 + Number(yy) : Number(yy)) : refYear;
+    if (!yy && monthNum > refMonth + 1) year = refYear - 1; // statement crosses a year boundary
+    return `${year}-${String(monthNum).padStart(2, "0")}-${dd.padStart(2, "0")}`;
+  }
+  m = t.match(/^(\d{1,2})-([A-Z]{3})-(\d{2,4})$/);
+  if (m) {
+    const [, dd, mon, yy] = m;
+    const monthNum = PDF_MONTH_ABBR[mon];
+    if (!monthNum) return null;
+    const year = yy.length === 2 ? 2000 + Number(yy) : Number(yy);
+    return `${year}-${String(monthNum).padStart(2, "0")}-${dd.padStart(2, "0")}`;
+  }
+  return null;
+}
+
+async function pdfExtractLines(file: File): Promise<string[]> {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+  const buffer = await file.arrayBuffer();
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+
+  const allLines: string[] = [];
+  outer:
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const content = await page.getTextContent();
+    const items = (content.items as { str?: string; transform: number[] }[])
+      .filter((it) => !!it.str?.trim()) as { str: string; transform: number[] }[];
+    const byY = new Map<number, { x: number; str: string }[]>();
+    for (const it of items) {
+      const y = Math.round(it.transform[5]);
+      const x = it.transform[4];
+      let bucketKey: number | null = null;
+      for (const k of byY.keys()) { if (Math.abs(k - y) <= 2) { bucketKey = k; break; } }
+      if (bucketKey === null) bucketKey = y;
+      if (!byY.has(bucketKey)) byY.set(bucketKey, []);
+      byY.get(bucketKey)!.push({ x, str: it.str });
+    }
+    const pageLines = [...byY.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([, parts]) => parts.sort((a, b) => a.x - b.x).map((pp) => pp.str).join(" ").replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    for (const line of pageLines) {
+      if (PDF_STOP_MARKERS.some((p) => p.test(line))) break outer;
+      allLines.push(line);
+    }
+  }
+  return allLines;
+}
+
+async function parsePDF(file: File): Promise<{ headers: string[]; rows: string[][] }> {
+  const lines = await pdfExtractLines(file);
+
+  let refYear = new Date().getFullYear();
+  let refMonth = new Date().getMonth() + 1;
+  for (const line of lines) {
+    const m = line.match(PDF_STATEMENT_DATE);
+    const monthNum = m ? PDF_MONTH_ABBR[m[2].toUpperCase()] : undefined;
+    if (m && monthNum) { refYear = Number(m[3]); refMonth = monthNum; break; }
+  }
+
+  type BuiltRow = { tokens: string[]; description: string; amount: number | null; isCredit: boolean; continuations: number };
+  const built: BuiltRow[] = [];
+  for (const line of lines) {
+    const lead = pdfMatchLeadingDateTokens(line);
+    if (lead) {
+      const amt = pdfExtractTrailingAmount(lead.rest);
+      if (amt) {
+        built.push({ tokens: lead.tokens, description: lead.rest.slice(0, amt.matchStart).trim(), amount: amt.amount, isCredit: amt.isCredit, continuations: 0 });
+      } else {
+        // no trailing amount on the row-start line — can't reliably use this row
+        built.push({ tokens: lead.tokens, description: lead.rest, amount: null, isCredit: false, continuations: PDF_MAX_CONTINUATION_LINES });
+      }
+    } else if (built.length > 0) {
+      const prev = built[built.length - 1];
+      if (prev.amount !== null && prev.continuations < PDF_MAX_CONTINUATION_LINES) {
+        prev.description += " " + line;
+        prev.continuations++;
+      }
+      // else: outside the transaction table (footer/header/boilerplate) — ignore
+    }
+  }
+
+  const rows: string[][] = [];
+  for (const row of built) {
+    if (row.amount === null || row.isCredit) continue; // isCredit = card payment, not a purchase; skipped on import
+    const dateTok = row.tokens.length === 2 ? row.tokens[1] : row.tokens[0];
+    const iso = pdfDateTokenToISO(dateTok, refYear, refMonth);
+    if (!iso) continue;
+    rows.push([iso, row.description.replace(/\s+/g, " ").trim(), String(row.amount)]);
+  }
+  return { headers: ["Date", "Description", "Amount"], rows };
+}
+
 function parseDate(s: string): string | null {
   s = s.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
@@ -302,15 +444,22 @@ export default function CsvImportModal({
     const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls") ||
       file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
       file.type === "application/vnd.ms-excel";
+    const isPdf = name.endsWith(".pdf") || file.type === "application/pdf";
     const isCsv = name.endsWith(".csv") || file.type === "text/csv";
-    if (!isCsv && !isExcel) {
-      setError("Please upload a .csv or .xlsx file.");
+    if (!isCsv && !isExcel && !isPdf) {
+      setError("Please upload a .csv, .xlsx, or .pdf file.");
       return;
     }
     try {
       let h: string[];
       let r: string[][];
-      if (isExcel) {
+      if (isPdf) {
+        ({ headers: h, rows: r } = await parsePDF(file));
+        if (r.length === 0) {
+          setError("Couldn't find any transactions in this PDF. It may be a scanned image, or a statement layout we don't recognize yet — try exporting as CSV or Excel instead.");
+          return;
+        }
+      } else if (isExcel) {
         ({ headers: h, rows: r } = await parseXLSX(file));
       } else {
         const buffer = await file.arrayBuffer();
@@ -597,7 +746,7 @@ export default function CsvImportModal({
             <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>
               Import bank transactions
             </div>
-            {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV or Excel file exported from your bank</div>}
+            {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV, Excel, or PDF statement from your bank</div>}
             {step === "map" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
             {step === "review" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Review possible duplicates before importing</div>}
           </div>
@@ -619,15 +768,15 @@ export default function CsvImportModal({
           >
             <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#e2e8f0", marginBottom: 6 }}>
-              Drop your CSV or Excel file here or click to browse
+              Drop your CSV, Excel, or PDF statement here or click to browse
             </div>
             <div style={{ fontSize: 13, color: "#64748b" }}>
-              Export from your bank as CSV or Excel (.xlsx), then upload it here
+              Export from your bank as CSV, Excel (.xlsx), or a PDF statement, then upload it here
             </div>
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.pdf,application/pdf"
               style={{ display: "none" }}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) processFile(f); }}
             />
