@@ -42,6 +42,10 @@ type DuplicateFlag = {
   existing: { id: string; date: string; amount: number; category: string };
 };
 
+// Some banks (e.g. WeChat Pay) prepend title/metadata rows before the real header row.
+// A row counts as the header row once at least 2 of its cells match one of these patterns.
+const HEADER_INDICATORS = [/交易时间/, /^\s*date/i, /金额/, /amount/i];
+
 // ─── CSV parsing ───────────────────────────────────────────────────────────────────────────────
 function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   const firstLine = text.split(/\r?\n/)[0] ?? "";
@@ -68,12 +72,11 @@ function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   }
 
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  // Find the real header row — some banks (e.g. WeChat Pay) prepend metadata rows
-  const headerIndicators = [/交易时间/, /^\s*date/i, /金额/, /amount/i];
+  // Find the real header row — see HEADER_INDICATORS above
   let headerIdx = 0;
   for (let i = 0; i < Math.min(lines.length, 30); i++) {
     const cells = lines[i].split(delim);
-    const hits = cells.filter(c => headerIndicators.some(p => p.test(c.replace(/^"|"$/g, "").trim()))).length;
+    const hits = cells.filter(c => HEADER_INDICATORS.some(p => p.test(c.replace(/^"|"$/g, "").trim()))).length;
     if (hits >= 2) { headerIdx = i; break; }
   }
   const headers = parseLine(lines[headerIdx]).map((h) => h.replace(/^"|"$/g, ""));
@@ -96,8 +99,20 @@ function xlsxCellToString(cell: CellValue | null): string {
 async function parseXLSX(file: File): Promise<{ headers: string[]; rows: string[][] }> {
   const { readSheet } = await import("read-excel-file/browser");
   const sheet = await readSheet(file);
-  const [headerRow, ...dataRows] = sheet;
-  const headers = (headerRow || []).map(xlsxCellToString);
+
+  // Find the real header row — see HEADER_INDICATORS above
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(sheet.length, 30); i++) {
+    const hits = (sheet[i] || []).filter((cell) => {
+      const s = xlsxCellToString(cell).trim();
+      return s && HEADER_INDICATORS.some((p) => p.test(s));
+    }).length;
+    if (hits >= 2) { headerIdx = i; break; }
+  }
+
+  const headerRow = sheet[headerIdx] || [];
+  const dataRows = sheet.slice(headerIdx + 1);
+  const headers = headerRow.map(xlsxCellToString);
   const rows = dataRows.map((row) => headers.map((_, i) => xlsxCellToString(row[i])));
   return { headers, rows };
 }
