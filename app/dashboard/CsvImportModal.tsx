@@ -258,6 +258,7 @@ export default function CsvImportModal({
   const [skipIndices, setSkipIndices] = useState<Set<number>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState("");
 
   const processFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
@@ -290,6 +291,7 @@ export default function CsvImportModal({
       });
       setHeaders(h);
       setRows(cleanedRows);
+      setFileName(file.name);
       setColDate(auto.date);
       setColDesc(auto.description);
       setColNotes(auto.notes);
@@ -440,6 +442,8 @@ export default function CsvImportModal({
         transaction_type: tx.transaction_type,
         tags: [],
         sub_category: null,
+        source: "csv",
+        source_file: fileName,
       }));
       const { error: dbErr } = await supabase.from("expenses").insert(batch);
       if (dbErr) {
@@ -455,7 +459,7 @@ export default function CsvImportModal({
     setSkippedCount(skip.size);
     setStep("done");
     onImported(inserted);
-  }, [buildParsedTransactions, onImported]);
+  }, [buildParsedTransactions, onImported, fileName]);
 
   const handleCheckDuplicates = useCallback(async () => {
     const parsed = buildParsedTransactions();

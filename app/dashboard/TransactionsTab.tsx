@@ -69,6 +69,7 @@ type Transaction = {
   tags: string[];
   transaction_type: "expense" | "income" | "transfer";
   sub_category: string | null;
+  source_file?: string | null;
 };
 
 type ClassificationRule = {
@@ -1216,6 +1217,14 @@ function TransactionList({
                             {displayTags.map((t) => (
                               <span key={t} style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
                             ))}
+                            {tx.source_file && (
+                              <span
+                                title={`Imported from ${tx.source_file}`}
+                                style={{ fontSize: 10.5, color: "var(--uf-text-3)", display: "inline-flex", alignItems: "center", gap: 3, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}
+                              >
+                                📎 {tx.source_file}
+                              </span>
+                            )}
                           </div>
                         </div>
 
