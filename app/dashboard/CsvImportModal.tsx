@@ -2,6 +2,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
+import type { CellValue } from "read-excel-file/browser";
 
 type Step = "upload" | "map" | "review" | "importing" | "done";
 
@@ -77,6 +78,27 @@ function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   }
   const headers = parseLine(lines[headerIdx]).map((h) => h.replace(/^"|"$/g, ""));
   const rows = lines.slice(headerIdx + 1).map(parseLine);
+  return { headers, rows };
+}
+
+// ─── Excel (.xlsx) parsing ──────────────────────────────────────────────────────────────────────
+function xlsxCellToString(cell: CellValue | null): string {
+  if (cell === null || cell === undefined) return "";
+  if (cell instanceof Date) {
+    const y = cell.getFullYear();
+    const m = String(cell.getMonth() + 1).padStart(2, "0");
+    const d = String(cell.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return String(cell);
+}
+
+async function parseXLSX(file: File): Promise<{ headers: string[]; rows: string[][] }> {
+  const { readSheet } = await import("read-excel-file/browser");
+  const sheet = await readSheet(file);
+  const [headerRow, ...dataRows] = sheet;
+  const headers = (headerRow || []).map(xlsxCellToString);
+  const rows = dataRows.map((row) => headers.map((_, i) => xlsxCellToString(row[i])));
   return { headers, rows };
 }
 
@@ -261,23 +283,34 @@ export default function CsvImportModal({
   const [fileName, setFileName] = useState("");
 
   const processFile = useCallback(async (file: File) => {
-    if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
-      setError("Please upload a .csv file.");
+    const name = file.name.toLowerCase();
+    const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls") ||
+      file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.type === "application/vnd.ms-excel";
+    const isCsv = name.endsWith(".csv") || file.type === "text/csv";
+    if (!isCsv && !isExcel) {
+      setError("Please upload a .csv or .xlsx file.");
       return;
     }
     try {
-      const buffer = await file.arrayBuffer();
-      let text: string;
-      try {
-        // Try UTF-8 first; strict mode throws if bytes are invalid UTF-8 (e.g. GBK files)
-        text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
-      } catch {
-        // WeChat Pay and many Chinese bank exports use GBK encoding
-        text = new TextDecoder("gbk").decode(buffer);
+      let h: string[];
+      let r: string[][];
+      if (isExcel) {
+        ({ headers: h, rows: r } = await parseXLSX(file));
+      } else {
+        const buffer = await file.arrayBuffer();
+        let text: string;
+        try {
+          // Try UTF-8 first; strict mode throws if bytes are invalid UTF-8 (e.g. GBK files)
+          text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+        } catch {
+          // WeChat Pay and many Chinese bank exports use GBK encoding
+          text = new TextDecoder("gbk").decode(buffer);
+        }
+        ({ headers: h, rows: r } = parseCSV(text));
       }
-      const { headers: h, rows: r } = parseCSV(text);
       if (h.length < 2) {
-        setError("Couldn't parse this file. Make sure it's a CSV with headers.");
+        setError("Couldn't parse this file. Make sure it has headers.");
         return;
       }
       const auto = autoDetectColumns(h);
@@ -547,9 +580,9 @@ export default function CsvImportModal({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
             <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>
-              Import bank CSV
+              Import bank transactions
             </div>
-            {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV exported from your bank</div>}
+            {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV or Excel file exported from your bank</div>}
             {step === "map" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
             {step === "review" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Review possible duplicates before importing</div>}
           </div>
@@ -571,15 +604,15 @@ export default function CsvImportModal({
           >
             <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#e2e8f0", marginBottom: 6 }}>
-              Drop your CSV here or click to browse
+              Drop your CSV or Excel file here or click to browse
             </div>
             <div style={{ fontSize: 13, color: "#64748b" }}>
-              Export from your bank as CSV, then upload it here
+              Export from your bank as CSV or Excel (.xlsx), then upload it here
             </div>
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               style={{ display: "none" }}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) processFile(f); }}
             />
@@ -617,7 +650,7 @@ export default function CsvImportModal({
               <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
                 {colCurrency
                   ? "Rows use the mapped currency column when present. This selection is the fallback if a row is blank or unclear."
-                  : "Used when there is no separate currency column. We auto-detect when the CSV makes it obvious, and you can override it here."}
+                  : "Used when there is no separate currency column. We auto-detect when the file makes it obvious, and you can override it here."}
               </div>
             </div>
 
@@ -633,7 +666,7 @@ export default function CsvImportModal({
 
             {previewRows.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Raw CSV sample</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Raw file sample</div>
                 <div style={{ border: "1px solid #23232d", borderRadius: 10, overflow: "hidden" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
