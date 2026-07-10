@@ -418,7 +418,7 @@ export default function CsvImportModal({
     const di = headers.indexOf(colDate);
     const ni = headers.indexOf(colDesc);
     const ai = headers.indexOf(colAmount);
-    return rows.slice(0, 5).map((r: string[]) => ({
+    return rows.map((r: string[]) => ({
       date: r[di] ?? "",
       desc: r[ni] ?? "",
       amount: r[ai] ?? "",
@@ -681,26 +681,28 @@ export default function CsvImportModal({
 
             {previewRows.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Raw file sample</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Raw file sample ({previewRows.length} rows)</div>
                 <div style={{ border: "1px solid #23232d", borderRadius: 10, overflow: "hidden" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ background: "#1a1a24" }}>
-                        {["Date", "Description", "Amount"].map((h) => (
-                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #23232d" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewRows.map((r: { date: string; desc: string; amount: string }, i: number) => (
-                        <tr key={i} style={{ borderBottom: i < previewRows.length - 1 ? "1px solid #1a1a24" : undefined }}>
-                          <td style={{ padding: "8px 12px", color: "#94a3b8" }}>{r.date}</td>
-                          <td style={{ padding: "8px 12px", color: "#e2e8f0", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</td>
-                          <td style={{ padding: "8px 12px", color: "#e2e8f0", whiteSpace: "nowrap" }}>{r.amount}</td>
+                  <div style={{ maxHeight: 260, overflowY: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: "#1a1a24" }}>
+                          {["Date", "Description", "Amount"].map((h) => (
+                            <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #23232d", position: "sticky", top: 0, background: "#1a1a24" }}>{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {previewRows.map((r: { date: string; desc: string; amount: string }, i: number) => (
+                          <tr key={i} style={{ borderBottom: i < previewRows.length - 1 ? "1px solid #1a1a24" : undefined }}>
+                            <td style={{ padding: "8px 12px", color: "#94a3b8" }}>{r.date}</td>
+                            <td style={{ padding: "8px 12px", color: "#e2e8f0", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</td>
+                            <td style={{ padding: "8px 12px", color: "#e2e8f0", whiteSpace: "nowrap" }}>{r.amount}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
