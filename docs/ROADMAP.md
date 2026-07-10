@@ -243,7 +243,7 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 - [ ] Improve "adjust inputs" flow from result screen
 - [x] Scenario simulator on reveal screen: save more, earn more, reduce expenses, change city — presented as “moves that bring freedom closer,” not raw calculators
-- [x] CSV import for transactions with column mapping, duplicate detection (date + amount), and review step — CsvImportModal.tsx
+- [x] Transaction import: CSV, Excel (.xlsx/.xls), and PDF bank/credit-card statements, with column mapping (CSV/Excel), duplicate detection (date + amount), a review step, and per-row source-file tracking shown in the transactions list — CsvImportModal.tsx
 - [ ] Better result explanation for beginners: FIRE number, withdrawal rate, assumptions, timeline
 - [ ] Email result summary with top plan step
 - [ ] Dashboard handoff that preserves calculator result and next action
