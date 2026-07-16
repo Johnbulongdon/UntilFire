@@ -9,7 +9,7 @@ Last updated: June 2026
 
 UntilFire starts with your freedom date, then walks with you toward it: what matters, what to do this month, and how each move brings work optionality closer. Free, no login.
 
-**Core differentiator:** UntilFire does it with you. Most finance tools are like a language app that only tells you what “good English” looks like; UntilFire should be the Duolingo-style path that gives you the next lesson, progress, and motivation toward financial freedom.
+**Core differentiator:** UntilFire does it with you. Most finance tools either hand you a number and leave you alone, or hand you a model you have to interpret yourself. UntilFire should be the path in between: a clear next move, tracked progress, and guidance that keeps working with you toward financial freedom. This is about continuity and clarity, not gamification — no streaks, no daily-engagement mechanics.
 
 **North star:** Turn financial independence from an abstract calculator result into a clear, emotional, actionable path: *when can work become optional, what should I do next, and how will UntilFire help me keep moving?*
 
@@ -185,7 +185,7 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 - [ ] Product Hunt tagline: "Personal finance that sets you free."
 - [ ] Product Hunt short description: "UntilFire starts with your freedom date, then gives you a plan to bring work optionality closer. Free, no login."
-- [ ] Maker first comment: personal story + why FIRE tools need to guide the path, not just hand over a number. Use the Duolingo analogy if helpful: good tools do not only show the answer; they help you get there.
+- [ ] Maker first comment: personal story + why FIRE tools need to guide the path, not just hand over a number — good tools do not only show the answer, they help you get there.
 - [ ] 20–40 second demo GIF/video: enter inputs → get freedom date → see plan.
 - [ ] 3–5 screenshots: hero, calculator step, result, monthly move/plan, dashboard continuity. Avoid making city/tax comparison the hero screenshot.
 - [ ] Simple FAQ answers: calculation assumptions, privacy, who it is for, why it is free.
@@ -269,6 +269,8 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 ## Phase 5 — Monthly Moves Adviser 📅
 
 *Goal: Make UntilFire useful every month, not just once.*
+
+**Sequencing note (2026-07-16):** intentionally not urgent right now. Early AI-generated recommendations read as generic — the fix is stronger, transparent infra (real scenario modeling grounded in the user's actual data) before layering AI on top, not AI stepping in to cover for weak infra. Revisit once the deterministic guidance surface (scenario simulator, real tracked data) is solid.
 
 ### Core Adviser Feature
 

@@ -136,7 +136,7 @@ Every tool in the market does one of two things:
 
 Neither tells you: *"Based on your actual situation, here's the one thing to do this month."*
 
-That's the gap UntilFire is building into. The market has calculators and modellers. Nobody has built the Duolingo-style path for FIRE — something that starts with your situation, shows the next move, tracks progress, and keeps helping you bring the freedom date closer.
+That's the gap UntilFire is building into. The market has calculators and modellers. Nobody has built the guided path for FIRE — something that starts with your situation, shows the next move, tracks progress, and keeps helping you bring the freedom date closer.
 
 ### UntilFire's Positioning Statement
 > For anyone who wants work to become optional, UntilFire is the personal FIRE adviser that starts with your freedom date and then does the journey with you: a clear path, a next move, and progress you can keep following.

@@ -50,7 +50,7 @@ UntilFire is a personal FIRE adviser web app. It turns personal finance into a g
 - Core differentiator: **UntilFire does it with you** — not just a FIRE number, but a path, next move, and continuity toward work optionality.
 - North star: turn financial independence from an abstract calculator result into a clear, emotional, actionable path.
 - Free first value moment: full no-login calculator.
-- Pro direction: personal FIRE adviser, plan, budget tracking, and continuity after the aha moment.
+- Pro direction: personal FIRE adviser, plan, budget tracking, and continuity after the aha moment. The "adviser" part is intentionally infra-first for now — deterministic tools (scenario modeling, real tracked data) before an AI-driven recommendation layer, since early AI output read as too generic to lead with.
 
 Important framing:
 
