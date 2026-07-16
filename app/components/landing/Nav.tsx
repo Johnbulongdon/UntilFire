@@ -17,7 +17,7 @@ export default function Nav({
   return (
     <nav className="uf-nav">
       <Link href="/" className="uf-nav-logo" style={{ textDecoration: "none" }}>
-        <Logo variant="light" size={26} />
+        <Logo variant="dark" size={26} />
       </Link>
       <div className="uf-nav-dots">
         {Array.from({ length: totalSteps }).map((_, i) => (

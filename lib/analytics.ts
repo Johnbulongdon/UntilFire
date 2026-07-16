@@ -26,6 +26,7 @@ import {
   type FireTypeSharedProperties,
   type FireTypeCtaClickedProperties,
   type HysaEmptyStateCtaClickedProperties,
+  type EmailCaptureSubmittedProperties,
 } from './analytics-events';
 
 function isClient(): boolean {
@@ -200,4 +201,11 @@ export function trackHysaEmptyStateCtaClicked(input: {
     placement: input.placement ?? 'assets_empty_state',
   });
   capture(FunnelEvents.HYSA_EMPTY_STATE_CTA_CLICKED, props);
+}
+
+export function trackEmailCaptureSubmitted(input: { landingSource?: string }) {
+  const props: EmailCaptureSubmittedProperties = withVersion({
+    ...(input.landingSource ? { landing_source: input.landingSource } : {}),
+  });
+  capture(FunnelEvents.EMAIL_CAPTURE_SUBMITTED, props);
 }

@@ -27,12 +27,13 @@ export const FunnelEvents = {
   FIRE_TYPE_SHARED: 'funnel_fire_type_shared',
   FIRE_TYPE_CTA_CLICKED: 'funnel_fire_type_cta_clicked',
   HYSA_EMPTY_STATE_CTA_CLICKED: 'funnel_hysa_empty_state_cta_clicked',
+  EMAIL_CAPTURE_SUBMITTED: 'funnel_email_capture_submitted',
 } as const;
 
 export type FunnelEventName =
   (typeof FunnelEvents)[keyof typeof FunnelEvents];
 
-export type CalculatorStepId = 'city' | 'currency' | 'income' | 'savings' | 'portfolio';
+export type CalculatorStepId = 'goal' | 'city' | 'currency' | 'income' | 'savings' | 'portfolio';
 
 export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   city: 1,
@@ -40,6 +41,7 @@ export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   income: 3,
   savings: 4,
   portfolio: 5,
+  goal: 0, // added after city/income/savings/portfolio were indexed; kept separate so historical data is untouched
 };
 
 // Coarse buckets keep individual users from being re-identified by their
@@ -147,6 +149,10 @@ export interface HysaEmptyStateCtaClickedProperties extends BaseFunnelProperties
   cta: 'learn_more' | 'connect_account';
   destination: 'apy_calculator' | 'plaid_connect';
   placement: 'assets_empty_state';
+}
+
+export interface EmailCaptureSubmittedProperties extends BaseFunnelProperties {
+  landing_source?: string;
 }
 
 export function withVersion<P extends Record<string, unknown>>(

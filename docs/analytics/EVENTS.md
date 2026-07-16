@@ -13,8 +13,8 @@ event in PostHog. **This doc and that file must stay in sync.**
 
 ```
 funnel_landing_viewed
-  → [primary] funnel_calculator_step_viewed (step_id=city)
-           → funnel_calculator_step_viewed (step_id=currency)
+  → [primary] funnel_calculator_step_viewed (step_id=goal)
+           → funnel_calculator_step_viewed (step_id=city)
            → funnel_calculator_step_viewed (step_id=income)
            → funnel_calculator_step_viewed (step_id=savings)
            → funnel_calculator_step_viewed (step_id=portfolio)
@@ -26,6 +26,8 @@ funnel_landing_viewed
            → funnel_checkout_started   (Stripe checkout URL returned)
            → funnel_checkout_succeeded (server, Stripe webhook)
 
+  → [reveal, no-signup branch] funnel_email_capture_submitted (waitlist email form on the reveal screen)
+
   → [quiz branch] funnel_fire_type_started  (on first answer)
                → funnel_fire_type_completed (on result mount)
                → funnel_fire_type_shared    (optional, on share action)
@@ -33,6 +35,12 @@ funnel_landing_viewed
 
   → [dashboard experiment] funnel_hysa_empty_state_cta_clicked (cta=learn_more|connect_account)
 ```
+
+`step_id=currency` is a tombstone: an earlier flow had a standalone currency-selection
+step between city and income. It was folded into the income step (`IncomeScreen`'s
+inline currency picker) and is no longer part of the live wizard, but the value is kept
+in `CalculatorStepId` / `CALCULATOR_STEP_INDEX` so historical PostHog data stays valid.
+Do not wire a new screen to `step_id=currency`.
 
 ## PII rules
 
@@ -63,11 +71,16 @@ funnel_landing_viewed
 
 ### `funnel_calculator_step_viewed`
 
-- **Where**: `app/page.tsx`, `Home` screen effect when the wizard transitions
-  to one of the five steps.
+- **Where**: `app/HomeClient.tsx`, `HomeClient` screen effect when the wizard
+  transitions to one of the five live steps (`goal`, `city`, `income`,
+  `savings`, `portfolio`).
 - **Properties**:
-  - `step_id` - `city` | `currency` | `income` | `savings` | `portfolio`.
-  - `step_index` - `1..5`. Mirrors `step_id` for funnel ordering in PostHog.
+  - `step_id` - `goal` | `city` | `income` | `savings` | `portfolio` (`currency`
+    is a tombstoned value from a retired step; see the funnel order note above).
+  - `step_index` - mirrors `step_id` for funnel ordering in PostHog. Not a dense
+    `1..5` range - `goal` was added after the others were indexed and kept its
+    own value (`0`) so historical data for `city`/`income`/`savings`/`portfolio`
+    stays comparable across the change.
   - `landing_source` - optional route/source label.
 
 ### `funnel_calculator_revealed`
@@ -183,6 +196,18 @@ client-side experience without double-counting conversions.
   - `fire_type_code` — 4-letter result code.
   - `fire_type_axes` — same 4-letter axis code.
   - `source` — optional.
+
+### `funnel_email_capture_submitted`
+
+- **Where**: `app/HomeClient.tsx`, `RevealScreen`'s `handleEmailCapture`, after
+  the `/api/waitlist` POST resolves without throwing.
+- **Why**: the reveal screen offers a no-account "or get it by email" form
+  alongside the `/login` signup CTA. That path previously had no funnel event,
+  so reveal → convert looked worse than it was - some of the drop-off measured
+  by `funnel_signup_started` was really converting through this untracked
+  path. This event closes that gap.
+- **Properties**:
+  - `landing_source` - optional route/source label.
 
 ### `funnel_hysa_empty_state_cta_clicked`
 

@@ -18,6 +18,7 @@ import {
   trackLandingViewed,
   trackCalculatorStepViewed,
   trackCalculatorRevealed,
+  trackEmailCaptureSubmitted,
 } from "@/lib/analytics";
 import type { CalculatorStepId } from "@/lib/analytics-events";
 import {
@@ -28,6 +29,7 @@ import {
 import Nav from "@/app/components/landing/Nav";
 import WizardProgress from "@/app/components/landing/WizardProgress";
 import LandingPage from "@/app/components/landing/LandingPage";
+import GoalsScreen from "@/app/components/landing/GoalsScreen";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
 import { CITIES } from "@/lib/fire-data";
 import { FireTypeAvatar } from "@/app/fire-type/FireTypeAvatar";
@@ -206,75 +208,6 @@ function toAnnualGross(value: number, mode: IncomeMode): number {
   }
 }
 
-const POPULAR_CURRENCIES: SupportedCurrency[] = ["USD", "EUR", "GBP", "CAD", "AUD", "SGD", "INR", "JPY", "CHF", "NZD"];
-
-const CURRENCY_FLAG: Partial<Record<SupportedCurrency, string>> = {
-  USD: "🇺🇸",
-  EUR: "🇪🇺",
-  GBP: "🇬🇧",
-  CAD: "🇨🇦",
-  AUD: "🇦🇺",
-  SGD: "🇸🇬",
-  INR: "🇮🇳",
-  JPY: "🇯🇵",
-  CHF: "🇨🇭",
-  NZD: "🇳🇿",
-  CNY: "🇨🇳",
-  HKD: "🇭🇰",
-  KRW: "🇰🇷",
-  SEK: "🇸🇪",
-  NOK: "🇳🇴",
-  DKK: "🇩🇰",
-  MYR: "🇲🇾",
-  THB: "🇹🇭",
-  IDR: "🇮🇩",
-  PHP: "🇵🇭",
-  VND: "🇻🇳",
-  TWD: "🇹🇼",
-  MXN: "🇲🇽",
-  BRL: "🇧🇷",
-  ZAR: "🇿🇦",
-  AED: "🇦🇪",
-  SAR: "🇸🇦",
-  TRY: "🇹🇷",
-  PLN: "🇵🇱",
-  CZK: "🇨🇿",
-  HUF: "🇭🇺",
-  ILS: "🇮🇱",
-  NGN: "🇳🇬",
-  PKR: "🇵🇰",
-};
-
-const CURRENCY_CONFETTI_COLORS: Record<string, string[]> = {
-  USD: ["#B22234", "#FFFFFF", "#3C3B6E", "#B22234", "#FFFFFF", "#3C3B6E"],
-  EUR: ["#003399", "#62FAE3", "#003399", "#62FAE3", "#FFFFFF"],
-  GBP: ["#CF142B", "#FFFFFF", "#00247D", "#CF142B", "#FFFFFF"],
-  CAD: ["#FF0000", "#FFFFFF", "#FF0000", "#FFFFFF"],
-  AUD: ["#00008B", "#FF0000", "#FFFFFF", "#62FAE3", "#00008B"],
-  SGD: ["#EF3340", "#FFFFFF", "#EF3340", "#FFFFFF"],
-  INR: ["#22D3A5", "#FFFFFF", "#138808", "#000080"],
-  JPY: ["#FFFFFF", "#BC002D", "#FFFFFF", "#BC002D"],
-  CHF: ["#FF0000", "#FFFFFF", "#FF0000", "#FFFFFF"],
-  NZD: ["#00247D", "#CC142B", "#FFFFFF", "#000000", "#CC142B"],
-};
-
-const DEFAULT_CONFETTI_COLORS = ["#62FAE3", "#22D3A5", "#A7F3D0", "#FFFFFF", "#B8FFE9"];
-
-const CONFETTI_POSITIONS = [
-  { left: "3%", x: "-160px", r: "-200deg", delay: "0.00s" },
-  { left: "9%", x: "-100px", r: "170deg", delay: "0.04s" },
-  { left: "15%", x: "-60px", r: "-140deg", delay: "0.02s" },
-  { left: "21%", x: "-20px", r: "220deg", delay: "0.08s" },
-  { left: "27%", x: "20px", r: "-180deg", delay: "0.04s" },
-  { left: "33%", x: "60px", r: "150deg", delay: "0.10s" },
-  { left: "39%", x: "100px", r: "-210deg", delay: "0.03s" },
-  { left: "45%", x: "140px", r: "190deg", delay: "0.09s" },
-  { left: "51%", x: "180px", r: "-160deg", delay: "0.05s" },
-  { left: "57%", x: "220px", r: "230deg", delay: "0.11s" },
-  { left: "63%", x: "260px", r: "-190deg", delay: "0.07s" },
-  { left: "69%", x: "300px", r: "170deg", delay: "0.13s" },
-];
-
 function stateToCurrency(stateKey?: string | null): SupportedCurrency {
   if (!stateKey) return "USD";
   if (stateKey.startsWith("ca_")) return "CAD";
@@ -293,98 +226,6 @@ function stateToCurrency(stateKey?: string | null): SupportedCurrency {
     cz: "CZK", pl: "PLN", hu: "HUF",
   };
   return map[stateKey] ?? "USD";
-}
-
-function CurrencyScreen({ defaultCurrency = "USD", onNext, onBack }: { defaultCurrency?: SupportedCurrency; onNext: (currency: SupportedCurrency) => void; onBack: () => void }) {
-  const [selected, setSelected] = useState<SupportedCurrency>(defaultCurrency);
-  const [confettiKey, setConfettiKey] = useState(0);
-  const [burstCurrency, setBurstCurrency] = useState<SupportedCurrency>("USD");
-
-  return (
-    <>
-      {confettiKey > 0 && (
-        <div key={confettiKey} className="uf-currency-confetti" aria-hidden>
-          {CONFETTI_POSITIONS.map((pos, i) => {
-            const colors = CURRENCY_CONFETTI_COLORS[burstCurrency] ?? DEFAULT_CONFETTI_COLORS;
-            return (
-              <span
-                key={i}
-                style={{
-                  left: pos.left,
-                  background: colors[i % colors.length],
-                  ["--x" as string]: pos.x,
-                  ["--r" as string]: pos.r,
-                  animationDelay: pos.delay,
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      <div className="uf-screen">
-        <WizardProgress step={1} />
-        <p className="uf-step-label">Step 2 of 5</p>
-        <div className="uf-eyebrow">Currency</div>
-        <h2 className="uf-h2">What currency do you <span className="uf-accent">earn in?</span></h2>
-        <p className="uf-body" style={{ marginBottom: 24 }}>
-          We&apos;ll use this as your default dashboard currency and convert the calculator inputs automatically.
-        </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 16 }}>
-          {POPULAR_CURRENCIES.map((currency) => (
-            <button
-              key={currency}
-              type="button"
-              onClick={() => {
-                setSelected(currency);
-                setBurstCurrency(currency);
-                setConfettiKey((value) => value + 1);
-              }}
-              className={`uf-currency-btn${selected === currency ? " selected" : ""}`}
-              aria-pressed={selected === currency}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>{CURRENCY_FLAG[currency]}</span>
-                <span className="uf-currency-code">{currency}</span>
-              </div>
-              <span className="uf-currency-name">{CURRENCY_NAMES[currency]}</span>
-            </button>
-          ))}
-        </div>
-
-        <div style={{ marginBottom: 28 }}>
-          <label className="uf-label">Other currencies</label>
-          <select
-            className="uf-input"
-            value={POPULAR_CURRENCIES.includes(selected) ? "" : selected}
-            onChange={(e) => {
-              if (e.target.value) {
-                const nextCurrency = e.target.value as SupportedCurrency;
-                setSelected(nextCurrency);
-                setBurstCurrency(nextCurrency);
-                setConfettiKey((value) => value + 1);
-              }
-            }}
-          >
-            <option value="">Choose from full list...</option>
-            {SUPPORTED_CURRENCIES.filter((currency) => !POPULAR_CURRENCIES.includes(currency)).map((currency) => (
-              <option key={currency} value={currency}>
-                {CURRENCY_FLAG[currency] ?? ""} {currency} - {CURRENCY_NAMES[currency]}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="uf-nav-row">
-          <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-          <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(selected)}>
-            Continue with {selected} {"->"}
-          </button>
-        </div>
-      </div>
-    </>
-  );
 }
 
 function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, onBack }: {
@@ -422,8 +263,8 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={1} />
-      <p className="uf-step-label">Step 2 of 4</p>
+      <WizardProgress step={2} />
+      <p className="uf-step-label">Step 3 of 5</p>
       {onCurrencyChange && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
           <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Currency:</span>
@@ -605,8 +446,8 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={2} />
-      <p className="uf-step-label">Step 3 of 4</p>
+      <WizardProgress step={3} />
+      <p className="uf-step-label">Step 4 of 5</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">How much do you <span className="uf-accent">save or spend?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
@@ -759,8 +600,8 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={3} />
-      <p className="uf-step-label">Step 4 of 4</p>
+      <WizardProgress step={4} />
+      <p className="uf-step-label">Step 5 of 5</p>
       <div className="uf-eyebrow">Net worth</div>
       <h2 className="uf-h2">What is your <span className="uf-accent">net worth?</span></h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
@@ -1142,11 +983,12 @@ function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear
   );
 }
 
-function RevealScreen({ city, income, savings, stateKey, currency = "USD", currentAge, portfolioBalance = 0, landingSource, onAdjust }: {
+function RevealScreen({ city, income, savings, stateKey, currency = "USD", currentAge, portfolioBalance = 0, landingSource, fireGoals, onAdjust }: {
   city: CityState; income: number; savings: number; stateKey: string;
   currency?: SupportedCurrency;
   currentAge?: number; portfolioBalance?: number;
   landingSource?: string;
+  fireGoals?: string[];
   onAdjust: () => void;
 }) {
   const router = useRouter();
@@ -1194,7 +1036,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
           portfolioBalance,
         }),
       });
-      saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
+      saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, fireGoals });
+      trackEmailCaptureSubmitted({ landingSource });
       setEmailSubmitted(true);
     } catch {
       setEmailSubmitted(true);
@@ -1675,7 +1518,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     data-gsap="milestone"
                     href="/login"
                     className="uf-bridge-save"
-                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, fireGoals })}
                   >
                     Save plan and track monthly
                   </Link>
@@ -1810,7 +1653,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     href="/login"
                     className="uf-automate-btn"
                     style={{ display: "block", marginTop: 18, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none", opacity: 0 }}
-                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, fireGoals })}
                   >
                     Save my plan →
                   </Link>
@@ -1950,7 +1793,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                           href="/login"
                           className="uf-automate-btn"
                           style={{ display: "block", marginTop: 22, width: "100%", height: 44, borderRadius: 10, background: "#22D3A5", color: "#003527", fontSize: 13, fontWeight: 700, textAlign: "center", lineHeight: "44px", textDecoration: "none" }}
-                          onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                          onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, fireGoals })}
                         >
                           Save my plan →
                         </Link>
@@ -2158,7 +2001,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     href="/login"
                     className="uf-bridge-save"
                     style={{ padding: "0 32px" }}
-                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency })}
+                    onClick={() => saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, fireGoals })}
                   >
                     Save plan and track monthly
                   </Link>
@@ -2224,13 +2067,14 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 // ROOT
 // -----------------------------------------------------------------------------
 
-type Screen = "hero" | "city" | "currency" | "income" | "savings" | "portfolio" | "reveal";
+type Screen = "hero" | "goals" | "city" | "income" | "savings" | "portfolio" | "reveal";
 
 export default function HomeClient() {
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("hero");
 
   // Wizard state
+  const [fireGoals, setFireGoals]         = useState<string[]>([]);
   const [cityState, setCityState]         = useState<CityState | null>(null);
   const [currency, setCurrency]           = useState<SupportedCurrency>("USD");
   const [income, setIncome]               = useState(90000);
@@ -2276,7 +2120,7 @@ export default function HomeClient() {
       return;
     }
     if (urlParams?.get("start") === "onboarding") {
-      setScreen("city");
+      setScreen("goals");
     }
   }, []);
 
@@ -2301,8 +2145,8 @@ export default function HomeClient() {
       return;
     }
     const stepMap: Partial<Record<Screen, CalculatorStepId>> = {
+      goals: "goal",
       city: "city",
-      currency: "currency",
       income: "income",
       savings: "savings",
       portfolio: "portfolio",
@@ -2317,8 +2161,8 @@ export default function HomeClient() {
     router.push('/login');
   }
 
-  const STEP_MAP: Record<Screen, number> = { hero: 0, city: 1, currency: 1, income: 2, savings: 3, portfolio: 4, reveal: 5 };
-  const totalDots = 6;
+  const STEP_MAP: Record<Screen, number> = { hero: 0, goals: 1, city: 2, income: 3, savings: 4, portfolio: 5, reveal: 6 };
+  const totalDots = 7;
 
   return (
     <>
@@ -2326,22 +2170,22 @@ export default function HomeClient() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --bg: #F7F9FB;
+          --bg: #08080e;
           --bg-hero: #003527;
-          --bg-card: #FFFFFF;
-          --bg-elevated: #F1F5F9;
-          --border: #E2E8F0;
-          --border-light: #E2E8F0;
-          --text: #19181E;
-          --text-muted: #64748B;
-          --text-dim: #94A3B8;
-          --accent: #064E3B;
-          --accent-dim: rgba(6,78,59,0.08);
-          --accent-glow: rgba(6,78,59,0.20);
-          --teal: #20D4BF;
+          --bg-card: #111118;
+          --bg-elevated: #16161f;
+          --border: #23232d;
+          --border-light: #23232d;
+          --text: #f1f5f9;
+          --text-muted: #9ca3af;
+          --text-dim: #6b7280;
+          --accent: #22d3a5;
+          --accent-dim: rgba(34,211,165,0.10);
+          --accent-glow: rgba(34,211,165,0.24);
+          --teal: #22d3a5;
           --teal-bright: #62FAE3;
-          --teal-dim: rgba(32,212,191,0.12);
-          --danger: #DC2626;
+          --teal-dim: rgba(34,211,165,0.12);
+          --danger: #f87171;
           --purple: #a78bfa;
           --font-display: 'Manrope', sans-serif;
           --font-body: 'Manrope', sans-serif;
@@ -2354,8 +2198,8 @@ export default function HomeClient() {
         input[type=number] { -moz-appearance: textfield; }
 
         /* -- NAV -- */
-        .uf-nav { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: rgba(255,255,255,0.95); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; backdrop-filter: blur(12px); }
-        .uf-nav-logo { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: #064E3B; letter-spacing: -0.5px; flex: 0 0 auto; min-width: 0; }
+        .uf-nav { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: rgba(8,8,14,0.85); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; backdrop-filter: blur(12px); }
+        .uf-nav-logo { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; flex: 0 0 auto; min-width: 0; }
         .uf-nav-logo span { color: var(--teal); }
         .uf-nav-dots { display: flex; gap: 6px; align-items: center; flex: 0 1 auto; min-width: 0; }
         .uf-nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.3s; flex: 0 0 auto; }
@@ -2364,7 +2208,7 @@ export default function HomeClient() {
         .uf-nav-actions { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
         .uf-nav-restart { font-size: 13px; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: var(--font-body); transition: color 0.2s; }
         .uf-nav-restart:hover { color: var(--text); }
-        .uf-nav-signin { font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
+        .uf-nav-signin { font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 14px; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
         .uf-nav-signin:hover { border-color: var(--accent); background: var(--accent-dim); }
         .uf-hero-signin { display: block; width: 100%; margin-top: 10px; background: none; border: none; color: rgba(255,255,255,0.5); font-family: var(--font-body); font-size: 14px; cursor: pointer; padding: 8px; transition: color 0.2s; }
         .uf-hero-signin:hover { color: rgba(255,255,255,0.8); }
@@ -4294,7 +4138,7 @@ export default function HomeClient() {
       `}</style>
 
       {screen === "hero" ? (
-        <LandingPage onStart={() => setScreen("city")} />
+        <LandingPage onStart={() => setScreen("goals")} />
       ) : (
       <>
       <Nav
@@ -4310,10 +4154,16 @@ export default function HomeClient() {
           <div className="uf-atm-orb uf-atm-orb-2" />
           <div className="uf-atm-orb uf-atm-orb-3" />
         </div>
+        {screen === "goals" && (
+          <GoalsScreen
+            onNext={(goals) => { setFireGoals(goals); setScreen("city"); }}
+            onBack={() => setScreen("hero")}
+          />
+        )}
         {screen === "city" && (
           <CityScreen
             onNext={c => { setCityState(c); setCurrency(stateToCurrency(c.stateKey)); setScreen("income"); }}
-            onBack={() => setScreen("hero")}
+            onBack={() => setScreen("goals")}
             onSkip={() => {
               setCityState({ name: "United States (avg)", col: 52000, stateKey: "custom", isCustom: true });
               setCurrency("USD");
@@ -4347,15 +4197,6 @@ export default function HomeClient() {
             onBack={() => setScreen("income")}
           />
         )}
-        {screen === "currency" && (
-          <IncomeScreen
-            stateKey={cityState?.stateKey ?? "custom"}
-            currency={currency}
-            onCurrencyChange={setCurrency}
-            onNext={inc => { setIncome(inc); setScreen("savings"); }}
-            onBack={() => setScreen("city")}
-          />
-        )}
         {screen === "portfolio" && (
           <PortfolioScreen
             currency={currency}
@@ -4375,6 +4216,7 @@ export default function HomeClient() {
             currentAge={currentAge}
             portfolioBalance={portfolioBalance}
             landingSource={landingSource}
+            fireGoals={fireGoals}
             onAdjust={() => setScreen("portfolio")}
           />
         )}
