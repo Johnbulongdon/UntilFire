@@ -591,6 +591,20 @@ function FooterSection() {
             />
           </a>
           <a
+            href="https://tooldirs.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://tooldirs.com/badge/badge_dark.svg"
+              alt="Featured on ToolDirs"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://launchbuff.com"
             target="_blank"
             rel="noopener noreferrer"
