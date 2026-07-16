@@ -21,19 +21,22 @@ function monthsToTarget(startBalance: number, monthlySave: number, target: numbe
   return m;
 }
 
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
 function futureDate(monthsFromNow: number): Date {
   const d = new Date();
   d.setMonth(d.getMonth() + monthsFromNow);
   return d;
 }
 
-/* Example household shown in the interactive sections, labeled as such in the UI. */
-const EX_SPEND_MONTHLY = 3000;
-const EX_TARGET = EX_SPEND_MONTHLY * 12 * 25;
-const EX_PORTFOLIO = 300000;
-const EX_SLIDER_DEFAULT = 1500;
+/* Compounding demo: fixed 30-year horizon starting from $0, so the ending
+   balance shows what compounding does with whatever contribution it's fed. */
+const TRYIT_YEARS = 30;
+const TRYIT_MONTHS = TRYIT_YEARS * 12;
+const TRYIT_SLIDER_DEFAULT = 300;
+
+function futureValueOfContributions(monthlyContribution: number, months: number, monthlyRate: number): number {
+  const growthFactor = Math.pow(1 + monthlyRate, months);
+  return monthlyContribution * ((growthFactor - 1) / monthlyRate);
+}
 
 /* World section example: what a $1M portfolio covers today, per real city data. */
 const WORLD_PORTFOLIO = 1000000;
@@ -244,37 +247,36 @@ function How7() {
   );
 }
 
-/* ── Try it: slider moves the date (real compounding, example household) ── */
+/* ── Try it: slider changes the monthly contribution, fixed 30-year horizon ── */
 function TryIt7() {
-  const [save, setSave] = useState(EX_SLIDER_DEFAULT);
-  const baselineMonths = useMemo(() => monthsToTarget(EX_PORTFOLIO, EX_SLIDER_DEFAULT, EX_TARGET), []);
-  const months = useMemo(() => monthsToTarget(EX_PORTFOLIO, save, EX_TARGET), [save]);
-  const d = futureDate(months);
-  const savedYears = (baselineMonths - months) / 12;
+  const [save, setSave] = useState(TRYIT_SLIDER_DEFAULT);
+  const contributed = save * TRYIT_MONTHS;
+  const ending = useMemo(() => futureValueOfContributions(save, TRYIT_MONTHS, GROWTH_MONTHLY), [save]);
+  const grown = Math.max(0, ending - contributed);
 
   return (
     <section className="uf7-block uf7-center" style={{ ["--uf7hue" as string]: "44deg" }}>
       <div className="uf7-blob uf7-glow-r" />
       <div className="uf7-wrap">
         <div className="uf7-sec-eyebrow uf7-rv">Try it</div>
-        <h2 className="uf7-statement uf7-rv">Move one number.<br />Watch <em>years</em> fall away.</h2>
+        <h2 className="uf7-statement uf7-rv">Compounding does the work.<br />Your number decides <em>how much</em>.</h2>
         <div className="uf7-slider-stage uf7-rv">
-          <div className="uf7-live-date">{MONTHS[d.getMonth()]} <span className="uf7-year">{d.getFullYear()}</span></div>
+          <div className="uf7-live-amount">${Math.round(ending).toLocaleString()}</div>
           <div className="uf7-saves">
-            {savedYears > 0.08 ? `↑ that move saves ${savedYears.toFixed(1)} years` : savedYears < -0.08 ? `↓ ${Math.abs(savedYears).toFixed(1)} years later` : " "}
+            You put in ${Math.round(contributed).toLocaleString()} — compounding added ${Math.round(grown).toLocaleString()}
           </div>
           <div className="uf7-slider-row">
             <div className="uf7-slider-label"><span>Monthly savings</span><strong>${save.toLocaleString()}/mo</strong></div>
             <input
               type="range"
-              min={500}
+              min={100}
               max={3000}
               step={100}
               value={save}
               onChange={(e) => setSave(+e.target.value)}
               aria-label="Monthly savings"
             />
-            <div className="uf7-slider-foot">Example household — spending $3,000/mo with $300K invested. Same math as the calculator.</div>
+            <div className="uf7-slider-foot">Starting from $0, after {TRYIT_YEARS} years at a 7% average annual return.</div>
           </div>
         </div>
       </div>
@@ -887,8 +889,7 @@ const CSS7 = `
   .uf7-row p { margin: 8px 0 0; font-size: 15px; line-height: 1.65; color: rgba(255,255,255,0.68); max-width: 460px; }
 
   .uf7-slider-stage { margin-top: 64px; }
-  .uf7-live-date { font-family: ${SERIF}; font-size: clamp(52px, 8vw, 96px); line-height: 1; letter-spacing: -0.02em; text-shadow: 0 4px 60px rgba(34,211,165,0.3); }
-  .uf7-year { color: #62fae3; }
+  .uf7-live-amount { font-family: ${SERIF}; font-size: clamp(52px, 8vw, 96px); line-height: 1; letter-spacing: -0.02em; text-shadow: 0 4px 60px rgba(34,211,165,0.3); color: #62fae3; }
   .uf7-saves { margin-top: 14px; font-size: 14px; font-weight: 700; color: #62fae3; min-height: 20px; }
   .uf7-slider-row { margin: 44px auto 0; max-width: 560px; }
   .uf7-slider-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.68); margin-bottom: 14px; }
