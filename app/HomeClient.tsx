@@ -549,7 +549,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
       </div>
 
       {savingsLocal === 0 && (
-        <div style={{ marginTop: 16, padding: "10px 14px", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, fontSize: 13, color: "#92400E", display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, fontSize: 13, color: "#fdba74", display: "flex", gap: 8, alignItems: "flex-start" }}>
           <span>⚠️</span>
           <span>With <strong>$0 saved per month</strong> your freedom date will be very far out. Make sure this is intentional — you can always update it later.</span>
         </div>
@@ -2270,26 +2270,10 @@ export default function HomeClient() {
         .uf-wline.done { background: var(--teal); }
         .uf-wline.active { background: var(--accent); }
 
-        /* -- CURRENCY -- */
-        .uf-currency-btn { display: flex; flex-direction: column; align-items: flex-start; padding: 12px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; }
-        @media (hover: hover) and (pointer: fine) {
-          .uf-currency-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
-        }
-        .uf-currency-btn.selected { border-color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent); }
-        @keyframes currencyConfettiFall {
-          0% { opacity: 0; transform: translate3d(0, -24px, 0) rotate(0deg) scale(0.5); }
-          8% { opacity: 1; }
-          100% { opacity: 0; transform: translate3d(var(--x), 100vh, 0) rotate(var(--r)) scale(1.1); }
-        }
-        .uf-currency-confetti { position: fixed; top: 0; left: 0; right: 0; height: 100vh; pointer-events: none; z-index: 200; overflow: hidden; }
-        .uf-currency-confetti span { position: absolute; top: 0; width: 8px; height: 13px; border-radius: 3px; animation: currencyConfettiFall 1.35s ease-out forwards; }
-        .uf-currency-code { font-weight: 800; font-size: 15px; color: var(--text); font-family: var(--font-display); }
-        .uf-currency-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-
         /* -- BUTTONS -- */
         .uf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 8px; font-family: var(--font-body); font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; }
-        .uf-btn-primary { background: var(--accent); color: #fff; }
-        .uf-btn-primary:hover:not(:disabled) { background: #065F46; transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
+        .uf-btn-primary { background: var(--accent); color: #003527; }
+        .uf-btn-primary:hover:not(:disabled) { background: var(--teal-bright); transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
         .uf-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
         .uf-btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
         .uf-btn-ghost:hover { color: var(--text); background: var(--bg-elevated); border-color: var(--text-dim); }
@@ -2297,16 +2281,16 @@ export default function HomeClient() {
         .uf-btn-teal:hover { background: #4df5d6; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(98,250,227,0.35); }
         .uf-btn-full { width: 100%; }
         .uf-btn-lg { padding: 18px 36px; font-size: 17px; }
-        .uf-btn-outline { height: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer; background: #fff; border: 1px solid #E2E8F0; color: #0F172A; font-size: 13px; font-weight: 600; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s; text-decoration: none; justify-content: center; }
-        .uf-btn-outline:hover { background: #F8FAFC; border-color: #CBD5E1; }
+        .uf-btn-outline { height: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 600; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s; text-decoration: none; justify-content: center; }
+        .uf-btn-outline:hover { background: var(--bg-elevated); border-color: var(--text-dim); }
         .uf-btn-dark { height: 44px; padding: 0 20px; border-radius: 10px; background: #003527; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s, transform 0.15s; }
         .uf-btn-dark:hover { background: #065F46; transform: translateY(-1px); }
         .uf-nav-row { margin-top: 32px; display: flex; gap: 12px; }
 
         /* -- INPUTS -- */
         .uf-label { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; letter-spacing: 0.2px; }
-        .uf-input { width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; padding: 13px 14px; font-family: var(--font-body); font-size: 16px; color: var(--text); outline: none; transition: border-color 0.2s; }
-        .uf-input:focus { border-color: #047857; box-shadow: 0 0 0 3px rgba(6,78,59,0.12); }
+        .uf-input { width: 100%; background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 8px; padding: 13px 14px; font-family: var(--font-body); font-size: 16px; color: var(--text); outline: none; transition: border-color 0.2s; }
+        .uf-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
         .uf-input-mono { font-family: var(--font-mono); font-size: 18px; font-weight: 500; }
         .uf-input-big { padding: 14px 16px; }
         .uf-big-input-wrap { position: relative; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
@@ -2317,35 +2301,35 @@ export default function HomeClient() {
 
         /* -- MODE PILLS -- */
         .uf-mode-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-        .uf-mode-pill { padding: 7px 16px; border-radius: 99px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: #fff; color: var(--text-muted); font-family: var(--font-body); transition: all 0.15s; }
-        .uf-mode-pill:hover { border-color: #047857; color: var(--accent); }
-        .uf-mode-pill.active { background: #ECFDF5; border-color: #047857; color: #065F46; font-weight: 700; }
+        .uf-mode-pill { padding: 7px 16px; border-radius: 99px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); font-family: var(--font-body); transition: all 0.15s; }
+        .uf-mode-pill:hover { border-color: var(--accent); color: var(--accent); }
+        .uf-mode-pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 700; }
 
         /* -- RANGE SLIDER -- */
         .uf-slider-wrap { margin: 8px 0; }
         .uf-range { width: 100%; -webkit-appearance: none; height: 4px; border-radius: 2px; background: var(--border); outline: none; cursor: pointer; }
-        .uf-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--accent); cursor: pointer; }
+        .uf-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg-card); box-shadow: 0 0 0 2px var(--accent); cursor: pointer; }
         .uf-range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); margin-top: 6px; }
 
         /* -- DROPDOWN -- */
-        .uf-dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: #fff; border: 1.5px solid var(--border); border-radius: 12px; max-height: 280px; overflow-y: auto; z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06); }
+        .uf-dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 12px; max-height: 280px; overflow-y: auto; z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2); }
         .uf-dropdown-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: transparent; border: none; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; text-align: left; }
-        .uf-dropdown-item:hover { background: #F8FAFC; }
+        .uf-dropdown-item:hover { background: var(--bg-elevated); }
         .uf-dropdown-flag { font-size: 18px; line-height: 1; flex-shrink: 0; }
         .uf-dropdown-name { font-size: 14px; color: var(--text); font-weight: 600; }
         .uf-dropdown-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .uf-dropdown-custom { width: 100%; display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: #ECFDF5; border: none; border-top: 1px solid #D1FAE5; cursor: pointer; transition: background 0.15s; text-align: left; }
-        .uf-dropdown-custom:hover { background: #D1FAE5; }
+        .uf-dropdown-custom { width: 100%; display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: var(--accent-dim); border: none; border-top: 1px solid var(--border); cursor: pointer; transition: background 0.15s; text-align: left; }
+        .uf-dropdown-custom:hover { background: rgba(34,211,165,0.18); }
         .uf-dropdown-custom-title { font-size: 14px; color: var(--accent); font-weight: 700; }
 
         /* -- CUSTOM CITY -- */
-        .uf-custom-city { background: #ECFDF5; border: 1px solid #D1FAE5; border-radius: 12px; padding: 16px; margin-top: 14px; }
+        .uf-custom-city { background: var(--accent-dim); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 14px; }
         .uf-custom-row { display: flex; gap: 10px; align-items: center; }
 
         /* -- CITY INFO -- */
         .uf-city-info { margin-top: 16px; }
         .uf-city-info-label { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
-        .uf-info-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; display: flex; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .uf-info-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; display: flex; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
         .uf-info-col { flex: 1; padding: 14px 16px; }
         .uf-info-col:not(:last-child) { border-right: 1px solid var(--border); }
         .uf-info-val { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--accent); }
@@ -2354,13 +2338,13 @@ export default function HomeClient() {
 
         /* -- STAT ROW -- */
         .uf-stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 20px; }
-        .uf-stat-box { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        .uf-stat-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
         .uf-stat-val { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--text); }
         .uf-stat-lab { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
 
         /* -- CARD -- */
-        .uf-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .uf-card-accent { background: #ECFDF5; border-color: #D1FAE5; }
+        .uf-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+        .uf-card-accent { background: var(--accent-dim); border-color: var(--border); }
         .uf-card-head { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         .uf-card-sub { font-size: 13px; color: var(--text-muted); }
         .uf-card-hint { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
@@ -2373,7 +2357,7 @@ export default function HomeClient() {
         .uf-tax-divider { border-top: 1px solid var(--border); margin: 6px 0; }
 
         /* -- PROGRESS BAR -- */
-        .uf-progress-track { background: #E2E8F0; border-radius: 4px; height: 8px; overflow: hidden; }
+        .uf-progress-track { background: var(--bg-elevated); border-radius: 4px; height: 8px; overflow: hidden; }
         .uf-progress-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
         .uf-rate-head { display: flex; justify-content: space-between; margin-bottom: 6px; }
 
@@ -2463,9 +2447,9 @@ export default function HomeClient() {
 
         /* -- GOALS GRID -- */
         .uf-goals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-        .uf-goal-card { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 18px; cursor: pointer; text-align: left; transition: all 0.15s; font-family: var(--font-body); }
-        .uf-goal-card:hover { border-color: var(--accent); background: #ECFDF5; }
-        .uf-goal-card.active { border-color: var(--accent); background: #ECFDF5; }
+        .uf-goal-card { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 12px; padding: 18px; cursor: pointer; text-align: left; transition: all 0.15s; font-family: var(--font-body); }
+        .uf-goal-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+        .uf-goal-card.active { border-color: var(--accent); background: var(--accent-dim); }
         .uf-goal-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .uf-goal-emoji { font-size: 24px; line-height: 1; }
         .uf-goal-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; transition: all 0.15s; }
