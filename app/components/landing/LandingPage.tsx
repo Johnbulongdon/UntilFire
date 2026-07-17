@@ -1111,6 +1111,19 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://huntstartup.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://huntstartup.com/badge-dark.svg"
+              alt="Hunt Startup"
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
