@@ -119,17 +119,23 @@ async function parseXLSX(file: File): Promise<{ headers: string[]; rows: string[
 
 // ─── PDF (bank/credit-card statement) parsing ──────────────────────────────────────────────────
 // A PDF has no real columns — each transaction row is reconstructed from the raw text layout
-// instead: a row starts on a line beginning with a date, ends with the transaction amount, and
-// may have up to one continuation line of extra description (e.g. a device ID or exchange rate)
-// directly below it. Anything past that (page footers, T&Cs, repeated headers) is not part of
-// the table and is ignored rather than merged in.
+// instead: a row starts on a line beginning with a date, ends with either one signed transaction
+// amount (credit-card statements) or an amount + a running balance (savings/deposit-account
+// statements - the direction is derived from whether the balance rose or fell), and may have up
+// to one continuation line of extra description (e.g. a device ID or exchange rate) directly
+// below it. Anything past that (page footers, T&Cs, repeated headers) is not part of the table
+// and is ignored rather than merged in.
 const PDF_MONTH_ABBR: Record<string, number> = {
   JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12,
 };
-const PDF_DATE_TOKEN_AT_START = /^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}[A-Z]{3}\d{0,4}|\d{1,2}-[A-Z]{3}-\d{2,4})\b/i;
+const PDF_DATE_TOKEN_AT_START = /^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}[A-Z]{3}\d{0,4}|\d{1,2}-[A-Z]{3}-\d{2,4}|\d{1,2}\s+[A-Z]{3}\s+\d{4})\b/i;
 const PDF_STATEMENT_DATE = /(\d{1,2})\s+([A-Z]{3})\s+(\d{4})/;
 const PDF_STOP_MARKERS = [/REWARDCASH SUMMARY/i, /TRANSACTION SUMMARY/i, /FEES AND CHARGES SUMMARY/i, /FINANCE CHARGE SUMMARY/i, /^\*{5,}/];
 const PDF_MAX_CONTINUATION_LINES = 1;
+// Savings/deposit-account statements (as opposed to credit-card statements)
+// show Deposit/Withdrawal + a running Balance instead of one signed amount,
+// and open each sub-account with a balance-only row that isn't a transaction.
+const PDF_BALANCE_ONLY_MARKERS = [/opening balance/i, /closing balance/i, /上期結餘/, /本期結餘/];
 
 function pdfMatchLeadingDateTokens(line: string): { tokens: string[]; rest: string } | null {
   let rest = line;
@@ -148,6 +154,37 @@ function pdfExtractTrailingAmount(text: string): { amount: number; isCredit: boo
   const m = text.match(/([\d,]+\.\d{2})\s*(CR)?\s*$/i);
   if (!m || m.index === undefined) return null;
   return { amount: parseFloat(m[1].replace(/,/g, "")), isCredit: !!m[2], matchStart: m.index };
+}
+
+// Deposit/Withdrawal + running-Balance statements end each transaction line
+// with two decimal amounts, not one - the first is the transaction amount,
+// the second is the account balance after it (not itself a transaction).
+//
+// This can look identical to a different case some statements already rely
+// on: a foreign-currency reference amount inlined before the real charge,
+// e.g. "...CN CNY 111.58 131.26" (111.58 is the CNY amount shown for
+// context, 131.26 is the actual HKD charge). That's disambiguated by
+// checking what precedes the first number - a currency code label (as
+// above) means it's a reference amount, not this row's own amount+balance,
+// so the single-trailing-amount path should handle it instead (it already
+// correctly extracts the real charge, the last number on the line).
+function pdfExtractAmountAndBalance(text: string): { amount: number; balance: number; matchStart: number } | null {
+  const m = text.match(/([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s*(CR)?\s*$/i);
+  if (!m || m.index === undefined) return null;
+  const beforeFirst = text.slice(0, m.index).trim();
+  const codeMatch = beforeFirst.match(/\b([A-Z]{3})$/);
+  if (codeMatch && (SUPPORTED_CURRENCIES as readonly string[]).includes(codeMatch[1])) return null;
+  return { amount: parseFloat(m[1].replace(/,/g, "")), balance: parseFloat(m[2].replace(/,/g, "")), matchStart: m.index };
+}
+
+// A summary line like "Statement date: 09 JUN 2026 ... Statement balance
+// HKD3,842.50" can start with a date token and end with an amount too, but
+// isn't a transaction - it never has real description text, just a bare
+// currency code (or nothing) left after the amount is stripped off.
+function pdfIsTrivialDescription(desc: string): boolean {
+  const trimmed = desc.trim();
+  if (!trimmed) return true;
+  return /^[A-Z]{3}$/.test(trimmed) && (SUPPORTED_CURRENCIES as readonly string[]).includes(trimmed);
 }
 
 function pdfDateTokenToISO(tok: string, refYear: number, refMonth: number): string | null {
@@ -176,6 +213,13 @@ function pdfDateTokenToISO(tok: string, refYear: number, refMonth: number): stri
     if (!monthNum) return null;
     const year = yy.length === 2 ? 2000 + Number(yy) : Number(yy);
     return `${year}-${String(monthNum).padStart(2, "0")}-${dd.padStart(2, "0")}`;
+  }
+  m = t.match(/^(\d{1,2})\s+([A-Z]{3})\s+(\d{4})$/);
+  if (m) {
+    const [, dd, mon, yyyy] = m;
+    const monthNum = PDF_MONTH_ABBR[mon];
+    if (!monthNum) return null;
+    return `${yyyy}-${String(monthNum).padStart(2, "0")}-${dd.padStart(2, "0")}`;
   }
   return null;
 }
@@ -228,14 +272,34 @@ async function parsePDF(file: File): Promise<{ headers: string[]; rows: string[]
 
   type BuiltRow = { tokens: string[]; description: string; amount: number | null; isCredit: boolean; continuations: number };
   const built: BuiltRow[] = [];
+  // Tracks the running account balance for Deposit/Withdrawal/Balance-style
+  // statements, so a transaction's direction (income vs expense) can be
+  // derived from whether the balance rose or fell - reset by each balance-only
+  // row, since one statement can cover several sub-accounts in sequence.
+  let runningBalance: number | null = null;
   for (const line of lines) {
     const lead = pdfMatchLeadingDateTokens(line);
     if (lead) {
+      const isBalanceOnly = PDF_BALANCE_ONLY_MARKERS.some((p) => p.test(lead.rest));
+      const amtBal = !isBalanceOnly ? pdfExtractAmountAndBalance(lead.rest) : null;
+      if (amtBal && !pdfIsTrivialDescription(lead.rest.slice(0, amtBal.matchStart))) {
+        const isWithdrawal = runningBalance === null || amtBal.balance < runningBalance;
+        runningBalance = amtBal.balance;
+        built.push({ tokens: lead.tokens, description: lead.rest.slice(0, amtBal.matchStart).trim(), amount: isWithdrawal ? -amtBal.amount : amtBal.amount, isCredit: false, continuations: 0 });
+        continue;
+      }
+      if (isBalanceOnly) {
+        const bal = pdfExtractTrailingAmount(lead.rest);
+        if (bal) runningBalance = bal.amount;
+        built.push({ tokens: lead.tokens, description: lead.rest, amount: null, isCredit: false, continuations: PDF_MAX_CONTINUATION_LINES });
+        continue;
+      }
       const amt = pdfExtractTrailingAmount(lead.rest);
-      if (amt) {
+      if (amt && !pdfIsTrivialDescription(lead.rest.slice(0, amt.matchStart))) {
         built.push({ tokens: lead.tokens, description: lead.rest.slice(0, amt.matchStart).trim(), amount: amt.amount, isCredit: amt.isCredit, continuations: 0 });
       } else {
-        // no trailing amount on the row-start line — can't reliably use this row
+        // no trailing amount, or the "description" is just a bare currency
+        // code (a statement-summary line, not a transaction) — can't reliably use this row
         built.push({ tokens: lead.tokens, description: lead.rest, amount: null, isCredit: false, continuations: PDF_MAX_CONTINUATION_LINES });
       }
     } else if (built.length > 0) {
