@@ -346,8 +346,15 @@ function parseAmount(s: string): number | null {
   return isNaN(n) ? null : n;
 }
 
-function guessCategory(desc: string, type: "expense" | "income"): string {
+// Moving money between accounts (or to/from another person), not earning or
+// spending it - matched on the word itself rather than generic deposit/
+// withdrawal language, since those alone don't distinguish a transfer from
+// real income (e.g. a salary deposit).
+const TRANSFER_PATTERN = /\btransfer\b|轉賬|轉帳|轉數快/i;
+
+function guessCategory(desc: string, type: "expense" | "income" | "transfer"): string {
   const d = desc.toLowerCase();
+  if (type === "transfer") return "transfer";
   if (type === "income") {
     if (/salary|payroll|direct dep|wages/.test(d)) return "salary";
     if (/freelance|consulting|invoice/.test(d)) return "freelance";
@@ -633,7 +640,7 @@ export default function CsvImportModal({
       const rawAmt = parseAmount(rawAmount);
       if (!date || rawAmt === null || !rawDesc.trim()) continue;
 
-      let type: "expense" | "income";
+      let type: "expense" | "income" | "transfer";
       let amount: number;
       if (rawTypeVal) {
         // WeChat Pay: 收入 = income, 支出 = expense; amounts always positive
@@ -644,6 +651,10 @@ export default function CsvImportModal({
         type = amt < 0 ? "expense" : "income";
         amount = Math.abs(amt);
       }
+      // Moving money between accounts (or to/from another person) isn't
+      // earned or spent - don't let it skew income/expense totals just
+      // because of which direction the balance happened to move.
+      if (TRANSFER_PATTERN.test(rawDesc)) type = "transfer";
       const currency = normalizeCurrencyCode(rawCurrency) || detectCurrencyFromValue(rawAmount, importCurrency) || importCurrency;
       parsed.push({
         date,
