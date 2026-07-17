@@ -406,6 +406,42 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>):
   return rate ? amount / rate : amount;
 };
 
+// ─── Duplicate detection across currencies ────────────────────────────────
+// Foreign-currency card statements often show the original amount inline,
+// e.g. "Alipay*McDonalds Shanghai CN CNY 28.90 *EXCHANGE RATE: 1.18131".
+// Extracting that lets us match a converted card charge (34.14 HKD) against
+// the same purchase's native-currency record from another source, like an
+// Alipay export (28.9 CNY) - the two would never match on amount alone.
+function extractEmbeddedForeignAmount(description: string): { currency: string; amount: number } | null {
+  const match = description.match(/\b([A-Z]{3})\s?([\d,]+\.\d{2})\b/);
+  if (!match) return null;
+  const currency = match[1];
+  if (!(SUPPORTED_CURRENCIES as readonly string[]).includes(currency)) return null;
+  const amount = parseFloat(match[2].replace(/,/g, ""));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return { currency, amount };
+}
+
+const DUPLICATE_DATE_TOLERANCE_DAYS = 2;
+const DUPLICATE_AMOUNT_TOLERANCE = 0.02;
+
+function shiftDate(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function isWithinDateTolerance(a: string, b: string): boolean {
+  const da = new Date(`${a}T00:00:00Z`).getTime();
+  const db = new Date(`${b}T00:00:00Z`).getTime();
+  if (!Number.isFinite(da) || !Number.isFinite(db)) return a === b;
+  return Math.abs(da - db) <= DUPLICATE_DATE_TOLERANCE_DAYS * 86400000;
+}
+
+function amountsClose(a: number, b: number): boolean {
+  return Math.abs(a - b) <= DUPLICATE_AMOUNT_TOLERANCE;
+}
+
 export default function CsvImportModal({
   onClose,
   onImported,
@@ -670,21 +706,36 @@ export default function CsvImportModal({
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { handleImport(new Set()); return; }
 
+    // Widen the query window so date-shifted duplicates (a card statement
+    // posts a day or two after the underlying wallet transaction) are still
+    // fetched as candidates.
+    const queryMinDate = shiftDate(minDate, -DUPLICATE_DATE_TOLERANCE_DAYS);
+    const queryMaxDate = shiftDate(maxDate, DUPLICATE_DATE_TOLERANCE_DAYS);
+
     const { data: existing } = await supabase
       .from("expenses")
-      .select("id, date, amount, category")
+      .select("id, date, amount, category, currency, description")
       .eq("user_id", session.user.id)
-      .gte("date", minDate)
-      .lte("date", maxDate);
+      .gte("date", queryMinDate)
+      .lte("date", queryMaxDate);
 
     const flags: DuplicateFlag[] = [];
     for (let i = 0; i < parsed.length; i++) {
       const row = parsed[i];
-      const match = existing?.find(
-        (e) =>
-          e.date === row.date &&
-          Number(e.amount) === row.amount
-      );
+      const rowForeign = extractEmbeddedForeignAmount(row.description);
+      const match = existing?.find((e) => {
+        if (!isWithinDateTolerance(e.date, row.date)) return false;
+        // Same currency, same amount - today's exact match, unchanged.
+        if (e.currency === row.currency && amountsClose(Number(e.amount), row.amount)) return true;
+        // This row's embedded original-currency amount (e.g. "CNY 28.90" on a
+        // converted card charge) matches the existing row's native amount.
+        if (rowForeign && e.currency === rowForeign.currency && amountsClose(Number(e.amount), rowForeign.amount)) return true;
+        // The existing row's own description embeds a foreign amount that
+        // matches this row's native currency/amount (import order reversed).
+        const existingForeign = extractEmbeddedForeignAmount(e.description ?? "");
+        if (existingForeign && existingForeign.currency === row.currency && amountsClose(existingForeign.amount, row.amount)) return true;
+        return false;
+      });
       if (match) flags.push({ rowIndex: i, row, existing: match });
     }
 
