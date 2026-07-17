@@ -1097,6 +1097,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://huzzler.so/products/12o2rXnSPR/untilfire?utm_source=huzzler_product_website&utm_medium=badge&utm_campaign=free_listing"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://huzzler.so/assets/images/embeddable-badges/featured.png"
+              alt="Huzzler Embed Badge"
+              width={159}
+              height={55}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
