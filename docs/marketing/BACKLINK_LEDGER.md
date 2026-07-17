@@ -17,6 +17,7 @@ Last full audit: 2026-06-22
 7. Use ISO dates (`YYYY-MM-DD`). If the exact date is unknown, use the most precise known month and explain it in Notes.
 8. Set Owner/session to a person, Codex thread, or `Unknown (pre-ledger)` so follow-up work has an accountable source.
 9. If a platform assigns a launch or publication date, record the date, time, and timezone exactly as shown and change the status to `scheduled`. Use `Unknown` when the schedule is inaccessible; never infer it.
+10. When hunting new targets, prioritize DR >= 10 platforms that explicitly advertise a dofollow backlink or dofollow listing benefit. Do not assume a link is dofollow from marketing copy alone; verify the final public page when possible.
 
 ## Status Vocabulary
 
@@ -309,6 +310,7 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 
 | Date | Owner/session | Change |
 | --- | --- | --- |
+| 2026-07-17 | John / Codex backlink acquisition | Added a persistent session rule to prioritize DR >= 10 targets that explicitly advertise dofollow backlinks or dofollow listing benefits, while still requiring final-page verification before counting a backlink as dofollow. |
 | 2026-07-17 | Codex backlink acquisition | Added the Hunt Startup dark badge to the UntilFire footer from the user-provided embed. The badge asset returns HTTP 200, but Hunt Startup remains logged as not submitted because the directory page did not contain UntilFire and the submit path previously required auth/account creation. |
 | 2026-07-17 | Codex backlink acquisition | Added the Huzzler free-listing badge to the UntilFire footer using the user-provided embed code and logged the current Huzzler product page state. The page returns HTTP 200 and includes UntilFire, but is marked `Not published` and its current Visit link is nofollow, so the dofollow backlink is still pending Huzzler verification/publication. |
 | 2026-07-17 | Codex backlink acquisition | Submitted Blogroll.org (DR 47) through its clean no-account blog suggestion form for the UntilFire Learning Hub and opened a Huzzler (DR 58) Google-auth handoff in Chrome. Logged Product Watch auth, TheSaaSDirectory registration/ModSecurity failure, IndieBlog/Blogosphere/Minifeed missing-RSS blockers, Startup Tracker API/auth, StartupDirectory.net login, Toolfolio captcha/pricing, InstantLaunch login, Fake Mayo no-submit/CAPTCHA, and AI-only/guest-post/profile fit blockers without duplicate, paid, CAPTCHA-bypassed, low-DR, or wrong-fit submissions. |
