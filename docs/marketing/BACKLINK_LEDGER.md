@@ -87,6 +87,7 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 
 | Platform | Status | Owner/session | Last checked | Evidence / next action |
 | --- | --- | --- | --- | --- |
+| ToolDirs | `not-submitted` | John / Codex backlink acquisition | 2026-07-17 | The requested ToolDirs dark badge is already present on latest pushed `origin/main` in `app/components/landing/LandingPage.tsx`, linking to `https://tooldirs.com` with image `https://tooldirs.com/badge/badge_dark.svg`, width `200`, and height `54`. No ToolDirs listing/backlink is confirmed on `main`; prior ToolDirs submit flow redirected to login/auth. Manual next step: sign in to ToolDirs, return to its submit/verification flow, and click badge verification after deployment. |
 | BetaList | `not-submitted` | Codex backlink acquisition | 2026-06-22 | Submission redirects to account sign-in. Free-tier and publication timing were not visible without an account; defer until the higher-confidence free batch is complete. |
 | Indie Hackers | `not-submitted` | Unassigned | 2026-06-22 | No repository or public listing evidence found. |
 | Hacker News | `not-submitted` | Unassigned | 2026-06-22 | Launch copy exists, but no submitted Show HN page was found. |
@@ -217,6 +218,7 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 
 | Date | Owner/session | Change |
 | --- | --- | --- |
+| 2026-07-17 | John / Codex backlink acquisition | Verified that the user-provided ToolDirs badge is already present on latest pushed `origin/main` and recorded the missing ToolDirs ledger row. No duplicate footer badge was added; ToolDirs still needs account-side verification before counting any listing or backlink. |
 | 2026-06-25 | Codex backlink acquisition | Added the KittyLaunch light badge embed to the UntilFire footer and recorded the post-deploy `Verify Badge` action needed to unlock the dofollow backlink and developer Upvote (+1). |
 | 2026-06-25 | Codex backlink acquisition | Rechecked recently submitted/pending listings and promoted MarketingDB, Startup Spotlight, StartupBase, Uneed, and Microlaunch to live statuses where public pages could be verified. Attempted/screened additional free targets; Dealflow Scout returned HTTP 500, Billion Dollar Pitch Decks had a client-only non-submitting form, and Startup List, True Recurring, Smol Launch, Sharebrand, eBool, and major software vendor portals were blocked by account, revenue-fit, CAPTCHA, paid, parked-domain, or vendor-gate issues. |
 | 2026-06-24 | Codex backlink acquisition | Submitted FinTech Weekly directory form plus SlashTraders and StockIntent guest-post pitches; marked Startup Fast activation email as sent by user after live badge verification. Logged Startup88, AwesomeFinTech, Fintech Labs, Ascend, and FinTech Insights as manual/skipped blockers where automation would require Typeform runtime, Google Forms connectivity, CAPTCHA, email-only outreach, or paid/sponsored language. |
