@@ -27,7 +27,6 @@ import {
   setAcquisitionSource,
 } from "@/lib/acquisition";
 import Nav from "@/app/components/landing/Nav";
-import WizardProgress from "@/app/components/landing/WizardProgress";
 import LandingPage from "@/app/components/landing/LandingPage";
 import GoalsScreen from "@/app/components/landing/GoalsScreen";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
@@ -263,7 +262,6 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={2} />
       <p className="uf-step-label">Step 3 of 5</p>
       {onCurrencyChange && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
@@ -446,7 +444,6 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={3} />
       <p className="uf-step-label">Step 4 of 5</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">How much do you <span className="uf-accent">save or spend?</span></h2>
@@ -600,7 +597,6 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={4} />
       <p className="uf-step-label">Step 5 of 5</p>
       <div className="uf-eyebrow">Net worth</div>
       <h2 className="uf-h2">What is your <span className="uf-accent">net worth?</span></h2>
@@ -2260,15 +2256,6 @@ export default function HomeClient() {
         }
 
         /* -- WIZARD PROGRESS -- */
-        .uf-wizard-progress { display: flex; align-items: center; margin-bottom: 8px; }
-        .uf-wizard-row { display: flex; align-items: center; flex: 1; }
-        .uf-wizard-row:last-child { flex: 0; }
-        .uf-wdot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex-shrink: 0; transition: all 0.3s; }
-        .uf-wdot.done { background: var(--teal); }
-        .uf-wdot.active { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
-        .uf-wline { flex: 1; height: 2px; background: var(--border); margin: 0 2px; transition: background 0.4s; }
-        .uf-wline.done { background: var(--teal); }
-        .uf-wline.active { background: var(--accent); }
 
         /* -- BUTTONS -- */
         .uf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 8px; font-family: var(--font-body); font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; }

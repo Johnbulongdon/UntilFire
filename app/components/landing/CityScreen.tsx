@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CITIES, City, STATE_TAX } from "@/lib/fire-data";
-import WizardProgress from "@/app/components/landing/WizardProgress";
 
 export interface CityState {
   name: string;
@@ -95,7 +94,6 @@ export default function CityScreen({
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={1} />
       <p className="uf-step-label">Step 2 of 5</p>
       <div className="uf-eyebrow">Location</div>
       <h2 className="uf-h2">

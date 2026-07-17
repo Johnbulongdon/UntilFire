@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import WizardProgress from "@/app/components/landing/WizardProgress";
 
 const FIRE_GOALS = [
   { id: "early", emoji: "🚀", title: "Early Retirement", desc: "Exit the workforce fully - the classic FIRE path." },
@@ -19,7 +18,6 @@ export default function GoalsScreen({ onNext, onBack }: { onNext: (goals: string
 
   return (
     <div className="uf-screen">
-      <WizardProgress step={0} />
       <p className="uf-step-label">Step 1 of 5</p>
       <div className="uf-eyebrow">Your path</div>
       <h2 className="uf-h2">What&apos;s your <span className="uf-accent">FIRE goal?</span></h2>
