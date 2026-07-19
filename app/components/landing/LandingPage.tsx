@@ -565,7 +565,7 @@ function FooterSection() {
             />
           </a>
           <a
-            href="https://launchstag.com"
+            href="https://launchstag.com/p/untilfire"
             target="_blank"
             rel="noopener"
             style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
@@ -593,7 +593,7 @@ function FooterSection() {
             />
           </a>
           <a
-            href="https://tooldirs.com"
+            href="https://tooldirs.com/product/untilfire"
             target="_blank"
             rel="noopener noreferrer"
             style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
@@ -677,8 +677,9 @@ function FooterSection() {
             />
           </a>
           <a
-            href="https://firstlook.tools"
+            href="https://firstlook.tools/product/untilfire"
             target="_blank"
+            rel="noopener"
             style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
           >
             <img
