@@ -4722,6 +4722,9 @@ export default function Dashboard() {
   const freedomDateLabel = freedomDate
     ? freedomDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : null;
+  const freedomDateCompactLabel = freedomDate
+    ? freedomDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : null;
   const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
     try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
   });
@@ -5320,7 +5323,7 @@ export default function Dashboard() {
         <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="light" size={22} /></Link>
         <div className="uf-mobile-top-title">
           <strong>UntilFire</strong>
-          <span>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
+          <span>{freedomDateCompactLabel ? `Free · ${freedomDateCompactLabel}` : tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
         </div>
         <button
           onClick={toggleDark}
