@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import CsvImportModal from "./CsvImportModal";
+import BudgetSetupModal from "./BudgetSetupModal";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, Line } from "recharts";
 import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import {
@@ -1294,7 +1295,7 @@ function MonthlySummary({
   isPro,
   isClassifying,
   onAiClassify,
-  onPredictBudget,
+  onOpenBudgetSetup,
 }: {
   transactions: Transaction[];
   viewMonth: string;
@@ -1311,7 +1312,7 @@ function MonthlySummary({
   isPro: boolean;
   isClassifying: boolean;
   onAiClassify: () => Promise<void>;
-  onPredictBudget: () => void;
+  onOpenBudgetSetup: () => void;
 }) {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -1558,10 +1559,10 @@ function MonthlySummary({
       {byCat.length > 0 && (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
           <button
-            onClick={onPredictBudget}
+            onClick={onOpenBudgetSetup}
             style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
           >
-            ↺ Predict budget from history
+            ✎ {budgetExpenses ? "Review budget" : "Set up budget"}
           </button>
         </div>
       )}
@@ -1916,6 +1917,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
   const [budgetExpenses, setBudgetExpenses] = useState<Record<string, number> | null>(null);
+  const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesFallback, setRatesFallback] = useState(false);
 
@@ -2219,50 +2221,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     }
   }, [showToast]);
 
-  const handlePredictBudget = useCallback(async () => {
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const priorMonths = [...new Set(
-      transactions
-        .filter((t) => t.transaction_type === "expense" && !t.date.startsWith(currentMonth))
-        .map((t) => t.date.slice(0, 7))
-    )].sort().slice(-3);
-
-    if (!priorMonths.length) { showToast("Need at least 1 prior month of expenses"); return; }
-
-    const catMonthTotals: Record<string, number[]> = {};
-    for (const month of priorMonths) {
-      const monthExpenses = transactions.filter((t) => t.transaction_type === "expense" && t.date.startsWith(month));
-      const catTotals: Record<string, number> = {};
-      for (const tx of monthExpenses) {
-        const usd = toUSD(netAmt(tx), tx.currency, rates);
-        catTotals[tx.category] = (catTotals[tx.category] || 0) + usd;
-      }
-      for (const [cat, total] of Object.entries(catTotals)) {
-        if (!catMonthTotals[cat]) catMonthTotals[cat] = [];
-        catMonthTotals[cat].push(total);
-      }
-    }
-    const predicted: Record<string, number> = {};
-    for (const [cat, totals] of Object.entries(catMonthTotals)) {
-      predicted[cat] = Math.round(totals.reduce((s, v) => s + v, 0) / priorMonths.length);
-    }
-    const newBudget = { ...(budgetExpenses || {}), ...predicted };
-    setBudgetExpenses(newBudget);
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: existing } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
-      const cur = (existing?.expenses as Record<string, unknown>) || {};
-      await supabase.from("user_budget").upsert({
-        user_id: session.user.id,
-        expenses: { ...cur, ...predicted },
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
-    }
-    showToast(`Budget set from ${priorMonths.length}-month average`);
-  }, [transactions, rates, budgetExpenses, showToast]);
-
   const handleSave = useCallback(async (keepOpen: boolean) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -2464,7 +2422,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         isPro={isPro}
         isClassifying={isClassifying}
         onAiClassify={handleAiClassify}
-        onPredictBudget={handlePredictBudget}
+        onOpenBudgetSetup={() => setBudgetSetupOpen(true)}
       />
 
       <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "stretch" }}>
@@ -2561,6 +2519,31 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           rates={rates}
           formatAmount={fmtDisplay}
           displayCurrency={displayCurrency}
+        />
+      )}
+
+      {budgetSetupOpen && (
+        <BudgetSetupModal
+          transactions={transactions}
+          expenseCategories={allExpenseCats}
+          budgetExpenses={budgetExpenses}
+          rates={rates}
+          formatAmount={fmtDisplay}
+          onClose={() => setBudgetSetupOpen(false)}
+          onSave={async (values) => {
+            const newBudget = { ...(budgetExpenses || {}), ...values };
+            setBudgetExpenses(newBudget);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const { data: existing } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+              const cur = (existing?.expenses as Record<string, unknown>) || {};
+              await supabase.from("user_budget").upsert({
+                user_id: session.user.id,
+                expenses: { ...cur, ...values },
+                updated_at: new Date().toISOString(),
+              }, { onConflict: "user_id" });
+            }
+          }}
         />
       )}
     </>
