@@ -16,6 +16,7 @@ import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
+import BudgetSetupModal from "./BudgetSetupModal";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
@@ -392,12 +393,12 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currenc
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 6,
-      background: "#F1F5F9", borderRadius: 8, padding: "9px 12px",
-      border: `1.5px solid ${focused ? "#047857" : "#E2E8F0"}`,
+      background: "var(--uf-surface, #F1F5F9)", borderRadius: 8, padding: "9px 12px",
+      border: `1.5px solid ${focused ? "#047857" : "var(--uf-border, #E2E8F0)"}`,
       boxShadow: focused ? "0 0 0 3px rgba(6,78,59,0.10)" : "none",
       transition: "border-color 0.2s, box-shadow 0.2s",
     }}>
-      <span style={{ color: "#94A3B8", fontSize: 13, fontFamily: "Manrope, sans-serif" }}>{prefix}</span>
+      <span style={{ color: "var(--uf-text-3, #94A3B8)", fontSize: 13, fontFamily: "Manrope, sans-serif" }}>{prefix}</span>
       <input
         type="number" value={displayValue || ""} placeholder={placeholder}
         onChange={e => {
@@ -410,7 +411,7 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currenc
           onChange(nextValue);
         }}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{ background: "none", border: "none", outline: "none", color: "#19181E", fontSize: 14, width: "100%", fontFamily: "Manrope, sans-serif" }}
+        style={{ background: "none", border: "none", outline: "none", color: "var(--uf-text, #19181E)", fontSize: 14, width: "100%", fontFamily: "Manrope, sans-serif" }}
       />
     </div>
   );
@@ -1927,11 +1928,12 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayCurrency, displayRates }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayCurrency, displayRates, recentTransactions = [] }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
   displayCurrency: string; displayRates: Record<string, number>;
+  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string }[];
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -1939,6 +1941,8 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
   const savings  = income - totalExp;
   const rate     = income > 0 ? (savings / income) * 100 : 0;
   const hasActuals = Object.values(actuals).some(v => v > 0);
+  const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
+  const budgetSetupCategories = EXPENSE_CATS.map(c => ({ key: c.key, label: c.label, code: c.key.slice(0, 2).toUpperCase(), color: c.color, emoji: c.icon }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1947,7 +1951,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>Monthly Income</div>
-            <div style={{ color: "#64748B", fontSize: 12, marginTop: 2 }}>After-tax take-home pay</div>
+            <div style={{ color: "var(--uf-text-2)", fontSize: 12, marginTop: 2 }}>After-tax take-home pay</div>
           </div>
           <span className="uf-tag" style={{ color: "#059669", background: "rgba(5,150,105,0.1)" }}>INCOME</span>
         </div>
@@ -1966,11 +1970,19 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>Monthly Budget</div>
-            <div style={{ color: "#64748B", fontSize: 12, marginTop: 2 }}>
+            <div style={{ color: "var(--uf-text-2)", fontSize: 12, marginTop: 2 }}>
               {hasActuals ? "Budget vs. this month's actual spending" : "Set your budget by category"}
             </div>
           </div>
-          <span className="uf-tag" style={{ color: "#DC2626", background: "rgba(220,38,38,0.1)" }}>EXPENSES</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={() => setBudgetSetupOpen(true)}
+              style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
+            >
+              ✎ Guided setup
+            </button>
+            <span className="uf-tag" style={{ color: "#DC2626", background: "rgba(220,38,38,0.1)" }}>EXPENSES</span>
+          </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {EXPENSE_CATS.map(cat => {
@@ -1981,7 +1993,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
             return (
               <div key={cat.key} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "160px 1fr 80px", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 13, color: "#64748B" }}>{cat.icon} {cat.label}</span>
+                  <span style={{ fontSize: 13, color: "var(--uf-text-2)" }}>{cat.icon} {cat.label}</span>
                   <NumberInput
                     value={expenses[cat.key] || 0}
                     onChange={v => setExpenses({ ...expenses, [cat.key]: v })}
@@ -1989,17 +2001,17 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
                     currency={displayCurrency}
                     rates={displayRates}
                   />
-                  <div style={{ height: 4, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${Math.min(100, income > 0 ? ((expenses[cat.key] || 0) / income) * 100 : 0)}%`, background: cat.color, borderRadius: 4, transition: "width 0.4s" }} />
                   </div>
                 </div>
                 {spent > 0 && (
                   <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
-                    <span style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", color: over ? "#DC2626" : "#64748B" }}>
+                    <span style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", color: over ? "#DC2626" : "var(--uf-text-2)" }}>
                       {over ? "⚠ " : ""}Spent {fmtMoney(spent)}{budget > 0 ? ` / ${fmtMoney(budget)}` : ""}
                     </span>
                     {budget > 0 && (
-                      <div style={{ height: 3, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ height: 3, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${spentPct}%`, background: over ? "#DC2626" : "#059669", borderRadius: 4, transition: "width 0.4s" }} />
                       </div>
                     )}
@@ -2022,27 +2034,43 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
               { label: "Total Expenses", val: fmtMoney(totalExp), color: "#DC2626" },
               { label: "Monthly Savings", val: fmtMoney(Math.max(0, savings)), color: "#059669" },
               { label: "Savings Rate", val: `${rate.toFixed(1)}%`, color: rate >= 50 ? "#064E3B" : rate >= 25 ? "#059669" : "#DC2626" },
-              { label: "Annual Savings", val: fmtMoney(Math.max(0, savings) * 12), color: "#19181E" },
+              { label: "Annual Savings", val: fmtMoney(Math.max(0, savings) * 12), color: "var(--uf-text)" },
             ].map(k => (
               <div key={k.label}>
-                <div style={{ color: "#64748B", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "Manrope, sans-serif" }}>{k.label}</div>
+                <div style={{ color: "var(--uf-text-2)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "Manrope, sans-serif" }}>{k.label}</div>
                 <div style={{ color: k.color, fontSize: 22, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{k.val}</div>
               </div>
             ))}
           </div>
           {/* Rate bar */}
           <div style={{ marginTop: 18 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748B", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--uf-text-2)", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
               <span>Savings rate</span><span>{rate.toFixed(1)}% {rate >= 50 ? "🔥 FIRE pace" : rate >= 25 ? "· Good" : "· Needs work"}</span>
             </div>
-            <div style={{ height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ height: 6, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${Math.min(100, rate)}%`, background: rate >= 50 ? "#064E3B" : rate >= 25 ? "#059669" : "#DC2626", borderRadius: 99, transition: "width 0.6s" }} />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94A3B8", marginTop: 5 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--uf-text-3)", marginTop: 5 }}>
               <span>0%</span><span>25%</span><span>50% FIRE</span>
             </div>
           </div>
         </div>
+      )}
+
+      {budgetSetupOpen && (
+        <BudgetSetupModal
+          transactions={recentTransactions.map(t => ({
+            ...t,
+            category: t.category ?? "other",
+            transaction_type: (t.transaction_type === "income" || t.transaction_type === "transfer" ? t.transaction_type : "expense") as "expense" | "income" | "transfer",
+          }))}
+          expenseCategories={budgetSetupCategories}
+          budgetExpenses={expenses}
+          rates={displayRates}
+          formatAmount={fmtMoney}
+          onClose={() => setBudgetSetupOpen(false)}
+          onSave={(values) => setExpenses({ ...expenses, ...values })}
+        />
       )}
     </div>
   );
@@ -4716,7 +4744,7 @@ export default function Dashboard() {
   }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[] }[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [freedomDate, setFreedomDate] = useState<Date | null>(null);
   const freedomDateLabel = freedomDate
@@ -4930,7 +4958,7 @@ export default function Dashboard() {
 
       const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
-      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags")
+      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category")
         .eq("user_id", session.user.id)
         .gte("date", historyStart)
         .order("date", { ascending: true })
@@ -4943,6 +4971,7 @@ export default function Dashboard() {
               currency: tx.currency ?? "USD",
               transaction_type: tx.transaction_type ?? "expense",
               tags: tx.tags || [],
+              category: tx.category ?? "other",
             })));
           }
         });
@@ -5616,7 +5645,7 @@ export default function Dashboard() {
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "recurring" && <RecurringTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} />
                 )}
               </div>
             )}

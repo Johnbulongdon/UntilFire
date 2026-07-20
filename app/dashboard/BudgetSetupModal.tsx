@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
 
 type CustomCategory = { key: string; label: string; code: string; color: string; emoji?: string };
 
@@ -27,7 +26,7 @@ export default function BudgetSetupModal({
   rates,
   formatAmount,
   onClose,
-  onSaved,
+  onSave,
 }: {
   transactions: MinimalTransaction[];
   expenseCategories: CustomCategory[];
@@ -35,7 +34,7 @@ export default function BudgetSetupModal({
   rates: Record<string, number>;
   formatAmount: (value: number) => string;
   onClose: () => void;
-  onSaved: (newBudget: Record<string, number>) => void;
+  onSave: (values: Record<string, number>) => Promise<void> | void;
 }) {
   // Same 3-prior-month averaging math the old bulk "Predict from history"
   // action used, but computed per category so it can sit next to each input
@@ -89,18 +88,9 @@ export default function BudgetSetupModal({
 
   async function handleSave(finalDrafts: Record<string, number>) {
     setSaving(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: existing } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
-      const cur = (existing?.expenses as Record<string, unknown>) || {};
-      await supabase.from("user_budget").upsert({
-        user_id: session.user.id,
-        expenses: { ...cur, ...finalDrafts },
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
-    }
+    await onSave(finalDrafts);
     setSaving(false);
-    onSaved({ ...(budgetExpenses || {}), ...finalDrafts });
+    onClose();
   }
 
   function advance(nextDrafts: Record<string, number>) {

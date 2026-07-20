@@ -2530,9 +2530,19 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           rates={rates}
           formatAmount={fmtDisplay}
           onClose={() => setBudgetSetupOpen(false)}
-          onSaved={(newBudget) => {
+          onSave={async (values) => {
+            const newBudget = { ...(budgetExpenses || {}), ...values };
             setBudgetExpenses(newBudget);
-            setBudgetSetupOpen(false);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const { data: existing } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+              const cur = (existing?.expenses as Record<string, unknown>) || {};
+              await supabase.from("user_budget").upsert({
+                user_id: session.user.id,
+                expenses: { ...cur, ...values },
+                updated_at: new Date().toISOString(),
+              }, { onConflict: "user_id" });
+            }
           }}
         />
       )}
