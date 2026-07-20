@@ -745,6 +745,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
     const flowByDay = new Map<string, number>();
     for (const tx of recentTransactions) {
+      if (tx.transaction_type === "transfer") continue;
       const txDate = new Date(tx.date);
       if (Number.isNaN(txDate.getTime())) continue;
       const day = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate());
@@ -1051,6 +1052,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
     const byKey = new Map(months.map((month) => [month.key, month]));
     for (const tx of recentTransactions) {
+      if (tx.transaction_type === "transfer") continue;
       const txDate = new Date(tx.date);
       if (Number.isNaN(txDate.getTime())) continue;
       const monthDate = new Date(txDate.getFullYear(), txDate.getMonth(), 1);
