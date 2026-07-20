@@ -783,6 +783,34 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://postmake.io"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://postmake.io/postmake_badge_dark.png"
+              alt="Featured on Postmake"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://confettisaas.com/submit"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://www.touched-grass.com/api/embed-badge?uuid=1dIUP7WnnC&theme=light&bg=grass"
+              alt="ConfettiSaaS.com touched grass today!"
+              width={220}
+              height={47}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
