@@ -607,7 +607,7 @@ function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings 
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, onTabChange, onOpenOnboarding }: {
+function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -630,6 +630,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   rothPct?: number;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
+  onFreedomDateChange?: (date: Date | null) => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
   const [showBreakdown, setShowBreakdown] = useState(true);
@@ -909,6 +910,27 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     return [...historyEntries, todayEntry, ...futureEntries];
   }, [rawChartData, investable, holdingsUnrealizedGain, nwSnapshots, chartMonthTickFormatter, chartMonthTooltipFormatter, recentTransactions, displayCurrency, displayRates]);
   const retireYear  = fireYear ? new Date().getFullYear() + fireYear : null;
+
+  // Exact freedom date: interpolate between the yearly projection points that
+  // bracket the FIRE-target crossing, same technique the chart already uses
+  // for its monthly points. This is a smoothed estimate over a yearly-step
+  // projection, not a day-by-day simulation.
+  const exactFreedomDate = useMemo(() => {
+    if (fireYear === null || fireYear <= 0) return null;
+    const prevPoint = rawChartData[fireYear - 1];
+    const curPoint = rawChartData[fireYear];
+    if (!prevPoint || !curPoint) return null;
+    const prevVal = prevPoint["Investable"] ?? 0;
+    const curVal = curPoint["Investable"] ?? 0;
+    const span = curVal - prevVal;
+    const fraction = span > 0 ? Math.min(1, Math.max(0, (fireTarget - prevVal) / span)) : 0;
+    const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+    return new Date(Date.now() + (fireYear - 1 + fraction) * msPerYear);
+  }, [fireYear, rawChartData, fireTarget]);
+
+  useEffect(() => {
+    onFreedomDateChange?.(exactFreedomDate);
+  }, [exactFreedomDate, onFreedomDateChange]);
 
   // Greeting
   const now = new Date();
@@ -4696,6 +4718,10 @@ export default function Dashboard() {
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[] }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
+  const [freedomDate, setFreedomDate] = useState<Date | null>(null);
+  const freedomDateLabel = freedomDate
+    ? freedomDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    : null;
   const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
     try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
   });
@@ -5134,6 +5160,9 @@ export default function Dashboard() {
 
         .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: #064E3B; letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid var(--uf-border); }
         .uf-sidebar-logo span { color: #20D4BF; }
+        .uf-sidebar-freedom { padding: 14px 20px; border-bottom: 1px solid var(--uf-border); display: flex; flex-direction: column; gap: 2px; }
+        .uf-sidebar-freedom-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--uf-text-3); }
+        .uf-sidebar-freedom-value { font-size: 15px; font-weight: 800; color: var(--uf-text); font-family: 'Manrope', sans-serif; }
         .uf-sidebar-nav { padding: 16px 10px 4px; display: flex; flex-direction: column; gap: 2px; }
         .uf-sidebar-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; }
         .uf-sidebar-item:hover { background: rgba(226,232,240,0.5); color: #1E3A2F; }
@@ -5327,6 +5356,13 @@ export default function Dashboard() {
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
           <Link href="/" className="uf-sidebar-logo"><Logo variant="light" size={26} /></Link>
+
+          {freedomDateLabel && (
+            <div className="uf-sidebar-freedom">
+              <span className="uf-sidebar-freedom-label">Freedom date</span>
+              <span className="uf-sidebar-freedom-value">{freedomDateLabel}</span>
+            </div>
+          )}
 
           <nav className="uf-sidebar-nav">
             {SIDEBAR_ITEMS.map(item => {
@@ -5550,6 +5586,7 @@ export default function Dashboard() {
                 rothPct={rothPct}
                 onTabChange={setTab}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
+                onFreedomDateChange={setFreedomDate}
               />
             )}
             {tab === "cashflow" && (
