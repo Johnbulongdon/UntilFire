@@ -811,6 +811,47 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://abacklaunch.com"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://abacklaunch.com/badges/featured-on-dark.svg"
+              alt="Listed on Aback Launch"
+              width={150}
+              height={32}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://saasgrow.app?ref=untilfire.com"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://saasgrow.app/api/badge?type=featured&style=dark"
+              alt="UntilFire on SaaSGrow"
+              width={240}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://toolfame.com/item/untilfire"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://toolfame.com/badge-light.svg"
+              alt="Featured on toolfame.com"
+              style={{ height: 54, width: "auto" }}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
