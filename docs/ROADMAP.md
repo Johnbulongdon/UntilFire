@@ -249,6 +249,10 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [ ] Dashboard handoff that preserves calculator result and next action
 - [ ] Sync custom categories/sub-categories to Supabase so they work across devices
 - [ ] Persist active dashboard tab in URL query param, e.g. `?tab=reports`
+- [ ] Add a way to remove custom categories once created
+- [ ] Show a live projected freedom date in the top bar so it's always visible, not just on the Overview chart
+- [ ] Rework recurring expenses (Cashflow → Recurring, `RecurringTab.tsx`): let users manually enter a recurring expense, match it once to a real transaction, and have future matching transactions auto-classified against it — current tab only does manual entries + automatic frequency detection, not match-once-then-auto-track
+- [ ] Redesign budget creation flow — current approach (deriving a budget from past spending data) is clumsy and not helpful; needs a clearer, more guided way to build a budget
 
 ### Monetisation
 
