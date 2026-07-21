@@ -936,6 +936,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://tooldisk.com"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://tooldisk.com/badge/badge_dark.svg"
+              alt="Featured on ToolDisk.com"
+              width={125}
+              height={44}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
