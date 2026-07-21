@@ -346,44 +346,46 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
         </>
       )}
 
-      <div className="uf-stats-grid" style={{ marginTop: 16 }}>
-        {displayGross !== null ? (
+      {canContinue && (
+        <div className="uf-stats-grid" style={{ marginTop: 16 }}>
+          {displayGross !== null ? (
+            <div className="uf-card">
+              <div className="uf-card-sub">Annual gross</div>
+              <div className="uf-card-main">{isNonUSD ? localMoney(displayGross) : fmtUSD(displayGross)}</div>
+            </div>
+          ) : null}
           <div className="uf-card">
-            <div className="uf-card-sub">Annual gross</div>
-            <div className="uf-card-main">{isNonUSD ? localMoney(displayGross) : fmtUSD(displayGross)}</div>
+            <div className="uf-card-sub">Annual take-home</div>
+            <div className="uf-card-main">
+              {isNonUSD ? localMoney(displayTakeHome) : fmtUSD(displayTakeHome)}
+            </div>
           </div>
-        ) : null}
-        <div className="uf-card">
-          <div className="uf-card-sub">Annual take-home</div>
-          <div className="uf-card-main">
-            {isNonUSD ? localMoney(displayTakeHome) : fmtUSD(displayTakeHome)}
+          <div className="uf-card">
+            <div className="uf-card-sub">Monthly take-home</div>
+            <div className="uf-card-main">
+              {isNonUSD ? localMoney(displayMonthly) : fmtUSD(displayMonthly)}
+            </div>
           </div>
+          {displayEffRate !== null ? (
+            <div className="uf-card">
+              <div className="uf-card-sub">Effective tax rate</div>
+              <div className="uf-card-main">{displayEffRate.toFixed(1)}%</div>
+            </div>
+          ) : mode !== "takehome" ? (
+            <div className="uf-card">
+              <div className="uf-card-sub">Tax estimate</div>
+              <div className="uf-card-main">Not applied</div>
+            </div>
+          ) : null}
+          {!isNonUSD && (
+            <div className="uf-card uf-card-accent">
+              <div className="uf-card-sub">Hourly take-home</div>
+              <div className="uf-hourly">{displayHourly.toFixed(2)}/hr</div>
+              <div className="uf-card-hint">Based on 2,080 working hours/yr</div>
+            </div>
+          )}
         </div>
-        <div className="uf-card">
-          <div className="uf-card-sub">Monthly take-home</div>
-          <div className="uf-card-main">
-            {isNonUSD ? localMoney(displayMonthly) : fmtUSD(displayMonthly)}
-          </div>
-        </div>
-        {displayEffRate !== null ? (
-          <div className="uf-card">
-            <div className="uf-card-sub">Effective tax rate</div>
-            <div className="uf-card-main">{displayEffRate.toFixed(1)}%</div>
-          </div>
-        ) : mode !== "takehome" ? (
-          <div className="uf-card">
-            <div className="uf-card-sub">Tax estimate</div>
-            <div className="uf-card-main">Not applied</div>
-          </div>
-        ) : null}
-        {!isNonUSD && (
-          <div className="uf-card uf-card-accent">
-            <div className="uf-card-sub">Hourly take-home</div>
-            <div className="uf-hourly">{displayHourly.toFixed(2)}/hr</div>
-            <div className="uf-card-hint">Based on 2,080 working hours/yr</div>
-          </div>
-        )}
-      </div>
+      )}
 
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>

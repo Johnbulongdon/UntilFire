@@ -29,7 +29,14 @@ export default function Nav({
         <Link href="/learn" className="uf-nav-restart" style={{ textDecoration: "none" }}>Learn</Link>
         <Link href="/pricing" className="uf-nav-restart" style={{ textDecoration: "none" }}>Pricing</Link>
         {step > 0 ? (
-          <button className="uf-nav-restart" onClick={onRestart}>Start over</button>
+          <button
+            className="uf-nav-restart"
+            onClick={() => {
+              if (window.confirm("Start over? This clears your current answers.")) onRestart();
+            }}
+          >
+            Start over
+          </button>
         ) : (
           <button className="uf-nav-signin" onClick={onSignIn}>Sign in</button>
         )}
