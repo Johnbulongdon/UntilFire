@@ -852,6 +852,34 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://dododirectory.com"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://dododirectory.com/badge-dark.png"
+              alt="Featured on DodoDirectory"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://sumodir.com"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://sumodir.com/badge.png"
+              alt="Featured on SumoDir"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
