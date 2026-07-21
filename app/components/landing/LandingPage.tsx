@@ -908,6 +908,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://toolfio.com"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://toolfio.com/toolfio-dark-badge.png"
+              alt="Featured on Toolfio"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
