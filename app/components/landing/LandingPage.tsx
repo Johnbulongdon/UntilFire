@@ -922,6 +922,20 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://gets.tools"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://gets.tools/badge/badge_dark.svg"
+              alt="Featured on Gets.Tools"
+              width={125}
+              height={44}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
