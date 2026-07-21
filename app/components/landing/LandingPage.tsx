@@ -867,7 +867,7 @@ function FooterSection() {
             />
           </a>
           <a
-            href="https://sumodir.com"
+            href="https://sumodir.com/item/untilfire-wwwuntilfirecom"
             target="_blank"
             rel="dofollow"
             style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
