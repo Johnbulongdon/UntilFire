@@ -991,6 +991,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const [useRealReturn, setUseRealReturn] = useState(false);
   const marketReturn = useRealReturn ? 0.07 : 0.10;
   const planningAge = currentAge ?? 30;
+  const ageWasAssumed = currentAge == null;
 
   const result = calcFIRE(savings, city.col, planningAge, portfolioBalance, marketReturn);
   const takeHome = income;
@@ -1454,6 +1455,11 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
                     <div>
                       <div className="uf-bridge-age">{isAlreadyFire ? "Now" : bridgeAge}</div>
                       <div className="uf-bridge-age-label">{isAlreadyFire ? "Work is already optional" : "Work optional age"}</div>
+                      {ageWasAssumed && !isAlreadyFire && (
+                        <button type="button" className="uf-bridge-age-assumed" onClick={onAdjust}>
+                          Assuming age 30 — add yours for an exact date →
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div data-gsap="date-sub" className="uf-bridge-subline" style={{ opacity: 0 }}>
@@ -2668,6 +2674,26 @@ export default function HomeClient() {
           font-size: clamp(16px, 2vw, 21px);
           font-weight: 750;
           letter-spacing: -0.02em;
+        }
+        .uf-bridge-age-assumed {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 10px;
+          padding: 0;
+          background: none;
+          border: none;
+          color: rgba(98,250,227,0.85);
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          cursor: pointer;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+        .uf-bridge-age-assumed:hover {
+          color: #62fae3;
         }
         .uf-bridge-age-delta {
           display: grid;
