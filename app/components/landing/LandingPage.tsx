@@ -880,6 +880,34 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://web-review.com"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://web-review.com/badge.png"
+              alt="Featured on Web Review"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://saasbison.com"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://saasbison.com/badge.png"
+              alt="Featured on SaaSBison"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
