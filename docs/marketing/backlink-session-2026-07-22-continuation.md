@@ -29,6 +29,7 @@ Temporary sync note for backlink work. Merge these items into `docs/marketing/BA
 | DaysLaunch | Free plan says dofollow links, but submit redirects to login and requires backlink/badge. | Candidate if account flow is allowed; do not count before approval/live listing. |
 | Open Launch / TinyLaunch / LaunchBoard | Login required and free dofollow is conditional or fully booked/top-3/badge based. | Candidate if user wants account-gated launch-platform work. |
 | InfoWebWorld | Existing listing pages use direct outbound links without `nofollow`, but no public listing form was found; Get Listed/sign-in routes do not expose a form in static HTML. | Possible owner-contact candidate, especially for personal finance / fintech category. |
+| KillerStartups | No public submit form found; contact/editorial path only. | Strong topical fit because it has startup/finance content, but it likely needs human/editorial email outreach rather than automated submission. |
 
 ## Skipped / Not Viable This Pass
 
@@ -68,6 +69,12 @@ Temporary sync note for backlink work. Merge these items into `docs/marketing/BA
 | Tolodora | Login required and client bundle states free listings get a nofollow link. |
 | Neeed Directory | Login required. |
 | FoundrList | Interactive/account-gated launch app; no static public submit form. |
+| BetaList | Submit/login flow is gated; observed listing outbound links include nofollow. |
+| F6S | Browser/JS verification gate before submission pages. |
+| SideProjectors | Current pages expose no usable public submit form and appear generic/stale for this use case. |
+| StartUs.cc | Automated probe could not access usable pages; likely not safe to count or submit without manual browser verification. |
+| FeedMyApp | Automated probe could not access usable pages; no verified public submit path in this pass. |
+| Webwiki | Challenge page returned `noindex,nofollow`; not useful as an automated dofollow source. |
 
 ## Notes
 
