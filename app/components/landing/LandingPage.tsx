@@ -950,6 +950,34 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://dofollow.tools"
+            target="_blank"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://dofollow.tools/badge/badge_dark.svg"
+              alt="Featured on Dofollow.Tools"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://www.showmysites.com"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://www.showmysites.com/static/backlink/gray_border.webp"
+              alt="ShowMySites Badge"
+              width={200}
+              height={60}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
