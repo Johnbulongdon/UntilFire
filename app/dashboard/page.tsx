@@ -27,6 +27,8 @@ import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbo
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView } from "@/lib/analytics";
+import { EXPENSE_CATEGORIES } from "@/lib/categories";
+import { useCustomCategories } from "@/lib/useCustomCategories";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -250,15 +252,6 @@ const LEARNING_STAGES: { id: LearnStageId; label: string; whatMattersNow: string
 ];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const EXPENSE_CATS = [
-  { key: "housing",       label: "Housing",       icon: "🏠", color: "#818cf8" },
-  { key: "food",          label: "Food & Dining",  icon: "🍔", color: "#f97316" },
-  { key: "transport",     label: "Transport",      icon: "🚗", color: "#22d3a5" },
-  { key: "subscriptions", label: "Subscriptions",  icon: "📱", color: "#a78bfa" },
-  { key: "healthcare",    label: "Healthcare",     icon: "🏥", color: "#ef4444" },
-  { key: "entertainment", label: "Entertainment",  icon: "🎬", color: "#fbbf24" },
-  { key: "other",         label: "Other",          icon: "📦", color: "#6b6b85" },
-];
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 const fmt = (
@@ -1928,46 +1921,60 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
   displayCurrency: string; displayRates: Record<string, number>;
-  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string }[];
+  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[] }[];
   freedomDateMonthYearLabel?: string | null;
+  onOpenTransactions?: () => void;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
-  const totalExp = EXPENSE_CATS.reduce((s, c) => s + (expenses[c.key] || 0), 0);
+
+  // Single shared category source (defaults + any user-defined ones), same list used everywhere else
+  const { customCats } = useCustomCategories();
+  const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
+  const activeCats = useMemo(
+    () => allExpenseCats.filter(c => (expenses[c.key] || 0) > 0 || (actuals[c.key] || 0) > 0),
+    [allExpenseCats, expenses, actuals],
+  );
+
+  const totalExp = activeCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
   const savings  = income - totalExp;
   const rate     = income > 0 ? (savings / income) * 100 : 0;
   const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const budgetSetupCategories = EXPENSE_CATS.map(c => ({ key: c.key, label: c.label, code: c.key.slice(0, 2).toUpperCase(), color: c.color, emoji: c.icon }));
+  const [onTrackOpen, setOnTrackOpen] = useState(false);
   const isEmpty = totalExp === 0;
 
   const donutStops = useMemo(() => {
     let acc = 0;
-    return EXPENSE_CATS.map(cat => {
+    return activeCats.map(cat => {
       const amt = expenses[cat.key] || 0;
       const pct = totalExp > 0 ? (amt / totalExp) * 100 : 0;
       const start = acc;
       acc += pct;
       return { ...cat, amt, pct, start, end: acc };
     });
-  }, [expenses, totalExp]);
+  }, [activeCats, expenses, totalExp]);
   const donutGradient = totalExp > 0
     ? donutStops.map(s => `${s.color} ${s.start}% ${s.end}%`).join(", ")
     : "var(--uf-border) 0% 100%";
 
-  const overBudgetCats = EXPENSE_CATS.filter(cat => {
-    const budget = expenses[cat.key] || 0;
-    const spent = actuals[cat.key] || 0;
-    return budget > 0 && spent > budget;
-  });
+  const overBudgetCats = activeCats
+    .filter(cat => {
+      const budget = expenses[cat.key] || 0;
+      const spent = actuals[cat.key] || 0;
+      return budget > 0 && spent > budget;
+    })
+    .sort((a, b) => ((actuals[b.key] || 0) - (expenses[b.key] || 0)) - ((actuals[a.key] || 0) - (expenses[a.key] || 0)));
+  const onTrackCats = activeCats.filter(c => !overBudgetCats.includes(c));
+  const onTrackBudgetTotal = onTrackCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
 
   function suggestSlackCategories(excludeKey: string) {
-    return EXPENSE_CATS
+    return activeCats
       .filter(c => c.key !== excludeKey)
       .map(c => ({ label: c.label, slack: (expenses[c.key] || 0) - (actuals[c.key] || 0) }))
       .filter(c => c.slack > 0.5)
@@ -1976,6 +1983,17 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
       .map(c => c.label);
   }
 
+  // Needs vs Wants — current month, from the same transaction feed the rest of the dashboard uses
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const monthTxns = recentTransactions.filter(t => t.date.startsWith(curMonth));
+  const expenseTxns = monthTxns.filter(t => (t.transaction_type ?? "expense") === "expense");
+  const taggedTxns = expenseTxns.filter(t => t.tags?.includes("need") || t.tags?.includes("want"));
+  const needsTotal = taggedTxns.filter(t => t.tags?.includes("need")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, displayRates), 0);
+  const wantsTotal = taggedTxns.filter(t => t.tags?.includes("want")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, displayRates), 0);
+  const classifiedTotal = needsTotal + wantsTotal;
+  const untaggedCount = expenseTxns.length - taggedTxns.length;
+
   const guidedSetupModal = budgetSetupOpen && (
     <BudgetSetupModal
       transactions={recentTransactions.map(t => ({
@@ -1983,7 +2001,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
         category: t.category ?? "other",
         transaction_type: (t.transaction_type === "income" || t.transaction_type === "transfer" ? t.transaction_type : "expense") as "expense" | "income" | "transfer",
       }))}
-      expenseCategories={budgetSetupCategories}
+      expenseCategories={allExpenseCats}
       budgetExpenses={expenses}
       rates={displayRates}
       formatAmount={fmtMoney}
@@ -2038,6 +2056,54 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
     );
   }
 
+  function renderRow(cat: typeof activeCats[number], over: boolean) {
+    const budget = expenses[cat.key] || 0;
+    const spent = actuals[cat.key] || 0;
+    const barPct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+    const isEditing = editingKey === cat.key;
+    const suggestions = over ? suggestSlackCategories(cat.key) : [];
+    return (
+      <div key={cat.key}>
+        <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}>
+          <span style={{ fontSize: 15, width: 20, flexShrink: 0 }}>{cat.emoji}</span>
+          <span style={{ flex: "0 0 110px", fontSize: 13, color: "var(--uf-text-2)" }}>{cat.label}</span>
+          {isEditing ? (
+            <div style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+              <NumberInput
+                value={budget}
+                onChange={v => setExpenses({ ...expenses, [cat.key]: v })}
+                prefix={currencyPrefix}
+                currency={displayCurrency}
+                rates={displayRates}
+              />
+            </div>
+          ) : (
+            <>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", flexShrink: 0, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmtMoney(budget)}</span>
+              <span className="uf-budget-pencil" style={{ fontSize: 11, color: "var(--uf-text-3)", flexShrink: 0 }}>✎</span>
+            </>
+          )}
+          <div style={{ height: 4, flex: 1, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${barPct}%`, background: over ? "#DC2626" : "#22d3a5", borderRadius: 4, transition: "width 0.4s" }} />
+          </div>
+          <span style={{ fontSize: 11, width: 90, textAlign: "right", flexShrink: 0, fontWeight: over ? 700 : 400, color: over ? "#DC2626" : "var(--uf-text-3)" }}>
+            {over ? `over ${fmtMoney(spent - budget)}` : spent > 0 ? `${fmtMoney(spent)} spent` : "—"}
+          </span>
+        </div>
+        {over && suggestions.length > 0 && (
+          <div style={{ fontSize: 11, color: "#f97316", padding: "0 18px 10px", marginTop: -4 }}>
+            ↳ Cut {fmtMoney(spent - budget)} from {suggestions.join(" or ")} to stay on pace
+          </div>
+        )}
+        {isEditing && (
+          <div style={{ fontSize: 11, color: "var(--uf-text-3)", padding: "0 18px 10px", marginTop: -4 }}>
+            <button onClick={() => setEditingKey(null)} style={{ background: "none", border: "none", color: "var(--uf-text-3)", textDecoration: "underline", cursor: "pointer", fontSize: 11, padding: 0, fontFamily: "Manrope, sans-serif" }}>Done</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="uf-budget-grid">
       <div className="uf-card" style={{ padding: "6px 18px" }}>
@@ -2051,54 +2117,56 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
           </button>
         </div>
 
-        {EXPENSE_CATS.map(cat => {
-          const budget = expenses[cat.key] || 0;
-          const spent = actuals[cat.key] || 0;
-          const over = budget > 0 && spent > budget;
-          const barPct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
-          const isEditing = editingKey === cat.key;
-          const suggestions = over ? suggestSlackCategories(cat.key) : [];
-          return (
-            <div key={cat.key}>
-              <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}>
-                <span style={{ fontSize: 15, width: 20, flexShrink: 0 }}>{cat.icon}</span>
-                <span style={{ flex: "0 0 110px", fontSize: 13, color: "var(--uf-text-2)" }}>{cat.label}</span>
-                {isEditing ? (
-                  <div style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                    <NumberInput
-                      value={budget}
-                      onChange={v => setExpenses({ ...expenses, [cat.key]: v })}
-                      prefix={currencyPrefix}
-                      currency={displayCurrency}
-                      rates={displayRates}
-                    />
+        {(classifiedTotal > 0 || untaggedCount > 0) && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--uf-text-2)" }}>
+              <span>Needs/Wants</span>
+              {classifiedTotal > 0 && (
+                <>
+                  <div style={{ width: 110, height: 6, borderRadius: 4, overflow: "hidden", display: "flex", background: "var(--uf-border)" }}>
+                    <div style={{ width: `${(needsTotal / classifiedTotal) * 100}%`, background: "#22d3a5" }} />
+                    <div style={{ width: `${(wantsTotal / classifiedTotal) * 100}%`, background: "#f97316" }} />
                   </div>
-                ) : (
-                  <>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", flexShrink: 0, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmtMoney(budget)}</span>
-                    <span className="uf-budget-pencil" style={{ fontSize: 11, color: "var(--uf-text-3)", flexShrink: 0 }}>✎</span>
-                  </>
-                )}
-                <div style={{ height: 4, flex: 1, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${barPct}%`, background: over ? "#DC2626" : "#22d3a5", borderRadius: 4, transition: "width 0.4s" }} />
-                </div>
-                <span style={{ fontSize: 11, width: 90, textAlign: "right", flexShrink: 0, fontWeight: over ? 700 : 400, color: over ? "#DC2626" : "var(--uf-text-3)" }}>
-                  {over ? `over ${fmtMoney(spent - budget)}` : spent > 0 ? `${fmtMoney(spent)} spent` : "—"}
-                </span>
-              </div>
-              {over && suggestions.length > 0 && (
-                <div style={{ fontSize: 11, color: "#f97316", padding: "0 18px 10px", marginTop: -4 }}>
-                  ↳ Cut {fmtMoney(spent - budget)} from {suggestions.join(" or ")} to stay on pace
-                </div>
+                  <span>{Math.round((needsTotal / classifiedTotal) * 100)}% / {Math.round((wantsTotal / classifiedTotal) * 100)}%</span>
+                </>
               )}
-              {isEditing && (
-                <div style={{ fontSize: 11, color: "var(--uf-text-3)", padding: "0 18px 10px", marginTop: -4 }}>
-                  <button onClick={() => setEditingKey(null)} style={{ background: "none", border: "none", color: "var(--uf-text-3)", textDecoration: "underline", cursor: "pointer", fontSize: 11, padding: 0, fontFamily: "Manrope, sans-serif" }}>Done</button>
-                </div>
-              )}
+              {untaggedCount > 0 && <span>{untaggedCount} unclassified</span>}
             </div>
-          );
-        })}
+            {untaggedCount > 0 && (
+              <button
+                onClick={onOpenTransactions}
+                style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
+              >
+                Tag in Transactions →
+              </button>
+            )}
+          </div>
+        )}
+
+        {overBudgetCats.length > 0 ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px 6px", margin: "0 -18px", fontSize: 11, fontWeight: 800, letterSpacing: "0.8px", textTransform: "uppercase", color: "#DC2626" }}>
+              Over budget <span style={{ background: "#DC2626", color: "#fff", fontSize: 10.5, fontWeight: 800, borderRadius: 999, padding: "1px 8px" }}>{overBudgetCats.length}</span>
+            </div>
+            {overBudgetCats.map(cat => renderRow(cat, true))}
+            <div style={{ height: 1, background: "var(--uf-border)", margin: "0 -18px" }} />
+          </>
+        ) : (
+          <div style={{ padding: "12px 18px", margin: "0 -18px", fontSize: 12, color: "#22d3a5", fontWeight: 600 }}>✓ Nothing over budget this month</div>
+        )}
+
+        {onTrackCats.length > 0 && (
+          <>
+            <button
+              onClick={() => setOnTrackOpen(v => !v)}
+              style={{ width: "calc(100% + 36px)", margin: "0 -18px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", background: "transparent", border: "none", cursor: "pointer" }}
+            >
+              <span>{onTrackCats.length} {overBudgetCats.length > 0 ? "more " : ""}on track — {fmtMoney(onTrackBudgetTotal)} budgeted</span>
+              <span style={{ color: "var(--uf-text-3)", transform: onTrackOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▾</span>
+            </button>
+            {onTrackOpen && onTrackCats.map(cat => renderRow(cat, false))}
+          </>
+        )}
       </div>
 
       <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 0 }}>
@@ -2110,7 +2178,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 10.5, minWidth: 0 }}>
-            {[...donutStops].sort((a, b) => b.amt - a.amt).map(s => (
+            {[...donutStops].sort((a, b) => b.amt - a.amt).slice(0, 6).map(s => (
               <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 6, height: 6, borderRadius: 2, background: s.color, flexShrink: 0 }} />
                 <span style={{ color: "var(--uf-text-2)" }}>{s.label}</span>
@@ -5097,8 +5165,9 @@ export default function Dashboard() {
           setIncome(prefillIncome || data.income || 0);
           const raw = data.expenses || {};
           const fp  = raw._fire_profile || {};
-          const { _fire_profile: _, ...budgetExpenses } = raw;
-          const mergedExpenses = { housing: 0, food: 0, transport: 0, subscriptions: 0, healthcare: 0, entertainment: 0, other: 0, ...budgetExpenses };
+          const { _fire_profile: _, _custom_cats: _cc, _custom_subcats: _cs, ...budgetExpenses } = raw;
+          const mergedExpenses = Object.fromEntries(EXPENSE_CATEGORIES.map(c => [c.key, 0])) as Record<string, number>;
+          Object.assign(mergedExpenses, budgetExpenses);
           setExpenses(mergedExpenses);
           // Apply wizard spend estimate only when existing budget is all-zero
           const hasAnyExpense = Object.values(mergedExpenses).some(v => (v as number) > 0);
@@ -5177,10 +5246,17 @@ export default function Dashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct };
+      // Read first so this write can't clobber _custom_cats/_custom_subcats written
+      // independently (and asynchronously) by useCustomCategories().
+      const { data: existingRow } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+      const existingExpenses = (existingRow?.expenses as Record<string, unknown>) || {};
+      const preserved: Record<string, unknown> = {};
+      if (existingExpenses._custom_cats !== undefined) preserved._custom_cats = existingExpenses._custom_cats;
+      if (existingExpenses._custom_subcats !== undefined) preserved._custom_subcats = existingExpenses._custom_subcats;
       const { error: saveError } = await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
-        expenses:    { ...expenses, _fire_profile: fireProfile },
+        expenses:    { ...expenses, ...preserved, _fire_profile: fireProfile },
         fire_age:    fireAge,
         fire_assets: k401, // keep backwards-compatible
         updated_at:  new Date().toISOString(),
@@ -5748,7 +5824,7 @@ export default function Dashboard() {
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "recurring" && <RecurringTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
                 )}
               </div>
             )}

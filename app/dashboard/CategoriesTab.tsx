@@ -8,6 +8,7 @@ import {
   loadCatCustomizations, saveCatCustomizations,
   CatCustomizations, COLOR_PALETTE, EMOJI_PALETTE, resolveDisplay,
 } from "@/lib/categories";
+import { useCustomCategories } from "@/lib/useCustomCategories";
 
 type ClassificationRule = {
   id: string;
@@ -556,43 +557,16 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
 
   useEffect(() => { saveCatCustomizations(catCustomizations); }, [catCustomizations]);
 
-  // Merge built-in categories with any user-defined ones
-  const [customCats, setCustomCats] = useState<{ key: string; label: string; code: string; color: string; emoji?: string }[]>(() => {
-    try { return JSON.parse(localStorage.getItem("uf_custom_cats") || "[]"); } catch { return []; }
-  });
+  // Merge built-in categories with any user-defined ones (single shared source, synced everywhere)
+  const { customCats, setCustomCats, customSubCats, setCustomSubCats } = useCustomCategories();
   const allExpenseCats = useMemo(() => [...EXPENSE_CATEGORIES, ...customCats], [customCats]);
 
-  // Sub-category definitions per category key
-  const [customSubCats, setCustomSubCats] = useState<Record<string, string[]>>(() => {
-    try { return JSON.parse(localStorage.getItem("uf_custom_subcats") || "{}"); } catch { return {}; }
-  });
-
-  const syncCustomSubCats = (updated: Record<string, string[]>) => {
-    localStorage.setItem("uf_custom_subcats", JSON.stringify(updated));
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
-        .then(({ data }) => {
-          const cur = (data?.expenses as Record<string, unknown>) || {};
-          supabase.from("user_budget").upsert({
-            user_id: session.user.id,
-            expenses: { ...cur, _custom_subcats: updated },
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
-        });
-    });
-  };
-
   const handleAddSubCategory = (catKey: string, sub: string) => {
-    const updated = { ...customSubCats, [catKey]: [...(customSubCats[catKey] || []), sub] };
-    setCustomSubCats(updated);
-    syncCustomSubCats(updated);
+    setCustomSubCats((prev) => ({ ...prev, [catKey]: [...(prev[catKey] || []), sub] }));
   };
 
   const handleDeleteSubCategory = (catKey: string, sub: string) => {
-    const updated = { ...customSubCats, [catKey]: (customSubCats[catKey] || []).filter((s) => s !== sub) };
-    setCustomSubCats(updated);
-    syncCustomSubCats(updated);
+    setCustomSubCats((prev) => ({ ...prev, [catKey]: (prev[catKey] || []).filter((s) => s !== sub) }));
   };
 
   // ── Category manager state ──────────────────────────────────────────────────
@@ -602,37 +576,8 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   const [newCatEmoji, setNewCatEmoji] = useState("");
 
   const handleDeleteCustomCat = (key: string) => {
-    const updated = customCats.filter((c) => c.key !== key);
-    setCustomCats(updated);
+    setCustomCats((prev) => prev.filter((c) => c.key !== key));
     setDeleteConfirmKey(null);
-    localStorage.setItem("uf_custom_cats", JSON.stringify(updated));
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
-        .then(({ data }) => {
-          const cur = (data?.expenses as Record<string, unknown>) || {};
-          supabase.from("user_budget").upsert({
-            user_id: session.user.id,
-            expenses: { ...cur, _custom_cats: updated },
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
-        });
-    });
-  };
-
-  const syncCustomCats = (updated: typeof customCats) => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
-        .then(({ data }) => {
-          const cur = (data?.expenses as Record<string, unknown>) || {};
-          supabase.from("user_budget").upsert({
-            user_id: session.user.id,
-            expenses: { ...cur, _custom_cats: updated },
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
-        });
-    });
   };
 
   const handleAddCustomCat = () => {
@@ -642,10 +587,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     if (allExpenseCats.some((c) => c.key === key)) return;
     const code = label.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "CU";
     const cat = { key, label, code, color: newCatColor, ...(newCatEmoji ? { emoji: newCatEmoji } : {}) };
-    const updated = [...customCats, cat];
-    setCustomCats(updated);
-    localStorage.setItem("uf_custom_cats", JSON.stringify(updated));
-    syncCustomCats(updated);
+    setCustomCats((prev) => [...prev, cat]);
     setNewCatLabel(""); setNewCatColor(COLOR_PALETTE[0]); setNewCatEmoji("");
     setShowAddForm(false);
   };
@@ -667,46 +609,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
           if (data) setTransactions(data as Transaction[]);
           setLoading(false);
         });
-      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
-        .then(({ data }) => {
-          if (data?.expenses) {
-            const exp = data.expenses as Record<string, unknown>;
-            if (Array.isArray(exp._custom_cats)) {
-              setCustomCats(exp._custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
-              localStorage.setItem("uf_custom_cats", JSON.stringify(exp._custom_cats));
-            }
-            if (exp._custom_subcats && typeof exp._custom_subcats === "object") {
-              setCustomSubCats(exp._custom_subcats as Record<string, string[]>);
-              localStorage.setItem("uf_custom_subcats", JSON.stringify(exp._custom_subcats));
-            }
-          }
-        });
     });
-  }, []);
-
-  // Re-fetch when tab regains focus
-  useEffect(() => {
-    const refetch = () => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session) return;
-        supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
-          .then(({ data }) => {
-            if (!data?.expenses) return;
-            const exp = data.expenses as Record<string, unknown>;
-            if (Array.isArray(exp._custom_cats)) {
-              setCustomCats(exp._custom_cats as { key: string; label: string; code: string; color: string; emoji?: string }[]);
-              localStorage.setItem("uf_custom_cats", JSON.stringify(exp._custom_cats));
-            }
-            if (exp._custom_subcats && typeof exp._custom_subcats === "object") {
-              setCustomSubCats(exp._custom_subcats as Record<string, string[]>);
-              localStorage.setItem("uf_custom_subcats", JSON.stringify(exp._custom_subcats));
-            }
-          });
-      });
-    };
-    const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
   const [y, m] = viewMonth.split("-").map(Number);

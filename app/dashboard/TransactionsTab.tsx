@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import CsvImportModal from "./CsvImportModal";
-import BudgetSetupModal from "./BudgetSetupModal";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, Line } from "recharts";
 import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import {
@@ -11,6 +10,7 @@ import {
   COLOR_PALETTE, EMOJI_PALETTE,
   loadCatCustomizations, saveCatCustomizations, CatCustomizations, resolveDisplay,
 } from "@/lib/categories";
+import { useCustomCategories } from "@/lib/useCustomCategories";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
@@ -1282,50 +1282,30 @@ function TransactionList({
 function MonthlySummary({
   transactions,
   viewMonth,
-  onPrevMonth,
-  onNextMonth,
   onSelectMonth,
-  budgetExpenses,
   rates,
   ratesFallback,
   formatAmount,
-  displayCurrency,
   expenseCategories,
   catCustomizations,
-  isPro,
-  isClassifying,
-  onAiClassify,
-  onOpenBudgetSetup,
 }: {
   transactions: Transaction[];
   viewMonth: string;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
   onSelectMonth: (month: string) => void;
-  budgetExpenses: Record<string, number> | null;
   rates: Record<string, number>;
   ratesFallback: boolean;
   formatAmount: (value: number) => string;
-  displayCurrency: string;
   expenseCategories: CustomCategory[];
   catCustomizations: CatCustomizations;
-  isPro: boolean;
-  isClassifying: boolean;
-  onAiClassify: () => Promise<void>;
-  onOpenBudgetSetup: () => void;
 }) {
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const isCurrentMonth = viewMonth === currentMonth;
-  const [y, m] = viewMonth.split("-").map(Number);
-  const monthLabel = new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const [chartOpen, setChartOpen] = useState(false);
 
   const monthTxns = transactions.filter((t) => t.date.startsWith(viewMonth));
   const currencies = [...new Set(monthTxns.map((t) => t.currency).filter(Boolean))];
   const isMixed = currencies.length > 1;
 
-  const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const expenseTotal = monthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+  const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
   const net = incomeTotal - expenseTotal;
   const byCat = expenseCategories.map((cat) => {
     const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
@@ -1340,14 +1320,9 @@ function MonthlySummary({
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
-  const prevMonth = (() => {
-    const [py, pm] = viewMonth.split("-").map(Number);
-    const d = new Date(py, pm - 2, 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  })();
-  const prevTxns = transactions.filter((t) => t.date.startsWith(prevMonth));
-  const prevIncome = prevTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const prevSpent = prevTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+  const workTotal = monthTxns
+    .filter((t) => t.transaction_type === "expense" && t.tags?.includes("work"))
+    .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
 
   // MOM chart data — last 12 months with data
   const momData = useMemo(() => {
@@ -1370,94 +1345,66 @@ function MonthlySummary({
     });
   }, [transactions, rates]);
 
-  const kpiCard = (label: string, value: number, color: string, hint: string) => (
-    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-2)", marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, color, letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums", lineHeight: 1.05 }}>
-        {label === "Net" && value >= 0 ? "+" : ""}{formatAmount(value)}
-      </div>
-      <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 10, fontVariantNumeric: "tabular-nums" }}>{hint}</div>
-    </div>
-  );
-
   return (
     <div style={{ marginBottom: 20 }}>
 
-      {/* MOM cashflow chart */}
+      {/* Monthly trend — collapsed by default, the sticky bar above already covers the headline numbers */}
       {momData.length >= 2 && (
-        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "16px 20px 10px", marginBottom: 20, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "var(--uf-text-2)", marginBottom: 12 }}>
-            Monthly cashflow
-          </div>
-          <ResponsiveContainer width="100%" height={130}>
-            <ComposedChart data={momData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onClick={(e: any) => { if (e?.activePayload?.[0]) onSelectMonth(e.activePayload[0].payload.month); }}>
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--uf-text-3)", fontFamily: "inherit" }} axisLine={false} tickLine={false} />
-              <YAxis hide />
-              <ChartTooltip
-                formatter={(v, name) => [formatAmount(Number(v ?? 0)), name === "income" ? "Income" : name === "expense" ? "Spent" : "Net"] as [string, string]}
-                contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
-                cursor={{ fill: "rgba(100,116,139,0.07)" }}
-              />
-              <Bar dataKey="income" fill="#059669" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
-              <Bar dataKey="expense" fill="#f97316" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
-              <Line dataKey="net" type="monotone" stroke="#22d3a5" strokeWidth={2}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                dot={(props: any) => (
-                  <circle key={props.payload.month} cx={props.cx} cy={props.cy} r={props.payload.month === viewMonth ? 5 : 3}
-                    fill={props.payload.month === viewMonth ? "#22d3a5" : "var(--uf-card)"}
-                    stroke="#22d3a5" strokeWidth={2} />
-                )} />
-            </ComposedChart>
-          </ResponsiveContainer>
-          <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-            {[{ color: "#059669", opacity: 0.7, label: "Income" }, { color: "#f97316", opacity: 0.7, label: "Spent" }, { color: "#22d3a5", opacity: 1, label: "Net", line: true }].map(({ color, opacity, label, line }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--uf-text-3)" }}>
-                {line
-                  ? <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2" /><circle cx="8" cy="4" r="2.5" fill="white" stroke={color} strokeWidth="2" /></svg>
-                  : <span style={{ width: 10, height: 10, borderRadius: 2, background: color, opacity, display: "inline-block" }} />}
-                {label}
+        <div className="uf-card" style={{ marginBottom: 12, overflow: "hidden" }}>
+          <button
+            onClick={() => setChartOpen((v) => !v)}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "transparent", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}
+          >
+            <span>📈 Monthly cashflow trend</span>
+            <span style={{ transform: chartOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s", color: "var(--uf-text-3)" }}>▾</span>
+          </button>
+          {chartOpen && (
+            <div style={{ padding: "0 20px 12px" }}>
+              <ResponsiveContainer width="100%" height={130}>
+                <ComposedChart data={momData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onClick={(e: any) => { if (e?.activePayload?.[0]) onSelectMonth(e.activePayload[0].payload.month); }}>
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--uf-text-3)", fontFamily: "inherit" }} axisLine={false} tickLine={false} />
+                  <YAxis hide />
+                  <ChartTooltip
+                    formatter={(v, name) => [formatAmount(Number(v ?? 0)), name === "income" ? "Income" : name === "expense" ? "Spent" : "Net"] as [string, string]}
+                    contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
+                    cursor={{ fill: "rgba(100,116,139,0.07)" }}
+                  />
+                  <Bar dataKey="income" fill="#059669" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
+                  <Bar dataKey="expense" fill="#f97316" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
+                  <Line dataKey="net" type="monotone" stroke="#22d3a5" strokeWidth={2}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    dot={(props: any) => (
+                      <circle key={props.payload.month} cx={props.cx} cy={props.cy} r={props.payload.month === viewMonth ? 5 : 3}
+                        fill={props.payload.month === viewMonth ? "#22d3a5" : "var(--uf-card)"}
+                        stroke="#22d3a5" strokeWidth={2} />
+                    )} />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+                {[{ color: "#059669", opacity: 0.7, label: "Income" }, { color: "#f97316", opacity: 0.7, label: "Spent" }, { color: "#22d3a5", opacity: 1, label: "Net", line: true }].map(({ color, opacity, label, line }) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--uf-text-3)" }}>
+                    {line
+                      ? <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2" /><circle cx="8" cy="4" r="2.5" fill="white" stroke={color} strokeWidth="2" /></svg>
+                      : <span style={{ width: 10, height: 10, borderRadius: 2, background: color, opacity, display: "inline-block" }} />}
+                    {label}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Header row: month label + nav */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 22, color: "#064E3B", letterSpacing: "-0.4px" }}>{monthLabel}</div>
-          {isMixed && (
-            <div style={{ fontSize: 11, color: ratesFallback ? "#D97706" : "var(--uf-text-3)", marginTop: 2 }}>
-              Totals shown in {displayCurrency} · {ratesFallback ? "⚠ estimated rates (live fetch failed)" : "live rates"}
             </div>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <button onClick={onPrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "var(--uf-text-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m14 6-6 6 6 6" /></svg>
-          </button>
-          <div style={{ padding: "0 8px", fontSize: 14, fontWeight: 700, color: "#064E3B", minWidth: 130, textAlign: "center", letterSpacing: "-0.2px" }}>{monthLabel}</div>
-          <button onClick={onNextMonth} disabled={isCurrentMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: isCurrentMonth ? "#CBD5E1" : "var(--uf-text-2)", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6 6 6-6 6" /></svg>
-          </button>
-        </div>
-      </div>
+      )}
 
-      {/* KPI grid */}
-      <div className="uf-kpi-grid" style={{ display: "grid", gridTemplateColumns: byCat.length > 0 ? "repeat(3, 1fr) 220px" : "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
-        {kpiCard("Income", incomeTotal, "#059669", prevIncome > 0 ? `vs ${formatAmount(prevIncome)} last month` : "No prior month data")}
-        {kpiCard("Spent", expenseTotal, "var(--uf-text)", prevSpent > 0 ? `vs ${formatAmount(prevSpent)} last month` : "No prior month data")}
-        {kpiCard("Net", net, net >= 0 ? "#047857" : "#DC2626", net >= 0 && incomeTotal > 0 ? `${((net / incomeTotal) * 100).toFixed(1)}% savings rate` : "Spending exceeds income")}
-
-        {/* Donut card */}
+      {/* Merged stat strip: donut + Saved + Work — Income/Spent/Rate already live in the sticky bar above */}
+      <div className="uf-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         {byCat.length > 0 && (
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <>
             <div style={{ flexShrink: 0 }}>
-              <ResponsiveContainer width={88} height={88}>
+              <ResponsiveContainer width={64} height={64}>
                 <PieChart>
-                  <Pie data={byCat} cx="50%" cy="50%" innerRadius={26} outerRadius={40} paddingAngle={2} dataKey="total">
+                  <Pie data={byCat} cx="50%" cy="50%" innerRadius={19} outerRadius={30} paddingAngle={2} dataKey="total">
                     {byCat.map((cat) => <Cell key={cat.key} fill={cat.color} />)}
                   </Pie>
                   <ChartTooltip
@@ -1467,131 +1414,28 @@ function MonthlySummary({
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-              {byCat.slice(0, 4).map((cat) => (
-                <div key={cat.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: cat.color, flexShrink: 0 }} />
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, color: "var(--uf-text)" }}>{cat.label}</span>
-                  <span style={{ color: "var(--uf-text-3)", fontVariantNumeric: "tabular-nums" }}>{expenseTotal ? Math.round((cat.total / expenseTotal) * 100) : 0}%</span>
-                </div>
-              ))}
+            <div style={{ width: 1, alignSelf: "stretch", background: "var(--uf-border)" }} />
+          </>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>Saved</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: net >= 0 ? "#047857" : "#DC2626", fontVariantNumeric: "tabular-nums" }}>{formatAmount(net)}</div>
+        </div>
+        {workTotal > 0 && (
+          <>
+            <div style={{ width: 1, alignSelf: "stretch", background: "var(--uf-border)" }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>💼 Work</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#6366f1", fontVariantNumeric: "tabular-nums" }}>{formatAmount(workTotal)}</div>
             </div>
+          </>
+        )}
+        {isMixed && (
+          <div style={{ marginLeft: "auto", fontSize: 11, color: ratesFallback ? "#D97706" : "var(--uf-text-3)" }}>
+            {ratesFallback ? "⚠ estimated rates (live fetch failed)" : "live rates"}
           </div>
         )}
       </div>
-
-      {/* Work Costs */}
-      {(() => {
-        const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
-        const workTxns = expenseTxns.filter((t) => t.tags?.includes("work"));
-        if (!workTxns.length) return null;
-        const workTotal = workTxns.reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
-        return (
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "14px 18px", marginBottom: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>💼 Work Costs</div>
-              <div style={{ fontSize: 11, color: "var(--uf-text-3)" }}>disappears at FIRE</div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: "#6366f1", fontFamily: "Manrope, sans-serif" }}>{formatAmount(workTotal)}</span>
-              <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{workTxns.length} transaction{workTxns.length !== 1 ? "s" : ""}</span>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Needs vs Wants */}
-      {(() => {
-        const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
-        const taggedTxns = expenseTxns.filter((t) => t.tags?.includes("need") || t.tags?.includes("want"));
-        if (!expenseTxns.length || (!isPro && !taggedTxns.length)) return null;
-        const needsTotal = taggedTxns.filter((t) => t.tags?.includes("need")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
-        const wantsTotal = taggedTxns.filter((t) => t.tags?.includes("want")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
-        const classifiedTotal = needsTotal + wantsTotal;
-        const untaggedCount = expenseTxns.length - taggedTxns.length;
-        return (
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "14px 18px", marginBottom: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: classifiedTotal > 0 ? 10 : 4 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Needs vs Wants</div>
-              {isPro ? (
-                <button
-                  onClick={() => { onAiClassify(); }}
-                  disabled={isClassifying}
-                  style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 700, cursor: isClassifying ? "not-allowed" : "pointer", opacity: isClassifying ? 0.6 : 1 }}
-                >
-                  {isClassifying ? "Classifying…" : "✦ AI classify all"}
-                </button>
-              ) : (
-                <div style={{ fontSize: 11, color: "var(--uf-text-3)" }}>Tap ? on each expense to tag</div>
-              )}
-            </div>
-            {classifiedTotal > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {[
-                  { label: "Needs", total: needsTotal, color: "#22d3a5" },
-                  { label: "Wants", total: wantsTotal, color: "#f97316" },
-                ].map(({ label, total, color }) => (
-                  <div key={label}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                      <span style={{ color, fontWeight: 600 }}>{label}</span>
-                      <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: "var(--uf-text)" }}>
-                        {formatAmount(total)}
-                        <span style={{ color: "var(--uf-text-3)", fontWeight: 400 }}> ({classifiedTotal > 0 ? Math.round((total / classifiedTotal) * 100) : 0}%)</span>
-                      </span>
-                    </div>
-                    <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${classifiedTotal > 0 ? (total / classifiedTotal) * 100 : 0}%`, background: color, borderRadius: 4, transition: "width 0.4s" }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {untaggedCount > 0 && (
-              <div style={{ fontSize: 11, color: "var(--uf-text-3)", marginTop: classifiedTotal > 0 ? 8 : 0 }}>
-                {untaggedCount} expense{untaggedCount !== 1 ? "s" : ""} unclassified
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Budget bars */}
-      {byCat.length > 0 && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
-          <button
-            onClick={onOpenBudgetSetup}
-            style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
-          >
-            ✎ {budgetExpenses ? "Review budget" : "Set up budget"}
-          </button>
-        </div>
-      )}
-      {byCat.length > 0 && budgetExpenses && (
-        <div className="uf-card" style={{ marginBottom: 0 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {byCat.map((cat) => {
-              const budget = budgetExpenses[cat.key] || 0;
-              const over = budget > 0 && cat.total > budget;
-              const barPct = budget > 0 ? Math.min(100, (cat.total / budget) * 100) : (cat.total / expenseTotal) * 100;
-              return (
-                <div key={cat.key}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                    <span style={{ color: "var(--uf-text-2)" }}>{cat.label}</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: over ? "#DC2626" : cat.color }}>
-                      {formatAmount(cat.total)}
-                      {budget > 0 ? <span style={{ color: "var(--uf-text-3)", fontWeight: 400 }}> / {formatAmount(budget)}</span> : <span style={{ color: "var(--uf-text-3)", fontWeight: 400 }}> ({((cat.total / expenseTotal) * 100).toFixed(0)}%)</span>}
-                    </span>
-                  </div>
-                  <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${barPct}%`, background: over ? "#DC2626" : cat.color, borderRadius: 4, transition: "width 0.4s" }} />
-                  </div>
-                  {over && <div style={{ fontSize: 11, color: "#DC2626", marginTop: 2 }}>over by {formatAmount(cat.total - budget)}</div>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1916,85 +1760,13 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [viewMonth, setViewMonth] = useState(currentMonth);
-  const [budgetExpenses, setBudgetExpenses] = useState<Record<string, number> | null>(null);
-  const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesFallback, setRatesFallback] = useState(false);
 
   // Custom categories / sub-categories (persisted in localStorage)
   const [catCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
 
-  const [customCats, setCustomCats] = useState<CustomCategory[]>(() => {
-    try { return JSON.parse(localStorage.getItem("uf_custom_cats") || "[]"); } catch { return []; }
-  });
-  const [customSubCats, setCustomSubCats] = useState<Record<string, string[]>>(() => {
-    try { return JSON.parse(localStorage.getItem("uf_custom_subcats") || "{}"); } catch { return {}; }
-  });
-  useEffect(() => { localStorage.setItem("uf_custom_cats", JSON.stringify(customCats)); }, [customCats]);
-  useEffect(() => { localStorage.setItem("uf_custom_subcats", JSON.stringify(customSubCats)); }, [customSubCats]);
-
-  // Stable Supabase write — called by the debounce and by the flush-on-unmount effect
-  const syncCatsToSupabase = useCallback((cats: CustomCategory[], subCats: Record<string, string[]>) => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
-        .then(({ data }) => {
-          const cur = (data?.expenses as Record<string, unknown>) || {};
-          supabase.from("user_budget").upsert({
-            user_id: session.user.id,
-            expenses: { ...cur, _custom_cats: cats, _custom_subcats: subCats },
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
-        });
-    });
-  }, []);
-
-  // Track whether a sync is pending so we can flush it on unmount
-  const pendingSyncRef = useRef<{ cats: CustomCategory[]; subCats: Record<string, string[]> } | null>(null);
-
-  // Sync custom cats to Supabase whenever they change (debounced 600ms)
-  useEffect(() => {
-    pendingSyncRef.current = { cats: customCats, subCats: customSubCats };
-    const id = setTimeout(() => {
-      syncCatsToSupabase(customCats, customSubCats);
-      pendingSyncRef.current = null;
-    }, 600);
-    return () => clearTimeout(id); // cancels the debounce timer only; unmount flush handled below
-  }, [customCats, customSubCats, syncCatsToSupabase]);
-
-  // Flush any pending sync immediately when this tab unmounts (prevents clearTimeout from swallowing it)
-  useEffect(() => {
-    return () => {
-      if (pendingSyncRef.current) {
-        syncCatsToSupabase(pendingSyncRef.current.cats, pendingSyncRef.current.subCats);
-      }
-    };
-  }, [syncCatsToSupabase]);
-
-  // Re-fetch custom categories when the browser tab regains focus (cross-device sync)
-  useEffect(() => {
-    const refetch = () => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session) return;
-        supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
-          .then(({ data }) => {
-            if (!data?.expenses) return;
-            const { _custom_cats, _custom_subcats } = data.expenses as Record<string, unknown>;
-            if (Array.isArray(_custom_cats)) {
-              setCustomCats(_custom_cats as CustomCategory[]);
-              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
-            }
-            if (_custom_subcats && typeof _custom_subcats === "object") {
-              setCustomSubCats(_custom_subcats as Record<string, string[]>);
-              localStorage.setItem("uf_custom_subcats", JSON.stringify(_custom_subcats));
-            }
-          });
-      });
-    };
-    const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, []);
+  const { customCats, setCustomCats, customSubCats, setCustomSubCats } = useCustomCategories();
 
   const allExpenseCats = useMemo(() => {
     const defaultLabels = new Set(EXPENSE_CATEGORIES.map(c => c.label.toLowerCase()));
@@ -2011,14 +1783,14 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleAddCategory = useCallback((cat: CustomCategory) => {
     setCustomCats((prev) => [...prev, cat]);
-  }, []);
+  }, [setCustomCats]);
   const handleDeleteCategory = useCallback((key: string) => {
     setCustomCats((prev) => prev.filter((c) => c.key !== key));
     setCustomSubCats((prev) => { const n = { ...prev }; delete n[key]; return n; });
-  }, []);
+  }, [setCustomCats, setCustomSubCats]);
   const handleAddSubCategory = useCallback((catKey: string, sub: string) => {
     setCustomSubCats((prev) => ({ ...prev, [catKey]: [...(prev[catKey] || []), sub] }));
-  }, []);
+  }, [setCustomSubCats]);
 
   // Form state (lifted so edit can populate it)
   const [draft, setDraft] = useState<DraftTransaction>(() => ({ ...EMPTY_DRAFT(), currency: defaultCurrency }));
@@ -2056,25 +1828,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         .then(({ data }) => {
           if (data) setTransactions(data);
           setLoading(false);
-        });
-      supabase
-        .from("user_budget")
-        .select("income, expenses")
-        .eq("user_id", session.user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.expenses) {
-            const { _fire_profile: _, _custom_cats, _custom_subcats, ...budgetCats } = data.expenses as Record<string, unknown>;
-            setBudgetExpenses(budgetCats as Record<string, number>);
-            if (Array.isArray(_custom_cats)) {
-              setCustomCats(_custom_cats as CustomCategory[]);
-              localStorage.setItem("uf_custom_cats", JSON.stringify(_custom_cats));
-            }
-            if (_custom_subcats && typeof _custom_subcats === "object") {
-              setCustomSubCats(_custom_subcats as Record<string, string[]>);
-              localStorage.setItem("uf_custom_subcats", JSON.stringify(_custom_subcats));
-            }
-          }
         });
       supabase
         .from("profiles")
@@ -2409,21 +2162,31 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       <MonthlySummary
         transactions={transactions}
         viewMonth={viewMonth}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
         onSelectMonth={setViewMonth}
-        budgetExpenses={budgetExpenses}
         rates={rates}
         ratesFallback={ratesFallback}
         formatAmount={fmtDisplay}
-        displayCurrency={displayCurrency}
         expenseCategories={allExpenseCats}
         catCustomizations={catCustomizations}
-        isPro={isPro}
-        isClassifying={isClassifying}
-        onAiClassify={handleAiClassify}
-        onOpenBudgetSetup={() => setBudgetSetupOpen(true)}
       />
+
+      {isPro && (() => {
+        const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
+        const untaggedCount = expenseTxns.filter((t) => !t.tags?.includes("need") && !t.tags?.includes("want")).length;
+        if (!untaggedCount) return null;
+        return (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", marginBottom: 16, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10 }}>
+            <span style={{ fontSize: 12, color: "var(--uf-text-2)" }}>{untaggedCount} expense{untaggedCount !== 1 ? "s" : ""} not tagged Need/Want</span>
+            <button
+              onClick={handleAiClassify}
+              disabled={isClassifying}
+              style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 700, cursor: isClassifying ? "not-allowed" : "pointer", opacity: isClassifying ? 0.6 : 1 }}
+            >
+              {isClassifying ? "Classifying…" : "✦ AI classify all"}
+            </button>
+          </div>
+        );
+      })()}
 
       <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "stretch" }}>
         <TransactionList
@@ -2522,30 +2285,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         />
       )}
 
-      {budgetSetupOpen && (
-        <BudgetSetupModal
-          transactions={transactions}
-          expenseCategories={allExpenseCats}
-          budgetExpenses={budgetExpenses}
-          rates={rates}
-          formatAmount={fmtDisplay}
-          onClose={() => setBudgetSetupOpen(false)}
-          onSave={async (values) => {
-            const newBudget = { ...(budgetExpenses || {}), ...values };
-            setBudgetExpenses(newBudget);
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              const { data: existing } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
-              const cur = (existing?.expenses as Record<string, unknown>) || {};
-              await supabase.from("user_budget").upsert({
-                user_id: session.user.id,
-                expenses: { ...cur, ...values },
-                updated_at: new Date().toISOString(),
-              }, { onConflict: "user_id" });
-            }
-          }}
-        />
-      )}
     </>
   );
 }
