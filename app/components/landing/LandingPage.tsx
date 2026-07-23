@@ -978,6 +978,19 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://startupdirectory.net"
+            rel="dofollow"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://startupdirectory.net/badge/featured-light.svg"
+              alt="Featured on StartupDirectory"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>

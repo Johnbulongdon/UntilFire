@@ -1,6 +1,6 @@
 # Backlink Session Notes - 2026-07-22 Continuation
 
-Temporary sync note for backlink work. Merge these items into `docs/marketing/BACKLINK_LEDGER.md` when making the next safe full-ledger edit.
+Raw sync note for backlink work. Main outcomes were merged into `docs/marketing/BACKLINK_LEDGER.md` on 2026-07-23; keep this file only as detailed source context for skipped/retry candidates.
 
 ## Completed / Submitted
 
