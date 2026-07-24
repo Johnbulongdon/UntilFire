@@ -991,6 +991,23 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://launchpadly.co/startup/untilfire?ref=badge"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-launchpadly-badge="untilfire"
+            data-launchpadly-badge-variant="minimal"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://launchpadly.co/embed/badges/startup/untilfire.svg?variant=minimal"
+              alt="Launchpadly Startup Directory"
+              width={220}
+              height={28}
+              style={{ display: "block", border: 0 }}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
