@@ -374,6 +374,7 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 
 ## Audit Log
 
+| 2026-07-26 | Codex backlink acquisition | Continued from the synced ledger. AppRater remained pending moderation after a successful HTTP submission but no public listing. SaaS Podium was screened and blocked by a stale public form schema plus anonymous Supabase RLS; Zearches was skipped as nofollow; TheNoicy was logged as a manual article/phone candidate; Radical.fm and BlackBud UK were skipped or deferred under the zero-budget/free-link rules. |
 | Date | Owner/session | Change |
 | --- | --- | --- |
 | 2026-07-24 | Codex backlink acquisition | Added the Launchpadly.co minimal badge to the UntilFire footer from the user-provided snippet. Ahrefs public endpoint returned DR 62 and the badge SVG returned 200, but the Launchpadly listing page still says UntilFire is not live yet, so it remains `not-submitted`/not counted as a live dofollow backlink pending Launchpadly verification or submission completion. |
