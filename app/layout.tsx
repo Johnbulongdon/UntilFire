@@ -4,6 +4,7 @@ import Script from 'next/script'
 import { AuthProvider } from '../lib/auth-context'
 import { Toaster } from 'react-hot-toast'
 import { Analytics } from '@vercel/analytics/react'
+import LoadingSplash from './components/LoadingSplash'
 import {
   UNTILFIRE_ANCHOR_COPY,
   UNTILFIRE_ANCHOR_DESCRIPTION,
@@ -52,6 +53,14 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('uf-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
+        {/* Decide the logo-reveal splash before first paint: first load of a
+            session only, and never for reduced-motion. Keeps it flash-free and
+            off internal navigations. See app/components/LoadingSplash.tsx. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var s=sessionStorage.getItem('uf_splash_seen')==='1';if(!r&&!s){document.documentElement.setAttribute('data-splash','1');sessionStorage.setItem('uf_splash_seen','1')}}catch(e){}})()`,
           }}
         />
         <script
@@ -219,6 +228,7 @@ export default function RootLayout({
             }),
           }}
         />
+        <LoadingSplash />
         <AuthProvider>
           {children}
 
