@@ -721,7 +721,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       .sort((a, b) => a.value - b.value)
       .map(m => ({ ...m, achieved: investable >= m.value }));
   }, [investable, fireTarget]);
-  const rawChartData = data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6));
+  // Memoized so its reference is stable across renders. Downstream memos depend
+  // on it (chartData, exactFreedomDate); a fresh array every render made
+  // exactFreedomDate recompute a new Date() each render, which the freedom-date
+  // effect pushed to the parent via setState → infinite re-render loop.
+  const rawChartData = useMemo(
+    () => data.slice(0, Math.min(data.length, (fireYear ?? 30) + 6)),
+    [data, fireYear],
+  );
   const chartData = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
