@@ -1008,6 +1008,19 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://sellwithboost.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://sellwithboost.com/badge/listing-dark.svg"
+              alt="Listed on Sell With boost"
+              style={{ height: 40, width: "auto" }}
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
