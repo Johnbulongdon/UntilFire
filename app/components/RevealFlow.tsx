@@ -113,13 +113,6 @@ export default function RevealFlow(props: RevealFlowProps) {
   const [step, setStep] = useState(1);
   const [scenarioIdx, setScenarioIdx] = useState(0);
 
-  // Auto-advance from the loading step.
-  useEffect(() => {
-    if (step !== 1) return;
-    const id = setTimeout(() => setStep((s) => (s === 1 ? 2 : s)), reduce ? 300 : 1500);
-    return () => clearTimeout(id);
-  }, [step, reduce]);
-
   const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
   const next = () => setStep((s) => Math.min(7, s + 1));
   const back = () => setStep((s) => Math.max(2, s - 1));
@@ -173,6 +166,11 @@ export default function RevealFlow(props: RevealFlowProps) {
   const subtle: React.CSSProperties = { fontSize: 15, color: "rgba(255,255,255,0.55)" };
   const anim = (a: string): React.CSSProperties => (reduce ? {} : { animation: a });
 
+  // Step 1 is a clean, full-screen brand loading clip that plays once and then
+  // hands off to the reveal (step 2). Rendered on its own so no reveal chrome
+  // (top bar, progress) shows during loading.
+  if (step === 1) return <VideoLoader onDone={() => setStep(2)} reduce={reduce} />;
+
   return (
     <div style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
@@ -203,15 +201,6 @@ export default function RevealFlow(props: RevealFlowProps) {
       {/* stage */}
       <div style={stage}>
         <div key={step} style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-
-          {/* 1 — loading */}
-          {step === 1 && (
-            <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 26 }}>
-              <div className="rf-anim" style={{ width: 64, height: 64, borderRadius: "50%", border: "4px solid rgba(255,255,255,0.14)", borderTopColor: TEAL, ...anim("rf-spin .9s linear infinite") }} />
-              <div style={{ fontSize: 22, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Crunching your numbers…</div>
-              <div style={subtle}>Mapping your freedom date</div>
-            </div>
-          )}
 
           {/* 2 — freedom age */}
           {step === 2 && (
@@ -386,6 +375,53 @@ export default function RevealFlow(props: RevealFlowProps) {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Clean, full-screen brand loading clip shown before the reveal. Plays once,
+ * then hands off via `onDone` — on the clip's natural end, and also on
+ * decode-error, blocked autoplay, or a stall safety-net so a visitor can never
+ * be stranded on the loader. Reduced-motion skips the clip entirely.
+ */
+function VideoLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean }) {
+  const done = useRef(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+  const finish = () => {
+    if (done.current) return;
+    done.current = true;
+    onDoneRef.current();
+  };
+
+  useEffect(() => {
+    const id = setTimeout(finish, reduce ? 250 : 5500); // clip is ~4s; net guards stalls
+    return () => clearTimeout(id);
+  }, [reduce]);
+
+  const shell: React.CSSProperties = {
+    minHeight: "100vh", background: "#08080e", display: "flex",
+    alignItems: "center", justifyContent: "center", overflow: "hidden",
+  };
+  if (reduce) return <div style={shell} aria-hidden />;
+
+  return (
+    <div style={shell}>
+      <video
+        src="/logo/reveal-loader.mp4"
+        muted
+        playsInline
+        autoPlay
+        preload="auto"
+        onEnded={finish}
+        onError={finish}
+        onCanPlay={(e) => {
+          const p = e.currentTarget.play?.();
+          if (p && typeof p.catch === "function") p.catch(finish);
+        }}
+        style={{ width: "min(74%, 62vh)", aspectRatio: "1 / 1", objectFit: "contain", display: "block" }}
+      />
     </div>
   );
 }
