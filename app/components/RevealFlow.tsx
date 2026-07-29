@@ -59,6 +59,7 @@ const KEYFRAMES = `
 @keyframes rf-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes rf-pop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @keyframes rf-dot{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+@keyframes rf-page{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes rf-bar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @keyframes rf-glow{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media (prefers-reduced-motion: reduce){
@@ -198,9 +199,9 @@ export default function RevealFlow(props: RevealFlowProps) {
         ))}
       </div>
 
-      {/* stage */}
+      {/* stage — the keyed wrapper re-mounts per step, so rf-page animates every page-to-page transition */}
       <div style={stage}>
-        <div key={step} style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+        <div key={step} style={{ width: "100%", display: "flex", justifyContent: "center", ...anim("rf-page .45s cubic-bezier(.2,.8,.2,1) both") }}>
 
           {/* 2 — freedom age */}
           {step === 2 && (
@@ -234,7 +235,12 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={{ fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em", ...anim("rf-up .5s ease both") }}>Here&apos;s your life, in years</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 7, width: "min(520px, 82vw)" }}>
                 {dots.map((c, i) => (
-                  <div key={i} style={{ width: "100%", aspectRatio: "1", borderRadius: 3, background: c, opacity: reduce ? 1 : 0, ...anim(`rf-dot .35s ease both ${Math.min(i * 6, 620)}ms`) }} />
+                  <div key={i} style={{
+                    width: "100%", aspectRatio: "1", borderRadius: 3, background: c,
+                    opacity: reduce ? 1 : 0,
+                    animation: reduce ? undefined : "rf-dot .34s ease both",
+                    animationDelay: reduce ? undefined : `${Math.min(i * 13, 1250)}ms`,
+                  }} />
                 ))}
               </div>
               <div style={{ display: "flex", gap: 22, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
@@ -380,15 +386,19 @@ export default function RevealFlow(props: RevealFlowProps) {
 }
 
 /**
- * Clean, full-screen brand loading clip shown before the reveal. Plays once,
- * then hands off via `onDone` — on the clip's natural end, and also on
- * decode-error, blocked autoplay, or a stall safety-net so a visitor can never
- * be stranded on the loader. Reduced-motion skips the clip entirely.
+ * Full-screen brand loading page shown before the reveal. The logo mark is
+ * always visible (so there is ALWAYS a loading page), and the logo clip plays
+ * on top of it whenever it can. It holds for roughly the clip's length, then
+ * hands off — on the clip's natural end, or a fixed hold if the clip can't play
+ * (404 / blocked autoplay / decode error), or an absolute safety net. This way
+ * a visitor always sees a loading beat and is never stranded. Reduced motion
+ * shows a brief static hold instead.
  */
 function VideoLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean }) {
   const done = useRef(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
+  const [clipOk, setClipOk] = useState(true);
   const finish = () => {
     if (done.current) return;
     done.current = true;
@@ -396,32 +406,51 @@ function VideoLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean }
   };
 
   useEffect(() => {
-    const id = setTimeout(finish, reduce ? 250 : 5500); // clip is ~4s; net guards stalls
-    return () => clearTimeout(id);
+    // Always hold the loading page for ~the clip length, even if the clip
+    // can't play; a longer net guards against a stall.
+    const hold = setTimeout(finish, reduce ? 600 : 4100);
+    const net = setTimeout(finish, 6500);
+    return () => { clearTimeout(hold); clearTimeout(net); };
   }, [reduce]);
 
   const shell: React.CSSProperties = {
     minHeight: "100vh", background: "#08080e", display: "flex",
     alignItems: "center", justifyContent: "center", overflow: "hidden",
   };
-  if (reduce) return <div style={shell} aria-hidden />;
+  const box: React.CSSProperties = {
+    position: "relative", width: "min(56%, 48vh)", maxWidth: 320, aspectRatio: "1 / 1",
+  };
+  const layer: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%" };
 
   return (
     <div style={shell}>
-      <video
-        src="/logo/reveal-loader.mp4"
-        muted
-        playsInline
-        autoPlay
-        preload="auto"
-        onEnded={finish}
-        onError={finish}
-        onCanPlay={(e) => {
-          const p = e.currentTarget.play?.();
-          if (p && typeof p.catch === "function") p.catch(finish);
-        }}
-        style={{ width: "min(74%, 62vh)", aspectRatio: "1 / 1", objectFit: "contain", display: "block" }}
-      />
+      <div style={box}>
+        <style dangerouslySetInnerHTML={{ __html: "@keyframes rf-logopulse{0%,100%{opacity:.82;transform:scale(1)}50%{opacity:1;transform:scale(1.045)}}" }} />
+        {/* Branded fallback — always present so the loading page never blanks. */}
+        <img
+          src="/logo/horizon-color.svg"
+          alt=""
+          aria-hidden
+          style={{ ...layer, borderRadius: "22%", animation: reduce ? undefined : "rf-logopulse 1.7s ease-in-out infinite" }}
+        />
+        {/* The logo clip on top; hidden if it can't play so the fallback shows. */}
+        {!reduce && (
+          <video
+            src="/logo/reveal-loader.mp4"
+            muted
+            playsInline
+            autoPlay
+            preload="auto"
+            onEnded={finish}
+            onError={() => setClipOk(false)}
+            onCanPlay={(e) => {
+              const p = e.currentTarget.play?.();
+              if (p && typeof p.catch === "function") p.catch(() => setClipOk(false));
+            }}
+            style={{ ...layer, objectFit: "contain", display: clipOk ? "block" : "none" }}
+          />
+        )}
+      </div>
     </div>
   );
 }
