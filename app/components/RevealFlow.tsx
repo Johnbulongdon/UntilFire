@@ -386,19 +386,15 @@ export default function RevealFlow(props: RevealFlowProps) {
 }
 
 /**
- * Full-screen brand loading page shown before the reveal. The logo mark is
- * always visible (so there is ALWAYS a loading page), and the logo clip plays
- * on top of it whenever it can. It holds for roughly the clip's length, then
- * hands off — on the clip's natural end, or a fixed hold if the clip can't play
- * (404 / blocked autoplay / decode error), or an absolute safety net. This way
- * a visitor always sees a loading beat and is never stranded. Reduced motion
- * shows a brief static hold instead.
+ * Full-screen brand loading page shown before the reveal: just the logo clip,
+ * centered and compact for a premium feel. It hands off on the clip's natural
+ * end, and also on decode-error, blocked autoplay, or a stall safety-net, so a
+ * visitor is never stranded on the loader. Reduced motion skips the clip.
  */
 function VideoLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean }) {
   const done = useRef(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
-  const [clipOk, setClipOk] = useState(true);
   const finish = () => {
     if (done.current) return;
     done.current = true;
@@ -406,9 +402,8 @@ function VideoLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean }
   };
 
   useEffect(() => {
-    // Always hold the loading page for ~the clip length, even if the clip
-    // can't play; a longer net guards against a stall.
-    const hold = setTimeout(finish, reduce ? 600 : 4100);
+    // Hold ~the clip length in case `ended` doesn't fire; longer net guards a stall.
+    const hold = setTimeout(finish, reduce ? 500 : 4100);
     const net = setTimeout(finish, 6500);
     return () => { clearTimeout(hold); clearTimeout(net); };
   }, [reduce]);
@@ -417,40 +412,24 @@ function VideoLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean }
     minHeight: "100vh", background: "#08080e", display: "flex",
     alignItems: "center", justifyContent: "center", overflow: "hidden",
   };
-  const box: React.CSSProperties = {
-    position: "relative", width: "min(56%, 48vh)", maxWidth: 320, aspectRatio: "1 / 1",
-  };
-  const layer: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%" };
+  if (reduce) return <div style={shell} aria-hidden />;
 
   return (
     <div style={shell}>
-      <div style={box}>
-        <style dangerouslySetInnerHTML={{ __html: "@keyframes rf-logopulse{0%,100%{opacity:.82;transform:scale(1)}50%{opacity:1;transform:scale(1.045)}}" }} />
-        {/* Branded fallback — always present so the loading page never blanks. */}
-        <img
-          src="/logo/horizon-color.svg"
-          alt=""
-          aria-hidden
-          style={{ ...layer, borderRadius: "22%", animation: reduce ? undefined : "rf-logopulse 1.7s ease-in-out infinite" }}
-        />
-        {/* The logo clip on top; hidden if it can't play so the fallback shows. */}
-        {!reduce && (
-          <video
-            src="/logo/reveal-loader.mp4"
-            muted
-            playsInline
-            autoPlay
-            preload="auto"
-            onEnded={finish}
-            onError={() => setClipOk(false)}
-            onCanPlay={(e) => {
-              const p = e.currentTarget.play?.();
-              if (p && typeof p.catch === "function") p.catch(() => setClipOk(false));
-            }}
-            style={{ ...layer, objectFit: "contain", display: clipOk ? "block" : "none" }}
-          />
-        )}
-      </div>
+      <video
+        src="/logo/reveal-loader.mp4"
+        muted
+        playsInline
+        autoPlay
+        preload="auto"
+        onEnded={finish}
+        onError={finish}
+        onCanPlay={(e) => {
+          const p = e.currentTarget.play?.();
+          if (p && typeof p.catch === "function") p.catch(() => {});
+        }}
+        style={{ width: "min(40%, 36vh)", maxWidth: 240, aspectRatio: "1 / 1", objectFit: "contain", display: "block" }}
+      />
     </div>
   );
 }
