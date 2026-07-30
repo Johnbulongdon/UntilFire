@@ -1021,6 +1021,18 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://hicyou.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://hicyou.com/badge/featured-dark.svg"
+              alt="Featured"
+              loading="lazy"
+            />
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
