@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
 import RevealFlow, { type RevealScenario } from "@/app/components/RevealFlow";
+import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
+import { CITY_COORDS } from "@/lib/city-coords";
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
 import { calcFIRE, calcTakeHome } from "@/lib/fire";
@@ -1008,7 +1010,23 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     { label: "Markets return 2% less", age: scenAge(bear.years), delta: freedomAge - scenAge(bear.years) },
   ];
 
+  // Expat-FIRE globe: iconic lower-cost destinations, each with a real
+  // recomputed freedom age (via calcFIRE at that city's cost of living).
   const currentCityKey = CITIES.find((c) => c.name === city.name)?.key ?? "sf";
+  const homeCoords = CITY_COORDS[currentCityKey] ?? { lat: 30.27, lng: -97.74 };
+  const expatHome = { name: city.name.split(",")[0] || city.name, lat: homeCoords.lat, lng: homeCoords.lng };
+  const EXPAT_KEYS = ["lisbon", "mexicocity", "chiangmai", "medellin", "bali", "porto", "valencia", "budapest", "bangkok", "kualalumpur"];
+  const expatCities: ExpatCity[] = EXPAT_KEYS
+    .map((k): ExpatCity | null => {
+      const c = CITIES.find((x) => x.key === k);
+      const co = CITY_COORDS[k];
+      if (!c || !co || c.col >= city.col) return null;
+      const age = planningAge + Math.round(calcFIRE(savings, c.col, planningAge, portfolioBalance, marketReturn).years);
+      return { key: k, name: c.name.split(",")[0], country: (c.name.split(", ")[1] ?? "").trim(), lat: co.lat, lng: co.lng, age, delta: freedomAge - age };
+    })
+    .filter((x): x is ExpatCity => x !== null && x.delta > 0)
+    .sort((a, b) => b.delta - a.delta)
+    .slice(0, 3);
 
   const symbol = getCurrencySymbol(currency);
   const formatCompact = (n: number) => {
@@ -1044,19 +1062,17 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         isAlreadyFire={isAlreadyFire}
         fireTarget={result.fireTarget}
         pctThere={pctThere}
-        cityName={city.name}
         savingsRatePct={savingsRatePct}
         usBaselineRate={PUBLIC_SAVINGS_RATE_BASELINE}
         fireBenchmarkRate={25}
         scenarios={scenarios}
-        monthlySavings={savings}
-        portfolioBalance={portfolioBalance}
-        currentCityKey={currentCityKey}
+        expatHome={expatHome}
+        expatBaseAge={freedomAge}
+        expatCities={expatCities}
         formatCompact={formatCompact}
         onSave={onSave}
         onAdjust={onAdjust}
         onShare={() => setShowShare(true)}
-        onCitySelect={(key) => router.push(`/geo-arbitrage/${key}`)}
       />
     </div>
   );

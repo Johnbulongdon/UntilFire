@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 
-// Real interactive geo-arbitrage globe, loaded on demand (step 6 only).
-const GeoArbitrageGlobe = dynamic(() => import("@/app/components/GeoArbitrageGlobe"), {
+// Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
+const ExpatFireGlobe = dynamic(() => import("@/app/components/ExpatFireGlobe"), {
   ssr: false,
   loading: () => (
-    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
+    <div style={{ minHeight: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
       Loading globe…
     </div>
   ),
@@ -33,22 +34,21 @@ export interface RevealFlowProps {
   fireTarget: number;
   /** 0–100, how much of the target is already invested. */
   pctThere: number;
-  cityName: string;
   savingsRatePct: number;
   /** Public U.S. personal-saving-rate benchmark (~5%). */
   usBaselineRate: number;
   /** Common FIRE savings-rate target (25%). */
   fireBenchmarkRate: number;
   scenarios: RevealScenario[];
-  monthlySavings: number;
-  portfolioBalance: number;
-  currentCityKey: string;
+  /** Expat-FIRE globe data (step 6). */
+  expatHome: { name: string; lat: number; lng: number };
+  expatBaseAge: number;
+  expatCities: ExpatCity[];
   /** Compact money formatter, e.g. 1_240_000 -> "$1.24M". */
   formatCompact: (n: number) => string;
   onSave: () => void;
   onAdjust: () => void;
   onShare: () => void;
-  onCitySelect: (key: string) => void;
 }
 
 const TEAL = "#62FAE3";
@@ -105,9 +105,9 @@ function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, f
 export default function RevealFlow(props: RevealFlowProps) {
   const {
     freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, isAlreadyFire,
-    fireTarget, pctThere, cityName, savingsRatePct, usBaselineRate, fireBenchmarkRate,
-    scenarios, monthlySavings, portfolioBalance, currentCityKey, formatCompact,
-    onSave, onAdjust, onShare, onCitySelect,
+    fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate,
+    scenarios, expatHome, expatBaseAge, expatCities, formatCompact,
+    onSave, onAdjust, onShare,
   } = props;
 
   const reduce = useReducedMotion();
@@ -304,23 +304,20 @@ export default function RevealFlow(props: RevealFlowProps) {
             </div>
           )}
 
-          {/* 6 — expat globe (real geo-arbitrage data) */}
+          {/* 6 — expat globe (real geo-arbitrage deltas) */}
           {step === 6 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center", width: "100%", ...anim("rf-up .55s ease both") }}>
               <div style={eyebrow}>EXPAT FIRE</div>
               <div style={{ fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em" }}>Retire even earlier somewhere else</div>
-              <div style={{ width: "min(520px, 88vw)", height: "min(340px, 60vw)", position: "relative" }}>
-                <GeoArbitrageGlobe
-                  monthlySavings={monthlySavings}
-                  portfolioBalance={portfolioBalance}
-                  currentAge={planningAge}
-                  currentCityKey={currentCityKey}
-                  onCitySelect={onCitySelect}
-                  fillContainer
-                />
-              </div>
+              {expatCities.length > 0 ? (
+                <ExpatFireGlobe home={expatHome} baseAge={expatBaseAge} cities={expatCities} />
+              ) : (
+                <div style={{ ...subtle, maxWidth: 460 }}>
+                  You&apos;re already in one of the most cost-efficient places for your plan — relocating wouldn&apos;t pull your date much sooner.
+                </div>
+              )}
               <div style={{ ...subtle, maxWidth: 460 }}>
-                Green cities cost less than {cityName.split(",")[0] || cityName} — your money already covers life there. Tap one to see the date.
+                A lower cost of living means a smaller target — pick a city to see how much sooner your date arrives.
               </div>
             </div>
           )}
