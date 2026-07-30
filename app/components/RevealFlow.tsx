@@ -408,8 +408,9 @@ function VideoLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean }
     return () => { clearTimeout(hold); clearTimeout(net); };
   }, [reduce]);
 
+  // Match the clip's own (pure black) background so its square edge is invisible.
   const shell: React.CSSProperties = {
-    minHeight: "100vh", background: "#08080e", display: "flex",
+    minHeight: "100vh", background: "#000000", display: "flex",
     alignItems: "center", justifyContent: "center", overflow: "hidden",
   };
   if (reduce) return <div style={shell} aria-hidden />;
