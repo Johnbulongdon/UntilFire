@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,131 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'asset-location-strategy-which-account-for-which-investment',
+    title: 'Asset Location Strategy: Which Investments Belong in Which Accounts',
+    description: 'How placing the right assets in the right account types — Roth, traditional, taxable — can meaningfully improve your after-tax returns without changing your investments.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-18',
+    readTime: '7 min read',
+    body: [
+      h2('Asset allocation vs. asset location'),
+      p('Asset allocation is the familiar decision: what percentage of your portfolio to hold in stocks, bonds, and other assets. Asset location is the less-discussed companion: which specific accounts should hold which assets.'),
+      p('The insight is that identical investments can produce different after-tax returns depending on where you hold them. A bond fund earning 4% inside a traditional IRA versus a taxable brokerage account has meaningfully different tax treatment. Optimizing location across your accounts — without changing your overall allocation — is one of the few genuinely free lunches in personal finance.'),
+      h2('The three account types and their tax treatment'),
+      ul([
+        'Traditional 401k / Traditional IRA: contributions are pre-tax (reducing current taxable income). Growth is tax-deferred. Withdrawals are taxed as ordinary income. Required minimum distributions begin at age 73.',
+        'Roth 401k / Roth IRA: contributions are after-tax (no current deduction). Growth is tax-free. Qualified withdrawals are entirely tax-free. No RMDs on Roth IRAs.',
+        'Taxable brokerage account: no tax advantage on contributions. Dividends and interest are taxed annually. Capital gains are taxed when you sell — at favorable long-term rates (0%, 15%, or 20%) if held over a year.',
+      ]),
+      h2('The asset location framework'),
+      p('The core principle: put tax-inefficient assets in tax-advantaged accounts and tax-efficient assets in taxable accounts.'),
+      h3('Best in traditional tax-deferred accounts (401k, traditional IRA)'),
+      ul([
+        'Bond funds and bond ETFs — interest income is taxed as ordinary income; deferring it is valuable.',
+        'REITs — dividends are mostly non-qualified (ordinary income rates); sheltering them helps.',
+        'High-dividend equity funds — same logic as bonds if dividends are non-qualified.',
+        'Actively managed funds with high turnover — short-term capital gains distributions are taxed as ordinary income.',
+      ]),
+      h3('Best in Roth accounts'),
+      ul([
+        'Assets you expect to grow the most — small-cap equities, emerging markets, individual high-growth stocks. The gains are entirely tax-free in a Roth.',
+        'Assets you plan to hold for decades without touching — the longer the time horizon in a Roth, the more tax-free compounding accumulates.',
+      ]),
+      h3('Best in taxable brokerage'),
+      ul([
+        'Total market index funds and broad equity index funds — qualified dividends taxed at preferential rates, minimal turnover means minimal capital gains distributions.',
+        'Municipal bonds — interest is federally tax-exempt; best held in taxable accounts where the tax exemption actually matters (it provides no extra benefit in an already-tax-sheltered account).',
+        'Tax-managed funds — designed to minimize annual taxable events; work best in taxable.',
+        'I-bonds — can only be held individually (not through brokerage), already tax-deferred.',
+      ]),
+      h2('Why this matters for FIRE'),
+      p('Asset location becomes increasingly important as your wealth grows across multiple account types. A FIRE portfolio of $1.5M across a traditional 401k ($800k), Roth IRA ($400k), and taxable brokerage ($300k) can generate meaningfully different lifetime after-tax income depending on how assets are positioned.'),
+      p('The practical impact compounds over decades. Holding a 3% bond allocation in a traditional IRA rather than a taxable account avoids taxing that 3% at ordinary income rates each year. Over 20 years at a 25% marginal rate, that difference is roughly 0.75% per year of after-tax drag eliminated — not transformative on its own, but cumulative and costless.'),
+      h2('When asset location does not matter much'),
+      p('Asset location optimization provides diminishing returns when: all of your savings are in a single account type (no choice to make), the difference in tax rates between account types is small (low marginal rate), or the amounts involved are small enough that the difference is negligible.'),
+      p('Also: do not let asset location override asset allocation. It is better to hold slightly suboptimal assets in the right ratio than perfectly located assets in the wrong ratio. Allocation first, location second.'),
+      h2('A simple starting point'),
+      p('If you are just starting to think about this: move your bond allocation into your traditional IRA or 401k. Keep your equity index funds in your taxable brokerage account. Put your most speculative or fastest-growing positions in the Roth IRA. This rough framework captures most of the available benefit without requiring complex rebalancing.'),
+    ],
+  },
+  {
+    slug: 'fat-fire-planning-for-high-spending-retirement',
+    title: 'Fat FIRE: Planning for Financial Independence With a High-Spending Lifestyle',
+    description: 'What Fat FIRE means, how much you need to sustain $100k+ annual spending, the unique challenges of large portfolios, and whether the standard FIRE rules still apply.',
+    category: 'FIRE Basics',
+    publishedAt: '2026-06-18',
+    readTime: '6 min read',
+    body: [
+      h2('What is Fat FIRE?'),
+      p('Fat FIRE is financial independence with a generous retirement spending budget — typically defined as $100,000 per year or more. It is not a different philosophy from regular FIRE; it is the same framework applied to a higher spending baseline.'),
+      p('The 25x rule still applies: at a $100,000 annual spend, the Fat FIRE number is $2,500,000. At $150,000/year, it is $3,750,000. At $200,000/year, $5,000,000. These are larger targets, but they are reachable — often faster than Lean FIRE pursuers expect, because Fat FIRE tends to attract high earners who can save aggressively even at high spending levels.'),
+      h2('Who pursues Fat FIRE'),
+      p('Fat FIRE is often pursued by people in high-earning professional careers — software engineers, physicians, lawyers, consultants, and business owners — who want financial independence without meaningfully reducing their current lifestyle. The trade-off they accept: a longer accumulation runway (or higher income) in exchange for the ability to spend freely in retirement.'),
+      p('It is also relevant for people with genuinely expensive obligations: supporting extended family, living in high cost-of-living cities, or maintaining interests that carry recurring high costs (travel, philanthropy, owning property in multiple locations).'),
+      h2('The Fat FIRE number calculation'),
+      p('Fat FIRE math uses the same tools as any FIRE plan, scaled up:'),
+      ul([
+        '$100,000/year spending → $2.5M portfolio (4% rule)',
+        '$150,000/year spending → $3.75M portfolio',
+        '$200,000/year spending → $5M portfolio',
+        '$250,000/year spending → $6.25M portfolio',
+      ]),
+      p('For very long retirements (retiring at 40 with a 55-year horizon), many Fat FIRE planners target 3–3.5% withdrawal rates rather than the full 4%, adding another 14–33% to the required portfolio. A $200,000/year spender targeting 3% needs approximately $6.7M rather than $5M.'),
+      h2('The tax challenge of Fat FIRE'),
+      p('Larger portfolios generate larger taxable events. A $4M portfolio in a traditional 401k generating 4% in required minimum distributions at age 73 ($160,000/year) is entirely taxable as ordinary income — a significant tax drag that smaller FIRE portfolios avoid. This makes tax diversification (building both Roth and traditional and taxable balances) especially important for Fat FIRE accumulation.'),
+      p('In retirement, large capital gain realizations from a substantial taxable portfolio can push income into the top 20% long-term capital gains bracket and trigger the 3.8% Net Investment Income Tax. Tax planning at Fat FIRE scale genuinely benefits from a professional financial advisor or CPA who specializes in high-net-worth retirement income strategies.'),
+      h2('Sequence of returns at fat FIRE scale'),
+      p('At $5M, a 30% market drawdown means losing $1.5M in nominal value. For a retiree spending $200,000/year, that drop cuts the portfolio from 25x to 17.5x spending — meaningfully below the safe withdrawal threshold. The psychological challenge is real: most people accumulating Fat FIRE portfolios built significant wealth identity around their net worth number, and watching it fall by seven figures is harder than it sounds.'),
+      p('Fat FIRE retirees have the same tools as other FIRE retirees for managing sequence risk: variable spending, cash buffers, bond ladders, delayed Social Security. But they also have an additional buffer: the ability to cut spending from $200,000 to $150,000 or even $120,000 in severe downturns without genuinely threatening their quality of life — a flexibility that Lean FIRE retirees do not have.'),
+      h2('Fat FIRE vs. just working longer'),
+      p('A common critique of Fat FIRE is that it requires so much accumulation that you might as well just work to a traditional retirement age — the "one more year" problem on steroids. For someone who needs $5M and earns $400,000/year, saving 50% means reaching Fat FIRE in about 17 years from zero. Starting at 25, that is FIRE at 42. Starting at 30, FIRE at 47. These are not traditional retirement ages, but they are decades shorter than working to 65.'),
+      p('The meaningful question for Fat FIRE pursers is not whether the math works — it does — but whether the spending level they are planning for genuinely reflects their values. Many people discover, after calculating the timeline, that they would rather target $120,000/year than $200,000/year and retire five years earlier. The framing that Fat FIRE is "FIRE with a larger budget" is correct, but the right budget is the one that reflects what you actually care about, not what your current income has trained you to spend.'),
+    ],
+  },
+  {
+    slug: 'investment-fees-expense-ratios-matter',
+    title: 'Why Investment Fees Matter More Than You Think',
+    description: 'How even small differences in fund expense ratios compound into enormous wealth gaps over decades — and how to ensure you are paying as little as possible.',
+    category: 'Investing',
+    publishedAt: '2026-06-18',
+    readTime: '5 min read',
+    body: [
+      h2('The invisible tax on your portfolio'),
+      p('Every mutual fund and ETF charges an annual expense ratio — a percentage of your assets deducted automatically each year to cover management costs. You never write a check; the fee is simply taken from your returns before you see them. Because it is invisible and constant, most investors dramatically underestimate its long-term impact.'),
+      p('The math is brutal. At 1% annual fees on a $500,000 portfolio, you pay $5,000 per year to your fund manager. But that $5,000 also forfeits all the compounding it would have generated over the next 20 or 30 years. The real cost of a 1% expense ratio over a long horizon is not 1% per year — it is far more.'),
+      h2('The compounding cost of fees: a concrete example'),
+      p('Investor A holds a fund with a 0.03% expense ratio (a typical Vanguard or Fidelity index fund). Investor B holds a comparable fund with a 1% expense ratio (common for actively managed funds). Both invest $200,000 today and earn 8% gross annual returns before fees.'),
+      ul([
+        'After 30 years: Investor A has approximately $1,926,000. Investor B has approximately $1,449,000.',
+        'The fee difference: $477,000. For taking the exact same market risk, Investor B paid $477,000 to a fund manager.',
+        'As a percentage of end wealth: Investor B gave up 25% of their total portfolio to fees.',
+      ]),
+      p('The difference between 0.03% and 1% expense ratios is 0.97% per year. Over 30 years at 8% gross returns, that 0.97% annual drag compounds into a 25% reduction in terminal wealth. No fund manager has demonstrated the ability to outperform by 0.97% annually with enough consistency to justify that cost.'),
+      h2('Active vs. passive: the fee comparison'),
+      p('Actively managed mutual funds typically charge 0.5%–1.5% in expense ratios, with some reaching 2%+. These funds employ research analysts and portfolio managers who attempt to beat market returns through security selection. The evidence is overwhelming: over any 15–20 year period, more than 90% of actively managed funds underperform their benchmark index after fees.'),
+      p('Passive index funds replicate a market index (like the S&P 500 or total stock market) with minimal trading and minimal management overhead. Their expense ratios reflect this:'),
+      ul([
+        'Vanguard Total Stock Market Index (VTSAX/VTI): 0.03–0.04%',
+        'Fidelity Total Market Index (FSKAX): 0.015%',
+        'Schwab Total Stock Market Index (SWTSX/SCHB): 0.03%',
+        'iShares Core S&P 500 ETF (IVV): 0.03%',
+      ]),
+      p('These funds all own essentially the same thing — the entire US stock market — at roughly 1/50th the cost of a typical actively managed fund.'),
+      h2('Other fees to watch beyond expense ratios'),
+      ul([
+        'Sales loads: upfront (front-end) or deferred (back-end) sales commissions on some mutual funds. Range from 1–5.75%. Never pay a sales load — no-load alternatives exist for every asset class.',
+        'Transaction fees: some brokers charge commissions per trade. Most major brokers (Fidelity, Schwab, Vanguard, TD Ameritrade) now offer $0 commission trades for stocks and ETFs.',
+        '12b-1 fees: marketing and distribution fees embedded in some mutual funds, usually 0.25%–1%. Not present in index funds; avoid funds that charge them.',
+        'Advisory fees: if you use a financial advisor who charges 1% of assets under management, that adds 1% per year on top of fund expense ratios. Fee-only advisors (who charge flat fees or hourly rates) are usually cheaper at higher asset levels.',
+      ]),
+      h2('How to find the expense ratio of any fund'),
+      p('Every fund is legally required to disclose its expense ratio in its prospectus and on major financial data sites. On Morningstar, the expense ratio appears on the fund\'s main page under "Fees." On the fund company\'s website, it is listed under "Fund Details" or "Costs." ETF.com provides fee comparisons across ETF categories.'),
+      p('As a rule of thumb: any broad market equity index fund with an expense ratio above 0.10% deserves scrutiny. Most asset classes now have competitive index funds available at or below 0.10%. If you are paying more, you should have a very specific reason why.'),
+      h2('The FIRE implication'),
+      p('For FIRE investors with long time horizons, fee minimization is one of the highest-leverage decisions you make. It requires no market timing, no security selection skill, no behavioral discipline under stress — just choosing the lowest-cost fund that provides the exposure you want. Moving from a 1% expense ratio fund to a 0.05% fund on a $300,000 portfolio is worth approximately $284,000 in additional wealth over 30 years at 8% gross returns. That extra wealth is not earned through better investment decisions. It is simply not given away.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +880,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'asset-location-strategy-which-account-for-which-investment': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/dashboard', label: 'Open Dashboard' },
+      { href: '/?source=learn-asset-location', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-asset-location',
+      label: 'Run your FIRE projection →',
+      source: 'learn-asset-location',
+    },
+  },
+  'fat-fire-planning-for-high-spending-retirement': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-fat-fire', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-fat-fire',
+      label: 'Calculate your Fat FIRE number →',
+      source: 'learn-fat-fire',
+    },
+  },
+  'investment-fees-expense-ratios-matter': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/?source=learn-fees', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-fees',
+      label: 'See the impact on your FIRE timeline →',
+      source: 'learn-fees',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +934,7 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'investment-fees-expense-ratios-matter',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -789,6 +959,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'asset-location-strategy-which-account-for-which-investment',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
@@ -809,6 +980,7 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'fat-fire-planning-for-high-spending-retirement',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
