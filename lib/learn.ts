@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,158 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'debt-payoff-vs-investing-the-math',
+    title: 'Debt Payoff vs Investing: The Math and When Each Wins',
+    description: 'Should you pay off debt or invest? The answer depends on interest rates, tax treatment, and risk tolerance — and the math is more nuanced than most guides admit.',
+    category: 'Saving',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The core trade-off'),
+      p('Paying off debt is a guaranteed return equal to the interest rate. Investing offers a variable return that historically averages 7–10% annually over long periods, but can lose value in any given year. The decision hinges on comparing these two returns — after adjusting for taxes and risk tolerance.'),
+      h2('The interest rate threshold'),
+      p('A simple rule used by many FIRE planners: pay off debt above 6–7% interest aggressively, invest if debt is below 4%, and use judgement in between.'),
+      ul([
+        'High-interest debt (7%+ APR): credit cards, personal loans, payday loans. Pay these off before investing. A guaranteed 20% return from eliminating credit card debt beats almost any investment.',
+        'Mid-range debt (4–7% APR): some car loans, private student loans. This is the grey zone. Many people split — invest enough to get any employer 401k match, then attack the debt.',
+        'Low-interest debt (below 4% APR): many mortgages, subsidised student loans. Here the math often favours investing. A 3% mortgage vs 7% historical stock returns: investing wins on expected value.',
+      ]),
+      h2('The employer match exception'),
+      p('One situation where investing always wins over debt payoff: when your employer offers a 401k match. A 50% or 100% match is an immediate 50–100% return on investment, which beats virtually any debt interest rate. Always invest enough to capture the full employer match before accelerating debt payoff.'),
+      h2('Tax treatment changes the math'),
+      p('Deductible debt interest changes the effective rate. Mortgage interest is tax-deductible for some households, reducing the effective rate. A 4% mortgage with a 22% marginal tax rate has an effective rate of ~3.1%. On the investment side, contributions to a traditional 401k reduce taxable income — each dollar invested returns an immediate tax benefit equal to your marginal rate.'),
+      p('Running the numbers after tax often tips closer decisions more clearly toward investing.'),
+      h2('The psychological factor'),
+      p('Debt carries psychological weight that math does not capture. Many people sleep better without debt — and that peace of mind has real value. If high debt causes anxiety that affects spending or life decisions, paying it off has value beyond the interest rate comparison.'),
+      p('The FIRE community generally acknowledges this: a debt-free household is simpler to manage and removes a recurring cash flow obligation. For some people, that psychological clarity is worth more than the expected-value advantage of investing during low-rate debt.'),
+      h2('Student loans: the special case'),
+      p('Federal student loans come with income-driven repayment plans and potential forgiveness programs. Aggressive payoff may not be optimal if you qualify for forgiveness after 10 or 20 years of income-driven payments. Model the forgiveness scenario before aggressively paying off federal student loans.'),
+      h2('A practical decision framework'),
+      ol([
+        'Capture full employer 401k match first — always, regardless of debt level.',
+        'Build a $1,000–$2,000 starter emergency fund.',
+        'Pay off any debt above 7% APR aggressively.',
+        'Build emergency fund to 3–6 months.',
+        'Invest in tax-advantaged accounts (Roth IRA, 401k).',
+        'Pay extra on 4–7% debt while continuing to invest.',
+        'Invest in taxable brokerage if debt is below 4%.',
+      ]),
+      h2('How this affects your FIRE timeline'),
+      p('Debt payoff and investing both reduce your FIRE number — one by reducing required withdrawals (you have no debt payment in retirement), the other by growing the portfolio. The hybrid approach of capturing the employer match, eliminating high-rate debt, and investing in tax-advantaged accounts simultaneously is what most FIRE planners find optimal.'),
+    ],
+  },
+  {
+    slug: 'real-estate-and-fire-rentals-reits-house-hacking',
+    title: 'Real Estate and FIRE: Rentals, REITs, and House Hacking',
+    description: 'Real estate is the second most common path to FIRE after index fund investing. Here is how rentals, REITs, and house hacking fit into a FIRE plan — and when each makes sense.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('Why real estate appeals to FIRE seekers'),
+      p('Real estate offers something the stock market does not: leverage and income. You can buy a $300,000 property with $60,000 down (20%), control the full asset, and collect rent that covers the mortgage and expenses. The return on your $60,000 includes rental income, property appreciation, mortgage paydown, and tax benefits — all at once.'),
+      p('For FIRE planning, real estate can provide passive income that reduces or replaces portfolio withdrawals, lowers the FIRE number needed, or accelerates wealth building through leverage. But it also comes with complexity, illiquidity, and active management demands that index fund investing does not.'),
+      h2('Strategy 1: Rental properties'),
+      p('A rental property generates monthly cash flow if rent exceeds expenses (mortgage, taxes, insurance, maintenance, vacancy). The classic rule of thumb: a property should rent for at least 1% of its purchase price per month to be likely cash-flow positive. A $200,000 property needs $2,000/month in rent.'),
+      ul([
+        'Cash flow: net monthly income after all expenses, including vacancy reserves (5–10% of rent) and maintenance reserves ($100–$200/month per unit).',
+        'Appreciation: property value increases over time. Long-run US residential appreciation averages ~3–4% annually.',
+        'Mortgage paydown: tenants pay down your mortgage. Over 30 years, you go from 20% equity to 100% equity without additional investment.',
+        'Tax benefits: depreciation (a non-cash expense) reduces taxable rental income. A $200,000 building depreciated over 27.5 years generates ~$7,000/year in depreciation deductions.',
+      ]),
+      p('The downside: landlording is not fully passive. Property management companies charge 8–12% of rent and reduce cash flow but remove day-to-day work. Plan for vacancies, repairs, and the occasional problem tenant.'),
+      h2('Strategy 2: House hacking'),
+      p('House hacking is buying a multi-unit property (duplex, triplex, fourplex), living in one unit, and renting the others. This is the single most accessible real estate FIRE accelerator for most people.'),
+      p('Benefits:'),
+      ul([
+        'Live for free or near-free: rental income from the other units covers most or all of the mortgage.',
+        'Owner-occupant financing: you can buy with 3.5% down (FHA) or 5% down (conventional) instead of the 20–25% required for investment properties.',
+        'Tax advantages: the owner-occupied portion qualifies for the mortgage interest deduction; the rental portion generates depreciation.',
+        'Accelerated savings rate: eliminating or dramatically reducing housing costs — typically the largest household expense — can push savings rates to 40–60%.',
+      ]),
+      p('The trade-off: you live next to your tenants. This works better for some personalities than others. Many FIRE households house-hack for 2–5 years, then move and convert the unit to a pure investment property.'),
+      h2('Strategy 3: REITs (Real Estate Investment Trusts)'),
+      p('REITs are publicly traded companies that own income-producing real estate — office buildings, apartments, warehouses, shopping centers, cell towers. You can buy REIT shares like stocks, with no property management, no mortgage, and instant liquidity.'),
+      p('REITs are required by law to distribute 90% of taxable income as dividends. This makes them high-yield investments — REIT dividend yields typically run 3–6%, higher than most stock dividends.'),
+      ul([
+        'Total REIT index funds (VNQ, SCHH): diversified exposure to the entire REIT market. Simple, low-cost, no concentration risk.',
+        'Tax inefficiency: REIT dividends are ordinary income, not qualified dividends. Hold REITs in tax-advantaged accounts (Roth, 401k) where possible.',
+        'Correlation with bonds: REITs are sensitive to interest rates. They underperform in rising rate environments.',
+      ]),
+      h2('How real estate fits into a FIRE plan'),
+      p('Most FIRE planners use real estate as one component, not their sole strategy. A common FIRE blueprint:'),
+      ul([
+        'Primary residence: buy rather than rent if local market and timeline allow. Build equity that can be tapped via downsizing or sale at FIRE.',
+        'House hack in early earning years: eliminate housing cost, accelerate savings rate.',
+        '1–3 rental properties: provide income streams that supplement portfolio withdrawals in early retirement.',
+        'REIT allocation (5–15% of portfolio): real estate exposure without landlord work.',
+      ]),
+      h2('When real estate does NOT make sense for FIRE'),
+      ul([
+        'High cost-of-living cities where the 1% rule is impossible (San Francisco, NYC). Cap rates are too low for cash flow.',
+        'Short timelines: if you plan to FIRE in 5 years, a 30-year mortgage is a long commitment.',
+        'Limited capital: investment property down payments require significant upfront cash that could otherwise be invested.',
+        'Low risk tolerance: real estate is concentrated, illiquid, and requires active management. If that creates anxiety, index funds are the better fit.',
+      ]),
+    ],
+  },
+  {
+    slug: 'withdrawal-order-in-fire-which-accounts-first',
+    title: 'Withdrawal Order in FIRE: Which Accounts to Draw From First',
+    description: 'The sequence you withdraw from 401k, Roth IRA, and taxable accounts in early retirement can save or cost you hundreds of thousands of dollars in taxes over 30 years.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why withdrawal order matters'),
+      p('Most FIRE retirees have money in three types of accounts: a tax-deferred account (traditional 401k, traditional IRA), a Roth account (Roth IRA, Roth 401k), and a taxable brokerage account. Each has different tax treatment on withdrawals. The order you draw from them determines your annual tax bill — and over 30+ years, optimising this can save six figures.'),
+      h2('The three account types'),
+      ul([
+        'Tax-deferred (traditional 401k, traditional IRA): contributions were pre-tax; withdrawals are taxed as ordinary income. Required Minimum Distributions (RMDs) start at age 73.',
+        'Tax-free (Roth IRA, Roth 401k): contributions were after-tax; qualified withdrawals are completely tax-free. No RMDs during owner\'s lifetime.',
+        'Taxable brokerage: no special tax treatment. Dividends and capital gains are taxed each year. Long-term capital gains rates (0%, 15%, 20%) apply to assets held over one year.',
+      ]),
+      h2('The conventional withdrawal order'),
+      p('Standard financial planning wisdom recommends this sequence:'),
+      ol([
+        'Required Minimum Distributions first (mandatory, not a choice after age 73).',
+        'Taxable accounts next: withdraw dividends and sell positions, paying long-term capital gains rates. Many early retirees pay 0% on long-term gains if their income is below the threshold (~$94,000 for married filers in 2025).',
+        'Tax-deferred accounts (401k, traditional IRA): withdrawals are ordinary income. Pull these to fill up lower tax brackets.',
+        'Roth accounts last: these grow tax-free and have no RMDs, so they benefit most from time.',
+      ]),
+      h2('Why early retirees often invert this'),
+      p('For FIRE retirees aged 40–59, the conventional order is less relevant because RMDs are decades away and the priority is accessing money without the 10% early withdrawal penalty.'),
+      p('The early retiree\'s tactical order:'),
+      ol([
+        'Taxable brokerage accounts: access these first. No penalties, long-term capital gains rates.',
+        'Roth IRA contributions (not earnings): you can withdraw your own contributions at any time, penalty-free.',
+        'Roth conversion ladder proceeds: after 5-year seasoning, converted amounts are penalty-free.',
+        'Tax-deferred accounts: only after 59½ (or via Rule 72(t) / Roth ladder if before 59½).',
+      ]),
+      h2('Tax bracket management'),
+      p('The most sophisticated withdrawal strategy manages your tax bracket across multiple accounts simultaneously. In low-income years, you can:'),
+      ul([
+        'Realise long-term capital gains at 0% if total income stays below ~$94,050 (married, 2025).',
+        'Convert traditional 401k to Roth up to the top of the 12% bracket, paying modest tax now to eliminate future ordinary income.',
+        'Harvest tax losses in the taxable account to offset gains.',
+      ]),
+      p('The goal: over decades, drain the tax-deferred accounts gradually at low rates, fill Roth accounts through conversions, and pay minimal taxes on the taxable brokerage through careful realisation timing.'),
+      h2('The Roth IRA flexibility advantage'),
+      p('In early retirement, the Roth IRA is a multi-purpose tool. You can withdraw contributions penalty-free at any age, use it as a staging account for Roth conversions, let earnings compound tax-free for decades, and pass it to heirs without income tax. It is the last account you want to drain.'),
+      h2('A practical framework for FIRE withdrawal planning'),
+      ol([
+        'Build 1–2 years of living expenses in taxable cash/short-term bonds as a buffer.',
+        'Draw from taxable brokerage while staying at 0% long-term capital gains rate.',
+        'Simultaneously run a Roth conversion ladder — convert 401k to Roth up to the top of the 12% bracket each year.',
+        'After 5 years, draw from the Roth conversions as they season.',
+        'After 59½, draw from 401k freely, prioritising the order that keeps you in the lowest bracket.',
+        'Leave Roth accounts for last — ideally pass them to heirs or use them only in high-expense years.',
+      ]),
+      h2('The impact of optimised withdrawal order'),
+      p('A household with $1.5M in a 401k, $300k in a Roth, and $200k in taxable that optimises withdrawal order across 30 years can save $150,000–$300,000 in total taxes compared to naive withdrawal (just taking from whichever is convenient). The savings compound: every dollar not paid in taxes is a dollar that keeps growing.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +907,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'debt-payoff-vs-investing-the-math': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate?source=learn-debt-payoff',
+      label: 'Calculate the impact on your savings rate',
+      source: 'learn-debt-payoff',
+    },
+  },
+  'real-estate-and-fire-rentals-reits-house-hacking': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/?source=learn-real-estate', label: 'FIRE Calculator' },
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-real-estate',
+      label: 'Add rental income to your FIRE plan',
+      source: 'learn-real-estate',
+    },
+  },
+  'withdrawal-order-in-fire-which-accounts-first': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/?source=learn-withdrawal-order', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-withdrawal-order',
+      label: 'Model your withdrawal strategy',
+      source: 'learn-withdrawal-order',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -763,6 +959,7 @@ export const learnStages: LearnStage[] = [
       'what-is-fire-financial-independence-retire-early',
       'why-savings-rate-matters-more-than-income',
       'compound-interest-and-fire',
+      'debt-payoff-vs-investing-the-math',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
     ],
@@ -783,6 +980,7 @@ export const learnStages: LearnStage[] = [
       'index-funds-101-what-to-invest-in',
       'diversification-why-eggs-in-many-baskets',
       'asset-allocation-stocks-vs-bonds',
+      'real-estate-and-fire-rentals-reits-house-hacking',
       'roth-ira-vs-401k-for-fire',
       'rebalancing-your-portfolio-annually',
       'tax-loss-harvesting-explained',
@@ -826,6 +1024,7 @@ export const learnStages: LearnStage[] = [
     articleSlugs: [
       'what-is-the-4-percent-rule',
       'sequence-of-returns-risk',
+      'withdrawal-order-in-fire-which-accounts-first',
       'barista-fire',
       'roth-ira-vs-401k-for-fire',
     ],
