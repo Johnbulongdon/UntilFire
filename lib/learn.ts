@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,177 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'psychology-of-early-retirement-identity-purpose',
+    title: 'The Psychology of Early Retirement: Identity, Purpose, and One More Year',
+    description: 'Reaching financial independence is a number. Leaving work is a psychology. This guide covers identity shifts, the one-more-year trap, and how to build a life you actually want after FIRE.',
+    category: 'Mindset',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('The problem nobody warns you about'),
+      p('Most FIRE content focuses on the math: savings rate, investment returns, withdrawal rules. The math is important. But the people who struggle most after reaching financial independence rarely struggled with the math. They struggled with who they were without a job.'),
+      p('Work provides structure, identity, social connection, and a sense of contribution. When you remove it without replacing those things intentionally, a surprising number of financially independent people find themselves lost, restless, or reaching for "just one more year" of income they do not need.'),
+      h2('Identity and the "what do you do?" question'),
+      p('In most cultures, "what do you do?" means "what is your job?" When you retire early, answering this question becomes surprisingly uncomfortable — especially in the first year. Your identity was partially built around your professional role. Without it, many people feel a quiet anxiety that has nothing to do with money.'),
+      p('This is not a sign that early retirement was a mistake. It is a sign that you spent years building competence, status, and meaning in a particular structure, and now the structure is gone. That is a real transition, not a failure.'),
+      h2('The one-more-year syndrome'),
+      p('One of the most documented psychological patterns in the FIRE community is "one more year" syndrome: reaching your FIRE number and then deciding to stay employed for one more year to add a buffer. Then another year. Then another.'),
+      p('Sometimes this is rational. Market conditions change, spending assumptions drift, or healthcare becomes an issue. But often it is anxiety masquerading as prudence. The portfolio is more than sufficient, but crossing the threshold feels terrifying because the structure of work is secretly serving a purpose beyond the paycheck.'),
+      ul([
+        'Check whether your hesitation is financial (run the numbers again) or psychological (the math is fine but leaving feels impossible)',
+        'Talk to people who have done it — not just financially, but the emotional transition',
+        'Set a concrete end date rather than an open-ended "when it feels right"',
+        'Build a structure for what comes next before you leave, not after',
+      ]),
+      h2('What replaces work?'),
+      p('Work provides five things most people underestimate until they are gone:'),
+      ul([
+        'Structure — a reason to get up, a rhythm to the week',
+        'Competence — the feeling of being good at something that matters',
+        'Social connection — daily interaction with other humans',
+        'Contribution — a sense that your effort made a difference',
+        'Status — a clear role in a social hierarchy',
+      ]),
+      p('Financial independence removes the obligation but not the need. The most successful early retirees replace work with something that provides at least some of these — not necessarily a job, but something. A project. A cause. A craft. A community. Something that asks something of them.'),
+      h2('The difference between retirement and freedom'),
+      p('Early retirement is often the wrong mental model. The people who thrive after FIRE are usually not thinking about "not working." They are thinking about what they are moving toward: time with family, a creative project, physical health, travel, volunteering, starting something on their own terms. The freedom is real. But freedom is not the same as leisure. Too much unstructured time without purpose becomes its own kind of trap.'),
+      h2('Practical steps before and after leaving work'),
+      h3('Before you leave'),
+      ul([
+        'Write down what your day looks like six months after you stop working — in detail',
+        'Identify the three to five things that will create structure and meaning in your weeks',
+        'Build those habits and communities before leaving, not after',
+        'Make sure the people close to you understand the change — especially a partner or spouse',
+      ]),
+      h3('After you leave'),
+      ul([
+        'Give yourself a deliberate transition period — six months to a year where you are allowed to just decompress',
+        'Expect some ambiguity and restlessness — it is normal and temporary',
+        'Do not immediately fill the void with busyness as a substitute for purpose',
+        'Revisit your spending plan — early retirement often involves an adjustment period where spending changes significantly',
+      ]),
+      h2('The financial side of the transition'),
+      p('One underappreciated financial risk is lifestyle drift in the first years of early retirement. When people are no longer working, they often spend more on travel, hobbies, or family — at least initially. This is not bad, but it does mean the first few years are important to track carefully. Spending that runs 15–20% above your FIRE-plan estimate early in retirement is common and worth monitoring against the 4% rule.'),
+      p('The good news is that most long-term early retirees report that their spending stabilises and often decreases after the initial burst. The expensive phase of retirement is often the early, energetic years — not later. Plan for it and do not be alarmed by it.'),
+      h2('FIRE is the foundation, not the destination'),
+      p('Financial independence is a foundation that makes a certain kind of life possible. What you build on that foundation is entirely up to you. The most important question is not "can I afford to stop working?" It is "what do I want my life to look like?" — and the answer to that question takes longer to build than the portfolio.'),
+    ],
+  },
+  {
+    slug: 'passive-income-streams-for-fire',
+    title: 'Passive Income Streams That Support FIRE',
+    description: 'Dividends, rental income, digital products, and interest — a practical guide to building income that runs without you, and how each type fits into a FIRE plan.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('What counts as passive income?'),
+      p('Passive income is money earned without active, ongoing work. The word "passive" gets overused in finance — most passive income streams require significant upfront work or capital. But the key property is that once the system is in place, income continues without proportional time investment.'),
+      p('For FIRE purposes, passive income matters in two ways: it can accelerate savings rate during accumulation, and it can replace the portfolio withdrawal in retirement. A household with $20,000 of passive annual income needs $500,000 less in their FIRE portfolio than one with no passive income (at the standard 4% rule).'),
+      h2('Dividend investing'),
+      p('Dividend investing means holding stocks or funds that pay regular cash distributions from company earnings. The simplest version: total market index funds already include dividends. A $1 million portfolio in VTI (Vanguard Total Stock Market ETF) generates roughly $12,000–$15,000 in dividends per year at current yields.'),
+      p('Some investors prefer dividend-focused funds (like VYM or SCHD) that weight toward higher-yielding stocks. The tradeoff: higher current income but potentially less total return than the broader market. For FIRE purposes, dividends are not free money — they are a return of capital embedded in the share price. What matters is total return, not yield.'),
+      ul([
+        'Pros: simple, liquid, low-cost via index funds, tax-advantaged in Roth accounts',
+        'Cons: dividend yield (~1.5–4%) alone cannot fund most FIRE plans; must combine with portfolio growth',
+        'Best for: investors who prefer receiving income rather than selling shares in retirement',
+      ]),
+      h2('Rental income'),
+      p('Real estate rental is one of the most common paths to passive income, but it is rarely fully passive. A single rental property typically requires a few hours per month of management, plus periods of intensive work during tenant transitions, maintenance, or disputes. Professional property management reduces this — at a cost of 8–12% of gross rent.'),
+      p('The financial case depends heavily on local market conditions. The standard benchmark is the gross rent multiplier: annual rent divided by property price. A property renting for $18,000 per year purchased for $250,000 has a GRM of 13.9 — reasonable. A property renting for $18,000 but costing $600,000 has a GRM of 33 — very difficult to cash-flow positively.'),
+      ul([
+        'Pros: leverage amplifies returns, rent tends to rise with inflation, tax advantages (depreciation)',
+        'Cons: illiquid, management overhead, concentration risk, large upfront capital required',
+        'Best for: people who understand property markets, are comfortable with leverage, and accept some active management',
+      ]),
+      h2('Digital products and royalties'),
+      p('Writing a book, creating an online course, building software, or publishing stock photos can generate royalty-style income for years after the initial work. The economics vary enormously: a bestselling book may earn five-figure royalties annually; a niche self-published guide may earn a few hundred dollars.'),
+      p('For FIRE planning, digital product income is best treated as supplemental and variable. It is not a reliable substitute for a portfolio — income can drop to near zero after a few years or if the platform changes. But as a supplement that reduces portfolio withdrawals, it can meaningfully extend financial resilience.'),
+      ul([
+        'Pros: no capital required, scales without proportional effort, aligns with skills you already have',
+        'Cons: highly variable, front-loaded effort, platform risk, most creators earn very little',
+        'Best for: people with existing expertise or audience who want income streams that align with their interests',
+      ]),
+      h2('High-yield savings and bonds'),
+      p('Interest income from savings accounts, CDs, treasury bonds, and bond funds is the most boring and most reliable passive income. In a higher-rate environment (2022–2025), short-term treasuries offered 4–5% yields. In low-rate environments (2009–2021), rates fell below 1%.'),
+      p('Bond interest income is particularly relevant for early retirees holding a bond allocation for stability. A $300,000 bond allocation at 4% yield generates $12,000 per year — money that does not require selling shares.'),
+      ul([
+        'Pros: predictable, no management overhead, low risk',
+        'Cons: rates vary with economic cycles, returns are lower than equities over long periods',
+        'Best for: the stable portion of a FIRE portfolio, not the growth engine',
+      ]),
+      h2('Peer lending and alternative income'),
+      p('Peer-to-peer lending platforms allow individuals to lend money to borrowers and earn interest. Platforms like LendingClub and Prosper gained popularity in the 2010s. In practice, default rates and platform risks have made this more complicated than originally marketed. Most sophisticated FIRE planners avoid P2P lending as a significant income source.'),
+      h2('How passive income fits into a FIRE plan'),
+      p('The standard FIRE approach does not require any active passive income streams. A diversified index fund portfolio with a 4% withdrawal rate is enough. Passive income streams become valuable in three scenarios:'),
+      ol([
+        'Accelerating accumulation: $10,000 per year in rental income is $10,000 more savings per year compounding toward FIRE.',
+        'Reducing portfolio dependence: $15,000 per year in passive income means $375,000 less portfolio required — or a significantly lower withdrawal rate on the same portfolio.',
+        'Psychological comfort: some early retirees find it easier to leave full-time work if some income flows without drawing down the portfolio.',
+      ]),
+      p('The risk is over-investing time and capital into passive income streams instead of the simpler, better-returning path of index fund investing. Before pursuing complex passive income strategies, run the numbers: does this produce a better risk-adjusted return than putting the same capital into a total market index fund?'),
+    ],
+  },
+  {
+    slug: 'fire-with-kids-family-financial-independence',
+    title: 'FIRE With Kids: Planning for Financial Independence as a Family',
+    description: 'Children change the FIRE equation significantly. Here is how to adjust your number, plan for education costs, and build toward family financial independence without delaying it indefinitely.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('The honest truth about kids and FIRE'),
+      p('Children are expensive. The US Department of Agriculture estimates the cost of raising a child from birth to age 17 at roughly $310,000 — and that does not include college. Childcare alone can cost $1,000–$3,000 per month per child in many cities. These are not reasons to avoid having children, but they are reasons to model the numbers honestly rather than around them.'),
+      p('The good news: families have reached FIRE with children at many income levels. The planning is different, but the mechanics are the same. The key differences are a larger FIRE number, a longer timeline, and more complexity in account sequencing — particularly around education savings.'),
+      h2('Adjusting your FIRE number for a family'),
+      p('Your FIRE number is 25× your annual expenses. Children increase annual expenses in several phases:'),
+      h3('Phase 1: Early childhood (0–5)'),
+      ul([
+        'Childcare or preschool: $12,000–$36,000 per year per child depending on location',
+        'Healthcare costs increase modestly (pediatric visits, dental)',
+        'Gear, food, and clothing: $3,000–$8,000 per year',
+      ]),
+      h3('Phase 2: School age (6–17)'),
+      ul([
+        'Public school: activities, sports, clothing — $4,000–$10,000 per year per child',
+        'Private school if chosen: $15,000–$50,000 per year per child',
+        'Healthcare, food, and transport scale up as children grow',
+      ]),
+      h3('Phase 3: College (18–22)'),
+      ul([
+        'In-state public: $10,000–$15,000 per year in tuition and fees (plus room and board)',
+        'Out-of-state or private: $30,000–$75,000 per year',
+        'This is either funded via 529 savings or a separate line in the FIRE plan',
+      ]),
+      p('A family of four with two children in a moderate-cost city might have annual expenses of $80,000–$120,000 during peak childcare years, falling back to $60,000–$80,000 once children are school-age and further once they leave home. Model each phase separately rather than using a single lifetime spending number.'),
+      h2('The 529 education savings plan'),
+      p('A 529 plan is a tax-advantaged savings account designed for education expenses. Contributions grow tax-free and withdrawals for qualified education expenses (tuition, fees, room and board) are also tax-free. Most states offer additional state income tax deductions on contributions.'),
+      p('The FIRE-relevant math: if you invest $500 per month per child from birth to age 18, at 7% annual growth, you accumulate roughly $210,000 — enough to cover four years at most public universities. Starting later requires more per month or a larger lump sum.'),
+      ul([
+        'Open a 529 as early as possible — even small balances benefit from 18 years of compound growth',
+        'Choose a low-cost plan: most advisers recommend Utah, Nevada, or New York plans for their fund options and costs',
+        'Account for 529 funds separately from your FIRE portfolio — they are earmarked and reduce the required FIRE number accordingly',
+        'Recent law change: unused 529 funds can now be rolled into a Roth IRA (up to $35,000 lifetime) — reducing the penalty of over-saving',
+      ]),
+      h2('Healthcare: the family multiplier'),
+      p('Healthcare is the most significant practical obstacle to early retirement with children. Employer-sponsored healthcare is typically subsidised, and losing it costs more for a family than for an individual.'),
+      p('A family plan on the ACA marketplace in 2024 typically costs $1,500–$2,500 per month before subsidies. However, ACA subsidies are means-tested: families with income below 400% of the federal poverty line qualify for significant subsidies. For a family of four, the poverty line is roughly $30,000, making 400% equal to $120,000. If your portfolio income (dividends, capital gains, Roth conversions) keeps taxable income below this threshold, healthcare costs can be significantly reduced.'),
+      p('Many FIRE families use "ACA harvesting": deliberately managing taxable income during early retirement to qualify for premium tax credits. This requires planning but can save $10,000–$20,000 per year on healthcare costs.'),
+      h2('Timeline and sequencing with children'),
+      p('Children often arrive during peak career years — the same years most FIRE plans assume maximum savings. Common strategies:'),
+      ul([
+        'Work longer but retire earlier in spirit: treat early years with children as the high-income sprint, then exit once children are school-age and expenses stabilise',
+        'Semi-FIRE during childcare years: reduce work rather than eliminate it — part-time work can cover childcare costs while the portfolio continues compounding',
+        'Achieve Barista FIRE: leave the primary career but maintain a flexible part-time income that covers variable family expenses',
+      ]),
+      h2('The gift of a financially literate household'),
+      p('One underappreciated dimension of FIRE with kids: children raised in households where money is discussed openly tend to have better financial outcomes as adults. Talking about savings, explaining why the family invests, and involving older children in basic budgeting creates generational financial literacy that compounds beyond your own FIRE date.'),
+      h2('What the actual numbers look like'),
+      p('A practical family FIRE example: household income $150,000, two children, target retirement at 45. Annual spending $90,000 (childcare years), dropping to $65,000 once children are independent. Target FIRE number: $65,000 × 25 = $1,625,000 (post-children baseline), with a separate $200,000 in 529 accounts. Total target: $1,825,000. At a 30% savings rate ($45,000/year) and 7% average return starting at age 32, this is achievable by 45 — tighter than a childless plan but achievable.'),
+      p('The key insight: model the phases honestly. Childcare spending is real but temporary. The FIRE number is based on long-term retirement spending, not peak-childcare spending. Running an honest phased model usually produces a more achievable timeline than treating children as an indefinite FIRE blocker.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +926,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'psychology-of-early-retirement-identity-purpose': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/dashboard', label: 'Dashboard' },
+    ],
+    primaryCta: {
+      href: '/calculators/4-percent-rule',
+      label: 'Check Your Withdrawal Plan',
+      source: 'learn-psychology-retirement',
+    },
+  },
+  'passive-income-streams-for-fire': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/4-percent-rule',
+      label: 'Calculate Your FIRE Number',
+      source: 'learn-passive-income',
+    },
+  },
+  'fire-with-kids-family-financial-independence': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/?source=learn-fire-kids', label: 'FIRE Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-fire-kids',
+      label: 'Run Your Family FIRE Number',
+      source: 'learn-fire-with-kids',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +980,7 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'fire-with-kids-family-financial-independence',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -789,6 +1005,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'passive-income-streams-for-fire',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
@@ -828,6 +1045,7 @@ export const learnStages: LearnStage[] = [
       'sequence-of-returns-risk',
       'barista-fire',
       'roth-ira-vs-401k-for-fire',
+      'psychology-of-early-retirement-identity-purpose',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
