@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,174 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'inflation-risk-and-fire',
+    title: 'Inflation Risk and FIRE: How Rising Prices Affect Your Plan',
+    description: 'Inflation is the silent threat to every retirement plan. Here is how it works against your FIRE number, which assets protect against it, and how to build inflation resilience into your plan.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why inflation matters more for early retirees'),
+      p('Inflation erodes purchasing power over time. For someone retiring at 65 with a 20-year retirement, the impact is significant but manageable. For someone retiring at 40 with a 50-year retirement, the compounding effect of even moderate inflation is severe.'),
+      p('At 3% annual inflation, $1 today buys only $0.48 in purchasing power after 25 years. At 4% inflation, the same $1 buys only $0.38. An early retiree spending $60,000/year in 2026 who lives to 90 needs their income to grow to roughly $180,000–$250,000 in nominal terms by 2060 just to maintain the same lifestyle. The FIRE plan must account for this.'),
+      h2('How the 4% rule handles inflation'),
+      p('The 4% rule already has inflation built in — but it is worth understanding how. The original Trinity Study (and subsequent research) found that a 60/40 portfolio could sustain inflation-adjusted withdrawals of 4% over 30 years in 95%+ of historical scenarios. "Inflation-adjusted" means you increase your withdrawal amount each year by the prior year\'s inflation rate.'),
+      p('If you withdraw $50,000 in year one and inflation is 3%, you withdraw $51,500 in year two, $53,045 in year three, and so on. The portfolio must support this rising withdrawal schedule. Historically, equity returns have exceeded inflation by 6–7% per year over long periods, which is why the 4% rule holds: the portfolio grows faster than inflation in most scenarios.'),
+      h2('When the 4% rule struggles with inflation'),
+      p('The 4% rule was calibrated for 30-year retirements. Early retirees with 50-year horizons face higher inflation risk for two reasons:'),
+      ul([
+        'More years of compounding inflation exposure: small differences in inflation assumptions become large over 50 years',
+        'Higher sequence-of-returns risk: a decade of high inflation in the early retirement years (as in the 1970s) depletes portfolios much faster than the historical averages assume',
+        'Longer period with no salary income to absorb cost increases',
+      ]),
+      p('Inflation averaging 4–5% for a sustained period — uncommon historically but not without precedent — would stress a standard 4% withdrawal plan significantly over a 50-year horizon. This is one reason many early retirees target 3–3.5% withdrawal rates.'),
+      h2('Assets that protect against inflation'),
+      h3('Equities (stocks)'),
+      p('Stocks are the best long-term inflation hedge available in a retirement portfolio. Companies can raise prices with inflation, maintain real earnings, and equity valuations tend to track nominal economic growth over long periods. In the short run, stocks can struggle during inflation spikes (high inflation often accompanies rising interest rates and lower valuations). But over 10+ year periods, equities have outpaced inflation by 5–7% annually.'),
+      h3('TIPS (Treasury Inflation-Protected Securities)'),
+      p('TIPS are US government bonds whose principal adjusts with CPI inflation. If inflation is 4%, the principal of a $10,000 TIPS bond rises to $10,400 — and you earn interest on the adjusted principal. TIPS provide a guaranteed real return above inflation. The tradeoff: real yields are typically lower than conventional bonds, and TIPS can have complex tax treatment (inflation adjustments are taxable even if not received as cash — "phantom income").'),
+      p('TIPS are most useful as a component of the bond allocation in a retirement portfolio, particularly for inflation-sensitive fixed expenses. A TIPS ladder — individual TIPS bonds maturing at specific future dates — is sometimes used to "floor" essential expenses.'),
+      h3('I-Bonds (Series I Savings Bonds)'),
+      p('I-Bonds are US Treasury savings bonds that adjust interest payments with inflation (CPI). They are sold directly via TreasuryDirect.gov at a maximum of $10,000 per person per year ($20,000 per couple, plus up to $5,000 via tax refund). Key features:'),
+      ul([
+        'Interest is tax-deferred until redemption (no annual phantom income unlike TIPS)',
+        'Exempt from state income tax',
+        'Cannot be redeemed in the first 12 months; 3-month interest penalty if redeemed in years 1–5',
+        'Currently among the best risk-free inflation-protected savings vehicles for amounts up to $10,000/year',
+      ]),
+      h3('Real estate'),
+      p('Rental real estate provides inflation protection through rent increases and property value appreciation. Rent tends to rise with or above CPI over time. A fixed-rate mortgage provides additional leverage: the real cost of the debt falls as inflation rises while rental income increases.'),
+      h3('Commodities and gold'),
+      p('Commodities (via index funds) and gold are sometimes held as inflation hedges. Their record as portfolio additions is mixed: they add volatility without reliable long-term return advantage. Most FIRE planners with long horizons rely on equities rather than commodities for inflation protection.'),
+      h2('The practical inflation strategy for FIRE'),
+      ul([
+        'Hold a primarily equity portfolio (60–80%): equities are the reliable long-run inflation beater',
+        'Include TIPS or I-Bonds in the bond allocation for inflation-sensitive security',
+        'Plan for healthcare inflation separately — medical costs have historically risen 2–4% faster than CPI',
+        'Use a conservative withdrawal rate (3–3.5%) to build in margin against higher-than-expected inflation',
+        'Review annual spending vs actual inflation each year — do not blindly apply CPI if your specific spending basket inflates differently',
+      ]),
+      h2('The 2021–2023 inflation lesson'),
+      p('The inflation surge of 2021–2023 (CPI peaking near 9% in mid-2022) provided a real-world test for early retirees. Portfolios fell as equities declined and bond yields rose simultaneously — the worst possible combination for a withdrawal-phase portfolio. Retirees who had built spending flexibility (through the guardrails method or maintained some income) navigated much better than those relying rigidly on 4% withdrawals from a stressed portfolio. The lesson: flexibility and a lower baseline withdrawal rate matter most precisely when inflation strikes.'),
+    ],
+  },
+  {
+    slug: 'emergency-fund-strategy-for-fire',
+    title: 'Emergency Fund Strategy for FIRE Seekers',
+    description: 'How big should your emergency fund be, where should you keep it, and when is it safe to shrink it as your investment portfolio grows? A practical guide for every stage of the FIRE journey.',
+    category: 'Saving',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('Why the emergency fund question is different for FIRE seekers'),
+      p('Standard financial advice says keep 3–6 months of expenses in a high-yield savings account as an emergency fund. This advice is designed for someone who has no investment portfolio and must protect against job loss. For FIRE seekers — who are actively building a substantial investment portfolio — the calculus is more nuanced.'),
+      p('The core tension: every dollar sitting in a 4–5% savings account instead of a 7–10% index fund portfolio costs you long-run return. Over 20 years, $20,000 in an emergency fund versus invested at 7% real return represents roughly $77,000 in foregone growth. But the emergency fund serves a real purpose: it prevents you from selling investments at the worst possible time (during a market crash that coincides with an unexpected expense).'),
+      h2('Phase 1: Early accumulation (net worth under $100k)'),
+      p('When you are early in your wealth-building journey with a small portfolio, the traditional advice applies. A market downturn that cuts your $50,000 portfolio to $35,000 — coinciding with a $10,000 car repair — can wipe out your progress and force you to sell at a loss. The emergency fund exists to prevent this scenario.'),
+      ul([
+        'Target: 3–6 months of essential expenses in cash/HYSA',
+        'Definition of essential: housing, utilities, food, insurance, minimum debt payments',
+        'Where to keep it: high-yield savings account (FDIC insured, currently 4–5% APY)',
+        'What counts: this is liquid, accessible money — not investments',
+      ]),
+      h2('Phase 2: Mid-accumulation ($100k–$500k portfolio)'),
+      p('As your portfolio grows, the emergency fund can start to shrink relative to expenses. A $200,000 portfolio with a 20% drawdown represents $40,000 of paper loss — uncomfortable, but survivable. More importantly, the portfolio itself starts to serve as a secondary emergency buffer in extremis.'),
+      p('Many FIRE seekers at this stage reduce to 2–3 months of expenses in cash while maintaining a low-interest-rate credit card as an additional buffer for genuine emergencies. The logic: if the car breaks down, put it on the credit card and pay it off within the month using portfolio dividends or regular savings before any interest accrues.'),
+      ul([
+        'Target: 2–4 months of essential expenses',
+        'Additional buffer: one credit card with a $10,000–$15,000 limit kept at $0 balance',
+        'Consider I-Bonds as the "outer ring" of the emergency fund: slightly less liquid but inflation-protected',
+      ]),
+      h2('Phase 3: Approaching FIRE ($500k+ portfolio)'),
+      p('With a large portfolio, the emergency fund takes on a different character. The "emergency" you are protecting against is not inability to pay a bill — it is being forced to sell investments during a market crash to cover a large unexpected expense. With $700,000 invested, you have meaningful flexibility.'),
+      p('At this stage, many FIRE planners consolidate the emergency fund into a cash bucket within the broader portfolio plan: 6–12 months of expenses in a high-yield savings account or short-term Treasury bills. This serves as both the emergency fund and the first year of retirement income — part of the larger bucket strategy.'),
+      ul([
+        'Target: 6–12 months of expenses (at retirement spending level, not current)',
+        'Purpose shift: from "protect against emergencies" to "cash buffer for year-one retirement withdrawals"',
+        'Overlap with bond tent: the cash allocation is part of the defensive positioning approaching FIRE',
+      ]),
+      h2('Phase 4: In retirement'),
+      p('Once you have reached FIRE and stopped working, the emergency fund evolves into part of your withdrawal strategy. The standard bucket strategy:'),
+      ul([
+        'Bucket 1 (cash, 1–2 years): high-yield savings, money market; covers living expenses without selling investments',
+        'Bucket 2 (short-term bonds, 3–5 years): refills Bucket 1 as it depletes; some growth',
+        'Bucket 3 (equities, 5+ years): long-term growth; refills Bucket 2 during strong market years',
+      ]),
+      p('In this framework, Bucket 1 is the emergency fund equivalent. You draw from it for living expenses and refill it from Bucket 2 annually (or from Bucket 3 in strong markets). A market crash does not force you to sell equities — you live on Bucket 1 while equities recover.'),
+      h2('The high-yield savings account: where to keep it'),
+      ul([
+        'High-yield savings accounts (HYSA): FDIC insured up to $250,000, currently 4–5% APY, fully liquid',
+        'Money market accounts: similar to HYSA, often with check-writing privileges',
+        'Treasury bills (T-bills): 4-week to 1-year US government bills, can be held at TreasuryDirect.gov or via Fidelity/Schwab',
+        'Short-term bond ETFs (e.g., SGOV, BIL): Treasury bill ETFs with daily liquidity; slightly more accessible than direct T-bill purchase',
+      ]),
+      p('Avoid keeping emergency funds in stocks or bond funds: the value can fall 20–40% precisely when you need the money most. FDIC-insured accounts or US Treasuries are the correct home.'),
+      h2('The key question: how liquid is liquid enough?'),
+      p('A common mistake is keeping emergency funds in accounts with withdrawal delays, lock-up periods, or market value risk. The emergency fund must be accessible within 1–3 business days with no risk of loss. High-yield savings accounts at major online banks (Ally, Marcus, Discover, Fidelity Cash Management) meet this standard. CD ladders, I-Bonds, and longer-duration bond funds do not.'),
+    ],
+  },
+  {
+    slug: 'choosing-your-withdrawal-rate-conservative-vs-aggressive',
+    title: 'Choosing Your Withdrawal Rate: 3%, 4%, or 5%?',
+    description: 'The withdrawal rate you choose determines how long your money lasts. Here is what the research shows about 3%, 4%, and 5% withdrawal rates — and how to choose the right one for your retirement length.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why withdrawal rate is the most consequential retirement decision'),
+      p('Your withdrawal rate — the percentage of your initial portfolio you spend each year, adjusted for inflation — determines whether your money lasts 20 years or 50. A 1% difference in withdrawal rate means the difference between a $1,250,000 FIRE number and a $1,666,666 FIRE number for the same $50,000 annual spending. That 1% gap requires an additional $416,000 in portfolio — years of extra work for most people.'),
+      p('This makes the withdrawal rate decision enormously consequential. Too high a rate and you risk running out of money late in life. Too low and you accumulate far beyond what you need, working longer than necessary. The right rate depends on retirement length, portfolio allocation, spending flexibility, and other income sources.'),
+      h2('The 4% rule: origin and research'),
+      p('The 4% rule originated from the 1994 Trinity Study by William Bengen, which analyzed US market return data from 1926 to 1992. The finding: a 60% equity / 40% bond portfolio could sustain 4% inflation-adjusted withdrawals over 30 years in 95%+ of historical scenarios. The worst historical starting point was retiring in 1966 just before a decade of stagflation — and even that scenario survived 30 years at 4%.'),
+      p('Subsequent research has expanded and refined these findings. The 4% rule is not a guarantee; it is a historically derived rule of thumb calibrated for a 30-year retirement with a specific portfolio allocation. The name stuck even as the research has evolved.'),
+      h2('The case for 5%: when it works'),
+      p('A 5% withdrawal rate is appropriate when:'),
+      ul([
+        'Retirement length is 20–25 years (traditional retiree at 65–70)',
+        'You have significant guaranteed income (Social Security, pension) covering essential expenses',
+        'You have substantial spending flexibility and could cut 20–30% in a severe downturn',
+        'You hold at least 50–60% equities to support the higher withdrawal',
+      ]),
+      p('Historical success rates at 5% over 30 years are around 80%, compared to 95%+ for 4%. That 15-point gap represents a meaningful risk of portfolio depletion — acceptable only with genuine flexibility or other income sources as backstops.'),
+      h2('The case for 4%: the standard choice'),
+      p('A 4% withdrawal rate is appropriate for:'),
+      ul([
+        'Traditional retirees with 25–35 year horizons',
+        'Early retirees at 55–60 (35-year horizon)',
+        'Those without significant spending flexibility or supplemental income',
+        'Any scenario where running out of money before death would be catastrophic rather than manageable',
+      ]),
+      p('At 4%, historical success rates over 30 years are 95%+. Over 40 years, success rates drop to roughly 85–90% depending on the period and allocation. This is why 4% at a 30-year horizon is the standard recommendation, but not the recommendation for a 40-50 year horizon.'),
+      h2('The case for 3–3.5%: the early retiree choice'),
+      p('For early retirees facing 40–55 year retirements, the evidence favors 3–3.5% withdrawal rates:'),
+      ul([
+        '3.5% historically succeeds in 90%+ of 40-year scenarios',
+        '3% historically succeeds in 95%+ of 40-year scenarios and 90%+ of 50-year scenarios',
+        'The extra buffer protects against extended bad-return sequences that 30-year research does not fully capture',
+        'Social Security arriving later in retirement provides a natural spending reduction that improves outcomes further',
+      ]),
+      p('The tradeoff: at 3.5% withdrawal, a $50,000 annual spending target requires a $1,428,571 portfolio (vs $1,250,000 at 4%). The additional $178,000 represents roughly 2–3 more years of saving for a median FIRE saver — significant but not prohibitive. At 3%, the required portfolio is $1,666,666 — roughly 4 more years of work versus the 4% rule.'),
+      h2('How Monte Carlo analysis helps'),
+      p('Monte Carlo simulation runs thousands of randomized return sequences against your specific withdrawal rate and portfolio allocation to estimate success probability. Unlike the historical analysis, Monte Carlo can model return sequences that have not occurred yet — important for stress-testing 50-year retirements.'),
+      p('A Monte Carlo result of "95% success" means that in 95 out of 100 simulated 50-year retirements, your portfolio survived. The 5% failure scenarios typically occur in sequences with very bad early years (sequence-of-returns risk) combined with persistent below-average returns. FIRECalc and cFireSim are free online tools that run this analysis.'),
+      h2('The practical framework'),
+      ul([
+        'Age 35–45 retirement: target 3.0–3.5% withdrawal rate',
+        'Age 45–55 retirement: target 3.5–4.0% withdrawal rate',
+        'Age 55–65 retirement: target 4.0% withdrawal rate',
+        'Age 65+ retirement: 4.0–5.0% depending on income sources and flexibility',
+      ]),
+      p('These are starting points, not laws. Every 1% of guaranteed income (Social Security, pension, rental) as a percentage of spending reduces the portfolio dependence and allows a slightly higher withdrawal rate. Every year of flexibility to cut spending by 20% in bad markets improves success rates significantly.'),
+      h2('Withdrawal rate vs portfolio size: the real question'),
+      p('Many FIRE planners focus on the withdrawal rate as an abstract number and forget that it implies a portfolio size. The practical question is: what FIRE number do I actually need? Run it from both directions:'),
+      ul([
+        'Top-down: I plan to spend $X per year → my FIRE number is $X / withdrawal rate',
+        'Bottom-up: I have $Y in savings → my sustainable annual spending is $Y × withdrawal rate',
+      ]),
+      p('The second calculation is often more useful near retirement: given what you actually have, what can you spend? If the answer is comfortable, you are done. If it is too low, you work longer or reduce spending. The withdrawal rate is the bridge between portfolio size and sustainable lifestyle — make sure you run it in both directions before declaring FIRE achieved.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +923,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'inflation-risk-and-fire': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['building-momentum', 'living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-inflation', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/4-percent-rule',
+      label: 'Stress-Test Against Inflation',
+      source: 'learn-inflation-risk',
+    },
+  },
+  'emergency-fund-strategy-for-fire': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-emergency-fund', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-emergency-fund',
+      label: 'Run Your FIRE Projection',
+      source: 'learn-emergency-fund',
+    },
+  },
+  'choosing-your-withdrawal-rate-conservative-vs-aggressive': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/?source=learn-withdrawal-rate', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/4-percent-rule',
+      label: 'Calculate Your Withdrawal Rate',
+      source: 'learn-withdrawal-rate',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +977,7 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'emergency-fund-strategy-for-fire',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -809,6 +1022,8 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'inflation-risk-and-fire',
+      'choosing-your-withdrawal-rate-conservative-vs-aggressive',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
