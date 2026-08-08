@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,132 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'inflation-risk-in-fire-portfolios',
+    title: 'Inflation Risk in FIRE: How to Protect Your Portfolio\'s Purchasing Power',
+    description: 'Why inflation is the silent threat to early retirement portfolios — and how TIPS, I-bonds, equities, and spending flexibility can keep your purchasing power intact over decades.',
+    category: 'Risk Management',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why inflation hits early retirees harder'),
+      p('Inflation is a slow-moving risk that compounds quietly over time. At 3% annual inflation, purchasing power halves in approximately 24 years. For someone who retires at 40 and plans for a 50-year retirement, the portfolio needs to fund expenses that could cost more than twice as much in real terms by their 60s.'),
+      p('The 4% safe withdrawal rule does account for inflation — it assumes withdrawals increase with the CPI each year. But there are two failure modes the rule does not fully capture: inflation that exceeds historical averages for extended periods, and category-specific inflation (healthcare, housing) that often runs well above the headline CPI for retirees.'),
+      h2('The CPI does not measure your inflation'),
+      p('The Consumer Price Index is an average. Your personal inflation rate depends on your spending mix. Retirees typically spend more on healthcare and housing than the CPI weights assume. Healthcare costs in the US have historically inflated at 5–7% per year — significantly above the 2–3% general CPI. A retiree who spends 20% of their budget on healthcare is exposed to a meaningfully higher real inflation rate than the headline index suggests.'),
+      p('The implication: model your personal spending basket, not just the CPI. If housing and healthcare dominate your budget, your spending plan should assume higher-than-average inflation for those categories, especially in the later decades of retirement.'),
+      h2('Equities: the best long-run inflation hedge'),
+      p('The most powerful inflation protection in a FIRE portfolio is equity ownership. Companies can raise prices as costs increase — revenues and earnings generally grow with inflation over time. A diversified equity index fund holding thousands of companies across sectors has historically outpaced inflation by 4–6% annually over long horizons.'),
+      p('This is the core reason FIRE portfolios lean heavily toward equities. Bonds and cash preserve nominal value but lose purchasing power in inflationary environments. Equities protect real value over decades, at the cost of short-term volatility.'),
+      h2('TIPS: Treasury Inflation-Protected Securities'),
+      p('TIPS are US government bonds whose principal adjusts with inflation. If CPI rises 4% in a year, the face value of your TIPS holdings rises 4%. Interest is paid on the adjusted principal, so your real income stays constant. TIPS are the closest thing to a guaranteed inflation hedge in the fixed-income world.'),
+      h3('When TIPS belong in a FIRE portfolio'),
+      p('TIPS are most useful in the bond allocation of a FIRE portfolio — replacing some conventional bond exposure with inflation-linked bonds. They are particularly valuable if:'),
+      ul([
+        'You are early in retirement and concerned about an inflationary decade (like the 1970s) hitting the first critical years of drawdown.',
+        'Your spending is dominated by fixed costs that track inflation closely.',
+        'You want your bond allocation to do more than just reduce volatility — you want it to actively hedge inflation risk.',
+      ]),
+      p('TIPS are less useful in taxable accounts because the inflation adjustment is taxed as ordinary income even though you do not receive cash — a phenomenon called "phantom income." They work best in tax-advantaged accounts like IRAs.'),
+      h2('I-bonds: the individual investor\'s inflation tool'),
+      p('Series I savings bonds are US government savings bonds whose interest rate is a composite of a fixed base rate and a variable inflation rate (adjusted twice a year based on CPI). In high-inflation periods, I-bond yields have significantly exceeded both savings accounts and conventional bonds.'),
+      p('The key constraints: I-bonds are available only to US individuals, capped at $10,000 per person per year (plus $5,000 in tax refunds), and must be held for at least one year (with a 3-month interest penalty for redemption in the first five years). They are not a portfolio allocation — they are a tactical savings vehicle for part of the cash bucket, particularly during inflationary periods.'),
+      h2('Real assets as inflation hedges'),
+      p('Beyond financial instruments, real assets provide inflation protection. Real estate, commodities, and infrastructure tend to appreciate with inflation because they represent physical goods and productive capacity:'),
+      ul([
+        'Real estate (direct ownership or REITs): rents and property values historically track inflation over long periods.',
+        'Commodities: raw materials prices tend to rise with inflation — though commodity exposure adds volatility and is better as a small tactical allocation than a core holding.',
+        'Infrastructure (utilities, pipelines, airports): regulated or contracted revenue streams often include explicit inflation adjustments.',
+      ]),
+      h2('Spending flexibility as the underrated hedge'),
+      p('The most overlooked inflation hedge is behavioral: maintaining flexibility in spending. A FIRE retiree who can reduce discretionary spending by 10–15% during high-inflation periods — deferring travel, postponing large purchases, trimming non-essential subscriptions — effectively gives the portfolio time to recover without being forced to sell more assets to cover the same spending.'),
+      p('This is the argument for building a FIRE number with a margin of safety and targeting a withdrawal rate below the 4% maximum. A household targeting 3–3.5% withdrawal rates has meaningful room to absorb inflation surprises without plan failure. The discipline of living below the withdrawal ceiling is itself a form of inflation insurance.'),
+    ],
+  },
+  {
+    slug: 'variable-withdrawal-strategies-beyond-the-4-percent-rule',
+    title: 'Variable Withdrawal Strategies: Smarter Than the Rigid 4% Rule',
+    description: 'How dynamic spending methods like guardrails, Variable Percentage Withdrawal, and floor-and-upside can make your FIRE portfolio last longer than a fixed withdrawal rate.',
+    category: 'Withdrawal Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('The problem with rigid 4% withdrawals'),
+      p('The 4% safe withdrawal rule is a powerful planning tool, but treating it as a rigid spending rule in actual retirement creates unnecessary risk. The original Trinity Study tested a fixed real withdrawal — withdrawing $40,000/year from a $1,000,000 portfolio and increasing that amount with inflation every year, regardless of what markets do.'),
+      p('In practice, most retirees do not need to spend exactly the same inflation-adjusted amount every year. Spending naturally varies — some years travel dominates, others are quieter. Flexible spending is both realistic and mathematically advantageous: it lets the portfolio breathe.'),
+      h2('Guardrails: the most practical dynamic strategy'),
+      p('The Guyton-Klinger guardrails method sets upper and lower spending bounds. You start with a target withdrawal rate (say, 5%), but you check it against guardrails each year:'),
+      ul([
+        'Upper guardrail: if your current withdrawal rate (annual spending ÷ current portfolio value) exceeds 20% above your initial rate (e.g., 6%), cut spending by 10%.',
+        'Lower guardrail: if your withdrawal rate drops more than 20% below your initial rate (e.g., 4%), increase spending by 10%.',
+        'Prosperity rule: if the portfolio has grown significantly and your withdrawal rate is well below target, give yourself a raise.',
+      ]),
+      p('The guardrails create a feedback loop: when the portfolio drops (pushing the withdrawal rate up), you pull back spending moderately. When it grows (pushing the rate down), you spend a little more. This extends portfolio survival significantly compared to rigid fixed withdrawals because you avoid the worst forced selling in down markets.'),
+      h3('Why guardrails allow a higher starting withdrawal'),
+      p('Because you are committing to moderate cuts in bad scenarios, the portfolio does not need to survive the worst case at a fixed rate. Research by David Blanchett and others suggests guardrails allow a starting withdrawal rate of 4.5–5.5% for early retirees who are willing to accept a 10% spending reduction in severe downturns — compared to the rigid 4% needed for fixed spending.'),
+      h2('Variable Percentage Withdrawal (VPW)'),
+      p('VPW is a systematic method that calculates each year\'s withdrawal as a fixed percentage of the current portfolio value, where the percentage increases as you age (because you have fewer years left to fund). Unlike a fixed dollar amount, VPW never depletes the portfolio — you can never "run out" because you are always taking a percentage of whatever remains.'),
+      p('The downside: income can be volatile. In a year when your portfolio drops 30%, your VPW income drops proportionally. This requires either a spending floor (non-negotiable minimum expenses funded separately) or the psychological comfort to live with variable income.'),
+      h3('VPW in practice'),
+      p('A retiree using VPW at age 50 might withdraw 4.5% of portfolio value in year one. By age 65, that percentage rises to perhaps 5.5%. By 80, to 7%+. The percentage grows because the remaining time horizon shrinks. The result: income is higher in later years and the portfolio is fully spent (intentionally) by end of life, rather than leaving a large bequest by accident.'),
+      h2('Floor and upside: the hybrid approach'),
+      p('The floor-and-upside strategy divides retirement income into two layers:'),
+      ul([
+        'The floor: guaranteed, non-market-dependent income covering essential expenses. Built from Social Security, annuities, rental income, TIPS ladders, or other stable sources. This income is there no matter what markets do.',
+        'The upside: discretionary spending funded by the investment portfolio. Since essential expenses are covered by the floor, market drops do not threaten the basics — only the discretionary layer.',
+      ]),
+      p('This approach requires higher initial capital or guaranteed income sources (like delaying Social Security to 70 or purchasing a deferred income annuity), but it dramatically reduces the psychological stress of portfolio volatility because the floor is untouchable.'),
+      h2('Which strategy should FIRE retirees use?'),
+      p('There is no universally right answer — the best strategy is the one you will actually execute. Guardrails work best for people who want a clear rule with defined adjustment triggers and are comfortable with some income variability. VPW suits people who are deeply analytical and comfortable with highly variable income. Floor-and-upside suits people who prioritize certainty for basic expenses above all else.'),
+      p('Most FIRE retirees benefit from some combination: a guaranteed income floor from delayed Social Security and possibly an annuity for a slice of essential spending, paired with guardrails or VPW for the discretionary portfolio. The portfolio does not need to do everything.'),
+      h2('The practical case for flexibility'),
+      p('The single most important insight from withdrawal research is that flexibility outperforms rigidity. A retiree willing to reduce spending by 10% in a severe downturn can safely start with a meaningfully higher withdrawal rate than one who insists on fixed real spending. This is not just financial advice — it reflects what most retirees actually do when their portfolio drops. Planning explicitly for that flexibility, rather than assuming it, produces more honest and more resilient retirement plans.'),
+    ],
+  },
+  {
+    slug: 'multiple-income-streams-fire-resilience',
+    title: 'Multiple Income Streams: Building a Resilient Foundation for FIRE',
+    description: 'Why diversifying income sources — beyond a single investment portfolio — makes your FIRE plan more resilient, and what income streams are worth building.',
+    category: 'Income Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The single-source risk in FIRE'),
+      p('Most FIRE plans are built on one income source: a diversified investment portfolio. You accumulate enough, and the portfolio funds everything. This is mathematically sound — but it concentrates retirement security in a single system that is subject to market risk, sequence-of-returns risk, and the behavioral challenge of watching your net worth decline in down markets while drawing from it.'),
+      p('Multiple income streams change the calculus. If part of your retirement income comes from sources that are not correlated with stock market performance — rental income, part-time consulting, royalties, a small business — then your portfolio can be smaller, your withdrawal rate can be lower, or you simply have more resilience against the scenarios that kill single-source plans.'),
+      h2('What counts as a meaningful income stream'),
+      p('Not every side gig qualifies. A meaningful income stream for FIRE purposes is one that is:'),
+      ul([
+        'Recurring: generates income regularly without constant active effort.',
+        'Scalable or sustainable: does not require full-time employment to maintain.',
+        'Additive: genuinely reduces your portfolio withdrawal requirement, not just a psychological consolation.',
+      ]),
+      p('Passive income in the pure sense (zero effort) barely exists outside investment portfolios. The more useful framing is "income that requires less than 10–15 hours per week of maintenance work" — which is compatible with the work-optional life FIRE enables.'),
+      h2('Rental income'),
+      p('Residential or commercial rental properties generate monthly cash flow that is only loosely correlated with stock market performance. In periods of stock market decline, rents often hold steady or increase (because housing demand is relatively inelastic). A rental portfolio generating $2,000 per month reduces a FIRE retiree\'s portfolio withdrawal requirement by $24,000 per year — a direct reduction in required portfolio size of $600,000 at the 4% rule.'),
+      p('The trade-off: rentals require active management (or property management fees that reduce net income), carry specific risks (vacancy, major repairs, problem tenants), and require significant upfront capital. But for FIRE seekers who enjoy real estate and want genuine cash flow diversity, a small rental portfolio is one of the strongest income stream options.'),
+      h2('Digital products and intellectual property'),
+      p('Books, online courses, software tools, stock photography, music licensing, and similar intellectual property products generate royalty income long after the initial creation work is done. A book that sells 200 copies per month generates ongoing income without additional labor. A well-designed online course on a durable topic can generate income for years.'),
+      p('The creation work is front-loaded and uncertain — most books sell poorly, most courses fail. But for FIRE seekers with deep expertise in a valuable area (personal finance, software development, professional skills, creative fields), a single successful digital product can generate a meaningful recurring income stream that diversifies the portfolio dependency.'),
+      h2('Consulting and freelance at reduced hours'),
+      p('Barista FIRE is sometimes discussed as "work a few shifts at a coffee shop for health insurance," but the more financially impactful version is periodic consulting in your area of expertise. A former software engineer who consults 10 hours per week at $150/hour generates $75,000+ per year — enough to largely eliminate portfolio withdrawals in a standard FIRE scenario.'),
+      p('The key distinction from regular employment: consulting is work-optional, not mandatory. You can scale down or stop entirely. You choose the projects. The income supplements the portfolio rather than replacing it. This is what makes it a resilience tool rather than a defeat of the FIRE plan.'),
+      h2('Content creation and distribution'),
+      p('YouTube channels, newsletters, podcasts, and blogs can generate advertising, sponsorship, or subscription revenue over time. The income is not passive in the startup phase — it requires consistent content creation for months or years before meaningful revenue emerges. But established content properties can generate tens of thousands of dollars per year with a few hours of weekly work.'),
+      p('For FIRE seekers who want to stay intellectually engaged during retirement, content creation aligns the income-generating activity with genuine interests. Teaching what you know — investing, cooking, travel, a professional skill — creates value for others while maintaining financial contribution.'),
+      h2('How multiple income streams affect the FIRE number'),
+      p('Each income stream reduces your required portfolio size. The math is direct: annual income from non-portfolio sources ÷ withdrawal rate = portfolio reduction.'),
+      ul([
+        '$12,000/year in rental income → reduces required portfolio by $300,000 (at 4% rule)',
+        '$18,000/year in consulting → reduces required portfolio by $450,000',
+        '$6,000/year in royalties → reduces required portfolio by $150,000',
+      ]),
+      p('A FIRE retiree with $36,000 per year in diversified non-portfolio income needs $900,000 less in their investment portfolio than one relying entirely on withdrawals. This can mean years shaved off the accumulation timeline — or a much more comfortable margin of safety.'),
+      h2('The sequencing argument for income streams'),
+      p('Multiple income streams are especially powerful against sequence-of-returns risk. In the critical first decade of retirement, a bad market sequence can permanently damage a portfolio that relies entirely on withdrawals. If other income streams cover basic expenses during a down market — eliminating or dramatically reducing withdrawals for 1–3 years — the portfolio avoids selling at market lows and recovers fully when markets rebound.'),
+      p('This is the resilience argument: even a modest $1,000–$1,500 per month from a part-time activity during the first five years of retirement can meaningfully improve the long-term survival probability of a FIRE portfolio under adverse conditions.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +881,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'inflation-risk-in-fire-portfolios': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire', 'building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-inflation', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-inflation',
+      label: 'Stress-test your FIRE number →',
+      source: 'learn-inflation',
+    },
+  },
+  'variable-withdrawal-strategies-beyond-the-4-percent-rule': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/dashboard', label: 'Open Dashboard' },
+    ],
+    primaryCta: {
+      href: '/dashboard',
+      label: 'Model your withdrawal strategy →',
+      source: 'learn-variable-withdrawal',
+    },
+  },
+  'multiple-income-streams-fire-resilience': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire', 'living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-income-streams', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-income-streams',
+      label: 'Calculate your FIRE number with income streams →',
+      source: 'learn-income-streams',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -789,6 +959,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'multiple-income-streams-fire-resilience',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
@@ -809,6 +980,7 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'inflation-risk-in-fire-portfolios',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
@@ -828,6 +1000,7 @@ export const learnStages: LearnStage[] = [
       'sequence-of-returns-risk',
       'barista-fire',
       'roth-ira-vs-401k-for-fire',
+      'variable-withdrawal-strategies-beyond-the-4-percent-rule',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
