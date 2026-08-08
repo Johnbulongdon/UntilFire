@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,136 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'social-security-and-fire-when-to-claim',
+    title: 'Social Security and FIRE: When to Claim and How Much to Count On',
+    description: 'Early retirees face unique Social Security decisions. Here is how to estimate your benefit, decide when to claim, and factor it into your FIRE number accurately.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why Social Security is complicated for early retirees'),
+      p('For traditional retirees, Social Security is straightforward: you work until 65–67, claim your benefit, and supplement with savings. For early retirees, it is more complex. If you stop working at 40, your Social Security record shows 15–20 years of earnings followed by 20–30 years of zeros. Those zeros reduce your benefit. And because benefits cannot start before age 62, you may have a gap of 20+ years before Social Security is even available.'),
+      p('Despite the complexity, Social Security remains one of the most valuable income sources available to FIRE retirees — particularly as a longevity hedge. A benefit that starts at 67 and continues for 30+ years, inflation-adjusted, can reduce portfolio dependence significantly in the later years of retirement.'),
+      h2('How Social Security benefits are calculated'),
+      p('Your Social Security benefit is based on your Average Indexed Monthly Earnings (AIME) — the average of your highest 35 years of inflation-adjusted earnings. If you worked for 20 years and retire early, you have 15 zero-earning years averaged in, which reduces your AIME and therefore your benefit.'),
+      p('The formula is progressive: lower earners replace a higher percentage of income than higher earners. The replacement formula applies "bend points":'),
+      ul([
+        '90% of the first $1,115 of AIME (2024 bend points)',
+        '32% of AIME between $1,115 and $6,721',
+        '15% of AIME above $6,721',
+      ]),
+      p('A person with a 20-year career earning $80,000/year consistently might expect a benefit of roughly $1,800–$2,200/month at full retirement age — less than a full-career worker, but still meaningful.'),
+      h2('Claiming age and the claiming strategy decision'),
+      p('You can claim Social Security benefits as early as age 62, but your benefit is permanently reduced. Claiming at full retirement age (67 for those born after 1960) gives you 100% of your calculated benefit. Delaying to age 70 increases it by 8% per year — a 24% permanent boost compared to claiming at 67.'),
+      ul([
+        'Age 62: 70% of full benefit (30% reduction)',
+        'Age 67: 100% of full benefit (full retirement age)',
+        'Age 70: 124% of full benefit (maximum)',
+      ]),
+      p('For early retirees with large portfolios, the decision is primarily about longevity insurance. If you claim at 70 instead of 62, the break-even point is roughly age 80–82 — if you live beyond that, delayed claiming is better financially. Given that early retirees tend to be healthier than average, many FIRE planners delay to 70 and draw down the portfolio first.'),
+      h2('How to check your Social Security estimate'),
+      p('The Social Security Administration provides a My Social Security online account at ssa.gov where you can see your full earnings history and benefit estimates. The estimates assume you continue working at your current salary — which is not true for early retirees.'),
+      p('For a more accurate estimate, use the SSA\'s detailed calculator or a tool like Open Social Security (opensocialsecurity.com), which allows custom earnings histories and stopping dates. These tools let you model "I stop working at 40 and claim at 70" scenarios directly.'),
+      h2('How much to count on in your FIRE plan'),
+      p('The two common approaches:'),
+      h3('Conservative approach'),
+      p('Ignore Social Security entirely in your FIRE number calculation. Build a portfolio large enough to fund retirement indefinitely without it. If Social Security eventually arrives, it becomes a buffer or lifestyle upgrade — but your plan does not depend on it. This is the safest assumption if you are more than 20 years from claiming age or have concerns about system changes.'),
+      h3('Moderate approach'),
+      p('Include a discounted Social Security estimate as a late-stage income source. If you expect $2,000/month at 70, model it as $1,400–$1,600/month to account for potential benefit cuts and uncertainty. Subtract this from your spending in the model after age 70, which reduces the portfolio required to reach your FIRE date.'),
+      h2('Social Security and FIRE number reduction'),
+      p('The mathematical impact is significant. If a couple expects $3,000/month combined in Social Security at age 70 and their annual spending is $80,000, the portfolio only needs to cover $44,000 in spending after Social Security begins. The FIRE number shifts from $2,000,000 (full spending × 25) to a plan that draws down more heavily before 70 and less after — which Monte Carlo simulations typically show as materially safer than a flat withdrawal rate.'),
+      h2('The Social Security tax impact in early retirement'),
+      p('Up to 85% of Social Security benefits are taxable if your provisional income (AGI + tax-exempt interest + half of Social Security) exceeds certain thresholds. For a married couple in 2024, benefits become partially taxable above $32,000 in provisional income and 85% taxable above $44,000. Early retirees managing taxable income (via Roth conversions, capital gain harvesting) have significant control over whether their eventual Social Security benefits are taxed.'),
+    ],
+  },
+  {
+    slug: 'geographic-arbitrage-moving-to-reach-fire-faster',
+    title: 'Geographic Arbitrage: How Moving Changes Your FIRE Date',
+    description: 'Moving to a lower-cost location can cut years off your FIRE timeline. Here is how to calculate the real impact of geoarbitrage on your plan — domestically and internationally.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('What is geographic arbitrage?'),
+      p('Geographic arbitrage — "geoarbitrage" in FIRE communities — means earning income at the rates of a high-cost market while spending at the rates of a lower-cost location. The gap between those two rates becomes additional savings.'),
+      p('The classic version: a software engineer earning a San Francisco salary moves to Lisbon, Portugal. The salary stays the same; spending drops by 40–60%. The savings rate spikes. FIRE arrives years earlier.'),
+      p('But geoarbitrage does not require international moves. Moving from San Francisco to Boise, from New York to North Carolina, or from a high-tax state to a no-income-tax state can all have meaningful FIRE effects.'),
+      h2('The FIRE math of moving'),
+      p('Because your FIRE number is 25× annual spending, every reduction in spending has two effects: it increases savings (accumulation effect) and it lowers the target (target effect). Moving from $90,000 in annual spending to $60,000 reduces your FIRE target by $750,000 and simultaneously frees up $30,000 per year of additional savings — a double win.'),
+      p('Example: Household earning $140,000/year, currently spending $90,000 in a high-cost city. FIRE number: $2,250,000. Portfolio: $500,000. Annual savings: $50,000. Years to FIRE: ~18 years.'),
+      p('Same household moves to a moderate-cost city. Spending falls to $60,000. FIRE number: $1,500,000. Annual savings: $80,000. Years to FIRE: ~10 years. The move saves 8 years.'),
+      h2('Domestic geoarbitrage: the tax dimension'),
+      p('The US has significant state income tax variation. Moving from California (13.3% top marginal rate) to Texas, Florida, Nevada, or another no-income-tax state can save $5,000–$20,000 per year depending on income level. At a FIRE number of 25×, a $10,000 annual tax saving is equivalent to $250,000 less in required portfolio.'),
+      p('States with no income tax: Alaska, Florida, Nevada, New Hampshire (interest/dividends only), South Dakota, Tennessee, Texas, Washington, Wyoming. Cost of living varies significantly within these states.'),
+      h2('International geoarbitrage'),
+      p('International moves unlock larger spending reductions, though they add complexity around healthcare, taxes, and social structure.'),
+      h3('Popular FIRE destinations in 2024–2025'),
+      ul([
+        'Portugal — Golden Visa history, NHR tax regime (being phased out), strong expat community, Lisbon/Porto costs about 40% less than London or major US cities',
+        'Mexico (CDMX, Oaxaca, Mérida) — close to US time zones, warm climate, $2,500–$3,500/month comfortable for a couple',
+        'Thailand (Chiang Mai) — long-popular FIRE destination, $1,500–$2,500/month for a comfortable lifestyle',
+        'Colombia (Medellín, Cartagena) — rapid improvement in infrastructure, digital nomad infrastructure, spring-like climate year-round',
+        'Eastern Europe (Georgia, Albania, Poland) — very low cost, EU/European culture, improving digital nomad visas',
+      ]),
+      h3('Financial complexity of international FIRE'),
+      ul([
+        'US citizens are taxed on worldwide income regardless of where they live — the Foreign Earned Income Exclusion ($126,500 in 2024) covers employment income but not investment income',
+        'Capital gains and dividends from a US portfolio remain taxable to the IRS regardless of residency',
+        'Foreign tax credits can reduce double taxation in countries with US tax treaties',
+        'Banking logistics: keeping a US bank account, using Charles Schwab International for fee-free ATM withdrawals globally',
+        'Healthcare: quality varies significantly by country; international health insurance ($2,000–$5,000/year for a couple) is typically required',
+      ]),
+      h2('Remote work unlocks domestic geoarbitrage without sacrifice'),
+      p('The rise of remote work has made domestic geoarbitrage more accessible than ever. A household earning Bay Area salaries who relocates to Boise, Asheville, or Tulsa can maintain their income while cutting spending by 25–40%. Many employers now explicitly allow remote work from anywhere in the US.'),
+      p('For FIRE planners currently in high-cost cities, the remote-work negotiation — either with a current employer or by finding a remote-first role — is often the highest-leverage single action available.'),
+      h2('The non-financial cost of moving'),
+      p('Geoarbitrage analysis often focuses on the numbers and underweights the real costs: distance from family, disruption of social networks, loss of familiar community, and the psychological adjustment of a new environment. These costs are real and should be modeled seriously. An international move that saves $30,000 per year but makes you profoundly unhappy does not advance your FIRE goals.'),
+      p('The most successful geoarbitrage moves are to places the person already wanted to live or regularly visited — not purely financially motivated relocations. A two-week "trial run" in a target location before committing is the single most effective way to validate that the numbers and the lifestyle actually match.'),
+      h2('How to calculate your personal geoarbitrage impact'),
+      p('Run the numbers in three scenarios: stay where you are, move domestically, move internationally. For each scenario, calculate: annual spending (using Numbeo or local research), state/country income tax, estimated FIRE number, current savings rate, and projected years to FIRE. The gap between scenarios gives you a concrete decision basis rather than an abstract trade-off.'),
+    ],
+  },
+  {
+    slug: 'dollar-cost-averaging-vs-lump-sum-investing',
+    title: 'Dollar-Cost Averaging vs Lump Sum: What the Research Actually Says',
+    description: 'Should you invest a windfall all at once or spread it over time? The data is clear — but psychology matters too. Here is how to think about this decision.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('Two ways to invest money'),
+      p('When you have a lump sum to invest — from a bonus, inheritance, house sale, or accumulated cash — you face a choice: invest it all immediately (lump sum investing, LSI) or spread the investment over time in equal installments (dollar-cost averaging, DCA).'),
+      p('DCA is often described as the smarter or safer approach. The research shows this framing is largely wrong — at least when applied to one-time windfalls. But DCA is the correct description of what most employed people naturally do when they invest a portion of each paycheck.'),
+      h2('What the research shows'),
+      p('A widely cited Vanguard study analyzing US, UK, and Australian markets over rolling periods from 1926 to 2011 found that lump sum investing outperformed dollar-cost averaging approximately two-thirds of the time across all market environments and time horizons studied.'),
+      p('The reason is simple: markets rise more often than they fall. If you have $100,000 to invest and spread it over 12 months, the money sitting in cash while you wait earns less than it would earning market returns. The longer the DCA period, the larger the expected cost — because you are forgoing more expected return.'),
+      p('The Vanguard finding across their analysis:'),
+      ul([
+        'US markets: LSI outperformed 12-month DCA in ~66% of rolling periods',
+        'UK markets: LSI outperformed in ~68% of rolling periods',
+        'Australian markets: LSI outperformed in ~63% of rolling periods',
+        'Average outperformance: 2.3% over 12-month DCA periods',
+      ]),
+      h2('When DCA is rational'),
+      p('Despite the average outperformance of LSI, there are scenarios where DCA is the correct or preferred choice:'),
+      ul([
+        'Your regular paycheck: investing automatically from each paycheck is by definition DCA and is optimal — you cannot invest money you have not yet earned',
+        'Extreme valuation environments: if markets are historically overvalued by multiple standard deviations (e.g., CAPE ratio >35), a risk-averse investor might reasonably prefer spreading deployment over 3–6 months',
+        'Psychological function: if DCA prevents you from panic-selling during volatility by giving you more incremental buy-in, the behavioral benefit may outweigh the expected return cost',
+        'Risk management for life-changing sums: an inheritance that represents all of your net worth may warrant a slower deployment for peace of mind, with the understanding that you are paying a statistical premium for that peace',
+      ]),
+      h2('The behavioral argument for DCA'),
+      p('The case for DCA is often more psychological than mathematical. If you invest $200,000 in a lump sum and the market immediately drops 20%, you have a $40,000 paper loss on day one. Many people would panic-sell. If you had deployed $17,000 per month over a year and the same crash happened, your last purchases are cheaper and your average cost is lower — the loss feels more manageable.'),
+      p('If DCA keeps you invested through volatility whereas LSI would cause you to panic-exit the market, DCA is correct for you even if it is suboptimal in expectation. Staying invested at a lower expected return beats exiting the market at a higher expected return.'),
+      h2('What FIRE practitioners actually do'),
+      p('Most financially literate FIRE planners use lump sum investing for windfalls above some comfort threshold, deploy within one to three months at most, and treat DCA as a behavioral hedge rather than a financial strategy. The typical approach: invest the full lump sum immediately if you are confident you will not panic-sell; deploy over no more than six months if you genuinely cannot stomach the immediate volatility risk.'),
+      p('Spreading over more than six months is almost never financially justified. The research is consistent across market conditions: the longer the DCA window, the greater the expected return sacrifice, with no compensating benefit on risk.'),
+      h2('The FIRE context'),
+      p('For FIRE savers, the DCA vs. LSI question mostly applies to year-end bonuses, tax refunds, RSU vesting events, or inheritances. For regular monthly savings, the question is moot — automatic investing from each paycheck is the correct approach and is inherently DCA.'),
+      p('The practical FIRE rule: when you have a lump sum, invest it within 30 days. The psychological cost of watching it sit in cash while the market rises is real, the research is consistent, and the long-term impact of waiting compounds against you. If you are nervous about market timing, remember that any investment can be followed by a crash — the difference is that with LSI your whole portfolio also participated in all the gains between now and that crash.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +885,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'social-security-and-fire-when-to-claim': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-social-security', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/4-percent-rule',
+      label: 'Recalculate With Social Security',
+      source: 'learn-social-security',
+    },
+  },
+  'geographic-arbitrage-moving-to-reach-fire-faster': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['starting-out', 'approaching-fire'],
+    relatedCalculators: [
+      { href: '/?source=learn-geoarbitrage', label: 'FIRE Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-geoarbitrage',
+      label: 'Recalculate With Lower Expenses',
+      source: 'learn-geoarbitrage',
+    },
+  },
+  'dollar-cost-averaging-vs-lump-sum-investing': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['starting-out'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/?source=learn-dca', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/compound-interest',
+      label: 'Model Lump Sum vs Monthly',
+      source: 'learn-dca-lump-sum',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -789,6 +963,8 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'geographic-arbitrage-moving-to-reach-fire-faster',
+      'dollar-cost-averaging-vs-lump-sum-investing',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
@@ -809,6 +985,7 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'social-security-and-fire-when-to-claim',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
