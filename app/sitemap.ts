@@ -95,18 +95,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ]
 
+  const HIGH_PRIORITY_LEARN_SLUGS = new Set([
+    'what-is-fire-financial-independence-retire-early',
+    'what-is-the-4-percent-rule',
+    'how-much-money-do-i-need-to-retire',
+    'compound-interest-and-fire',
+    'why-savings-rate-matters-more-than-income',
+    'index-funds-101-what-to-invest-in',
+    'roth-ira-vs-401k-for-fire',
+    'sequence-of-returns-risk',
+    'coast-fire-vs-full-fire',
+    'barista-fire',
+  ])
+
   const articleRoutes: MetadataRoute.Sitemap = learnArticles.map((article) => ({
     url: siteUrl(`/learn/${article.slug}`),
-    lastModified: new Date('2026-06-04'),
+    lastModified: new Date(article.publishedAt),
     changeFrequency: 'monthly' as const,
-    priority: 0.65,
+    priority: HIGH_PRIORITY_LEARN_SLUGS.has(article.slug) ? 0.75 : 0.65,
   }))
 
   const stageRoutes: MetadataRoute.Sitemap = learnStages.map((stage) => ({
     url: siteUrl(`/learn/stages/${stage.id}`),
     lastModified: new Date(),
     changeFrequency: 'weekly',
-    priority: 0.65,
+    priority: 0.7,
   }))
 
   const curatedCitySlugs = new Set(cityLandingPages.map((page) => page.slug))
