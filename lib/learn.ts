@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,187 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'debt-payoff-vs-investing-the-math-and-psychology',
+    title: 'Debt Payoff vs Investing: The Math and the Psychology',
+    description: 'Should you pay off debt aggressively or invest instead? The answer depends on interest rates, tax treatment, and your psychological relationship with debt. Here is how to think through it.',
+    category: 'Saving',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The core question'),
+      p('When you have extra money each month, you face a choice: put it toward debt or invest it. The mathematical answer depends on one comparison: the after-tax cost of your debt vs the expected after-tax return on your investment. If investing returns more than the debt costs, invest. If not, pay off the debt.'),
+      p('The psychological answer is more nuanced. Debt carries emotional weight that numbers do not capture. A mathematically optimal decision that leaves you anxious and unable to sleep is not optimal. The best strategy combines math and psychology — but you need to understand both before choosing.'),
+      h2('The arbitrage math'),
+      p('The standard framework:'),
+      ul([
+        'Mortgage at 3.5%: expected S&P 500 real return ~7%. Invest — the margin is large.',
+        'Car loan at 6%: expected real return ~7%. Marginal case, slight lean toward investing.',
+        'Student loan at 7%: expected real return ~7%. Break even mathematically; psychological factors dominate.',
+        'Credit card at 20%: risk-free equivalent return is 20%. Pay off first, always.',
+        'Private student loans at 12%: pay off first.',
+      ]),
+      p('The threshold where the math shifts to "pay off debt" is roughly 6–7% for most people — the approximate expected real return on a diversified equity portfolio. Debt above this rate has a guaranteed return (paying it off) that beats the uncertain market return. Debt below this rate is likely worth keeping while investing the difference.'),
+      h2('Tax adjustments matter'),
+      p('The comparison must be made on an after-tax basis. A 6.5% student loan interest rate, if deductible, has an after-tax cost of 6.5% × (1 - marginal tax rate). In a 22% bracket, the after-tax cost is 5.1% — which changes the math in favor of investing. Similarly, investment returns in a 401k or Roth IRA are tax-advantaged, which increases their effective return.'),
+      p('The full comparison:'),
+      ul([
+        'After-tax cost of debt = interest rate × (1 - tax rate) if interest is deductible',
+        'After-tax return on investment = expected return × (1 - applicable tax rate) for taxable accounts; full return for Roth/401k',
+        'If after-tax investment return > after-tax cost of debt: invest',
+        'If after-tax cost of debt > after-tax investment return: pay off debt',
+      ]),
+      h2('The guaranteed return argument'),
+      p('One important nuance: paying off debt is a guaranteed return. If your mortgage is 5%, paying it off returns exactly 5% with zero risk. Investing in the stock market is expected to return 7% but comes with a range of outcomes — it could return -20% in any given year, or 30%. For risk-averse people, the lower but guaranteed return of debt payoff is genuinely preferable — not just psychologically but rationally.'),
+      p('The riskier your investment alternative, the more attractive the guaranteed debt payoff becomes, especially as interest rates on debt rise. In a 5–6% mortgage environment with uncertain market outlook, the case for accelerating mortgage payoff is genuinely stronger than conventional financial advice suggests.'),
+      h2('The FIRE-specific calculation'),
+      p('For FIRE planners, there is an additional factor: debt reduces flexibility. Carrying a large mortgage into early retirement means a fixed, non-negotiable monthly expense that does not flex with market conditions. A paid-off home reduces your minimum required spending and therefore reduces your FIRE number. The FIRE community is divided on mortgage payoff strategy — but many FIRE practitioners specifically target mortgage freedom before or at their FIRE date, even when the math slightly favors investing.'),
+      h2('Priority order for most people'),
+      ol([
+        'High-interest debt first (credit cards, payday loans above 10%): guaranteed double-digit return',
+        'Employer 401(k) match (100% immediate return): capture all matching funds',
+        'Moderate interest debt (7–10%): pay off aggressively alongside investing',
+        'Tax-advantaged accounts (HSA, Roth IRA, 401k): maximize before taxable investing',
+        'Lower interest debt (below 6%): invest while making normal payments',
+        'Taxable brokerage: once all of the above are handled',
+      ]),
+      h2('When the psychology overrides the math'),
+      p('The math says carry a 3.5% mortgage and invest the difference. The psychology might say: I cannot sleep with $400,000 of debt, I want to own my home outright, and the peace of mind is worth more to me than the expected return differential.'),
+      p('This is a legitimate choice. A guaranteed, debt-free home with a slightly smaller portfolio is not a failed FIRE plan. It is a different risk profile. The math tells you the opportunity cost; it does not tell you whether that cost is worth paying for the psychological benefit. Only you can make that judgment.'),
+      p('The dangerous version is not making a deliberate choice but defaulting to debt payoff because it "feels right" without understanding that you are giving up compounding returns. Make the choice with open eyes: know the opportunity cost, weigh the psychological benefit, and decide.'),
+    ],
+  },
+  {
+    slug: 'how-to-calculate-your-savings-rate',
+    title: 'How to Calculate Your Savings Rate the Right Way',
+    description: 'Savings rate is the most powerful variable in your FIRE timeline — but most people calculate it wrong. Here is the correct method, common mistakes, and how to use it to measure progress.',
+    category: 'Saving',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('Why savings rate matters more than income'),
+      p('Savings rate — the percentage of your income that you save and invest — is the single most powerful variable in your FIRE timeline. A 50% savings rate leads to financial independence in roughly 17 years regardless of whether your income is $50,000 or $150,000. Income determines the speed of absolute wealth accumulation, but savings rate determines the timeline to freedom.'),
+      p('Despite its importance, savings rate is one of the most inconsistently calculated metrics in personal finance. Different people and tools use different definitions, making comparisons misleading. Here is a precise definition and why it matters.'),
+      h2('The correct formula'),
+      p('Savings rate = (Amount saved and invested) / (Gross income or Take-home income) × 100'),
+      p('The numerator is straightforward: the total amount that goes into investment accounts, savings, or debt reduction in a given period. The denominator is where people disagree.'),
+      h3('Gross income savings rate'),
+      p('Divide total savings by gross (pre-tax) income. This is the most conservative definition and the one most commonly used in academic and financial planning contexts.'),
+      p('Example: Gross income $100,000. Total savings (401k + IRA + taxable investing): $30,000. Savings rate: 30%.'),
+      h3('Take-home (net) income savings rate'),
+      p('Divide total savings by take-home pay (after taxes). This is sometimes preferred because it focuses on what you actually control. 401k contributions taken from gross pay before you see them may feel more relevant when compared to take-home pay.'),
+      p('Example: Take-home income $75,000. Total savings: $30,000. Savings rate: 40%.'),
+      p('Neither definition is wrong — but be consistent and note which you are using when comparing with others.'),
+      h2('What counts as savings'),
+      h3('Definitely counts'),
+      ul([
+        '401(k) contributions (including pre-tax, Roth 401k, and employer match)',
+        'IRA contributions (traditional and Roth)',
+        'HSA contributions',
+        'Taxable brokerage account investments',
+        'Extra mortgage principal payments above required minimum',
+        'I-Bonds and other savings bonds',
+        'Cash savings held in high-yield savings or money market accounts with investing intent',
+      ]),
+      h3('Often debated'),
+      ul([
+        'Employer 401(k) match: many FIRE planners include this as part of savings (you earned it); some exclude it (you did not save it from income)',
+        'Mortgage principal: some include it as forced savings (you are building equity); others exclude it because the home is not a liquid investment',
+        'Student loan overpayments: counts as debt payoff / guaranteed return; include if you are tracking this as part of your FIRE savings effort',
+      ]),
+      h3('Does not count'),
+      ul([
+        'Regular living expenses',
+        'Taxes (federal, state, payroll)',
+        'Health insurance premiums',
+        'Charitable giving (unless deliberately part of the plan)',
+      ]),
+      h2('Common calculation mistakes'),
+      ul([
+        'Counting retirement contributions but forgetting taxable investing: if you contribute $23,000 to your 401k but also invest $10,000/month in a brokerage, all of it counts',
+        'Ignoring the employer match: if your employer contributes $5,000/year to your 401k, that is $5,000 of additional savings toward your FIRE number',
+        'Using irregular income inconsistently: annual bonuses should be included in both income and savings when received; do not include the income without the savings or vice versa',
+        'Measuring monthly when spending is annual: large irregular expenses (car insurance, annual subscriptions, property tax) should be amortized into monthly tracking',
+      ]),
+      h2('A simple tracking method'),
+      p('Track three numbers monthly:'),
+      ul([
+        'Total income received (gross or take-home — pick one and stay consistent)',
+        'Total invested/saved (sum of all accounts that received new money)',
+        'Savings rate = invested / income',
+      ]),
+      p('A 12-month rolling average smooths out irregular income and expense months. It gives a more accurate picture of your real savings rate than any individual month.'),
+      h2('Using savings rate to project your FIRE timeline'),
+      p('Once you know your savings rate, you can estimate your FIRE timeline. The rule of thumb (assuming 7% real return and 4% withdrawal rate):'),
+      ul([
+        '10% savings rate: ~43 years to FIRE',
+        '20% savings rate: ~32 years',
+        '30% savings rate: ~25 years',
+        '40% savings rate: ~20 years',
+        '50% savings rate: ~17 years',
+        '60% savings rate: ~13 years',
+        '70% savings rate: ~9 years',
+        '80% savings rate: ~6 years',
+      ]),
+      p('These timelines assume you are starting from zero. If you already have savings, your timeline shortens. Run the UntilFire calculator with your actual savings rate and current portfolio to get a personalized projection rather than relying on the table alone.'),
+    ],
+  },
+  {
+    slug: 'stock-options-rsus-and-fire',
+    title: 'Stock Options, RSUs, and FIRE: How Equity Compensation Changes the Math',
+    description: 'Equity compensation can dramatically accelerate a FIRE timeline — or create concentration risk that blows it up. Here is how RSUs, ISOs, and NQSOs work and how to handle them on the path to financial independence.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('Why equity comp matters for FIRE'),
+      p('For employees at public companies, startups, and fast-growing private companies, equity compensation — stock options and restricted stock units (RSUs) — can represent a significant portion of total compensation and a major FIRE accelerator. A $150,000 salary with $80,000/year in RSU grants is really $230,000 in total compensation, with the equity portion having the potential to compound in value before vesting.'),
+      p('But equity comp introduces complexity that cash income does not: vesting schedules, tax treatment that differs by instrument type, concentration risk in a single stock, and the psychological difficulty of selling shares of your own employer. Handled well, equity comp can cut years off a FIRE timeline. Handled poorly, it can concentrate your savings into a single stock that underperforms or collapses.'),
+      h2('RSUs: the most common form in public companies'),
+      p('Restricted Stock Units (RSUs) are grants of company shares that vest on a schedule — typically over 4 years with a 1-year cliff. When an RSU vests, you receive shares of company stock. The value of those shares at vesting is taxed as ordinary income (added to your W-2), regardless of whether you sell them.'),
+      h3('Tax treatment of RSUs'),
+      ul([
+        'At vesting: FMV of shares treated as W-2 income; withheld at supplemental rate (22% federal for most employees, more for high earners)',
+        'If you hold after vesting: additional gain or loss is taxed as capital gains (long-term if held >1 year)',
+        'Employers typically withhold a portion of shares to cover taxes (sell-to-cover), leaving you with fewer shares than the gross grant',
+      ]),
+      h3('The FIRE-optimal approach to RSUs'),
+      p('For most FIRE seekers, the correct approach to RSUs at vesting is to sell immediately and diversify. The reasoning:'),
+      ul([
+        'Your employment income already depends on your employer — your savings should not too',
+        'Holding creates concentrated risk: if the company underperforms, both your income and savings decline simultaneously',
+        'The tax benefit of holding (converting to long-term capital gains) is typically small compared to the concentration risk taken',
+        'Sell at vesting → invest in total market index fund → continue building diversified portfolio',
+      ]),
+      p('The exception: if you have strong conviction in your company\'s prospects and it represents a small percentage of your total net worth (under 10%), holding a portion can make sense. Above 10%, concentration risk is generally too high.'),
+      h2('Stock options: ISOs and NQSOs'),
+      p('Stock options give you the right to buy company shares at a fixed price (the strike or exercise price) for a set period. Two types:'),
+      h3('Non-Qualified Stock Options (NQSOs)'),
+      p('The most common type. At exercise, the difference between the fair market value and the strike price (the "spread") is taxed as ordinary income. If you exercise an NQSO with a $10 strike when the stock is worth $50, you owe ordinary income tax on $40 per share. This works the same as RSUs: spread is W-2 income, post-exercise appreciation is capital gains.'),
+      h3('Incentive Stock Options (ISOs)'),
+      p('ISOs have more favorable tax treatment but more complexity. The spread at exercise is not taxed for regular income tax purposes — but it is an Alternative Minimum Tax (AMT) preference item. If the stock subsequently falls, you can have a large AMT liability on gains you never realized.'),
+      ul([
+        'Exercise and hold: potentially no regular income tax, but AMT risk if the stock falls',
+        'Exercise and sell same year (disqualifying disposition): spread taxed as ordinary income — same as NQSO',
+        'Exercise, hold 1+ year, sell 2+ years after grant: all gain taxed as long-term capital gain — most favorable treatment but requires holding',
+      ]),
+      p('ISO strategy requires careful modeling, especially in high-value situations. The AMT risk of exercising ISOs and holding through a stock decline is real and has damaged many employees in tech downturns. Consult a tax professional before exercising and holding significant ISO positions.'),
+      h2('Private company equity'),
+      p('Options in private companies (startups) add additional complexity: illiquidity (you cannot sell until IPO or acquisition), 409A valuations that may not reflect true market value, and expiration windows if you leave the company. The 90-day exercise window on departure is the most common pitfall: you must decide whether to exercise (and pay the tax and exercise cost) within 90 days of leaving, or lose the options.'),
+      p('Many employees in late-stage startups with significant option value negotiate extended exercise windows (3–10 years) when leaving. This is increasingly standard and worth negotiating if you are leaving a company with valuable unexercised options.'),
+      h2('How to incorporate equity comp in a FIRE plan'),
+      ul([
+        'Do not count unvested equity as part of your FIRE number: it may not vest, the company may not succeed, the stock may fall',
+        'As each tranche vests, sell and diversify: treat vesting dates as income events, not investment decisions',
+        'Model your FIRE timeline with and without equity comp: the baseline (salary only) shows your fallback position; equity adds optionality',
+        'Track the after-tax value: a $10,000 RSU grant that vests might deliver $7,000–$8,000 after withholding — model net, not gross',
+        'If equity represents more than 20% of your net worth, create a systematic diversification plan',
+      ]),
+      h2('The concentration risk trap'),
+      p('The most common equity comp mistake among FIRE seekers: accumulating a large position in a single company stock because it has performed well, and using paper gains to project a FIRE date that depends on the stock continuing to rise. Enron, WorldCom, and thousands of individual companies demonstrate that no company is too successful to fail catastrophically. A single-stock concentration above 10–15% of net worth is the most common way equity comp destroys rather than creates FIRE wealth.'),
+      p('The antidote: commit to a systematic sell-and-diversify policy on every vesting date, regardless of your conviction in the company. Capturing the gains in an index fund locks in the FIRE benefit; holding in a single stock is a bet on future performance you cannot control.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +936,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'debt-payoff-vs-investing-the-math-and-psychology': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-debt-vs-invest', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate',
+      label: 'Calculate Your Savings Rate',
+      source: 'learn-debt-payoff-vs-investing',
+    },
+  },
+  'how-to-calculate-your-savings-rate': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-savings-rate-calc', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate',
+      label: 'Calculate Your Savings Rate',
+      source: 'learn-how-to-calculate-savings-rate',
+    },
+  },
+  'stock-options-rsus-and-fire': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/?source=learn-equity-comp', label: 'FIRE Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-equity-comp',
+      label: 'Recalculate With Equity Income',
+      source: 'learn-stock-options-rsus',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +990,8 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'debt-payoff-vs-investing-the-math-and-psychology',
+      'how-to-calculate-your-savings-rate',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -789,6 +1016,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'stock-options-rsus-and-fire',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
