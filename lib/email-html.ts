@@ -232,3 +232,33 @@ export function buildRetentionEmail(): string {
     hero + checkin + building
   );
 }
+
+// ─── Admin broadcast email ─────────────────────────────────────────────────
+// Sent from the admin page's email composer to a chosen user segment.
+// Unlike the lifecycle emails above, this is a marketing broadcast, so it
+// always carries a one-click unsubscribe link.
+
+export function buildAdminAnnouncementEmail({
+  heading,
+  bodyHtml,
+  unsubscribeUrl,
+}: {
+  heading: string;
+  bodyHtml: string;
+  unsubscribeUrl: string;
+}): string {
+  const hero = heroCard("Update", heading, "A quick note from the UntilFire team.");
+
+  const content = sectionCard(`
+    <div style="font-size:14px;color:#374151;line-height:1.75">${bodyHtml}</div>
+    <p style="margin:24px 0 0;font-size:14px;color:#6B7280;line-height:1.7;border-top:1px solid #F0F4F1;padding-top:20px">
+      <span style="font-weight:700;color:#003527">&#8212; John, founder of UntilFire</span>
+    </p>
+    <p style="margin:20px 0 0;font-size:11px;color:#9CA3AF;line-height:1.6">
+      You're receiving this because you have an UntilFire account.
+      <a href="${unsubscribeUrl}" style="color:#9CA3AF;text-decoration:underline">Unsubscribe from these emails</a>.
+    </p>
+  `);
+
+  return base(heading, hero + content);
+}

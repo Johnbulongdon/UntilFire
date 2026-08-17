@@ -2,6 +2,11 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-08-16
+
+### Removed
+- Monte Carlo "Confidence Check" page (`FIRE Calculator → Simulate`) — the success-probability copy overclaimed 10,000 simulations while the code ran 1,000, and "before your target age" was actually a flat 40-year horizon from today regardless of the user's real age. Removed rather than patched pending a redesign that ties it correctly into the plan's real freedom date. `MonteCarloCard`, `SimulationsTab`, and `lib/fire/monte-carlo.ts` deleted.
+
 ## [Unreleased] - 2026-07-10
 
 ### Added

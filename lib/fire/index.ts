@@ -24,9 +24,6 @@ import { calcFIRE } from './strategies/traditional';
 
 export { calcTakeHome, getLocale, takeHomePay } from './tax';
 
-export { monteCarloFIRE } from './monte-carlo';
-export type { MonteCarloResult } from './monte-carlo';
-
 export {
   ensureDefaultScenario,
   loadDefaultScenario,

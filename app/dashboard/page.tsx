@@ -22,7 +22,7 @@ import ProfileTab from "./ProfileTab";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
-import { monteCarloFIRE, calcFIRE } from "@/lib/fire";
+import { calcFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
@@ -440,162 +440,6 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
       <span style={{ fontSize: 14 }}>{icon}</span>
       <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 11, color, letterSpacing: "1px", textTransform: "uppercase" }}>{text}</span>
-    </div>
-  );
-}
-
-// ─── Monte Carlo Probability Card ─────────────────────────────────────────────
-function MonteCarloCard({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, displayCurrency, displayRates, onOpenBudgets, onOpenProfile }: {
-  income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number;
-  displayCurrency: string; displayRates: Record<string, number>;
-  onOpenBudgets?: () => void; onOpenProfile?: () => void;
-}) {
-  const [extraSavings, setExtraSavings] = useState(0);
-  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
-
-  const monthlyExpenses = Object.entries(expenses)
-    .filter(([k]) => !k.startsWith("_"))
-    .reduce((s, [, v]) => s + (v || 0), 0);
-
-  const annualExpenses = monthlyExpenses * 12;
-  const fireTarget     = annualExpenses / withdrawalRate;
-  const annualSavings  = income * 12 - annualExpenses;
-  const investable     = k401 + rothIRA + taxable + cashSavings;
-
-  const base = useMemo(() => {
-    if (fireTarget <= 0 || income <= 0) return null;
-    return monteCarloFIRE({ initialInvestable: investable, annualSavings, fireTarget, meanReturn: growthRate });
-  }, [investable, annualSavings, fireTarget, growthRate, income]);
-
-  const delta = useMemo(() => {
-    if (!base || extraSavings === 0) return null;
-    return monteCarloFIRE({
-      initialInvestable: investable,
-      annualSavings: annualSavings + extraSavings * 12,
-      fireTarget,
-      meanReturn: growthRate,
-    });
-  }, [base, investable, annualSavings, fireTarget, growthRate, extraSavings]);
-
-  if (!base) {
-    return (
-      <div className="uf-card" style={{ padding: "28px 32px", textAlign: "center" }}>
-        <div style={{ fontSize: 30, marginBottom: 10 }}>🎲</div>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#064E3B", margin: "0 0 8px", fontFamily: "Manrope, sans-serif" }}>
-          Add your monthly basics first
-        </h3>
-        <p style={{ color: "#64748B", fontSize: 14, margin: "0 auto 18px", lineHeight: 1.6, maxWidth: 460 }}>
-          Monte Carlo needs your income and monthly expenses before it can estimate your FIRE success probability. Add those in <strong>Cashflow → Budgets</strong>, then keep your FIRE age and goal settings in <strong>Profile</strong>.
-        </p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
-          <button onClick={onOpenBudgets} style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-            Add budget basics →
-          </button>
-          <button onClick={onOpenProfile} style={{ background: "#F0FDF4", color: "#047857", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-            Open Profile setup →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const result     = delta ?? base;
-  const yearDelta  = delta ? Math.max(0, base.p50Years - delta.p50Years) : 0;
-  const maxCount   = Math.max(...result.histogram.map(h => h.count), 1);
-  const scoreColor = result.probability >= 80 ? "#059669" : result.probability >= 60 ? "#065F46" : result.probability >= 40 ? "#D97706" : "#DC2626";
-  const scoreLabel = result.probability >= 80 ? "HIGHLY LIKELY" : result.probability >= 60 ? "LIKELY" : result.probability >= 40 ? "POSSIBLE" : "UNLIKELY";
-  const pctYr      = (y: number) => y > 50 ? "50+ yr" : `${y} yr`;
-
-  return (
-    <div className="uf-card" style={{ padding: 0, overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr" }}>
-
-        {/* Score */}
-        <div style={{ padding: "28px 28px 24px", borderRight: "1px solid #E2E8F0" }}>
-          <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#64748B", marginBottom: 4, fontWeight: 700 }}>
-            Success Probability
-          </div>
-          <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 14, lineHeight: 1.5 }}>
-            Chance of reaching your FIRE number before your target age, based on 10,000 randomised market simulations.
-          </div>
-          <div style={{ fontSize: 60, fontWeight: 800, color: scoreColor, fontFamily: "Manrope, sans-serif", letterSpacing: "-3px", lineHeight: 1, marginBottom: 4 }}>
-            {result.probability}%
-          </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: scoreColor, letterSpacing: "0.8px", marginBottom: 24 }}>{scoreLabel}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-            {([
-              { label: "Best case",  years: result.p10Years, color: "#059669" },
-              { label: "Median",     years: result.p50Years, color: "#065F46" },
-              { label: "Worst case", years: result.p90Years, color: "#94A3B8" },
-            ] as const).map(row => (
-              <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, color: "#64748B" }}>{row.label}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: row.color, background: `${row.color}18`, borderRadius: 20, padding: "3px 10px", fontFamily: "Manrope, sans-serif" }}>
-                  {pctYr(row.years)}
-                </span>
-              </div>
-            ))}
-          </div>
-          <p style={{ fontSize: 11, color: "#94A3B8", margin: 0, lineHeight: 1.5 }}>1,000 simulations · σ=12% annual returns</p>
-        </div>
-
-        {/* Histogram */}
-        <div style={{ padding: "28px 28px 24px" }}>
-          <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#64748B", marginBottom: 12, fontWeight: 700 }}>Distribution</div>
-          <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
-            {([["#059669", "Within 40 yr"], ["#D97706", "Beyond 40 yr"]] as const).map(([c, l]) => (
-              <div key={l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
-                <span style={{ fontSize: 11, color: "#64748B", fontFamily: "Manrope, sans-serif" }}>{l}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            {result.histogram.map(h => (
-              <div key={h.bucket} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Manrope, sans-serif", width: 36, flexShrink: 0, textAlign: "right" }}>{h.bucket}</span>
-                <div style={{ flex: 1, height: 14, background: "#F1F5F9", borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${(h.count / maxCount) * 100}%`, background: h.within40 ? "#059669" : "#D97706", borderRadius: 3, transition: "width 0.4s" }} />
-                </div>
-                <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "Manrope, sans-serif", width: 26, flexShrink: 0, textAlign: "right" }}>
-                  {Math.round((h.count / result.totalRuns) * 100)}%
-                </span>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 16, marginTop: 14 }}>
-            {([
-              { label: "p10", val: result.p10Years, color: "#059669" },
-              { label: "p50", val: result.p50Years, color: "#065F46" },
-              { label: "p90", val: result.p90Years, color: "#94A3B8" },
-            ] as const).map(m => (
-              <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", color: m.color, textDecoration: "underline dotted" }}>{m.label}</span>
-                <span style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", color: "#94A3B8", marginLeft: 2 }}>{pctYr(m.val)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* What-if slider */}
-      <div style={{ borderTop: "1px solid #E2E8F0", padding: "16px 28px", display: "flex", alignItems: "center", gap: 16, background: "#F8FAFC", flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13, color: "#64748B", flexShrink: 0 }}>What if you saved</span>
-        <input type="range" min={0} max={2000} step={50} value={extraSavings}
-          onChange={e => setExtraSavings(Number(e.target.value))}
-          style={{ flex: 1, minWidth: 120, accentColor: "#064E3B" }} />
-        <span style={{ fontSize: 13, fontFamily: "Manrope, sans-serif", color: "#19181E", flexShrink: 0, minWidth: 90 }}>
-          +{fmtMoney(extraSavings)}/mo
-        </span>
-        {yearDelta > 0 ? (
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "#ECFDF5", borderRadius: 20, padding: "4px 12px", fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>
-            −{yearDelta} yr
-          </span>
-        ) : (
-          <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>drag to simulate</span>
-        )}
-      </div>
     </div>
   );
 }
@@ -3800,32 +3644,6 @@ function GoalsTab({ fireAge, setFireAge, onBack }: { fireAge: number; setFireAge
   );
 }
 
-// ─── Simulations Tab ──────────────────────────────────────────────────────────
-function SimulationsTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, growthRate, withdrawalRate, displayCurrency, displayRates, onBack, onOpenBudgets, onOpenProfile }: {
-  income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; cashSavings?: number; growthRate: number; withdrawalRate: number; displayCurrency: string; displayRates: Record<string, number>; onBack: () => void;
-  onOpenBudgets?: () => void; onOpenProfile?: () => void;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <button onClick={onBack} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#64748B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
-        ← Back to Calculator
-      </button>
-      <div>
-        <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 20, fontWeight: 700, color: "#19181E", margin: "0 0 4px" }}>Monte Carlo Simulation</h2>
-        <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>10,000 randomised market scenarios to estimate your probability of reaching FIRE.</p>
-      </div>
-      <MonteCarloCard
-        income={income} expenses={expenses}
-        k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
-        growthRate={growthRate} withdrawalRate={withdrawalRate}
-        displayCurrency={displayCurrency} displayRates={displayRates}
-        onOpenBudgets={onOpenBudgets} onOpenProfile={onOpenProfile}
-      />
-    </div>
-  );
-}
-
 // ─── Investment Simulations Tab ──────────────────────────────────────────────
 type SimHolding = { ticker: string; name: string; pct: number; ret: number; color: string };
 type GeoMix = { na: number; eu: number; ap: number; em: number };
@@ -4488,12 +4306,10 @@ function TaxProfileCard({
 function FireCalcMenuTab({
   fireAge,
   onOpenProfile,
-  onOpenSimulation,
   onOpenInvestSim,
 }: {
   fireAge: number;
   onOpenProfile: () => void;
-  onOpenSimulation: () => void;
   onOpenInvestSim: () => void;
 }) {
   const [fireTypeResult, setFireTypeResult] = useState<{ code: string; name: string } | null>(null);
@@ -4512,14 +4328,6 @@ function FireCalcMenuTab({
       meta: `Current age: ${fireAge}`,
       label: "Edit in Profile →",
       onClick: onOpenProfile,
-    },
-    {
-      icon: "🎲",
-      title: "Confidence Check",
-      desc: "Run 10,000 randomised market scenarios to see how resilient your freedom date is by your target age.",
-      meta: "Stress-test your plan",
-      label: "Check Confidence →",
-      onClick: onOpenSimulation,
     },
     {
       icon: "📈",
@@ -4731,7 +4539,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "budgets">("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
-  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "simulation" | "invest-sim">("menu");
+  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [upgradedBanner, setUpgradedBanner] = useState(false);
@@ -5640,7 +5448,6 @@ export default function Dashboard() {
                     <div className="uf-sidebar-sub-nav">
                       {([
                         { label: "Freedom Date", isActive: tab === "fire-calculator" && fireCalcSubTab === "menu",       onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                        { label: "Simulate",     isActive: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
                         { label: "Scenarios",    isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
                         { label: "Goals",        isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
                         { label: "Learn",        isActive: tab === "learning-hub",                                       onClick: () => openDashboardTab("learning-hub") },
@@ -5732,7 +5539,6 @@ export default function Dashboard() {
               <nav className="uf-section-switch uf-plan-section-switch" aria-label="Plan sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                  { label: "Simulate", active: tab === "fire-calculator" && fireCalcSubTab === "simulation", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("simulation"); } },
                   { label: "Scenarios", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
                   { label: "Goals", active: tab === "goals", onClick: () => openDashboardTab("goals") },
                   { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
@@ -5903,7 +5709,6 @@ export default function Dashboard() {
                     <FireCalcMenuTab
                       fireAge={fireAge}
                       onOpenProfile={() => setTab("profile")}
-                      onOpenSimulation={() => setFireCalcSubTab("simulation")}
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
                     <TaxProfileCard
@@ -5932,18 +5737,6 @@ export default function Dashboard() {
                   <GoalsTab
                     fireAge={fireAge} setFireAge={setFireAge}
                     onBack={() => setFireCalcSubTab("menu")}
-                  />
-                )}
-                {fireCalcSubTab === "simulation" && (
-                  <SimulationsTab
-                    income={income} expenses={expenses}
-                    k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
-                    growthRate={growthRate} withdrawalRate={withdrawalRate}
-                    displayCurrency={defaultCurrency}
-                    displayRates={rates}
-                    onBack={() => setFireCalcSubTab("menu")}
-                    onOpenBudgets={() => { setTab("cashflow"); setCashflowSubTab("budgets"); }}
-                    onOpenProfile={() => setTab("profile")}
                   />
                 )}
                 {fireCalcSubTab === "invest-sim" && (
