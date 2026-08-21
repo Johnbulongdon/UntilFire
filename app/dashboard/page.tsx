@@ -16,6 +16,7 @@ import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
+import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
@@ -4537,7 +4538,7 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
-  const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "budgets">("cashflow");
+  const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "expected" | "budgets">("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -5426,6 +5427,7 @@ export default function Dashboard() {
                             <div className="uf-sidebar-sub-sub-nav">
                               {([
                                 { key: "cashflow" as const, label: "Transactions" },
+                                { key: "expected" as const, label: "Expected"     },
                                 { key: "budgets" as const,  label: "Budget"       },
                               ]).map(ss => (
                                 <button
@@ -5617,7 +5619,7 @@ export default function Dashboard() {
               <div>
                 {/* Cashflow sub-tab nav */}
                 <div className="uf-cashflow-subtab-switch" style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
-                  {(["cashflow", "budgets"] as const).map(t => (
+                  {(["cashflow", "expected", "budgets"] as const).map(t => (
                     <button
                       key={t}
                       onClick={() => { setCashflowSubTab(t); }}
@@ -5629,13 +5631,14 @@ export default function Dashboard() {
                         borderBottom: `2px solid ${cashflowSubTab === t ? "#047857" : "transparent"}`,
                       }}
                     >
-                      {t === "cashflow" ? "Transactions" : "Budget"}
+                      {t === "cashflow" ? "Transactions" : t === "expected" ? "Expected" : "Budget"}
                     </button>
                   ))}
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "recurring" && <RecurringTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
+                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
                 )}
