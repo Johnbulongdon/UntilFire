@@ -9,6 +9,8 @@ import { isPro, supabase } from "@/lib/supabase";
 type PlaidItem = {
   id: string;
   institution_name: string;
+  institution_logo: string | null;
+  institution_color: string | null;
   last_synced_at: string | null;
 };
 
@@ -49,6 +51,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [syncResults, setSyncResults] = useState<Record<string, SyncResult>>({});
   const [error, setError] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -131,14 +134,16 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
         setError(data.error ?? "Failed to import transactions");
         return;
       }
-      const newItem: PlaidItem = {
-        id: data.item_id,
-        institution_name: data.institution_name,
-        last_synced_at: new Date().toISOString(),
-      };
       setItems((prev) => {
-        const exists = prev.find((it) => it.id === newItem.id);
-        return exists ? prev.map((it) => (it.id === newItem.id ? newItem : it)) : [...prev, newItem];
+        const existing = prev.find((it) => it.id === data.item_id);
+        const newItem: PlaidItem = {
+          id: data.item_id,
+          institution_name: data.institution_name,
+          institution_logo: existing?.institution_logo ?? null,
+          institution_color: existing?.institution_color ?? null,
+          last_synced_at: new Date().toISOString(),
+        };
+        return existing ? prev.map((it) => (it.id === newItem.id ? newItem : it)) : [...prev, newItem];
       });
       setSyncResults((prev) => ({
         ...prev,
@@ -212,6 +217,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
     });
     setDisconnectingId(null);
     setItems((prev) => prev.filter((it) => it.id !== itemId));
+    setSelectedItemId((cur) => (cur === itemId ? null : cur));
     setSyncResults((prev) => {
       const next = { ...prev };
       delete next[itemId];
@@ -323,74 +329,67 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
         </div>
       )}
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          background: "var(--uf-surface)",
-          border: "1px solid var(--uf-border)",
-          borderRadius: 12,
-          padding: "14px 18px",
-          marginBottom: items.length > 0 ? 10 : 0,
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: "#047857", letterSpacing: "0.08em" }}>
-            BANK
-          </span>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>
-              {!itemsLoaded
-                ? "Checking connected accounts"
-                : items.length === 0
-                  ? "Connect your bank account"
-                  : "Connected accounts"}
-            </div>
-            {showEmptyStateCard && (
-              <div style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}>
-                Auto-import transactions via Plaid
+      {items.length === 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            background: "var(--uf-surface)",
+            border: "1px solid var(--uf-border)",
+            borderRadius: 12,
+            padding: "14px 18px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#047857", letterSpacing: "0.08em" }}>
+              BANK
+            </span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>
+                {!itemsLoaded ? "Checking connected accounts" : "Connect your bank account"}
               </div>
-            )}
+              {showEmptyStateCard && (
+                <div style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}>
+                  Auto-import transactions via Plaid
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {importing ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              color: "#047857",
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            <span
+          {importing ? (
+            <div
               style={{
-                display: "inline-block",
-                width: 14,
-                height: 14,
-                border: "2px solid #D1FAE5",
-                borderTopColor: "#047857",
-                borderRadius: "50%",
-                animation: "plaid-spin 0.8s linear infinite",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                color: "#047857",
+                fontSize: 13,
+                fontWeight: 600,
               }}
-            />
-            Importing transactions...
-          </div>
-        ) : showEmptyStateCard ? null : atFreeLimit ? (
-          <button onClick={onUpgradeClick} style={btnStyle("primary")}>
-            Upgrade for more -&gt;
-          </button>
-        ) : (
-          <button onClick={handleConnectClick} disabled={loadingLink} style={btnStyle("primary")}>
-            {loadingLink ? "Opening..." : "+ Add account"}
-          </button>
-        )}
-      </div>
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 14,
+                  height: 14,
+                  border: "2px solid #D1FAE5",
+                  borderTopColor: "#047857",
+                  borderRadius: "50%",
+                  animation: "plaid-spin 0.8s linear infinite",
+                }}
+              />
+              Importing transactions...
+            </div>
+          ) : showEmptyStateCard ? null : (
+            <button onClick={handleConnectClick} disabled={loadingLink} style={btnStyle("primary")}>
+              {loadingLink ? "Opening..." : "+ Add account"}
+            </button>
+          )}
+        </div>
+      )}
 
       {showEmptyStateCard && (
         <div
@@ -492,87 +491,156 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
         </div>
       )}
 
-      {items.map((item) => {
-        const result = syncResults[item.id];
-        const isSyncing = syncingId === item.id;
-        const isDisconnecting = disconnectingId === item.id;
-        return (
-          <div
-            key={item.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              background: "var(--uf-card)",
-              border: "1px solid var(--uf-border)",
-              borderRadius: 10,
-              padding: "12px 16px",
-              marginBottom: 6,
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#064E3B" }}>{item.institution_name}</div>
-              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
-                Last synced: {fmtSynced(item.last_synced_at)}
-                {result && result.added > 0 && (
-                  <span style={{ color: "#059669", marginLeft: 8 }}>+{result.added} imported</span>
-                )}
-                {result && result.added === 0 && result.modified === 0 && result.removed === 0 && (
-                  <span style={{ color: "#94A3B8", marginLeft: 8 }}>up to date</span>
-                )}
-              </div>
+      {items.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {importing && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", fontSize: 13, fontWeight: 600 }}>
+              <span
+                style={{
+                  display: "inline-block", width: 14, height: 14,
+                  border: "2px solid #D1FAE5", borderTopColor: "#047857",
+                  borderRadius: "50%", animation: "plaid-spin 0.8s linear infinite",
+                }}
+              />
+              Importing transactions...
             </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              <button
-                onClick={() => handleSync(item.id)}
-                disabled={isSyncing || isDisconnecting}
-                style={btnStyle("ghost")}
-              >
-                {isSyncing ? "Syncing..." : "Sync now"}
-              </button>
-              <button
-                onClick={() => handleDisconnect(item.id, item.institution_name)}
-                disabled={isSyncing || isDisconnecting}
-                style={{ ...btnStyle("ghost"), color: "#DC2626", borderColor: "#FCA5A5" }}
-              >
-                {isDisconnecting ? "Removing..." : "Disconnect"}
-              </button>
-            </div>
-          </div>
-        );
-      })}
+          )}
 
-      {atFreeLimit && (
-        <div
-          style={{
-            fontSize: 12,
-            color: "#64748B",
-            marginTop: 6,
-            padding: "6px 12px",
-            background: "var(--uf-surface)",
-            borderRadius: 8,
-            border: "1px solid var(--uf-border)",
-          }}
-        >
-          Free plan | 1 bank included |{" "}
-          <button
-            onClick={onUpgradeClick}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#047857",
-              fontWeight: 700,
-              cursor: "pointer",
-              padding: 0,
-              fontSize: 12,
-              fontFamily: "inherit",
-            }}
-          >
-            Upgrade to Pro
-          </button>{" "}
-          for unlimited
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#047857", letterSpacing: "0.08em" }}>
+            CONNECTED BANKS
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {items.map((item) => {
+              const selected = selectedItemId === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setSelectedItemId(selected ? null : item.id)}
+                  style={{
+                    width: 92,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 6,
+                    background: selected ? "var(--uf-surface)" : "var(--uf-card)",
+                    border: selected ? "1.5px solid #047857" : "1px solid var(--uf-border)",
+                    borderRadius: 12,
+                    padding: "10px 8px",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    textAlign: "center",
+                  }}
+                >
+                  {item.institution_logo ? (
+                    <img
+                      src={item.institution_logo}
+                      alt=""
+                      width={36}
+                      height={36}
+                      style={{ borderRadius: 9, objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 36, height: 36, borderRadius: 9,
+                        background: item.institution_color || "#047857",
+                        color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                        fontWeight: 700, fontSize: 15, fontFamily: "Manrope, sans-serif",
+                      }}
+                    >
+                      {item.institution_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      fontSize: 11.5, fontWeight: 700, color: "var(--uf-text)",
+                      maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}
+                  >
+                    {item.institution_name}
+                  </div>
+                  <div style={{ fontSize: 10, color: "#94A3B8" }}>{fmtSynced(item.last_synced_at)}</div>
+                </button>
+              );
+            })}
+
+            <button
+              onClick={atFreeLimit ? onUpgradeClick : handleConnectClick}
+              disabled={!atFreeLimit && loadingLink}
+              style={{
+                width: 92,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+                background: "var(--uf-card)", border: "1.5px dashed var(--uf-border)", borderRadius: 12,
+                padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", color: "#047857",
+              }}
+            >
+              <div
+                style={{
+                  width: 36, height: 36, borderRadius: 9, border: "1.5px dashed #047857",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 300,
+                }}
+              >
+                +
+              </div>
+              <div style={{ fontSize: 11.5, fontWeight: 700 }}>
+                {atFreeLimit ? "Upgrade" : loadingLink ? "Opening…" : "Add bank"}
+              </div>
+            </button>
+          </div>
+
+          {selectedItemId && (() => {
+            const item = items.find((it) => it.id === selectedItemId);
+            if (!item) return null;
+            const result = syncResults[item.id];
+            const isSyncing = syncingId === item.id;
+            const isDisconnecting = disconnectingId === item.id;
+            return (
+              <div
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+                  background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 14px",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#064E3B" }}>{item.institution_name}</div>
+                  <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
+                    Last synced: {fmtSynced(item.last_synced_at)}
+                    {result && result.added > 0 && (
+                      <span style={{ color: "#059669", marginLeft: 8 }}>+{result.added} imported</span>
+                    )}
+                    {result && result.added === 0 && result.modified === 0 && result.removed === 0 && (
+                      <span style={{ color: "#94A3B8", marginLeft: 8 }}>up to date</span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button
+                    onClick={() => handleSync(item.id)}
+                    disabled={isSyncing || isDisconnecting}
+                    style={btnStyle("ghost")}
+                  >
+                    {isSyncing ? "Syncing..." : "Sync now"}
+                  </button>
+                  <button
+                    onClick={() => handleDisconnect(item.id, item.institution_name)}
+                    disabled={isSyncing || isDisconnecting}
+                    style={{ ...btnStyle("ghost"), color: "#DC2626", borderColor: "#FCA5A5" }}
+                  >
+                    {isDisconnecting ? "Removing..." : "Disconnect"}
+                  </button>
+                  <button
+                    onClick={() => setSelectedItemId(null)}
+                    style={{ ...btnStyle("ghost"), padding: "7px 10px" }}
+                    title="Close"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

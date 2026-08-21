@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { Transaction as PlaidTransaction } from "plaid";
-import { getPlaidClient, mapPlaidTx } from "@/lib/plaid";
+import { getInstitutionBranding, getPlaidClient, mapPlaidTx } from "@/lib/plaid";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -58,6 +58,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       hasMore = syncResp.data.has_more;
     }
 
+    const branding = body.institution_id
+      ? await getInstitutionBranding(body.institution_id)
+      : { logo: null, color: null };
+
     // Upsert plaid_items row (handles re-connect of same institution)
     const { data: itemRow, error: itemErr } = await admin
       .from("plaid_items")
@@ -68,6 +72,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           plaid_access_token: accessToken,
           institution_id: body.institution_id,
           institution_name: body.institution_name,
+          institution_logo: branding.logo,
+          institution_color: branding.color,
           cursor: cursor ?? null,
           last_synced_at: new Date().toISOString(),
         },

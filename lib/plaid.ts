@@ -1,4 +1,4 @@
-import { Configuration, PlaidApi, PlaidEnvironments, Transaction as PlaidTransaction } from "plaid";
+import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Transaction as PlaidTransaction } from "plaid";
 
 let _client: PlaidApi | null = null;
 
@@ -17,6 +17,30 @@ export function getPlaidClient(): PlaidApi {
     _client = new PlaidApi(config);
   }
   return _client;
+}
+
+// Fetches a bank's real logo (base64 152x152 PNG) and brand color from
+// Plaid's institutions API. Best-effort — not all institutions have one,
+// and the caller should treat a null result as "fall back to a monogram."
+export async function getInstitutionBranding(
+  institutionId: string,
+): Promise<{ logo: string | null; color: string | null }> {
+  try {
+    const plaid = getPlaidClient();
+    const resp = await plaid.institutionsGetById({
+      institution_id: institutionId,
+      country_codes: [CountryCode.Us],
+      options: { include_optional_metadata: true },
+    });
+    const institution = resp.data.institution;
+    const color = institution.primary_color
+      ? `#${institution.primary_color.replace(/^#/, "")}`
+      : null;
+    return { logo: institution.logo ?? null, color };
+  } catch (err) {
+    console.error("[plaid] getInstitutionBranding", institutionId, err);
+    return { logo: null, color: null };
+  }
 }
 
 // Plaid personal_finance_category.primary → UntilFire category
