@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import CsvImportModal from "./CsvImportModal";
+import PlaidConnect from "./PlaidConnect";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, Line } from "recharts";
 import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import {
@@ -1743,12 +1744,13 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick }: {
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
   preferredCurrencies?: string[];
   isPro?: boolean;
+  onUpgradeClick?: () => void;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2118,6 +2120,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: transparent; border-radius: 999px; padding: 0; align-items: center; z-index: 30; }
         }
       `}</style>
+
+      <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick} />
 
       {/* Sticky summary bar */}
       <div style={{
