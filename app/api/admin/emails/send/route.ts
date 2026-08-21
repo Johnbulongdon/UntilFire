@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { requireAdminUser } from "@/lib/admin-auth";
-import { buildAdminAnnouncementEmail } from "@/lib/email-html";
+import { buildAdminAnnouncementEmail, buildMonthlyUpdateEmail, type UpdateItem } from "@/lib/email-html";
 import { makeUnsubscribeToken } from "@/lib/unsubscribe-token";
 
 const SITE = "https://www.untilfire.com";
 type Segment = "all" | "free" | "pro";
+type Template = "announcement" | "monthly_update";
+
+function parseUpdateItems(raw: unknown): UpdateItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((it): it is { title: unknown; desc: unknown } => !!it && typeof it === "object")
+    .map((it) => ({
+      title: typeof it.title === "string" ? it.title.trim() : "",
+      desc: typeof it.desc === "string" ? it.desc.trim() : "",
+    }))
+    .filter((it) => it.title || it.desc);
+}
 
 // Sequential send with a small delay between calls to stay under Resend's
 // rate limit. Fine at UntilFire's current scale (dozens of users); if the
@@ -28,13 +40,33 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
+  const template: Template = body?.template === "monthly_update" ? "monthly_update" : "announcement";
   const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
-  const heading = typeof body?.heading === "string" ? body.heading.trim() : "";
-  const bodyHtml = typeof body?.bodyHtml === "string" ? body.bodyHtml.trim() : "";
   const segment: Segment = body?.segment === "free" || body?.segment === "pro" ? body.segment : "all";
 
-  if (!subject || !heading || !bodyHtml) {
-    return NextResponse.json({ error: "subject, heading, and bodyHtml are required" }, { status: 400 });
+  // Announcement fields
+  const heading = typeof body?.heading === "string" ? body.heading.trim() : "";
+  const bodyHtml = typeof body?.bodyHtml === "string" ? body.bodyHtml.trim() : "";
+
+  // Monthly update fields
+  const monthLabel = typeof body?.monthLabel === "string" ? body.monthLabel.trim() : "";
+  const intro = typeof body?.intro === "string" ? body.intro.trim() : "";
+  const newItems = parseUpdateItems(body?.newItems);
+  const fixItems = parseUpdateItems(body?.fixItems);
+  const ctaLabel = typeof body?.ctaLabel === "string" ? body.ctaLabel.trim() : "";
+  const ctaHref = typeof body?.ctaHref === "string" ? body.ctaHref.trim() : "";
+
+  if (!subject) {
+    return NextResponse.json({ error: "subject is required" }, { status: 400 });
+  }
+  if (template === "announcement" && (!heading || !bodyHtml)) {
+    return NextResponse.json({ error: "heading and bodyHtml are required" }, { status: 400 });
+  }
+  if (template === "monthly_update" && (!monthLabel || !intro || (!newItems.length && !fixItems.length))) {
+    return NextResponse.json(
+      { error: "monthLabel, intro, and at least one update item are required" },
+      { status: 400 }
+    );
   }
 
   const [{ data: usersPage, error: usersErr }, { data: profiles }, { data: subs }] = await Promise.all([
@@ -63,7 +95,18 @@ export async function POST(req: NextRequest) {
   for (const recipient of recipients) {
     const token = makeUnsubscribeToken(recipient.id);
     const unsubscribeUrl = `${SITE}/unsubscribe?u=${recipient.id}&t=${token}`;
-    const html = buildAdminAnnouncementEmail({ heading, bodyHtml, unsubscribeUrl });
+    const html =
+      template === "monthly_update"
+        ? buildMonthlyUpdateEmail({
+            monthLabel,
+            intro,
+            newItems,
+            fixItems,
+            ctaLabel: ctaLabel || undefined,
+            ctaHref: ctaHref || undefined,
+            unsubscribeUrl,
+          })
+        : buildAdminAnnouncementEmail({ heading, bodyHtml, unsubscribeUrl });
 
     try {
       const { error } = await resend.emails.send({

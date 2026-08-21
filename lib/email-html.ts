@@ -233,10 +233,26 @@ export function buildRetentionEmail(): string {
   );
 }
 
-// ─── Admin broadcast email ─────────────────────────────────────────────────
+// ─── Admin broadcast emails ─────────────────────────────────────────────────
 // Sent from the admin page's email composer to a chosen user segment.
-// Unlike the lifecycle emails above, this is a marketing broadcast, so it
-// always carries a one-click unsubscribe link.
+// Unlike the lifecycle emails above, these are marketing broadcasts, so they
+// always carry a one-click unsubscribe link.
+
+function founderSignoff(bordered = true): string {
+  const border = bordered ? "border-top:1px solid #F0F4F1;padding-top:20px" : "";
+  return `
+    <p style="margin:24px 0 0;font-size:14px;color:#6B7280;line-height:1.7;${border}">
+      <span style="font-weight:700;color:#003527">&#8212; John, founder of UntilFire</span>
+    </p>`;
+}
+
+function unsubscribeNote(unsubscribeUrl: string): string {
+  return `
+    <p style="margin:20px 0 0;font-size:11px;color:#9CA3AF;line-height:1.6">
+      You're receiving this because you have an UntilFire account.
+      <a href="${unsubscribeUrl}" style="color:#9CA3AF;text-decoration:underline">Unsubscribe from these emails</a>.
+    </p>`;
+}
 
 export function buildAdminAnnouncementEmail({
   heading,
@@ -251,14 +267,59 @@ export function buildAdminAnnouncementEmail({
 
   const content = sectionCard(`
     <div style="font-size:14px;color:#374151;line-height:1.75">${bodyHtml}</div>
-    <p style="margin:24px 0 0;font-size:14px;color:#6B7280;line-height:1.7;border-top:1px solid #F0F4F1;padding-top:20px">
-      <span style="font-weight:700;color:#003527">&#8212; John, founder of UntilFire</span>
-    </p>
-    <p style="margin:20px 0 0;font-size:11px;color:#9CA3AF;line-height:1.6">
-      You're receiving this because you have an UntilFire account.
-      <a href="${unsubscribeUrl}" style="color:#9CA3AF;text-decoration:underline">Unsubscribe from these emails</a>.
-    </p>
+    ${founderSignoff()}
+    ${unsubscribeNote(unsubscribeUrl)}
   `);
 
   return base(heading, hero + content);
+}
+
+// ─── Monthly update email ───────────────────────────────────────────────────
+// A reusable, structured template for recurring product-update emails —
+// mirrors the New/Fixed shape of CHANGELOG.md so each month is "fill in the
+// items," not "reformat from scratch."
+
+export interface UpdateItem {
+  title: string;
+  desc: string;
+}
+
+export function buildMonthlyUpdateEmail({
+  monthLabel,
+  intro,
+  newItems,
+  fixItems,
+  ctaLabel,
+  ctaHref,
+  unsubscribeUrl,
+}: {
+  monthLabel: string;
+  intro: string;
+  newItems: UpdateItem[];
+  fixItems: UpdateItem[];
+  ctaLabel?: string;
+  ctaHref?: string;
+  unsubscribeUrl: string;
+}): string {
+  const heading = `What's new in ${monthLabel}`;
+  const hero = heroCard("Monthly Update", heading, intro);
+
+  const itemList = (items: UpdateItem[]) => `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      ${items.map((it, i) => bulletRow(it.title, it.desc, i === items.length - 1)).join("")}
+    </table>`;
+
+  const newSection = newItems.length
+    ? sectionCard(`${sectionLabel("New this month")}${itemList(newItems)}`)
+    : "";
+
+  const fixSection = fixItems.length
+    ? sectionCard(`${sectionLabel("Fixed & improved")}${itemList(fixItems)}`)
+    : "";
+
+  const cta = ctaHref && ctaLabel ? ctaBlock(ctaHref, ctaLabel) : "";
+
+  const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
+
+  return base(heading, hero + newSection + fixSection + cta + footer);
 }
