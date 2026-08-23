@@ -512,27 +512,39 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             {items.map((item) => {
-              const selected = selectedItemId === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setSelectedItemId(selected ? null : item.id)}
-                  style={{
-                    width: 92,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 6,
-                    background: selected ? "var(--uf-surface)" : "var(--uf-card)",
-                    border: selected ? "1.5px solid #047857" : "1px solid var(--uf-border)",
-                    borderRadius: 12,
-                    padding: "10px 8px",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    textAlign: "center",
-                  }}
-                >
-                  {item.institution_logo ? (
+              const armed = selectedItemId === item.id;
+              const result = syncResults[item.id];
+              const isSyncing = syncingId === item.id;
+              const isDisconnecting = disconnectingId === item.id;
+
+              const metaText = isSyncing
+                ? "Syncing…"
+                : result && result.added > 0
+                  ? `+${result.added} imported`
+                  : result
+                    ? "up to date"
+                    : fmtSynced(item.last_synced_at);
+              const metaColor = isSyncing ? "#047857" : result && result.added > 0 ? "#059669" : "#94A3B8";
+
+              const tileBody = (
+                <>
+                  {armed ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleSync(item.id); }}
+                      disabled={isSyncing || isDisconnecting}
+                      title="Sync now"
+                      aria-label="Sync now"
+                      style={{
+                        width: 36, height: 36, borderRadius: 9, border: "none",
+                        background: "#047857", color: "#fff",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 16, cursor: isSyncing || isDisconnecting ? "default" : "pointer",
+                        animation: isSyncing ? "plaid-spin 0.8s linear infinite" : "none",
+                      }}
+                    >
+                      ⟳
+                    </button>
+                  ) : item.institution_logo ? (
                     <img
                       src={item.institution_logo}
                       alt=""
@@ -560,8 +572,56 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
                   >
                     {item.institution_name}
                   </div>
-                  <div style={{ fontSize: 10, color: "#94A3B8" }}>{fmtSynced(item.last_synced_at)}</div>
-                </button>
+                  <div style={{ fontSize: 10, color: metaColor, fontWeight: metaColor === "#94A3B8" ? 400 : 700 }}>
+                    {metaText}
+                  </div>
+                </>
+              );
+
+              if (!armed) {
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelectedItemId(item.id)}
+                    style={{
+                      width: 92,
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                      background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12,
+                      padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", textAlign: "center",
+                    }}
+                  >
+                    {tileBody}
+                  </button>
+                );
+              }
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedItemId(null)}
+                  style={{
+                    width: 92, position: "relative",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                    background: "var(--uf-surface)", border: "1.5px solid #047857", borderRadius: 12,
+                    padding: "10px 8px", cursor: "pointer", textAlign: "center",
+                  }}
+                >
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDisconnect(item.id, item.institution_name); }}
+                    disabled={isSyncing || isDisconnecting}
+                    title="Disconnect"
+                    aria-label={`Disconnect ${item.institution_name}`}
+                    style={{
+                      position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%",
+                      border: "1px solid var(--uf-border)", background: "#fff", color: "#DC2626",
+                      fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: isSyncing || isDisconnecting ? "default" : "pointer",
+                    }}
+                  >
+                    {isDisconnecting ? "…" : "✕"}
+                  </button>
+                  {tileBody}
+                </div>
               );
             })}
 
@@ -588,59 +648,6 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
               </div>
             </button>
           </div>
-
-          {selectedItemId && (() => {
-            const item = items.find((it) => it.id === selectedItemId);
-            if (!item) return null;
-            const result = syncResults[item.id];
-            const isSyncing = syncingId === item.id;
-            const isDisconnecting = disconnectingId === item.id;
-            return (
-              <div
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
-                  background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 14px",
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#064E3B" }}>{item.institution_name}</div>
-                  <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
-                    Last synced: {fmtSynced(item.last_synced_at)}
-                    {result && result.added > 0 && (
-                      <span style={{ color: "#059669", marginLeft: 8 }}>+{result.added} imported</span>
-                    )}
-                    {result && result.added === 0 && result.modified === 0 && result.removed === 0 && (
-                      <span style={{ color: "#94A3B8", marginLeft: 8 }}>up to date</span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <button
-                    onClick={() => handleSync(item.id)}
-                    disabled={isSyncing || isDisconnecting}
-                    style={btnStyle("ghost")}
-                  >
-                    {isSyncing ? "Syncing..." : "Sync now"}
-                  </button>
-                  <button
-                    onClick={() => handleDisconnect(item.id, item.institution_name)}
-                    disabled={isSyncing || isDisconnecting}
-                    style={{ ...btnStyle("ghost"), color: "#DC2626", borderColor: "#FCA5A5" }}
-                  >
-                    {isDisconnecting ? "Removing..." : "Disconnect"}
-                  </button>
-                  <button
-                    onClick={() => setSelectedItemId(null)}
-                    style={{ ...btnStyle("ghost"), padding: "7px 10px" }}
-                    title="Close"
-                    aria-label="Close"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
         </div>
       )}
     </div>
