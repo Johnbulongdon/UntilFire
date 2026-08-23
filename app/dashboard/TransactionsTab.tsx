@@ -311,18 +311,7 @@ function QuickAddForm({
   const showAiPill = !!draft.aiSuggestion && draft.aiSuggestion !== draft.category && !isIncome;
 
   return (
-    <div className="cf-quick-form" style={{
-      background: "var(--uf-card)",
-      border: "1px solid var(--uf-border)",
-      borderRadius: 12,
-      overflow: "hidden",
-      position: "sticky",
-      top: 24,
-      height: "calc(100vh - 48px)",
-      display: "flex",
-      flexDirection: "column",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-    }}>
+    <div className="cf-quick-form" style={{ display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <div style={{ padding: "14px 20px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--uf-border)" }}>
         <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.1px", textTransform: "uppercase", color: "#047857" }}>
@@ -338,7 +327,7 @@ function QuickAddForm({
       </div>
 
       {/* Body */}
-      <div className="cf-quick-form-body" style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1, minHeight: 0 }}>
+      <div className="cf-quick-form-body" style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "visible", flex: 1, minHeight: 0, paddingBottom: "calc(120px + env(safe-area-inset-bottom, 0px))" }}>
         {/* Type toggle */}
         <div style={{ display: "inline-flex", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3, alignSelf: "flex-start" }}>
           {(["expense", "income", "transfer"] as const).map((t) => (
@@ -844,7 +833,7 @@ function QuickAddForm({
       </div>
 
       {/* Footer */}
-      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", borderTop: "1px solid var(--uf-border)", background: "linear-gradient(180deg, transparent, var(--uf-card))", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid var(--uf-border)", background: "linear-gradient(180deg, rgba(250,251,252,0.92), var(--uf-card) 24%)", display: "flex", flexDirection: "column", gap: 10, position: "sticky", bottom: 0, zIndex: 2 }}>
         {!editing && (
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 12 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -889,35 +878,13 @@ function QuickAddForm({
         </button>
       </div>
 
-      {/* Mobile: shown via drawer */}
+      {/* Always shown via drawer — tighten the drawer sheet for mobile safe areas */}
       <style>{`
-        @media (max-width: 1024px) { .cf-form-pane { display: none; } }
-        .cf-form-pane { display: flex; flex-direction: column; }
         @media (max-width: 1024px) {
           .cf-mobile-drawer {
             max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px) !important;
             padding-bottom: env(safe-area-inset-bottom, 0px);
             z-index: 220 !important;
-          }
-          .cf-quick-form {
-            position: relative !important;
-            top: auto !important;
-            height: auto !important;
-            max-height: none !important;
-            border: none !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-          }
-          .cf-quick-form-body {
-            overflow-y: visible !important;
-            padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
-          }
-          .cf-quick-form-footer {
-            position: sticky;
-            bottom: 0;
-            z-index: 2;
-            padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
-            background: linear-gradient(180deg, rgba(250,251,252,0.92), var(--uf-card) 24%) !important;
           }
         }
       `}</style>
@@ -1424,7 +1391,7 @@ function Toast({
 // ─── Mobile components ────────────────────────────────────────────────────────
 function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => void }) {
   return (
-    <div style={{ display: "none" }} className="cf-mobile-bar">
+    <div className="cf-mobile-bar">
       <button
         onClick={onOpen}
         aria-label="Add transaction"
@@ -1461,7 +1428,9 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
           <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", cursor: "pointer" }} />
           <button onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "var(--uf-text-3)", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>{children}</div>
+        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>
+          <div style={{ maxWidth: 480, margin: "0 auto" }}>{children}</div>
+        </div>
       </div>
     </>
   );
@@ -2021,10 +1990,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       tags: [...(tx.tags || [])],
       aiSuggestion: null,
     });
-    // On mobile, open drawer
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1024px)").matches) {
-      setDrawerOpen(true);
-    }
+    setDrawerOpen(true);
   }, []);
 
   const handleCancelEdit = useCallback(() => {
@@ -2093,10 +2059,12 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   return (
     <>
       <style>{`
-        @media (max-width: 1024px) {
-          .cf-split { grid-template-columns: 1fr !important; }
-          .cf-form-col { display: none; }
-          .cf-mobile-bar { display: flex !important; position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: transparent; border-radius: 999px; padding: 0; align-items: center; z-index: 30; }
+        .cf-mobile-bar {
+          display: flex; position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+          left: 16px; right: 16px; background: transparent; border-radius: 999px; padding: 0; align-items: center; z-index: 30;
+        }
+        @media (min-width: 1025px) {
+          .cf-mobile-bar { left: 50%; right: auto; width: 100%; max-width: 340px; transform: translateX(-50%); bottom: 28px; }
         }
       `}</style>
 
@@ -2180,37 +2148,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         aiNudge={isPro && untaggedCount > 0 ? { untaggedCount, onClassify: handleAiClassify, isClassifying } : null}
       />
 
-      <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "stretch" }}>
-        <TransactionList
-          transactions={monthTxns}
-          editingId={editingId}
-          justAddedId={justAddedId}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onCategoryChange={handleCategoryChange}
-          rates={rates}
-          formatAmount={fmtDisplay}
-          catCustomizations={catCustomizations}
-          expenseCategories={allExpenseCats}
-        />
-        <div className="cf-form-col">
-          <QuickAddForm
-            draft={draft}
-            setDraft={setDraft}
-            onSave={handleSave}
-            editing={!!editingId}
-            onCancelEdit={handleCancelEdit}
-            existingTags={existingTags}
-            allExpenseCats={allExpenseCats}
-            allSubCats={allSubCats}
-            colorPalette={COLOR_PALETTE}
-            emojiPalette={EMOJI_PALETTE}
-            preferredCurrencies={preferredCurrencies}
-            onAddCategory={handleAddCategory}
-            onAddSubCategory={handleAddSubCategory}
-          />
-        </div>
-      </div>
+      <TransactionList
+        transactions={monthTxns}
+        editingId={editingId}
+        justAddedId={justAddedId}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onCategoryChange={handleCategoryChange}
+        rates={rates}
+        formatAmount={fmtDisplay}
+        catCustomizations={catCustomizations}
+        expenseCategories={allExpenseCats}
+      />
 
       <MobileBar
         onOpen={() => { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); setDrawerOpen(true); }}
