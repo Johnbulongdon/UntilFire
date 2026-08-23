@@ -1285,45 +1285,17 @@ function MonthlySummary({
   viewMonth,
   onSelectMonth,
   rates,
-  ratesFallback,
   formatAmount,
-  expenseCategories,
-  catCustomizations,
+  aiNudge,
 }: {
   transactions: Transaction[];
   viewMonth: string;
   onSelectMonth: (month: string) => void;
   rates: Record<string, number>;
-  ratesFallback: boolean;
   formatAmount: (value: number) => string;
-  expenseCategories: CustomCategory[];
-  catCustomizations: CatCustomizations;
+  aiNudge?: { untaggedCount: number; onClassify: () => void; isClassifying: boolean } | null;
 }) {
   const [chartOpen, setChartOpen] = useState(false);
-
-  const monthTxns = transactions.filter((t) => t.date.startsWith(viewMonth));
-  const currencies = [...new Set(monthTxns.map((t) => t.currency).filter(Boolean))];
-  const isMixed = currencies.length > 1;
-
-  const expenseTotal = monthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
-  const incomeTotal = monthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const net = incomeTotal - expenseTotal;
-  const byCat = expenseCategories.map((cat) => {
-    const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
-    const { color, emoji } = resolveDisplay(base, catCustomizations, cat.key);
-    return {
-      ...cat,
-      color,
-      emoji,
-      total: monthTxns.filter((t) => t.transaction_type === "expense" && t.category === cat.key).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
-    };
-  })
-    .filter((c) => c.total > 0)
-    .sort((a, b) => b.total - a.total);
-
-  const workTotal = monthTxns
-    .filter((t) => t.transaction_type === "expense" && t.tags?.includes("work"))
-    .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
 
   // MOM chart data — last 12 months with data
   const momData = useMemo(() => {
@@ -1346,12 +1318,15 @@ function MonthlySummary({
     });
   }, [transactions, rates]);
 
+  const showTrend = momData.length >= 2;
+  const showNudge = !!aiNudge && aiNudge.untaggedCount > 0;
+  if (!showTrend && !showNudge) return null;
+
   return (
     <div style={{ marginBottom: 20 }}>
-
-      {/* Monthly trend — collapsed by default, the sticky bar above already covers the headline numbers */}
-      {momData.length >= 2 && (
-        <div className="uf-card" style={{ marginBottom: 12, overflow: "hidden" }}>
+      {/* Overview: trend (collapsed by default) + AI Need/Want nudge, one card instead of several — headline numbers already live in the sticky bar above */}
+      <div className="uf-card" style={{ overflow: "hidden" }}>
+        {showTrend && (
           <button
             onClick={() => setChartOpen((v) => !v)}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "transparent", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}
@@ -1359,81 +1334,53 @@ function MonthlySummary({
             <span>📈 Monthly cashflow trend</span>
             <span style={{ transform: chartOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s", color: "var(--uf-text-3)" }}>▾</span>
           </button>
-          {chartOpen && (
-            <div style={{ padding: "0 20px 12px" }}>
-              <ResponsiveContainer width="100%" height={130}>
-                <ComposedChart data={momData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+        )}
+        {showTrend && chartOpen && (
+          <div style={{ padding: "0 20px 12px" }}>
+            <ResponsiveContainer width="100%" height={130}>
+              <ComposedChart data={momData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onClick={(e: any) => { if (e?.activePayload?.[0]) onSelectMonth(e.activePayload[0].payload.month); }}>
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--uf-text-3)", fontFamily: "inherit" }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <ChartTooltip
+                  formatter={(v, name) => [formatAmount(Number(v ?? 0)), name === "income" ? "Income" : name === "expense" ? "Spent" : "Net"] as [string, string]}
+                  contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
+                  cursor={{ fill: "rgba(100,116,139,0.07)" }}
+                />
+                <Bar dataKey="income" fill="#059669" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
+                <Bar dataKey="expense" fill="#f97316" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
+                <Line dataKey="net" type="monotone" stroke="#22d3a5" strokeWidth={2}
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onClick={(e: any) => { if (e?.activePayload?.[0]) onSelectMonth(e.activePayload[0].payload.month); }}>
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--uf-text-3)", fontFamily: "inherit" }} axisLine={false} tickLine={false} />
-                  <YAxis hide />
-                  <ChartTooltip
-                    formatter={(v, name) => [formatAmount(Number(v ?? 0)), name === "income" ? "Income" : name === "expense" ? "Spent" : "Net"] as [string, string]}
-                    contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
-                    cursor={{ fill: "rgba(100,116,139,0.07)" }}
-                  />
-                  <Bar dataKey="income" fill="#059669" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
-                  <Bar dataKey="expense" fill="#f97316" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
-                  <Line dataKey="net" type="monotone" stroke="#22d3a5" strokeWidth={2}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    dot={(props: any) => (
-                      <circle key={props.payload.month} cx={props.cx} cy={props.cy} r={props.payload.month === viewMonth ? 5 : 3}
-                        fill={props.payload.month === viewMonth ? "#22d3a5" : "var(--uf-card)"}
-                        stroke="#22d3a5" strokeWidth={2} />
-                    )} />
-                </ComposedChart>
-              </ResponsiveContainer>
-              <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-                {[{ color: "#059669", opacity: 0.7, label: "Income" }, { color: "#f97316", opacity: 0.7, label: "Spent" }, { color: "#22d3a5", opacity: 1, label: "Net", line: true }].map(({ color, opacity, label, line }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--uf-text-3)" }}>
-                    {line
-                      ? <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2" /><circle cx="8" cy="4" r="2.5" fill="white" stroke={color} strokeWidth="2" /></svg>
-                      : <span style={{ width: 10, height: 10, borderRadius: 2, background: color, opacity, display: "inline-block" }} />}
-                    {label}
-                  </div>
-                ))}
-              </div>
+                  dot={(props: any) => (
+                    <circle key={props.payload.month} cx={props.cx} cy={props.cy} r={props.payload.month === viewMonth ? 5 : 3}
+                      fill={props.payload.month === viewMonth ? "#22d3a5" : "var(--uf-card)"}
+                      stroke="#22d3a5" strokeWidth={2} />
+                  )} />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+              {[{ color: "#059669", opacity: 0.7, label: "Income" }, { color: "#f97316", opacity: 0.7, label: "Spent" }, { color: "#22d3a5", opacity: 1, label: "Net", line: true }].map(({ color, opacity, label, line }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--uf-text-3)" }}>
+                  {line
+                    ? <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2" /><circle cx="8" cy="4" r="2.5" fill="white" stroke={color} strokeWidth="2" /></svg>
+                    : <span style={{ width: 10, height: 10, borderRadius: 2, background: color, opacity, display: "inline-block" }} />}
+                  {label}
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Merged stat strip: donut + Saved + Work — Income/Spent/Rate already live in the sticky bar above */}
-      <div className="uf-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-        {byCat.length > 0 && (
-          <>
-            <div style={{ flexShrink: 0 }}>
-              <ResponsiveContainer width={64} height={64}>
-                <PieChart>
-                  <Pie data={byCat} cx="50%" cy="50%" innerRadius={19} outerRadius={30} paddingAngle={2} dataKey="total">
-                    {byCat.map((cat) => <Cell key={cat.key} fill={cat.color} />)}
-                  </Pie>
-                  <ChartTooltip
-                    formatter={(v) => [formatAmount(Number(v ?? 0)), ""]}
-                    contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div style={{ width: 1, alignSelf: "stretch", background: "var(--uf-border)" }} />
-          </>
+          </div>
         )}
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>Saved</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: net >= 0 ? "#047857" : "#DC2626", fontVariantNumeric: "tabular-nums" }}>{formatAmount(net)}</div>
-        </div>
-        {workTotal > 0 && (
-          <>
-            <div style={{ width: 1, alignSelf: "stretch", background: "var(--uf-border)" }} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>💼 Work</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#6366f1", fontVariantNumeric: "tabular-nums" }}>{formatAmount(workTotal)}</div>
-            </div>
-          </>
-        )}
-        {isMixed && (
-          <div style={{ marginLeft: "auto", fontSize: 11, color: ratesFallback ? "#D97706" : "var(--uf-text-3)" }}>
-            {ratesFallback ? "⚠ estimated rates (live fetch failed)" : "live rates"}
+        {showNudge && aiNudge && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderTop: showTrend ? "1px solid var(--uf-border)" : "none" }}>
+            <span style={{ fontSize: 12, color: "var(--uf-text-2)" }}>{aiNudge.untaggedCount} expense{aiNudge.untaggedCount !== 1 ? "s" : ""} not tagged Need/Want</span>
+            <button
+              onClick={aiNudge.onClassify}
+              disabled={aiNudge.isClassifying}
+              style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 700, cursor: aiNudge.isClassifying ? "not-allowed" : "pointer", opacity: aiNudge.isClassifying ? 0.6 : 1 }}
+            >
+              {aiNudge.isClassifying ? "Classifying…" : "✦ AI classify all"}
+            </button>
           </div>
         )}
       </div>
@@ -1873,6 +1820,38 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const stickyNet = incomeTotal - expenseTotal;
   const savingsRate = incomeTotal > 0 ? Math.round((stickyNet / incomeTotal) * 100) : null;
 
+  const byCat = useMemo(() => {
+    return allExpenseCats
+      .map((cat) => {
+        const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
+        const { color, emoji } = resolveDisplay(base, catCustomizations, cat.key);
+        return {
+          ...cat,
+          color,
+          emoji,
+          total: monthTxns.filter((t) => t.transaction_type === "expense" && t.category === cat.key).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
+        };
+      })
+      .filter((c) => c.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [monthTxns, allExpenseCats, catCustomizations, rates]);
+
+  const workTotal = useMemo(
+    () => monthTxns.filter((t) => t.transaction_type === "expense" && t.tags?.includes("work")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
+    [monthTxns, rates]
+  );
+
+  const isMixedCurrency = useMemo(
+    () => new Set(monthTxns.map((t) => t.currency).filter(Boolean)).size > 1,
+    [monthTxns]
+  );
+
+  const untaggedCount = useMemo(() => {
+    if (!isPro) return 0;
+    const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
+    return expenseTxns.filter((t) => !t.tags?.includes("need") && !t.tags?.includes("want")).length;
+  }, [isPro, monthTxns]);
+
   const existingTags = useMemo(
     () => [...new Set(transactions.flatMap((t) => t.tags || []))].sort(),
     [transactions]
@@ -2154,9 +2133,38 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
               <div style={{ fontSize: 15, fontWeight: 800, color: savingsRate >= 20 ? "#047857" : savingsRate >= 0 ? "var(--uf-text)" : "#DC2626", fontVariantNumeric: "tabular-nums" }}>{savingsRate}%</div>
             </div>
           )}
+          {byCat.length > 0 && (
+            <>
+              <div style={{ width: 1, alignSelf: "stretch", background: "var(--uf-border)" }} />
+              <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }} title="Spending by category">
+                <ResponsiveContainer width={32} height={32}>
+                  <PieChart>
+                    <Pie data={byCat} cx="50%" cy="50%" innerRadius={8} outerRadius={15} paddingAngle={2} dataKey="total">
+                      {byCat.map((cat) => <Cell key={cat.key} fill={cat.color} />)}
+                    </Pie>
+                    <ChartTooltip
+                      formatter={(v) => [fmtDisplay(Number(v ?? 0)), ""]}
+                      contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
+          {workTotal > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>💼 Work</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#6366f1", fontVariantNumeric: "tabular-nums" }}>{fmtDisplay(workTotal)}</div>
+            </div>
+          )}
         </div>
-        {/* Import CSV button */}
-        <div style={{ marginLeft: "auto" }}>
+        {/* Rates note + Import CSV */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
+          {isMixedCurrency && (
+            <span style={{ fontSize: 11, color: ratesFallback ? "#D97706" : "var(--uf-text-3)" }}>
+              {ratesFallback ? "⚠ estimated rates" : "live rates"}
+            </span>
+          )}
           <button onClick={() => setShowImport(true)} style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
             <span>↑</span> Import CSV
           </button>
@@ -2168,29 +2176,9 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         viewMonth={viewMonth}
         onSelectMonth={setViewMonth}
         rates={rates}
-        ratesFallback={ratesFallback}
         formatAmount={fmtDisplay}
-        expenseCategories={allExpenseCats}
-        catCustomizations={catCustomizations}
+        aiNudge={isPro && untaggedCount > 0 ? { untaggedCount, onClassify: handleAiClassify, isClassifying } : null}
       />
-
-      {isPro && (() => {
-        const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
-        const untaggedCount = expenseTxns.filter((t) => !t.tags?.includes("need") && !t.tags?.includes("want")).length;
-        if (!untaggedCount) return null;
-        return (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", marginBottom: 16, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10 }}>
-            <span style={{ fontSize: 12, color: "var(--uf-text-2)" }}>{untaggedCount} expense{untaggedCount !== 1 ? "s" : ""} not tagged Need/Want</span>
-            <button
-              onClick={handleAiClassify}
-              disabled={isClassifying}
-              style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 700, cursor: isClassifying ? "not-allowed" : "pointer", opacity: isClassifying ? 0.6 : 1 }}
-            >
-              {isClassifying ? "Classifying…" : "✦ AI classify all"}
-            </button>
-          </div>
-        );
-      })()}
 
       <div className="cf-split" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "stretch" }}>
         <TransactionList
