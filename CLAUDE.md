@@ -192,6 +192,26 @@ Use the narrowest verification that matches the change. For broad or risky chang
 - `docs/design/` — design docs synced from gstack sessions.
 - `AGENTS.md` — repository-wide agent workflow and publishing rules.
 
+## App Structure Rules
+
+The logged-in app has one grouping axis. Full detail in `docs/design/app-structure.md`.
+
+- **Money** — records what already happened. Cashflow (Transactions, Recurring, Expected, Categories, Budget), Net Worth, Debts, Insights.
+- **Plan** — models what might happen. Freedom Date, Scenarios, Goals, Expat FIRE, Learn.
+- **Home** — synthesises both. Read-only; Home never gets its own inputs.
+- **Profile** — account, not money. Lives in the user menu, not the sidebar.
+
+When placing a new feature:
+
+1. If it records something that already happened → Money.
+2. If it models something that hasn't happened yet → Plan.
+3. If it interprets the other two → Home.
+4. If it's about the account rather than the money → Profile.
+5. If it seems to fit two groups, it is two features. Split it.
+6. Every tab must be reachable from a nav array. One array per nav — never a hand-kept second copy, and add new tabs to the `valid` deep-link array too.
+
+Rule 6 is load-bearing: two hand-kept copies of the Cashflow sub-nav are how Categories and Recurring shipped unreachable.
+
 ## Onboarding and First-Session UX Rules
 
 - No surprise surveys, ratings, feedback boxes, paywalls, or bank prompts before value.

@@ -4498,16 +4498,27 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   },
   {
     key: "cashflow",
-    label: "Cashflow",
-    activeTabs: ["cashflow", "reports"],
+    label: "Money",
+    activeTabs: ["cashflow", "reports", "assets", "liabilities"],
     svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
   },
   {
     key: "fire-calculator",
     label: "Plan",
-    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub", "assets", "liabilities"],
+    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub"],
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
+];
+
+// Section switches for the two multi-tab groups. Grouped on one axis: Money holds
+// what already happened (facts you record), Plan holds what might happen
+// (hypotheses you test). Home synthesises both and owns no inputs of its own.
+// See docs/design/app-structure.md — adding a tab means adding it here, nowhere else.
+const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
+  { label: "Cashflow",  tab: "cashflow"    },
+  { label: "Net Worth", tab: "assets"      },
+  { label: "Debts",     tab: "liabilities" },
+  { label: "Insights",  tab: "reports"     },
 ];
 
 type CashflowSubTab = "cashflow" | "categories" | "recurring" | "expected" | "budgets";
@@ -4533,7 +4544,7 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
   },
   {
     key: "cashflow",
-    label: "Cashflow",
+    label: "Money",
     svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
   },
   {
@@ -4861,8 +4872,8 @@ export default function Dashboard() {
 
   const isMobilePrimaryActive = (key: MobilePrimaryKey) => {
     if (key === "home") return tab === "overview";
-    if (key === "cashflow") return tab === "cashflow" || tab === "reports";
-    if (key === "plan") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "learning-hub" || tab === "assets" || tab === "liabilities";
+    if (key === "cashflow") return MONEY_SECTIONS.some(s => s.tab === tab);
+    if (key === "plan") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "learning-hub";
     return tab === "profile";
   };
 
@@ -5422,21 +5433,18 @@ export default function Dashboard() {
                   </button>
                   {isActive && item.key === "cashflow" && (
                     <div className="uf-sidebar-sub-nav">
-                      {([
-                        { key: "cashflow",    label: "Cashflow"  },
-                        { key: "reports",     label: "Insights"  },
-                      ] as { key: TabKey; label: string }[]).map(sub => (
-                        <div key={sub.key}>
+                      {MONEY_SECTIONS.map(sub => (
+                        <div key={sub.tab}>
                           <button
-                            className={`uf-sidebar-sub-item ${tab === sub.key ? "active" : ""}`}
+                            className={`uf-sidebar-sub-item ${tab === sub.tab ? "active" : ""}`}
                             onClick={() => {
-                              openDashboardTab(sub.key);
-                              if (sub.key === "cashflow") setCashflowSubTab("cashflow");
+                              openDashboardTab(sub.tab);
+                              if (sub.tab === "cashflow") setCashflowSubTab("cashflow");
                             }}
                           >
                             {sub.label}
                           </button>
-                          {sub.key === "cashflow" && tab === "cashflow" && (
+                          {sub.tab === "cashflow" && tab === "cashflow" && (
                             <div className="uf-sidebar-sub-sub-nav">
                               {CASHFLOW_SUB_TABS.map(ss => (
                                 <button
@@ -5530,32 +5538,30 @@ export default function Dashboard() {
                 >×</button>
               </div>
             )}
-            {(tab === "cashflow" || tab === "reports") && (
-              <nav className="uf-section-switch uf-cashflow-section-switch" aria-label="Cashflow sections">
-                {([
-                  { label: "Cashflow", active: tab === "cashflow", onClick: () => { setCashflowSubTab("cashflow"); openDashboardTab("cashflow"); } },
-                  { label: "Insights", active: tab === "reports", onClick: () => openDashboardTab("reports") },
-                ]).map(item => (
+            {MONEY_SECTIONS.some(s => s.tab === tab) && (
+              <nav className="uf-section-switch uf-cashflow-section-switch" aria-label="Money sections">
+                {MONEY_SECTIONS.map(item => (
                   <button
                     key={item.label}
-                    className={`uf-section-button ${item.active ? "active" : ""}`}
-                    onClick={item.onClick}
+                    className={`uf-section-button ${tab === item.tab ? "active" : ""}`}
+                    onClick={() => {
+                      if (item.tab === "cashflow") setCashflowSubTab("cashflow");
+                      openDashboardTab(item.tab);
+                    }}
                   >
                     {item.label}
                   </button>
                 ))}
               </nav>
             )}
-            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire" || tab === "assets" || tab === "liabilities") && (
+            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire") && (
               <nav className="uf-section-switch uf-plan-section-switch" aria-label="Plan sections">
                 {([
                   { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
                   { label: "Scenarios", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
                   { label: "Goals", active: tab === "goals", onClick: () => openDashboardTab("goals") },
-                  { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
                   { label: "Expat FIRE", active: tab === "expat-fire", onClick: () => openDashboardTab("expat-fire") },
-                  { label: "Net Worth", active: tab === "assets", onClick: () => openDashboardTab("assets") },
-                  { label: "Debts", active: tab === "liabilities", onClick: () => openDashboardTab("liabilities") },
+                  { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
                 ]).map(item => (
                   <button
                     key={item.label}
