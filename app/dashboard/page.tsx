@@ -4510,6 +4510,19 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   },
 ];
 
+type CashflowSubTab = "cashflow" | "categories" | "recurring" | "expected" | "budgets";
+
+// Single source of truth for the Cashflow sub-nav — the sidebar sub-sub-nav and
+// the horizontal switcher both render from this. They used to be two hand-kept
+// arrays, which is how Categories and Recurring ended up rendered but unreachable.
+const CASHFLOW_SUB_TABS: { key: CashflowSubTab; label: string }[] = [
+  { key: "cashflow",   label: "Transactions" },
+  { key: "recurring",  label: "Recurring"    },
+  { key: "expected",   label: "Expected"     },
+  { key: "categories", label: "Categories"   },
+  { key: "budgets",    label: "Budget"       },
+];
+
 type MobilePrimaryKey = "home" | "cashflow" | "plan" | "profile";
 
 const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string }[] = [
@@ -4538,7 +4551,7 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
-  const [cashflowSubTab, setCashflowSubTab] = useState<"cashflow" | "categories" | "recurring" | "expected" | "budgets">("cashflow");
+  const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -4576,7 +4589,7 @@ export default function Dashboard() {
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
       "overview", "cashflow", "assets", "liabilities",
-      "fire-calculator", "expat-fire", "reports", "learning-hub", "profile",
+      "fire-calculator", "expat-fire", "goals", "reports", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
@@ -5425,11 +5438,7 @@ export default function Dashboard() {
                           </button>
                           {sub.key === "cashflow" && tab === "cashflow" && (
                             <div className="uf-sidebar-sub-sub-nav">
-                              {([
-                                { key: "cashflow" as const, label: "Transactions" },
-                                { key: "expected" as const, label: "Expected"     },
-                                { key: "budgets" as const,  label: "Budget"       },
-                              ]).map(ss => (
+                              {CASHFLOW_SUB_TABS.map(ss => (
                                 <button
                                   key={ss.key}
                                   className={`uf-sidebar-sub-sub-item ${cashflowSubTab === ss.key ? "active" : ""}`}
@@ -5618,20 +5627,23 @@ export default function Dashboard() {
             {tab === "cashflow" && (
               <div>
                 {/* Cashflow sub-tab nav */}
-                <div className="uf-cashflow-subtab-switch" style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28 }}>
-                  {(["cashflow", "expected", "budgets"] as const).map(t => (
+                <div
+                  className="uf-cashflow-subtab-switch"
+                  style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28, overflowX: "auto", scrollbarWidth: "none" }}
+                >
+                  {CASHFLOW_SUB_TABS.map(t => (
                     <button
-                      key={t}
-                      onClick={() => { setCashflowSubTab(t); }}
+                      key={t.key}
+                      onClick={() => { setCashflowSubTab(t.key); }}
                       style={{
                         background: "none", border: "none", padding: "0 0 14px",
                         fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                        letterSpacing: "-0.3px", marginBottom: -1,
-                        color: cashflowSubTab === t ? "#047857" : "#64748B",
-                        borderBottom: `2px solid ${cashflowSubTab === t ? "#047857" : "transparent"}`,
+                        letterSpacing: "-0.3px", marginBottom: -1, whiteSpace: "nowrap",
+                        color: cashflowSubTab === t.key ? "#047857" : "#64748B",
+                        borderBottom: `2px solid ${cashflowSubTab === t.key ? "#047857" : "transparent"}`,
                       }}
                     >
-                      {t === "cashflow" ? "Transactions" : t === "expected" ? "Expected" : "Budget"}
+                      {t.label}
                     </button>
                   ))}
                 </div>
