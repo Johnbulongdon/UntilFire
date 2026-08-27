@@ -4521,6 +4521,18 @@ const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
   { label: "Insights",  tab: "reports"     },
 ];
 
+// Plan's destinations. Two of them are sub-tab states of fire-calculator rather
+// than tabs of their own, hence the optional subTab. Feeds the sidebar sub-nav
+// and the mobile section switch — one array, per rule 6.
+type PlanSection = { label: string; tab: TabKey; subTab?: "menu" | "invest-sim" };
+const PLAN_SECTIONS: PlanSection[] = [
+  { label: "Freedom Date", tab: "fire-calculator", subTab: "menu"       },
+  { label: "Scenarios",    tab: "fire-calculator", subTab: "invest-sim" },
+  { label: "Goals",        tab: "goals"        },
+  { label: "Expat FIRE",   tab: "expat-fire"   },
+  { label: "Learn",        tab: "learning-hub" },
+];
+
 type CashflowSubTab = "cashflow" | "categories" | "recurring" | "expected" | "budgets";
 
 // Single source of truth for the Cashflow sub-nav — the sidebar sub-sub-nav and
@@ -5208,9 +5220,16 @@ export default function Dashboard() {
         .dark .uf-sidebar-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
         .dark .uf-sidebar-sub-item.active { color: var(--uf-green-700); }
         .dark .uf-sidebar-sub-item.active::before { background: var(--uf-green); }
-        @media(min-width: 901px) { .uf-money-section-switch { display: none !important; } }
-        @media(min-width: 901px) { .uf-cashflow-subtab-switch { display: none !important; } }
-        @media(min-width: 901px) { .uf-freedom-section-switch { display: none !important; } }
+        /* Desktop has the sidebar, which already carries all three nav levels —
+           the horizontal switches are the mobile equivalent and would just
+           duplicate it. These class names must match the ones in the JSX:
+           they had drifted to uf-money-/uf-freedom-section-switch, which are
+           rendered nowhere, so both bars were showing on desktop. */
+        @media(min-width: 901px) {
+          .uf-cashflow-section-switch,
+          .uf-plan-section-switch,
+          .uf-cashflow-subtab-switch { display: none !important; }
+        }
 
         .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: calc(100svh - 48px); min-height: 480px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 55%, #ffffff 0%, #eef2f7 75%); }
         .dark .expat-globe-wrap { background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
@@ -5442,19 +5461,16 @@ export default function Dashboard() {
                   )}
                   {isActive && item.key === "fire-calculator" && (
                     <div className="uf-sidebar-sub-nav">
-                      {([
-                        { label: "Freedom Date", isActive: tab === "fire-calculator" && fireCalcSubTab === "menu",       onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                        { label: "Scenarios",    isActive: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
-                        { label: "Goals",        isActive: tab === "goals",                                              onClick: () => openDashboardTab("goals") },
-                        { label: "Learn",        isActive: tab === "learning-hub",                                       onClick: () => openDashboardTab("learning-hub") },
-                        { label: "Expat FIRE",   isActive: tab === "expat-fire",                                         onClick: () => openDashboardTab("expat-fire") },
-                        { label: "Net Worth",    isActive: tab === "assets",                                             onClick: () => openDashboardTab("assets") },
-                        { label: "Debts",        isActive: tab === "liabilities",                                        onClick: () => openDashboardTab("liabilities") },
-                      ]).map(sub => (
+                      {PLAN_SECTIONS.map(sub => (
                         <button
                           key={sub.label}
-                          className={`uf-sidebar-sub-item ${sub.isActive ? "active" : ""}`}
-                          onClick={sub.onClick}
+                          className={`uf-sidebar-sub-item ${
+                            tab === sub.tab && (!sub.subTab || fireCalcSubTab === sub.subTab) ? "active" : ""
+                          }`}
+                          onClick={() => {
+                            if (sub.subTab) setFireCalcSubTab(sub.subTab);
+                            openDashboardTab(sub.tab);
+                          }}
                         >
                           {sub.label}
                         </button>
@@ -5531,19 +5547,18 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
-            {(tab === "fire-calculator" || tab === "goals" || tab === "learning-hub" || tab === "expat-fire") && (
+            {PLAN_SECTIONS.some(s => s.tab === tab) && (
               <nav className="uf-section-switch uf-plan-section-switch" aria-label="Plan sections">
-                {([
-                  { label: "Freedom Date", active: tab === "fire-calculator" && fireCalcSubTab === "menu", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("menu"); } },
-                  { label: "Scenarios", active: tab === "fire-calculator" && fireCalcSubTab === "invest-sim", onClick: () => { openDashboardTab("fire-calculator"); setFireCalcSubTab("invest-sim"); } },
-                  { label: "Goals", active: tab === "goals", onClick: () => openDashboardTab("goals") },
-                  { label: "Expat FIRE", active: tab === "expat-fire", onClick: () => openDashboardTab("expat-fire") },
-                  { label: "Learn", active: tab === "learning-hub", onClick: () => openDashboardTab("learning-hub") },
-                ]).map(item => (
+                {PLAN_SECTIONS.map(item => (
                   <button
                     key={item.label}
-                    className={`uf-section-button ${item.active ? "active" : ""}`}
-                    onClick={item.onClick}
+                    className={`uf-section-button ${
+                      tab === item.tab && (!item.subTab || fireCalcSubTab === item.subTab) ? "active" : ""
+                    }`}
+                    onClick={() => {
+                      if (item.subTab) setFireCalcSubTab(item.subTab);
+                      openDashboardTab(item.tab);
+                    }}
                   >
                     {item.label}
                   </button>
