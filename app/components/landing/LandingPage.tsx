@@ -59,6 +59,11 @@ const TRUST_LOGOS = [
 ];
 
 function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: number, markers: { location: [number, number]; size: number }[], startPhi: number) {
+  // WebGL can be unavailable (disabled hardware acceleration, some privacy
+  // extensions, older devices) or the cobe chunk can fail to load — cobe
+  // throws synchronously in createGlobe when it can't get a WebGL context.
+  // Without this the canvas just sits empty with nothing to explain why.
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
     let raf = 0;
@@ -66,23 +71,38 @@ function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size
     let globe: { update: (state: { phi: number }) => void; destroy: () => void } | null = null;
     let phi = startPhi;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // cobe doesn't throw when WebGL is unavailable — it checks internally and
+    // silently returns a no-op {destroy,update} pair, leaving the canvas
+    // blank with no signal. Check for a context ourselves first so a missing
+    // one is detectable.
+    const probe = canvasRef.current;
+    const hasWebGL = !!probe && !!(probe.getContext("webgl2") || probe.getContext("webgl"));
+    if (!hasWebGL) {
+      setFailed(true);
+      return;
+    }
     import("cobe").then(({ default: createGlobe }) => {
       if (cancelled || !canvasRef.current) return;
-      globe = createGlobe(canvasRef.current, {
-        devicePixelRatio: 2,
-        width: size * 2,
-        height: size * 2,
-        phi,
-        theta: 0.22,
-        dark: 1,
-        diffuse: 1.2,
-        mapSamples: 24000,
-        mapBrightness: 8,
-        baseColor: [0.18, 0.5, 0.42],
-        markerColor: [0.38, 0.98, 0.89],
-        glowColor: [0.1, 0.4, 0.34],
-        markers,
-      });
+      try {
+        globe = createGlobe(canvasRef.current, {
+          devicePixelRatio: 2,
+          width: size * 2,
+          height: size * 2,
+          phi,
+          theta: 0.22,
+          dark: 1,
+          diffuse: 1.2,
+          mapSamples: 24000,
+          mapBrightness: 8,
+          baseColor: [0.18, 0.5, 0.42],
+          markerColor: [0.38, 0.98, 0.89],
+          glowColor: [0.1, 0.4, 0.34],
+          markers,
+        });
+      } catch {
+        setFailed(true);
+        return;
+      }
       if (!reduceMotion) {
         let onscreen = true;
         const spin = () => {
@@ -100,7 +120,7 @@ function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size
         });
         if (canvasRef.current) visObserver.observe(canvasRef.current);
       }
-    }).catch(() => {});
+    }).catch(() => setFailed(true));
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
@@ -109,6 +129,7 @@ function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  return failed;
 }
 
 /* ── Nav ─────────────────────────────────────────────────────────────── */
@@ -320,7 +341,7 @@ function CompoundGap7() {
 /* ── The world: globe + real city numbers ────────────────────────────── */
 function World7() {
   const globeRef = useRef<HTMLCanvasElement | null>(null);
-  useCobeGlobe(globeRef, 440, [
+  const globeFailed = useCobeGlobe(globeRef, 440, [
     { location: [18.79, 98.98], size: 0.07 },
     { location: [19.43, -99.13], size: 0.07 },
     { location: [38.72, -9.14], size: 0.07 },
@@ -350,7 +371,11 @@ function World7() {
         <h2 className="uf7-statement uf7-rv">Your second life comes with a <em>world</em>.</h2>
         <div className="uf7-globe-grid">
           <div className="uf7-globe-stage uf7-rv">
-            <canvas ref={globeRef} style={{ width: "100%", height: "100%" }} />
+            {globeFailed ? (
+              <div className="uf7-globe-fallback" aria-hidden />
+            ) : (
+              <canvas ref={globeRef} style={{ width: "100%", height: "100%" }} />
+            )}
           </div>
           <div className="uf7-rv">
             {rows.map((r) => (
@@ -1184,7 +1209,14 @@ const CSS7 = `
     -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
     mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
   }
-  .uf7-trust-track { display: flex; gap: 16px; align-items: center; width: max-content; animation: uf7trustScroll 30s linear infinite; }
+  .uf7-trust-track {
+    display: flex; gap: 16px; align-items: center; width: max-content;
+    animation: uf7trustScroll 30s linear infinite;
+    /* Promotes the track to its own compositing layer — Safari can fail to
+       repaint a masked ancestor (.uf7-trust-strip's mask-image) during a
+       pure-transform animation otherwise, so the logos appear frozen. */
+    will-change: transform;
+  }
   @media (prefers-reduced-motion: reduce) { .uf7-trust-track { animation: none; } }
   @keyframes uf7trustScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
   .uf7-trust-logo { border-radius: 8px; object-fit: cover; opacity: 0.75; flex-shrink: 0; filter: grayscale(0.15); }
@@ -1253,6 +1285,12 @@ const CSS7 = `
   }
   .uf7-globe-grid { margin-top: 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
   .uf7-globe-stage { position: relative; aspect-ratio: 1; width: min(440px, 100%); justify-self: center; }
+  .uf7-globe-fallback {
+    width: 100%; height: 100%; border-radius: 50%;
+    background: radial-gradient(circle at 38% 35%, rgba(53,201,174,0.22), transparent 62%), var(--uf-surface);
+    border: 1px solid rgba(53,201,174,0.35);
+    box-shadow: 0 0 60px rgba(53,201,174,0.18);
+  }
   .uf7-city-row { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: baseline; padding: 17px 0; border-top: 1px solid rgba(255,255,255,0.14); }
   .uf7-city-row:last-of-type { border-bottom: 1px solid rgba(255,255,255,0.14); }
   .uf7-city { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
