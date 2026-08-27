@@ -36,7 +36,7 @@ Last full audit: 2026-06-22
 
 ## Audit Snapshot
 
-On 2026-06-22, the Ahrefs Referring Domains report showed 175 domains and Domain Rating 0; the dashboard summary showed 160 referring domains. These counts are volatile. The report was dominated by automated SEO-spam domains, so the raw referring-domain count must not be used as the count of useful backlinks.
+On 2026-08-27, the user reported that authenticated Ahrefs Site Explorer shows `untilfire.com` at Domain Rating 28. This is the current user-provided baseline; DR and referring-domain counts are volatile and should be rechecked in Ahrefs after new links are crawled. The previous 2026-06-22 snapshot showed 175 referring domains and Domain Rating 0, with the report dominated by automated SEO-spam domains, so raw referring-domain counts must not be used as the count of useful backlinks.
 
 Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most high-DR-looking results were explicitly labeled SPAM by Ahrefs and had no traffic.
 
@@ -405,6 +405,7 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 
 | Date | Owner/session | Change |
 | --- | --- | --- |
+| 2026-08-27 | Codex backlink acquisition | User reported current authenticated Ahrefs Site Explorer value: `untilfire.com` Domain Rating 28. Recorded this as the working baseline before the next backlink batch; no claim is made that the pending directory submissions have affected DR yet. |
 | 2026-08-27 | Codex backlink acquisition | Rechecked pending acquisition status and fresh candidates. LaunchFree, ToolPromote, ToolFame, SaaSGrow, and SaaSRow still have no publicly verified UntilFire listing from the current checks. TheSaaSDir's free tier is available again; TheMicroSaaSDir is also free/no-account/badge-gated. No new email-required submission was sent while awaiting destination-specific approval. |
 | 2026-08-27 | Codex backlink acquisition | Submitted the free ToolPromote listing for UntilFire with receipt `TP-MTB83ANH-TPAS` and no paid upgrade. Added the SaaSLineup badge to the footer from latest pushed main commit `13090bb`; SaaSLineup verified the badge, accepted the free submission, published `https://saaslineup.com/product/untilfire/`, and the public outbound link was confirmed followable. Fresh ToolPromote, SaaSLineup, Launchory, OrbitArticles, and Personal Finance Tips opportunities were screened without duplicates. |
 | 2026-07-30 | Codex backlink acquisition | Verified the HiCyou badge is live on the production homepage after commit `f65db83`, then retried HiCyou auth/verification. Google OAuth still returned `please complete security verification`, so the HiCyou tab remains a handoff and no listing or dofollow backlink is counted yet. |
