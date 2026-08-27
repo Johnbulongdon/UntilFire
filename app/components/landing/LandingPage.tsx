@@ -484,7 +484,7 @@ function Closing7({ onStart }: { onStart: () => void }) {
 /* ── Footer ──────────────────────────────────────────────────────────── */
 function FooterSection() {
   return (
-    <footer style={{ background: "#030d0a", borderTop: "1px solid rgba(255,255,255,0.08)", padding: "48px 24px 32px" }}>
+    <footer style={{ background: "var(--uf-ground)", borderTop: "1px solid rgba(255,255,255,0.08)", padding: "48px 24px 32px" }}>
       <div style={{ maxWidth: 800, margin: "0 auto" }}>
         {/* Links */}
         <div style={{ display: "flex", justifyContent: "center", gap: 28, flexWrap: "wrap", marginBottom: 32 }}>
@@ -1097,7 +1097,7 @@ function FooterSection() {
 
 
 const CSS7 = `
-  .uf7-root { background: #04110c; color: #fff; overflow-x: hidden; }
+  .uf7-root { background: var(--uf-ground); color: #fff; overflow-x: hidden; }
   .uf7-root * { box-sizing: border-box; }
   .uf7-grain {
     position: fixed; inset: 0; pointer-events: none; z-index: 40;
@@ -1125,14 +1125,14 @@ const CSS7 = `
   .uf7-nav-links a { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.72); text-decoration: none; }
   .uf7-nav-cta {
     padding: 9px 18px; border-radius: 2px; border: none; cursor: pointer;
-    font-family: ${F}; font-size: 13px; font-weight: 700; color: #04110c; background: rgba(255,255,255,0.92);
+    font-family: ${F}; font-size: 13px; font-weight: 700; color: var(--uf-ground); background: rgba(255,255,255,0.92);
   }
 
   .uf7-hero {
     position: relative; min-height: 100vh; overflow: hidden; text-align: center;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
     padding: 150px 24px 220px;
-    background: radial-gradient(1100px 700px at 50% 118%, #0a2f22 0%, transparent 60%), #04110c;
+    background: radial-gradient(1100px 700px at 50% 118%, var(--uf-surface) 0%, transparent 60%), var(--uf-ground);
   }
   .uf7-hb1 { width: 820px; height: 660px; top: -240px; left: -180px; background: radial-gradient(circle at 40% 40%, rgba(34,211,165,0.58), transparent 65%); animation: uf7drift1 24s ease-in-out infinite; }
   .uf7-hb2 { width: 760px; height: 660px; top: -160px; right: -240px; background: radial-gradient(circle at 55% 45%, rgba(79,70,229,0.40), transparent 65%); animation: uf7drift2 30s ease-in-out infinite; }
@@ -1148,7 +1148,7 @@ const CSS7 = `
     background: radial-gradient(ellipse at 50% 100%, rgba(98,250,227,0.34) 0%, rgba(34,211,165,0.14) 42%, transparent 70%);
     filter: blur(28px) hue-rotate(calc(var(--uf7hue, 0deg) + var(--uf7shue, 0deg)));
   }
-  .uf7-eyebrow { position: relative; z-index: 4; font-size: 12px; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; color: #62fae3; }
+  .uf7-eyebrow { position: relative; z-index: 4; font-size: 12px; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; color: var(--uf-teal); }
   .uf7-h1 {
     position: relative; z-index: 4; margin: 18px 0 0; font-family: ${SERIF}; font-weight: 400;
     font-size: clamp(48px, 7.4vw, 88px); line-height: 1.04; letter-spacing: -0.02em;
@@ -1162,7 +1162,7 @@ const CSS7 = `
     font-size: clamp(12px, 1.6vw, 16px); letter-spacing: 0.2em; text-transform: uppercase;
     color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums;
   }
-  .uf7-countdown b { color: #62fae3; font-weight: 500; }
+  .uf7-countdown b { color: var(--uf-teal); font-weight: 500; }
   .uf7-cta {
     position: relative; z-index: 4; margin-top: 36px;
     display: inline-flex; align-items: center; gap: 10px;
@@ -1171,7 +1171,7 @@ const CSS7 = `
     backdrop-filter: blur(14px); color: #fff; font-family: ${F}; font-size: 17px; font-weight: 700;
     box-shadow: 0 0 0 1px rgba(98,250,227,0.12), 0 0 44px rgba(34,211,165,0.32), 0 18px 40px rgba(0,0,0,0.4);
   }
-  .uf7-arrow { color: #62fae3; }
+  .uf7-arrow { color: var(--uf-teal); }
   .uf7-micro { position: relative; z-index: 4; margin-top: 16px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); }
 
   .uf7-trust { position: relative; z-index: 4; margin-top: 44px; width: 100%; max-width: 720px; }
@@ -1189,14 +1189,14 @@ const CSS7 = `
   @keyframes uf7trustScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
   .uf7-trust-logo { border-radius: 8px; object-fit: cover; opacity: 0.75; flex-shrink: 0; filter: grayscale(0.15); }
 
-  .uf7-block { position: relative; overflow: hidden; padding: 110px 24px; background: #04110c; }
+  .uf7-block { position: relative; overflow: hidden; padding: 110px 24px; background: var(--uf-ground); }
   .uf7-wrap { position: relative; z-index: 4; max-width: 920px; margin: 0 auto; }
   .uf7-wrap-wide { max-width: 1040px; }
   .uf7-center { text-align: center; }
-  .uf7-sec-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.26em; text-transform: uppercase; color: #62fae3; }
+  .uf7-sec-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.26em; text-transform: uppercase; color: var(--uf-teal); }
   .uf7-statement { margin: 18px 0 0; font-family: ${SERIF}; font-weight: 400; font-size: clamp(28px, 4.4vw, 46px); line-height: 1.2; letter-spacing: -0.02em; }
   .uf7-statement em, .uf7-statement i { font-style: italic; }
-  .uf7-statement em { color: #62fae3; }
+  .uf7-statement em { color: var(--uf-teal); }
   .uf7-glow-l { width: 640px; height: 520px; top: -180px; left: -260px; background: radial-gradient(circle, rgba(34,211,165,0.18), transparent 62%); animation: uf7drift1 36s ease-in-out infinite; }
   .uf7-glow-r { width: 700px; height: 560px; top: -160px; right: -280px; background: radial-gradient(circle, rgba(79,70,229,0.2), transparent 62%); animation: uf7drift2 40s ease-in-out infinite; }
 
@@ -1208,20 +1208,20 @@ const CSS7 = `
   .uf7-row p { margin: 8px 0 0; font-size: 15px; line-height: 1.65; color: rgba(255,255,255,0.68); max-width: 460px; }
 
   .uf7-slider-stage { margin-top: 64px; }
-  .uf7-live-amount { font-family: ${SERIF}; font-size: clamp(52px, 8vw, 96px); line-height: 1; letter-spacing: -0.02em; text-shadow: 0 4px 60px rgba(34,211,165,0.3); color: #62fae3; }
-  .uf7-saves { margin-top: 14px; font-size: 14px; font-weight: 700; color: #62fae3; min-height: 20px; }
+  .uf7-live-amount { font-family: ${SERIF}; font-size: clamp(52px, 8vw, 96px); line-height: 1; letter-spacing: -0.02em; text-shadow: 0 4px 60px rgba(34,211,165,0.3); color: var(--uf-teal); }
+  .uf7-saves { margin-top: 14px; font-size: 14px; font-weight: 700; color: var(--uf-teal); min-height: 20px; }
   .uf7-slider-row { margin: 44px auto 0; max-width: 560px; }
   .uf7-slider-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.68); margin-bottom: 14px; }
   .uf7-slider-label strong { color: #fff; font-variant-numeric: tabular-nums; }
-  .uf7-slider-row input[type="range"] { width: 100%; appearance: none; -webkit-appearance: none; height: 3px; border-radius: 99px; background: linear-gradient(90deg, #22d3a5, rgba(255,255,255,0.15)); outline: none; }
+  .uf7-slider-row input[type="range"] { width: 100%; appearance: none; -webkit-appearance: none; height: 3px; border-radius: 99px; background: linear-gradient(90deg, var(--uf-teal), rgba(255,255,255,0.15)); outline: none; }
   .uf7-slider-row input[type="range"]::-webkit-slider-thumb {
     appearance: none; -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%;
-    background: #62fae3; border: 3px solid #04110c;
+    background: var(--uf-teal); border: 3px solid var(--uf-ground);
     box-shadow: 0 0 0 1px rgba(98,250,227,0.6), 0 0 24px rgba(98,250,227,0.55); cursor: pointer;
   }
   .uf7-slider-row input[type="range"]::-moz-range-thumb {
     width: 22px; height: 22px; border-radius: 50%;
-    background: #62fae3; border: 3px solid #04110c;
+    background: var(--uf-teal); border: 3px solid var(--uf-ground);
     box-shadow: 0 0 0 1px rgba(98,250,227,0.6), 0 0 24px rgba(98,250,227,0.55); cursor: pointer;
   }
   .uf7-slider-foot { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.42); }
@@ -1229,15 +1229,15 @@ const CSS7 = `
   .uf7-runway { margin-top: 70px; position: relative; height: 320px; display: flex; align-items: flex-end; gap: 6px; }
   .uf7-bar { flex: 1; border-radius: 3px 3px 1px 1px; background: linear-gradient(180deg, rgba(98,250,227,0.95), rgba(34,211,165,0.25)); transform-origin: bottom; }
   .uf7-target-line { position: absolute; left: 0; right: 0; top: 12%; border-top: 2px dashed rgba(98,250,227,0.5); }
-  .uf7-target-tag { position: absolute; right: 0; top: 12%; transform: translateY(-130%); font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #62fae3; }
+  .uf7-target-tag { position: absolute; right: 0; top: 12%; transform: translateY(-130%); font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--uf-teal); }
   .uf7-drift { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .uf7-chart-note { position: absolute; white-space: nowrap; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; }
-  .uf7-cn-plan { top: -12%; right: 0; color: #62fae3; }
+  .uf7-cn-plan { top: -12%; right: 0; color: var(--uf-teal); }
   .uf7-cn-base { top: 56%; right: 0; color: rgba(255,255,255,0.48); }
   .uf7-chart-leader { position: absolute; top: -5%; right: 10px; height: 13%; width: 1px; background: rgba(98,250,227,0.45); }
   .uf7-runway-axis { display: flex; justify-content: space-between; margin-top: 14px; font-family: ${MONO}; font-size: 11px; color: rgba(255,255,255,0.45); }
   .uf7-earlier { margin-top: 34px; font-family: ${SERIF}; font-size: clamp(22px, 3vw, 30px); }
-  .uf7-earlier em { color: #62fae3; font-style: italic; }
+  .uf7-earlier em { color: var(--uf-teal); font-style: italic; }
 
   .uf7-stars {
     position: absolute; inset: 0; pointer-events: none; opacity: 0.7;
@@ -1258,7 +1258,7 @@ const CSS7 = `
   .uf7-city { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
   .uf7-cost { font-size: 14px; color: rgba(255,255,255,0.68); font-variant-numeric: tabular-nums; }
   .uf7-status { font-family: ${MONO}; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; }
-  .uf7-ready { color: #62fae3; }
+  .uf7-ready { color: var(--uf-teal); }
   .uf7-later { color: rgba(255,255,255,0.45); }
   .uf7-globe-foot { margin-top: 22px; font-size: 12.5px; color: rgba(255,255,255,0.5); }
 
@@ -1268,11 +1268,11 @@ const CSS7 = `
   .uf7-tier { font-size: 13px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
   .uf7-amount { margin-top: 14px; font-family: ${SERIF}; font-size: clamp(40px, 5vw, 56px); line-height: 1; }
   .uf7-amount small { font-size: 15px; color: rgba(255,255,255,0.68); font-family: ${F}; font-weight: 600; }
-  .uf7-trial-note { display: block; margin-top: 12px; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #62fae3; }
+  .uf7-trial-note { display: block; margin-top: 12px; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--uf-teal); }
   .uf7-pcol ul { margin: 26px 0 0; padding: 0; list-style: none; }
   .uf7-pcol li { font-size: 14.5px; line-height: 1.5; color: rgba(255,255,255,0.78); padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.07); }
   .uf7-pcol li:first-child { border-top: none; }
-  .uf7-pro-cta { margin-top: 28px; display: inline-block; padding: 14px 34px; border-radius: 2px; border: none; cursor: pointer; font-size: 14.5px; font-weight: 800; color: #04110c; background: linear-gradient(90deg, #b8ffe9, #62fae3 50%, #22d3a5); box-shadow: 0 14px 34px rgba(34,211,165,0.26); font-family: ${F}; }
+  .uf7-pro-cta { margin-top: 28px; display: inline-block; padding: 14px 34px; border-radius: 2px; border: none; cursor: pointer; font-size: 14.5px; font-weight: 800; color: var(--uf-ground); background: linear-gradient(90deg, #b8ffe9, var(--uf-teal) 50%, var(--uf-teal)); box-shadow: 0 14px 34px rgba(34,211,165,0.26); font-family: ${F}; }
   .uf7-free-cta { margin-top: 28px; display: inline-block; padding: 13px 30px; border-radius: 2px; cursor: pointer; font-size: 14.5px; font-weight: 700; color: #fff; background: rgba(5,14,11,0.6); border: 1px solid rgba(255,255,255,0.22); font-family: ${F}; }
 
   .uf7-quote-mark { font-family: ${SERIF}; font-size: 90px; line-height: 0.4; color: rgba(98,250,227,0.5); }
@@ -1284,7 +1284,7 @@ const CSS7 = `
   .uf7-faq-list details:last-child { border-bottom: 1px solid rgba(255,255,255,0.14); }
   .uf7-faq-list summary { cursor: pointer; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; list-style: none; display: flex; justify-content: space-between; align-items: center; }
   .uf7-faq-list summary::-webkit-details-marker { display: none; }
-  .uf7-faq-list summary::after { content: "+"; color: #62fae3; font-size: 22px; font-weight: 500; }
+  .uf7-faq-list summary::after { content: "+"; color: var(--uf-teal); font-size: 22px; font-weight: 500; }
   .uf7-faq-list details[open] summary::after { content: "–"; }
   .uf7-faq-list details p { margin: 14px 0 0; font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.68); max-width: 640px; }
 
@@ -1351,7 +1351,7 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
   }, []);
 
   return (
-    <div ref={rootRef} className="uf7-root" style={{ fontFamily: F }}>
+    <div ref={rootRef} className="uf7-root dark" style={{ fontFamily: F }}>
       <div className="uf7-grain" aria-hidden />
       <Nav7 onStart={onStart} />
       <Hero7 onStart={onStart} />
