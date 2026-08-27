@@ -104,7 +104,7 @@ export default function GeoArbitragePage() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '40px 20px',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'Manrope, sans-serif',
           color: '#fff',
           textAlign: 'center',
         }}
@@ -147,7 +147,7 @@ export default function GeoArbitragePage() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '40px 20px',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'Manrope, sans-serif',
           color: '#fff',
         }}
       >
@@ -237,7 +237,7 @@ export default function GeoArbitragePage() {
       style={{
         minHeight: '100vh',
         background: '#f8fafc',
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: 'Manrope, sans-serif',
       }}
     >
       {/* Header */}
@@ -275,7 +275,7 @@ export default function GeoArbitragePage() {
         {/* Title */}
         <h1
           style={{
-            fontFamily: 'Syne, sans-serif',
+            fontFamily: 'Bricolage Grotesque, Manrope, sans-serif',
             fontSize: 28,
             fontWeight: 800,
             color: '#0F172A',
@@ -303,7 +303,7 @@ export default function GeoArbitragePage() {
                 fontSize: 32,
                 fontWeight: 800,
                 color: '#059669',
-                fontFamily: 'Syne, sans-serif',
+                fontFamily: 'Bricolage Grotesque, Manrope, sans-serif',
               }}
             >
               You could FIRE here NOW
@@ -328,7 +328,7 @@ export default function GeoArbitragePage() {
                 fontSize: 42,
                 fontWeight: 800,
                 color: '#22d3a5',
-                fontFamily: 'Syne, sans-serif',
+                fontFamily: 'Bricolage Grotesque, Manrope, sans-serif',
                 lineHeight: 1,
               }}
             >
@@ -354,7 +354,7 @@ export default function GeoArbitragePage() {
                 fontSize: 42,
                 fontWeight: 800,
                 color: '#ef4444',
-                fontFamily: 'Syne, sans-serif',
+                fontFamily: 'Bricolage Grotesque, Manrope, sans-serif',
                 lineHeight: 1,
               }}
             >

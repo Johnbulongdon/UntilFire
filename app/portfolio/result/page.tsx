@@ -245,5 +245,5 @@ const pageStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
   padding: '64px 24px',
-  fontFamily: "'DM Sans', system-ui, sans-serif",
+  fontFamily: "'Manrope', system-ui, sans-serif",
 }

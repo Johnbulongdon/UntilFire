@@ -18,7 +18,7 @@ export default function PortfolioPage() {
         flexDirection: 'column',
         alignItems: 'center',
         padding: '80px 24px',
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "'Manrope', system-ui, sans-serif",
       }}
     >
       <div style={{ maxWidth: 640, width: '100%', marginBottom: 36 }}>

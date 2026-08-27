@@ -223,14 +223,43 @@ Rule 6 is load-bearing: two hand-kept copies of the Cashflow sub-nav are how Cat
 - Feedback should be user-initiated after value, not pushed early.
 - FIRE/personality test belongs in Profile or as a secondary flow, not as first-run friction.
 
-## Design System Notes
+## Design System — the default for all design and all code
 
-- Background: `#08080e`
-- Accent orange: `#f97316`
-- Accent teal: `#22d3a5`
-- Fonts: Syne, DM Sans, DM Mono
+Full detail in `docs/design/design-system.md`. Tokens: `app/globals.css`.
+Primitives: `components/ui/`. This is not optional styling guidance — it is the
+default for every new surface.
+
+**The one rule: green acts, teal means freedom.** Green (`--uf-green`) is every
+button, link and interactive affordance. Teal (`--uf-teal`) is reserved for
+progress toward the freedom date — the date itself, progress bars, "2.4 years
+earlier". Teal is never a button and never means generic success (`--uf-pos`).
+
+- Ground: light default (`--uf-ground` `#F6FAF8`), dark via `.dark` on `<html>`, every route.
+- Display font: Bricolage Grotesque (freedom date, page titles, h1/h2).
+- Body font: Manrope. Data font: DM Mono with tabular numerals.
+- Instrument Serif is the marketing-only serif (landing page + HomeClient hero).
+- Neutrals and shadows are tinted green, never pure grey or black.
 - Default tone: calm, confident, trustworthy, emotionally outcome-led.
 - Mobile-first matters for beta and launch traffic.
+
+Scales — use these steps, nothing between them:
+
+- Type: 52 · 34 · 24 · 18 · 16 · 14 · 13 · 11 (classes `.uf-t-*` in globals.css)
+- Space: 4 · 8 · 12 · 16 · 24 · 32 · 48
+- Radius: 8 control · 12 card · 18 modal · 999 pill
+- Elevation: `--uf-e1` · `--uf-e2` · `--uf-e3`
+
+Rules for new code:
+
+1. Never hand-roll a button, card, labelled input, status pill, or label-figure-delta block — import `Button`, `Card`, `Field`, `Badge`, `Stat` from `@/components/ui`.
+2. Never write a hex colour. Use a token. A colour with no token needs a token, not a literal.
+3. Never invent a size, radius, or gap. Pick the nearest step on the scale.
+4. Every figure uses DM Mono with tabular numerals.
+5. Teal is not a button.
+6. Style through tokens so both themes work for free. A colour defined outside the token system is pinned to light mode.
+
+Migration is **adopt on touch** — existing screens keep working via legacy token
+aliases; migrate what you touch, and build new surfaces on the system from the start.
 
 ## Documentation Rules
 

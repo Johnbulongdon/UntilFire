@@ -28,11 +28,11 @@ export default function ExpatFirePage() {
     <>
       <ExpatFireCalculator />
 
-      <section style={{ background: '#F7F9FB', padding: '0 24px 72px', fontFamily: "'DM Sans', sans-serif" }}>
+      <section style={{ background: '#F7F9FB', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18, paddingTop: 48 }}>
 
           <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 28, letterSpacing: '-0.03em', fontFamily: 'Syne, sans-serif', fontWeight: 800 }}>
+            <h2 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 28, letterSpacing: '-0.03em', fontFamily: 'Bricolage Grotesque, Manrope, sans-serif', fontWeight: 800 }}>
               What is geo-arbitrage FIRE?
             </h2>
             <p style={{ margin: '0 0 12px', color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
@@ -44,7 +44,7 @@ export default function ExpatFirePage() {
           </article>
 
           <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 16px', color: '#064E3B', fontSize: 24, fontFamily: 'Syne, sans-serif', fontWeight: 800 }}>
+            <h2 style={{ margin: '0 0 16px', color: '#064E3B', fontSize: 24, fontFamily: 'Bricolage Grotesque, Manrope, sans-serif', fontWeight: 800 }}>
               Expat FIRE FAQ
             </h2>
 

@@ -2602,7 +2602,7 @@ function GoalsPageTab({ userId }: { userId: string }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Syne, sans-serif", letterSpacing: "-0.4px" }}>Goals</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Bricolage Grotesque, Manrope, sans-serif", letterSpacing: "-0.4px" }}>Goals</div>
           <div style={{ fontSize: 13, color: "var(--uf-text-muted)", marginTop: 2 }}>Save toward the things that matter</div>
         </div>
         <button
@@ -2765,7 +2765,7 @@ function GoalsPageTab({ userId }: { userId: string }) {
             borderRadius: 18, padding: "24px 24px 20px", width: "100%", maxWidth: 420,
             display: "flex", flexDirection: "column", gap: 18,
           }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Syne, sans-serif" }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Bricolage Grotesque, Manrope, sans-serif" }}>
               {editingGoal ? "Edit Goal" : "New Goal"}
             </div>
 
@@ -3869,7 +3869,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
   const draftRet = draft.length ? simWeightedRet(draft) : 0;
   const draftDonut = simDonut(draft, 1);
 
-  const uppercaseLabel: React.CSSProperties = { fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-3)" };
+  const uppercaseLabel: React.CSSProperties = { fontFamily: "Manrope, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-3)" };
 
   return (
     <>
@@ -3914,7 +3914,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    {tag && <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "#E7F6EE", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
+                    {tag && <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "#E7F6EE", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
                     {scenarios.length > 1 && (
                       <button onClick={e => { e.stopPropagation(); removeScenario(i); }} title="Remove scenario" aria-label={`Remove ${s.name}`} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 16, lineHeight: 1, padding: 0, width: 16, textAlign: "center" }}>×</button>
                     )}
@@ -3958,14 +3958,14 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                         {donut.map((seg, k) => <circle key={k} cx="60" cy="60" r="44" fill="none" stroke={seg.c} strokeWidth="18" strokeDasharray={seg.dash} strokeDashoffset={seg.offset} />)}
                       </g>
                       <text x="60" y="57" textAnchor="middle" style={{ fontFamily: "Manrope, sans-serif", fontSize: 11, fontWeight: 800, fill: "var(--uf-text)" }}>1Y</text>
-                      <text x="60" y="70" textAnchor="middle" style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 800, fill: ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(ret)}</text>
+                      <text x="60" y="70" textAnchor="middle" style={{ fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 800, fill: ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(ret)}</text>
                     </svg>
                     <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
                       {col.s.holdings.map((h, k) => (
                         <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ width: 9, height: 9, borderRadius: 3, background: h.color, flexShrink: 0 }} />
                           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text)", flex: 1 }}>{h.ticker}</div>
-                          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{`${((h.pct || 0) / tot * 100).toFixed(0)}%`}</div>
+                          <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{`${((h.pct || 0) / tot * 100).toFixed(0)}%`}</div>
                         </div>
                       ))}
                     </div>
@@ -3973,7 +3973,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--uf-border)", border: "1px solid var(--uf-border)", borderRadius: 9, overflow: "hidden", marginTop: 16 }}>
                     {stats.map((st, k) => (
                       <div key={k} style={{ background: "var(--uf-card)", padding: "11px 14px" }}>
-                        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, color: "var(--uf-text-3)", marginBottom: 3 }}>{st.l}</div>
+                        <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 10, fontWeight: 600, color: "var(--uf-text-3)", marginBottom: 3 }}>{st.l}</div>
                         <div style={{ fontSize: 16, fontWeight: 800, color: "var(--uf-text)" }}>{st.v}</div>
                       </div>
                     ))}
@@ -3995,7 +3995,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                   <div key={k} style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <div style={{ width: 11, height: 11, borderRadius: 3, background: r.c }} />
                     <span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text)" }}>{r.label}</span>
-                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 800, color: "var(--uf-text)" }}>{r.pct}</span>
+                    <span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 800, color: "var(--uf-text)" }}>{r.pct}</span>
                   </div>
                 ))}
               </div>
@@ -4016,9 +4016,9 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               </div>
             </div>
             <div style={{ display: "flex", gap: 18, marginBottom: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#64748B" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your Plan</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: GREEN }} /><span style={{ fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{sel.name}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{simFmtPct(selRet)}</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#CBD5E1" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{bench}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{simFmtPct(benchRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#64748B" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your Plan</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: GREEN }} /><span style={{ fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{sel.name}</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{simFmtPct(selRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#CBD5E1" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{bench}</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{simFmtPct(benchRet)}</span></div>
             </div>
             <svg width="100%" viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none" style={{ display: "block", height: 196 }}>
               <line x1="0" y1="52" x2={GW} y2="52" stroke="var(--uf-border)" />
@@ -4069,7 +4069,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <div style={uppercaseLabel}>Holdings</div>
-                <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 800, color: draftTotal === 100 ? GREEN_TEXT : "#E0902B" }}>Total {draftTotal}%</div>
+                <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 800, color: draftTotal === 100 ? GREEN_TEXT : "#E0902B" }}>Total {draftTotal}%</div>
               </div>
               <div style={{ height: 7, borderRadius: 9999, background: "var(--uf-surface-2)", overflow: "hidden", display: "flex", marginBottom: 6 }}>
                 {draftDonut.map((g, k) => <div key={k} style={{ width: g.barW, background: g.c }} />)}
@@ -4078,9 +4078,9 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               {draft.map((h, k) => (
                 <div key={k} style={{ padding: "13px 0", borderBottom: "1px solid var(--uf-border)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ background: h.color, color: "#fff", fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 800, padding: "4px 7px", borderRadius: 5, letterSpacing: "0.3px", minWidth: 42, textAlign: "center" }}>{h.ticker}</span>
+                    <span style={{ background: h.color, color: "#fff", fontFamily: "Manrope, sans-serif", fontSize: 10, fontWeight: 800, padding: "4px 7px", borderRadius: 5, letterSpacing: "0.3px", minWidth: 42, textAlign: "center" }}>{h.ticker}</span>
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--uf-text)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
-                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: h.ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(h.ret)}</span>
+                    <span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: h.ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(h.ret)}</span>
                     <div onClick={() => removeRow(k)} style={{ cursor: "pointer", color: "var(--uf-text-3)", fontSize: 18, lineHeight: 1, width: 18, textAlign: "center" }}>×</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 10 }}>
@@ -5158,42 +5158,19 @@ export default function Dashboard() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-
-        :root {
-          --uf-bg: #F7F9FB;
-          --uf-card: #ffffff;
-          --uf-border: #E2E8F0;
-          --uf-text: #0F172A;
-          --uf-text-2: #64748B;
-          --uf-text-3: #94A3B8;
-          --uf-surface: #F8FAFC;
-          --uf-surface-2: #F1F5F9;
-          --uf-topbar-glass: rgba(255,255,255,0.96);
-          --uf-drawer-bg: #ffffff;
-        }
-        .dark {
-          --uf-bg: #08080e;
-          --uf-card: #111118;
-          --uf-border: #23232d;
-          --uf-text: #F1F5F9;
-          --uf-text-2: #9CA3AF;
-          --uf-text-3: #6B7280;
-          --uf-surface: #0d1117;
-          --uf-surface-2: #111118;
-          --uf-topbar-glass: rgba(8,8,14,0.96);
-          --uf-drawer-bg: #0d1117;
-        }
+        /* Theme tokens live in app/globals.css — see docs/design/design-system.md.
+           They were moved out of here because defining them in a page component
+           is why dark mode only ever worked on this one route. */
 
         *, *::before, *::after { box-sizing: border-box; }
-        body { background: var(--uf-bg); color: var(--uf-text); font-family: 'Manrope', sans-serif; margin: 0; }
+        body { background: var(--uf-ground); color: var(--uf-ink); font-family: var(--uf-font); margin: 0; }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        input[type=range] { -webkit-appearance: none; height: 4px; border-radius: 2px; background: #E2E8F0; outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #064E3B; border: 3px solid #F7F9FB; cursor: pointer; box-shadow: 0 0 0 2px #064E3B; }
+        input[type=range] { -webkit-appearance: none; height: 4px; border-radius: 2px; background: var(--uf-border); outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--uf-green); border: 3px solid var(--uf-ground); cursor: pointer; box-shadow: 0 0 0 2px var(--uf-green); }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--uf-border); border-radius: 4px; }
 
-        .uf-card { background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 16px; padding: 20px 24px; }
+        .uf-card { background: var(--uf-surface); border: 1px solid var(--uf-border); border-radius: var(--uf-r-card); padding: 20px 24px; }
         .uf-card-glow { box-shadow: 0 0 0 1px rgba(6,78,59,0.3), 0 0 24px rgba(6,78,59,0.08); border-color: rgba(6,78,59,0.35) !important; }
         .uf-tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
 
@@ -6207,7 +6184,7 @@ function ExpatCityDetail({
 
   return (
     <div style={{
-      background: bg, minHeight: "100%", fontFamily: "DM Sans, sans-serif",
+      background: bg, minHeight: "100%", fontFamily: "Manrope, sans-serif",
       overflowY: "auto",
     }}>
       {/* Back header */}
@@ -6232,7 +6209,7 @@ function ExpatCityDetail({
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px 80px" }}>
         {/* Title */}
         <h1 style={{
-          fontFamily: "Syne, sans-serif", fontSize: 28, fontWeight: 800,
+          fontFamily: "Bricolage Grotesque, Manrope, sans-serif", fontSize: 28, fontWeight: 800,
           color: textPrimary, margin: "0 0 8px",
         }}>
           {targetCity.flag} {targetCity.name}
@@ -6252,7 +6229,7 @@ function ExpatCityDetail({
             textAlign: "center", background: isDark ? "rgba(5,150,105,0.1)" : "#F0FDF4",
             border: "1px solid #A7F3D0", borderRadius: 16, padding: "24px 20px", marginBottom: 24,
           }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#059669", fontFamily: "Syne, sans-serif" }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#059669", fontFamily: "Bricolage Grotesque, Manrope, sans-serif" }}>
               You could FIRE here NOW
             </div>
             <div style={{ fontSize: 14, color: isDark ? "#6ee7b7" : "#065F46", marginTop: 8 }}>
@@ -6265,7 +6242,7 @@ function ExpatCityDetail({
             border: isDark ? "1px solid rgba(34,211,165,0.25)" : "1px solid #A7F3D0",
             borderRadius: 16, padding: "24px 20px", marginBottom: 24,
           }}>
-            <div style={{ fontSize: 42, fontWeight: 800, color: "#22d3a5", fontFamily: "Syne, sans-serif", lineHeight: 1 }}>
+            <div style={{ fontSize: 42, fontWeight: 800, color: "#22d3a5", fontFamily: "Bricolage Grotesque, Manrope, sans-serif", lineHeight: 1 }}>
               {yearDiff.toFixed(1)} years sooner
             </div>
             <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>
@@ -6278,7 +6255,7 @@ function ExpatCityDetail({
             border: isDark ? "1px solid rgba(239,68,68,0.25)" : "1px solid #FECACA",
             borderRadius: 16, padding: "24px 20px", marginBottom: 24,
           }}>
-            <div style={{ fontSize: 42, fontWeight: 800, color: "#ef4444", fontFamily: "Syne, sans-serif", lineHeight: 1 }}>
+            <div style={{ fontSize: 42, fontWeight: 800, color: "#ef4444", fontFamily: "Bricolage Grotesque, Manrope, sans-serif", lineHeight: 1 }}>
               {yearDiff.toFixed(1)} years later
             </div>
             <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>

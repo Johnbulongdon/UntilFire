@@ -34,7 +34,7 @@ export async function GET(req: Request, { params }: { params: { state: string } 
           height: '630px',
           background: 'linear-gradient(135deg, #08080e 0%, #1a1a2e 100%)',
           color: '#fff',
-          fontFamily: 'Syne, system-ui, sans-serif',
+          fontFamily: 'Bricolage Grotesque, system-ui, sans-serif',
           position: 'relative',
           padding: '48px',
           boxSizing: 'border-box',

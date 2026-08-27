@@ -242,7 +242,7 @@ function StatCard({ label, value, sub, color = C.text, accent = false }) {
       <span
         style={{
           fontSize: 22,
-          fontFamily: "'Syne', sans-serif",
+          fontFamily: "'Bricolage Grotesque', 'Manrope', sans-serif",
           fontWeight: 700,
           color: color,
           lineHeight: 1.1,
@@ -312,7 +312,7 @@ function SectionHeader({ icon, title, color = C.accent }) {
       <span style={{ fontSize: 16 }}>{icon}</span>
       <span
         style={{
-          fontFamily: "'Syne', sans-serif",
+          fontFamily: "'Bricolage Grotesque', 'Manrope', sans-serif",
           fontWeight: 700,
           fontSize: 13,
           color,
@@ -405,7 +405,7 @@ export default function EnhancedFIRECalculator() {
       >
         <span
           style={{
-            fontFamily: "'Syne', sans-serif",
+            fontFamily: "'Bricolage Grotesque', 'Manrope', sans-serif",
             fontWeight: 800,
             fontSize: 20,
             color: C.accent,
@@ -655,7 +655,7 @@ export default function EnhancedFIRECalculator() {
             >
               <span
                 style={{
-                  fontFamily: "'Syne', sans-serif",
+                  fontFamily: "'Bricolage Grotesque', 'Manrope', sans-serif",
                   fontWeight: 700,
                   fontSize: 15,
                 }}

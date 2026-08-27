@@ -252,7 +252,7 @@ export default function ExpectedPaymentsTab({
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", fontFamily: "Syne, sans-serif" }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", fontFamily: "Bricolage Grotesque, Manrope, sans-serif" }}>
             Expected payments
           </h2>
           <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
