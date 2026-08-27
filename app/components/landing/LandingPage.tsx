@@ -59,10 +59,13 @@ const TRUST_LOGOS = [
 ];
 
 function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: number, markers: { location: [number, number]; size: number }[], startPhi: number) {
-  // WebGL can be unavailable (disabled hardware acceleration, some privacy
-  // extensions, older devices) or the cobe chunk can fail to load — cobe
-  // throws synchronously in createGlobe when it can't get a WebGL context.
-  // Without this the canvas just sits empty with nothing to explain why.
+  // cobe can fail several ways — WebGL unavailable, the chunk failing to
+  // load, createGlobe throwing — and it doesn't surface any of them itself
+  // (a missing WebGL context is checked internally and swallowed into a
+  // no-op {destroy,update} pair). Without catching this the canvas just
+  // sits empty with nothing to explain why. The console.error calls below
+  // are deliberate: if this trips in the wild, the real reason should be
+  // visible in devtools instead of another guess.
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -71,13 +74,15 @@ function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size
     let globe: { update: (state: { phi: number }) => void; destroy: () => void } | null = null;
     let phi = startPhi;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // cobe doesn't throw when WebGL is unavailable — it checks internally and
-    // silently returns a no-op {destroy,update} pair, leaving the canvas
-    // blank with no signal. Check for a context ourselves first so a missing
-    // one is detectable.
+    // cobe requests a context with these exact attributes internally and,
+    // if it comes back null, swallows that into a no-op {destroy,update}
+    // pair rather than throwing — so probing with the same attributes here
+    // is the only way to catch that case before it silently renders nothing.
+    const glAttrs = { alpha: true, stencil: false, antialias: true, depth: false, preserveDrawingBuffer: false } as const;
     const probe = canvasRef.current;
-    const hasWebGL = !!probe && !!(probe.getContext("webgl2") || probe.getContext("webgl"));
+    const hasWebGL = !!probe && !!(probe.getContext("webgl2", glAttrs) || probe.getContext("webgl", glAttrs));
     if (!hasWebGL) {
+      console.error("[globe] no WebGL2/WebGL context available on this canvas");
       setFailed(true);
       return;
     }
@@ -99,7 +104,8 @@ function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size
           glowColor: [0.1, 0.4, 0.34],
           markers,
         });
-      } catch {
+      } catch (err) {
+        console.error("[globe] createGlobe threw:", err);
         setFailed(true);
         return;
       }
@@ -120,7 +126,10 @@ function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size
         });
         if (canvasRef.current) visObserver.observe(canvasRef.current);
       }
-    }).catch(() => setFailed(true));
+    }).catch((err) => {
+      console.error("[globe] failed to load the cobe module:", err);
+      setFailed(true);
+    });
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
@@ -1206,16 +1215,19 @@ const CSS7 = `
   }
   .uf7-trust-strip {
     position: relative; overflow: hidden; margin-top: 18px; width: 100%;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
-    mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
   }
+  /* Edge fade via layered gradients instead of mask-image: masking a
+     transform-animated element is a known trigger for browsers/GPUs to
+     stop repainting the masked layer, which reads as the animation being
+     frozen even though it's still running underneath. */
+  .uf7-trust-strip::before, .uf7-trust-strip::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 64px; z-index: 2; pointer-events: none;
+  }
+  .uf7-trust-strip::before { left: 0; background: linear-gradient(90deg, var(--uf-ground), transparent); }
+  .uf7-trust-strip::after { right: 0; background: linear-gradient(270deg, var(--uf-ground), transparent); }
   .uf7-trust-track {
     display: flex; gap: 16px; align-items: center; width: max-content;
     animation: uf7trustScroll 30s linear infinite;
-    /* Promotes the track to its own compositing layer — Safari can fail to
-       repaint a masked ancestor (.uf7-trust-strip's mask-image) during a
-       pure-transform animation otherwise, so the logos appear frozen. */
-    will-change: transform;
   }
   @media (prefers-reduced-motion: reduce) { .uf7-trust-track { animation: none; } }
   @keyframes uf7trustScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
