@@ -1078,6 +1078,15 @@ function FooterSection() {
               loading="lazy"
             />
           </a>
+          <a
+            href="https://curlship.com"
+            target="_blank"
+            rel="noopener"
+            title="Listed on CurlShip"
+            style={{ color: "rgba(255,255,255,0.56)", textDecoration: "none" }}
+          >
+            Listed on CurlShip
+          </a>
           <span>Make work optional</span>
         </div>
       </div>
