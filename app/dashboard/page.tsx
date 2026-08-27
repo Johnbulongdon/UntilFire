@@ -815,7 +815,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
   // Status pill
   const statusLabel = savingsRate >= 50 ? "Ahead of schedule" : savingsRate >= 25 ? "On track" : income > 0 ? "Needs attention" : "No data yet";
-  const statusColor = savingsRate >= 50 ? "#059669" : savingsRate >= 25 ? "#20D4BF" : income > 0 ? "#F59E0B" : "#94A3B8";
+  const statusColor = savingsRate >= 50 ? "var(--uf-pos)" : savingsRate >= 25 ? "var(--uf-green-700)" : income > 0 ? "var(--uf-warn)" : "var(--uf-ink-3)";
 
   const bestMove = nextMoveScenarios?.[0] ?? null;
   const actualOrPlannedIncome = hasActuals ? actualIncome : income;
@@ -877,8 +877,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
   const brokeragePct = positiveMoneyTotal > 0 ? (Math.max(brokerageAssets, 0) / positiveMoneyTotal) * 100 : 0;
   const cashPct = positiveMoneyTotal > 0 ? (Math.max(displayCashAssets, 0) / positiveMoneyTotal) * 100 : 0;
   const moneyMixGradient = positiveMoneyTotal > 0
-    ? `conic-gradient(#064E3B 0% ${retirementPct}%, #10B981 ${retirementPct}% ${retirementPct + brokeragePct}%, #CFFAEF ${retirementPct + brokeragePct}% 100%)`
-    : "conic-gradient(#E2E8F0 0% 100%)";
+    ? `conic-gradient(var(--uf-green-900) 0% ${retirementPct}%, var(--uf-green-700) ${retirementPct}% ${retirementPct + brokeragePct}%, var(--uf-green) ${retirementPct + brokeragePct}% 100%)`
+    : "conic-gradient(var(--uf-surface-2) 0% 100%)";
   const moneyMixSourceLabel = plaidAccounts.some((account) => account.type === "depository" || account.type === "investment")
     ? "Connected balances shown where available"
     : "Using manual balances";
@@ -890,11 +890,11 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         ? `Your current path still points to ${retireYear}.`
         : `Your current path needs a nudge to protect ${retireYear}.`
     : "Finish your setup to see your projected freedom date.";
-  const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "#DC2626" : projectedSpendStatus === "Running below plan" ? "#059669" : "#64748B";
-  const spendingBarColor = projectedSpendStatus === "Running above plan" ? "#DC2626" : projectedSpendStatus === "Running below plan" ? "#059669" : "#0F766E";
+  const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-ink-3)";
+  const spendingBarColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-green-700)";
   const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
   const spendingExpectedPct = hasActuals ? Math.min(elapsedFraction * 100, 100) : 0;
-  const spendingBarTrackColor = hasActuals ? "#E2E8F0" : "#F1F5F9";
+  const spendingBarTrackColor = hasActuals ? "var(--uf-surface-2)" : "var(--uf-surface)";
   const investedBalance = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0);
   const availableCash = Math.max(displayCashAssets, 0);
   const emergencyFundHealthyNow = efMonthlyBase > 0 && (availableCash / efMonthlyBase) >= EMERGENCY_FUND_TARGET_MONTHS;
@@ -1187,13 +1187,16 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
         onOpenOnboarding={onOpenOnboarding}
       />
 
-      {/* ── Hero: chart-led progress card ───────────────────────────────── */}
-      <div className="uf-card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(180deg, #064E3B 0%, #022C22 100%)", borderColor: "transparent" }}>
+      {/* ── Hero: chart-led progress card. Fixed dark treatment regardless of
+          the dashboard's light/dark setting — a deliberate hero moment, same
+          idea as the free-calculator reveal — so it forces the `.dark` token
+          scope rather than following the ambient theme. ─────────────────── */}
+      <div className="uf-card dark" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(180deg, var(--uf-green-50) 0%, var(--uf-ground) 100%)", borderColor: "transparent" }}>
         <div style={{ padding: "22px 22px 0", position: "relative" }}>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top right, rgba(98,250,227,0.14), transparent 38%)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top right, rgba(53,201,174,0.14), transparent 38%)", pointerEvents: "none" }} />
           <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#A7F3D0", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-green-900)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
                 Your progress
               </div>
               <div style={{ fontSize: 15, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
@@ -1210,7 +1213,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                     borderRadius: 999,
                     border: chartPeriod === period ? "1px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.14)",
                     background: chartPeriod === period ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.06)",
-                    color: "#FFFFFF",
+                    color: "#fff",
                     fontSize: 12,
                     fontWeight: 800,
                     cursor: "pointer",
@@ -1225,10 +1228,10 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
 
           <div className="uf-progress-metrics" style={{ display: "grid", gridTemplateColumns: holdingsUnrealizedGain !== null ? "repeat(4, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14, position: "relative" }}>
             {[
-              { label: "Net worth", value: fmtMoney(currentNetWorth, true), tone: "#FFFFFF" },
-              { label: "This month", value: hasActuals ? fmtMoney(actualOrPlannedSavings, true) : fmtMoney(goalContribution, true), tone: actualOrPlannedSavings >= 0 ? "#62FAE3" : "#FCA5A5" },
-              ...(holdingsUnrealizedGain !== null ? [{ label: "Investment gains", value: fmtMoney(holdingsUnrealizedGain, true), tone: "#62FAE3" }] : []),
-              { label: "Status", value: statusLabel, tone: "#A7F3D0" },
+              { label: "Net worth", value: fmtMoney(currentNetWorth, true), tone: "#fff" },
+              { label: "This month", value: hasActuals ? fmtMoney(actualOrPlannedSavings, true) : fmtMoney(goalContribution, true), tone: actualOrPlannedSavings >= 0 ? "var(--uf-teal)" : "var(--uf-neg)" },
+              ...(holdingsUnrealizedGain !== null ? [{ label: "Investment gains", value: fmtMoney(holdingsUnrealizedGain, true), tone: "var(--uf-teal)" }] : []),
+              { label: "Status", value: statusLabel, tone: "var(--uf-green-900)" },
             ].map((item) => (
               <div key={item.label} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 14, padding: "12px 14px" }}>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.58)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>{item.label}</div>
@@ -1244,17 +1247,17 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <ComposedChart data={periodData} margin={{ top: 4, right: 14, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#62FAE3" stopOpacity={0.48} />
-                  <stop offset="55%" stopColor="#62FAE3" stopOpacity={0.10} />
-                  <stop offset="100%" stopColor="#62FAE3" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--uf-teal)" stopOpacity={0.48} />
+                  <stop offset="55%" stopColor="var(--uf-teal)" stopOpacity={0.10} />
+                  <stop offset="100%" stopColor="var(--uf-teal)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="contribGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#059669" stopOpacity={0.65} />
-                  <stop offset="100%" stopColor="#059669" stopOpacity={0.15} />
+                  <stop offset="0%" stopColor="var(--uf-green)" stopOpacity={0.65} />
+                  <stop offset="100%" stopColor="var(--uf-green)" stopOpacity={0.15} />
                 </linearGradient>
                 <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#62FAE3" stopOpacity={0.45} />
-                  <stop offset="100%" stopColor="#62FAE3" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="var(--uf-teal)" stopOpacity={0.45} />
+                  <stop offset="100%" stopColor="var(--uf-teal)" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" vertical={false} />
@@ -1284,12 +1287,12 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   const contrib = entry?.Contributions as number | undefined;
                   const gains = entry?.["Market Growth"] as number | undefined;
                   return (
-                    <div style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12, padding: "10px 12px", fontSize: 12, fontFamily: "Manrope, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
-                      <div style={{ fontWeight: 800, marginBottom: 6, color: "#F8FAFC" }}>{entry?.label ?? ""}</div>
+                    <div style={{ background: "var(--uf-card)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12, padding: "10px 12px", fontSize: 12, fontFamily: "Manrope, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
+                      <div style={{ fontWeight: 800, marginBottom: 6, color: "var(--uf-ink)" }}>{entry?.label ?? ""}</div>
                       {actual !== undefined && actual !== null && <div style={{ color: "rgba(255,255,255,0.86)", marginBottom: 4 }}>{entry?.phase === "today" ? "Current" : "History"}: {fmtMoney(actual, true)}</div>}
-                      {projected !== undefined && projected !== null && !showBreakdown && <div style={{ color: "#62FAE3", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
-                      {showBreakdown && contrib !== undefined && <div style={{ color: "#4ADE80", marginBottom: 2 }}>Contributions: {fmtMoney(contrib, true)}</div>}
-                      {showBreakdown && gains !== undefined && <div style={{ color: "#62FAE3", marginBottom: 4 }}>Market returns: {fmtMoney(gains, true)}</div>}
+                      {projected !== undefined && projected !== null && !showBreakdown && <div style={{ color: "var(--uf-teal)", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
+                      {showBreakdown && contrib !== undefined && <div style={{ color: "var(--uf-green-700)", marginBottom: 2 }}>Contributions: {fmtMoney(contrib, true)}</div>}
+                      {showBreakdown && gains !== undefined && <div style={{ color: "var(--uf-teal)", marginBottom: 4 }}>Market returns: {fmtMoney(gains, true)}</div>}
                       <div style={{ color: "rgba(255,255,255,0.6)" }}>Target: {fmtMoney(fireTarget, true)}</div>
                     </div>
                   );
@@ -1309,23 +1312,23 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                     const w = Math.max(dot.label.length * 5.8 + 12, 40);
                     return (
                       <g>
-                        <rect x={x - w / 2} y={y - 30} width={w} height={16} rx={4} fill="rgba(8,8,14,0.82)" stroke="rgba(34,211,165,0.55)" strokeWidth={0.8} />
-                        <text x={x} y={y - 18} textAnchor="middle" fill="#22d3a5" fontSize={9} fontWeight={700} fontFamily="Manrope, sans-serif">{dot.label}</text>
-                        <line x1={x} y1={y - 14} x2={x} y2={y - 5} stroke="rgba(34,211,165,0.65)" strokeWidth={1} />
-                        <circle cx={x} cy={y} r={4} fill={dot.achieved ? "rgba(34,211,165,0.25)" : "#22d3a5"} stroke="#22d3a5" strokeWidth={1.5} />
+                        <rect x={x - w / 2} y={y - 30} width={w} height={16} rx={4} fill="rgba(8,8,14,0.82)" stroke="rgba(53,201,174,0.55)" strokeWidth={0.8} />
+                        <text x={x} y={y - 18} textAnchor="middle" fill="var(--uf-teal)" fontSize={9} fontWeight={700} fontFamily="Manrope, sans-serif">{dot.label}</text>
+                        <line x1={x} y1={y - 14} x2={x} y2={y - 5} stroke="rgba(53,201,174,0.65)" strokeWidth={1} />
+                        <circle cx={x} cy={y} r={4} fill={dot.achieved ? "rgba(53,201,174,0.25)" : "var(--uf-teal)"} stroke="var(--uf-teal)" strokeWidth={1.5} />
                       </g>
                     );
                   }}
                 />
               ))}
-              <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.88)" strokeWidth={2} connectNulls={false} dot={false} activeDot={{ r: 5, fill: "#FFFFFF" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
+              <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.88)" strokeWidth={2} connectNulls={false} dot={false} activeDot={{ r: 5, fill: "#fff" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
               {!showBreakdown && (
-                <Area type="monotone" dataKey="projected" stroke="#62FAE3" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "#62FAE3" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
+                <Area type="monotone" dataKey="projected" stroke="var(--uf-teal)" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
               )}
               {showBreakdown && (
                 <>
-                  <Area type="monotone" dataKey="Contributions" stroke="#059669" strokeWidth={1.5} fill="url(#contribGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
-                  <Area type="monotone" dataKey="Market Growth" stroke="#62FAE3" strokeWidth={1.5} fill="url(#growthGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
+                  <Area type="monotone" dataKey="Contributions" stroke="var(--uf-green)" strokeWidth={1.5} fill="url(#contribGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
+                  <Area type="monotone" dataKey="Market Growth" stroke="var(--uf-teal)" strokeWidth={1.5} fill="url(#growthGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
                 </>
               )}
             </ComposedChart>
@@ -1353,14 +1356,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               {showBreakdown ? (
                 <>
                   <span style={{ display: "flex", gap: 2 }}>
-                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "#059669", opacity: 0.8, display: "inline-block" }} />
-                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "#62FAE3", opacity: 0.6, display: "inline-block" }} />
+                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "var(--uf-green)", opacity: 0.8, display: "inline-block" }} />
+                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "var(--uf-teal)", opacity: 0.6, display: "inline-block" }} />
                   </span>
                   <span>Contributions · Returns</span>
                 </>
               ) : (
                 <>
-                  <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="#62FAE3" strokeWidth="2" /></svg>
+                  <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="var(--uf-teal)" strokeWidth="2" /></svg>
                   Projection
                 </>
               )}
@@ -1385,8 +1388,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 fontWeight: 800,
                 padding: "5px 10px",
                 borderRadius: 999,
-                background: emergencyFundPlan.state === "healthy" ? "#DCFCE7" : emergencyFundPlan.state === "fragile" ? "#FEF3C7" : emergencyFundPlan.state === "rebuilding" ? "#E0F2FE" : "#FEE2E2",
-                color: emergencyFundPlan.state === "healthy" ? "#166534" : emergencyFundPlan.state === "fragile" ? "#92400E" : emergencyFundPlan.state === "rebuilding" ? "#075985" : "#991B1B",
+                background: emergencyFundPlan.state === "healthy" ? "var(--uf-green-50)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-bg)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-surface-2)" : "var(--uf-neg-bg)",
+                color: emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-ink)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-neg-ink)",
                 fontFamily: "Manrope, sans-serif",
               }}>
                 {emergencyFundPlan.stateLabel}
@@ -1423,14 +1426,14 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                 Your freedom date
               </div>
               {budgetMode === "history" && histMonthsCount > 0 && (
-                <span style={{ fontSize: 10, fontWeight: 700, background: "rgba(5,150,105,0.12)", color: "#059669", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, background: "var(--uf-green-50)", color: "var(--uf-pos-ink)", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
                   {histMonthsCount}mo avg
                 </span>
               )}
             </div>
             {retireYear ? (
               <>
-                <div style={{ fontSize: "clamp(32px, 6vw, 44px)", fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.04em", lineHeight: 1 }}>{retireYear}</div>
+                <div style={{ fontSize: "clamp(32px, 6vw, 44px)", fontWeight: 800, color: "var(--uf-text)", fontFamily: "var(--uf-font-display)", letterSpacing: "-0.02em", lineHeight: 1 }}>{retireYear}</div>
                 <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 6 }}>
                   {fireYear ? `${fireYear} years away` : "Projected from your current plan"}
                   {fireAge > 0 && fireYear ? ` · around age ${fireAge + fireYear}` : ""}
@@ -1443,7 +1446,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
               <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Progress</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: progress >= 50 ? "#059669" : "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{progress.toFixed(0)}%</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: progress >= 50 ? "var(--uf-pos)" : "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{progress.toFixed(0)}%</div>
             </div>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
               <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Target</div>
@@ -1467,8 +1470,8 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                   fontWeight: 800,
                   padding: "5px 10px",
                   borderRadius: 999,
-                  background: emergencyFundPlan.state === "healthy" ? "#DCFCE7" : emergencyFundPlan.state === "fragile" ? "#FEF3C7" : emergencyFundPlan.state === "rebuilding" ? "#E0F2FE" : "#FEE2E2",
-                  color: emergencyFundPlan.state === "healthy" ? "#166534" : emergencyFundPlan.state === "fragile" ? "#92400E" : emergencyFundPlan.state === "rebuilding" ? "#075985" : "#991B1B",
+                  background: emergencyFundPlan.state === "healthy" ? "var(--uf-green-50)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-bg)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-surface-2)" : "var(--uf-neg-bg)",
+                  color: emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-ink)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-neg-ink)",
                   fontFamily: "Manrope, sans-serif",
                 }}>
                   Safety: {emergencyFundPlan.stateLabel}
@@ -1509,20 +1512,20 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                         return (
                           <>
                             <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
-                              <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#DCFCE7" strokeWidth={stroke} />
+                              <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--uf-green-50)" strokeWidth={stroke} />
                               <circle
                                 cx={size / 2}
                                 cy={size / 2}
                                 r={radius}
                                 fill="none"
-                                stroke="#10B981"
+                                stroke="var(--uf-green)"
                                 strokeWidth={stroke}
                                 strokeLinecap="round"
                                 strokeDasharray={circumference}
                                 strokeDashoffset={dashOffset}
                               />
                             </svg>
-                            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#047857", fontFamily: "Manrope, sans-serif" }}>
+                            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "var(--uf-pos-ink)", fontFamily: "Manrope, sans-serif" }}>
                               {Math.round(task.progressPct)}%
                             </div>
                           </>
@@ -1530,7 +1533,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                       })()}
                     </div>
                   ) : (
-                    <div style={{ width: 24, height: 24, borderRadius: 999, background: "#ECFDF5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 999, background: "var(--uf-green-50)", color: "var(--uf-pos-ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>
                       {index + 1}
                     </div>
                   )}
@@ -1540,13 +1543,13 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
                         {task.label}
                       </div>
                       {task.impactYears > 0 && (
-                        <div style={{ fontSize: 12, fontWeight: 800, color: "#047857", background: "#ECFDF5", borderRadius: 999, padding: "4px 10px", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-pos-ink)", background: "var(--uf-green-50)", borderRadius: 999, padding: "4px 10px", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap" }}>
                           {task.impactYears >= 1.5 ? `${task.impactYears.toFixed(1)} years` : `${Math.round(task.impactYears * 12)} months`}
                         </div>
                       )}
                     </div>
                     {index < 2 && task.progressText && (
-                      <div style={{ fontSize: 12, color: "#047857", fontFamily: "Manrope, sans-serif", fontWeight: 700, marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: "var(--uf-pos-ink)", fontFamily: "Manrope, sans-serif", fontWeight: 700, marginTop: 4 }}>
                         Progress: {task.progressText}
                       </div>
                     )}
@@ -1622,19 +1625,19 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
           <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
           {monthlyWorkCosts != null && monthlyWorkCosts > 0 && (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, padding: "7px 10px", fontSize: 12, color: "#6366f1", fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "7px 10px", fontSize: 12, color: "var(--uf-ink-2)", fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
               <span>💼</span>
               <span>{fmtMoney(monthlyWorkCosts, true)}/mo in work costs drops at FIRE → retirement target: {fmtMoney(retirementMonthlyExpenses * 12 / withdrawalRate, true)}</span>
             </div>
           )}
-          <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "#047857", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>View categories →</button>
+          <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "var(--uf-pos-ink)", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>View categories →</button>
         </div>
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Consistency</div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "#059669" : "#F59E0B", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "var(--uf-pos)" : "var(--uf-warn)", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
                 {consistencyLabel}
               </div>
               <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 6, lineHeight: 1.6 }}>
@@ -1649,7 +1652,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             )}
           </div>
           <div style={{ height: 8, background: "var(--uf-border)", borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ width: `${trackedMonths > 0 ? (onTrackMonths / trackedMonths) * 100 : 0}%`, height: "100%", background: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "linear-gradient(90deg, #059669, #34D399)" : "linear-gradient(90deg, #F59E0B, #FBBF24)", borderRadius: 999 }} />
+            <div style={{ width: `${trackedMonths > 0 ? (onTrackMonths / trackedMonths) * 100 : 0}%`, height: "100%", background: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "linear-gradient(90deg, var(--uf-pos), var(--uf-green-700))" : "linear-gradient(90deg, var(--uf-warn), var(--uf-warn))", borderRadius: 999 }} />
           </div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{consistencySupport}</div>
         </div>
@@ -1670,9 +1673,9 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             </div>
             <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { label: "Retirement accounts", value: retirementAccounts, color: "#064E3B", pct: retirementPct },
-                { label: "Brokerage", value: brokerageAssets, color: "#10B981", pct: brokeragePct },
-                { label: "Cash", value: displayCashAssets, color: "#CFFAEF", pct: cashPct, text: "#065F46" },
+                { label: "Retirement accounts", value: retirementAccounts, color: "var(--uf-green-900)", pct: retirementPct },
+                { label: "Brokerage", value: brokerageAssets, color: "var(--uf-green-700)", pct: brokeragePct },
+                { label: "Cash", value: displayCashAssets, color: "var(--uf-green)", pct: cashPct, text: "var(--uf-pos-ink)" },
               ].map((row) => (
                 <div key={row.label}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5, fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
@@ -1687,7 +1690,7 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
               <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>{moneyMixSourceLabel}</div>
               {(totalDebt + mortgageBalance) > 0 && (
                 <div style={{ paddingTop: 4, borderTop: "1px solid var(--uf-border)", fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
-                  Debt: <span style={{ color: "#DC2626", fontWeight: 800 }}>{fmtMoney(totalDebt + mortgageBalance, true)}</span>
+                  Debt: <span style={{ color: "var(--uf-neg)", fontWeight: 800 }}>{fmtMoney(totalDebt + mortgageBalance, true)}</span>
                 </div>
               )}
             </div>
@@ -3234,8 +3237,8 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 {emergencyFundPlan.headline}
               </div>
               <span style={{
-                background: emergencyFundPlan.state === "healthy" ? "#DCFCE7" : emergencyFundPlan.state === "fragile" ? "#FEF3C7" : emergencyFundPlan.state === "rebuilding" ? "#E0F2FE" : "#FEE2E2",
-                color: emergencyFundPlan.state === "healthy" ? "#166534" : emergencyFundPlan.state === "fragile" ? "#92400E" : emergencyFundPlan.state === "rebuilding" ? "#075985" : "#991B1B",
+                background: emergencyFundPlan.state === "healthy" ? "var(--uf-green-50)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-bg)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-surface-2)" : "var(--uf-neg-bg)",
+                color: emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-ink)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-neg-ink)",
                 borderRadius: 999,
                 padding: "4px 10px",
                 fontSize: 12,
