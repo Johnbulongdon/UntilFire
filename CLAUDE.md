@@ -234,19 +234,20 @@ button, link and interactive affordance. Teal (`--uf-teal`) is reserved for
 progress toward the freedom date — the date itself, progress bars, "2.4 years
 earlier". Teal is never a button and never means generic success (`--uf-pos`).
 
-- Ground: light default (`--uf-ground` `#F6FAF8`), dark via `.dark` on `<html>`, every route.
-- Display font: Bricolage Grotesque (freedom date, page titles, h1/h2).
+- Ground: warm cream (`--uf-ground` `#FDF8F1`) light default, warm dark (`#16120D`) via `.dark`, every route.
+- Display font: Fraunces (freedom date, page titles, h1/h2) — display sizes only.
 - Body font: Manrope. Data font: DM Mono with tabular numerals.
 - Instrument Serif is the marketing-only serif (landing page + HomeClient hero).
-- Neutrals and shadows are tinted green, never pure grey or black.
+- Neutrals and shadows are warm, never grey or black. Money apps are cold; this one isn't.
+- Badge text (11px) uses the `--uf-*-ink` variants — the base colours fail AA at that size.
 - Default tone: calm, confident, trustworthy, emotionally outcome-led.
 - Mobile-first matters for beta and launch traffic.
 
 Scales — use these steps, nothing between them:
 
-- Type: 52 · 34 · 24 · 18 · 16 · 14 · 13 · 11 (classes `.uf-t-*` in globals.css)
+- Type: 56 · 34 · 24 · 18 · 16 · 14 · 13 · 11 (classes `.uf-t-*` in globals.css)
 - Space: 4 · 8 · 12 · 16 · 24 · 32 · 48
-- Radius: 8 control · 12 card · 18 modal · 999 pill
+- Radius: 12 control · 20 card · 28 modal · 999 pill (buttons are full pills)
 - Elevation: `--uf-e1` · `--uf-e2` · `--uf-e3`
 
 Rules for new code:

@@ -2602,7 +2602,7 @@ function GoalsPageTab({ userId }: { userId: string }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Bricolage Grotesque, Manrope, sans-serif", letterSpacing: "-0.4px" }}>Goals</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Fraunces, Georgia, serif", letterSpacing: "-0.4px" }}>Goals</div>
           <div style={{ fontSize: 13, color: "var(--uf-text-muted)", marginTop: 2 }}>Save toward the things that matter</div>
         </div>
         <button
@@ -2765,7 +2765,7 @@ function GoalsPageTab({ userId }: { userId: string }) {
             borderRadius: 18, padding: "24px 24px 20px", width: "100%", maxWidth: 420,
             display: "flex", flexDirection: "column", gap: 18,
           }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Bricolage Grotesque, Manrope, sans-serif" }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Fraunces, Georgia, serif" }}>
               {editingGoal ? "Edit Goal" : "New Goal"}
             </div>
 
@@ -6209,7 +6209,7 @@ function ExpatCityDetail({
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px 80px" }}>
         {/* Title */}
         <h1 style={{
-          fontFamily: "Bricolage Grotesque, Manrope, sans-serif", fontSize: 28, fontWeight: 800,
+          fontFamily: "Fraunces, Georgia, serif", fontSize: 28, fontWeight: 800,
           color: textPrimary, margin: "0 0 8px",
         }}>
           {targetCity.flag} {targetCity.name}
@@ -6229,7 +6229,7 @@ function ExpatCityDetail({
             textAlign: "center", background: isDark ? "rgba(5,150,105,0.1)" : "#F0FDF4",
             border: "1px solid #A7F3D0", borderRadius: 16, padding: "24px 20px", marginBottom: 24,
           }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#059669", fontFamily: "Bricolage Grotesque, Manrope, sans-serif" }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#059669", fontFamily: "Fraunces, Georgia, serif" }}>
               You could FIRE here NOW
             </div>
             <div style={{ fontSize: 14, color: isDark ? "#6ee7b7" : "#065F46", marginTop: 8 }}>
@@ -6242,7 +6242,7 @@ function ExpatCityDetail({
             border: isDark ? "1px solid rgba(34,211,165,0.25)" : "1px solid #A7F3D0",
             borderRadius: 16, padding: "24px 20px", marginBottom: 24,
           }}>
-            <div style={{ fontSize: 42, fontWeight: 800, color: "#22d3a5", fontFamily: "Bricolage Grotesque, Manrope, sans-serif", lineHeight: 1 }}>
+            <div style={{ fontSize: 42, fontWeight: 800, color: "#22d3a5", fontFamily: "Fraunces, Georgia, serif", lineHeight: 1 }}>
               {yearDiff.toFixed(1)} years sooner
             </div>
             <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>
@@ -6255,7 +6255,7 @@ function ExpatCityDetail({
             border: isDark ? "1px solid rgba(239,68,68,0.25)" : "1px solid #FECACA",
             borderRadius: 16, padding: "24px 20px", marginBottom: 24,
           }}>
-            <div style={{ fontSize: 42, fontWeight: 800, color: "#ef4444", fontFamily: "Bricolage Grotesque, Manrope, sans-serif", lineHeight: 1 }}>
+            <div style={{ fontSize: 42, fontWeight: 800, color: "#ef4444", fontFamily: "Fraunces, Georgia, serif", lineHeight: 1 }}>
               {yearDiff.toFixed(1)} years later
             </div>
             <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>

@@ -1,6 +1,6 @@
-# UntilFire Design System — v1
+# UntilFire Design System — v3 Warm
 
-Agreed with John on 2026-08-26. This is the default for all design and all code
+Agreed with John on 2026-08-27 (v3 Warm; the system itself landed 2026-08-26). This is the default for all design and all code
 from here on. Tokens live in `app/globals.css`; primitives live in
 `components/ui/`.
 
@@ -9,6 +9,9 @@ built by approximating the last. Measured before this document: **44 font sizes,
 23 border radii, 25 spacing values, 8 greens, 302 hand-rolled buttons, 0 shared
 components.** Two fonts (Syne, DM Sans) were referenced but never loaded, so
 they had never rendered.
+
+The visual language is **v3 Warm**, chosen from four directions explored on
+2026-08-27.
 
 ## The one rule
 
@@ -28,16 +31,36 @@ that means something.
 
 | | Decision |
 | --- | --- |
-| **Ground** | Light default, dark via `.dark` on `<html>`, available on every route |
-| **Display** | Bricolage Grotesque — freedom date, page titles, h1/h2 |
-| **Body** | Manrope — everything else |
+| **Ground** | Warm cream `#FDF8F1`, light default; warm dark `#16120D` via `.dark`, every route |
+| **Display** | Fraunces — freedom date, page titles, h1/h2. Display sizes only |
+| **Body** | Manrope — everything h3 and below |
 | **Data** | DM Mono, tabular numerals — every figure, date, percentage |
 | **Marketing serif** | Instrument Serif — landing page and HomeClient hero only |
 
-Neutrals are **tinted green, not grey** (`#F6FAF8`, not `#F7F9FB`), and shadows
-are tinted the same way (`rgba(6,58,44,…)`, never black). It's a two-point shift
-nobody consciously notices and it's most of the difference between a default
-Tailwind app and one somebody designed.
+Money apps are cold; this one deliberately isn't. Neutrals are **warm all the way
+down** — ink is `#221B12`, not black — and shadows are warm too
+(`rgba(120,80,30,…)`). Dark mode keeps the warmth: a warm near-black, not the
+usual blue-black, so the personality survives the toggle.
+
+Radius is generous (12 control / 20 card / 28 modal) and buttons are full pills.
+
+### Why teal for freedom
+
+Green is taken (acts), red is taken (negative), amber is taken (warning). Teal is
+the only cool note in a warm system — and that contrast is the argument *for* it:
+the colour that doesn't belong to the warm world is the one that means escape
+from it. It also collides with nothing, and it's the brand colour already in use.
+
+Gold was considered and rejected: it sits next to the warning amber, so a
+"2.4 years earlier" badge and a "due in 5d" badge read as the same temperature in
+the same Cashflow list.
+
+### Contrast
+
+Badge text is 11px, which needs 4.5:1. The base brand colours pass at display
+size but not at 11px, so badges use the `--uf-*-ink` variants, solved for AA
+rather than eyeballed. All 14 foreground/background pairs pass in both themes —
+re-check with the solver in the commit if you change a colour.
 
 ## Scales
 
@@ -45,9 +68,9 @@ Use these. Nothing between the steps.
 
 | Scale | Steps | Was |
 | --- | --- | --- |
-| Type | 52 · 34 · 24 · 18 · 16 · 14 · 13 · 11 | 44 sizes |
+| Type | 56 · 34 · 24 · 18 · 16 · 14 · 13 · 11 | 44 sizes |
 | Space | 4 · 8 · 12 · 16 · 24 · 32 · 48 | 25 values |
-| Radius | 8 control · 12 card · 18 modal · 999 pill | 23 values |
+| Radius | 12 control · 20 card · 28 modal · 999 pill | 23 values |
 | Elevation | e1 · e2 · e3 | ad hoc |
 | Weight | 400 · 500 · 600 · 700 · 800 | 7 — kept |
 

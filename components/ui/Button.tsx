@@ -16,9 +16,9 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const SIZES: Record<ButtonSize, React.CSSProperties> = {
-  sm: { fontSize: 13, padding: "7px 13px" },
-  md: { fontSize: 14, padding: "10px 18px" },
-  lg: { fontSize: 15, padding: "13px 24px" },
+  sm: { fontSize: 13, padding: "8px 16px" },
+  md: { fontSize: 14, padding: "11px 22px" },
+  lg: { fontSize: 15, padding: "14px 28px" },
 };
 
 const VARIANTS: Record<ButtonVariant, React.CSSProperties> = {
@@ -48,7 +48,7 @@ export default function Button({
       style={{
         fontFamily: "var(--uf-font)",
         fontWeight: 700,
-        borderRadius: "var(--uf-r-control)",
+        borderRadius: "var(--uf-r-pill)",
         border: "1px solid transparent",
         display: "inline-flex",
         alignItems: "center",

@@ -96,7 +96,7 @@ export default function ExpatFireCalculator() {
           <div style={{ display: 'inline-block', background: 'rgba(34,211,165,0.15)', border: '1px solid rgba(34,211,165,0.3)', borderRadius: 99, padding: '4px 14px', fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', color: '#22d3a5', marginBottom: 16, textTransform: 'uppercase' }}>
             Geo-Arbitrage Calculator
           </div>
-          <h1 style={{ fontFamily: 'Bricolage Grotesque, Manrope, sans-serif', fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, color: '#ffffff', margin: '0 0 14px', lineHeight: 1.15 }}>
+          <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, color: '#ffffff', margin: '0 0 14px', lineHeight: 1.15 }}>
             Expat FIRE
           </h1>
           <p style={{ color: '#a7f3d0', fontSize: 17, margin: 0, lineHeight: 1.65 }}>
@@ -186,7 +186,7 @@ export default function ExpatFireCalculator() {
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '16px 20px', marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 2 }}>Staying in {currentCity.name.split(',')[0]}</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#064E3B', fontFamily: 'Bricolage Grotesque, Manrope, sans-serif' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#064E3B', fontFamily: 'Fraunces, Georgia, serif' }}>
               {result.years <= 0 ? 'FIRE ready now 🎉' : `${result.years.toFixed(1)} years to FIRE`}
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function ExpatFireCalculator() {
         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '20px 20px 22px', marginTop: 16 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div>
-              <h3 style={{ fontFamily: 'Bricolage Grotesque, Manrope, sans-serif', fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+              <h3 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>
                 Freedom timeline
               </h3>
               <p style={{ color: '#64748b', fontSize: 13, margin: '2px 0 0', lineHeight: 1.5 }}>
@@ -243,7 +243,7 @@ export default function ExpatFireCalculator() {
 
           {/* Readout */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-            <span style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', fontFamily: 'Bricolage Grotesque, Manrope, sans-serif' }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', fontFamily: 'Fraunces, Georgia, serif' }}>
               {t === 0 ? 'Today' : projAge ? `Age ${projAge}` : `In ${t} ${t === 1 ? 'year' : 'years'}`}
             </span>
             {t > 0 && (
@@ -296,7 +296,7 @@ export default function ExpatFireCalculator() {
 
         {/* Globe */}
         <div style={{ marginTop: 32, marginBottom: 8 }}>
-          <h2 style={{ fontFamily: 'Bricolage Grotesque, Manrope, sans-serif', fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+          <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
             Tap a city to compare
           </h2>
           <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 20px' }}>

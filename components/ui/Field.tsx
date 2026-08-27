@@ -16,7 +16,7 @@ export const inputStyle = (numeric = false): React.CSSProperties => ({
   fontFamily: numeric ? "var(--uf-font-mono)" : "var(--uf-font)",
   fontVariantNumeric: numeric ? "tabular-nums" : undefined,
   fontSize: 14,
-  padding: "10px 12px",
+  padding: "11px 14px",
   border: "1px solid var(--uf-border-2)",
   borderRadius: "var(--uf-r-control)",
   background: "var(--uf-card)",

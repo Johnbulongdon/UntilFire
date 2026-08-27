@@ -25,8 +25,8 @@ const VALUE_COLORS: Record<StatTone, string> = {
 
 const SIZES: Record<StatSize, { fontSize: number; weight: number }> = {
   md: { fontSize: 20, weight: 500 },
-  lg: { fontSize: 26, weight: 500 },
-  display: { fontSize: 52, weight: 500 },
+  lg: { fontSize: 24, weight: 500 },
+  display: { fontSize: 56, weight: 500 },
 };
 
 export interface StatProps {

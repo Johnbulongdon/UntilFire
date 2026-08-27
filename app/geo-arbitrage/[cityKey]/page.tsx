@@ -275,7 +275,7 @@ export default function GeoArbitragePage() {
         {/* Title */}
         <h1
           style={{
-            fontFamily: 'Bricolage Grotesque, Manrope, sans-serif',
+            fontFamily: 'Fraunces, Georgia, serif',
             fontSize: 28,
             fontWeight: 800,
             color: '#0F172A',
@@ -303,7 +303,7 @@ export default function GeoArbitragePage() {
                 fontSize: 32,
                 fontWeight: 800,
                 color: '#059669',
-                fontFamily: 'Bricolage Grotesque, Manrope, sans-serif',
+                fontFamily: 'Fraunces, Georgia, serif',
               }}
             >
               You could FIRE here NOW
@@ -328,7 +328,7 @@ export default function GeoArbitragePage() {
                 fontSize: 42,
                 fontWeight: 800,
                 color: '#22d3a5',
-                fontFamily: 'Bricolage Grotesque, Manrope, sans-serif',
+                fontFamily: 'Fraunces, Georgia, serif',
                 lineHeight: 1,
               }}
             >
@@ -354,7 +354,7 @@ export default function GeoArbitragePage() {
                 fontSize: 42,
                 fontWeight: 800,
                 color: '#ef4444',
-                fontFamily: 'Bricolage Grotesque, Manrope, sans-serif',
+                fontFamily: 'Fraunces, Georgia, serif',
                 lineHeight: 1,
               }}
             >
