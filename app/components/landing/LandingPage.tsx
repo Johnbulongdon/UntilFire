@@ -608,6 +608,36 @@ function FooterSection() {
             />
           </a>
           <a
+            href="https://thesaasdir.com/product/untilfire?ref=badge"
+            target="_blank"
+            rel="dofollow"
+            title="Featured on TheSaaSDir"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://thesaasdir.com/badge/untilfire.svg"
+              alt="Featured on TheSaaSDir"
+              width={160}
+              height={44}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://themicrosaasdir.com/product/untilfire?ref=badge"
+            target="_blank"
+            rel="dofollow"
+            title="Featured on TheMicroSaaSDir"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://themicrosaasdir.com/badge/untilfire.svg"
+              alt="Featured on TheMicroSaaSDir"
+              width={160}
+              height={44}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://tooldirs.com/product/untilfire"
             target="_blank"
             rel="noopener noreferrer"
