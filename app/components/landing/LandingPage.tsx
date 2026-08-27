@@ -593,6 +593,21 @@ function FooterSection() {
             />
           </a>
           <a
+            href="https://saaslineup.com/product/untilfire?ref=badge"
+            target="_blank"
+            rel="dofollow"
+            title="Featured on SaaSLineup"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            <img
+              src="https://saaslineup.com/badge/untilfire.svg"
+              alt="Featured on SaaSLineup"
+              width={160}
+              height={44}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://tooldirs.com/product/untilfire"
             target="_blank"
             rel="noopener noreferrer"
