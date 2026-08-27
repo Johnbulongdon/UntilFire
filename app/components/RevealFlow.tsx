@@ -51,8 +51,20 @@ export interface RevealFlowProps {
   onShare: () => void;
 }
 
-const TEAL = "#62FAE3";
-const BG = "#003527";
+// Fixed dark presentation regardless of the visitor's light/dark preference —
+// this reveal is a deliberate cinematic moment, not a themed surface. The
+// shell forces the `.dark` token scope below so it draws from the same
+// palette as the rest of the app's dark mode instead of a bespoke one.
+const TEAL = "var(--uf-teal)";
+const BG = "var(--uf-ground)";
+// "Still working" needs to sit clearly between the dim "lived" grey and the
+// bright teal "free years" — --uf-green is too close in hue to teal at this
+// lightness and the two read as one colour in the dot grid.
+const WORKING = "var(--uf-ink-3)";
+const NEG = "var(--uf-neg)";
+// Mirrors --uf-teal in .dark — needed for translucent glows/tints, which
+// rgba() can't derive from a CSS var.
+const TEAL_RGB = "53,201,174";
 
 const KEYFRAMES = `
 @keyframes rf-spin{to{transform:rotate(360deg)}}
@@ -136,7 +148,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   const working = Math.max(0, Math.min(100 - lived, yearsToFire));
   const freeYears = Math.max(0, 100 - lived - working);
   const dots = useMemo(() => Array.from({ length: 100 }, (_, i) => (
-    i < lived ? "rgba(255,255,255,0.16)" : i < lived + working ? "#059669" : TEAL
+    i < lived ? "rgba(255,255,255,0.16)" : i < lived + working ? WORKING : TEAL
   )), [lived, working]);
 
   // Freedom-number ring (r=118 → circumference ≈ 741).
@@ -173,7 +185,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   if (step === 1) return <VideoLoader onDone={() => setStep(2)} reduce={reduce} />;
 
   return (
-    <div style={shell}>
+    <div className="dark" style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
       <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 42%, transparent 36%, rgba(0,0,0,.5))", pointerEvents: "none", zIndex: 1 }} />
 
@@ -206,11 +218,11 @@ export default function RevealFlow(props: RevealFlowProps) {
           {/* 2 — freedom age */}
           {step === 2 && (
             <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, position: "relative" }}>
-              <div aria-hidden style={{ position: "absolute", top: "50%", left: "50%", width: 560, height: 560, maxWidth: "90vw", maxHeight: "90vw", borderRadius: "50%", background: "radial-gradient(circle, rgba(98,250,227,.18), transparent 60%)", pointerEvents: "none", ...anim("rf-glow .9s .1s ease both") }} />
+              <div aria-hidden style={{ position: "absolute", top: "50%", left: "50%", width: 560, height: 560, maxWidth: "90vw", maxHeight: "90vw", borderRadius: "50%", background: `radial-gradient(circle, rgba(${TEAL_RGB},.18), transparent 60%)`, pointerEvents: "none", ...anim("rf-glow .9s .1s ease both") }} />
               <div style={{ ...eyebrow, position: "relative", ...anim("rf-up .5s ease both") }}>
                 {isAlreadyFire ? "YOU'RE ALREADY FINANCIALLY FREE" : "YOU COULD BE FREE AT"}
               </div>
-              <div style={{ fontSize: "clamp(96px, 22vw, 200px)", lineHeight: 0.85, fontWeight: 800, letterSpacing: "-0.04em", position: "relative", ...anim("rf-pop .7s .1s ease both") }}>
+              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(96px, 22vw, 200px)", lineHeight: 0.85, fontWeight: 800, letterSpacing: "-0.04em", position: "relative", ...anim("rf-pop .7s .1s ease both") }}>
                 {isAlreadyFire ? "Now" : ageText}
               </div>
               <div style={{ fontSize: 24, fontWeight: 700, color: "rgba(255,255,255,0.9)", position: "relative", ...anim("rf-up .5s .4s ease both") }}>
@@ -232,7 +244,7 @@ export default function RevealFlow(props: RevealFlowProps) {
           {/* 3 — life in years */}
           {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em", ...anim("rf-up .5s ease both") }}>Here&apos;s your life, in years</div>
+              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em", ...anim("rf-up .5s ease both") }}>Here&apos;s your life, in years</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 7, width: "min(520px, 82vw)" }}>
                 {dots.map((c, i) => (
                   <div key={i} style={{
@@ -245,7 +257,7 @@ export default function RevealFlow(props: RevealFlowProps) {
               </div>
               <div style={{ display: "flex", gap: 22, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
                 <Legend color="rgba(255,255,255,0.16)" label={`Lived (${lived})`} />
-                <Legend color="#059669" label={`Still working (${working})`} />
+                <Legend color={WORKING} label={`Still working (${working})`} />
                 <Legend color={TEAL} label={`Free years (${freeYears})`} highlight />
               </div>
               <div style={subtle}>
@@ -266,7 +278,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                   <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={reduce ? ringOffset : RING} style={{ transition: reduce ? undefined : "stroke-dashoffset 1.1s .25s ease", strokeDashoffset: ringOffset }} />
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>{numText}</div>
+                  <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>{numText}</div>
                   <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>invested</div>
                 </div>
               </div>
@@ -283,7 +295,7 @@ export default function RevealFlow(props: RevealFlowProps) {
           {step === 5 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center", ...anim("rf-up .55s ease both") }}>
               <div style={eyebrow}>HOW YOU STACK UP</div>
-              <div style={{ fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
+              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
                 {beatsUs
                   ? <>You save <span style={{ color: TEAL }}>{savingsRatePct}%</span> of your take-home</>
                   : <>You&apos;re saving <span style={{ color: TEAL }}>{savingsRatePct}%</span> right now</>}
@@ -308,7 +320,7 @@ export default function RevealFlow(props: RevealFlowProps) {
           {step === 6 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center", width: "100%", ...anim("rf-up .55s ease both") }}>
               <div style={eyebrow}>EXPAT FIRE</div>
-              <div style={{ fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em" }}>Retire even earlier somewhere else</div>
+              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em" }}>Retire even earlier somewhere else</div>
               {expatCities.length > 0 ? (
                 <ExpatFireGlobe home={expatHome} baseAge={expatBaseAge} cities={expatCities} />
               ) : (
@@ -325,7 +337,7 @@ export default function RevealFlow(props: RevealFlowProps) {
           {/* 7 — save */}
           {step === 7 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center", maxWidth: 480, ...anim("rf-up .55s ease both") }}>
-              <div style={{ fontSize: "clamp(24px, 5vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(24px, 5vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
                 Save your plan —<br />and make it happen.
               </div>
               <div style={subtle}>Track the monthly moves that pull your freedom date closer.</div>
@@ -336,18 +348,18 @@ export default function RevealFlow(props: RevealFlowProps) {
                   {scenarios.map((s, i) => {
                     const active = i === scenarioIdx;
                     return (
-                      <button key={s.label} onClick={() => setScenarioIdx(i)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 13px", borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all .15s ease", background: active ? "rgba(98,250,227,0.12)" : "rgba(255,255,255,0.05)", border: active ? `1px solid ${TEAL}` : "1px solid rgba(255,255,255,0.14)", color: active ? "#fff" : "rgba(255,255,255,0.85)", font: "inherit" }}>
+                      <button key={s.label} onClick={() => setScenarioIdx(i)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 13px", borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all .15s ease", background: active ? `rgba(${TEAL_RGB},0.12)` : "rgba(255,255,255,0.05)", border: active ? `1px solid ${TEAL}` : "1px solid rgba(255,255,255,0.14)", color: active ? "#fff" : "rgba(255,255,255,0.85)", font: "inherit" }}>
                         <span style={{ width: 15, height: 15, borderRadius: "50%", flex: "none", background: active ? TEAL : "transparent", border: active ? `2px solid ${TEAL}` : "2px solid rgba(255,255,255,0.4)", boxShadow: active ? `inset 0 0 0 2px ${BG}` : undefined }} />
                         <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{s.label}</span>
-                        <span style={{ fontWeight: 800, fontSize: 15, color: active ? TEAL : "rgba(255,255,255,0.55)" }}>{s.age}</span>
+                        <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontWeight: 800, fontSize: 15, color: active ? TEAL : "rgba(255,255,255,0.55)" }}>{s.age}</span>
                       </button>
                     );
                   })}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 15, borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 14, marginTop: 14 }}>
                   <span style={{ color: "rgba(255,255,255,0.7)" }}>You&apos;d reach FIRE at</span>
-                  <b style={{ color: TEAL, fontSize: 19 }}>{selected?.age}</b>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: selected && selected.delta > 0 ? TEAL : selected && selected.delta < 0 ? "#f0a0a0" : "rgba(255,255,255,0.5)" }}>
+                  <b style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: TEAL, fontSize: 19 }}>{selected?.age}</b>
+                  <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 14, color: selected && selected.delta > 0 ? TEAL : selected && selected.delta < 0 ? NEG : "rgba(255,255,255,0.5)" }}>
                     {selected && selected.delta > 0 ? `${selected.delta} yrs sooner` : selected && selected.delta < 0 ? `${Math.abs(selected.delta)} yrs later` : "your current plan"}
                   </span>
                 </div>
@@ -453,8 +465,8 @@ function Bar({ heightPct, value, label, tone, delay, reduce, youBadge }: {
       {youBadge && (
         <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", color: BG, background: TEAL, borderRadius: 6, padding: "3px 9px" }}>YOU</span>
       )}
-      <div style={{ fontSize: tone === "you" ? 30 : 22, fontWeight: 800, color: valueColor }}>{value}</div>
-      <div style={{ width: tone === "you" ? 90 : 78, height: h, borderRadius: "8px 8px 0 0", background: bg, transformOrigin: "bottom", boxShadow: tone === "you" ? "0 0 42px rgba(98,250,227,0.42)" : undefined, animation: reduce ? "none" : `rf-bar .65s ${delay} cubic-bezier(.2,.8,.2,1) both` }} />
+      <div style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: tone === "you" ? 30 : 22, fontWeight: 800, color: valueColor }}>{value}</div>
+      <div style={{ width: tone === "you" ? 90 : 78, height: h, borderRadius: "8px 8px 0 0", background: bg, transformOrigin: "bottom", boxShadow: tone === "you" ? `0 0 42px rgba(${TEAL_RGB},0.42)` : undefined, animation: reduce ? "none" : `rf-bar .65s ${delay} cubic-bezier(.2,.8,.2,1) both` }} />
       <div style={{ fontSize: 13, color: tone === "you" ? TEAL : "rgba(255,255,255,0.6)", fontWeight: tone === "you" ? 600 : 400 }}>{label}</div>
     </div>
   );
