@@ -74,6 +74,7 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 
 ## Submitted or Public, Backlink Not Confirmed
 
+| FindersList | `submitted` | 2026-08-27 | Unknown | https://www.finderslist.com/submit | Codex backlink acquisition | 2026-08-27 | Free public form accepted the UntilFire listing through `/api/submit-tool` with no account, CAPTCHA, payment, or reciprocal-link requirement. Submitted under `budgeting-apps`; response was `{"ok":true}`. FindersList says free submissions are reviewed within 24 hours. Public listing and outbound link attributes are not yet verified, so do not count this as dofollow until rechecked. |
 | Platform | Status | Submitted date | Assigned launch date | Submission or public URL | Owner/session | Last checked | Notes / next action |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ToolPromote | `submitted` | 2026-08-27 | Unknown | https://toolpromote.com/submit | Codex backlink acquisition | 2026-08-27 | Free Standard submission accepted with receipt `TP-MTB83ANH-TPAS`. No logo was uploaded and no paid Featured tier was selected. The first public search did not show an UntilFire listing, so the final backlink is not counted yet; recheck after review. |
@@ -409,6 +410,7 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 
 ## Audit Log
 
+| 2026-08-27 | Codex backlink acquisition | Submitted one additional non-guest-post listing to FindersList using its free public form; the API returned `ok=true`. Screened Zearches but skipped it because published outbound anchors use `rel="nofollow"`; Startuups and SaaSBoard were skipped because submission requires an account. |
 | Date | Owner/session | Change |
 | --- | --- | --- |
 | 2026-08-27 | Codex backlink acquisition | Reused the existing CurlShip listing 2162 instead of resubmitting. Added a restrained `Listed on CurlShip` footer link in main commit `126bb46`; Vercel deployment completed, CurlShip verification returned `has_badge=true` and `dofollow=true`, and the listing was promoted to `live-follow`. |
