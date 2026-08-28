@@ -342,7 +342,12 @@ function calcProjection({
   for (let y = 0; y <= years; y++) {
     const investable = cur401k + curRoth + curTaxable + curCash;
     const netWorth   = investable - curDebt - curMort;
-    if (fireYear === null && investable >= fireTarget && y > 0) fireYear = y;
+    // fireTarget > 0 guards against the moment right after a page refresh,
+    // before real data has loaded from Supabase and every input (including
+    // monthlyExpenses, so fireTarget itself) is still its zero default —
+    // without this, "$0 invested >= $0 target" is trivially true on the
+    // very first loop year, and the freedom date briefly shows as today.
+    if (fireYear === null && fireTarget > 0 && investable >= fireTarget && y > 0) fireYear = y;
     const contributed = Math.min(totalContributed, investable);
     data.push({
       year: y,
