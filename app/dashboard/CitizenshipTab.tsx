@@ -1,12 +1,39 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  US, GB, CA, AU, NZ, SG, AE, DE, FR, NL, JP, MX, CH, IE, ES, IT, PT, SE, NO, DK, BE, AT, PL, CZ, GR, FI,
+  KR, TW, CN, IN, TH, MY, ID, PH, VN, HK, BR, AR, CL, CO, PE, CR, PA, IL, SA, QA, ZA, KE, NG, EG, TR,
+} from "country-flag-icons/react/3x2";
 import { Button, Card, Badge, Select } from "@/components/ui";
 import {
   CITIZENSHIP_SCORES, CITIZENSHIP_TAX_RATE_LABEL, CITIZENSHIP_CGT_LABEL, CITIZENSHIP_ACCOUNT_LABEL, CITIZENSHIP_COST_OF_LIVING,
   citizenshipScore, citizenshipBand,
   type CitizenshipScore, type CitizenshipBand, type CostOfLivingTier,
 } from "@/lib/citizenship-data";
+
+// Real SVG flags, not emoji — flag emoji is two "regional indicator"
+// characters that some fonts (older Windows, several Linux emoji font
+// packages that ship without flag glyphs for licensing reasons) render as
+// literal letter pairs instead of composing into a flag, which is exactly
+// the "shows SG instead of the flag" bug this replaces. Keyed by this
+// file's own citizenship codes, not ISO directly, since a few (uk, in_ind,
+// il_isr, ar_lat, co_col, pa_pan, id_idn) don't match their ISO-3166 code.
+const FLAG_COMPONENTS: Record<string, typeof US> = {
+  us: US, uk: GB, ca: CA, au: AU, nz: NZ, sg: SG, ae: AE, de: DE, fr: FR, nl: NL, jp: JP, mx: MX,
+  ch: CH, ie: IE, es: ES, it: IT, pt: PT, se: SE, no: NO, dk: DK, be: BE, at: AT, pl: PL, cz: CZ,
+  gr: GR, fi: FI, kr: KR, tw: TW, cn: CN, in_ind: IN, th: TH, my: MY, id_idn: ID, ph: PH, vn: VN,
+  hk: HK, br: BR, ar_lat: AR, cl: CL, co_col: CO, pe: PE, cr: CR, pa_pan: PA, il_isr: IL, sa: SA,
+  qa: QA, za: ZA, ke: KE, ng: NG, eg: EG, tr: TR,
+};
+
+function Flag({ code, size = 28 }: { code: string; size?: number }) {
+  const FlagSvg = FLAG_COMPONENTS[code];
+  if (!FlagSvg) return null;
+  // A thin border, since several flags (Japan, Poland, Monaco...) are mostly
+  // or entirely white and otherwise disappear against the app's cream ground.
+  return <FlagSvg style={{ width: size, height: size * (2 / 3), flexShrink: 0, borderRadius: 3, border: "1px solid var(--uf-border)" }} />;
+}
 
 const CITIZENSHIP_STORAGE_KEY = "uf_citizenship";
 
@@ -85,7 +112,7 @@ function CitizenshipCard({ c, mine, open, onToggle }: { c: CitizenshipScore; min
           background: "transparent", border: "none", cursor: "pointer", textAlign: "left", font: "inherit",
         }}
       >
-        <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{c.flag}</span>
+        <Flag code={c.code} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontFamily: "var(--uf-font-display)", fontWeight: 800, fontSize: 15, color: "var(--uf-ink)" }}>{c.name}</span>
@@ -204,7 +231,7 @@ export default function CitizenshipTab() {
         <Select value={mineCode} onChange={(e) => pickMine(e.target.value)} style={{ maxWidth: 320 }}>
           <option value="">Not set</option>
           {[...CITIZENSHIP_SCORES].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-            <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+            <option key={c.code} value={c.code}>{c.name}</option>
           ))}
         </Select>
       </div>
