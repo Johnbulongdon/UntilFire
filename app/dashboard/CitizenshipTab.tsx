@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Badge, Select } from "@/components/ui";
-import { CITIZENSHIP_SCORES, citizenshipScore, citizenshipBand, type CitizenshipScore, type CitizenshipBand } from "@/lib/citizenship-data";
+import { CITIZENSHIP_SCORES, CITIZENSHIP_TAX_RATE_LABEL, citizenshipScore, citizenshipBand, type CitizenshipScore, type CitizenshipBand } from "@/lib/citizenship-data";
 
 const CITIZENSHIP_STORAGE_KEY = "uf_citizenship";
 
@@ -46,11 +46,14 @@ function ScoreRing({ score, band, size = 52 }: { score: number; band: Citizenshi
   );
 }
 
-function SubscoreRow({ label, value, max }: { label: string; value: number; max: number }) {
+function SubscoreRow({ label, hint, value, max }: { label: string; hint?: string; value: number; max: number }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13, color: "var(--uf-ink-2)" }}>
-      <span>{label}</span>
-      <span style={{ fontWeight: 700, color: "var(--uf-ink)", fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>{value}/{max}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, fontSize: 13, color: "var(--uf-ink-2)" }}>
+      <span>
+        {label}
+        {hint && <span style={{ color: "var(--uf-ink-3)", fontSize: 12 }}> — {hint}</span>}
+      </span>
+      <span style={{ flexShrink: 0, fontWeight: 700, color: "var(--uf-ink)", fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>{value}/{max}</span>
     </div>
   );
 }
@@ -78,13 +81,16 @@ function CitizenshipCard({ c, mine, open, onToggle }: { c: CitizenshipScore; min
             {mine && <Badge tone="freedom">Yours</Badge>}
           </div>
           <Badge tone={BAND_TONE[band.cls]} style={{ marginTop: 6 }}>{band.label}</Badge>
+          <div style={{ fontSize: 12, color: "var(--uf-ink-3)", fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", marginTop: 4 }}>
+            {CITIZENSHIP_TAX_RATE_LABEL[c.code] ?? "Rate unavailable"}
+          </div>
         </div>
         <ScoreRing score={score} band={band} />
       </button>
       {open && (
         <div style={{ padding: "0 var(--uf-s4) var(--uf-s4)", borderTop: "1px solid var(--uf-border)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "var(--uf-s3)", marginBottom: "var(--uf-s4)" }}>
-            <SubscoreRow label="Tax burden" value={c.tax} max={40} />
+            <SubscoreRow label="Tax burden" hint={CITIZENSHIP_TAX_RATE_LABEL[c.code]} value={c.tax} max={40} />
             <SubscoreRow label="Retirement access" value={c.retirement} max={30} />
             <SubscoreRow label="Investment freedom" value={c.investment} max={30} />
           </div>

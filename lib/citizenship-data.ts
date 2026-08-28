@@ -752,3 +752,63 @@ export function citizenshipBand(score: number): CitizenshipBand {
   if (score >= 60) return { cls: "workable", label: "Workable, with tradeoffs" };
   return { cls: "friction", label: "Real friction" };
 }
+
+// Approximate effective personal income-tax rate per citizenship, keyed to
+// match STATE_TAX in fire-data.ts one-for-one (same "directional, not
+// authoritative" caveat as the rest of this file). Not imported directly
+// because STATE_TAX is about residence, not citizenship — the two happen to
+// share the same country-level figure for every entry here except the US
+// and Canada, which fire-data.ts only tracks per state/province.
+export const CITIZENSHIP_TAX_RATE_LABEL: Record<string, string> = {
+  us: "Varies by state (0–13.3%) + progressive federal (10–37%)",
+  uk: "~20% effective",
+  ca: "Varies by province (~10–15%) + progressive federal",
+  au: "~22% effective",
+  nz: "~20% effective",
+  sg: "~10% effective",
+  ae: "No personal income tax",
+  de: "~22% effective",
+  fr: "~24% effective",
+  nl: "~25% effective",
+  jp: "~18% effective",
+  mx: "~7% effective",
+  ch: "~20% effective",
+  ie: "~20% effective",
+  es: "~18% effective",
+  it: "~25% effective",
+  pt: "~15% effective",
+  se: "~30% effective",
+  no: "~28% effective",
+  dk: "~35% effective",
+  be: "~32% effective",
+  at: "~22% effective",
+  pl: "12% lower bracket",
+  cz: "15% flat",
+  gr: "~22% effective",
+  fi: "~30% effective",
+  kr: "~15% effective",
+  tw: "~12% effective",
+  cn: "~6% effective",
+  in_ind: "~15% effective",
+  th: "~5% effective",
+  my: "~8% effective",
+  id_idn: "~5% effective",
+  ph: "~15% effective",
+  vn: "~10% effective",
+  hk: "~12% effective",
+  br: "~18% effective",
+  ar_lat: "~10% effective",
+  cl: "~10% effective",
+  co_col: "~8% effective",
+  pe: "~15% effective",
+  cr: "~15% effective",
+  pa_pan: "~10% effective",
+  il_isr: "~20% effective",
+  sa: "No personal income tax",
+  qa: "No personal income tax",
+  za: "~18% effective",
+  ke: "~20% effective",
+  ng: "~15% effective",
+  eg: "~15% effective",
+  tr: "~20% effective",
+};
