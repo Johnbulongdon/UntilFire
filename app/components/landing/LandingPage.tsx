@@ -220,6 +220,35 @@ function Hero7({ onStart }: { onStart: () => void }) {
     { location: [35.68, 139.69], size: 0.05 },
     { location: [1.35, 103.82], size: 0.05 },
   ], 4.2);
+  const trustTrackRef = useRef<HTMLDivElement | null>(null);
+
+  // Driven by rAF + inline transform rather than a CSS @keyframes animation.
+  // The CSS version (animation: uf7trustScroll ...) reliably ran in every
+  // browser we tested it in, but was reported frozen on at least one real
+  // machine with nothing unusual about it — a plain requestAnimationFrame
+  // loop setting style.transform directly doesn't depend on the browser's
+  // CSS animation engine at all, so it's a strictly more reliable fallback
+  // even though we never isolated why the CSS version failed there.
+  useEffect(() => {
+    const track = trustTrackRef.current;
+    if (!track) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0;
+    let x = 0;
+    let last: number | null = null;
+    const pxPerSecond = 20;
+    const tick = (now: number) => {
+      if (last === null) last = now;
+      x += pxPerSecond * ((now - last) / 1000);
+      last = now;
+      const loopWidth = track.scrollWidth / 2;
+      if (loopWidth > 0) x %= loopWidth;
+      track.style.transform = `translateX(${-x}px)`;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   return (
     <section className="uf7-hero" style={{ ["--uf7hue" as string]: "0deg" }}>
@@ -247,7 +276,7 @@ function Hero7({ onStart }: { onStart: () => void }) {
       <div className="uf7-trust">
         <p className="uf7-trust-label">Securely connects to 14,000+ banks &amp; brokerages</p>
         <div className="uf7-trust-strip">
-          <div className="uf7-trust-track">
+          <div className="uf7-trust-track" ref={trustTrackRef}>
             {[...TRUST_LOGOS, ...TRUST_LOGOS].map((logo, i) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -369,16 +398,6 @@ function CompoundGap7() {
 
 /* ── The world: globe + real city numbers ────────────────────────────── */
 function World7() {
-  const globeRef = useRef<HTMLCanvasElement | null>(null);
-  const globeFailed = useCobeGlobe(globeRef, 440, [
-    { location: [18.79, 98.98], size: 0.07 },
-    { location: [19.43, -99.13], size: 0.07 },
-    { location: [38.72, -9.14], size: 0.07 },
-    { location: [35.68, 139.69], size: 0.05 },
-    { location: [51.51, -0.13], size: 0.05 },
-    { location: [37.77, -122.42], size: 0.05 },
-  ], 2.2);
-
   const rows = useMemo(() => {
     return WORLD_CITY_KEYS
       .map((key) => CITIES.find((c) => c.key === key))
@@ -400,11 +419,15 @@ function World7() {
         <h2 className="uf7-statement uf7-rv">Your second life comes with a <em>world</em>.</h2>
         <div className="uf7-globe-grid">
           <div className="uf7-globe-stage uf7-rv">
-            {globeFailed ? (
-              <div className="uf7-globe-fallback" aria-hidden />
-            ) : (
-              <canvas ref={globeRef} style={{ width: "100%", height: "100%" }} />
-            )}
+            {/* Static image, not the live WebGL globe: cobe renders its glow
+                and markers fine but its internal world-map texture failed
+                to decode on at least one real, ordinary Chrome install with
+                nothing unusual about it, with zero error signal from the
+                library — not something we can chase further from here. A
+                pre-rendered frame is guaranteed to look the same for every
+                visitor, at the cost of the rotation. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/landing/globe-static.webp" alt="" aria-hidden width={880} height={880} style={{ width: "100%", height: "100%", borderRadius: "50%" }} />
           </div>
           <div className="uf7-rv">
             {rows.map((r) => (
@@ -1247,10 +1270,7 @@ const CSS7 = `
   .uf7-trust-strip::after { right: 0; background: linear-gradient(270deg, var(--uf-ground), transparent); }
   .uf7-trust-track {
     display: flex; gap: 16px; align-items: center; width: max-content;
-    animation: uf7trustScroll 30s linear infinite;
   }
-  @media (prefers-reduced-motion: reduce) { .uf7-trust-track { animation: none; } }
-  @keyframes uf7trustScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
   .uf7-trust-logo { border-radius: 8px; object-fit: cover; opacity: 0.75; flex-shrink: 0; filter: grayscale(0.15); }
 
   .uf7-block { position: relative; overflow: hidden; padding: 110px 24px; background: var(--uf-ground); }
@@ -1317,12 +1337,6 @@ const CSS7 = `
   }
   .uf7-globe-grid { margin-top: 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
   .uf7-globe-stage { position: relative; aspect-ratio: 1; width: min(440px, 100%); justify-self: center; }
-  .uf7-globe-fallback {
-    width: 100%; height: 100%; border-radius: 50%;
-    background: radial-gradient(circle at 38% 35%, rgba(53,201,174,0.22), transparent 62%), var(--uf-surface);
-    border: 1px solid rgba(53,201,174,0.35);
-    box-shadow: 0 0 60px rgba(53,201,174,0.18);
-  }
   .uf7-city-row { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: baseline; padding: 17px 0; border-top: 1px solid rgba(255,255,255,0.14); }
   .uf7-city-row:last-of-type { border-bottom: 1px solid rgba(255,255,255,0.14); }
   .uf7-city { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
