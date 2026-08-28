@@ -27,6 +27,9 @@ import {
   type FireTypeCtaClickedProperties,
   type HysaEmptyStateCtaClickedProperties,
   type EmailCaptureSubmittedProperties,
+  type NextMoveViewedProperties,
+  type ScenarioTestedProperties,
+  type ScenarioAcceptedProperties,
 } from './analytics-events';
 
 function isClient(): boolean {
@@ -208,4 +211,33 @@ export function trackEmailCaptureSubmitted(input: { landingSource?: string }) {
     ...(input.landingSource ? { landing_source: input.landingSource } : {}),
   });
   capture(FunnelEvents.EMAIL_CAPTURE_SUBMITTED, props);
+}
+
+export function trackNextMoveViewed(input: { moveCount: number; topPriority: number }) {
+  const props: NextMoveViewedProperties = withVersion({
+    move_count: input.moveCount,
+    top_priority: input.topPriority,
+  });
+  capture(FunnelEvents.NEXT_MOVE_VIEWED, props);
+}
+
+export function trackScenarioTested(input: { scenarioIndex: number; scenarioLabel: string; deltaYears: number }) {
+  const props: ScenarioTestedProperties = withVersion({
+    scenario_index: input.scenarioIndex,
+    scenario_label: input.scenarioLabel,
+    delta_years_rounded: Math.round(input.deltaYears * 10) / 10,
+  });
+  capture(FunnelEvents.SCENARIO_TESTED, props);
+}
+
+export function trackScenarioAccepted(input: { scenarioIndex: number; scenarioLabel: string; deltaYears: number }) {
+  const props: ScenarioAcceptedProperties = withVersion({
+    scenario_index: input.scenarioIndex,
+    scenario_label: input.scenarioLabel,
+    delta_years_rounded: Math.round(input.deltaYears * 10) / 10,
+  });
+  // send_instantly: onSave navigates to /login right after this fires;
+  // queued events would otherwise be dropped on page unload, same reasoning
+  // as trackSignupCompleted above.
+  capture(FunnelEvents.SCENARIO_ACCEPTED, props, { sendInstantly: true });
 }

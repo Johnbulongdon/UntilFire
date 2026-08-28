@@ -28,6 +28,9 @@ export const FunnelEvents = {
   FIRE_TYPE_CTA_CLICKED: 'funnel_fire_type_cta_clicked',
   HYSA_EMPTY_STATE_CTA_CLICKED: 'funnel_hysa_empty_state_cta_clicked',
   EMAIL_CAPTURE_SUBMITTED: 'funnel_email_capture_submitted',
+  NEXT_MOVE_VIEWED: 'funnel_next_move_viewed',
+  SCENARIO_TESTED: 'funnel_scenario_tested',
+  SCENARIO_ACCEPTED: 'funnel_scenario_accepted',
 } as const;
 
 export type FunnelEventName =
@@ -153,6 +156,31 @@ export interface HysaEmptyStateCtaClickedProperties extends BaseFunnelProperties
 
 export interface EmailCaptureSubmittedProperties extends BaseFunnelProperties {
   landing_source?: string;
+}
+
+export interface NextMoveViewedProperties extends BaseFunnelProperties {
+  move_count: number;
+  // 0 for a generic move; >0 marks the emergency-fund-first rule (the
+  // priority values that DashTab's topTasks ranking assigns to safety-net
+  // tasks), so this alone answers "did the safety rule fire" without
+  // needing the task's label text.
+  top_priority: number;
+}
+
+export interface ScenarioTestedProperties extends BaseFunnelProperties {
+  scenario_index: number;
+  scenario_label: string;
+  // Relative shift between scenarios (sooner/later), not an absolute
+  // years-to-FIRE figure — the bucketing rule above exists to stop an
+  // absolute timeline identifying someone; a 1.8-year delta between two
+  // hypotheticals doesn't, so it's sent as a rounded number, not a bucket.
+  delta_years_rounded: number;
+}
+
+export interface ScenarioAcceptedProperties extends BaseFunnelProperties {
+  scenario_index: number;
+  scenario_label: string;
+  delta_years_rounded: number;
 }
 
 export function withVersion<P extends Record<string, unknown>>(

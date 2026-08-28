@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
+import { trackScenarioTested } from "@/lib/analytics";
 
 // Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
 const ExpatFireGlobe = dynamic(() => import("@/app/components/ExpatFireGlobe"), {
@@ -46,7 +47,7 @@ export interface RevealFlowProps {
   expatCities: ExpatCity[];
   /** Compact money formatter, e.g. 1_240_000 -> "$1.24M". */
   formatCompact: (n: number) => string;
-  onSave: () => void;
+  onSave: (scenario: RevealScenario) => void;
   onAdjust: () => void;
   onShare: () => void;
 }
@@ -348,7 +349,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                   {scenarios.map((s, i) => {
                     const active = i === scenarioIdx;
                     return (
-                      <button key={s.label} onClick={() => setScenarioIdx(i)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 13px", borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all .15s ease", background: active ? `rgba(${TEAL_RGB},0.12)` : "rgba(255,255,255,0.05)", border: active ? `1px solid ${TEAL}` : "1px solid rgba(255,255,255,0.14)", color: active ? "#fff" : "rgba(255,255,255,0.85)", font: "inherit" }}>
+                      <button key={s.label} onClick={() => { setScenarioIdx(i); trackScenarioTested({ scenarioIndex: i, scenarioLabel: s.label, deltaYears: s.delta }); }} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 13px", borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all .15s ease", background: active ? `rgba(${TEAL_RGB},0.12)` : "rgba(255,255,255,0.05)", border: active ? `1px solid ${TEAL}` : "1px solid rgba(255,255,255,0.14)", color: active ? "#fff" : "rgba(255,255,255,0.85)", font: "inherit" }}>
                         <span style={{ width: 15, height: 15, borderRadius: "50%", flex: "none", background: active ? TEAL : "transparent", border: active ? `2px solid ${TEAL}` : "2px solid rgba(255,255,255,0.4)", boxShadow: active ? `inset 0 0 0 2px ${BG}` : undefined }} />
                         <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{s.label}</span>
                         <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontWeight: 800, fontSize: 15, color: active ? TEAL : "rgba(255,255,255,0.55)" }}>{s.age}</span>
@@ -365,7 +366,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                 </div>
               </div>
 
-              <button onClick={onSave} style={{ width: "100%", background: TEAL, color: BG, border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>
+              <button onClick={() => selected && onSave(selected)} style={{ width: "100%", background: TEAL, color: BG, border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>
                 Start my path — it&apos;s free →
               </button>
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Free to start · No credit card · Takes 30 seconds</div>

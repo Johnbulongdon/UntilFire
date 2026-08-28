@@ -1,5 +1,5 @@
 # UntilFire — Product Roadmap
-Last updated: June 2026
+Last updated: August 2026
 
 ---
 
@@ -276,11 +276,15 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 **Sequencing note (2026-07-16):** intentionally not urgent right now. Early AI-generated recommendations read as generic — the fix is stronger, transparent infra (real scenario modeling grounded in the user's actual data) before layering AI on top, not AI stepping in to cover for weak infra. Revisit once the deterministic guidance surface (scenario simulator, real tracked data) is solid.
 
+**Update (2026-08-28):** the deterministic guidance surface is further along than this note implied. `DashTab`'s `topTasks` (`app/dashboard/page.tsx`) is already a rules-based recommendation engine — nine conditional rules, each carrying an impact (`impactYears`) and a priority score, sorted `priority` then `impactYears`, top 3 shown. The emergency-fund-first rule ("if safety net is below the floor, recommend safety first, ranked above growth moves") already exists and already outranks everything else. `RevealFlow`'s step-7 scenario picker is a working test-a-scenario UI. This phase is a lot more "extend what's there" than "build from zero" — see the Learning Loop section below for the concrete plan and what's shipped so far.
+
 ### Core Adviser Feature
 
-- [ ] Personalized monthly FIRE action plan based on actual spending, income, city, savings rate, and timeline
-- [ ] "This month: invest $300 more and your freedom date moves 4 months closer" style recommendations
-- [ ] Explain tradeoffs clearly: impact, difficulty, confidence, and why it matters
+- [x] Rules-based next-move ranking grounded in the user's actual data (`topTasks`, `DashTab`) — impact × priority, not impact alone yet (confidence/ease weighting still open, see Learning Loop below)
+- [x] Emergency-fund-first safety rule, ranked above growth moves (`emergencyFundPlan.priorityMode`)
+- [x] Working scenario-test UI with real recomputed numbers (`RevealFlow` step 7, `HomeClient.tsx`'s `scenarios`)
+- [ ] "This month: invest $300 more and your freedom date moves 4 months closer" style recommendations — the pieces above produce this shape already; not yet surfaced as a monthly-cadence card
+- [ ] Explain tradeoffs clearly: impact, difficulty, confidence, and why it matters — impact exists (`impactYears`); difficulty and confidence do not yet
 - [ ] Keep recommendations grounded in user data and editable assumptions
 - [ ] Monthly progress email or dashboard card
 
@@ -291,6 +295,62 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [ ] Coast FIRE and Barista FIRE scenario modelling
 - [ ] Better projection confidence and scenario comparison
 - [ ] Optional bank/Plaid deepening only if it improves the plan, not as a budgeting-app detour
+
+### Learning Loop — Observe → understand → recommend → test → follow up → improve
+
+Added 2026-08-28. The product should not just learn about the user; it should
+help the user learn what actually changes their future. Sequenced by
+dependency, not by calendar — each stage needs the one before it shipped and
+producing real data before it's worth building.
+
+**1. Behavioral event tracking — foundation, first slice shipped**
+
+Extends the existing funnel contract (`lib/analytics-events.ts` /
+`docs/analytics/EVENTS.md`) rather than a second system. North-star metric:
+**reveal → user tests or accepts one next move** — that's whether UntilFire
+creates action, not just curiosity.
+
+- [x] `funnel_next_move_viewed` — Home shows a real recommendation
+- [x] `funnel_scenario_tested` — a scenario is picked in the reveal
+- [x] `funnel_scenario_accepted` — "Start my path" clicked, which scenario was live
+- [ ] `funnel_next_move_opened` — needs the task rows in `DashTab` to become a real click target first; they're informational today
+- [ ] `funnel_numbers_updated` — needs a decision on which edit surfaces count (Assets/Liabilities forms? Budget modal? both?) before wiring
+- [ ] `funnel_action_completed` — needs a definition of "action" (mark a recommended task done doesn't have UI yet; connecting a bank account already does and could be the first instance)
+- [ ] 7-day / 30-day return — **do not build a bespoke event for this.** PostHog computes retention natively from the identified pageviews/events already being sent; this needs correct use of PostHog's Retention insight, not new instrumentation. Revisit only if a dashboard card or lifecycle email needs a server-computed trigger, which is a different, larger feature (same shape as the existing Day-7 email cron).
+
+**2. Lightweight feedback on recommendations — not started**
+
+New small component next to the next-move card ("Does this feel realistic?"
+/ 3 buttons / one event), separate from `FeedbackWidget.tsx` (that one is a
+user-initiated free-text bug/feature form — different use case). Ships once
+`funnel_next_move_viewed` has been live long enough to know the card is
+actually being seen.
+
+**3. Rules engine — extend `topTasks`, don't rebuild it**
+
+- [x] Impact ranking (`impactYears`)
+- [x] Safety-first override (emergency fund priority)
+- [ ] Confidence weighting (manual-entry numbers vs. Plaid-verified)
+- [ ] Ease/effort score per move type
+- [ ] Sort by impact × confidence × ease instead of impact × priority alone
+- [ ] "Maybe, show another" branch — swap in the next-ranked task instead of repeating the same one
+
+**4. Monthly check-in — new Home card, not a nav change**
+
+See the IA note below first. Compares the month's actuals (already tracked
+via Cashflow) against the plan, using the rules engine's output. This is the
+piece that makes the loop monthly instead of one-time.
+
+**IA note — flagged, not resolved:** an earlier version of this loop proposed
+`Home / Plan / Money / Tools / Check-in` as the nav. That conflicts with
+`docs/design/app-structure.md` (confirmed 2026-08-26): `Home / Money / Plan /
+Profile`, with an explicit rule that a nav group duplicating existing content
+("Learn is not a top-level group... spends a nav slot on something nobody
+opens the app to do") doesn't get its own slot. The same reasoning applies to
+"Tools" — Scenarios and Expat FIRE already live in Plan. Recommendation:
+keep the current nav; "Tools" needs no new group, and "Check-in" is a Home
+card (Home's job is exactly this — "interprets the other two, read-only"),
+not a fifth top-level destination.
 
 ---
 

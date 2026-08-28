@@ -13,6 +13,7 @@ import {
   trackLandingViewed,
   trackCalculatorStepViewed,
   trackCalculatorRevealed,
+  trackScenarioAccepted,
 } from "@/lib/analytics";
 import type { CalculatorStepId } from "@/lib/analytics-events";
 import {
@@ -1036,7 +1037,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     return `${symbol}${Math.round(v)}`;
   };
 
-  const onSave = () => {
+  const onSave = (scenario: RevealScenario) => {
+    trackScenarioAccepted({ scenarioIndex: scenarios.indexOf(scenario), scenarioLabel: scenario.label, deltaYears: scenario.delta });
     saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, fireGoals });
     router.push("/login");
   };

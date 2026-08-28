@@ -27,7 +27,7 @@ import { calcFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
-import { trackDashboardFirstView } from "@/lib/analytics";
+import { trackDashboardFirstView, trackNextMoveViewed } from "@/lib/analytics";
 import { EXPENSE_CATEGORIES } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 
@@ -1154,6 +1154,19 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
       .sort((a, b) => (b.priority - a.priority) || (b.impactYears - a.impactYears))
       .slice(0, 3);
   })();
+
+  // Fires once per session, the first time Home actually has a real
+  // recommendation to show — mirrors the sessionStorage-guard pattern
+  // trackDashboardFirstView uses below. top_priority carries whether the
+  // emergency-fund-first rule was the one that fired (its tasks are the
+  // only ones with priority > 0) without sending the task's label text,
+  // which embeds a dollar amount.
+  useEffect(() => {
+    if (topTasks.length === 0) return;
+    if (sessionStorage.getItem("uf_nmv")) return;
+    sessionStorage.setItem("uf_nmv", "1");
+    trackNextMoveViewed({ moveCount: topTasks.length, topPriority: topTasks[0].priority });
+  }, [topTasks]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

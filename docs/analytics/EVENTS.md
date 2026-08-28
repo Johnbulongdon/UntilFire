@@ -217,6 +217,67 @@ client-side experience without double-counting conversions.
   - `destination` — `apy_calculator` | `plaid_connect`.
   - `placement` — `assets_empty_state`.
 
+## Engagement loop (post-auth)
+
+These extend the same contract past `funnel_dashboard_first_view` into what
+happens on repeat visits. Added 2026-08-28 as the first step of the
+Observe → understand → recommend → test → follow up → improve loop in
+`docs/ROADMAP.md` Phase 5. The single most important number this section
+exists to answer: **reveal → user tests or accepts one next move** — that's
+`funnel_calculator_revealed` (existing) through `funnel_scenario_tested` /
+`funnel_scenario_accepted` (below), stitched together once
+`posthog.identify(userId)` runs at signup. It's the difference between
+UntilFire creating action versus just curiosity.
+
+### `funnel_next_move_viewed`
+
+- **Where**: `app/dashboard/page.tsx`, `DashTab`, effect keyed on `topTasks`.
+  Fires once per session, the first time Home actually has a real
+  recommendation to show (`topTasks.length > 0`) — guarded by a
+  `sessionStorage` flag (`uf_nmv`), same pattern as
+  `funnel_dashboard_first_view`'s `uf_dv` flag.
+- **Properties**:
+  - `move_count` — how many ranked tasks are showing (max 3; see `topTasks`
+    in `DashTab`).
+  - `top_priority` — the top task's priority score. Only the emergency-fund
+    rules set this above 0 (100 = below the floor, 70 = rebuilding toward
+    target), so `top_priority > 0` means the safety-first rule is the one
+    that fired, without sending the task's label text — those strings
+    interpolate a dollar amount (e.g. "Rebuild your emergency fund by about
+    $1,200"), which the PII rule below forbids.
+- **Not yet wired**: a distinct `next_move_opened` (clicking into a specific
+  recommendation) needs a real click target first — the task rows in
+  `DashTab` are currently informational, not interactive. Add the
+  affordance, then the event.
+
+### `funnel_scenario_tested`
+
+- **Where**: `app/components/RevealFlow.tsx`, step 7's scenario picker,
+  `onClick` on each scenario row.
+- **Properties**:
+  - `scenario_index` — position in the fixed 5-item list (`HomeClient.tsx`'s
+    `scenarios` array: keep current plan, save $500 more, invest a 5% raise,
+    sabbatical, markets return 2% less).
+  - `scenario_label` — the scenario's label. Safe to send raw: the label set
+    is fixed and generic, none of the five interpolate a user-specific
+    number.
+  - `delta_years_rounded` — years sooner/later than the current plan,
+    rounded to one decimal. Deliberately **not** run through `bucketYears`:
+    that bucketing exists to stop an absolute years-to-FIRE figure
+    identifying someone, and a relative delta between two hypotheticals
+    (typically under ±3 years) isn't that.
+
+### `funnel_scenario_accepted`
+
+- **Where**: `app/HomeClient.tsx`, `onSave` — fired when "Start my path" is
+  clicked in the reveal's save step, right before `saveCalculatorPrefill`
+  and the redirect to `/login`.
+- **Properties**: same shape as `funnel_scenario_tested` — whichever
+  scenario was selected when the user chose to move forward, not
+  necessarily the one they last tapped.
+- **Note**: uses `send_instantly` — `onSave` navigates immediately after,
+  same reasoning as `trackSignupCompleted`.
+
 ## Adding a new event
 
 1. Add the event name to `FunnelEvents` in `lib/analytics-events.ts`.
