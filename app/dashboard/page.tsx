@@ -14,7 +14,6 @@ import TransactionsTab from "./TransactionsTab";
 import PlaidConnect from "./PlaidConnect";
 import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
-import GoalsIntroModal from "./GoalsIntroModal";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
@@ -2566,6 +2565,25 @@ const PERMA_LABELS: Record<PermaCategory, string> = {
   accomplishment: "Accomplishment",
 };
 
+// The PERMA model (positive emotion, engagement, relationships, meaning,
+// accomplishment) as five short "why" prompts. A category drops off this
+// list once the user has a goal tagged with it — see remainingPermaPrompts
+// in GoalsPageTab.
+type PermaPrompt = {
+  id: PermaCategory;
+  question: string;
+  emoji: string;
+  defaultName: string;
+};
+
+const PERMA_PROMPTS: PermaPrompt[] = [
+  { id: "emotion", question: "What would finally feel like relief?", emoji: "🛟", defaultName: "Emergency Cushion" },
+  { id: "engagement", question: "What would you spend more time on, if money weren’t the constraint?", emoji: "🎨", defaultName: "Passion Project Fund" },
+  { id: "relationships", question: "Who do you want more time and freedom for?", emoji: "✈️", defaultName: "Family Time Fund" },
+  { id: "meaning", question: "What’s the bigger reason behind all this?", emoji: "🎓", defaultName: "Education & Giving Fund" },
+  { id: "accomplishment", question: "What’s the milestone that would make this feel real?", emoji: "🔥", defaultName: "Financial Independence" },
+];
+
 type Goal = {
   id: string;
   name: string;
@@ -2600,7 +2618,9 @@ const QUICK_GOAL_PRESETS = [
 
 const EMOJI_PICKER = ["🚗","🏠","👶","⛵","✈️","📚","💍","🛠️","💻","🎯","🏋️","🐶","🌴","🎸","🏕️","💎","🛻","🏡","🎓","🚀","🎁","🌏","🏖️","🍕","🛳️"];
 
-function GoalsPageTab({ userId }: { userId: string }) {
+type PermaCardState = { description: string; estimate: number | null; estimating: boolean };
+
+function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpenses?: number }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -2608,6 +2628,62 @@ function GoalsPageTab({ userId }: { userId: string }) {
   const [draft, setDraft] = useState<GoalDraft>({ name: "", emoji: "🎯", target_amount: "", current_saved: "", target_date: "" });
   const [saving, setSaving] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [permaCards, setPermaCards] = useState<Partial<Record<PermaCategory, PermaCardState>>>({});
+  const [permaSavingId, setPermaSavingId] = useState<PermaCategory | null>(null);
+
+  const coveredPermaCategories = new Set(goals.map(g => g.perma_category).filter(Boolean) as PermaCategory[]);
+  const remainingPermaPrompts = PERMA_PROMPTS.filter(p => !coveredPermaCategories.has(p.id));
+
+  function permaCard(id: PermaCategory): PermaCardState {
+    return permaCards[id] ?? { description: "", estimate: null, estimating: false };
+  }
+  function updatePermaCard(id: PermaCategory, patch: Partial<PermaCardState>) {
+    setPermaCards(prev => ({ ...prev, [id]: { ...permaCard(id), ...patch } }));
+  }
+
+  async function estimatePermaGoal(p: PermaPrompt) {
+    const card = permaCard(p.id);
+    if (!card.description.trim()) return;
+    updatePermaCard(p.id, { estimating: true });
+    try {
+      const res = await fetch("/api/estimate-goal-amount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: p.id, description: card.description, monthlyExpenses }),
+      });
+      const data = await res.json() as { amount: number };
+      updatePermaCard(p.id, { estimate: data.amount, estimating: false });
+    } catch {
+      updatePermaCard(p.id, { estimate: null, estimating: false });
+    }
+  }
+
+  function nudgePermaEstimate(id: PermaCategory, dir: "higher" | "lower") {
+    const card = permaCard(id);
+    if (card.estimate == null) return;
+    const next = Math.round(card.estimate * (dir === "higher" ? 1.25 : 0.8));
+    updatePermaCard(id, { estimate: Math.max(1, next) });
+  }
+
+  async function confirmPermaGoal(p: PermaPrompt) {
+    const card = permaCard(p.id);
+    if (card.estimate == null) return;
+    setPermaSavingId(p.id);
+    const payload = {
+      user_id: userId,
+      name: card.description.trim().slice(0, 60) || p.defaultName,
+      emoji: p.emoji,
+      target_amount: card.estimate,
+      current_saved: 0,
+      target_date: null,
+      sort_order: goals.length,
+      perma_category: p.id,
+    };
+    const { data } = await supabase.from("goals").insert(payload).select().single();
+    if (data) setGoals(prev => [...prev, data as Goal]);
+    setPermaSavingId(null);
+    setPermaCards(prev => { const next = { ...prev }; delete next[p.id]; return next; });
+  }
 
   useEffect(() => {
     if (!userId) return;
@@ -2703,6 +2779,88 @@ function GoalsPageTab({ userId }: { userId: string }) {
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add Goal
         </button>
       </div>
+
+      {/* Your why: one prompt per PERMA category with no linked goal yet.
+          Describe it in your own words, get an estimate, nudge it until it
+          feels right, then save — no popup, no typing a number cold. Once
+          saved it drops off this list and shows up as a normal card below
+          with a PERMA badge (see the goals grid). */}
+      {remainingPermaPrompts.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>
+            Your why
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+            {remainingPermaPrompts.map(p => {
+              const card = permaCard(p.id);
+              const saving = permaSavingId === p.id;
+              return (
+                <div key={p.id} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <span style={{ fontSize: 20, lineHeight: 1 }}>{p.emoji}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-muted)", marginBottom: 3 }}>
+                        {PERMA_LABELS[p.id]}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", lineHeight: 1.4 }}>{p.question}</div>
+                    </div>
+                  </div>
+
+                  {card.estimate == null ? (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="What this looks like for you…"
+                        value={card.description}
+                        onChange={e => updatePermaCard(p.id, { description: e.target.value })}
+                        style={{
+                          width: "100%", padding: "9px 12px", background: "var(--uf-surface)",
+                          border: "1px solid var(--uf-border)", borderRadius: 10, fontSize: 13,
+                          color: "var(--uf-text)", fontFamily: "inherit", outline: "none", boxSizing: "border-box",
+                        }}
+                      />
+                      <button
+                        onClick={() => estimatePermaGoal(p)}
+                        disabled={!card.description.trim() || card.estimating}
+                        style={{
+                          alignSelf: "flex-start", background: "none", border: "none",
+                          color: card.description.trim() ? "#22d3a5" : "var(--uf-text-muted)",
+                          fontSize: 12, fontWeight: 700, cursor: card.description.trim() ? "pointer" : "default",
+                          padding: 0, fontFamily: "inherit",
+                        }}
+                      >
+                        {card.estimating ? "Estimating…" : "Estimate my number →"}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 12, color: "var(--uf-text-muted)", fontStyle: "italic" }}>&ldquo;{card.description}&rdquo;</div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "DM Mono, monospace", fontVariantNumeric: "tabular-nums" }}>
+                        ${card.estimate.toLocaleString()}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button onClick={() => nudgePermaEstimate(p.id, "lower")} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "var(--uf-text)", cursor: "pointer", fontFamily: "inherit" }}>
+                          Lower
+                        </button>
+                        <button
+                          onClick={() => confirmPermaGoal(p)}
+                          disabled={saving}
+                          style={{ flex: 1, background: "#22d3a5", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "#003527", cursor: "pointer", fontFamily: "inherit" }}
+                        >
+                          {saving ? "Saving…" : "Looks right"}
+                        </button>
+                        <button onClick={() => nudgePermaEstimate(p.id, "higher")} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "var(--uf-text)", cursor: "pointer", fontFamily: "inherit" }}>
+                          Higher
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Empty state */}
       {goals.length === 0 && (
@@ -4893,7 +5051,6 @@ export default function Dashboard() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [surveyOpen,     setSurveyOpen]     = useState(false);
   const [tourOpen,       setTourOpen]       = useState(false);
-  const [goalsIntroOpen, setGoalsIntroOpen] = useState(false);
   function closeTour() {
     setTourOpen(false);
     try { localStorage.setItem('uf_tour_done', '1') } catch {}
@@ -5101,12 +5258,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (!profileLoading && income === 0 && !localStorage.getItem('uf_onboarding_dismissed')) {
       setOnboardingOpen(true);
-    }
-  }, [profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!profileLoading && !localStorage.getItem('uf_goals_intro_done')) {
-      setGoalsIntroOpen(true);
     }
   }, [profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -5394,17 +5545,7 @@ export default function Dashboard() {
           }}
         />
       )}
-      {goalsIntroOpen && !onboardingOpen && (
-        <GoalsIntroModal
-          userId={userId}
-          monthlyExpenses={monthlyExpenses}
-          onDone={() => {
-            localStorage.setItem('uf_goals_intro_done', '1');
-            setGoalsIntroOpen(false);
-          }}
-        />
-      )}
-      {tourOpen && !onboardingOpen && !surveyOpen && !goalsIntroOpen && (
+      {tourOpen && !onboardingOpen && !surveyOpen && (
         <TourModal onClose={closeTour} />
       )}
 
@@ -5798,7 +5939,7 @@ export default function Dashboard() {
               </div>
             )}
             {tab === "goals" && (
-              <GoalsPageTab userId={userId} />
+              <GoalsPageTab userId={userId} monthlyExpenses={monthlyExpenses} />
             )}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
