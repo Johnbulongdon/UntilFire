@@ -94,7 +94,7 @@ export default function CityScreen({
 
   return (
     <div className="uf-screen">
-      <p className="uf-step-label">Step 2 of 5</p>
+      <p className="uf-step-label">Step 1 of 4</p>
       <div className="uf-eyebrow">Location</div>
       <h2 className="uf-h2">
         Where do you live

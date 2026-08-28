@@ -23,7 +23,6 @@ import {
 } from "@/lib/acquisition";
 import Nav from "@/app/components/landing/Nav";
 import LandingPage from "@/app/components/landing/LandingPage";
-import GoalsScreen from "@/app/components/landing/GoalsScreen";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
 import { CITIES } from "@/lib/fire-data";
 import { FireTypeAvatar } from "@/app/fire-type/FireTypeAvatar";
@@ -233,7 +232,7 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
 
   return (
     <div className="uf-screen">
-      <p className="uf-step-label">Step 3 of 5</p>
+      <p className="uf-step-label">Step 2 of 4</p>
       {onCurrencyChange && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
           <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Currency:</span>
@@ -417,7 +416,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
   return (
     <div className="uf-screen">
-      <p className="uf-step-label">Step 4 of 5</p>
+      <p className="uf-step-label">Step 3 of 4</p>
       <div className="uf-eyebrow">Finances</div>
       <h2 className="uf-h2">How much do you <span className="uf-accent">save or spend?</span></h2>
       <p className="uf-body" style={{ marginBottom: 24 }}>
@@ -570,7 +569,7 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
 
   return (
     <div className="uf-screen">
-      <p className="uf-step-label">Step 5 of 5</p>
+      <p className="uf-step-label">Step 4 of 4</p>
       <div className="uf-eyebrow">Net worth</div>
       <h2 className="uf-h2">What is your <span className="uf-accent">net worth?</span></h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
@@ -952,12 +951,11 @@ function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear
   );
 }
 
-function RevealScreen({ city, income, savings, stateKey, currency = "USD", currentAge, portfolioBalance = 0, landingSource, fireGoals, onAdjust }: {
+function RevealScreen({ city, income, savings, stateKey, currency = "USD", currentAge, portfolioBalance = 0, landingSource, onAdjust }: {
   city: CityState; income: number; savings: number; stateKey: string;
   currency?: SupportedCurrency;
   currentAge?: number; portfolioBalance?: number;
   landingSource?: string;
-  fireGoals?: string[];
   onAdjust: () => void;
 }) {
   const router = useRouter();
@@ -1039,7 +1037,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const onSave = (scenario: RevealScenario) => {
     trackScenarioAccepted({ scenarioIndex: scenarios.indexOf(scenario), scenarioLabel: scenario.label, deltaYears: scenario.delta });
-    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, fireGoals });
+    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
     router.push("/login");
   };
 
@@ -1085,14 +1083,13 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 // ROOT
 // -----------------------------------------------------------------------------
 
-type Screen = "hero" | "goals" | "city" | "income" | "savings" | "portfolio" | "reveal";
+type Screen = "hero" | "city" | "income" | "savings" | "portfolio" | "reveal";
 
 export default function HomeClient() {
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("hero");
 
   // Wizard state
-  const [fireGoals, setFireGoals]         = useState<string[]>([]);
   const [cityState, setCityState]         = useState<CityState | null>(null);
   const [currency, setCurrency]           = useState<SupportedCurrency>("USD");
   const [income, setIncome]               = useState(90000);
@@ -1138,7 +1135,7 @@ export default function HomeClient() {
       return;
     }
     if (urlParams?.get("start") === "onboarding") {
-      setScreen("goals");
+      setScreen("city");
     }
   }, []);
 
@@ -1163,7 +1160,6 @@ export default function HomeClient() {
       return;
     }
     const stepMap: Partial<Record<Screen, CalculatorStepId>> = {
-      goals: "goal",
       city: "city",
       income: "income",
       savings: "savings",
@@ -1179,8 +1175,8 @@ export default function HomeClient() {
     router.push('/login');
   }
 
-  const STEP_MAP: Record<Screen, number> = { hero: 0, goals: 1, city: 2, income: 3, savings: 4, portfolio: 5, reveal: 6 };
-  const totalDots = 7;
+  const STEP_MAP: Record<Screen, number> = { hero: 0, city: 1, income: 2, savings: 3, portfolio: 4, reveal: 5 };
+  const totalDots = 6;
 
   return (
     <>
@@ -3157,7 +3153,7 @@ export default function HomeClient() {
       `}</style>
 
       {screen === "hero" ? (
-        <LandingPage onStart={() => setScreen("goals")} />
+        <LandingPage onStart={() => setScreen("city")} />
       ) : (
       <>
       {/* The reveal is a full-screen takeover with its own top bar + progress,
@@ -3177,16 +3173,10 @@ export default function HomeClient() {
           <div className="uf-atm-orb uf-atm-orb-2" />
           <div className="uf-atm-orb uf-atm-orb-3" />
         </div>
-        {screen === "goals" && (
-          <GoalsScreen
-            onNext={(goals) => { setFireGoals(goals); setScreen("city"); }}
-            onBack={() => setScreen("hero")}
-          />
-        )}
         {screen === "city" && (
           <CityScreen
             onNext={c => { setCityState(c); setCurrency(stateToCurrency(c.stateKey)); setScreen("income"); }}
-            onBack={() => setScreen("goals")}
+            onBack={() => setScreen("hero")}
             onSkip={() => {
               setCityState({ name: "United States (avg)", col: 52000, stateKey: "custom", isCustom: true });
               setCurrency("USD");
@@ -3239,7 +3229,6 @@ export default function HomeClient() {
             currentAge={currentAge}
             portfolioBalance={portfolioBalance}
             landingSource={landingSource}
-            fireGoals={fireGoals}
             onAdjust={() => setScreen("portfolio")}
           />
         )}

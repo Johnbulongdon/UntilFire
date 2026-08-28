@@ -7,7 +7,6 @@ export type CalculatorPrefill = {
   annualCost?: number
   cityName?: string
   stateKey?: string
-  fireGoals?: string[]
   fireTarget?: number
   retireYear?: number
   generatedAt?: string

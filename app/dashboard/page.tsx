@@ -14,6 +14,7 @@ import TransactionsTab from "./TransactionsTab";
 import PlaidConnect from "./PlaidConnect";
 import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
+import GoalsIntroModal from "./GoalsIntroModal";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
@@ -30,6 +31,7 @@ import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed } from "@/lib/analytics";
 import { EXPENSE_CATEGORIES } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
+import { Badge } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -446,7 +448,8 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
+  userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -1168,6 +1171,18 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
     trackNextMoveViewed({ moveCount: topTasks.length, topPriority: topTasks[0].priority });
   }, [topTasks]);
 
+  // Self-contained fetch (same pattern as GoalsPageTab, which owns the
+  // read/write of this table) so Home reflects the goals a user set —
+  // whether from the PERMA intro flow or added by hand in Plan -> Goals —
+  // without lifting that state up through the rest of the dashboard tree.
+  const [goals, setGoals] = useState<Goal[]>([]);
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("goals").select("*").eq("user_id", userId).order("sort_order").limit(3).then(({ data }) => {
+      setGoals((data as Goal[]) ?? []);
+    });
+  }, [userId]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
@@ -1577,6 +1592,50 @@ function DashTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, to
             <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Finish your setup to generate your next best tasks.</div>
           )}
         </div>
+      </div>
+
+      {/* ── Your goals: the measurable targets set via the PERMA intro flow
+          or added by hand in Plan -> Goals. Read-only here — Home never
+          gets its own inputs, per docs/design/app-structure.md. ───────── */}
+      <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Your goals
+          </div>
+          {goals.length > 0 && (
+            <button onClick={() => onTabChange?.("goals")} style={{ background: "none", border: "none", color: "var(--uf-pos-ink)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0 }}>
+              View all →
+            </button>
+          )}
+        </div>
+        {goals.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {goals.map((g) => {
+              const pct = g.target_amount > 0 ? Math.min(1, g.current_saved / g.target_amount) : 0;
+              return (
+                <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontSize: 20, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--uf-surface)", borderRadius: 10, flexShrink: 0 }}>{g.emoji}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
+                      <span style={{ flexShrink: 0, color: "var(--uf-text-2)", fontWeight: 600 }}>{Math.round(pct * 100)}%</span>
+                    </div>
+                    <div style={{ height: 5, background: "var(--uf-green-50)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
+                      <div style={{ height: "100%", width: `${pct * 100}%`, background: "var(--uf-green)", borderRadius: 99 }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
+            Set a goal to save toward and track it here.{" "}
+            <button onClick={() => onTabChange?.("goals")} style={{ background: "none", border: "none", color: "var(--uf-pos-ink)", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, fontSize: "inherit" }}>
+              Add one →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Monthly operating row ────────────────────────────────────────── */}
@@ -2497,6 +2556,16 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
 
 // ─── Goals Tab ────────────────────────────────────────────────────────────────
 
+type PermaCategory = "emotion" | "engagement" | "relationships" | "meaning" | "accomplishment";
+
+const PERMA_LABELS: Record<PermaCategory, string> = {
+  emotion: "Positive emotion",
+  engagement: "Engagement",
+  relationships: "Relationships",
+  meaning: "Meaning",
+  accomplishment: "Accomplishment",
+};
+
 type Goal = {
   id: string;
   name: string;
@@ -2505,6 +2574,7 @@ type Goal = {
   current_saved: number;
   target_date: string | null;
   sort_order: number;
+  perma_category?: PermaCategory | null;
 };
 
 type GoalDraft = {
@@ -2708,8 +2778,11 @@ function GoalsPageTab({ userId }: { userId: string }) {
                   }}>{g.emoji}</div>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", lineHeight: 1.3 }}>{g.name}</div>
+                    {g.perma_category && (
+                      <Badge tone="freedom" style={{ marginTop: 4 }}>{PERMA_LABELS[g.perma_category]}</Badge>
+                    )}
                     {g.target_date && (
-                      <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 4 }}>
                         🗓 {new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                       </div>
                     )}
@@ -3596,67 +3669,6 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Goals Tab ────────────────────────────────────────────────────────────────
-const FIRE_GOAL_OPTIONS = [
-  { id: "early-retirement", label: "Early Retirement",    icon: "🏖️", desc: "Stop working entirely and live off your portfolio" },
-  { id: "coast-fire",       label: "Coast FIRE",          icon: "🚀", desc: "Save enough now, let compound growth carry you" },
-  { id: "barista-fire",     label: "Barista FIRE",        icon: "☕", desc: "Part-time income covers expenses, portfolio grows" },
-  { id: "fat-fire",         label: "Fat FIRE",            icon: "💎", desc: "Full retirement with a luxury lifestyle buffer" },
-];
-
-function GoalsTab({ fireAge, setFireAge, onBack }: { fireAge: number; setFireAge: (v: number) => void; onBack: () => void }) {
-  const [goalId, setGoalId] = useState("early-retirement");
-  const [ageSaved, setAgeSaved] = useState(false);
-  const ageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function handleAgeChange(nextAge: number) {
-    setFireAge(nextAge);
-    setAgeSaved(true);
-    if (ageTimer.current) clearTimeout(ageTimer.current);
-    ageTimer.current = setTimeout(() => setAgeSaved(false), 2200);
-  }
-  useEffect(() => () => { if (ageTimer.current) clearTimeout(ageTimer.current); }, []);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <button onClick={onBack} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#64748B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
-        ← Back to Calculator
-      </button>
-      <div className="uf-card">
-        <SectionLabel icon="🎯" text="FIRE Goal Type" color="#064E3B" />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {FIRE_GOAL_OPTIONS.map(g => (
-            <button
-              key={g.id}
-              onClick={() => setGoalId(g.id)}
-              style={{
-                background: goalId === g.id ? "rgba(6,78,59,0.06)" : "#F8FAFC",
-                border: `2px solid ${goalId === g.id ? "#047857" : "#E2E8F0"}`,
-                borderRadius: 12, padding: "16px 18px", cursor: "pointer",
-                textAlign: "left", transition: "all 0.15s",
-              }}
-            >
-              <div style={{ fontSize: 22, marginBottom: 6 }}>{g.icon}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: goalId === g.id ? "#064E3B" : "#19181E", fontFamily: "Manrope, sans-serif" }}>{g.label}</div>
-              <div style={{ fontSize: 12, color: "#64748B", marginTop: 4, lineHeight: 1.5 }}>{g.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="uf-card">
-        <SectionLabel icon="🎂" text="Current Age" color="#064E3B" />
-        <div style={{ maxWidth: 280 }}>
-          <FieldRow label="Your current age" hint="Used to calculate your FIRE date">
-            <NumberInput value={fireAge} onChange={handleAgeChange} placeholder="30" prefix="🎂" />
-          </FieldRow>
-          <div style={{ marginTop: 10, fontSize: 12, color: ageSaved ? "#059669" : "#94A3B8", fontWeight: ageSaved ? 700 : 500 }}>
-            {ageSaved ? "✓ Age updated — saving automatically" : "Your age saves automatically and updates your FIRE date."}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -4592,7 +4604,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
-  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "goals" | "invest-sim">("menu");
+  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [upgradedBanner, setUpgradedBanner] = useState(false);
@@ -4881,6 +4893,7 @@ export default function Dashboard() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [surveyOpen,     setSurveyOpen]     = useState(false);
   const [tourOpen,       setTourOpen]       = useState(false);
+  const [goalsIntroOpen, setGoalsIntroOpen] = useState(false);
   function closeTour() {
     setTourOpen(false);
     try { localStorage.setItem('uf_tour_done', '1') } catch {}
@@ -5088,6 +5101,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (!profileLoading && income === 0 && !localStorage.getItem('uf_onboarding_dismissed')) {
       setOnboardingOpen(true);
+    }
+  }, [profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!profileLoading && !localStorage.getItem('uf_goals_intro_done')) {
+      setGoalsIntroOpen(true);
     }
   }, [profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -5375,7 +5394,17 @@ export default function Dashboard() {
           }}
         />
       )}
-      {tourOpen && !onboardingOpen && !surveyOpen && (
+      {goalsIntroOpen && !onboardingOpen && (
+        <GoalsIntroModal
+          userId={userId}
+          monthlyExpenses={monthlyExpenses}
+          onDone={() => {
+            localStorage.setItem('uf_goals_intro_done', '1');
+            setGoalsIntroOpen(false);
+          }}
+        />
+      )}
+      {tourOpen && !onboardingOpen && !surveyOpen && !goalsIntroOpen && (
         <TourModal onClose={closeTour} />
       )}
 
@@ -5604,6 +5633,7 @@ export default function Dashboard() {
             )}
             {tab === "overview" && (
               <DashTab
+                userId={userId}
                 income={effectiveIncome} expenses={effectiveExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                 totalDebt={totalDebt} mortgageBalance={mortgageBalance}
@@ -5761,12 +5791,6 @@ export default function Dashboard() {
                       annualReturn={growthRate}
                     />
                   </>
-                )}
-                {fireCalcSubTab === "goals" && (
-                  <GoalsTab
-                    fireAge={fireAge} setFireAge={setFireAge}
-                    onBack={() => setFireCalcSubTab("menu")}
-                  />
                 )}
                 {fireCalcSubTab === "invest-sim" && (
                   <InvestSimTab onBack={() => setFireCalcSubTab("menu")} />
