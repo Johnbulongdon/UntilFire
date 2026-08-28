@@ -58,6 +58,15 @@ const TRUST_LOGOS = [
   { name: "Discover", file: "discover.jpg" },
 ];
 
+// The exact data URI cobe embeds internally for its world-map texture
+// (extracted from node_modules/cobe/dist/index.esm.js — cobe has no public
+// option to supply or inspect this). cobe loads it via a plain `new Image()`
+// with no onerror handler, so a decode failure just leaves the sphere
+// textureless (glow + markers render fine, since those don't sample it)
+// with zero signal anywhere. Probing the identical bytes ourselves is the
+// only way to catch that specific failure mode from outside the library.
+const COBE_TEXTURE_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAACAAQAAAADMzoqnAAAECklEQVR42u3VsW4jRRzH8d94gzfF4Q0VQaC4vBLTRTp0mze4ggfAPAE5XQEFsGNAVIjwBrmW7h7gJE+giKjyABTZE4g06LKJETdRJvtD65kdz6yduKABiW+TVfzRf2bXYxtcE/59YJCz6YdbgQF6ACSRrwYKYImmh5PbwOewlV3wlQNbAN6SEExjUOO+BU0aCSnxReHABUlK4YFQeJeUT3da8IIkZ6NGoSnFY5KsMoVzMKfECUnqxgPYRArarmUCndHwzIEaQEpg5xVdBXROl8mpAQx5dUgPiHoYAAkg5w3JABR06byGAVgcRGAz5bznj6phBQNRFwyqgdxebH6gshJAesWoFhgYpApAFoG8BIZ/fEhSox5jDjQXmV0Ar5XJfAIrALi3URVs09gHIL4XJCkLC5LH9JWiArABFCSrQjdgkBzRJ0WJeUOSNyQAfJJwUSWUBRlJQ8oGHATACGlBynnzy2kEYLNjrxouigD8BZcgOeVPqh12RtufaCN5wCPVDpvQ9lsIrqndsJtDcWqBCpf4hWN7OdWHBw58FwIaNOU/n1TpMW2DFaD48cmr4185T8NHkpUFX749pQPVdgRKC/DGoQPVeAEKv+WHvY8OOWNTPRp5kHuwSf8wzXtVBKR7YwEH9H3lQUaypUfSATOALyVNu5vZJW31Bnx98nkLfDUWJaz6ixvm+RIQRdl3kmRxxiaDoGnZW4CpPfkaQadlcPim1xOSvETQo7Lv75enVAXJ3xGUlony4KQBBWUM1NiDc6qhyS8RgQs18OCMMtPDaAUIyg0PZkRWDqs+wnKJBTDI1Js6BolegOsKmUxNDBAAKqQyMQmidhegBlLZ+wwKYdv5M/8x1khkb1cgKqP2H+MKyV5vS+whrE8DQDgAlUAoRBX056EElJCjJVACeJBZgNfVp+iCCm4RBWCgKsRxASSA9KgDhDtCiTuMyfHsKXzhC6wNAIjjWb8LKAOA2ctk3FmCOlgKFy8f1N0JJtgsxinYnVAHt4t3gPzZXSCTyCWCQmBT91QE3B5yarSN40dNHYPka4TlDhTUI8zLvl0JSL3vZn6DsCFZOeB2yROEpR68sECQQA++xIGCR2X7DwlEoLRgUrZrqlUg50S1uy43YqDcN6UFBVkhAjWiCV2Q0jgQPdplMKxvBXodcOfAwJYvgdL+1etA1YJJfBcZlQV7sO1i2gHoNiyxtQ5sBsCgWyoxCHiFFd2L5nUTCqMAqGUgsQ9f5kCcCiZgRYkMgMTd5WsB1rTzj0Em14BE4r+QxN1lCEsVur2PoF5Wbg8RJXR4djgvBgauhLywoEZQrt1KKRdVS4CdlJ8qafyP+9KIj/nE/d7kKwH9jgS72e9DV+kvfTWgct4ZyP8Byb8BPG7MaaIIkAQAAAAASUVORK5CYII=";
+
 function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: number, markers: { location: [number, number]; size: number }[], startPhi: number) {
   // cobe can fail several ways — WebGL unavailable, the chunk failing to
   // load, createGlobe throwing — and it doesn't surface any of them itself
@@ -109,6 +118,17 @@ function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size
         setFailed(true);
         return;
       }
+      // createGlobe succeeded without throwing, which only proves a WebGL
+      // context exists — it says nothing about whether the map texture
+      // actually decoded (cobe swallows that failure with no onerror).
+      // Decode the identical bytes ourselves so a failure is visible.
+      const textureProbe = new Image();
+      textureProbe.onload = () => console.info("[globe] texture decoded fine — if the globe still looks empty, the failure is in WebGL texture upload/sampling, not image decode");
+      textureProbe.onerror = () => {
+        console.error("[globe] the embedded world-map texture failed to decode in this browser — this is what makes the globe render as glow+markers with no continents");
+        setFailed(true);
+      };
+      textureProbe.src = COBE_TEXTURE_URI;
       if (!reduceMotion) {
         let onscreen = true;
         const spin = () => {
