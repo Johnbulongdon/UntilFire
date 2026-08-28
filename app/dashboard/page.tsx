@@ -986,6 +986,27 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const consistencySupport = consistencyMonths[0]
     ? `${fmtMoney(Math.abs(consistencyMonths[0].savings))} ${consistencyMonths[0].savings >= 0 ? "saved" : "net short"} in ${consistencyMonths[0].date.toLocaleString("en-US", { month: "short" })}`
     : "We’ll start tracking this once your monthly history fills in.";
+
+  // On-track score: not "how independent are you" (the freedom date already
+  // answers that) but "how well are you keeping up the habits that get you
+  // there." Three factors, out of 100: safety runway (40), bank-verified
+  // real numbers rather than manual estimates (20), and month-over-month
+  // contribution consistency (40). Each unavailable-data case defaults to
+  // half credit rather than 0 or hiding the score, so a brand-new account
+  // isn't punished for not having history yet.
+  const scoreSafetyPts = efMonthlyBase > 0
+    ? Math.max(0, Math.min(40, (emergencyFundPlan.progressToTargetPct / 100) * 40))
+    : 20;
+  const scoreConnectedPts = plaidAccounts.length > 0 ? 20 : 0;
+  const scoreConsistencyPts = trackedMonths > 0
+    ? (onTrackMonths / trackedMonths) * 40
+    : 20;
+  const onTrackScore = Math.round(scoreSafetyPts + scoreConnectedPts + scoreConsistencyPts);
+  const onTrackBand = onTrackScore >= 80
+    ? { label: "On track", color: "var(--uf-pos)" }
+    : onTrackScore >= 55
+      ? { label: "Needs a nudge", color: "var(--uf-warn)" }
+      : { label: "Off track", color: "var(--uf-neg)" };
   const topTasks = (() => {
     const tasks: Array<{
       label: string;
@@ -1398,6 +1419,50 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", maxWidth: 300 }}>
             {growthSummary}
+          </div>
+        </div>
+      </div>
+
+      {/* ── On-track score: not how independent you are (the freedom date
+          answers that) — how well you're keeping up the habits that get you
+          there. ─────────────────────────────────────────────────────────── */}
+      <div className="uf-card" style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}>
+          {(() => {
+            const size = 96, stroke = 9, radius = (size - stroke) / 2, circumference = 2 * Math.PI * radius;
+            const dashOffset = circumference * (1 - onTrackScore / 100);
+            return (
+              <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
+                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--uf-surface-2)" strokeWidth={stroke} />
+                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={onTrackBand.color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashOffset} />
+              </svg>
+            );
+          })()}
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>{onTrackScore}</div>
+            <div style={{ fontSize: 10, color: "var(--uf-text-muted)", fontFamily: "Manrope, sans-serif" }}>/ 100</div>
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>
+            On-track score
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: onTrackBand.color, fontFamily: "Manrope, sans-serif", marginBottom: 10 }}>
+            {onTrackBand.label}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <span>Safety runway</span>
+              <span style={{ fontWeight: 700, color: "var(--uf-text)" }}>{Math.round(scoreSafetyPts)}/40</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <span>Real, bank-verified numbers</span>
+              <span style={{ fontWeight: 700, color: "var(--uf-text)" }}>{Math.round(scoreConnectedPts)}/20</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <span>Contribution consistency</span>
+              <span style={{ fontWeight: 700, color: "var(--uf-text)" }}>{Math.round(scoreConsistencyPts)}/40</span>
+            </div>
           </div>
         </div>
       </div>
