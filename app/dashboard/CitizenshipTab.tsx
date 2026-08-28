@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Badge, Select } from "@/components/ui";
-import { CITIZENSHIP_SCORES, CITIZENSHIP_TAX_RATE_LABEL, citizenshipScore, citizenshipBand, type CitizenshipScore, type CitizenshipBand } from "@/lib/citizenship-data";
+import {
+  CITIZENSHIP_SCORES, CITIZENSHIP_TAX_RATE_LABEL, CITIZENSHIP_CGT_LABEL, CITIZENSHIP_ACCOUNT_LABEL, CITIZENSHIP_COST_OF_LIVING,
+  citizenshipScore, citizenshipBand,
+  type CitizenshipScore, type CitizenshipBand, type CostOfLivingTier,
+} from "@/lib/citizenship-data";
 
 const CITIZENSHIP_STORAGE_KEY = "uf_citizenship";
 
@@ -26,6 +30,13 @@ const BAND_RING: Record<CitizenshipBand["cls"], string> = {
   strong: "var(--uf-pos)",
   workable: "var(--uf-warn)",
   friction: "var(--uf-neg)",
+};
+
+const COL_TONE: Record<CostOfLivingTier, "positive" | "muted" | "warning" | "negative"> = {
+  Low: "positive",
+  Moderate: "muted",
+  High: "warning",
+  "Very high": "negative",
 };
 
 function ScoreRing({ score, band, size = 52 }: { score: number; band: CitizenshipBand; size?: number }) {
@@ -80,7 +91,12 @@ function CitizenshipCard({ c, mine, open, onToggle }: { c: CitizenshipScore; min
             <span style={{ fontFamily: "var(--uf-font-display)", fontWeight: 800, fontSize: 15, color: "var(--uf-ink)" }}>{c.name}</span>
             {mine && <Badge tone="freedom">Yours</Badge>}
           </div>
-          <Badge tone={BAND_TONE[band.cls]} style={{ marginTop: 6 }}>{band.label}</Badge>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+            <Badge tone={BAND_TONE[band.cls]}>{band.label}</Badge>
+            {CITIZENSHIP_COST_OF_LIVING[c.code] && (
+              <Badge tone={COL_TONE[CITIZENSHIP_COST_OF_LIVING[c.code]]}>{CITIZENSHIP_COST_OF_LIVING[c.code]} cost of living</Badge>
+            )}
+          </div>
           <div style={{ fontSize: 12, color: "var(--uf-ink-3)", fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", marginTop: 4 }}>
             {CITIZENSHIP_TAX_RATE_LABEL[c.code] ?? "Rate unavailable"}
           </div>
@@ -94,6 +110,18 @@ function CitizenshipCard({ c, mine, open, onToggle }: { c: CitizenshipScore; min
             <SubscoreRow label="Retirement access" value={c.retirement} max={30} />
             <SubscoreRow label="Investment freedom" value={c.investment} max={30} />
           </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--uf-s3)", marginBottom: "var(--uf-s4)" }}>
+            <div style={{ background: "var(--uf-surface)", borderRadius: "var(--uf-r-control)", padding: "var(--uf-s3)" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--uf-ink-3)", marginBottom: 4 }}>Capital gains</div>
+              <div style={{ fontSize: 13, color: "var(--uf-ink)", lineHeight: 1.4 }}>{CITIZENSHIP_CGT_LABEL[c.code] ?? "Varies — verify current rules"}</div>
+            </div>
+            <div style={{ background: "var(--uf-surface)", borderRadius: "var(--uf-r-control)", padding: "var(--uf-s3)" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--uf-ink-3)", marginBottom: 4 }}>Retirement account</div>
+              <div style={{ fontSize: 13, color: "var(--uf-ink)", lineHeight: 1.4 }}>{CITIZENSHIP_ACCOUNT_LABEL[c.code] ?? "Varies — verify current rules"}</div>
+            </div>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--uf-s4)" }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--uf-pos-ink)", marginBottom: 8 }}>Strengths</div>
@@ -161,10 +189,12 @@ export default function CitizenshipTab() {
 
       <Card elevation="flat" style={{ background: "var(--uf-surface)", fontSize: 13, color: "var(--uf-ink-2)", lineHeight: 1.6 }}>
         Scored out of 100 across tax burden (40), retirement account access (30), and investment
-        freedom (30). This is general, simplified content, not personalized tax or legal advice —
-        rules change and vary by individual circumstance, so verify anything that matters for your
-        actual decisions. This is separate from your tax/residence settings in Profile, which are
-        about where you currently live rather than which passport you hold.
+        freedom (30) — plus the real numbers behind them: income tax rate, capital gains tax,
+        the actual retirement account each citizenship gives you, and a rough cost-of-living tier.
+        This is general, simplified content, not personalized tax or legal advice — rules change
+        and vary by individual circumstance, so verify anything that matters for your actual
+        decisions. This is separate from your tax/residence settings in Profile, which are about
+        where you currently live rather than which passport you hold.
       </Card>
 
       <div>
