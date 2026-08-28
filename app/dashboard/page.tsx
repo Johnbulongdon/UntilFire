@@ -14,6 +14,7 @@ import TransactionsTab from "./TransactionsTab";
 import PlaidConnect from "./PlaidConnect";
 import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
+import CitizenshipTab from "./CitizenshipTab";
 import CategoriesTab from "./CategoriesTab";
 import RecurringTab from "./RecurringTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
@@ -74,6 +75,7 @@ type TabKey =
   | "fire-calculator"
   | "expat-fire"
   | "goals"
+  | "citizenship"
   | "reports"
   | "learning-hub"
   | "profile";
@@ -4756,7 +4758,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "fire-calculator",
     label: "Plan",
-    activeTabs: ["fire-calculator", "expat-fire", "goals", "learning-hub"],
+    activeTabs: ["fire-calculator", "expat-fire", "goals", "citizenship", "learning-hub"],
     svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   },
 ];
@@ -4781,6 +4783,7 @@ const PLAN_SECTIONS: PlanSection[] = [
   { label: "Scenarios",    tab: "fire-calculator", subTab: "invest-sim" },
   { label: "Goals",        tab: "goals"        },
   { label: "Expat FIRE",   tab: "expat-fire"   },
+  { label: "Citizenship",  tab: "citizenship"  },
   { label: "Learn",        tab: "learning-hub" },
 ];
 
@@ -4863,7 +4866,7 @@ export default function Dashboard() {
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
       "overview", "cashflow", "assets", "liabilities",
-      "fire-calculator", "expat-fire", "goals", "reports", "learning-hub", "profile",
+      "fire-calculator", "expat-fire", "goals", "citizenship", "reports", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
@@ -5136,7 +5139,7 @@ export default function Dashboard() {
   const isMobilePrimaryActive = (key: MobilePrimaryKey) => {
     if (key === "home") return tab === "overview";
     if (key === "cashflow") return MONEY_SECTIONS.some(s => s.tab === tab);
-    if (key === "plan") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "learning-hub";
+    if (key === "plan") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "citizenship" || tab === "learning-hub";
     return tab === "profile";
   };
 
@@ -5618,7 +5621,7 @@ export default function Dashboard() {
         <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="light" size={22} /></Link>
         <div className="uf-mobile-top-title">
           <strong>UntilFire</strong>
-          <span>{freedomDateCompactLabel ? `Free · ${freedomDateCompactLabel}` : tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
+          <span>{freedomDateCompactLabel ? `Free · ${freedomDateCompactLabel}` : tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
         </div>
         <button
           onClick={toggleDark}
@@ -6006,6 +6009,7 @@ export default function Dashboard() {
             {tab === "goals" && (
               <GoalsPageTab userId={userId} monthlyExpenses={monthlyExpenses} />
             )}
+            {tab === "citizenship" && <CitizenshipTab />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "expat-fire" && (
