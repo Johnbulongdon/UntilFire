@@ -96,7 +96,7 @@ function SubscoreRow({ label, hint, value, max }: { label: string; hint?: string
   );
 }
 
-function CitizenshipCard({ c, mine, open, onToggle }: { c: CitizenshipScore; mine: boolean; open: boolean; onToggle: () => void }) {
+function CitizenshipCard({ c, rank, mine, open, onToggle }: { c: CitizenshipScore; rank: number; mine: boolean; open: boolean; onToggle: () => void }) {
   const score = citizenshipScore(c);
   const band = citizenshipBand(score);
   return (
@@ -112,6 +112,14 @@ function CitizenshipCard({ c, mine, open, onToggle }: { c: CitizenshipScore; min
           background: "transparent", border: "none", cursor: "pointer", textAlign: "left", font: "inherit",
         }}
       >
+        <span
+          style={{
+            fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: 12, fontWeight: 700,
+            color: "var(--uf-ink-3)", width: 22, flexShrink: 0, textAlign: "right",
+          }}
+        >
+          #{rank}
+        </span>
         <Flag code={c.code} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -245,10 +253,11 @@ export default function CitizenshipTab() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
-        {sorted.map((c) => (
+        {sorted.map((c, i) => (
           <CitizenshipCard
             key={c.code}
             c={c}
+            rank={i + 1}
             mine={c.code === mineCode}
             open={openCode === c.code}
             onToggle={() => setOpenCode((prev) => (prev === c.code ? null : c.code))}
