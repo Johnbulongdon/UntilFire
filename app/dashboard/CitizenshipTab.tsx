@@ -7,9 +7,9 @@ import {
 } from "country-flag-icons/react/3x2";
 import { Button, Card, Badge, Select } from "@/components/ui";
 import {
-  CITIZENSHIP_SCORES, CITIZENSHIP_TAX_RATE_LABEL, CITIZENSHIP_CGT_LABEL, CITIZENSHIP_ACCOUNT_LABEL, CITIZENSHIP_COST_OF_LIVING,
+  CITIZENSHIP_SCORES, CITIZENSHIP_TAX_RATE_LABEL, CITIZENSHIP_CGT_LABEL, CITIZENSHIP_ACCOUNT_LABEL,
   citizenshipScore, citizenshipBand,
-  type CitizenshipScore, type CitizenshipBand, type CostOfLivingTier,
+  type CitizenshipScore, type CitizenshipBand,
 } from "@/lib/citizenship-data";
 
 // Real SVG flags, not emoji — flag emoji is two "regional indicator"
@@ -57,13 +57,6 @@ const BAND_RING: Record<CitizenshipBand["cls"], string> = {
   strong: "var(--uf-pos)",
   workable: "var(--uf-warn)",
   friction: "var(--uf-neg)",
-};
-
-const COL_TONE: Record<CostOfLivingTier, "positive" | "muted" | "warning" | "negative"> = {
-  Low: "positive",
-  Moderate: "muted",
-  High: "warning",
-  "Very high": "negative",
 };
 
 function ScoreRing({ score, band, size = 52 }: { score: number; band: CitizenshipBand; size?: number }) {
@@ -128,9 +121,6 @@ function CitizenshipCard({ c, rank, mine, open, onToggle }: { c: CitizenshipScor
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
             <Badge tone={BAND_TONE[band.cls]}>{band.label}</Badge>
-            {CITIZENSHIP_COST_OF_LIVING[c.code] && (
-              <Badge tone={COL_TONE[CITIZENSHIP_COST_OF_LIVING[c.code]]}>{CITIZENSHIP_COST_OF_LIVING[c.code]} cost of living</Badge>
-            )}
           </div>
           <div style={{ fontSize: 12, color: "var(--uf-ink-3)", fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", marginTop: 4 }}>
             {CITIZENSHIP_TAX_RATE_LABEL[c.code] ?? "Rate unavailable"}
@@ -224,12 +214,13 @@ export default function CitizenshipTab() {
 
       <Card elevation="flat" style={{ background: "var(--uf-surface)", fontSize: 13, color: "var(--uf-ink-2)", lineHeight: 1.6 }}>
         Scored out of 100 across tax burden (40), retirement account access (30), and investment
-        freedom (30) — plus the real numbers behind them: income tax rate, capital gains tax,
-        the actual retirement account each citizenship gives you, and a rough cost-of-living tier.
-        This is general, simplified content, not personalized tax or legal advice — rules change
-        and vary by individual circumstance, so verify anything that matters for your actual
-        decisions. This is separate from your tax/residence settings in Profile, which are about
-        where you currently live rather than which passport you hold.
+        freedom (30) — plus the real numbers behind them: income tax rate, capital gains tax, and
+        the actual retirement account each citizenship gives you. Cost of living is not part of
+        this score — it varies far more by city than by citizenship, so that lives in Expat FIRE
+        with real per-city numbers instead. This is general, simplified content, not personalized
+        tax or legal advice — rules change and vary by individual circumstance, so verify anything
+        that matters for your actual decisions. This is separate from your tax/residence settings
+        in Profile, which are about where you currently live rather than which passport you hold.
       </Card>
 
       <div>
