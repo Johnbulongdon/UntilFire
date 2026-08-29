@@ -2,6 +2,12 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-08-29
+
+### Added
+- "Your month" check-in card on Home (`DashTab`) — closes the monthly loop by combining last month's actual result (`consistencyMonths`, on-track or off-plan, savings vs. short) with this month's top recommendation (`topTasks[0]`) into one verdict, with a CTA that scrolls to the existing top-tasks card. Dismissible per calendar month (`uf_checkin_dismissed_YYYY-MM`), so it reappears as a fresh check-in each month rather than sitting as a permanent fixture.
+- `funnel_next_move_opened` analytics event — fires when the check-in card's CTA is clicked, giving the top-tasks recommendations their first real click target (previously informational only).
+
 ## [Unreleased] - 2026-08-16
 
 ### Removed

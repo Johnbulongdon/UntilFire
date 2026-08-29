@@ -28,7 +28,7 @@ import { calcFIRE } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
-import { trackDashboardFirstView, trackNextMoveViewed } from "@/lib/analytics";
+import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
 import { EXPENSE_CATEGORIES } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { Badge } from "@/components/ui";
@@ -1198,6 +1198,34 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     trackNextMoveViewed({ moveCount: topTasks.length, topPriority: topTasks[0].priority });
   }, [topTasks]);
 
+  // "Your month" check-in — the piece that closes the loop monthly instead
+  // of leaving Home as a one-time reveal. Reuses consistencyMonths (already
+  // tracks whether each past month hit its savings goal and stayed near
+  // budget) and topTasks (already ranks this month's best move); no new
+  // data model, just a synthesis of both plus a per-month dismiss flag.
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthKey = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`;
+  const checkinMonthLabel = MONTH_NAMES[prevMonthDate.getMonth()];
+  // Looked up by key rather than consistencyMonths[0] — that array's first
+  // entry can be the current, still-in-progress month once it has any
+  // transactions, and a check-in should summarize the month that just ended.
+  const lastCompletedMonth = consistencyMonths.find((m) => m.key === prevMonthKey) ?? null;
+
+  const [checkinDismissed, setCheckinDismissed] = useState(false);
+  useEffect(() => {
+    try { setCheckinDismissed(localStorage.getItem(`uf_checkin_dismissed_${currentMonthKey}`) === "1"); } catch { /* ignore */ }
+  }, [currentMonthKey]);
+  function dismissCheckin() {
+    setCheckinDismissed(true);
+    try { localStorage.setItem(`uf_checkin_dismissed_${currentMonthKey}`, "1"); } catch { /* ignore */ }
+  }
+  function openThisMonthsMove() {
+    dismissCheckin();
+    trackNextMoveOpened({ topPriority: topTasks[0]?.priority ?? 0 });
+    document.getElementById("uf-top-tasks-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
   // Self-contained fetch (same pattern as GoalsPageTab, which owns the
   // read/write of this table) so Home reflects the goals a user set —
   // whether from the PERMA intro flow or added by hand in Plan -> Goals —
@@ -1474,6 +1502,39 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
+      {/* ── Your month: closes last month's loop and points at this month's
+          move. Dismissible per calendar month (uf_checkin_dismissed_YYYY-MM)
+          so it reads as a check-in ritual, not a permanent fixture. ────── */}
+      {!checkinDismissed && topTasks.length > 0 && (
+        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Your month
+            </div>
+            <button
+              onClick={dismissCheckin}
+              style={{ background: "none", border: "none", color: "var(--uf-text-3)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0 }}
+            >
+              Not now
+            </button>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1.4 }}>
+            {lastCompletedMonth
+              ? `${checkinMonthLabel}: ${lastCompletedMonth.onTrack ? "on track" : "off plan"} — you ${lastCompletedMonth.savings >= 0 ? "saved" : "were short"} ${fmtMoney(Math.abs(lastCompletedMonth.savings), true)}.`
+              : "New here — here's this month's best move."}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
+            This month: {topTasks[0].label}
+          </div>
+          <button
+            onClick={openThisMonthsMove}
+            style={{ alignSelf: "flex-start", border: "none", background: "var(--uf-green)", color: "#fff", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+          >
+            See this month&apos;s move →
+          </button>
+        </div>
+      )}
+
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
       {efMonthlyBase > 0 && (
         <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
@@ -1557,7 +1618,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           </div>
         </div>
 
-        <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div id="uf-top-tasks-card" className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 24 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>

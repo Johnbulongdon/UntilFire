@@ -245,10 +245,18 @@ UntilFire creating action versus just curiosity.
     that fired, without sending the task's label text — those strings
     interpolate a dollar amount (e.g. "Rebuild your emergency fund by about
     $1,200"), which the PII rule below forbids.
-- **Not yet wired**: a distinct `next_move_opened` (clicking into a specific
-  recommendation) needs a real click target first — the task rows in
-  `DashTab` are currently informational, not interactive. Add the
-  affordance, then the event.
+### `funnel_next_move_opened`
+
+- **Where**: `app/dashboard/page.tsx`, `DashTab`. Fires when the "Your month"
+  check-in card's CTA is clicked, which scrolls to and opens the "Best way
+  to move your date" (`topTasks`) card — the first real click target on a
+  task row, closing the gap noted above.
+- **Properties**:
+  - `top_priority` — same meaning as `funnel_next_move_viewed`'s
+    `top_priority`: identifies whether the safety-first rule is the move
+    being opened, without sending the task's label text.
+- **Not fired on dismiss**: clicking "Not now" on the check-in card hides it
+  for the month without counting as opening the move — only the CTA counts.
 
 ### `funnel_scenario_tested`
 

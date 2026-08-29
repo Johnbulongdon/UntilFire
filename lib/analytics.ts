@@ -28,6 +28,7 @@ import {
   type HysaEmptyStateCtaClickedProperties,
   type EmailCaptureSubmittedProperties,
   type NextMoveViewedProperties,
+  type NextMoveOpenedProperties,
   type ScenarioTestedProperties,
   type ScenarioAcceptedProperties,
 } from './analytics-events';
@@ -219,6 +220,13 @@ export function trackNextMoveViewed(input: { moveCount: number; topPriority: num
     top_priority: input.topPriority,
   });
   capture(FunnelEvents.NEXT_MOVE_VIEWED, props);
+}
+
+export function trackNextMoveOpened(input: { topPriority: number }) {
+  const props: NextMoveOpenedProperties = withVersion({
+    top_priority: input.topPriority,
+  });
+  capture(FunnelEvents.NEXT_MOVE_OPENED, props);
 }
 
 export function trackScenarioTested(input: { scenarioIndex: number; scenarioLabel: string; deltaYears: number }) {

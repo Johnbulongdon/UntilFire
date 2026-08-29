@@ -283,7 +283,7 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [x] Rules-based next-move ranking grounded in the user's actual data (`topTasks`, `DashTab`) — impact × priority, not impact alone yet (confidence/ease weighting still open, see Learning Loop below)
 - [x] Emergency-fund-first safety rule, ranked above growth moves (`emergencyFundPlan.priorityMode`)
 - [x] Working scenario-test UI with real recomputed numbers (`RevealFlow` step 7, `HomeClient.tsx`'s `scenarios`)
-- [ ] "This month: invest $300 more and your freedom date moves 4 months closer" style recommendations — the pieces above produce this shape already; not yet surfaced as a monthly-cadence card
+- [x] "This month: invest $300 more and your freedom date moves 4 months closer" style recommendations — shipped as the "Your month" check-in card on Home (`DashTab`), synthesizing `consistencyMonths` (last month's actual result) and `topTasks[0]` (this month's move) into one verdict; dismissible per calendar month via `uf_checkin_dismissed_YYYY-MM`
 - [ ] Explain tradeoffs clearly: impact, difficulty, confidence, and why it matters — impact exists (`impactYears`); difficulty and confidence do not yet
 - [ ] Keep recommendations grounded in user data and editable assumptions
 - [ ] Monthly progress email or dashboard card
@@ -313,7 +313,7 @@ creates action, not just curiosity.
 - [x] `funnel_next_move_viewed` — Home shows a real recommendation
 - [x] `funnel_scenario_tested` — a scenario is picked in the reveal
 - [x] `funnel_scenario_accepted` — "Start my path" clicked, which scenario was live
-- [ ] `funnel_next_move_opened` — needs the task rows in `DashTab` to become a real click target first; they're informational today
+- [x] `funnel_next_move_opened` — fires when the "Your month" check-in card's CTA is clicked, which scrolls to and opens the top-tasks card; the click target this event was blocked on
 - [ ] `funnel_numbers_updated` — needs a decision on which edit surfaces count (Assets/Liabilities forms? Budget modal? both?) before wiring
 - [ ] `funnel_action_completed` — needs a definition of "action" (mark a recommended task done doesn't have UI yet; connecting a bank account already does and could be the first instance)
 - [ ] 7-day / 30-day return — **do not build a bespoke event for this.** PostHog computes retention natively from the identified pageviews/events already being sent; this needs correct use of PostHog's Retention insight, not new instrumentation. Revisit only if a dashboard card or lifecycle email needs a server-computed trigger, which is a different, larger feature (same shape as the existing Day-7 email cron).
@@ -335,11 +335,14 @@ actually being seen.
 - [ ] Sort by impact × confidence × ease instead of impact × priority alone
 - [ ] "Maybe, show another" branch — swap in the next-ranked task instead of repeating the same one
 
-**4. Monthly check-in — new Home card, not a nav change**
+**4. Monthly check-in — new Home card, not a nav change — shipped 2026-08-29**
 
-See the IA note below first. Compares the month's actuals (already tracked
-via Cashflow) against the plan, using the rules engine's output. This is the
-piece that makes the loop monthly instead of one-time.
+Compares the month's actuals (already tracked via Cashflow) against the
+plan, using the rules engine's output — the "Your month" card on Home
+(`DashTab`, above the freedom-date/best-move row). No nav change, per the IA
+note below. Not yet done: a monthly email version (dashboard card alone
+satisfies this item; email is separate, still unchecked under Core Adviser
+Feature above) and the feedback widget in stage 2 below.
 
 **IA note — flagged, not resolved:** an earlier version of this loop proposed
 `Home / Plan / Money / Tools / Check-in` as the nav. That conflicts with

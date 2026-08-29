@@ -29,6 +29,7 @@ export const FunnelEvents = {
   HYSA_EMPTY_STATE_CTA_CLICKED: 'funnel_hysa_empty_state_cta_clicked',
   EMAIL_CAPTURE_SUBMITTED: 'funnel_email_capture_submitted',
   NEXT_MOVE_VIEWED: 'funnel_next_move_viewed',
+  NEXT_MOVE_OPENED: 'funnel_next_move_opened',
   SCENARIO_TESTED: 'funnel_scenario_tested',
   SCENARIO_ACCEPTED: 'funnel_scenario_accepted',
 } as const;
@@ -164,6 +165,13 @@ export interface NextMoveViewedProperties extends BaseFunnelProperties {
   // priority values that DashTab's topTasks ranking assigns to safety-net
   // tasks), so this alone answers "did the safety rule fire" without
   // needing the task's label text.
+  top_priority: number;
+}
+
+export interface NextMoveOpenedProperties extends BaseFunnelProperties {
+  // Same rationale as NextMoveViewedProperties.top_priority: identifies
+  // whether the safety-first rule is the move being opened without sending
+  // the task's label text (which interpolates a dollar amount).
   top_priority: number;
 }
 
