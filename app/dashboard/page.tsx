@@ -24,7 +24,7 @@ import ProfileTab from "./ProfileTab";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
-import { calcFIRE } from "@/lib/fire";
+import { calcFIRE, REAL_RETURN } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
@@ -6229,7 +6229,7 @@ function ExpatFireDashTab({
 
   const tlYears = Math.min(timelineYears, sliderMax);
   const tlAnnual = Math.max(0, monthlySavings) * 12;
-  const projectedPortfolio = (portfolioBalance + tlAnnual / 0.10) * Math.pow(1.10, tlYears) - tlAnnual / 0.10;
+  const projectedPortfolio = (portfolioBalance + tlAnnual / REAL_RETURN) * Math.pow(1 + REAL_RETURN, tlYears) - tlAnnual / REAL_RETURN;
   const readyCount = cityUnlocks.filter(c => c.years <= tlYears + 1e-9).length;
   const projAge = age ? age + tlYears : undefined;
   const tlThisYear = new Date().getFullYear();

@@ -19,7 +19,7 @@ export {
   traditionalStrategy,
 } from './strategies';
 
-export { calcFIRE } from './strategies/traditional';
+export { calcFIRE, REAL_RETURN } from './strategies/traditional';
 import { calcFIRE } from './strategies/traditional';
 
 export { calcTakeHome, getLocale, takeHomePay } from './tax';

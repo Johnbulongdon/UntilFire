@@ -6,7 +6,7 @@ import { cityLandingPages, getCityLandingPage } from '@/lib/city-pages'
 import type { CityLandingPage } from '@/lib/city-pages'
 import { CITIES, STATE_TAX, isUS } from '@/lib/fire-data'
 import type { City } from '@/lib/fire-data'
-import { calcFIRE, calcTakeHome } from '@/lib/fire'
+import { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'
 import CityCalcWidget from '../CityCalcWidget'
 
 type Props = {
@@ -464,10 +464,10 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   ]
 
   // How much to save each month to hit the full FIRE target over different timelines,
-  // assuming ~10% average annual return compounded monthly from $0 (matches the
+  // assuming the shared real return compounded monthly from $0 (matches the
   // scenario table assumption above).
   const SAVINGS_TIMELINES = [10, 15, 20, 25, 30]
-  const SAVINGS_MONTHLY_RATE = 0.10 / 12
+  const SAVINGS_MONTHLY_RATE = REAL_RETURN / 12
   const savingsByTimeline = SAVINGS_TIMELINES.map((yrs) => {
     const months = yrs * 12
     const monthly = (fireTarget * SAVINGS_MONTHLY_RATE) / (Math.pow(1 + SAVINGS_MONTHLY_RATE, months) - 1)
@@ -660,7 +660,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               How much to save each month to retire in {data.name}
             </h2>
             <p style={{ fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
-              Monthly investing needed to reach the {fmt(fireTarget)} target, starting from $0 at ~10% average annual return
+              Monthly investing needed to reach the {fmt(fireTarget)} target, starting from $0 at a ~7% average annual return after inflation
             </p>
           </div>
           <table className="city-scenario-table">

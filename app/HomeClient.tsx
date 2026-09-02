@@ -8,7 +8,7 @@ import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
-import { calcFIRE, calcTakeHome } from "@/lib/fire";
+import { calcFIRE, calcTakeHome, REAL_RETURN } from "@/lib/fire";
 import {
   trackLandingViewed,
   trackCalculatorStepViewed,
@@ -961,7 +961,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const router = useRouter();
   const planningAge = currentAge ?? 30;
   const ageWasAssumed = currentAge == null;
-  const marketReturn = 0.10;
+  const marketReturn = REAL_RETURN;
 
   const result = calcFIRE(savings, city.col, planningAge, portfolioBalance, marketReturn);
   const takeHome = income;

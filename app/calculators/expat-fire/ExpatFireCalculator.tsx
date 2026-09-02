@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { CITIES } from '@/lib/fire-data';
 import { CITY_COORDS } from '@/lib/city-coords';
-import { calcFIRE } from '@/lib/fire';
+import { calcFIRE, REAL_RETURN } from '@/lib/fire';
 
 const GeoArbitrageGlobe = dynamic(
   () => import('@/app/components/GeoArbitrageGlobe'),
@@ -75,7 +75,7 @@ export default function ExpatFireCalculator() {
 
   const t = Math.min(timelineYears, sliderMax);
   const annualContribution = Math.max(0, savings) * 12;
-  const projectedPortfolio = (portfolio + annualContribution / 0.10) * Math.pow(1.10, t) - annualContribution / 0.10;
+  const projectedPortfolio = (portfolio + annualContribution / REAL_RETURN) * Math.pow(1 + REAL_RETURN, t) - annualContribution / REAL_RETURN;
   const readyCount = cityUnlocks.filter(c => c.years <= t + 1e-9).length;
   const projAge = age ? Number(age) + t : undefined;
   const thisYear = new Date().getFullYear();

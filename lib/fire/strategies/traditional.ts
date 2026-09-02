@@ -1,6 +1,27 @@
 import type { FireInputs, FireOutput, FireStrategy } from '../types';
 
 /**
+ * The one growth assumption for the whole product.
+ *
+ * REAL, not nominal: roughly the ~10% long-run average total return of a broad
+ * equity index minus roughly 3% long-run inflation. Because it is real, every
+ * target derived from it (25x annual spending) stays in TODAY's dollars, which
+ * is both what the FIRE convention quotes and the only version a human can
+ * judge — "$1.25M" means something, "$2.24M in 2043 money" does not.
+ *
+ * Keeping it real also costs one assumption instead of three: a nominal model
+ * needs a market return, an inflation rate to inflate the target, AND a wage
+ * growth rate to inflate contributions. Both approaches produce the same
+ * freedom date when done consistently; only this one is legible.
+ *
+ * This constant exists because the number used to be written out in six places
+ * and two of them said 0.10 — which grew the portfolio at a nominal rate while
+ * still comparing it against a today's-dollar target, reporting freedom dates
+ * several years too early. Import it; never re-type the literal.
+ */
+export const REAL_RETURN = 0.07;
+
+/**
  * Traditional FIRE: 25× annual expenses target (4% safe withdrawal), 7% real
  * return assumption, capped at 65 years of accumulation.
  *
@@ -12,7 +33,7 @@ function compute({
   annualExpenses,
   currentAge,
   startingBalance = 0,
-  expectedRealReturn = 0.07,
+  expectedRealReturn = REAL_RETURN,
   withdrawalRate = 0.04,
   maxYears = 65,
 }: FireInputs): FireOutput {
@@ -63,7 +84,7 @@ export function calcFIRE(
   annualExpenses: number,
   currentAge?: number,
   startingBalance: number = 0,
-  expectedReturn: number = 0.10,
+  expectedReturn: number = REAL_RETURN,
 ): FireOutput {
   return compute({ monthlySavings, annualExpenses, currentAge, startingBalance, expectedRealReturn: expectedReturn });
 }

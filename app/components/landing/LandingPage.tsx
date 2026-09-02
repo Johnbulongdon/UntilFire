@@ -369,7 +369,7 @@ function TryIt7() {
               onChange={(e) => setSave(+e.target.value)}
               aria-label="Monthly savings"
             />
-            <div className="uf7-slider-foot">Starting from $0, after {TRYIT_YEARS} years at a 7% average annual return.</div>
+            <div className="uf7-slider-foot">Starting from $0, after {TRYIT_YEARS} years at a 7% average annual return — the ~10% long-run market average, less ~3% inflation, so this is in today&apos;s money.</div>
           </div>
         </div>
       </div>
