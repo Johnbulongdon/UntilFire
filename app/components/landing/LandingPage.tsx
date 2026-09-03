@@ -399,37 +399,43 @@ const DECADE_SHARES = [
 
 function DecadeShape7() {
   return (
-    <section className="uf7-block" style={{ ["--uf7hue" as string]: "62deg" }}>
+    <section className="uf7-block uf7-block--alt" style={{ ["--uf7hue" as string]: "62deg" }}>
       <div className="uf7-blob uf7-glow-l" />
       <div className="uf7-wrap">
-        <div className="uf7-sec-eyebrow uf7-rv">The honest part</div>
-        <h2 className="uf7-statement uf7-rv">The decade nobody <em>warns you about</em>.</h2>
-        <p className="uf7-lede uf7-rv">
-          Ten years in, a $500-a-month habit is worth about $86,500. It does not feel like
-          financial independence. It feels like a savings account with extra steps. That is
-          not failure — that is the shape of the thing.
-        </p>
+        <div className="uf7-split">
+          <div className="uf7-split-head">
+            <div className="uf7-sec-eyebrow uf7-rv">The honest part</div>
+            <h2 className="uf7-statement uf7-rv">The decade nobody <em>warns you about</em>.</h2>
+            <p className="uf7-lede uf7-rv">
+              Ten years in, a $500-a-month habit is worth about $86,500. It does not feel like
+              financial independence. It feels like a savings account with extra steps.
+            </p>
+            <p className="uf7-lede uf7-rv">
+              That is not failure — that is the shape of the thing. Left alone, the same habit
+              produces <em className="uf7-hl">$702,000 in its fourth decade alone</em>.
+            </p>
+          </div>
 
-        <div className="uf7-decades uf7-rv">
-          {DECADE_SHARES.map((d, i) => (
-            <div className="uf7-decade" key={d.span}>
-              <div className="uf7-decade-span">{d.span}</div>
-              <div className="uf7-decade-track">
-                <div
-                  className={`uf7-decade-fill${i === DECADE_SHARES.length - 1 ? " uf7-decade-fill-hot" : ""}`}
-                  style={{ width: `${d.width}%` }}
-                />
-              </div>
-              <div className="uf7-decade-amt">{d.amount}</div>
-              <div className="uf7-decade-pct">{d.pct}%</div>
+          <div className="uf7-panel uf7-rv">
+            <div className="uf7-panel-cap">What each decade adds</div>
+            <div className="uf7-decades">
+              {DECADE_SHARES.map((d, i) => (
+                <div className="uf7-decade" key={d.span}>
+                  <div className="uf7-decade-span">{d.span}</div>
+                  <div className="uf7-decade-track">
+                    <div
+                      className={`uf7-decade-fill${i === DECADE_SHARES.length - 1 ? " uf7-decade-fill-hot" : ""}`}
+                      style={{ width: `${d.width}%` }}
+                    />
+                  </div>
+                  <div className="uf7-decade-amt">{d.amount}</div>
+                  <div className="uf7-decade-pct">{d.pct}%</div>
+                </div>
+              ))}
             </div>
-          ))}
+            <div className="uf7-panel-foot">$500/mo · 40 years · 7% real</div>
+          </div>
         </div>
-
-        <p className="uf7-earlier uf7-rv">
-          The same habit, left alone, produces <em>$702,000 in its fourth decade alone</em> —
-          eight times what the first one produced.
-        </p>
       </div>
     </section>
   );
@@ -443,12 +449,16 @@ function StartEarly7() {
     <section className="uf7-block" style={{ ["--uf7hue" as string]: "80deg" }}>
       <div className="uf7-blob uf7-glow-r" />
       <div className="uf7-wrap">
-        <div className="uf7-sec-eyebrow uf7-rv">Which is why</div>
-        <h2 className="uf7-statement uf7-rv">Starting early beats <em>saving more</em>.</h2>
-        <p className="uf7-lede uf7-rv">
-          Someone who invests for ten years and then never adds another dollar still
-          finishes ahead of someone who starts a decade later and keeps paying in for thirty.
-        </p>
+        <div className="uf7-head-2up">
+          <div>
+            <div className="uf7-sec-eyebrow uf7-rv">Which is why</div>
+            <h2 className="uf7-statement uf7-rv">Starting early beats <em>saving more</em>.</h2>
+          </div>
+          <p className="uf7-lede uf7-rv">
+            Someone who invests for ten years and then never adds another dollar still
+            finishes ahead of someone who starts a decade later and keeps paying in for thirty.
+          </p>
+        </div>
 
         <div className="uf7-versus uf7-rv">
           <div className="uf7-versus-card uf7-versus-win">
@@ -503,7 +513,7 @@ const ANY_SIZE_ROWS = [
 
 function AnySize7() {
   return (
-    <section className="uf7-block" style={{ ["--uf7hue" as string]: "44deg" }}>
+    <section className="uf7-block uf7-block--alt" style={{ ["--uf7hue" as string]: "44deg" }}>
       <div className="uf7-wrap">
         <div className="uf7-sec-eyebrow uf7-rv">At any size</div>
         <h2 className="uf7-statement uf7-rv">You do not need a large number <em>to start</em>.</h2>
@@ -592,7 +602,7 @@ function World7() {
 /* ── Pricing: editorial columns ──────────────────────────────────────── */
 function Pricing7({ onStart }: { onStart: () => void }) {
   return (
-    <section className="uf7-block" id="pricing" style={{ ["--uf7hue" as string]: "52deg" }}>
+    <section className="uf7-block uf7-block--alt" id="pricing" style={{ ["--uf7hue" as string]: "52deg" }}>
       <div className="uf7-blob uf7-glow-l" />
       <div className="uf7-wrap">
         <div className="uf7-sec-eyebrow uf7-center uf7-rv">Pricing</div>
@@ -607,7 +617,7 @@ function Pricing7({ onStart }: { onStart: () => void }) {
               <li>Decision sliders</li>
               <li>Shareable result card</li>
             </ul>
-            <button className="uf7-free-cta" onClick={onStart}>Find my second birthday</button>
+            <button className="uf7-free-cta" onClick={onStart}>Find my freedom date</button>
           </div>
           <div className="uf7-pcol uf7-rv">
             <div className="uf7-tier">Pro</div>
@@ -687,10 +697,10 @@ function Closing7({ onStart }: { onStart: () => void }) {
       <div className="uf7-blob uf7-close-a" />
       <div className="uf7-blob uf7-close-b" />
       <div className="uf7-wrap">
-        <h2 className="uf7-closing-h uf7-rv">Your second life<br />is <i>waiting</i>.</h2>
-        <p className="uf7-closing-sub uf7-rv">Find your second birthday — free, no login, about 60 seconds.</p>
+        <h2 className="uf7-closing-h uf7-rv">You are somewhere<br />on that <i>curve</i>.</h2>
+        <p className="uf7-closing-sub uf7-rv">Sixty seconds to find out where — free, no login.</p>
         <button className="uf7-cta uf7-rv" onClick={onStart} style={{ marginTop: 38 }}>
-          Find my second birthday <span className="uf7-arrow">→</span>
+          Find my freedom date <span className="uf7-arrow">→</span>
         </button>
       </div>
     </section>
@@ -1373,11 +1383,6 @@ const CSS7 = `
   }
   .uf7-h1 i { font-style: italic; }
   .uf7-note { position: relative; z-index: 4; margin: 26px auto 0; max-width: 520px; font-size: 16px; line-height: 1.6; font-weight: 500; color: rgba(255,255,255,0.75); }
-    position: relative; z-index: 4; margin-top: 20px;
-    font-family: ${MONO};
-    font-size: clamp(12px, 1.6vw, 16px); letter-spacing: 0.2em; text-transform: uppercase;
-    color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums;
-  }
   .uf7-cta {
     position: relative; z-index: 4; margin-top: 36px;
     display: inline-flex; align-items: center; gap: 10px;
@@ -1422,7 +1427,20 @@ const CSS7 = `
   }
   .uf7-trust-logo { border-radius: 8px; object-fit: cover; opacity: 0.75; flex-shrink: 0; filter: grayscale(0.15); }
 
-  .uf7-block { position: relative; overflow: hidden; padding: 110px 24px; background: var(--uf-ground); }
+  .uf7-block { position: relative; overflow: hidden; padding: 104px 24px; background: var(--uf-ground); }
+
+  /* Chapters. Every section used to sit on the same flat ground, which is
+     why the page read as one undifferentiated scroll however much the copy
+     changed. Alternating surfaces + a hairline give it pacing. */
+  .uf7-block--alt { background: var(--uf-card); border-top: 1px solid rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.07); }
+
+  /* Two columns: argument left, evidence right. The single 920px column was
+     leaving a third of a desktop viewport empty. */
+  .uf7-split { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 72px; align-items: center; }
+  .uf7-split-head { align-self: center; }
+
+  /* Holds the data so it reads as an object rather than floating on the page. */
+  .uf7-panel { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; padding: 28px; }
 
   /* ── Hero: the two decade figures, and the curve they describe ── */
   .uf7-yourdate { position: relative; z-index: 4; margin-top: 22px; font-family: ${MONO}; font-size: 13px; color: rgba(255,255,255,0.62); }
@@ -1436,11 +1454,16 @@ const CSS7 = `
   .uf7-splitstat-foot { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
 
   /* ── Shared section lede ── */
+  .uf7-panel-cap { font-family: ${MONO}; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 22px; }
+  .uf7-panel-foot { font-family: ${MONO}; font-size: 11px; color: rgba(255,255,255,0.36); margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .uf7-hl { font-style: normal; color: var(--uf-teal); }
+  .uf7-head-2up { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: end; }
+  .uf7-head-2up .uf7-lede { margin-top: 0; }
   .uf7-lede { margin: 20px 0 0; font-size: 17px; line-height: 1.75; color: rgba(255,255,255,0.62); max-width: 620px; }
 
   /* ── Decade shares ── */
   .uf7-decades { margin-top: 48px; display: flex; flex-direction: column; gap: 14px; }
-  .uf7-decade { display: grid; grid-template-columns: 120px 1fr 108px 48px; gap: 18px; align-items: center; }
+  .uf7-decade { display: grid; grid-template-columns: 88px 1fr 92px 38px; gap: 12px; align-items: center; }
   .uf7-decade-span { font-family: ${MONO}; font-size: 12px; color: rgba(255,255,255,0.5); }
   .uf7-decade-track { height: 32px; border-radius: 10px; background: rgba(255,255,255,0.07); overflow: hidden; }
   .uf7-decade-fill { height: 100%; border-radius: 10px; background: rgba(98,250,227,0.34); }
@@ -1473,7 +1496,7 @@ const CSS7 = `
   .uf7-mult { display: inline-block; background: rgba(34,211,165,0.14); color: var(--uf-teal); border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 800; }
   .uf7-table-foot { margin: 18px 0 0; font-family: ${MONO}; font-size: 11px; line-height: 1.7; color: rgba(255,255,255,0.42); max-width: 620px; }
 
-  .uf7-wrap { position: relative; z-index: 4; max-width: 920px; margin: 0 auto; }
+  .uf7-wrap { position: relative; z-index: 4; max-width: 1060px; margin: 0 auto; }
   .uf7-wrap-wide { max-width: 1040px; }
   .uf7-center { text-align: center; }
   .uf7-sec-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.26em; text-transform: uppercase; color: var(--uf-teal); }
@@ -1571,6 +1594,9 @@ const CSS7 = `
     .uf7-nav-links { display: none; }
     .uf7-hero { padding: 130px 20px 190px; }
     .uf7-block { padding: 88px 20px; }
+    .uf7-split { grid-template-columns: 1fr; gap: 36px; }
+    .uf7-head-2up { grid-template-columns: 1fr; gap: 20px; align-items: start; }
+    .uf7-panel { padding: 22px; border-radius: 18px; }
     .uf7-row { grid-template-columns: 60px 1fr; gap: 18px; padding: 28px 0; }
     .uf7-globe-grid { grid-template-columns: 1fr; gap: 40px; }
     .uf7-price-cols { grid-template-columns: 1fr; }
