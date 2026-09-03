@@ -175,36 +175,25 @@ function Nav7({ onStart }: { onStart: () => void }) {
   );
 }
 
-/* ── Countdown to the second birth ───────────────────────────────────── */
-function Countdown7() {
-  const [now, setNow] = useState<Date | null>(null);
-  const [target, setTarget] = useState<Date>(() => new Date(2037, 2, 15));
-  const [personal, setPersonal] = useState(false);
+/* ── Returning visitor: their own date, if they already have one ──────
+   Was Countdown7, a ticking clock to a "second birth". The hero no longer
+   speaks that way, but the personalisation is worth keeping: someone who
+   already ran the calculator should see their own date, not a generic
+   pitch. Renders nothing at all for first-time visitors. ─────────────── */
+function YourDateLine7() {
+  const [retireYear, setRetireYear] = useState<number | null>(null);
 
   useEffect(() => {
     const prefill = peekCalculatorPrefill();
     if (prefill && typeof prefill.retireYear === "number" && prefill.retireYear > new Date().getFullYear()) {
-      setTarget(new Date(prefill.retireYear, 6, 1));
-      setPersonal(true);
+      setRetireYear(prefill.retireYear);
     }
-    setNow(new Date());
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
   }, []);
 
-  const pad = (n: number) => String(n).padStart(2, "0");
-  let days = "—";
-  let clock = "--:--:--";
-  if (now) {
-    const ms = Math.max(0, target.getTime() - now.getTime());
-    days = Math.floor(ms / 86400000).toLocaleString();
-    const rem = ms % 86400000;
-    clock = pad(Math.floor(rem / 3600000)) + ":" + pad(Math.floor((rem % 3600000) / 60000)) + ":" + pad(Math.floor((rem % 60000) / 1000));
-  }
+  if (retireYear === null) return null;
   return (
-    <div className="uf7-countdown">
-      {personal ? "Your second birth in " : "Second birth in "}
-      <b>{days}</b> days · <b>{clock}</b>
+    <div className="uf7-yourdate">
+      Last time, your freedom date was <b>{retireYear}</b>. Pick up where you left off.
     </div>
   );
 }
@@ -262,14 +251,31 @@ function Hero7({ onStart }: { onStart: () => void }) {
       </div>
 
       <div className="uf7-eyebrow">Finance your freedom</div>
-      <h1 className="uf7-h1">You are born <i>twice</i>.</h1>
+      <h1 className="uf7-h1">Over half of it arrives<br />in the <i>last ten years</i>.</h1>
       <p className="uf7-note">
-        Once, into the grind. The second time, the day work becomes optional — and the
-        world becomes something to explore, not survive. UntilFire plans the years in between.
+        The first decade feels like nothing is happening. That is the decade almost
+        everyone quits — right before the part that pays. UntilFire keeps you in it.
       </p>
-      <Countdown7 />
+
+      {/* The whole argument in two figures: the first decade barely moves, the
+          last one does most of the work. Same $500/mo, same 7% real return. */}
+      <YourDateLine7 />
+
+      <div className="uf7-splitstat">
+        <div className="uf7-splitstat-card">
+          <div className="uf7-splitstat-label">First decade</div>
+          <div className="uf7-splitstat-num uf7-splitstat-dim">7%</div>
+          <div className="uf7-splitstat-foot">of your final balance</div>
+        </div>
+        <div className="uf7-splitstat-card uf7-splitstat-hot">
+          <div className="uf7-splitstat-label">Last decade</div>
+          <div className="uf7-splitstat-num">54%</div>
+          <div className="uf7-splitstat-foot">of your final balance</div>
+        </div>
+      </div>
+
       <button className="uf7-cta" onClick={onStart}>
-        Find my second birthday <span className="uf7-arrow">→</span>
+        See where I am on the curve <span className="uf7-arrow">→</span>
       </button>
       <p className="uf7-micro">Free · No account · Numbers stay private</p>
 
@@ -378,33 +384,153 @@ function TryIt7() {
 }
 
 /* ── The compound gap: one chart, bars vs drift ──────────────────────── */
-function CompoundGap7() {
-  const y0 = new Date().getFullYear();
-  const bars = useMemo(() => Array.from({ length: 26 }, (_, i) => Math.max(3, Math.pow(i / 25, 1.9) * 88)), []);
+/* ── The decade nobody warns you about ───────────────────────────────
+   Replaces the old CompoundGap7 "plan vs drift" runway. Same compounding
+   idea, but shown as the share each decade contributes, which is the more
+   surprising and more honest version: the first decade really does feel
+   like nothing, and saying so is what makes the rest believable.
+   Figures: $500/mo, 40 years, 7% real (REAL_RETURN). ───────────────── */
+const DECADE_SHARES = [
+  { span: "Years 0–10",  amount: "$86,542",  pct: 7,  width: 12 },
+  { span: "Years 10–20", amount: "$173,921", pct: 13, width: 25 },
+  { span: "Years 20–30", amount: "$349,522", pct: 27, width: 50 },
+  { span: "Years 30–40", amount: "$702,421", pct: 54, width: 100 },
+];
+
+function DecadeShape7() {
   return (
     <section className="uf7-block" style={{ ["--uf7hue" as string]: "62deg" }}>
       <div className="uf7-blob uf7-glow-l" />
       <div className="uf7-wrap">
-        <div className="uf7-sec-eyebrow uf7-rv">The compound gap</div>
-        <h2 className="uf7-statement uf7-rv">Your money compounds.<br />A plan makes it <em>count</em>.</h2>
-        <div className="uf7-runway uf7-rv">
-          <div className="uf7-target-line" />
-          <div className="uf7-target-tag">Your FIRE target</div>
-          <svg className="uf7-drift" viewBox="0 0 800 320" preserveAspectRatio="none" aria-hidden>
-            <path d="M0,312 C260,300 520,268 800,210" fill="none" stroke="rgba(255,255,255,0.38)" strokeWidth="2.5" strokeDasharray="6 8" vectorEffect="non-scaling-stroke" />
-            <circle cx="794" cy="211" r="5" fill="rgba(255,255,255,0.5)" />
-          </svg>
-          {bars.map((h, i) => (
-            <div className="uf7-bar" key={i} style={{ height: `${h}%` }} />
+        <div className="uf7-sec-eyebrow uf7-rv">The honest part</div>
+        <h2 className="uf7-statement uf7-rv">The decade nobody <em>warns you about</em>.</h2>
+        <p className="uf7-lede uf7-rv">
+          Ten years in, a $500-a-month habit is worth about $86,500. It does not feel like
+          financial independence. It feels like a savings account with extra steps. That is
+          not failure — that is the shape of the thing.
+        </p>
+
+        <div className="uf7-decades uf7-rv">
+          {DECADE_SHARES.map((d, i) => (
+            <div className="uf7-decade" key={d.span}>
+              <div className="uf7-decade-span">{d.span}</div>
+              <div className="uf7-decade-track">
+                <div
+                  className={`uf7-decade-fill${i === DECADE_SHARES.length - 1 ? " uf7-decade-fill-hot" : ""}`}
+                  style={{ width: `${d.width}%` }}
+                />
+              </div>
+              <div className="uf7-decade-amt">{d.amount}</div>
+              <div className="uf7-decade-pct">{d.pct}%</div>
+            </div>
           ))}
-          <div className="uf7-chart-note uf7-cn-plan">With a plan — {y0 + 11}</div>
-          <div className="uf7-chart-leader" />
-          <div className="uf7-chart-note uf7-cn-base">Drifting — {y0 + 18}</div>
         </div>
-        <div className="uf7-runway-axis">
-          <span>{y0}</span><span>{y0 + 4}</span><span>{y0 + 9}</span><span>{y0 + 13}</span><span>{y0 + 18}</span>
+
+        <p className="uf7-earlier uf7-rv">
+          The same habit, left alone, produces <em>$702,000 in its fourth decade alone</em> —
+          eight times what the first one produced.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ── Starting early beats saving more ────────────────────────────────
+   The turn after the honest section: the flat decade is the valuable one.
+   $5,000/yr at 7% real, contributions at year end, both measured at 65. ── */
+function StartEarly7() {
+  return (
+    <section className="uf7-block" style={{ ["--uf7hue" as string]: "80deg" }}>
+      <div className="uf7-blob uf7-glow-r" />
+      <div className="uf7-wrap">
+        <div className="uf7-sec-eyebrow uf7-rv">Which is why</div>
+        <h2 className="uf7-statement uf7-rv">Starting early beats <em>saving more</em>.</h2>
+        <p className="uf7-lede uf7-rv">
+          Someone who invests for ten years and then never adds another dollar still
+          finishes ahead of someone who starts a decade later and keeps paying in for thirty.
+        </p>
+
+        <div className="uf7-versus uf7-rv">
+          <div className="uf7-versus-card uf7-versus-win">
+            <div className="uf7-versus-tag">Wins</div>
+            <div className="uf7-versus-who">Starts at 25, stops at 35</div>
+            <p className="uf7-versus-desc">$5,000 a year for ten years, then never adds another dollar.</p>
+            <div className="uf7-versus-figs">
+              <div>
+                <div className="uf7-versus-lbl">Put in</div>
+                <div className="uf7-versus-in">$50,000</div>
+              </div>
+              <div>
+                <div className="uf7-versus-lbl">At 65</div>
+                <div className="uf7-versus-out">$602,070</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="uf7-versus-card">
+            <div className="uf7-versus-who">Starts at 35, never stops</div>
+            <p className="uf7-versus-desc">$5,000 a year, every year, for thirty-one years.</p>
+            <div className="uf7-versus-figs">
+              <div>
+                <div className="uf7-versus-lbl">Put in</div>
+                <div className="uf7-versus-in">$155,000</div>
+              </div>
+              <div>
+                <div className="uf7-versus-lbl">At 65</div>
+                <div className="uf7-versus-out uf7-versus-out-dim">$546,091</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="uf7-earlier uf7-rv">Same savings, guided monthly: <em>{y0 + 11} instead of {y0 + 18}</em>.</p>
+
+        <p className="uf7-earlier uf7-rv">
+          The early starter put in <em>$105,000 less</em> and still finished <em>$55,980 ahead</em>.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ── It works at any size ────────────────────────────────────────────
+   The multiple is identical down the column on purpose: the multiplier is
+   time, not the size of the contribution. 40 years at 7% real. ──────── */
+const ANY_SIZE_ROWS = [
+  { invest: "$100 / mo",   paid: "$48,000",  becomes: "$262,481" },
+  { invest: "$250 / mo",   paid: "$120,000", becomes: "$656,203" },
+  { invest: "$500 / mo",   paid: "$240,000", becomes: "$1,312,407" },
+  { invest: "$1,000 / mo", paid: "$480,000", becomes: "$2,624,813" },
+];
+
+function AnySize7() {
+  return (
+    <section className="uf7-block" style={{ ["--uf7hue" as string]: "44deg" }}>
+      <div className="uf7-wrap">
+        <div className="uf7-sec-eyebrow uf7-rv">At any size</div>
+        <h2 className="uf7-statement uf7-rv">You do not need a large number <em>to start</em>.</h2>
+        <p className="uf7-lede uf7-rv">
+          A habit beats a windfall, because a habit gets multiplied every month it runs.
+        </p>
+
+        <div className="uf7-table uf7-rv">
+          <div className="uf7-table-head">
+            <div>You invest</div>
+            <div>You contribute</div>
+            <div>It becomes</div>
+            <div className="uf7-table-end">Multiple</div>
+          </div>
+          {ANY_SIZE_ROWS.map((r) => (
+            <div className="uf7-table-row" key={r.invest}>
+              <div className="uf7-table-invest">{r.invest}</div>
+              <div className="uf7-table-paid">{r.paid}</div>
+              <div className="uf7-table-becomes">{r.becomes}</div>
+              <div className="uf7-table-end"><span className="uf7-mult">5.5&times;</span></div>
+            </div>
+          ))}
+        </div>
+        <p className="uf7-table-foot uf7-rv">
+          Over 40 years at a 7% average annual return after inflation. The multiple is the
+          same on every row because the multiplier is time, not the size of the cheque.
+        </p>
       </div>
     </section>
   );
@@ -1247,13 +1373,11 @@ const CSS7 = `
   }
   .uf7-h1 i { font-style: italic; }
   .uf7-note { position: relative; z-index: 4; margin: 26px auto 0; max-width: 520px; font-size: 16px; line-height: 1.6; font-weight: 500; color: rgba(255,255,255,0.75); }
-  .uf7-countdown {
     position: relative; z-index: 4; margin-top: 20px;
     font-family: ${MONO};
     font-size: clamp(12px, 1.6vw, 16px); letter-spacing: 0.2em; text-transform: uppercase;
     color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums;
   }
-  .uf7-countdown b { color: var(--uf-teal); font-weight: 500; }
   .uf7-cta {
     position: relative; z-index: 4; margin-top: 36px;
     display: inline-flex; align-items: center; gap: 10px;
@@ -1299,6 +1423,56 @@ const CSS7 = `
   .uf7-trust-logo { border-radius: 8px; object-fit: cover; opacity: 0.75; flex-shrink: 0; filter: grayscale(0.15); }
 
   .uf7-block { position: relative; overflow: hidden; padding: 110px 24px; background: var(--uf-ground); }
+
+  /* ── Hero: the two decade figures, and the curve they describe ── */
+  .uf7-yourdate { position: relative; z-index: 4; margin-top: 22px; font-family: ${MONO}; font-size: 13px; color: rgba(255,255,255,0.62); }
+  .uf7-yourdate b { color: var(--uf-teal); font-weight: 500; }
+  .uf7-splitstat { position: relative; z-index: 4; display: flex; gap: 16px; margin-top: 32px; flex-wrap: wrap; justify-content: center; }
+  .uf7-splitstat-card { min-width: 168px; padding: 16px 24px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); text-align: left; }
+  .uf7-splitstat-hot { background: rgba(34,211,165,0.10); border-color: rgba(98,250,227,0.34); }
+  .uf7-splitstat-label { font-family: ${MONO}; font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+  .uf7-splitstat-num { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 40px; line-height: 1.1; margin-top: 6px; color: var(--uf-teal); }
+  .uf7-splitstat-dim { color: rgba(255,255,255,0.55); }
+  .uf7-splitstat-foot { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+  /* ── Shared section lede ── */
+  .uf7-lede { margin: 20px 0 0; font-size: 17px; line-height: 1.75; color: rgba(255,255,255,0.62); max-width: 620px; }
+
+  /* ── Decade shares ── */
+  .uf7-decades { margin-top: 48px; display: flex; flex-direction: column; gap: 14px; }
+  .uf7-decade { display: grid; grid-template-columns: 120px 1fr 108px 48px; gap: 18px; align-items: center; }
+  .uf7-decade-span { font-family: ${MONO}; font-size: 12px; color: rgba(255,255,255,0.5); }
+  .uf7-decade-track { height: 32px; border-radius: 10px; background: rgba(255,255,255,0.07); overflow: hidden; }
+  .uf7-decade-fill { height: 100%; border-radius: 10px; background: rgba(98,250,227,0.34); }
+  .uf7-decade-fill-hot { background: linear-gradient(90deg, rgba(34,211,165,0.75), var(--uf-teal)); }
+  .uf7-decade-amt { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 13px; color: rgba(255,255,255,0.78); text-align: right; }
+  .uf7-decade-pct { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--uf-teal); text-align: right; }
+
+  /* ── Early vs late starter ── */
+  .uf7-versus { margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .uf7-versus-card { position: relative; padding: 28px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); }
+  .uf7-versus-win { background: rgba(34,211,165,0.09); border-color: rgba(98,250,227,0.36); }
+  .uf7-versus-tag { position: absolute; top: -11px; left: 28px; background: var(--uf-teal); color: #06231C; border-radius: 999px; padding: 3px 12px; font-size: 11px; font-weight: 800; }
+  .uf7-versus-who { font-size: 16px; font-weight: 800; }
+  .uf7-versus-desc { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.6); }
+  .uf7-versus-figs { display: flex; gap: 32px; margin-top: 24px; }
+  .uf7-versus-lbl { font-family: ${MONO}; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+  .uf7-versus-in { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 20px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+  .uf7-versus-out { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 28px; color: var(--uf-teal); margin-top: 2px; }
+  .uf7-versus-out-dim { color: rgba(255,255,255,0.55); }
+
+  /* ── Any-size table ── */
+  .uf7-table { margin-top: 44px; border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; overflow: hidden; }
+  .uf7-table-head, .uf7-table-row { display: grid; grid-template-columns: 1.1fr 1fr 1.1fr 0.7fr; gap: 16px; align-items: center; padding: 16px 24px; }
+  .uf7-table-head { background: rgba(255,255,255,0.05); font-family: ${MONO}; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+  .uf7-table-row { border-top: 1px solid rgba(255,255,255,0.09); }
+  .uf7-table-end { text-align: right; }
+  .uf7-table-invest { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 15px; }
+  .uf7-table-paid { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 14px; color: rgba(255,255,255,0.5); }
+  .uf7-table-becomes { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 17px; color: var(--uf-teal); }
+  .uf7-mult { display: inline-block; background: rgba(34,211,165,0.14); color: var(--uf-teal); border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 800; }
+  .uf7-table-foot { margin: 18px 0 0; font-family: ${MONO}; font-size: 11px; line-height: 1.7; color: rgba(255,255,255,0.42); max-width: 620px; }
+
   .uf7-wrap { position: relative; z-index: 4; max-width: 920px; margin: 0 auto; }
   .uf7-wrap-wide { max-width: 1040px; }
   .uf7-center { text-align: center; }
@@ -1335,16 +1509,6 @@ const CSS7 = `
   }
   .uf7-slider-foot { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.42); }
 
-  .uf7-runway { margin-top: 70px; position: relative; height: 320px; display: flex; align-items: flex-end; gap: 6px; }
-  .uf7-bar { flex: 1; border-radius: 3px 3px 1px 1px; background: linear-gradient(180deg, rgba(98,250,227,0.95), rgba(34,211,165,0.25)); transform-origin: bottom; }
-  .uf7-target-line { position: absolute; left: 0; right: 0; top: 12%; border-top: 2px dashed rgba(98,250,227,0.5); }
-  .uf7-target-tag { position: absolute; right: 0; top: 12%; transform: translateY(-130%); font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--uf-teal); }
-  .uf7-drift { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-  .uf7-chart-note { position: absolute; white-space: nowrap; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; }
-  .uf7-cn-plan { top: -12%; right: 0; color: var(--uf-teal); }
-  .uf7-cn-base { top: 56%; right: 0; color: rgba(255,255,255,0.48); }
-  .uf7-chart-leader { position: absolute; top: -5%; right: 10px; height: 13%; width: 1px; background: rgba(98,250,227,0.45); }
-  .uf7-runway-axis { display: flex; justify-content: space-between; margin-top: 14px; font-family: ${MONO}; font-size: 11px; color: rgba(255,255,255,0.45); }
   .uf7-earlier { margin-top: 34px; font-family: ${SERIF}; font-size: clamp(22px, 3vw, 30px); }
   .uf7-earlier em { color: var(--uf-teal); font-style: italic; }
 
@@ -1409,10 +1573,18 @@ const CSS7 = `
     .uf7-block { padding: 88px 20px; }
     .uf7-row { grid-template-columns: 60px 1fr; gap: 18px; padding: 28px 0; }
     .uf7-globe-grid { grid-template-columns: 1fr; gap: 40px; }
-    .uf7-runway { height: 220px; gap: 3px; }
     .uf7-price-cols { grid-template-columns: 1fr; }
     .uf7-pcol { padding: 8px 0 40px; }
     .uf7-pcol + .uf7-pcol { border-left: none; border-top: 1px solid rgba(255,255,255,0.14); padding: 40px 0 8px; }
+    .uf7-versus { grid-template-columns: 1fr; }
+    .uf7-decade { grid-template-columns: 88px 1fr 92px; gap: 12px; }
+    .uf7-decade-pct { display: none; }
+    .uf7-table-head { display: none; }
+    .uf7-table-row { grid-template-columns: 1fr auto; gap: 6px 12px; }
+    /* badge drops to a second line; keep it under the amount, not under the label */
+    .uf7-table-row .uf7-table-end { grid-column: 2; }
+    .uf7-table-paid { display: none; }
+    .uf7-splitstat-card { min-width: 140px; padding: 14px 18px; }
   }
 `;
 
@@ -1466,7 +1638,9 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
       <Hero7 onStart={onStart} />
       <How7 />
       <TryIt7 />
-      <CompoundGap7 />
+      <DecadeShape7 />
+      <StartEarly7 />
+      <AnySize7 />
       <World7 />
       <Pricing7 onStart={onStart} />
       <Quote7 />
