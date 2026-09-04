@@ -164,20 +164,6 @@ function Hero7({ onStart }: { onStart: () => void }) {
       </button>
       <p className="uf7-micro">Free · No account · Numbers stay private</p>
 
-      <a
-        className="uf7-award"
-        href="https://www.founder.best/products/untilfire?ref=founderbest"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="https://www.founder.best/top1.png"
-          alt="UntilFire — #1 Product of the Week on Founder.best"
-          width={200}
-        />
-      </a>
-
       {/* The shape the headline describes. Flat for three decades, then
           steep — the two figures above state it, this shows it. Stroke and
           fill are tokens so it reads on cream and on the dark theme. */}
@@ -651,6 +637,20 @@ function FooterSection() {
         {/* Bottom */}
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 12, color: "var(--uf-ink-3)", fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
           <span>© 2026 UntilFire</span>
+          <a
+            href="https://www.founder.best/products/untilfire?ref=founderbest"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://www.founder.best/top1.png"
+              alt="UntilFire — #1 Product of the Week on Founder.best"
+              width={200}
+              loading="lazy"
+            />
+          </a>
           <a
             href="https://startupfa.st/projects/untilfire"
             target="_blank"
@@ -1309,17 +1309,6 @@ const CSS7 = `
   }
   .uf7-arrow { color: currentColor; opacity: 0.72; }
   .uf7-micro { position: relative; z-index: 4; margin-top: 16px; font-size: 13px; font-weight: 500; color: var(--uf-ink-3); }
-
-  /* Founder.best award badge. z-index 4 like its hero siblings, so it sits
-     above the drifting blobs and the dawn canvas rather than behind them.
-     The image is remote and its intrinsic height isn't known here, so the
-     width is fixed and the height is left to the aspect ratio. */
-  .uf7-award {
-    position: relative; z-index: 4; margin-top: 28px; display: inline-block; line-height: 0;
-    opacity: 0.92; transition: opacity 160ms ease, transform 160ms ease;
-  }
-  .uf7-award:hover { opacity: 1; transform: translateY(-1px); }
-  .uf7-award img { width: 200px; height: auto; display: block; }
 
   .uf7-trust { position: relative; z-index: 4; margin-top: 44px; width: 100%; max-width: 720px; }
   .uf7-trust-label {
