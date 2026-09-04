@@ -50,9 +50,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Theme, decided before first paint so there is no flash.
+
+            Warm cream is the default for everyone, including visitors whose
+            device prefers dark: the landing page is a first impression and it
+            should be the same one for every new visitor. We deliberately do
+            NOT read prefers-color-scheme here — doing so used to mean a
+            dark-mode device saw a dark marketing page on its very first visit,
+            before the person had expressed any preference about this product.
+
+            Dark is opt-in, and once opted into it sticks everywhere: the
+            toggle (toggleDark in app/dashboard/page.tsx) writes 'dark' or
+            'light' to uf-theme, and only an explicit 'dark' turns it on. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('uf-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+            __html: `(function(){try{if(localStorage.getItem('uf-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})()`,
           }}
         />
         {/* Decide the logo-reveal splash before first paint: first load of a
