@@ -58,109 +58,6 @@ const TRUST_LOGOS = [
   { name: "Discover", file: "discover.jpg" },
 ];
 
-// The exact data URI cobe embeds internally for its world-map texture
-// (extracted from node_modules/cobe/dist/index.esm.js — cobe has no public
-// option to supply or inspect this). cobe loads it via a plain `new Image()`
-// with no onerror handler, so a decode failure just leaves the sphere
-// textureless (glow + markers render fine, since those don't sample it)
-// with zero signal anywhere. Probing the identical bytes ourselves is the
-// only way to catch that specific failure mode from outside the library.
-const COBE_TEXTURE_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAACAAQAAAADMzoqnAAAECklEQVR42u3VsW4jRRzH8d94gzfF4Q0VQaC4vBLTRTp0mze4ggfAPAE5XQEFsGNAVIjwBrmW7h7gJE+giKjyABTZE4g06LKJETdRJvtD65kdz6yduKABiW+TVfzRf2bXYxtcE/59YJCz6YdbgQF6ACSRrwYKYImmh5PbwOewlV3wlQNbAN6SEExjUOO+BU0aCSnxReHABUlK4YFQeJeUT3da8IIkZ6NGoSnFY5KsMoVzMKfECUnqxgPYRArarmUCndHwzIEaQEpg5xVdBXROl8mpAQx5dUgPiHoYAAkg5w3JABR06byGAVgcRGAz5bznj6phBQNRFwyqgdxebH6gshJAesWoFhgYpApAFoG8BIZ/fEhSox5jDjQXmV0Ar5XJfAIrALi3URVs09gHIL4XJCkLC5LH9JWiArABFCSrQjdgkBzRJ0WJeUOSNyQAfJJwUSWUBRlJQ8oGHATACGlBynnzy2kEYLNjrxouigD8BZcgOeVPqh12RtufaCN5wCPVDpvQ9lsIrqndsJtDcWqBCpf4hWN7OdWHBw58FwIaNOU/n1TpMW2DFaD48cmr4185T8NHkpUFX749pQPVdgRKC/DGoQPVeAEKv+WHvY8OOWNTPRp5kHuwSf8wzXtVBKR7YwEH9H3lQUaypUfSATOALyVNu5vZJW31Bnx98nkLfDUWJaz6ixvm+RIQRdl3kmRxxiaDoGnZW4CpPfkaQadlcPim1xOSvETQo7Lv75enVAXJ3xGUlony4KQBBWUM1NiDc6qhyS8RgQs18OCMMtPDaAUIyg0PZkRWDqs+wnKJBTDI1Js6BolegOsKmUxNDBAAKqQyMQmidhegBlLZ+wwKYdv5M/8x1khkb1cgKqP2H+MKyV5vS+whrE8DQDgAlUAoRBX056EElJCjJVACeJBZgNfVp+iCCm4RBWCgKsRxASSA9KgDhDtCiTuMyfHsKXzhC6wNAIjjWb8LKAOA2ctk3FmCOlgKFy8f1N0JJtgsxinYnVAHt4t3gPzZXSCTyCWCQmBT91QE3B5yarSN40dNHYPka4TlDhTUI8zLvl0JSL3vZn6DsCFZOeB2yROEpR68sECQQA++xIGCR2X7DwlEoLRgUrZrqlUg50S1uy43YqDcN6UFBVkhAjWiCV2Q0jgQPdplMKxvBXodcOfAwJYvgdL+1etA1YJJfBcZlQV7sO1i2gHoNiyxtQ5sBsCgWyoxCHiFFd2L5nUTCqMAqGUgsQ9f5kCcCiZgRYkMgMTd5WsB1rTzj0Em14BE4r+QxN1lCEsVur2PoF5Wbg8RJXR4djgvBgauhLywoEZQrt1KKRdVS4CdlJ8qafyP+9KIj/nE/d7kKwH9jgS72e9DV+kvfTWgct4ZyP8Byb8BPG7MaaIIkAQAAAAASUVORK5CYII=";
-
-function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: number, markers: { location: [number, number]; size: number }[], startPhi: number) {
-  // cobe can fail several ways — WebGL unavailable, the chunk failing to
-  // load, createGlobe throwing — and it doesn't surface any of them itself
-  // (a missing WebGL context is checked internally and swallowed into a
-  // no-op {destroy,update} pair). Without catching this the canvas just
-  // sits empty with nothing to explain why. The console.error calls below
-  // are deliberate: if this trips in the wild, the real reason should be
-  // visible in devtools instead of another guess.
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    let raf = 0;
-    let visObserver: IntersectionObserver | null = null;
-    let globe: { update: (state: { phi: number }) => void; destroy: () => void } | null = null;
-    let phi = startPhi;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // cobe requests a context with these exact attributes internally and,
-    // if it comes back null, swallows that into a no-op {destroy,update}
-    // pair rather than throwing — so probing with the same attributes here
-    // is the only way to catch that case before it silently renders nothing.
-    const glAttrs = { alpha: true, stencil: false, antialias: true, depth: false, preserveDrawingBuffer: false } as const;
-    const probe = canvasRef.current;
-    const hasWebGL = !!probe && !!(probe.getContext("webgl2", glAttrs) || probe.getContext("webgl", glAttrs));
-    if (!hasWebGL) {
-      console.error("[globe] no WebGL2/WebGL context available on this canvas");
-      setFailed(true);
-      return;
-    }
-    import("cobe").then(({ default: createGlobe }) => {
-      if (cancelled || !canvasRef.current) return;
-      try {
-        globe = createGlobe(canvasRef.current, {
-          devicePixelRatio: 2,
-          width: size * 2,
-          height: size * 2,
-          phi,
-          theta: 0.22,
-          dark: 1,
-          diffuse: 1.2,
-          mapSamples: 24000,
-          mapBrightness: 8,
-          baseColor: [0.18, 0.5, 0.42],
-          markerColor: [0.38, 0.98, 0.89],
-          glowColor: [0.1, 0.4, 0.34],
-          markers,
-        });
-      } catch (err) {
-        console.error("[globe] createGlobe threw:", err);
-        setFailed(true);
-        return;
-      }
-      // createGlobe succeeded without throwing, which only proves a WebGL
-      // context exists — it says nothing about whether the map texture
-      // actually decoded (cobe swallows that failure with no onerror).
-      // Decode the identical bytes ourselves so a failure is visible.
-      const textureProbe = new Image();
-      textureProbe.onload = () => console.info("[globe] texture decoded fine — if the globe still looks empty, the failure is in WebGL texture upload/sampling, not image decode");
-      textureProbe.onerror = () => {
-        console.error("[globe] the embedded world-map texture failed to decode in this browser — this is what makes the globe render as glow+markers with no continents");
-        setFailed(true);
-      };
-      textureProbe.src = COBE_TEXTURE_URI;
-      if (!reduceMotion) {
-        let onscreen = true;
-        const spin = () => {
-          if (onscreen) {
-            phi += 0.0028;
-            globe?.update({ phi });
-          }
-          raf = requestAnimationFrame(spin);
-        };
-        raf = requestAnimationFrame(spin);
-        // Pause rendering while the canvas is offscreen: keeps scrolling
-        // smooth and saves battery — two live globes share one page.
-        visObserver = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => { onscreen = entry.isIntersecting; });
-        });
-        if (canvasRef.current) visObserver.observe(canvasRef.current);
-      }
-    }).catch((err) => {
-      console.error("[globe] failed to load the cobe module:", err);
-      setFailed(true);
-    });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      visObserver?.disconnect();
-      if (globe) globe.destroy();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return failed;
-}
-
 /* ── Nav ─────────────────────────────────────────────────────────────── */
 function Nav7({ onStart }: { onStart: () => void }) {
   return (
@@ -200,15 +97,6 @@ function YourDateLine7() {
 
 /* ── Hero ────────────────────────────────────────────────────────────── */
 function Hero7({ onStart }: { onStart: () => void }) {
-  const dawnRef = useRef<HTMLCanvasElement | null>(null);
-  useCobeGlobe(dawnRef, 1400, [
-    { location: [18.79, 98.98], size: 0.06 },
-    { location: [38.72, -9.14], size: 0.06 },
-    { location: [19.43, -99.13], size: 0.06 },
-    { location: [51.51, -0.13], size: 0.05 },
-    { location: [35.68, 139.69], size: 0.05 },
-    { location: [1.35, 103.82], size: 0.05 },
-  ], 4.2);
   const trustTrackRef = useRef<HTMLDivElement | null>(null);
 
   // Driven by rAF + inline transform rather than a CSS @keyframes animation.
@@ -246,9 +134,6 @@ function Hero7({ onStart }: { onStart: () => void }) {
       <div className="uf7-blob uf7-hb3" />
       <div className="uf7-blob uf7-hb4" />
       <div className="uf7-dawn-glow" aria-hidden />
-      <div className="uf7-dawn" aria-hidden>
-        <canvas ref={dawnRef} style={{ width: "100%", height: "100%" }} />
-      </div>
 
       <div className="uf7-eyebrow">Finance your freedom</div>
       <h1 className="uf7-h1">Over half of it arrives<br />in the <i>last ten years</i>.</h1>
@@ -292,6 +177,35 @@ function Hero7({ onStart }: { onStart: () => void }) {
           width={200}
         />
       </a>
+
+      {/* The shape the headline describes. Flat for three decades, then
+          steep — the two figures above state it, this shows it. Stroke and
+          fill are tokens so it reads on cream and on the dark theme. */}
+      <div className="uf7-curve" aria-hidden>
+        <svg viewBox="0 0 1200 260" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="uf7cfill" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1200" y2="0">
+              <stop offset="0%" stopColor="var(--uf-surface-2)" stopOpacity="0.7" />
+              <stop offset="62%" stopColor="var(--uf-teal-soft)" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="var(--uf-teal)" stopOpacity="0.5" />
+            </linearGradient>
+            <linearGradient id="uf7cline" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1200" y2="0">
+              <stop offset="0%" stopColor="var(--uf-ink-3)" />
+              <stop offset="62%" stopColor="var(--uf-teal-line)" />
+              <stop offset="100%" stopColor="var(--uf-teal)" />
+            </linearGradient>
+          </defs>
+          <path d="M0 232 L150 227 L300 219 L450 207 L600 190 L750 166 L900 132 L1050 86 L1200 24 L1200 260 L0 260 Z" fill="url(#uf7cfill)" />
+          <path d="M0 232 L150 227 L300 219 L450 207 L600 190 L750 166 L900 132 L1050 86 L1200 24"
+                fill="none" stroke="url(#uf7cline)" strokeWidth="2.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <line x1="900" y1="0" x2="900" y2="260" stroke="var(--uf-teal)" strokeWidth="1" strokeDasharray="4 5" opacity="0.5" />
+        </svg>
+        <span className="uf7-curve-here">you are here</span>
+        <span className="uf7-curve-last">the last decade &rarr;</span>
+        <div className="uf7-curve-axis">
+          <span>today</span><span>10 yrs</span><span>20 yrs</span><span>30 yrs</span><span>40 yrs</span>
+        </div>
+      </div>
 
       <div className="uf7-trust">
         <p className="uf7-trust-label">Securely connects to 14,000+ banks &amp; brokerages</p>
@@ -1360,7 +1274,7 @@ const CSS7 = `
   .uf7-hero {
     position: relative; min-height: 100vh; overflow: hidden; text-align: center;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
-    padding: 150px 24px 220px;
+    padding: 150px 24px 264px;
     background: radial-gradient(1100px 700px at 50% 118%, var(--uf-surface) 0%, transparent 60%), var(--uf-ground);
   }
   .uf7-hb1 { width: 820px; height: 660px; top: -240px; left: -180px; background: radial-gradient(circle at 40% 40%, rgba(34,211,165,0.58), transparent 65%); animation: uf7drift1 24s ease-in-out infinite; }
@@ -1447,6 +1361,26 @@ const CSS7 = `
   /* ── Hero: the two decade figures, and the curve they describe ── */
   .uf7-yourdate { position: relative; z-index: 4; margin-top: 22px; font-family: ${MONO}; font-size: 13px; color: var(--uf-ink-3); }
   .uf7-yourdate b { color: var(--uf-teal); font-weight: 500; }
+  /* Hero compound curve. Sits above the sun glow, below the copy. */
+  .uf7-curve { position: absolute; left: 0; right: 0; bottom: 0; height: 214px; z-index: 3; pointer-events: none; }
+  .uf7-curve svg { width: 100%; height: 100%; display: block; }
+  .uf7-curve-here {
+    position: absolute; left: 9%; bottom: 40px; font-family: ${MONO}; font-size: 11px;
+    letter-spacing: 0.08em; color: var(--uf-ink-3); white-space: nowrap;
+  }
+  .uf7-curve-here::after {
+    content: ""; position: absolute; left: 50%; bottom: -13px; width: 9px; height: 9px; margin-left: -4.5px;
+    border-radius: 50%; background: var(--uf-ground); border: 2px solid var(--uf-ink-3);
+  }
+  .uf7-curve-last {
+    position: absolute; left: 76%; top: 14px; font-family: ${MONO}; font-size: 11px;
+    letter-spacing: 0.06em; color: var(--uf-teal-deep); white-space: nowrap;
+  }
+  .uf7-curve-axis {
+    position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: space-between;
+    padding: 0 24px; font-family: ${MONO}; font-size: 10px; letter-spacing: 0.1em; color: var(--uf-ink-3); opacity: 0.75;
+  }
+
   .uf7-splitstat { position: relative; z-index: 4; display: flex; gap: 16px; margin-top: 32px; flex-wrap: wrap; justify-content: center; }
   .uf7-splitstat-card { min-width: 168px; padding: 16px 24px; border-radius: 16px; background: var(--uf-surface); border: 1px solid var(--uf-border); text-align: left; }
   .uf7-splitstat-hot { background: rgba(34,211,165,0.10); border-color: rgba(98,250,227,0.34); }
@@ -1594,7 +1528,7 @@ const CSS7 = `
 
   @media (max-width: 760px) {
     .uf7-nav-links { display: none; }
-    .uf7-hero { padding: 130px 20px 190px; }
+    .uf7-hero { padding: 130px 20px 210px; }
     .uf7-block { padding: 88px 20px; }
     .uf7-split { grid-template-columns: 1fr; gap: 36px; }
     .uf7-head-2up { grid-template-columns: 1fr; gap: 20px; align-items: start; }
@@ -1613,6 +1547,9 @@ const CSS7 = `
     .uf7-table-row .uf7-table-end { grid-column: 2; }
     .uf7-table-paid { display: none; }
     .uf7-splitstat-card { min-width: 140px; padding: 14px 18px; }
+    .uf7-curve { height: 148px; }
+    .uf7-curve-last { display: none; }
+    .uf7-curve-axis { font-size: 9px; padding: 0 14px; }
   }
 `;
 
