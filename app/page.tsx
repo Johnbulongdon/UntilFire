@@ -61,34 +61,34 @@ export default function Home() {
       <HomeClient />
 
       <section
-        className="uf-home-seo-shell dark"
+        className="uf-home-seo-shell"
         aria-label="About the UntilFire FIRE calculator"
         style={{
           background: "var(--uf-ground)",
-          borderTop: "1px solid rgba(255,255,255,0.09)",
+          borderTop: "1px solid var(--uf-border)",
           fontFamily: "'Manrope', sans-serif",
-          color: "rgba(255,255,255,0.82)",
+          color: "var(--uf-ink-2)",
         }}
       >
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "56px 24px 72px" }}>
           <p style={seoHeading}>Finance your freedom</p>
-          <h1 style={{ fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif", fontSize: "clamp(32px, 4.6vw, 46px)", fontWeight: 400, lineHeight: 1.12, letterSpacing: "-0.02em", color: "#ffffff", margin: "0 0 16px" }}>
+          <h1 style={{ fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif", fontSize: "clamp(32px, 4.6vw, 46px)", fontWeight: 400, lineHeight: 1.12, letterSpacing: "-0.02em", color: "var(--uf-ink)", margin: "0 0 16px" }}>
             FIRE Calculator — Find Your Freedom Date and FIRE Number
           </h1>
-          <p style={{ fontSize: 17, lineHeight: 1.8, color: "rgba(255,255,255,0.62)", margin: "0 0 16px", maxWidth: 720 }}>
+          <p style={{ fontSize: 17, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 16px", maxWidth: 720 }}>
             UntilFire is a free FIRE calculator and personal finance planner for anyone chasing financial
             independence and early retirement. Enter your income, spending, and savings, and we&apos;ll show your{" "}
             <strong style={{ color: "var(--uf-teal)" }}>FIRE number</strong>, your{" "}
             <strong style={{ color: "var(--uf-teal)" }}>freedom date</strong>, and the single move that brings early
             retirement closer — no account needed.
           </p>
-          <p style={{ fontSize: 16, lineHeight: 1.8, color: "rgba(255,255,255,0.62)", margin: "0 0 32px", maxWidth: 720 }}>
+          <p style={{ fontSize: 16, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 32px", maxWidth: 720 }}>
             Most calculators stop at a number. UntilFire does it with you: a clear path, a next move, and continuity
             toward work optionality — built on the same 25× rule and 4% safe withdrawal math the FIRE community trusts.
           </p>
 
           {/* How it works */}
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.03em", margin: "0 0 18px" }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>
             How the FIRE calculator works
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 40 }}>
@@ -97,52 +97,52 @@ export default function Home() {
               { n: "2", t: "See your freedom date", d: "We estimate your FIRE number with the 25× rule and project the year work becomes optional." },
               { n: "3", t: "Find your next move", d: "See how saving more, spending less, or earning more pulls your retirement date earlier." },
             ].map((s) => (
-              <div key={s.n} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, padding: "20px 18px" }}>
+              <div key={s.n} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "20px 18px" }}>
                 <div style={{ width: 28, height: 28, borderRadius: 999, background: "rgba(98,250,227,0.12)", color: "var(--uf-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, marginBottom: 12 }}>{s.n}</div>
-                <h3 style={{ fontSize: 17, color: "#ffffff", margin: "0 0 8px" }}>{s.t}</h3>
-                <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.62)", lineHeight: 1.7 }}>{s.d}</p>
+                <h3 style={{ fontSize: 17, color: "var(--uf-ink)", margin: "0 0 8px" }}>{s.t}</h3>
+                <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>{s.d}</p>
               </div>
             ))}
           </div>
 
           {/* FIRE calculators */}
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.03em", margin: "0 0 18px" }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>
             Free FIRE calculators
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 40 }}>
             {calculators.map((c) => (
-              <Link key={c.href} href={c.href} style={{ textDecoration: "none", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, padding: "18px 16px", display: "block" }}>
+              <Link key={c.href} href={c.href} style={{ textDecoration: "none", background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "18px 16px", display: "block" }}>
                 <div style={{ fontSize: 16, fontWeight: 800, color: "var(--uf-teal)", marginBottom: 6 }}>{c.label}</div>
-                <div style={{ fontSize: 14, color: "rgba(255,255,255,0.62)", lineHeight: 1.6 }}>{c.desc}</div>
+                <div style={{ fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.6 }}>{c.desc}</div>
               </Link>
             ))}
           </div>
 
           {/* FIRE number by city */}
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.03em", margin: "0 0 8px" }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-0.03em", margin: "0 0 8px" }}>
             FIRE number by city
           </h2>
-          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.62)", lineHeight: 1.7, margin: "0 0 18px", maxWidth: 680 }}>
+          <p style={{ fontSize: 15, color: "var(--uf-ink-2)", lineHeight: 1.7, margin: "0 0 18px", maxWidth: 680 }}>
             How much you need to retire depends on where you live. Explore FIRE numbers and cost-of-living context for
             popular cities, or <Link href="/fire-number" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>browse all city FIRE guides</Link>.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 40 }}>
             {cityLandingPages.map((c) => (
-              <Link key={c.slug} href={`/fire-number/${c.slug}`} style={{ textDecoration: "none", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 2, padding: "8px 16px", fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>
+              <Link key={c.slug} href={`/fire-number/${c.slug}`} style={{ textDecoration: "none", background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 2, padding: "8px 16px", fontSize: 14, fontWeight: 700, color: "var(--uf-ink-2)" }}>
                 {c.city.name} FIRE number
               </Link>
             ))}
           </div>
 
           {/* FAQ */}
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.03em", margin: "0 0 18px" }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>
             FIRE calculator — frequently asked questions
           </h2>
           <div style={{ display: "grid", gap: 12, marginBottom: 32 }}>
             {homeFaqs.map((f) => (
-              <div key={f.q} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: "18px 18px 16px" }}>
-                <h3 style={{ margin: "0 0 8px", fontSize: 17, color: "#ffffff" }}>{f.q}</h3>
-                <p style={{ margin: 0, fontSize: 14.5, color: "rgba(255,255,255,0.62)", lineHeight: 1.8 }}>{f.a}</p>
+              <div key={f.q} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: "18px 18px 16px" }}>
+                <h3 style={{ margin: "0 0 8px", fontSize: 17, color: "var(--uf-ink)" }}>{f.q}</h3>
+                <p style={{ margin: 0, fontSize: 14.5, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>{f.a}</p>
               </div>
             ))}
           </div>
