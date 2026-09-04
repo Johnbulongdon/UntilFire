@@ -1,13 +1,16 @@
 "use client";
 
 interface LogoProps {
-  variant?: "dark" | "light";
+  variant?: "dark" | "light" | "auto";
   size?: number;
   className?: string;
 }
 
 export default function Logo({ variant = "dark", size = 28, className }: LogoProps) {
-  const textColor = variant === "dark" ? "#ffffff" : "#064E3B";
+  // "auto" follows the app theme token, so the wordmark stays legible on a
+  // surface that can be cream or warm dark. "dark"/"light" keep their fixed
+  // colours for surfaces that are always one or the other.
+  const textColor = variant === "auto" ? "var(--uf-ink)" : variant === "dark" ? "#ffffff" : "#064E3B";
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }} className={className}>
       <img

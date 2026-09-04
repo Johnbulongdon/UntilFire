@@ -165,7 +165,7 @@ function useCobeGlobe(canvasRef: React.RefObject<HTMLCanvasElement | null>, size
 function Nav7({ onStart }: { onStart: () => void }) {
   return (
     <header className="uf7-nav">
-      <Logo variant="dark" size={26} />
+      <Logo variant="auto" size={26} />
       <nav className="uf7-nav-links">
         <a href="#how">How it works</a>
         <a href="#pricing">Pricing</a>
@@ -711,7 +711,7 @@ function Closing7({ onStart }: { onStart: () => void }) {
 /* ── Footer ──────────────────────────────────────────────────────────── */
 function FooterSection() {
   return (
-    <footer style={{ background: "var(--uf-ground)", borderTop: "1px solid rgba(255,255,255,0.08)", padding: "48px 24px 32px" }}>
+    <footer style={{ background: "var(--uf-ground)", borderTop: "1px solid var(--uf-border)", padding: "48px 24px 32px" }}>
       <div style={{ maxWidth: 800, margin: "0 auto" }}>
         {/* Links */}
         <div style={{ display: "flex", justifyContent: "center", gap: 28, flexWrap: "wrap", marginBottom: 32 }}>
@@ -721,7 +721,7 @@ function FooterSection() {
             ["Pricing", "#pricing"],
             ["FAQ", "#faq"],
           ].map(([label, href]) => (
-            <a key={label} href={href} style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.72)", textDecoration: "none" }}>{label}</a>
+            <a key={label} href={href} style={{ fontSize: 14, fontWeight: 600, color: "var(--uf-ink-2)", textDecoration: "none" }}>{label}</a>
           ))}
         </div>
 
@@ -735,7 +735,7 @@ function FooterSection() {
         </div>
 
         {/* Bottom */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 12, color: "rgba(255,255,255,0.45)", fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 12, color: "var(--uf-ink-3)", fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
           <span>© 2026 UntilFire</span>
           <a
             href="https://startupfa.st/projects/untilfire"
@@ -1310,7 +1310,7 @@ function FooterSection() {
             target="_blank"
             rel="noopener"
             title="Listed on CurlShip"
-            style={{ color: "rgba(255,255,255,0.56)", textDecoration: "none" }}
+            style={{ color: "var(--uf-ink-3)", textDecoration: "none" }}
           >
             Listed on CurlShip
           </a>
@@ -1324,14 +1324,16 @@ function FooterSection() {
 
 
 const CSS7 = `
-  .uf7-root { background: var(--uf-ground); color: #fff; overflow-x: hidden; }
+  .uf7-root { background: var(--uf-ground); color: var(--uf-ink); overflow-x: hidden; }
   .uf7-root * { box-sizing: border-box; }
   .uf7-grain {
     position: fixed; inset: 0; pointer-events: none; z-index: 40;
-    opacity: 0.45; mix-blend-mode: overlay;
+    opacity: 0.14; mix-blend-mode: overlay;
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.55"/></svg>');
   }
-  .uf7-blob { position: absolute; border-radius: 50%; filter: blur(90px) hue-rotate(calc(var(--uf7hue, 0deg) + var(--uf7shue, 0deg))); pointer-events: none; }
+  .uf7-blob { position: absolute; border-radius: 50%; filter: blur(90px) hue-rotate(calc(var(--uf7hue, 0deg) + var(--uf7shue, 0deg))); pointer-events: none; opacity: 0.22; }
+  .dark .uf7-blob { opacity: 1; }
+  .dark .uf7-grain { opacity: 0.45; }
   @keyframes uf7drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px,34px) scale(1.09); } }
   @keyframes uf7drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-44px,-28px) scale(1.06); } }
   @media (prefers-reduced-motion: reduce) {
@@ -1345,14 +1347,14 @@ const CSS7 = `
     position: fixed; top: 0; left: 0; right: 0; z-index: 50;
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 28px;
-    background: rgba(4,17,12,0.5); backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+    background: var(--uf-topbar-glass); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--uf-surface);
   }
   .uf7-nav-links { display: flex; gap: 26px; }
-  .uf7-nav-links a { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.72); text-decoration: none; }
+  .uf7-nav-links a { font-size: 13px; font-weight: 600; color: var(--uf-ink-2); text-decoration: none; }
   .uf7-nav-cta {
-    padding: 9px 18px; border-radius: 2px; border: none; cursor: pointer;
-    font-family: ${F}; font-size: 13px; font-weight: 700; color: var(--uf-ground); background: rgba(255,255,255,0.92);
+    padding: 9px 18px; border-radius: var(--uf-r-pill); border: none; cursor: pointer;
+    font-family: ${F}; font-size: 13px; font-weight: 700; color: var(--uf-ground); background: var(--uf-ink);
   }
 
   .uf7-hero {
@@ -1379,20 +1381,20 @@ const CSS7 = `
   .uf7-h1 {
     position: relative; z-index: 4; margin: 18px 0 0; font-family: ${SERIF}; font-weight: 400;
     font-size: clamp(48px, 7.4vw, 88px); line-height: 1.04; letter-spacing: -0.02em;
-    color: rgba(255,255,255,0.96); text-shadow: 0 3px 60px rgba(0,0,0,0.4);
+    color: var(--uf-ink);
   }
   .uf7-h1 i { font-style: italic; }
-  .uf7-note { position: relative; z-index: 4; margin: 26px auto 0; max-width: 520px; font-size: 16px; line-height: 1.6; font-weight: 500; color: rgba(255,255,255,0.75); }
+  .uf7-note { position: relative; z-index: 4; margin: 26px auto 0; max-width: 520px; font-size: 16px; line-height: 1.6; font-weight: 500; color: var(--uf-ink-2); }
   .uf7-cta {
     position: relative; z-index: 4; margin-top: 36px;
     display: inline-flex; align-items: center; gap: 10px;
-    height: 60px; padding: 0 38px; border-radius: 2px; cursor: pointer;
-    background: rgba(5,14,11,0.72); border: 1px solid rgba(255,255,255,0.22);
+    height: 60px; padding: 0 38px; border-radius: var(--uf-r-pill); cursor: pointer;
+    background: var(--uf-green); border: 1px solid transparent;
     backdrop-filter: blur(14px); color: #fff; font-family: ${F}; font-size: 17px; font-weight: 700;
-    box-shadow: 0 0 0 1px rgba(98,250,227,0.12), 0 0 44px rgba(34,211,165,0.32), 0 18px 40px rgba(0,0,0,0.4);
+    box-shadow: var(--uf-e2);
   }
-  .uf7-arrow { color: var(--uf-teal); }
-  .uf7-micro { position: relative; z-index: 4; margin-top: 16px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); }
+  .uf7-arrow { color: currentColor; opacity: 0.72; }
+  .uf7-micro { position: relative; z-index: 4; margin-top: 16px; font-size: 13px; font-weight: 500; color: var(--uf-ink-3); }
 
   /* Founder.best award badge. z-index 4 like its hero siblings, so it sits
      above the drifting blobs and the dawn canvas rather than behind them.
@@ -1408,7 +1410,7 @@ const CSS7 = `
   .uf7-trust { position: relative; z-index: 4; margin-top: 44px; width: 100%; max-width: 720px; }
   .uf7-trust-label {
     margin: 0; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.14em;
-    text-transform: uppercase; color: rgba(255,255,255,0.42); text-align: center;
+    text-transform: uppercase; color: var(--uf-ink-3); text-align: center;
   }
   .uf7-trust-strip {
     position: relative; overflow: hidden; margin-top: 18px; width: 100%;
@@ -1432,7 +1434,7 @@ const CSS7 = `
   /* Chapters. Every section used to sit on the same flat ground, which is
      why the page read as one undifferentiated scroll however much the copy
      changed. Alternating surfaces + a hairline give it pacing. */
-  .uf7-block--alt { background: var(--uf-card); border-top: 1px solid rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .uf7-block--alt { background: var(--uf-card); border-top: 1px solid var(--uf-surface); border-bottom: 1px solid var(--uf-surface); }
 
   /* Two columns: argument left, evidence right. The single 920px column was
      leaving a third of a desktop viewport empty. */
@@ -1440,61 +1442,61 @@ const CSS7 = `
   .uf7-split-head { align-self: center; }
 
   /* Holds the data so it reads as an object rather than floating on the page. */
-  .uf7-panel { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; padding: 28px; }
+  .uf7-panel { background: var(--uf-surface); border: 1px solid var(--uf-border); border-radius: 22px; padding: 28px; }
 
   /* ── Hero: the two decade figures, and the curve they describe ── */
-  .uf7-yourdate { position: relative; z-index: 4; margin-top: 22px; font-family: ${MONO}; font-size: 13px; color: rgba(255,255,255,0.62); }
+  .uf7-yourdate { position: relative; z-index: 4; margin-top: 22px; font-family: ${MONO}; font-size: 13px; color: var(--uf-ink-3); }
   .uf7-yourdate b { color: var(--uf-teal); font-weight: 500; }
   .uf7-splitstat { position: relative; z-index: 4; display: flex; gap: 16px; margin-top: 32px; flex-wrap: wrap; justify-content: center; }
-  .uf7-splitstat-card { min-width: 168px; padding: 16px 24px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); text-align: left; }
+  .uf7-splitstat-card { min-width: 168px; padding: 16px 24px; border-radius: 16px; background: var(--uf-surface); border: 1px solid var(--uf-border); text-align: left; }
   .uf7-splitstat-hot { background: rgba(34,211,165,0.10); border-color: rgba(98,250,227,0.34); }
-  .uf7-splitstat-label { font-family: ${MONO}; font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+  .uf7-splitstat-label { font-family: ${MONO}; font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--uf-ink-3); }
   .uf7-splitstat-num { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 40px; line-height: 1.1; margin-top: 6px; color: var(--uf-teal); }
-  .uf7-splitstat-dim { color: rgba(255,255,255,0.55); }
-  .uf7-splitstat-foot { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+  .uf7-splitstat-dim { color: var(--uf-ink-3); }
+  .uf7-splitstat-foot { font-size: 12px; color: var(--uf-ink-3); margin-top: 2px; }
 
   /* ── Shared section lede ── */
-  .uf7-panel-cap { font-family: ${MONO}; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 22px; }
-  .uf7-panel-foot { font-family: ${MONO}; font-size: 11px; color: rgba(255,255,255,0.36); margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .uf7-panel-cap { font-family: ${MONO}; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--uf-ink-3); margin-bottom: 22px; }
+  .uf7-panel-foot { font-family: ${MONO}; font-size: 11px; color: var(--uf-ink-3); margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--uf-border); }
   .uf7-hl { font-style: normal; color: var(--uf-teal); }
   .uf7-head-2up { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: end; }
   .uf7-head-2up .uf7-lede { margin-top: 0; }
-  .uf7-lede { margin: 20px 0 0; font-size: 17px; line-height: 1.75; color: rgba(255,255,255,0.62); max-width: 620px; }
+  .uf7-lede { margin: 20px 0 0; font-size: 17px; line-height: 1.75; color: var(--uf-ink-3); max-width: 620px; }
 
   /* ── Decade shares ── */
   .uf7-decades { margin-top: 48px; display: flex; flex-direction: column; gap: 14px; }
   .uf7-decade { display: grid; grid-template-columns: 88px 1fr 92px 38px; gap: 12px; align-items: center; }
-  .uf7-decade-span { font-family: ${MONO}; font-size: 12px; color: rgba(255,255,255,0.5); }
-  .uf7-decade-track { height: 32px; border-radius: 10px; background: rgba(255,255,255,0.07); overflow: hidden; }
+  .uf7-decade-span { font-family: ${MONO}; font-size: 12px; color: var(--uf-ink-3); }
+  .uf7-decade-track { height: 32px; border-radius: 10px; background: var(--uf-surface); overflow: hidden; }
   .uf7-decade-fill { height: 100%; border-radius: 10px; background: rgba(98,250,227,0.34); }
   .uf7-decade-fill-hot { background: linear-gradient(90deg, rgba(34,211,165,0.75), var(--uf-teal)); }
-  .uf7-decade-amt { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 13px; color: rgba(255,255,255,0.78); text-align: right; }
+  .uf7-decade-amt { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--uf-ink-2); text-align: right; }
   .uf7-decade-pct { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--uf-teal); text-align: right; }
 
   /* ── Early vs late starter ── */
   .uf7-versus { margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .uf7-versus-card { position: relative; padding: 28px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); }
+  .uf7-versus-card { position: relative; padding: 28px; border-radius: 20px; background: var(--uf-surface); border: 1px solid var(--uf-border); }
   .uf7-versus-win { background: rgba(34,211,165,0.09); border-color: rgba(98,250,227,0.36); }
   .uf7-versus-tag { position: absolute; top: -11px; left: 28px; background: var(--uf-teal); color: #06231C; border-radius: 999px; padding: 3px 12px; font-size: 11px; font-weight: 800; }
   .uf7-versus-who { font-size: 16px; font-weight: 800; }
-  .uf7-versus-desc { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.6); }
+  .uf7-versus-desc { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--uf-ink-3); }
   .uf7-versus-figs { display: flex; gap: 32px; margin-top: 24px; }
-  .uf7-versus-lbl { font-family: ${MONO}; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
-  .uf7-versus-in { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 20px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+  .uf7-versus-lbl { font-family: ${MONO}; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--uf-ink-3); }
+  .uf7-versus-in { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 20px; color: var(--uf-ink-2); margin-top: 4px; }
   .uf7-versus-out { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 28px; color: var(--uf-teal); margin-top: 2px; }
-  .uf7-versus-out-dim { color: rgba(255,255,255,0.55); }
+  .uf7-versus-out-dim { color: var(--uf-ink-3); }
 
   /* ── Any-size table ── */
-  .uf7-table { margin-top: 44px; border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; overflow: hidden; }
+  .uf7-table { margin-top: 44px; border: 1px solid var(--uf-border); border-radius: 18px; overflow: hidden; }
   .uf7-table-head, .uf7-table-row { display: grid; grid-template-columns: 1.1fr 1fr 1.1fr 0.7fr; gap: 16px; align-items: center; padding: 16px 24px; }
-  .uf7-table-head { background: rgba(255,255,255,0.05); font-family: ${MONO}; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
-  .uf7-table-row { border-top: 1px solid rgba(255,255,255,0.09); }
+  .uf7-table-head { background: var(--uf-surface); font-family: ${MONO}; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--uf-ink-3); }
+  .uf7-table-row { border-top: 1px solid var(--uf-border); }
   .uf7-table-end { text-align: right; }
   .uf7-table-invest { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 15px; }
-  .uf7-table-paid { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 14px; color: rgba(255,255,255,0.5); }
+  .uf7-table-paid { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 14px; color: var(--uf-ink-3); }
   .uf7-table-becomes { font-family: ${MONO}; font-variant-numeric: tabular-nums; font-size: 17px; color: var(--uf-teal); }
   .uf7-mult { display: inline-block; background: rgba(34,211,165,0.14); color: var(--uf-teal); border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 800; }
-  .uf7-table-foot { margin: 18px 0 0; font-family: ${MONO}; font-size: 11px; line-height: 1.7; color: rgba(255,255,255,0.42); max-width: 620px; }
+  .uf7-table-foot { margin: 18px 0 0; font-family: ${MONO}; font-size: 11px; line-height: 1.7; color: var(--uf-ink-3); max-width: 620px; }
 
   .uf7-wrap { position: relative; z-index: 4; max-width: 1060px; margin: 0 auto; }
   .uf7-wrap-wide { max-width: 1040px; }
@@ -1507,19 +1509,19 @@ const CSS7 = `
   .uf7-glow-r { width: 700px; height: 560px; top: -160px; right: -280px; background: radial-gradient(circle, rgba(79,70,229,0.2), transparent 62%); animation: uf7drift2 40s ease-in-out infinite; }
 
   .uf7-rows { margin-top: 60px; }
-  .uf7-row { display: grid; grid-template-columns: 110px 1fr; gap: 28px; align-items: baseline; padding: 32px 0; border-top: 1px solid rgba(255,255,255,0.14); }
-  .uf7-row:last-child { border-bottom: 1px solid rgba(255,255,255,0.14); }
+  .uf7-row { display: grid; grid-template-columns: 110px 1fr; gap: 28px; align-items: baseline; padding: 32px 0; border-top: 1px solid var(--uf-border); }
+  .uf7-row:last-child { border-bottom: 1px solid var(--uf-border); }
   .uf7-row-n { font-family: ${SERIF}; font-size: clamp(38px, 5vw, 54px); color: rgba(98,250,227,0.85); line-height: 1; }
   .uf7-row h3 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.015em; }
-  .uf7-row p { margin: 8px 0 0; font-size: 15px; line-height: 1.65; color: rgba(255,255,255,0.68); max-width: 460px; }
+  .uf7-row p { margin: 8px 0 0; font-size: 15px; line-height: 1.65; color: var(--uf-ink-2); max-width: 460px; }
 
   .uf7-slider-stage { margin-top: 64px; }
   .uf7-live-amount { font-family: ${SERIF}; font-size: clamp(52px, 8vw, 96px); line-height: 1; letter-spacing: -0.02em; text-shadow: 0 4px 60px rgba(34,211,165,0.3); color: var(--uf-teal); }
   .uf7-saves { margin-top: 14px; font-size: 14px; font-weight: 700; color: var(--uf-teal); min-height: 20px; }
   .uf7-slider-row { margin: 44px auto 0; max-width: 560px; }
-  .uf7-slider-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.68); margin-bottom: 14px; }
+  .uf7-slider-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--uf-ink-2); margin-bottom: 14px; }
   .uf7-slider-label strong { color: #fff; font-variant-numeric: tabular-nums; }
-  .uf7-slider-row input[type="range"] { width: 100%; appearance: none; -webkit-appearance: none; height: 3px; border-radius: 99px; background: linear-gradient(90deg, var(--uf-teal), rgba(255,255,255,0.15)); outline: none; }
+  .uf7-slider-row input[type="range"] { width: 100%; appearance: none; -webkit-appearance: none; height: 3px; border-radius: 99px; background: linear-gradient(90deg, var(--uf-teal), var(--uf-border)); outline: none; }
   .uf7-slider-row input[type="range"]::-webkit-slider-thumb {
     appearance: none; -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%;
     background: var(--uf-teal); border: 3px solid var(--uf-ground);
@@ -1530,7 +1532,7 @@ const CSS7 = `
     background: var(--uf-teal); border: 3px solid var(--uf-ground);
     box-shadow: 0 0 0 1px rgba(98,250,227,0.6), 0 0 24px rgba(98,250,227,0.55); cursor: pointer;
   }
-  .uf7-slider-foot { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.42); }
+  .uf7-slider-foot { margin-top: 14px; font-size: 12px; color: var(--uf-ink-3); }
 
   .uf7-earlier { margin-top: 34px; font-family: ${SERIF}; font-size: clamp(22px, 3vw, 30px); }
   .uf7-earlier em { color: var(--uf-teal); font-style: italic; }
@@ -1538,55 +1540,55 @@ const CSS7 = `
   .uf7-stars {
     position: absolute; inset: 0; pointer-events: none; opacity: 0.7;
     background-image:
-      radial-gradient(1.2px 1.2px at 12% 22%, rgba(255,255,255,0.7), transparent 100%),
-      radial-gradient(1px 1px at 28% 64%, rgba(255,255,255,0.45), transparent 100%),
-      radial-gradient(1.4px 1.4px at 43% 12%, rgba(255,255,255,0.6), transparent 100%),
-      radial-gradient(1px 1px at 61% 38%, rgba(255,255,255,0.4), transparent 100%),
-      radial-gradient(1.3px 1.3px at 74% 70%, rgba(255,255,255,0.55), transparent 100%),
-      radial-gradient(1px 1px at 87% 18%, rgba(255,255,255,0.5), transparent 100%),
-      radial-gradient(1.1px 1.1px at 52% 86%, rgba(255,255,255,0.4), transparent 100%),
-      radial-gradient(1.3px 1.3px at 8% 78%, rgba(255,255,255,0.5), transparent 100%);
+      radial-gradient(1.2px 1.2px at 12% 22%, var(--uf-ink-2), transparent 100%),
+      radial-gradient(1px 1px at 28% 64%, var(--uf-ink-3), transparent 100%),
+      radial-gradient(1.4px 1.4px at 43% 12%, var(--uf-ink-3), transparent 100%),
+      radial-gradient(1px 1px at 61% 38%, var(--uf-ink-3), transparent 100%),
+      radial-gradient(1.3px 1.3px at 74% 70%, var(--uf-ink-3), transparent 100%),
+      radial-gradient(1px 1px at 87% 18%, var(--uf-ink-3), transparent 100%),
+      radial-gradient(1.1px 1.1px at 52% 86%, var(--uf-ink-3), transparent 100%),
+      radial-gradient(1.3px 1.3px at 8% 78%, var(--uf-ink-3), transparent 100%);
   }
   .uf7-globe-grid { margin-top: 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
   .uf7-globe-stage { position: relative; aspect-ratio: 1; width: min(440px, 100%); justify-self: center; }
-  .uf7-city-row { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: baseline; padding: 17px 0; border-top: 1px solid rgba(255,255,255,0.14); }
-  .uf7-city-row:last-of-type { border-bottom: 1px solid rgba(255,255,255,0.14); }
+  .uf7-city-row { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: baseline; padding: 17px 0; border-top: 1px solid var(--uf-border); }
+  .uf7-city-row:last-of-type { border-bottom: 1px solid var(--uf-border); }
   .uf7-city { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
-  .uf7-cost { font-size: 14px; color: rgba(255,255,255,0.68); font-variant-numeric: tabular-nums; }
+  .uf7-cost { font-size: 14px; color: var(--uf-ink-2); font-variant-numeric: tabular-nums; }
   .uf7-status { font-family: ${MONO}; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; }
   .uf7-ready { color: var(--uf-teal); }
-  .uf7-later { color: rgba(255,255,255,0.45); }
-  .uf7-globe-foot { margin-top: 22px; font-size: 12.5px; color: rgba(255,255,255,0.5); }
+  .uf7-later { color: var(--uf-ink-3); }
+  .uf7-globe-foot { margin-top: 22px; font-size: 12.5px; color: var(--uf-ink-3); }
 
   .uf7-price-cols { margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; }
   .uf7-pcol { padding: 8px 44px 8px 0; }
-  .uf7-pcol + .uf7-pcol { border-left: 1px solid rgba(255,255,255,0.14); padding: 8px 0 8px 44px; }
-  .uf7-tier { font-size: 13px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+  .uf7-pcol + .uf7-pcol { border-left: 1px solid var(--uf-border); padding: 8px 0 8px 44px; }
+  .uf7-tier { font-size: 13px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--uf-ink-3); }
   .uf7-amount { margin-top: 14px; font-family: ${SERIF}; font-size: clamp(40px, 5vw, 56px); line-height: 1; }
-  .uf7-amount small { font-size: 15px; color: rgba(255,255,255,0.68); font-family: ${F}; font-weight: 600; }
+  .uf7-amount small { font-size: 15px; color: var(--uf-ink-2); font-family: ${F}; font-weight: 600; }
   .uf7-trial-note { display: block; margin-top: 12px; font-family: ${MONO}; font-size: 11px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--uf-teal); }
   .uf7-pcol ul { margin: 26px 0 0; padding: 0; list-style: none; }
-  .uf7-pcol li { font-size: 14.5px; line-height: 1.5; color: rgba(255,255,255,0.78); padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.07); }
+  .uf7-pcol li { font-size: 14.5px; line-height: 1.5; color: var(--uf-ink-2); padding: 8px 0; border-top: 1px solid var(--uf-surface); }
   .uf7-pcol li:first-child { border-top: none; }
   .uf7-pro-cta { margin-top: 28px; display: inline-block; padding: 14px 34px; border-radius: 2px; border: none; cursor: pointer; font-size: 14.5px; font-weight: 800; color: var(--uf-ground); background: linear-gradient(90deg, #b8ffe9, var(--uf-teal) 50%, var(--uf-teal)); box-shadow: 0 14px 34px rgba(34,211,165,0.26); font-family: ${F}; }
-  .uf7-free-cta { margin-top: 28px; display: inline-block; padding: 13px 30px; border-radius: 2px; cursor: pointer; font-size: 14.5px; font-weight: 700; color: #fff; background: rgba(5,14,11,0.6); border: 1px solid rgba(255,255,255,0.22); font-family: ${F}; }
+  .uf7-free-cta { margin-top: 28px; display: inline-block; padding: 13px 30px; border-radius: var(--uf-r-pill); cursor: pointer; font-size: 14.5px; font-weight: 700; color: #fff; background: var(--uf-green); border: 1px solid transparent; font-family: ${F}; }
 
   .uf7-quote-mark { font-family: ${SERIF}; font-size: 90px; line-height: 0.4; color: rgba(98,250,227,0.5); }
   .uf7-big-quote { margin: 34px auto 0; font-family: ${SERIF}; font-size: clamp(26px, 4vw, 40px); line-height: 1.3; max-width: 780px; }
-  .uf7-attr { margin-top: 30px; font-size: 12px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+  .uf7-attr { margin-top: 30px; font-size: 12px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: var(--uf-ink-3); }
 
   .uf7-faq-list { margin-top: 56px; }
-  .uf7-faq-list details { border-top: 1px solid rgba(255,255,255,0.14); padding: 24px 4px; }
-  .uf7-faq-list details:last-child { border-bottom: 1px solid rgba(255,255,255,0.14); }
+  .uf7-faq-list details { border-top: 1px solid var(--uf-border); padding: 24px 4px; }
+  .uf7-faq-list details:last-child { border-bottom: 1px solid var(--uf-border); }
   .uf7-faq-list summary { cursor: pointer; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; list-style: none; display: flex; justify-content: space-between; align-items: center; }
   .uf7-faq-list summary::-webkit-details-marker { display: none; }
   .uf7-faq-list summary::after { content: "+"; color: var(--uf-teal); font-size: 22px; font-weight: 500; }
   .uf7-faq-list details[open] summary::after { content: "–"; }
-  .uf7-faq-list details p { margin: 14px 0 0; font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.68); max-width: 640px; }
+  .uf7-faq-list details p { margin: 14px 0 0; font-size: 15px; line-height: 1.7; color: var(--uf-ink-2); max-width: 640px; }
 
   .uf7-closing { text-align: center; padding: 150px 24px 160px; }
   .uf7-closing-h { margin: 0; font-family: ${SERIF}; font-weight: 400; font-size: clamp(40px, 6.6vw, 68px); line-height: 1.06; letter-spacing: -0.02em; }
-  .uf7-closing-sub { margin: 22px auto 0; max-width: 420px; font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.68); }
+  .uf7-closing-sub { margin: 22px auto 0; max-width: 420px; font-size: 15.5px; line-height: 1.6; color: var(--uf-ink-2); }
   .uf7-close-a { width: 760px; height: 560px; bottom: -260px; left: 50%; transform: translateX(-58%); background: radial-gradient(circle, rgba(34,211,165,0.28), transparent 62%); animation: uf7drift1 30s ease-in-out infinite; }
   .uf7-close-b { width: 560px; height: 480px; bottom: -200px; right: -160px; background: radial-gradient(circle, rgba(79,70,229,0.28), transparent 62%); animation: uf7drift2 34s ease-in-out infinite; }
 
@@ -1601,7 +1603,7 @@ const CSS7 = `
     .uf7-globe-grid { grid-template-columns: 1fr; gap: 40px; }
     .uf7-price-cols { grid-template-columns: 1fr; }
     .uf7-pcol { padding: 8px 0 40px; }
-    .uf7-pcol + .uf7-pcol { border-left: none; border-top: 1px solid rgba(255,255,255,0.14); padding: 40px 0 8px; }
+    .uf7-pcol + .uf7-pcol { border-left: none; border-top: 1px solid var(--uf-border); padding: 40px 0 8px; }
     .uf7-versus { grid-template-columns: 1fr; }
     .uf7-decade { grid-template-columns: 88px 1fr 92px; gap: 12px; }
     .uf7-decade-pct { display: none; }
@@ -1658,7 +1660,7 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
   }, []);
 
   return (
-    <div ref={rootRef} className="uf7-root dark" style={{ fontFamily: F }}>
+    <div ref={rootRef} className="uf7-root" style={{ fontFamily: F }}>
       <div className="uf7-grain" aria-hidden />
       <Nav7 onStart={onStart} />
       <Hero7 onStart={onStart} />
