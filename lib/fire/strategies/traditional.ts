@@ -46,13 +46,18 @@ function compute({
     bal = bal * (1 + expectedRealReturn) + monthlySavings * 12;
     yrs++;
   }
+  if (bal < fireTarget) {
+    return { fireTarget, years: null, retireYear: null };
+  }
   // Interpolate to find the exact fractional year when balance crosses FIRE target
   let fractionalYears = yrs;
-  if (yrs > 0 && yrs < maxYears) {
+  if (yrs > 0) {
     const annual = monthlySavings * 12;
     const k = annual / expectedRealReturn;
     const ratio = (fireTarget + k) / (balPrev + k);
-    if (ratio > 1) {
+    if (expectedRealReturn === 0 && annual > 0) {
+      fractionalYears = (yrs - 1) + Math.min(1, Math.max(0, (fireTarget - balPrev) / annual));
+    } else if (ratio > 1) {
       const t = Math.log(ratio) / Math.log(1 + expectedRealReturn);
       fractionalYears = (yrs - 1) + Math.min(Math.max(t, 0), 1);
     }

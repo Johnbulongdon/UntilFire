@@ -6201,12 +6201,12 @@ function ExpatFireDashTab({
         const r = calcFIRE(monthlySavings, c.col, age || undefined, portfolioBalance);
         return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
       })
-      .sort((a, b) => a.years - b.years || a.col - b.col);
+      .sort((a, b) => (a.years ?? Infinity) - (b.years ?? Infinity) || a.col - b.col);
   }, [monthlySavings, portfolioBalance, age]);
 
   // Run the bar from today to roughly when the bulk of cities have unlocked.
   const sliderMax = useMemo(() => {
-    const ys = cityUnlocks.map(c => c.years).filter(y => y < 60).sort((a, b) => a - b);
+    const ys = cityUnlocks.map(c => c.years).filter((y): y is number => y !== null && y < 60).sort((a, b) => a - b);
     if (!ys.length) return 5;
     const p95 = ys[Math.floor(0.95 * (ys.length - 1))];
     return Math.min(50, Math.max(5, Math.ceil(p95)));
@@ -6230,7 +6230,7 @@ function ExpatFireDashTab({
   const tlYears = Math.min(timelineYears, sliderMax);
   const tlAnnual = Math.max(0, monthlySavings) * 12;
   const projectedPortfolio = (portfolioBalance + tlAnnual / REAL_RETURN) * Math.pow(1 + REAL_RETURN, tlYears) - tlAnnual / REAL_RETURN;
-  const readyCount = cityUnlocks.filter(c => c.years <= tlYears + 1e-9).length;
+  const readyCount = cityUnlocks.filter(c => c.years !== null && c.years <= tlYears + 1e-9).length;
   const projAge = age ? age + tlYears : undefined;
   const tlThisYear = new Date().getFullYear();
 
@@ -6400,8 +6400,8 @@ function ExpatFireDashTab({
             {/* Ordered milestone strip — which cities turn green first */}
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginTop: 10 }}>
               {cityUnlocks.slice(0, 16).map(c => {
-                const unlocked = c.years <= tlYears + 1e-9;
-                const badge = c.years < 0.5 ? "now" : projAge ? `age ${c.age}` : `${c.year}`;
+                const unlocked = c.years !== null && c.years <= tlYears + 1e-9;
+                const badge = c.years === null ? "Not reached" : c.years < 0.5 ? "now" : projAge ? `age ${c.age}` : `${c.year}`;
                 return (
                   <div key={c.key} style={{
                     flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
@@ -6481,7 +6481,7 @@ function ExpatCityDetail({
 
   const currentYears = currentFire.years;
   const targetYears = targetFire.years;
-  const yearDiff = Math.abs(currentYears - targetYears);
+  const yearDiff = currentYears !== null && targetYears !== null ? Math.abs(currentYears - targetYears) : null;
   const isFireNow = portfolioBalance >= targetCol * 25;
   const monthlyDiff = Math.round((currentCol - targetCol) / 12);
 
@@ -6567,7 +6567,12 @@ function ExpatCityDetail({
               Your portfolio covers {targetCity.name} expenses at the 4% rule.
             </div>
           </div>
-        ) : targetYears < currentYears ? (
+        ) : yearDiff === null ? (
+          <div style={{ textAlign: "center", padding: 24 }}>
+            <strong>{targetYears === null ? "Not reached under these assumptions" : "Target reached within the projection"}</strong>
+            <p>At least one location does not reach FIRE within 65 years, so a years-saved comparison is unavailable.</p>
+          </div>
+        ) : targetYears !== null && currentYears !== null && targetYears < currentYears ? (
           <div style={{
             textAlign: "center", background: isDark ? "rgba(34,211,165,0.08)" : "#F0FDF4",
             border: isDark ? "1px solid rgba(34,211,165,0.25)" : "1px solid #A7F3D0",
@@ -6619,7 +6624,7 @@ function ExpatCityDetail({
           </div>
           {row("Annual cost of living", `${fmtUSD(currentCol)}/yr`, `${fmtUSD(targetCol)}/yr`)}
           {row("FIRE number", fmtUSD(currentFire.fireTarget), fmtUSD(targetFire.fireTarget))}
-          {row("Years to FIRE", `${currentYears.toFixed(1)} yrs`, `${targetYears.toFixed(1)} yrs`)}
+          {row("Years to FIRE", currentYears === null ? "Not reached" : `${currentYears.toFixed(1)} yrs`, targetYears === null ? "Not reached" : `${targetYears.toFixed(1)} yrs`)}
           {row("Freedom year", String(currentFire.retireYear ?? "—"), String(targetFire.retireYear ?? "—"))}
         </div>
 

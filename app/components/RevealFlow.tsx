@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
-import { trackScenarioTested } from "@/lib/analytics";
 
 // Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
 const ExpatFireGlobe = dynamic(() => import("@/app/components/ExpatFireGlobe"), {
@@ -15,20 +14,11 @@ const ExpatFireGlobe = dynamic(() => import("@/app/components/ExpatFireGlobe"), 
   ),
 });
 
-export interface RevealScenario {
-  /** Short label, e.g. "Save $500 more each month". */
-  label: string;
-  /** Age this scenario reaches FIRE. */
-  age: number;
-  /** Years sooner (positive) or later (negative) than the current plan. */
-  delta: number;
-}
-
 export interface RevealFlowProps {
-  freedomAge: number;
-  freedomYear: number;
+  freedomAge: number | null;
+  freedomYear: number | null;
   /** Rounded whole years to FIRE. */
-  yearsToFire: number;
+  yearsToFire: number | null;
   planningAge: number;
   ageWasAssumed: boolean;
   isAlreadyFire: boolean;
@@ -40,14 +30,14 @@ export interface RevealFlowProps {
   usBaselineRate: number;
   /** Common FIRE savings-rate target (25%). */
   fireBenchmarkRate: number;
-  scenarios: RevealScenario[];
+
   /** Expat-FIRE globe data (step 6). */
   expatHome: { name: string; lat: number; lng: number };
-  expatBaseAge: number;
+  expatBaseAge: number | null;
   expatCities: ExpatCity[];
   /** Compact money formatter, e.g. 1_240_000 -> "$1.24M". */
   formatCompact: (n: number) => string;
-  onSave: (scenario: RevealScenario) => void;
+  onSave: () => void;
   onAdjust: () => void;
   onShare: () => void;
 }
@@ -62,7 +52,6 @@ const BG = "var(--uf-ground)";
 // bright teal "free years" — --uf-green is too close in hue to teal at this
 // lightness and the two read as one colour in the dot grid.
 const WORKING = "var(--uf-ink-3)";
-const NEG = "var(--uf-neg)";
 // Mirrors --uf-teal in .dark — needed for translucent glows/tints, which
 // rgba() can't derive from a CSS var.
 const TEAL_RGB = "53,201,174";
@@ -119,13 +108,12 @@ export default function RevealFlow(props: RevealFlowProps) {
   const {
     freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate,
-    scenarios, expatHome, expatBaseAge, expatCities, formatCompact,
+    expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, onAdjust, onShare,
   } = props;
 
   const reduce = useReducedMotion();
   const [step, setStep] = useState(1);
-  const [scenarioIdx, setScenarioIdx] = useState(0);
 
   const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
   const next = () => setStep((s) => Math.min(7, s + 1));
@@ -146,7 +134,7 @@ export default function RevealFlow(props: RevealFlowProps) {
 
   // Life-in-years dots.
   const lived = Math.max(0, Math.min(100, planningAge));
-  const working = Math.max(0, Math.min(100 - lived, yearsToFire));
+  const working = Math.max(0, Math.min(100 - lived, yearsToFire ?? 0));
   const freeYears = Math.max(0, 100 - lived - working);
   const dots = useMemo(() => Array.from({ length: 100 }, (_, i) => (
     i < lived ? "rgba(255,255,255,0.16)" : i < lived + working ? WORKING : TEAL
@@ -157,7 +145,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   const ringOffset = RING * (1 - Math.max(0, Math.min(100, pctThere)) / 100);
 
   // Count-ups.
-  const ageText = useCountUp(step === 2, freedomAge, 900, reduce, (v) => String(Math.round(v)));
+  const ageText = useCountUp(step === 2, freedomAge ?? 0, 900, reduce, (v) => String(Math.round(v)));
   const numText = useCountUp(step === 4, fireTarget, 1100, reduce, (v) => formatCompact(v));
 
   // Honest savings comparison bars.
@@ -165,7 +153,6 @@ export default function RevealFlow(props: RevealFlowProps) {
   const savingsMultiple = usBaselineRate > 0 ? savingsRatePct / usBaselineRate : 0;
   const beatsUs = savingsRatePct > usBaselineRate;
 
-  const selected = scenarios[scenarioIdx] ?? scenarios[0];
 
   const shell: React.CSSProperties = {
     minHeight: "100vh", background: BG, color: "#fff", display: "flex", flexDirection: "column",
@@ -184,6 +171,20 @@ export default function RevealFlow(props: RevealFlowProps) {
   // hands off to the reveal (step 2). Rendered on its own so no reveal chrome
   // (top bar, progress) shows during loading.
   if (step === 1) return <VideoLoader onDone={() => setStep(2)} reduce={reduce} />;
+
+  if (yearsToFire === null) return (
+    <div className="dark" style={shell}>
+      <main style={{ ...stage, flexDirection: "column", gap: 24, textAlign: "center", maxWidth: 560 }}>
+        <div style={eyebrow}>YOUR STARTING POINT</div>
+        <h1 style={{ fontSize: "clamp(28px, 6vw, 42px)", lineHeight: 1.15, margin: 0 }}>Not reached under these assumptions</h1>
+        <p style={subtle}>Your current inputs do not reach your freedom number within our 65-year projection. This is a snapshot of today, not a verdict on your future.</p>
+        <div style={{ fontSize: 28, fontWeight: 800 }}>Freedom number: {formatCompact(fireTarget)}</div>
+        <p style={subtle}>Save your starting point, then choose a goal that fits your situation.</p>
+        <button onClick={onSave} style={{ background: TEAL, color: BG, border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>Save my starting point →</button>
+        <button onClick={onAdjust} style={{ background: "none", border: "none", color: "#fff", textDecoration: "underline", padding: 12, cursor: "pointer" }}>Adjust inputs</button>
+      </main>
+    </div>
+  );
 
   return (
     <div className="dark" style={shell}>
@@ -309,7 +310,7 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={subtle}>
                 {beatsUs
                   ? <>That&apos;s about <b style={{ color: TEAL }}>{savingsMultiple.toFixed(1)}×</b> the ~{usBaselineRate}% average U.S. saver{savingsRatePct >= fireBenchmarkRate ? ", already past the 25% FIRE pace." : ", closing on the 25% FIRE pace."}</>
-                  : <>Nudging past the ~{usBaselineRate}% U.S. average is the fastest lever on your date — even $50/month moves it.</>}
+                  : <>Your savings rate is a starting point. A useful goal should fit your income, essential costs, and priorities.</>}
               </div>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", maxWidth: 460 }}>
                 Benchmarks: ~{usBaselineRate}% U.S. personal saving rate (BEA/FRED); 25% is a common FIRE savings target.
@@ -323,7 +324,7 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={eyebrow}>EXPAT FIRE</div>
               <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em" }}>Retire even earlier somewhere else</div>
               {expatCities.length > 0 ? (
-                <ExpatFireGlobe home={expatHome} baseAge={expatBaseAge} cities={expatCities} />
+                <ExpatFireGlobe home={expatHome} baseAge={expatBaseAge ?? planningAge} cities={expatCities} />
               ) : (
                 <div style={{ ...subtle, maxWidth: 460 }}>
                   You&apos;re already in one of the most cost-efficient places for your plan — relocating wouldn&apos;t pull your date much sooner.
@@ -339,35 +340,12 @@ export default function RevealFlow(props: RevealFlowProps) {
           {step === 7 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center", maxWidth: 480, ...anim("rf-up .55s ease both") }}>
               <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(24px, 5vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
-                Save your plan —<br />and make it happen.
+                Save your starting point.
               </div>
-              <div style={subtle}>Track the monthly moves that pull your freedom date closer.</div>
+              <div style={subtle}>Keep the numbers you entered so you can choose a goal and track your progress.</div>
 
-              <div style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 18, textAlign: "left" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", color: TEAL, marginBottom: 13 }}>EXPLORE SCENARIOS — WHAT IF YOU…</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {scenarios.map((s, i) => {
-                    const active = i === scenarioIdx;
-                    return (
-                      <button key={s.label} onClick={() => { setScenarioIdx(i); trackScenarioTested({ scenarioIndex: i, scenarioLabel: s.label, deltaYears: s.delta }); }} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 13px", borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all .15s ease", background: active ? `rgba(${TEAL_RGB},0.12)` : "rgba(255,255,255,0.05)", border: active ? `1px solid ${TEAL}` : "1px solid rgba(255,255,255,0.14)", color: active ? "#fff" : "rgba(255,255,255,0.85)", font: "inherit" }}>
-                        <span style={{ width: 15, height: 15, borderRadius: "50%", flex: "none", background: active ? TEAL : "transparent", border: active ? `2px solid ${TEAL}` : "2px solid rgba(255,255,255,0.4)", boxShadow: active ? `inset 0 0 0 2px ${BG}` : undefined }} />
-                        <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{s.label}</span>
-                        <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontWeight: 800, fontSize: 15, color: active ? TEAL : "rgba(255,255,255,0.55)" }}>{s.age}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 15, borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 14, marginTop: 14 }}>
-                  <span style={{ color: "rgba(255,255,255,0.7)" }}>You&apos;d reach FIRE at</span>
-                  <b style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: TEAL, fontSize: 19 }}>{selected?.age}</b>
-                  <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 14, color: selected && selected.delta > 0 ? TEAL : selected && selected.delta < 0 ? NEG : "rgba(255,255,255,0.5)" }}>
-                    {selected && selected.delta > 0 ? `${selected.delta} yrs sooner` : selected && selected.delta < 0 ? `${Math.abs(selected.delta)} yrs later` : "your current plan"}
-                  </span>
-                </div>
-              </div>
-
-              <button onClick={() => selected && onSave(selected)} style={{ width: "100%", background: TEAL, color: BG, border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>
-                Start my path — it&apos;s free →
+              <button onClick={onSave} style={{ width: "100%", background: TEAL, color: BG, border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>
+                Save my starting point →
               </button>
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Free to start · No credit card · Takes 30 seconds</div>
               <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
@@ -387,7 +365,7 @@ export default function RevealFlow(props: RevealFlowProps) {
         )}
         {step >= 2 && step < 7 && (
           <button onClick={next} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.28)", color: "#fff", borderRadius: 10, padding: "15px 40px", font: "700 16px Manrope, sans-serif", cursor: "pointer" }}>
-            {step === 6 ? "Save my plan →" : "Continue →"}
+            {step === 6 ? "Save my starting point →" : "Continue →"}
           </button>
         )}
       </div>

@@ -18,7 +18,6 @@ export default function CityCalcWidget({ city }: { city: City }) {
     const tax = calcTakeHome(income, city.state);
     const takeHome = tax.takeHome;
     const monthlySavings = (takeHome * savingsRate) / 100 / 12;
-    if (monthlySavings <= 0) return null;
     return calcFIRE(monthlySavings, city.col, age, currentSavings);
   }, [income, savingsRate, age, currentSavings, city]);
 
@@ -112,13 +111,13 @@ export default function CityCalcWidget({ city }: { city: City }) {
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Years to FIRE</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px" }}>{Math.round(result.years)}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px" }}>{result.years === null ? "Not reached" : Math.round(result.years)}</div>
             <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>at {savingsRate}% savings rate</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Retire at Age</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#22d3a5", letterSpacing: "-0.5px" }}>{result.age ?? age + Math.round(result.years)}</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>in {result.retireYear}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#22d3a5", letterSpacing: "-0.5px" }}>{result.age ?? "—"}</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>{result.retireYear === null ? "Not reached within 65 years" : `in ${result.retireYear}`}</div>
           </div>
         </div>
       )}

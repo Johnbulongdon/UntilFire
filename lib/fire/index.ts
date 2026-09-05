@@ -61,6 +61,7 @@ export function recommendActionsForReveal({
     if (fireYears !== undefined && extra > 0) {
       const base    = calcFIRE(monthlySavings, annualCostOfLiving, currentAge);
       const boosted = calcFIRE(targetSavings, annualCostOfLiving, currentAge);
+      if (base.years === null || boosted.years === null) return actions;
       const delta   = Math.max(0, base.years - boosted.years);
       actions.push({
         id: 'raise_savings_rate',
@@ -87,6 +88,7 @@ export function recommendActionsForReveal({
       const reducedCOL = annualCostOfLiving * 0.9;
       const base    = calcFIRE(monthlySavings, annualCostOfLiving, currentAge);
       const reduced = calcFIRE(monthlySavings + annualCostOfLiving * 0.1 / 12, reducedCOL, currentAge);
+      if (base.years === null || reduced.years === null) return actions;
       const delta   = Math.max(0, base.years - reduced.years);
       actions.push({
         id: 'reduce_fixed_costs',
@@ -106,6 +108,7 @@ export function recommendActionsForReveal({
     if (fireYears !== undefined) {
       const base    = calcFIRE(monthlySavings, annualCostOfLiving, currentAge);
       const boosted = calcFIRE(monthlySavings + monthlyIncome * 0.1, annualCostOfLiving, currentAge);
+      if (base.years === null || boosted.years === null) return actions;
       const delta   = Math.max(0, base.years - boosted.years);
       actions.push({
         id: 'increase_income',

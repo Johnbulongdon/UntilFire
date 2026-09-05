@@ -104,8 +104,8 @@ export default function LoginPage() {
           {hasPrefill ? (
             <div style={{ fontSize: 15, color: '#0F172A', lineHeight: 1.5, fontWeight: 700 }}>
               {prefillYear
-                ? <>Your freedom year is <span style={{ color: '#059669' }}>{prefillYear}</span>.<br />Save your plan to track it.</>
-                : <>Your plan is ready.<br /><span style={{ color: '#64748B', fontWeight: 400 }}>Sign in to save and track it.</span></>
+                ? <>Your freedom year is <span style={{ color: '#059669' }}>{prefillYear}</span>.<br />Save your starting point to track your progress.</>
+                : <>Your starting point is ready.<br /><span style={{ color: '#64748B', fontWeight: 400 }}>Sign in to save and track it.</span></>
               }
             </div>
           ) : (

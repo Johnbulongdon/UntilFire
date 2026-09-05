@@ -588,9 +588,9 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
                   <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#19181E" }}>{fmt(s.gross)}</td>
                   <td style={{ padding: "16px 24px", fontSize: 14, color: "#475569" }}>{fmt(s.takeHome)}</td>
                   <td style={{ padding: "16px 24px", fontSize: 14, color: "#475569" }}>{fmt(s.monthlySavings)}</td>
-                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#064E3B" }}>{Math.round(s.years)} yrs</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#064E3B" }}>{s.years === null ? "Not reached" : `${Math.round(s.years)} yrs`}</td>
                   <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "#22d3a5" }}>
-                    {START_AGE + Math.round(s.years)}
+                    {s.years === null ? "—" : START_AGE + Math.round(s.years)}
                   </td>
                 </tr>
               ))}

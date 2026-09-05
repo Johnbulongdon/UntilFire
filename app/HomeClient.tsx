@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
-import RevealFlow, { type RevealScenario } from "@/app/components/RevealFlow";
+import RevealFlow from "@/app/components/RevealFlow";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { supabase } from "@/lib/supabase";
@@ -13,7 +13,6 @@ import {
   trackLandingViewed,
   trackCalculatorStepViewed,
   trackCalculatorRevealed,
-  trackScenarioAccepted,
 } from "@/lib/analytics";
 import type { CalculatorStepId } from "@/lib/analytics-events";
 import {
@@ -973,11 +972,11 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
   const savingsRatePct = savingsBenchmark.savingsRate;
-  const fireIdentity = deriveFireIdentity(savingsRatePct, portfolioBalance, result.years);
+  const fireIdentity = deriveFireIdentity(savingsRatePct, portfolioBalance, result.years ?? undefined);
 
   const isAlreadyFire = result.years === 0;
-  const yearsToFire = Math.round(result.years);
-  const freedomAge = planningAge + yearsToFire;
+  const yearsToFire = result.years === null ? null : Math.round(result.years);
+  const freedomAge = yearsToFire === null ? null : planningAge + yearsToFire;
   const pctThere = result.fireTarget > 0
     ? Math.max(0, Math.min(100, Math.round((portfolioBalance / result.fireTarget) * 100)))
     : 0;
@@ -996,19 +995,6 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     });
   }, [stateKey, city.isCustom, result.fireTarget, result.years, landingSource]);
 
-  // Real scenario variants — each recomputed with calcFIRE so the ages are honest.
-  const scenAge = (years: number) => planningAge + Math.round(years);
-  const save500 = calcFIRE(savings + 500, city.col, planningAge, portfolioBalance, marketReturn);
-  const raise5 = calcFIRE(savings + income * 0.05 / 12, city.col, planningAge, portfolioBalance, marketReturn);
-  const bear = calcFIRE(savings, city.col, planningAge, portfolioBalance, marketReturn - 0.02);
-  const scenarios: RevealScenario[] = [
-    { label: "Keep your current plan", age: freedomAge, delta: 0 },
-    { label: "Save $500 more each month", age: scenAge(save500.years), delta: freedomAge - scenAge(save500.years) },
-    { label: "Invest a future 5% raise", age: scenAge(raise5.years), delta: freedomAge - scenAge(raise5.years) },
-    { label: "Take a 1-year sabbatical", age: freedomAge + 1, delta: -1 },
-    { label: "Markets return 2% less", age: scenAge(bear.years), delta: freedomAge - scenAge(bear.years) },
-  ];
-
   // Expat-FIRE globe: iconic lower-cost destinations, each with a real
   // recomputed freedom age (via calcFIRE at that city's cost of living).
   const currentCityKey = CITIES.find((c) => c.name === city.name)?.key ?? "sf";
@@ -1019,8 +1005,10 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     .map((k): ExpatCity | null => {
       const c = CITIES.find((x) => x.key === k);
       const co = CITY_COORDS[k];
-      if (!c || !co || c.col >= city.col) return null;
-      const age = planningAge + Math.round(calcFIRE(savings, c.col, planningAge, portfolioBalance, marketReturn).years);
+      if (!c || !co || c.col >= city.col || freedomAge === null) return null;
+      const projection = calcFIRE(savings, c.col, planningAge, portfolioBalance, marketReturn);
+      if (projection.years === null) return null;
+      const age = planningAge + Math.round(projection.years);
       return { key: k, name: c.name.split(",")[0], country: (c.name.split(", ")[1] ?? "").trim(), lat: co.lat, lng: co.lng, age, delta: freedomAge - age };
     })
     .filter((x): x is ExpatCity => x !== null && x.delta > 0)
@@ -1035,15 +1023,14 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     return `${symbol}${Math.round(v)}`;
   };
 
-  const onSave = (scenario: RevealScenario) => {
-    trackScenarioAccepted({ scenarioIndex: scenarios.indexOf(scenario), scenarioLabel: scenario.label, deltaYears: scenario.delta });
-    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
+  const onSave = () => {
+    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
     router.push("/login");
   };
 
   return (
     <div className="uf-screen uf-reveal-screen">
-      {showShare && (
+      {showShare && result.retireYear !== null && (
         <ShareModal
           cityName={city.name}
           fireIdentity={fireIdentity}
@@ -1065,7 +1052,6 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         savingsRatePct={savingsRatePct}
         usBaselineRate={PUBLIC_SAVINGS_RATE_BASELINE}
         fireBenchmarkRate={25}
-        scenarios={scenarios}
         expatHome={expatHome}
         expatBaseAge={freedomAge}
         expatCities={expatCities}

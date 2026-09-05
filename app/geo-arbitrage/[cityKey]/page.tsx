@@ -35,8 +35,8 @@ function fmtUSD(n: number): string {
   return `$${Math.round(n)}`;
 }
 
-function fmtYears(y: number): string {
-  return y.toFixed(1) + ' yrs';
+function fmtYears(y: number | null): string {
+  return y === null ? 'Not reached within 65 years' : y.toFixed(1) + ' yrs';
 }
 
 function pill(
@@ -189,7 +189,7 @@ export default function GeoArbitragePage() {
 
   const currentYears = currentFire.years;
   const targetYears = targetFire.years;
-  const yearDiff = Math.abs(currentYears - targetYears);
+  const yearDiff = currentYears !== null && targetYears !== null ? Math.abs(currentYears - targetYears) : null;
   const isFireNow = portfolioBalance >= targetCol * 25;
   const monthlyDiff = Math.round((currentCol - targetCol) / 12);
 
@@ -312,7 +312,12 @@ export default function GeoArbitragePage() {
               Your portfolio covers {targetCity!.name} expenses at the 4% rule.
             </div>
           </div>
-        ) : targetYears < currentYears ? (
+        ) : yearDiff === null ? (
+          <div style={{ textAlign: "center", padding: 24 }}>
+            <strong>{targetYears === null ? "Not reached under these assumptions" : "Target reached within the projection"}</strong>
+            <p>At least one location does not reach FIRE within 65 years, so a years-saved comparison is unavailable.</p>
+          </div>
+        ) : targetYears !== null && currentYears !== null && targetYears < currentYears ? (
           <div
             style={{
               textAlign: 'center',

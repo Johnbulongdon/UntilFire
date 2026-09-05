@@ -48,8 +48,9 @@ export interface FireInputs {
 
 export interface FireOutput {
   fireTarget: number;
-  years: number;
-  retireYear: number;
+  /** Null when the target is not reached within the projection horizon. */
+  years: number | null;
+  retireYear: number | null;
   /** Age at FIRE — only set when the caller supplied currentAge. */
   age?: number;
 }

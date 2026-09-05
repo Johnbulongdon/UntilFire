@@ -91,14 +91,14 @@ export function trackCalculatorRevealed(input: {
   stateKey: string;
   isCustomCity: boolean;
   fireTarget: number;
-  yearsToFire: number;
+  yearsToFire: number | null;
   landingSource?: string;
 }) {
   const props: CalculatorRevealedProperties = withVersion({
     state_key: input.stateKey,
     is_custom_city: input.isCustomCity,
     fire_target_bucket: bucketUSD(input.fireTarget),
-    years_to_fire_bucket: bucketYears(input.yearsToFire),
+    years_to_fire_bucket: input.yearsToFire === null ? "not_reached" : bucketYears(input.yearsToFire),
     ...(input.landingSource ? { landing_source: input.landingSource } : {}),
   });
   capture(FunnelEvents.CALCULATOR_REVEALED, props);
