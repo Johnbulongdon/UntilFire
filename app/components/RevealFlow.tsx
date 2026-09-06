@@ -118,7 +118,8 @@ export default function RevealFlow(props: RevealFlowProps) {
   } = props;
 
   const prefersReducedMotion = useReducedMotion();
-  const [playMotion, setPlayMotion] = useState(false);
+  // The reveal is an automatic presentation; Replay is optional.
+  const [playMotion, setPlayMotion] = useState(true);
   const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
 
