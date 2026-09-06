@@ -130,10 +130,13 @@ export default function RevealFlow(props: RevealFlowProps) {
   // Keyboard navigation between result steps.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.repeat || e.isComposing || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.isContentEditable || target?.closest("button, a, input, select, textarea, [role=dialog]")) return;
       if (e.key === "ArrowRight" || e.key === "Enter") {
-        if (step > 1 && step < 7) next();
+        if (step > 1 && step < 7) { e.preventDefault(); next(); }
       } else if (e.key === "ArrowLeft") {
-        if (step > 2) back();
+        if (step > 2) { e.preventDefault(); back(); }
       }
     };
     window.addEventListener("keydown", onKey);
