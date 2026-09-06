@@ -388,21 +388,23 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   const defaultSavings = isNonUSD ? Math.round(1500 * fxRate) : 1500;
   const [mode, setMode] = useState<SavingsInputMode>("savings");
   const [period, setPeriod] = useState<SavingsPeriod>("monthly");
-  const [amount, setAmount] = useState(Math.min(defaultSavings, monthlyLocal));
-  const incomeLimit = period === "yearly" ? monthlyLocal * 12 : monthlyLocal;
+  const [amount, setAmount] = useState(Math.min(defaultSavings, Math.floor(monthlyLocal)));
+  const incomeLimit = Math.floor(period === "yearly" ? monthlyLocal * 12 : monthlyLocal);
   const boundedAmount = mode === "savings" ? Math.min(amount, incomeLimit) : amount;
   const monthlyAmount = period === "yearly" ? boundedAmount / 12 : boundedAmount;
   const savingsLocal = mode === "savings" ? monthlyAmount : Math.max(0, monthlyLocal - monthlyAmount);
   const expensesLocal = mode === "spending" ? monthlyAmount : Math.max(0, monthlyLocal - savingsLocal);
   const rate = monthlyLocal > 0 ? Math.min(100, Math.round((savingsLocal / monthlyLocal) * 100)) : 0;
   const sliderMax = Math.max(isNonUSD ? Math.round(10000 * fxRate) : 10000, Math.ceil(monthlyLocal / 100) * 100);
-  const sliderStep = isNonUSD ? Math.max(1, Math.round(100 * fxRate)) : 100;
+
   const inputMax = mode === "savings" ? incomeLimit : period === "yearly" ? sliderMax * 12 : sliderMax;
-  const inputStep = period === "yearly" ? sliderStep * 12 : sliderStep;
+
 
   const handlePeriodChange = (nextPeriod: SavingsPeriod) => {
     if (nextPeriod === period) return;
-    setAmount(nextPeriod === "yearly" ? boundedAmount * 12 : boundedAmount / 12);
+    const converted = Math.round(nextPeriod === "yearly" ? boundedAmount * 12 : boundedAmount / 12);
+    const nextLimit = Math.floor(nextPeriod === "yearly" ? monthlyLocal * 12 : monthlyLocal);
+    setAmount(mode === "savings" ? Math.min(converted, nextLimit) : converted);
     setPeriod(nextPeriod);
   };
 
@@ -469,7 +471,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
           min={0}
           max={mode === "savings" ? incomeLimit : undefined}
           onChange={e => {
-            const value = Math.max(0, Number(e.target.value) || 0);
+            const value = Math.max(0, Math.round(Number(e.target.value) || 0));
             setAmount(mode === "savings" ? Math.min(value, incomeLimit) : value);
           }}
           autoFocus
@@ -484,10 +486,10 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
       <div className="uf-slider-wrap">
         <input
-          type="range" min={0} max={inputMax} step={mode === "savings" ? "any" : inputStep}
+          type="range" min={0} max={inputMax} step={1}
           value={Math.min(boundedAmount, inputMax)}
           className="uf-range"
-          onChange={e => setAmount(Number(e.target.value))}
+          onChange={e => setAmount(Math.min(inputMax, Math.max(0, Math.round(Number(e.target.value) || 0))))}
         />
         <div className="uf-range-labels">
           <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(inputMax / 2).toLocaleString()}</span><span>{currencySymbol}{inputMax.toLocaleString()}{periodUnit}</span>

@@ -20,6 +20,14 @@ for (const currency of ['USD', 'EUR']) {
   const click = label => all(render()).find(n=>n.type==='button' && String(n.props.children).includes(label)).props.onClick();
   const limit = currency==='EUR'?900:1000;
   assert.equal(input().props.value, limit, 'Default cannot exceed income');
+  const slider = () => all(render()).find(n=>n.type==='input' && n.props.type==='range');
+  assert.equal(slider().props.step, 1);
+  slider().props.onChange({target:{value:'289.194915254237'}});
+  assert.equal(input().props.value,289,'Slider amounts are whole numbers');
+  input().props.onChange({target:{value:'289.7'}});
+  assert.equal(input().props.value,290,'Typed amounts are rounded');
+  click('Yearly'); input().props.onChange({target:{value:'3500'}}); click('Monthly');
+  assert.equal(input().props.value,292,'Period conversion rounds the displayed amount');
   input().props.onChange({target:{value:'999999'}});
   assert.equal(input().props.value, limit, 'Typed savings are capped');
   click('Yearly'); assert.equal(input().props.max,limit*12);
