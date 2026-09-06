@@ -26,6 +26,7 @@ interface ExpatFireGlobeProps {
   /** Freedom age if you stay put. */
   baseAge: number;
   cities: ExpatCity[];
+  playMotion?: boolean;
 }
 
 // Decode the bundled land once; d3 clips polygons and routes at the horizon.
@@ -35,7 +36,7 @@ const LAND = feature(
 ) as FeatureCollection;
 const GRATICULE = geoGraticule10();
 
-export default function ExpatFireGlobe({ home, baseAge, cities }: ExpatFireGlobeProps) {
+export default function ExpatFireGlobe({ home, baseAge, cities, playMotion = false }: ExpatFireGlobeProps) {
   const [sel, setSel] = useState(0);
   const isStay = sel >= cities.length;
   const dest = isStay ? null : cities[sel];
@@ -61,7 +62,7 @@ export default function ExpatFireGlobe({ home, baseAge, cities }: ExpatFireGlobe
   const chips = [...cities.map((c) => ({ label: c.name, sub: c.country })), { label: `Stay in ${home.name}`, sub: "Your current plan" }];
 
   return (
-    <div className="uf-expat-motion" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, width: "100%" }}>
+    <div className="uf-expat-motion" data-motion={playMotion ? "play" : "system"} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, width: "100%" }}>
       <style>{`
         @keyframes uf-route-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
         @keyframes uf-globe-enter { from { opacity: 0; transform: scale(.92) rotate(-6deg); } to { opacity: 1; transform: none; } }
@@ -69,7 +70,7 @@ export default function ExpatFireGlobe({ home, baseAge, cities }: ExpatFireGlobe
         .uf-expat-motion svg { animation: uf-globe-enter 1s cubic-bezier(.2,.8,.2,1) both; }
         .uf-expat-route { animation: uf-route-draw 1.4s .3s ease both; }
         .uf-expat-city { animation: uf-city-enter .65s ease both; }
-        @media (prefers-reduced-motion: reduce) { .uf-expat-motion * { animation: none !important; transition: none !important; } }
+        @media (prefers-reduced-motion: reduce) { .uf-expat-motion:not([data-motion="play"]) * { animation: none !important; transition: none !important; } }
       `}</style>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(24px, 6vw, 52px)", flexWrap: "wrap" }}>
         <svg viewBox="0 0 280 280" role="img" aria-label={dest ? `Globe showing the route from ${home.name} to ${dest.name}` : `Globe centered on ${home.name}`} style={{ width: "min(260px, 66vw)", height: "auto", flex: "none" }}>

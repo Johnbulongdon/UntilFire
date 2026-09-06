@@ -16,7 +16,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
   require: (id) => id === 'react' ? {
     ...React, useEffect: () => {}, useMemo: (fn) => fn(), useRef: (value) => ({ current: value }),
     useState: (value) => [value === 1 ? 7 : typeof value === 'function' ? value() : value, () => {}],
-  } : id === 'next/dynamic' ? { default: () => () => null } : require(id),
+  } : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === 'next/dynamic' ? { default: () => () => null } : require(id),
 });
 const props = {
   freedomAge: 52, freedomYear: 2048, yearsToFire: 22, planningAge: 30,

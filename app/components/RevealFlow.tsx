@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Logo from "@/app/components/Logo";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 
 // Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
@@ -64,7 +65,7 @@ const KEYFRAMES = `
 @keyframes rf-bar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @keyframes rf-glow{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media (prefers-reduced-motion: reduce){
-  .rf-root *, .rf-anim,[class^="rf-"]{animation:none!important;transition:none!important}
+  .rf-root:not([data-motion="play"]) *{animation:none!important;transition:none!important}
 }
 `;
 
@@ -116,9 +117,12 @@ export default function RevealFlow(props: RevealFlowProps) {
     onSave, onAdjust, onShare,
   } = props;
 
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const [playMotion, setPlayMotion] = useState(false);
+  const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
 
+  const replay = () => { setPlayMotion(true); setStep(1); };
   const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
   const next = () => setStep((s) => Math.min(7, s + 1));
   const back = () => setStep((s) => Math.max(2, s - 1));
@@ -172,12 +176,15 @@ export default function RevealFlow(props: RevealFlowProps) {
   const anim = (a: string): React.CSSProperties => (reduce ? {} : { animation: a });
 
   // Keep the handoff on the same theme as the form and result.
-  if (step === 1) return <ResultLoader onDone={() => setStep(2)} reduce={reduce} />;
+  if (step === 1) return <ResultLoader onDone={() => setStep(2)} reduce={reduce} playMotion={playMotion} />;
 
   if (yearsToFire === null) return (
-    <div className="rf-root" style={shell}>
+    <div className="rf-root" data-motion={playMotion ? "play" : "system"} style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
       <main style={{ ...stage, ...anim("rf-page .65s ease both"), flexDirection: "column", gap: 24, textAlign: "center", maxWidth: 560 }}>
+        <Logo variant="auto" size={26} />
+        <button type="button" onClick={replay} style={{ background: "none", border: "none", color: "var(--uf-green)", font: "inherit", cursor: "pointer" }}>{reduce ? "Play animations" : "Replay reveal"}</button>
+        {reduce && <p style={subtle}>Animations are off because your device requests reduced motion.</p>}
         <div style={eyebrow}>YOUR STARTING POINT</div>
         <h1 style={{ fontSize: "clamp(28px, 6vw, 42px)", lineHeight: 1.15, margin: 0 }}>Not reached under these assumptions</h1>
         <p style={subtle}>Your current inputs do not reach your freedom number within our 65-year projection. This is a snapshot of today, not a verdict on your future.</p>
@@ -190,22 +197,24 @@ export default function RevealFlow(props: RevealFlowProps) {
   );
 
   return (
-    <div className="rf-root" style={shell}>
+    <div className="rf-root" data-motion={playMotion ? "play" : "system"} style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
       <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 42%, transparent 36%, var(--uf-surface))", pointerEvents: "none", zIndex: 1 }} />
 
       {/* top bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1120, width: "100%", margin: "0 auto", zIndex: 2 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 8, background: TEAL, display: "flex", alignItems: "center", justifyContent: "center", color: BG, fontWeight: 800, fontSize: 14 }}>U</div>
-          <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: "0.2px" }}>UntilFire</span>
-        </div>
+        <Logo variant="auto" size={26} />
+        <button type="button" onClick={replay} style={{ background: "none", border: "none", color: "var(--uf-green)", font: "600 13px Manrope, sans-serif", cursor: "pointer", padding: 8 }}>
+          {reduce ? "Play animations" : "Replay reveal"}
+        </button>
         {step < 7 && (
           <button onClick={() => goTo(7)} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer", padding: "6px 4px" }}>
             Skip to save →
           </button>
         )}
       </div>
+
+      {reduce && <p role="status" style={{ ...subtle, textAlign: "center", marginTop: 12 }}>Animations are off because your device requests reduced motion. You can choose Play animations above.</p>}
 
       {/* progress (6 segments for steps 2–7) */}
       <div style={{ maxWidth: 1120, width: "100%", margin: "18px auto 0", display: "flex", gap: 8, zIndex: 2 }}>
@@ -327,7 +336,7 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={eyebrow}>EXPAT FIRE</div>
               <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em" }}>Retire even earlier somewhere else</div>
               {expatCities.length > 0 ? (
-                <ExpatFireGlobe home={expatHome} baseAge={expatBaseAge ?? planningAge} cities={expatCities} />
+                <ExpatFireGlobe home={expatHome} baseAge={expatBaseAge ?? planningAge} cities={expatCities} playMotion={playMotion} />
               ) : (
                 <div style={{ ...subtle, maxWidth: 460 }}>
                   You&apos;re already in one of the most cost-efficient places for your plan — relocating wouldn&apos;t pull your date much sooner.
@@ -377,7 +386,7 @@ export default function RevealFlow(props: RevealFlowProps) {
 }
 
 /** A brief, theme-aware handoff without the old black video backdrop. */
-function ResultLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean }) {
+function ResultLoader({ onDone, reduce, playMotion }: { onDone: () => void; reduce: boolean; playMotion: boolean }) {
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
   useEffect(() => {
@@ -385,9 +394,9 @@ function ResultLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean 
     return () => clearTimeout(timer);
   }, [reduce]);
   return (
-    <div className="rf-root" style={{ minHeight: "100vh", background: BG, color: "var(--uf-ink)", display: "flex", flexDirection: "column", gap: 24, alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div className="rf-root" data-motion={playMotion ? "play" : "system"} style={{ minHeight: "100vh", background: BG, color: "var(--uf-ink)", display: "flex", flexDirection: "column", gap: 24, alignItems: "center", justifyContent: "center", padding: 24 }}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
-      <img src="/logo/horizon-color.svg" alt="UntilFire" width={48} height={48} />
+      <Logo variant="auto" size={36} />
       <svg aria-hidden viewBox="0 0 400 180" style={{ width: "min(400px, 85vw)", overflow: "visible" }}>
         <path d="M10 165 H390" fill="none" stroke="var(--uf-border-2)" />
         <path d="M10 160 C140 160 245 145 300 90 S365 25 390 10" fill="none" stroke={TEAL} strokeWidth="4" strokeLinecap="round" pathLength="1" strokeDasharray="1" style={{ animation: reduce ? undefined : "rf-draw 1.8s cubic-bezier(.4,0,.2,1) both" }} />
