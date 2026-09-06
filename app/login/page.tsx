@@ -67,7 +67,7 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#F7F9FB',
+      background: 'var(--uf-ground)',
       fontFamily: "'Manrope', sans-serif",
     }}>
       <style>{`
@@ -79,18 +79,18 @@ export default function LoginPage() {
           justify-content: center;
           gap: 12px;
           padding: 14px 20px;
-          background: #ffffff;
-          border: 1px solid #E2E8F0;
+          background: var(--uf-card);
+          border: 1px solid var(--uf-border);
           border-radius: 10px;
           cursor: pointer;
           font-size: 15px;
           font-weight: 600;
-          color: #19181E;
+          color: var(--uf-ink);
           font-family: 'Manrope', sans-serif;
           transition: border-color 0.15s, box-shadow 0.15s;
         }
         .login-btn:hover {
-          border-color: #059669;
+          border-color: var(--uf-green);
           box-shadow: 0 0 0 3px rgba(5,150,105,0.08);
         }
       `}</style>
@@ -99,17 +99,17 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ marginBottom: 10 }}>
-            <Logo variant="light" size={28} />
+            <Logo variant="auto" size={28} />
           </div>
           {hasPrefill ? (
-            <div style={{ fontSize: 15, color: '#0F172A', lineHeight: 1.5, fontWeight: 700 }}>
+            <div style={{ fontSize: 15, color: 'var(--uf-ink)', lineHeight: 1.5, fontWeight: 700 }}>
               {prefillYear
-                ? <>Your freedom year is <span style={{ color: '#059669' }}>{prefillYear}</span>.<br />Save your plan to track it.</>
-                : <>Your plan is ready.<br /><span style={{ color: '#64748B', fontWeight: 400 }}>Sign in to save and track it.</span></>
+                ? <>Your freedom year is <span style={{ color: 'var(--uf-green)' }}>{prefillYear}</span>.<br />Save your starting point to track your progress.</>
+                : <>Your starting point is ready.<br /><span style={{ color: 'var(--uf-ink-2)', fontWeight: 400 }}>Sign in to save and track it.</span></>
               }
             </div>
           ) : (
-            <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 15, color: 'var(--uf-ink-2)', lineHeight: 1.5 }}>
               Sign in to track your progress<br />toward financial independence
             </div>
           )}
@@ -117,8 +117,8 @@ export default function LoginPage() {
 
         {/* Card */}
         <div style={{
-          background: '#ffffff',
-          border: '1px solid #E2E8F0',
+          background: 'var(--uf-card)',
+          border: '1px solid var(--uf-border)',
           borderRadius: 16,
           padding: '32px 28px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)',
@@ -137,7 +137,7 @@ export default function LoginPage() {
             marginTop: 24,
             textAlign: 'center',
             fontSize: 12,
-            color: '#94A3B8',
+            color: 'var(--uf-ink-3)',
             lineHeight: 1.6,
             fontFamily: "'Manrope', sans-serif",
           }}>
@@ -147,7 +147,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 24 }}>
-          <Link href="/" style={{ fontSize: 13, color: '#64748B', textDecoration: 'none' }}>
+          <Link href="/" style={{ fontSize: 13, color: 'var(--uf-ink-2)', textDecoration: 'none' }}>
             ← Back to calculator
           </Link>
         </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
-import RevealFlow, { type RevealScenario } from "@/app/components/RevealFlow";
+import RevealFlow from "@/app/components/RevealFlow";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { supabase } from "@/lib/supabase";
@@ -13,7 +13,6 @@ import {
   trackLandingViewed,
   trackCalculatorStepViewed,
   trackCalculatorRevealed,
-  trackScenarioAccepted,
 } from "@/lib/analytics";
 import type { CalculatorStepId } from "@/lib/analytics-events";
 import {
@@ -389,19 +388,23 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   const defaultSavings = isNonUSD ? Math.round(1500 * fxRate) : 1500;
   const [mode, setMode] = useState<SavingsInputMode>("savings");
   const [period, setPeriod] = useState<SavingsPeriod>("monthly");
-  const [amount, setAmount] = useState(defaultSavings);
-  const monthlyAmount = period === "yearly" ? amount / 12 : amount;
+  const [amount, setAmount] = useState(Math.min(defaultSavings, Math.floor(monthlyLocal)));
+  const incomeLimit = Math.floor(period === "yearly" ? monthlyLocal * 12 : monthlyLocal);
+  const boundedAmount = mode === "savings" ? Math.min(amount, incomeLimit) : amount;
+  const monthlyAmount = period === "yearly" ? boundedAmount / 12 : boundedAmount;
   const savingsLocal = mode === "savings" ? monthlyAmount : Math.max(0, monthlyLocal - monthlyAmount);
   const expensesLocal = mode === "spending" ? monthlyAmount : Math.max(0, monthlyLocal - savingsLocal);
-  const rate = monthlyLocal > 0 ? Math.round((savingsLocal / monthlyLocal) * 100) : 0;
+  const rate = monthlyLocal > 0 ? Math.min(100, Math.round((savingsLocal / monthlyLocal) * 100)) : 0;
   const sliderMax = Math.max(isNonUSD ? Math.round(10000 * fxRate) : 10000, Math.ceil(monthlyLocal / 100) * 100);
-  const sliderStep = isNonUSD ? Math.max(1, Math.round(100 * fxRate)) : 100;
-  const inputMax = period === "yearly" ? sliderMax * 12 : sliderMax;
-  const inputStep = period === "yearly" ? sliderStep * 12 : sliderStep;
+
+  const inputMax = mode === "savings" ? incomeLimit : period === "yearly" ? sliderMax * 12 : sliderMax;
+
 
   const handlePeriodChange = (nextPeriod: SavingsPeriod) => {
     if (nextPeriod === period) return;
-    setAmount(nextPeriod === "yearly" ? Math.round(amount * 12) : Math.round(amount / 12));
+    const converted = Math.round(nextPeriod === "yearly" ? boundedAmount * 12 : boundedAmount / 12);
+    const nextLimit = Math.floor(nextPeriod === "yearly" ? monthlyLocal * 12 : monthlyLocal);
+    setAmount(mode === "savings" ? Math.min(converted, nextLimit) : converted);
     setPeriod(nextPeriod);
   };
 
@@ -412,7 +415,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   const periodUnit = period === "yearly" ? "/year" : "/month";
   const inputLabel = `${periodLabel} ${mode === "savings" ? "savings" : "spending"} amount`;
 
-  const spendSliderMax = isNonUSD ? Math.round(15000 * fxRate) : 15000;
+
 
   return (
     <div className="uf-screen">
@@ -427,7 +430,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
         <button
           type="button"
           className={`uf-mode-pill ${mode === "savings" ? "active" : ""}`}
-          onClick={() => setMode("savings")}
+          onClick={() => { setAmount(Math.min(amount, incomeLimit)); setMode("savings"); }}
         >
           I know my savings
         </button>
@@ -464,9 +467,13 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
           type="number"
           className="uf-input uf-input-mono uf-input-big"
           style={{ paddingLeft: 28 }}
-          value={amount || ""}
+          value={boundedAmount || ""}
           min={0}
-          onChange={e => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
+          max={mode === "savings" ? incomeLimit : undefined}
+          onChange={e => {
+            const value = Math.max(0, Math.round(Number(e.target.value) || 0));
+            setAmount(mode === "savings" ? Math.min(value, incomeLimit) : value);
+          }}
           autoFocus
         />
         <span className="uf-unit">{periodUnit}</span>
@@ -479,10 +486,10 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
       <div className="uf-slider-wrap">
         <input
-          type="range" min={0} max={inputMax} step={inputStep}
-          value={Math.min(amount, inputMax)}
+          type="range" min={0} max={inputMax} step={1}
+          value={Math.min(boundedAmount, inputMax)}
           className="uf-range"
-          onChange={e => setAmount(parseInt(e.target.value))}
+          onChange={e => setAmount(Math.min(inputMax, Math.max(0, Math.round(Number(e.target.value) || 0))))}
         />
         <div className="uf-range-labels">
           <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(inputMax / 2).toLocaleString()}</span><span>{currencySymbol}{inputMax.toLocaleString()}{periodUnit}</span>
@@ -518,7 +525,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
       </div>
 
       {savingsLocal === 0 && (
-        <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, fontSize: 13, color: "#fdba74", display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, fontSize: 13, color: "var(--uf-warn-ink)", display: "flex", gap: 8, alignItems: "flex-start" }}>
           <span>⚠️</span>
           <span>With <strong>$0 saved per month</strong> your freedom date will be very far out. Make sure this is intentional — you can always update it later.</span>
         </div>
@@ -973,11 +980,11 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const savingsBenchmark = getSavingsBenchmark(city.name, savings, monthlyTakeHome);
   const savingsRatePct = savingsBenchmark.savingsRate;
-  const fireIdentity = deriveFireIdentity(savingsRatePct, portfolioBalance, result.years);
+  const fireIdentity = deriveFireIdentity(savingsRatePct, portfolioBalance, result.years ?? undefined);
 
   const isAlreadyFire = result.years === 0;
-  const yearsToFire = Math.round(result.years);
-  const freedomAge = planningAge + yearsToFire;
+  const yearsToFire = result.years === null ? null : Math.round(result.years);
+  const freedomAge = yearsToFire === null ? null : planningAge + yearsToFire;
   const pctThere = result.fireTarget > 0
     ? Math.max(0, Math.min(100, Math.round((portfolioBalance / result.fireTarget) * 100)))
     : 0;
@@ -996,19 +1003,6 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     });
   }, [stateKey, city.isCustom, result.fireTarget, result.years, landingSource]);
 
-  // Real scenario variants — each recomputed with calcFIRE so the ages are honest.
-  const scenAge = (years: number) => planningAge + Math.round(years);
-  const save500 = calcFIRE(savings + 500, city.col, planningAge, portfolioBalance, marketReturn);
-  const raise5 = calcFIRE(savings + income * 0.05 / 12, city.col, planningAge, portfolioBalance, marketReturn);
-  const bear = calcFIRE(savings, city.col, planningAge, portfolioBalance, marketReturn - 0.02);
-  const scenarios: RevealScenario[] = [
-    { label: "Keep your current plan", age: freedomAge, delta: 0 },
-    { label: "Save $500 more each month", age: scenAge(save500.years), delta: freedomAge - scenAge(save500.years) },
-    { label: "Invest a future 5% raise", age: scenAge(raise5.years), delta: freedomAge - scenAge(raise5.years) },
-    { label: "Take a 1-year sabbatical", age: freedomAge + 1, delta: -1 },
-    { label: "Markets return 2% less", age: scenAge(bear.years), delta: freedomAge - scenAge(bear.years) },
-  ];
-
   // Expat-FIRE globe: iconic lower-cost destinations, each with a real
   // recomputed freedom age (via calcFIRE at that city's cost of living).
   const currentCityKey = CITIES.find((c) => c.name === city.name)?.key ?? "sf";
@@ -1019,8 +1013,10 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     .map((k): ExpatCity | null => {
       const c = CITIES.find((x) => x.key === k);
       const co = CITY_COORDS[k];
-      if (!c || !co || c.col >= city.col) return null;
-      const age = planningAge + Math.round(calcFIRE(savings, c.col, planningAge, portfolioBalance, marketReturn).years);
+      if (!c || !co || c.col >= city.col || freedomAge === null) return null;
+      const projection = calcFIRE(savings, c.col, planningAge, portfolioBalance, marketReturn);
+      if (projection.years === null) return null;
+      const age = planningAge + Math.round(projection.years);
       return { key: k, name: c.name.split(",")[0], country: (c.name.split(", ")[1] ?? "").trim(), lat: co.lat, lng: co.lng, age, delta: freedomAge - age };
     })
     .filter((x): x is ExpatCity => x !== null && x.delta > 0)
@@ -1035,15 +1031,14 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     return `${symbol}${Math.round(v)}`;
   };
 
-  const onSave = (scenario: RevealScenario) => {
-    trackScenarioAccepted({ scenarioIndex: scenarios.indexOf(scenario), scenarioLabel: scenario.label, deltaYears: scenario.delta });
-    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
+  const onSave = () => {
+    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
     router.push("/login");
   };
 
   return (
     <div className="uf-screen uf-reveal-screen">
-      {showShare && (
+      {showShare && result.retireYear !== null && (
         <ShareModal
           cityName={city.name}
           fireIdentity={fireIdentity}
@@ -1065,7 +1060,6 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         savingsRatePct={savingsRatePct}
         usBaselineRate={PUBLIC_SAVINGS_RATE_BASELINE}
         fireBenchmarkRate={25}
-        scenarios={scenarios}
         expatHome={expatHome}
         expatBaseAge={freedomAge}
         expatCities={expatCities}
@@ -1184,22 +1178,22 @@ export default function HomeClient() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --bg: #08080e;
+          --bg: var(--uf-ground);
           --bg-hero: #003527;
-          --bg-card: #111118;
-          --bg-elevated: #16161f;
-          --border: #23232d;
-          --border-light: #23232d;
-          --text: #f1f5f9;
-          --text-muted: #9ca3af;
-          --text-dim: #6b7280;
-          --accent: #22d3a5;
-          --accent-dim: rgba(34,211,165,0.10);
+          --bg-card: var(--uf-card);
+          --bg-elevated: var(--uf-surface);
+          --border: var(--uf-border);
+          --border-light: var(--uf-border-2);
+          --text: var(--uf-ink);
+          --text-muted: var(--uf-ink-2);
+          --text-dim: var(--uf-ink-3);
+          --accent: var(--uf-green);
+          --accent-dim: var(--uf-green-50);
           --accent-glow: rgba(34,211,165,0.24);
-          --teal: #22d3a5;
-          --teal-bright: #62FAE3;
-          --teal-dim: rgba(34,211,165,0.12);
-          --danger: #f87171;
+          --teal: var(--uf-teal);
+          --teal-bright: var(--uf-green-700);
+          --teal-dim: var(--uf-teal-soft);
+          --danger: var(--uf-neg);
           --purple: #a78bfa;
           --font-display: 'Manrope', sans-serif;
           --font-body: 'Manrope', sans-serif;
@@ -1212,7 +1206,7 @@ export default function HomeClient() {
         input[type=number] { -moz-appearance: textfield; }
 
         /* -- NAV -- */
-        .uf-nav { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: rgba(8,8,14,0.85); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; backdrop-filter: blur(12px); }
+        .uf-nav { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: var(--uf-topbar-glass); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; backdrop-filter: blur(12px); }
         .uf-nav-logo { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; flex: 0 0 auto; min-width: 0; }
         .uf-nav-logo span { color: var(--teal); }
         .uf-nav-dots { display: flex; gap: 6px; align-items: center; flex: 0 1 auto; min-width: 0; }
@@ -1265,9 +1259,9 @@ export default function HomeClient() {
             width: min(492px, calc(100vw - 48px));
             margin-top: 0;
             padding: 10px;
-            border: 1px solid rgba(226, 232, 240, 0.9);
+            border: 1px solid var(--uf-border);
             border-radius: 18px;
-            background: rgba(255, 255, 255, 0.94);
+            background: var(--uf-topbar-glass);
             box-shadow: 0 14px 40px rgba(15, 23, 42, 0.14);
             backdrop-filter: blur(12px);
             z-index: 50;
@@ -1278,13 +1272,13 @@ export default function HomeClient() {
 
         /* -- BUTTONS -- */
         .uf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 8px; font-family: var(--font-body); font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; }
-        .uf-btn-primary { background: var(--accent); color: #003527; }
+        .uf-btn-primary { background: var(--accent); color: #fff; }
         .uf-btn-primary:hover:not(:disabled) { background: var(--teal-bright); transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
         .uf-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
         .uf-btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
         .uf-btn-ghost:hover { color: var(--text); background: var(--bg-elevated); border-color: var(--text-dim); }
-        .uf-btn-teal { background: var(--teal-bright); color: #003527; font-weight: 700; }
-        .uf-btn-teal:hover { background: #4df5d6; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(98,250,227,0.35); }
+        .uf-btn-teal { background: var(--teal-bright); color: #fff; font-weight: 700; }
+        .uf-btn-teal:hover { background: var(--uf-green); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(98,250,227,0.35); }
         .uf-btn-full { width: 100%; }
         .uf-btn-lg { padding: 18px 36px; font-size: 17px; }
         .uf-btn-outline { height: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 600; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s; text-decoration: none; justify-content: center; }

@@ -44,13 +44,13 @@ export default function ExpatFireCalculator() {
         const r = calcFIRE(savings, c.col, age || undefined, portfolio);
         return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
       })
-      .sort((a, b) => a.years - b.years || a.col - b.col);
+      .sort((a, b) => (a.years ?? Infinity) - (b.years ?? Infinity) || a.col - b.col);
   }, [savings, portfolio, age]);
 
   // Run the bar from today to roughly when the bulk of cities have unlocked
   // (95th percentile, so one very expensive outlier doesn't stretch it out).
   const sliderMax = useMemo(() => {
-    const ys = cityUnlocks.map(c => c.years).filter(y => y < 60).sort((a, b) => a - b);
+    const ys = cityUnlocks.map(c => c.years).filter((y): y is number => y !== null && y < 60).sort((a, b) => a - b);
     if (!ys.length) return 5;
     const p95 = ys[Math.floor(0.95 * (ys.length - 1))];
     return Math.min(50, Math.max(5, Math.ceil(p95)));
@@ -76,7 +76,7 @@ export default function ExpatFireCalculator() {
   const t = Math.min(timelineYears, sliderMax);
   const annualContribution = Math.max(0, savings) * 12;
   const projectedPortfolio = (portfolio + annualContribution / REAL_RETURN) * Math.pow(1 + REAL_RETURN, t) - annualContribution / REAL_RETURN;
-  const readyCount = cityUnlocks.filter(c => c.years <= t + 1e-9).length;
+  const readyCount = cityUnlocks.filter(c => c.years !== null && c.years <= t + 1e-9).length;
   const projAge = age ? Number(age) + t : undefined;
   const thisYear = new Date().getFullYear();
 
@@ -187,7 +187,7 @@ export default function ExpatFireCalculator() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 2 }}>Staying in {currentCity.name.split(',')[0]}</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: '#064E3B', fontFamily: 'Fraunces, Georgia, serif' }}>
-              {result.years <= 0 ? 'FIRE ready now 🎉' : `${result.years.toFixed(1)} years to FIRE`}
+              {result.years === null ? 'Not reached under these assumptions' : result.years <= 0 ? 'FIRE ready now 🎉' : `${result.years.toFixed(1)} years to FIRE`}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
@@ -263,8 +263,8 @@ export default function ExpatFireCalculator() {
           {/* Ordered milestone strip — which cities turn green first */}
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, marginTop: 16 }}>
             {cityUnlocks.slice(0, 18).map(c => {
-              const unlocked = c.years <= t + 1e-9;
-              const badge = c.years < 0.5 ? 'now' : projAge ? `age ${c.age}` : `${c.year}`;
+              const unlocked = c.years !== null && c.years <= t + 1e-9;
+              const badge = c.years === null ? "Not reached" : c.years < 0.5 ? 'now' : projAge ? `age ${c.age}` : `${c.year}`;
               return (
                 <div
                   key={c.key}
