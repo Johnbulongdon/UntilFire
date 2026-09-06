@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { advanceOnEnter } from "@/lib/keyboard-navigation";
 import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
 import RevealFlow from "@/app/components/RevealFlow";
@@ -358,7 +359,7 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
 
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} disabled={!canContinue} onClick={() => onNext(incomeForFIRE)}>
+        <button data-primary-next className="uf-btn uf-btn-primary" style={{ flex: 1 }} disabled={!canContinue} onClick={() => onNext(incomeForFIRE)}>
           Continue →
         </button>
       </div>
@@ -533,7 +534,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
         <button
-          className="uf-btn uf-btn-primary"
+          data-primary-next className="uf-btn uf-btn-primary"
           style={{ flex: 1 }}
           onClick={() => onNext(
             isNonUSD ? Math.round(savingsLocal / fxRate) : savingsLocal,
@@ -619,7 +620,7 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
 
       <div className="uf-nav-row">
         <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(portfolio, parsedAge)}>
+        <button data-primary-next className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(portfolio, parsedAge)}>
           Show my freedom date
         </button>
       </div>
@@ -1080,8 +1081,16 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 type Screen = "hero" | "city" | "income" | "savings" | "portfolio" | "reveal";
 
 export default function HomeClient() {
+  const wizardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("hero");
+
+  useEffect(() => {
+    if (screen === "hero" || screen === "reveal") return;
+    const onKey = (event: KeyboardEvent) => { if (wizardRef.current) advanceOnEnter(event, wizardRef.current); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen]);
 
   // Wizard state
   const [cityState, setCityState]         = useState<CityState | null>(null);
@@ -3161,7 +3170,7 @@ export default function HomeClient() {
         />
       )}
 
-      <div className={`uf-page${screen === "reveal" ? " uf-page-flush" : ""}`}>
+      <div ref={wizardRef} className={`uf-page${screen === "reveal" ? " uf-page-flush" : ""}`}>
         <div className="uf-page-bg" aria-hidden="true">
           <div className="uf-atm-orb uf-atm-orb-1" />
           <div className="uf-atm-orb uf-atm-orb-2" />

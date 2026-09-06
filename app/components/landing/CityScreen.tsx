@@ -120,6 +120,12 @@ export default function CityScreen({
             setSelected(null);
             setShowCustom(false);
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.repeat && !e.nativeEvent.isComposing && open && query.trim() && !selected) {
+              e.preventDefault();
+              if (matches.length) pickCity(matches[0]); else openCustom();
+            }
+          }}
           onFocus={() => {
             if (query.trim()) setOpen(true);
           }}
@@ -140,7 +146,7 @@ export default function CityScreen({
         {open && query.trim() && (
           <div ref={dropRef} className="uf-dropdown">
             {matches.map((c) => (
-              <button key={c.key} className="uf-dropdown-item" onMouseDown={() => pickCity(c)}>
+              <button key={c.key} className="uf-dropdown-item" onClick={() => pickCity(c)}>
                 <span className="uf-dropdown-flag">{c.flag}</span>
                 <div>
                   <div className="uf-dropdown-name">{c.name}</div>
@@ -150,7 +156,7 @@ export default function CityScreen({
                 </div>
               </button>
             ))}
-            <button className="uf-dropdown-custom" onMouseDown={openCustom}>
+            <button className="uf-dropdown-custom" onClick={openCustom}>
               <span className="uf-dropdown-flag">📍</span>
               <div>
                 <div className="uf-dropdown-custom-title">
@@ -190,7 +196,7 @@ export default function CityScreen({
             </div>
             <span className="uf-unit">/month</span>
             <button
-              className="uf-btn uf-btn-primary"
+              data-primary-next className="uf-btn uf-btn-primary"
               disabled={!customMonthly || parseInt(customMonthly) < 100}
               onClick={confirmCustom}
             >
@@ -245,7 +251,7 @@ export default function CityScreen({
           Skip for now
         </button>
         <button
-          className="uf-btn uf-btn-primary"
+          data-primary-next className="uf-btn uf-btn-primary"
           style={{ flex: 1 }}
           disabled={!selected}
           onClick={() => selected && onNext(selected)}
