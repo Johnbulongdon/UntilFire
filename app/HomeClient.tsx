@@ -517,7 +517,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
       </div>
 
       {savingsLocal === 0 && (
-        <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, fontSize: 13, color: "#fdba74", display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, fontSize: 13, color: "var(--uf-warn-ink)", display: "flex", gap: 8, alignItems: "flex-start" }}>
           <span>⚠️</span>
           <span>With <strong>$0 saved per month</strong> your freedom date will be very far out. Make sure this is intentional — you can always update it later.</span>
         </div>
@@ -1170,22 +1170,22 @@ export default function HomeClient() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --bg: #08080e;
+          --bg: var(--uf-ground);
           --bg-hero: #003527;
-          --bg-card: #111118;
-          --bg-elevated: #16161f;
-          --border: #23232d;
-          --border-light: #23232d;
-          --text: #f1f5f9;
-          --text-muted: #9ca3af;
-          --text-dim: #6b7280;
-          --accent: #22d3a5;
-          --accent-dim: rgba(34,211,165,0.10);
+          --bg-card: var(--uf-card);
+          --bg-elevated: var(--uf-surface);
+          --border: var(--uf-border);
+          --border-light: var(--uf-border-2);
+          --text: var(--uf-ink);
+          --text-muted: var(--uf-ink-2);
+          --text-dim: var(--uf-ink-3);
+          --accent: var(--uf-green);
+          --accent-dim: var(--uf-green-50);
           --accent-glow: rgba(34,211,165,0.24);
-          --teal: #22d3a5;
-          --teal-bright: #62FAE3;
-          --teal-dim: rgba(34,211,165,0.12);
-          --danger: #f87171;
+          --teal: var(--uf-teal);
+          --teal-bright: var(--uf-green-700);
+          --teal-dim: var(--uf-teal-soft);
+          --danger: var(--uf-neg);
           --purple: #a78bfa;
           --font-display: 'Manrope', sans-serif;
           --font-body: 'Manrope', sans-serif;
@@ -1198,7 +1198,7 @@ export default function HomeClient() {
         input[type=number] { -moz-appearance: textfield; }
 
         /* -- NAV -- */
-        .uf-nav { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: rgba(8,8,14,0.85); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; backdrop-filter: blur(12px); }
+        .uf-nav { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: var(--uf-topbar-glass); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; backdrop-filter: blur(12px); }
         .uf-nav-logo { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; flex: 0 0 auto; min-width: 0; }
         .uf-nav-logo span { color: var(--teal); }
         .uf-nav-dots { display: flex; gap: 6px; align-items: center; flex: 0 1 auto; min-width: 0; }
@@ -1251,9 +1251,9 @@ export default function HomeClient() {
             width: min(492px, calc(100vw - 48px));
             margin-top: 0;
             padding: 10px;
-            border: 1px solid rgba(226, 232, 240, 0.9);
+            border: 1px solid var(--uf-border);
             border-radius: 18px;
-            background: rgba(255, 255, 255, 0.94);
+            background: var(--uf-topbar-glass);
             box-shadow: 0 14px 40px rgba(15, 23, 42, 0.14);
             backdrop-filter: blur(12px);
             z-index: 50;
@@ -1264,13 +1264,13 @@ export default function HomeClient() {
 
         /* -- BUTTONS -- */
         .uf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 8px; font-family: var(--font-body); font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; }
-        .uf-btn-primary { background: var(--accent); color: #003527; }
+        .uf-btn-primary { background: var(--accent); color: #fff; }
         .uf-btn-primary:hover:not(:disabled) { background: var(--teal-bright); transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
         .uf-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
         .uf-btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
         .uf-btn-ghost:hover { color: var(--text); background: var(--bg-elevated); border-color: var(--text-dim); }
-        .uf-btn-teal { background: var(--teal-bright); color: #003527; font-weight: 700; }
-        .uf-btn-teal:hover { background: #4df5d6; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(98,250,227,0.35); }
+        .uf-btn-teal { background: var(--teal-bright); color: #fff; font-weight: 700; }
+        .uf-btn-teal:hover { background: var(--uf-green); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(98,250,227,0.35); }
         .uf-btn-full { width: 100%; }
         .uf-btn-lg { padding: 18px 36px; font-size: 17px; }
         .uf-btn-outline { height: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 600; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s; text-decoration: none; justify-content: center; }
