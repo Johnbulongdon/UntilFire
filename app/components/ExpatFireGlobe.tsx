@@ -61,17 +61,26 @@ export default function ExpatFireGlobe({ home, baseAge, cities }: ExpatFireGlobe
   const chips = [...cities.map((c) => ({ label: c.name, sub: c.country })), { label: `Stay in ${home.name}`, sub: "Your current plan" }];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, width: "100%" }}>
+    <div className="uf-expat-motion" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, width: "100%" }}>
+      <style>{`
+        @keyframes uf-route-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+        @keyframes uf-globe-enter { from { opacity: 0; transform: scale(.92) rotate(-6deg); } to { opacity: 1; transform: none; } }
+        @keyframes uf-city-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+        .uf-expat-motion svg { animation: uf-globe-enter 1s cubic-bezier(.2,.8,.2,1) both; }
+        .uf-expat-route { animation: uf-route-draw 1.4s .3s ease both; }
+        .uf-expat-city { animation: uf-city-enter .65s ease both; }
+        @media (prefers-reduced-motion: reduce) { .uf-expat-motion * { animation: none !important; transition: none !important; } }
+      `}</style>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(24px, 6vw, 52px)", flexWrap: "wrap" }}>
         <svg viewBox="0 0 280 280" role="img" aria-label={dest ? `Globe showing the route from ${home.name} to ${dest.name}` : `Globe centered on ${home.name}`} style={{ width: "min(260px, 66vw)", height: "auto", flex: "none" }}>
           <circle cx="140" cy="140" r="130" fill="var(--uf-surface)" stroke="var(--uf-border-2)" />
           <path d={map.grid} fill="none" stroke="var(--uf-border-2)" strokeWidth="0.6" />
           <path d={map.land} fill="var(--uf-green-100)" stroke="var(--uf-green)" strokeWidth="0.7" />
-          <path d={map.route} fill="none" stroke={TEAL} strokeWidth="2" strokeDasharray="5 5" />
+          <path key={dest?.key ?? "stay"} className="uf-expat-route" d={map.route} fill="none" stroke={TEAL} strokeWidth="2" pathLength="1" strokeDasharray="1" />
           {map.home && <circle cx={map.home[0]} cy={map.home[1]} r="5" fill="var(--uf-ink)" stroke="var(--uf-ground)" strokeWidth="2" />}
           {map.dest && <circle cx={map.dest[0]} cy={map.dest[1]} r="6" fill={TEAL} stroke="var(--uf-ground)" strokeWidth="2" />}
         </svg>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", position: "relative", minWidth: 180 }}>
+        <div key={dest?.key ?? "stay"} className="uf-expat-city" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", position: "relative", minWidth: 180 }}>
           <div aria-hidden style={{ position: "absolute", top: "44%", left: "46%", width: 360, height: 360, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(98,250,227,.14), transparent 62%)", pointerEvents: "none" }} />
           <div style={{ fontSize: "clamp(88px, 20vw, 128px)", lineHeight: 0.82, fontWeight: 800, letterSpacing: "-0.05em", position: "relative" }}>{shownAge}</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: TEAL, position: "relative", marginTop: 6 }}>

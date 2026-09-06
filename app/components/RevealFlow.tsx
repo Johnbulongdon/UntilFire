@@ -42,10 +42,7 @@ export interface RevealFlowProps {
   onShare: () => void;
 }
 
-// Fixed dark presentation regardless of the visitor's light/dark preference —
-// this reveal is a deliberate cinematic moment, not a themed surface. The
-// shell forces the `.dark` token scope below so it draws from the same
-// palette as the rest of the app's dark mode instead of a bespoke one.
+// Reveal motion uses the same theme as the rest of the journey.
 const TEAL = "var(--uf-teal)";
 const BG = "var(--uf-ground)";
 // "Still working" needs to sit clearly between the dim "lived" grey and the
@@ -57,7 +54,9 @@ const WORKING = "var(--uf-ink-3)";
 const TEAL_RGB = "53,201,174";
 
 const KEYFRAMES = `
-@keyframes rf-spin{to{transform:rotate(360deg)}}
+@keyframes rf-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes rf-ring{from{stroke-dashoffset:741}}
+@keyframes rf-halo{0%{transform:scale(.65);opacity:0}45%{opacity:.65}100%{transform:scale(1.7);opacity:0}}
 @keyframes rf-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes rf-pop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @keyframes rf-dot{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
@@ -65,7 +64,7 @@ const KEYFRAMES = `
 @keyframes rf-bar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @keyframes rf-glow{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media (prefers-reduced-motion: reduce){
-  .rf-anim,[class^="rf-"]{animation:none!important}
+  .rf-root *, .rf-anim,[class^="rf-"]{animation:none!important;transition:none!important}
 }
 `;
 
@@ -73,7 +72,11 @@ function useReducedMotion() {
   const [reduce, setReduce] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
-    setReduce(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduce(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
   }, []);
   return reduce;
 }
@@ -83,24 +86,25 @@ function useReducedMotion() {
  * `fmt` is held in a ref so its (per-render) identity never restarts the
  * animation — otherwise each setText re-render would relaunch it from zero.
  */
-function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, fmt: (v: number) => string) {
+function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, fmt: (v: number) => string, from = 0) {
   const fmtRef = useRef(fmt);
   fmtRef.current = fmt;
-  const [text, setText] = useState(() => fmt(reduce ? to : 0));
+  const [text, setText] = useState(() => fmt(reduce ? to : from));
   useEffect(() => {
     if (!active) return;
     if (reduce) { setText(fmtRef.current(to)); return; }
+    setText(fmtRef.current(from));
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / dur);
       const eased = 1 - Math.pow(1 - t, 3);
-      setText(fmtRef.current(to * eased));
+      setText(fmtRef.current(from + (to - from) * eased));
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [active, to, dur, reduce]);
+  }, [active, to, dur, reduce, from]);
   return text;
 }
 
@@ -145,8 +149,8 @@ export default function RevealFlow(props: RevealFlowProps) {
   const ringOffset = RING * (1 - Math.max(0, Math.min(100, pctThere)) / 100);
 
   // Count-ups.
-  const ageText = useCountUp(step === 2, freedomAge ?? 0, 900, reduce, (v) => String(Math.round(v)));
-  const numText = useCountUp(step === 4, fireTarget, 1100, reduce, (v) => formatCompact(v));
+  const ageText = useCountUp(step === 2, freedomAge ?? planningAge, 1800, reduce, (v) => String(Math.round(v)), planningAge);
+  const numText = useCountUp(step === 4, fireTarget, 1700, reduce, (v) => formatCompact(v));
 
   // Honest savings comparison bars.
   const maxRate = Math.max(savingsRatePct, fireBenchmarkRate, usBaselineRate, 1);
@@ -171,8 +175,9 @@ export default function RevealFlow(props: RevealFlowProps) {
   if (step === 1) return <ResultLoader onDone={() => setStep(2)} reduce={reduce} />;
 
   if (yearsToFire === null) return (
-    <div style={shell}>
-      <main style={{ ...stage, flexDirection: "column", gap: 24, textAlign: "center", maxWidth: 560 }}>
+    <div className="rf-root" style={shell}>
+      <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
+      <main style={{ ...stage, ...anim("rf-page .65s ease both"), flexDirection: "column", gap: 24, textAlign: "center", maxWidth: 560 }}>
         <div style={eyebrow}>YOUR STARTING POINT</div>
         <h1 style={{ fontSize: "clamp(28px, 6vw, 42px)", lineHeight: 1.15, margin: 0 }}>Not reached under these assumptions</h1>
         <p style={subtle}>Your current inputs do not reach your freedom number within our 65-year projection. This is a snapshot of today, not a verdict on your future.</p>
@@ -185,7 +190,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   );
 
   return (
-    <div style={shell}>
+    <div className="rf-root" style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
       <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 42%, transparent 36%, var(--uf-surface))", pointerEvents: "none", zIndex: 1 }} />
 
@@ -222,14 +227,14 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={{ ...eyebrow, position: "relative", ...anim("rf-up .5s ease both") }}>
                 {isAlreadyFire ? "YOU'RE ALREADY FINANCIALLY FREE" : "YOU COULD BE FREE AT"}
               </div>
-              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(96px, 22vw, 200px)", lineHeight: 0.85, fontWeight: 800, letterSpacing: "-0.04em", position: "relative", ...anim("rf-pop .7s .1s ease both") }}>
+              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(96px, 22vw, 200px)", lineHeight: 0.85, fontWeight: 800, letterSpacing: "-0.04em", position: "relative", ...anim("rf-pop 1s .1s ease both") }}>
                 {isAlreadyFire ? "Now" : ageText}
               </div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: "var(--uf-ink)", position: "relative", ...anim("rf-up .5s .4s ease both") }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: "var(--uf-ink)", position: "relative", ...anim("rf-up .7s 1.3s ease both") }}>
                 {isAlreadyFire ? "Your investments cover your cost of living." : `in the year ${freedomYear}`}
               </div>
               {!isAlreadyFire && (
-                <div style={{ ...subtle, marginTop: 4, position: "relative", ...anim("rf-up .5s .55s ease both") }}>
+                <div style={{ ...subtle, marginTop: 4, position: "relative", ...anim("rf-up .7s 1.65s ease both") }}>
                   Most people wait until 65. You don&apos;t have to.
                 </div>
               )}
@@ -275,7 +280,7 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={{ position: "relative", width: 260, height: 260, maxWidth: "80vw", maxHeight: "80vw", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg viewBox="0 0 260 260" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
                   <circle cx="130" cy="130" r="118" fill="none" stroke="var(--uf-border)" strokeWidth="14" />
-                  <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={reduce ? ringOffset : RING} style={{ transition: reduce ? undefined : "stroke-dashoffset 1.1s .25s ease", strokeDashoffset: ringOffset }} />
+                  <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring 1.7s .2s cubic-bezier(.2,.8,.2,1) both" }} />
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>{numText}</div>
@@ -376,15 +381,23 @@ function ResultLoader({ onDone, reduce }: { onDone: () => void; reduce: boolean 
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
   useEffect(() => {
-    const timer = setTimeout(() => onDoneRef.current(), reduce ? 0 : 500);
+    const timer = setTimeout(() => onDoneRef.current(), reduce ? 0 : 2200);
     return () => clearTimeout(timer);
   }, [reduce]);
   return (
-    <div role="status" aria-label="Preparing your result" style={{
-      minHeight: "100vh", background: BG, display: "flex",
-      alignItems: "center", justifyContent: "center",
-    }}>
-      <img src="/logo/horizon-color.svg" alt="" width={80} height={80} />
+    <div className="rf-root" style={{ minHeight: "100vh", background: BG, color: "var(--uf-ink)", display: "flex", flexDirection: "column", gap: 24, alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
+      <img src="/logo/horizon-color.svg" alt="UntilFire" width={48} height={48} />
+      <svg aria-hidden viewBox="0 0 400 180" style={{ width: "min(400px, 85vw)", overflow: "visible" }}>
+        <path d="M10 165 H390" fill="none" stroke="var(--uf-border-2)" />
+        <path d="M10 160 C140 160 245 145 300 90 S365 25 390 10" fill="none" stroke={TEAL} strokeWidth="4" strokeLinecap="round" pathLength="1" strokeDasharray="1" style={{ animation: reduce ? undefined : "rf-draw 1.8s cubic-bezier(.4,0,.2,1) both" }} />
+        <circle cx="390" cy="10" r="7" fill={TEAL} style={{ animation: reduce ? undefined : "rf-dot .4s 1.6s both", transformBox: "fill-box", transformOrigin: "center" }} />
+      </svg>
+      <div role="status" style={{ textAlign: "center", animation: reduce ? undefined : "rf-up .6s ease both" }}>
+        <div style={{ fontFamily: "var(--uf-font-display)", fontSize: 30 }}>Let’s find your place on the curve.</div>
+        <p style={{ color: "var(--uf-ink-2)", marginTop: 10 }}>Your numbers. Your starting point.</p>
+      </div>
+      <button onClick={() => onDoneRef.current()} style={{ border: "none", background: "none", color: "var(--uf-ink-2)", padding: 12, font: "inherit", cursor: "pointer", textDecoration: "underline" }}>Show my result →</button>
     </div>
   );
 }

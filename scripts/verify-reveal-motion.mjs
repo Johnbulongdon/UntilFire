@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
+const source=fs.readFileSync('app/components/RevealFlow.tsx','utf8');
+const ast=ts.createSourceFile('RevealFlow.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+const hook=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='useCountUp');
+let value,frame,cleanup;
+const ctx=vm.createContext({useRef:v=>({current:v}),useState:fn=>{value=fn();return[value,v=>value=v]},useEffect:fn=>cleanup=fn(),performance:{now:()=>0},requestAnimationFrame:fn=>{frame=fn;return 1},cancelAnimationFrame:()=>{frame=null}});
+vm.runInContext(ts.transpileModule(hook.getText(ast),{compilerOptions:{module:ts.ModuleKind.None}}).outputText,ctx);
+ctx.useCountUp(true,52,1800,false,Math.round,30);
+assert.equal(value,30);frame(900);assert.ok(value>30&&value<52);frame(1800);assert.equal(value,52);cleanup();assert.equal(frame,null);
+ctx.useCountUp(true,52,1800,false,Math.round,30);assert.equal(value,30,'Replay restarts at current age');cleanup();
+ctx.useCountUp(true,52,1800,true,Math.round,30);assert.equal(value,52,'Reduced motion shows result immediately');assert.equal(frame,null);
+console.log('Reveal count-up passed: starting age, intermediate frame, final value, replay, cancellation, and reduced motion.');
