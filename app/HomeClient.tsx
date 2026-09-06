@@ -388,19 +388,21 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   const defaultSavings = isNonUSD ? Math.round(1500 * fxRate) : 1500;
   const [mode, setMode] = useState<SavingsInputMode>("savings");
   const [period, setPeriod] = useState<SavingsPeriod>("monthly");
-  const [amount, setAmount] = useState(defaultSavings);
-  const monthlyAmount = period === "yearly" ? amount / 12 : amount;
+  const [amount, setAmount] = useState(Math.min(defaultSavings, monthlyLocal));
+  const incomeLimit = period === "yearly" ? monthlyLocal * 12 : monthlyLocal;
+  const boundedAmount = mode === "savings" ? Math.min(amount, incomeLimit) : amount;
+  const monthlyAmount = period === "yearly" ? boundedAmount / 12 : boundedAmount;
   const savingsLocal = mode === "savings" ? monthlyAmount : Math.max(0, monthlyLocal - monthlyAmount);
   const expensesLocal = mode === "spending" ? monthlyAmount : Math.max(0, monthlyLocal - savingsLocal);
-  const rate = monthlyLocal > 0 ? Math.round((savingsLocal / monthlyLocal) * 100) : 0;
+  const rate = monthlyLocal > 0 ? Math.min(100, Math.round((savingsLocal / monthlyLocal) * 100)) : 0;
   const sliderMax = Math.max(isNonUSD ? Math.round(10000 * fxRate) : 10000, Math.ceil(monthlyLocal / 100) * 100);
   const sliderStep = isNonUSD ? Math.max(1, Math.round(100 * fxRate)) : 100;
-  const inputMax = period === "yearly" ? sliderMax * 12 : sliderMax;
+  const inputMax = mode === "savings" ? incomeLimit : period === "yearly" ? sliderMax * 12 : sliderMax;
   const inputStep = period === "yearly" ? sliderStep * 12 : sliderStep;
 
   const handlePeriodChange = (nextPeriod: SavingsPeriod) => {
     if (nextPeriod === period) return;
-    setAmount(nextPeriod === "yearly" ? Math.round(amount * 12) : Math.round(amount / 12));
+    setAmount(nextPeriod === "yearly" ? boundedAmount * 12 : boundedAmount / 12);
     setPeriod(nextPeriod);
   };
 
@@ -411,7 +413,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
   const periodUnit = period === "yearly" ? "/year" : "/month";
   const inputLabel = `${periodLabel} ${mode === "savings" ? "savings" : "spending"} amount`;
 
-  const spendSliderMax = isNonUSD ? Math.round(15000 * fxRate) : 15000;
+
 
   return (
     <div className="uf-screen">
@@ -426,7 +428,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
         <button
           type="button"
           className={`uf-mode-pill ${mode === "savings" ? "active" : ""}`}
-          onClick={() => setMode("savings")}
+          onClick={() => { setAmount(Math.min(amount, incomeLimit)); setMode("savings"); }}
         >
           I know my savings
         </button>
@@ -463,9 +465,13 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
           type="number"
           className="uf-input uf-input-mono uf-input-big"
           style={{ paddingLeft: 28 }}
-          value={amount || ""}
+          value={boundedAmount || ""}
           min={0}
-          onChange={e => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
+          max={mode === "savings" ? incomeLimit : undefined}
+          onChange={e => {
+            const value = Math.max(0, Number(e.target.value) || 0);
+            setAmount(mode === "savings" ? Math.min(value, incomeLimit) : value);
+          }}
           autoFocus
         />
         <span className="uf-unit">{periodUnit}</span>
@@ -478,10 +484,10 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 
       <div className="uf-slider-wrap">
         <input
-          type="range" min={0} max={inputMax} step={inputStep}
-          value={Math.min(amount, inputMax)}
+          type="range" min={0} max={inputMax} step={mode === "savings" ? "any" : inputStep}
+          value={Math.min(boundedAmount, inputMax)}
           className="uf-range"
-          onChange={e => setAmount(parseInt(e.target.value))}
+          onChange={e => setAmount(Number(e.target.value))}
         />
         <div className="uf-range-labels">
           <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(inputMax / 2).toLocaleString()}</span><span>{currencySymbol}{inputMax.toLocaleString()}{periodUnit}</span>
