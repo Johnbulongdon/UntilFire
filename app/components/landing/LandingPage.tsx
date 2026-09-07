@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { peekCalculatorPrefill } from "@/lib/journey";
+import AnimatedHero from "./AnimatedHero";
 import Logo from "@/app/components/Logo";
 import { CITIES } from "@/lib/fire-data";
-import { peekCalculatorPrefill } from "@/lib/journey";
+
 
 const F = "'Manrope', sans-serif";
 const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
@@ -43,21 +45,6 @@ const WORLD_PORTFOLIO = 1000000;
 const WORLD_SAVE_MONTHLY = 2000;
 const WORLD_CITY_KEYS = ["chiangmai", "mexicocity", "lisbon", "tokyo", "london", "sf"];
 
-const TRUST_LOGOS = [
-  { name: "Chase", file: "chase.jpg" },
-  { name: "Fidelity", file: "fidelity.jpg" },
-  { name: "Vanguard", file: "vanguard.jpg" },
-  { name: "Schwab", file: "schwab.jpg" },
-  { name: "Bank of America", file: "bank-of-america.jpg" },
-  { name: "Wells Fargo", file: "wells-fargo.jpg" },
-  { name: "SoFi", file: "sofi.jpg" },
-  { name: "Robinhood", file: "robinhood.jpg" },
-  { name: "Amex", file: "amex.jpg" },
-  { name: "Citi", file: "citi.jpg" },
-  { name: "US Bank", file: "us-bank.jpg" },
-  { name: "Discover", file: "discover.jpg" },
-];
-
 /* ── Nav ─────────────────────────────────────────────────────────────── */
 function Nav7({ onStart }: { onStart: () => void }) {
   return (
@@ -72,11 +59,6 @@ function Nav7({ onStart }: { onStart: () => void }) {
   );
 }
 
-/* ── Returning visitor: their own date, if they already have one ──────
-   Was Countdown7, a ticking clock to a "second birth". The hero no longer
-   speaks that way, but the personalisation is worth keeping: someone who
-   already ran the calculator should see their own date, not a generic
-   pitch. Renders nothing at all for first-time visitors. ─────────────── */
 function YourDateLine7() {
   const [retireYear, setRetireYear] = useState<number | null>(null);
 
@@ -95,128 +77,8 @@ function YourDateLine7() {
   );
 }
 
+
 /* ── Hero ────────────────────────────────────────────────────────────── */
-function Hero7({ onStart }: { onStart: () => void }) {
-  const trustTrackRef = useRef<HTMLDivElement | null>(null);
-
-  // Driven by rAF + inline transform rather than a CSS @keyframes animation.
-  // The CSS version (animation: uf7trustScroll ...) reliably ran in every
-  // browser we tested it in, but was reported frozen on at least one real
-  // machine with nothing unusual about it — a plain requestAnimationFrame
-  // loop setting style.transform directly doesn't depend on the browser's
-  // CSS animation engine at all, so it's a strictly more reliable fallback
-  // even though we never isolated why the CSS version failed there.
-  useEffect(() => {
-    const track = trustTrackRef.current;
-    if (!track) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let raf = 0;
-    let x = 0;
-    let last: number | null = null;
-    const pxPerSecond = 20;
-    const tick = (now: number) => {
-      if (last === null) last = now;
-      x += pxPerSecond * ((now - last) / 1000);
-      last = now;
-      const loopWidth = track.scrollWidth / 2;
-      if (loopWidth > 0) x %= loopWidth;
-      track.style.transform = `translateX(${-x}px)`;
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  return (
-    <section className="uf7-hero" style={{ ["--uf7hue" as string]: "0deg" }}>
-      <div className="uf7-blob uf7-hb1" />
-      <div className="uf7-blob uf7-hb2" />
-      <div className="uf7-blob uf7-hb3" />
-      <div className="uf7-blob uf7-hb4" />
-      <div className="uf7-dawn-glow" aria-hidden />
-
-      <div className="uf7-eyebrow">Finance your freedom</div>
-      <h1 className="uf7-h1">Over half of it arrives<br />in the <i>last ten years</i>.</h1>
-      <p className="uf7-note">
-        The first decade feels like nothing is happening. That is the decade almost
-        everyone quits — right before the part that pays. UntilFire keeps you in it.
-      </p>
-
-      {/* The whole argument in two figures: the first decade barely moves, the
-          last one does most of the work. Same $500/mo, same 7% real return. */}
-      <YourDateLine7 />
-
-      <div className="uf7-splitstat">
-        <div className="uf7-splitstat-card">
-          <div className="uf7-splitstat-label">First decade</div>
-          <div className="uf7-splitstat-num uf7-splitstat-dim">7%</div>
-          <div className="uf7-splitstat-foot">of your final balance</div>
-        </div>
-        <div className="uf7-splitstat-card uf7-splitstat-hot">
-          <div className="uf7-splitstat-label">Last decade</div>
-          <div className="uf7-splitstat-num">54%</div>
-          <div className="uf7-splitstat-foot">of your final balance</div>
-        </div>
-      </div>
-
-      <button className="uf7-cta" onClick={onStart}>
-        See where I am on the curve <span className="uf7-arrow">→</span>
-      </button>
-      <p className="uf7-micro">Free · No account · Numbers stay private</p>
-
-      {/* The shape the headline describes. Flat for three decades, then
-          steep — the two figures above state it, this shows it. Stroke and
-          fill are tokens so it reads on cream and on the dark theme. */}
-      <div className="uf7-curve" aria-hidden>
-        <svg viewBox="0 0 1200 260" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="uf7cfill" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1200" y2="0">
-              <stop offset="0%" stopColor="var(--uf-surface-2)" stopOpacity="0.7" />
-              <stop offset="62%" stopColor="var(--uf-teal-soft)" stopOpacity="0.75" />
-              <stop offset="100%" stopColor="var(--uf-teal)" stopOpacity="0.5" />
-            </linearGradient>
-            <linearGradient id="uf7cline" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1200" y2="0">
-              <stop offset="0%" stopColor="var(--uf-ink-3)" />
-              <stop offset="62%" stopColor="var(--uf-teal-line)" />
-              <stop offset="100%" stopColor="var(--uf-teal)" />
-            </linearGradient>
-          </defs>
-          <path d="M0 232 L150 227 L300 219 L450 207 L600 190 L750 166 L900 132 L1050 86 L1200 24 L1200 260 L0 260 Z" fill="url(#uf7cfill)" />
-          <path d="M0 232 L150 227 L300 219 L450 207 L600 190 L750 166 L900 132 L1050 86 L1200 24"
-                fill="none" stroke="url(#uf7cline)" strokeWidth="2.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          <line x1="900" y1="0" x2="900" y2="260" stroke="var(--uf-teal)" strokeWidth="1" strokeDasharray="4 5" opacity="0.5" />
-        </svg>
-        <span className="uf7-curve-here">you are here</span>
-        <span className="uf7-curve-last">the last decade &rarr;</span>
-        <div className="uf7-curve-axis">
-          <span>today</span><span>10 yrs</span><span>20 yrs</span><span>30 yrs</span><span>40 yrs</span>
-        </div>
-      </div>
-
-      <div className="uf7-trust">
-        <p className="uf7-trust-label">Securely connects to 14,000+ banks &amp; brokerages</p>
-        <div className="uf7-trust-strip">
-          <div className="uf7-trust-track" ref={trustTrackRef}>
-            {[...TRUST_LOGOS, ...TRUST_LOGOS].map((logo, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={logo.name + i}
-                src={`/app-icons/${logo.file}`}
-                alt={i < TRUST_LOGOS.length ? logo.name : ""}
-                aria-hidden={i >= TRUST_LOGOS.length}
-                width={36}
-                height={36}
-                className="uf7-trust-logo"
-                loading="lazy"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ── How it works ────────────────────────────────────────────────────── */
 function How7() {
   const steps = [
@@ -1589,7 +1451,7 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
     <div ref={rootRef} className="uf7-root" style={{ fontFamily: F }}>
       <div className="uf7-grain" aria-hidden />
       <Nav7 onStart={onStart} />
-      <Hero7 onStart={onStart} />
+      <AnimatedHero onStart={onStart}><YourDateLine7 /></AnimatedHero>
       <How7 />
       <TryIt7 />
       <DecadeShape7 />
