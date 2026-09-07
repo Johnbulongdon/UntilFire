@@ -410,7 +410,6 @@ function ResultLoader({ onDone, reduce, playMotion }: { onDone: () => void; redu
         <div style={{ fontFamily: "var(--uf-font-display)", fontSize: 30 }}>Let’s find your place on the curve.</div>
         <p style={{ color: "var(--uf-ink-2)", marginTop: 10 }}>Your numbers. Your starting point.</p>
       </div>
-      <button onClick={() => onDoneRef.current()} style={{ border: "none", background: "none", color: "var(--uf-ink-2)", padding: 12, font: "inherit", cursor: "pointer", textDecoration: "underline" }}>Show my result →</button>
     </div>
   );
 }
