@@ -12,7 +12,11 @@ export async function POST(req: NextRequest) {
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { type, message } = await req.json() as { type: string; message: string };
-  const ALLOWED_TYPES = ["bug", "feature", "general", "other"];
+  // Must match the CHECK constraint in supabase/migrations/0003_feedback_table.sql
+  // exactly. It previously also accepted "other", which the constraint rejects:
+  // the request passed validation here and then died on the insert, so the
+  // caller got a 500 for what is really a bad request.
+  const ALLOWED_TYPES = ["bug", "feature", "general"];
   if (!type || !ALLOWED_TYPES.includes(type)) {
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   }
