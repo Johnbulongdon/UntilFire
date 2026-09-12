@@ -46,9 +46,29 @@ function base(preheader: string, body: string): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
+  <style>
+    /* The brand faces, self-hosted. Apple Mail, iOS Mail, Thunderbird and
+       Samsung Mail honour @font-face; Gmail and Outlook strip it and use the
+       fallback stack instead, which is why every rule still names one. Both
+       are variable fonts, so one file covers the whole weight range. */
+    @font-face {
+      font-family: 'Fraunces';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('${SITE}/fonts/email/fraunces.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Manrope';
+      font-style: normal;
+      font-weight: 200 800;
+      font-display: swap;
+      src: url('${SITE}/fonts/email/manrope.woff2') format('woff2');
+    }
+  </style>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
-<body style="margin:0;padding:0;background:${GROUND};-webkit-text-size-adjust:100%;mso-line-height-rule:exactly">
+<body style="margin:0;padding:0;background:${GROUND};font-family:${BODY};-webkit-text-size-adjust:100%;mso-line-height-rule:exactly">
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${GROUND};padding:32px 16px 48px">
     <tr><td align="center">
@@ -56,8 +76,8 @@ function base(preheader: string, body: string): string {
         <tr><td style="padding:0 0 28px;text-align:center">${LOGO}</td></tr>
         ${body}
         <tr><td style="padding:32px 0 0;text-align:center;border-top:1px solid ${BORDER}">
-          <p style="margin:0 0 4px;font-size:12px;color:${INK_2};line-height:1.6">UntilFire &mdash; Personal finance that sets you free.</p>
-          <p style="margin:0;font-size:11px;color:${INK_3};line-height:1.6">
+          <p style="margin:0 0 4px;font-size:12px;color:${INK_2};line-height:1.6;font-family:${BODY}">UntilFire &mdash; Personal finance that sets you free.</p>
+          <p style="margin:0;font-size:11px;color:${INK_3};line-height:1.6;font-family:${BODY}">
             <a href="${SITE}" style="color:${INK_3};text-decoration:none">untilfire.com</a>
           </p>
         </td></tr>
@@ -74,7 +94,7 @@ function heroCard(eyebrow: string, headline: string, subtext: string, greeting =
     : "";
   return `
   <tr><td style="background:${CARD};border:1px solid ${BORDER};border-radius:20px;padding:40px 36px 36px">
-    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${TEAL}">${eyebrow}</p>${hello}
+    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${TEAL};font-family:${BODY}">${eyebrow}</p>${hello}
     <h1 style="margin:0 0 14px;font-size:34px;font-weight:700;color:${INK};letter-spacing:-0.8px;line-height:1.15;font-family:${DISPLAY}">${headline}</h1>
     <p style="margin:0;font-size:15px;color:${INK_2};line-height:1.7;font-family:${BODY}">${subtext}</p>
   </td></tr>`;
@@ -90,7 +110,7 @@ function sectionCard(content: string): string {
 }
 
 function sectionLabel(text: string): string {
-  return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:${GREEN};text-transform:uppercase;letter-spacing:1.5px">${text}</p>`;
+  return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:${GREEN};text-transform:uppercase;letter-spacing:1.5px;font-family:${BODY}">${text}</p>`;
 }
 
 const escapeAttr = (s: string) =>
@@ -123,8 +143,8 @@ function bulletRow(title: string, desc: string, last = false, image?: string): s
       <div style="width:6px;height:6px;border-radius:50%;background:${TEAL};margin-top:7px"></div>
     </td>
     <td style="vertical-align:top;padding-left:14px;padding-bottom:${last ? "0" : "18px"}">
-      <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:${INK};line-height:1.4">${title}</p>
-      <p style="margin:0;font-size:13px;color:${INK_2};line-height:1.6">${desc}</p>${shot}
+      <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:${INK};line-height:1.4;font-family:${BODY}">${title}</p>
+      <p style="margin:0;font-size:13px;color:${INK_2};line-height:1.6;font-family:${BODY}">${desc}</p>${shot}
     </td>
   </tr>`;
 }
@@ -168,7 +188,7 @@ export function buildWelcomeEmail(): string {
         true
       )}
     </table>
-    <p style="margin:24px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px">
+    <p style="margin:24px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px;font-family:${BODY}">
       I hope what worked for me works for you.<br>
       <span style="font-weight:700;color:${INK}">&#8212; John, founder of UntilFire</span>
     </p>
@@ -213,13 +233,13 @@ export function buildTrialReminderEmail(trialEndDate: string): string {
 
   const value = sectionCard(`
     ${sectionLabel("What Pro gives you")}
-    <p style="margin:0 0 14px;font-size:14px;color:${INK_2};line-height:1.75">
+    <p style="margin:0 0 14px;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
       Unlimited bank connections, auto-imported transactions, full cashflow tracking, and a live FIRE projection that updates as your finances do.
     </p>
-    <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.75">
+    <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
       If you&#39;ve been using the dashboard this month, you&#39;ve already seen what Pro does &#8212; it keeps doing exactly that.
     </p>
-    <p style="margin:20px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px">
+    <p style="margin:20px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px;font-family:${BODY}">
       &#8212; John, founder of UntilFire
     </p>
   `);
@@ -243,23 +263,23 @@ export function buildRetentionEmail(): string {
 
   const checkin = sectionCard(`
     ${sectionLabel("A few things worth reflecting on")}
-    <p style="margin:0 0 18px;font-size:14px;color:${INK_2};line-height:1.75">
+    <p style="margin:0 0 18px;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
       Are you more aware of your spending than you were last week? More aware of what you earn, what you owe, and the time you trade for it every day?
     </p>
-    <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.75">
+    <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
       Even just noticing the numbers more clearly is progress. That awareness is what compounds &#8212; not just the savings.
     </p>
   `);
 
   const building = sectionCard(`
     ${sectionLabel("What we&#39;re building next")}
-    <p style="margin:0 0 16px;font-size:14px;color:${INK_2};line-height:1.75">
+    <p style="margin:0 0 16px;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
       We&#39;re adding more tools &#8212; better spending breakdowns, smarter projections, and ways to model big life decisions against your timeline. Your feedback is what shapes what gets built next.
     </p>
-    <p style="margin:0 0 20px;font-size:14px;color:${INK_2};line-height:1.75">
+    <p style="margin:0 0 20px;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
       If there&#39;s something you wish UntilFire did, or something that confused you, just reply to this email. I read every one.
     </p>
-    <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:${INK}">Follow along as we build:</p>
+    <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:${INK};font-family:${BODY}">Follow along as we build:</p>
     <table cellpadding="0" cellspacing="0" role="presentation">
       <tr>
         <td style="padding-right:10px">
@@ -270,7 +290,7 @@ export function buildRetentionEmail(): string {
         </td>
       </tr>
     </table>
-    <p style="margin:20px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px">
+    <p style="margin:20px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px;font-family:${BODY}">
       &#8212; John, founder of UntilFire
     </p>
   `);
@@ -289,14 +309,14 @@ export function buildRetentionEmail(): string {
 function founderSignoff(bordered = true): string {
   const border = bordered ? "border-top:1px solid ${GROUND};padding-top:20px" : "";
   return `
-    <p style="margin:24px 0 0;font-size:14px;color:${INK_2};line-height:1.7;${border}">
+    <p style="margin:24px 0 0;font-size:14px;color:${INK_2};line-height:1.7;${border};font-family:${BODY}">
       <span style="font-weight:700;color:${INK}">&#8212; John, founder of UntilFire</span>
     </p>`;
 }
 
 function unsubscribeNote(unsubscribeUrl: string): string {
   return `
-    <p style="margin:20px 0 0;font-size:11px;color:${INK_3};line-height:1.6">
+    <p style="margin:20px 0 0;font-size:11px;color:${INK_3};line-height:1.6;font-family:${BODY}">
       You're receiving this because you have an UntilFire account.
       <a href="${unsubscribeUrl}" style="color:${INK_3};text-decoration:underline">Unsubscribe from these emails</a>.
     </p>`;
@@ -314,7 +334,7 @@ export function buildAdminAnnouncementEmail({
   const hero = heroCard("Update", heading, "A quick note from the UntilFire team.");
 
   const content = sectionCard(`
-    <div style="font-size:14px;color:${INK_2};line-height:1.75">${bodyHtml}</div>
+    <div style="font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">${bodyHtml}</div>
     ${founderSignoff()}
     ${unsubscribeNote(unsubscribeUrl)}
   `);
