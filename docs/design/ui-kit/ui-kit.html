@@ -1,0 +1,1302 @@
+<title>UntilFire UI Kit</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   UntilFire tokens, copied verbatim from app/globals.css.
+   The page drives its own theme rather than following the
+   viewer's: which theme you are looking at IS the subject here,
+   so it has to be a control, not an inherited setting.
+   ───────────────────────────────────────────────────────────── */
+.uf {
+  --uf-ground:#FDF8F1; --uf-card:#FFFDFA; --uf-surface:#F7EFE3; --uf-surface-2:#F0E5D5;
+  --uf-border:#EFE2D0; --uf-border-2:#DFCDB4;
+  --uf-ink:#221B12; --uf-ink-2:#6B5C48; --uf-ink-3:#9A8B76;
+  --uf-green:#12856A; --uf-green-700:#0C6B55; --uf-green-900:#06412F;
+  --uf-green-100:#CDEBE1; --uf-green-50:#E6F5EF;
+  --uf-teal:#0E9C86; --uf-teal-deep:#0A7665; --uf-teal-soft:#D3F1EA; --uf-teal-line:#7FD9C6;
+  --uf-pos:#12856A; --uf-neg:#C0483C; --uf-neg-bg:#FAE6E2; --uf-warn:#C4831A; --uf-warn-bg:#FCEFD8;
+  --uf-pos-ink:#107B62; --uf-neg-ink:#B24237; --uf-warn-ink:#936213;
+  --uf-e1:0 1px 2px rgba(120,80,30,0.06);
+  --uf-e2:0 6px 20px rgba(120,80,30,0.08);
+  --uf-e3:0 16px 40px rgba(120,80,30,0.13);
+  --uf-chart-1:#0E9C86; --uf-chart-2:#5B5BD6; --uf-chart-3:#B07A12;
+  --uf-r-control:12px; --uf-r-card:20px; --uf-r-modal:28px; --uf-r-pill:999px;
+  --uf-s1:4px; --uf-s2:8px; --uf-s3:12px; --uf-s4:16px; --uf-s5:24px; --uf-s6:32px; --uf-s7:48px;
+  --uf-dur-1:120ms; --uf-dur-2:180ms; --uf-dur-3:240ms; --uf-dur-4:420ms;
+  --uf-ease:cubic-bezier(0.22,1,0.36,1);
+  --uf-ease-standard:cubic-bezier(0.4,0,0.2,1);
+  --uf-ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --uf-font-display:'Fraunces',Georgia,serif;
+  --uf-font:'Manrope',ui-sans-serif,system-ui,sans-serif;
+  --uf-font-mono:'DM Mono',ui-monospace,SFMono-Regular,monospace;
+}
+.uf[data-uf="dark"] {
+  --uf-ground:#16120D; --uf-card:#1F1A13; --uf-surface:#191410; --uf-surface-2:#2A2318;
+  --uf-border:#332B21; --uf-border-2:#463C2D;
+  --uf-ink:#F5EDE1; --uf-ink-2:#BAAB95; --uf-ink-3:#8A7C68;
+  --uf-green:#2FA383; --uf-green-700:#3CBA97; --uf-green-900:#BFE9DA;
+  --uf-green-100:#123A2E; --uf-green-50:#0E2C23;
+  --uf-teal:#35C9AE; --uf-teal-deep:#5FDCC4; --uf-teal-soft:#0F3A33; --uf-teal-line:#1E6B5D;
+  --uf-pos:#2FA383; --uf-neg:#E07A6C; --uf-neg-bg:#3A201C; --uf-warn:#E0A84E; --uf-warn-bg:#3A2C13;
+  --uf-pos-ink:#5FCFAC; --uf-neg-ink:#EE9B90; --uf-warn-ink:#EDBC72;
+  --uf-e1:0 1px 2px rgba(0,0,0,0.40);
+  --uf-e2:0 6px 20px rgba(0,0,0,0.45);
+  --uf-e3:0 16px 40px rgba(0,0,0,0.55);
+  --uf-chart-1:#26A68E; --uf-chart-2:#8189E6; --uf-chart-3:#B78A26;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#FDF8F1}
+.uf{background:var(--uf-ground);color:var(--uf-ink);font-family:var(--uf-font);
+    min-height:100vh;padding:0 20px 96px;transition:background var(--uf-dur-3) var(--uf-ease)}
+.wrap{max-width:1000px;margin:0 auto}
+.mono{font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums}
+
+/* type scale — the real .uf-t-* classes */
+.t-display{font-family:var(--uf-font-display);font-size:56px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.t-h1{font-family:var(--uf-font-display);font-size:34px;font-weight:700;letter-spacing:-.022em;line-height:1.14}
+.t-h2{font-family:var(--uf-font-display);font-size:24px;font-weight:700;letter-spacing:-.018em;line-height:1.22}
+.t-h3{font-size:18px;font-weight:700;letter-spacing:-.01em;line-height:1.35}
+.t-lead{font-size:16px;font-weight:400;line-height:1.65}
+.t-body{font-size:14px;font-weight:400;line-height:1.6}
+.t-small{font-size:13px;font-weight:400;line-height:1.5}
+.t-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+
+/* header */
+header.hd{display:flex;align-items:flex-start;gap:var(--uf-s4);padding:44px 0 8px;flex-wrap:wrap}
+.hd-eyebrow{color:var(--uf-teal)}
+.hd p{margin:12px 0 0;max-width:60ch;color:var(--uf-ink-2)}
+.counts{display:flex;gap:var(--uf-s5);flex-wrap:wrap;margin:28px 0 0;
+        padding:18px 20px;background:var(--uf-surface);border-radius:var(--uf-r-card)}
+.counts div span{display:block}
+.counts .n{font-family:var(--uf-font-mono);font-size:21px;font-weight:500;letter-spacing:-.02em}
+.counts .l{font-size:12px;color:var(--uf-ink-3);margin-top:2px}
+
+/* section index */
+nav.idx{position:sticky;top:0;z-index:5;display:flex;gap:4px;flex-wrap:wrap;
+        padding:12px 0;margin:36px 0 0;background:var(--uf-ground);
+        border-bottom:1px solid var(--uf-border)}
+nav.idx a{font-size:12px;font-weight:700;color:var(--uf-ink-2);text-decoration:none;
+          padding:6px 12px;border-radius:var(--uf-r-pill);transition:background var(--uf-dur-1) var(--uf-ease)}
+nav.idx a:hover{background:var(--uf-surface-2);color:var(--uf-ink)}
+nav.idx a:focus-visible{outline:2px solid var(--uf-green);outline-offset:2px}
+
+section{padding:52px 0 0;scroll-margin-top:58px}
+.sec-h{margin:0 0 18px}
+.sec-h h2{margin:0}
+.sec-h p{margin:7px 0 0;max-width:64ch;color:var(--uf-ink-2)}
+.src{display:inline-block;margin-top:9px;font-family:var(--uf-font-mono);font-size:11px;
+     color:var(--uf-ink-3);background:var(--uf-surface);border:1px solid var(--uf-border);
+     border-radius:6px;padding:2px 8px}
+
+/* the card primitive, as shipped */
+.card{background:var(--uf-card);border:1px solid var(--uf-border);
+      border-radius:var(--uf-r-card);box-shadow:var(--uf-e1);padding:var(--uf-s5)}
+.card + .card{margin-top:var(--uf-s4)}
+.card.flat{box-shadow:none}
+.card.float{box-shadow:var(--uf-e2)}
+.kicker{color:var(--uf-ink-3);margin-bottom:14px}
+
+/* specimen row */
+.row{display:flex;align-items:center;gap:var(--uf-s4);padding:12px 0;
+     border-top:1px solid var(--uf-border);flex-wrap:wrap}
+.row:first-of-type{border-top:0}
+.row > code:first-child{font-family:var(--uf-font-mono);font-size:11px;color:var(--uf-ink-3);
+                        width:132px;flex-shrink:0}
+.row .items{display:flex;align-items:center;gap:var(--uf-s3);flex-wrap:wrap}
+.note{font-size:13px;color:var(--uf-ink-3)}
+
+/* button primitive */
+.btn{font-family:var(--uf-font);font-weight:700;border-radius:var(--uf-r-pill);
+     border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;
+     gap:var(--uf-s2);white-space:nowrap;cursor:pointer;
+     transition:filter var(--uf-dur-1) var(--uf-ease),background var(--uf-dur-1) var(--uf-ease);
+     font-size:14px;padding:11px 22px}
+.btn:hover{filter:brightness(1.06)}
+.btn:focus-visible{outline:2px solid var(--uf-green);outline-offset:2px}
+.btn.sm{font-size:13px;padding:8px 16px}
+.btn.lg{font-size:15px;padding:14px 28px}
+.btn.primary{background:var(--uf-green);color:#fff}
+.btn.secondary{background:var(--uf-card);color:var(--uf-ink);border-color:var(--uf-border-2)}
+.btn.ghost{background:transparent;color:var(--uf-ink-2)}
+.btn.danger{background:transparent;color:var(--uf-neg);border-color:var(--uf-neg)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.btn.full{width:100%}
+
+/* badge primitive */
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:var(--uf-r-pill);
+       padding:4px 11px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge.positive{background:var(--uf-green-50);color:var(--uf-pos-ink)}
+.badge.negative{background:var(--uf-neg-bg);color:var(--uf-neg-ink)}
+.badge.warning{background:var(--uf-warn-bg);color:var(--uf-warn-ink)}
+.badge.freedom{background:var(--uf-teal-soft);color:var(--uf-teal-deep)}
+.badge.muted{background:var(--uf-surface-2);color:var(--uf-ink-3)}
+
+/* field primitive */
+.field{display:flex;flex-direction:column;gap:6px}
+.field > label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--uf-ink-2)}
+.ctl{font-family:var(--uf-font);font-size:14px;padding:11px 14px;border:1px solid var(--uf-border-2);
+     border-radius:var(--uf-r-control);background:var(--uf-card);color:var(--uf-ink);width:100%}
+.ctl.num{font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums}
+.ctl:focus-visible{outline:2px solid var(--uf-green);outline-offset:1px}
+.field .hint{font-size:12px;color:var(--uf-ink-3)}
+.field .err{font-size:12px;color:var(--uf-neg)}
+
+/* stat primitive */
+.stat .lab{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+           color:var(--uf-ink-3);margin-bottom:5px}
+.stat .val{font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums;font-size:24px;
+           font-weight:500;letter-spacing:-.02em;line-height:1.1}
+.stat .val.md{font-size:20px}
+.stat .val.display{font-size:56px}
+.stat .dl{font-size:12px;margin-top:5px}
+.tone-default{color:var(--uf-ink)} .tone-positive{color:var(--uf-pos)}
+.tone-negative{color:var(--uf-neg)} .tone-freedom{color:var(--uf-teal)}
+
+.grid{display:grid;gap:var(--uf-s4)}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:720px){.g2,.g3,.g4{grid-template-columns:1fr}}
+</style>
+<style>
+/* swatches */
+.sw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(156px,1fr));gap:var(--uf-s3)}
+.sw{border:1px solid var(--uf-border);border-radius:var(--uf-r-control);overflow:hidden;
+    text-align:left;background:var(--uf-card);cursor:copy;font:inherit;padding:0;width:100%}
+.sw:focus-visible{outline:2px solid var(--uf-green);outline-offset:2px}
+.sw .chip{display:block;height:52px;border-bottom:1px solid var(--uf-border)}
+.sw .meta > span{display:block}
+.sw .meta{padding:8px 10px}
+.sw .tk{font-family:var(--uf-font-mono);font-size:10.5px;color:var(--uf-ink-2)}
+.sw .hex{font-family:var(--uf-font-mono);font-size:10.5px;color:var(--uf-ink-3);margin-top:2px}
+.sw[data-copied] .hex::after{content:" copied";color:var(--uf-teal)}
+
+/* charts */
+.bar-track{height:10px;background:var(--uf-surface-2);border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--uf-teal-line),var(--uf-teal));
+  transition:width var(--uf-dur-4) var(--uf-ease)}
+.bar-fill.prov{background:var(--uf-teal-line)}
+.bar-head{display:flex;align-items:baseline;gap:var(--uf-s3);margin-bottom:7px}
+.bar-head .cap{margin-left:auto;font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums;
+  font-size:12px;color:var(--uf-ink-2)}
+.m{font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums;font-weight:500;letter-spacing:-.01em}
+.dl{display:inline-flex;align-items:baseline;gap:5px;font-size:12px}
+.dl .ctx{color:var(--uf-ink-3);font-family:var(--uf-font)}
+.alert{display:flex;align-items:flex-start;gap:var(--uf-s3);border-radius:var(--uf-r-control);padding:13px 15px}
+.alert svg{flex-shrink:0;margin-top:1px}
+.alert .ttl{font-size:14px;font-weight:700;color:var(--uf-ink);line-height:1.35}
+.alert .facts{font-size:12.5px;color:var(--uf-ink-2);margin-top:3px}
+.alert .amt{flex-shrink:0;margin-left:var(--uf-s2)}
+.seg{display:inline-flex;gap:2px;padding:3px;background:var(--uf-surface-2);border-radius:var(--uf-r-pill)}
+.seg button{font-family:var(--uf-font);font-size:13px;font-weight:700;padding:7px 14px;
+  border-radius:var(--uf-r-pill);border:1px solid transparent;cursor:pointer;background:transparent;
+  color:var(--uf-ink-3);transition:background var(--uf-dur-1) var(--uf-ease),color var(--uf-dur-1) var(--uf-ease)}
+.seg button[aria-checked="true"]{background:var(--uf-card);color:var(--uf-ink);box-shadow:var(--uf-e1)}
+.seg button:focus-visible{outline:2px solid var(--uf-green);outline-offset:2px}
+.tile{border:1px solid var(--uf-border);border-radius:var(--uf-r-control);padding:14px 16px;min-height:74px}
+.tile .tier{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+.tile .nm{font-size:13px;font-weight:700;margin-top:6px}
+.rules{margin:0;padding-left:1.3em}
+.rules li{margin-bottom:var(--uf-s4)}
+.rules .rt{font-size:18px;font-weight:700;letter-spacing:-.01em;line-height:1.35}
+.rules .rb{font-size:13px;line-height:1.6;color:var(--uf-ink-2);margin-top:5px}
+.sym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--uf-s3)}
+.sym{border:1px solid var(--uf-border);border-radius:var(--uf-r-control);padding:16px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;background:var(--uf-card)}
+.sym .g{color:var(--uf-ink);display:flex}
+.sym .n{font-family:var(--uf-font-mono);font-size:11px;color:var(--uf-ink-2)}
+.sym .u{font-size:11px;color:var(--uf-ink-3)}
+.share{display:flex;gap:var(--uf-s7);align-items:center;flex-wrap:wrap}
+.share-legend{display:flex;flex-direction:column;gap:10px;min-width:230px}
+.share-legend .r{display:flex;align-items:center;gap:10px;font-size:13px}
+.share-legend .sw2{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.share-legend .nm{color:var(--uf-ink-2)}
+.share-legend .amt{margin-left:auto;font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums;color:var(--uf-ink)}
+.share-legend .pct{font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums;color:var(--uf-ink-3);width:40px;text-align:right}
+.meter{max-width:520px}
+.meter-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+.meter-pct{font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums;font-size:34px;font-weight:500}
+.meter-of{margin-left:auto;font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--uf-ink-2)}
+.meter-track{height:14px;background:var(--uf-surface-2);border-radius:999px;overflow:hidden}
+.meter-fill{height:100%;border-radius:999px}
+.meter-ticks{position:relative;height:16px;margin-top:6px}
+.meter-ticks span{position:absolute;font-family:var(--uf-font-mono);font-size:10.5px;color:var(--uf-ink-3)}
+.plot{overflow-x:auto}
+.plot svg{display:block}
+.ax{font-family:var(--uf-font-mono);font-size:11px;fill:var(--uf-ink-3)}
+.gridline{stroke:var(--uf-border);stroke-dasharray:3 3}
+.series-dot{r:4;stroke:var(--uf-card);stroke-width:2}
+.tip{position:absolute;pointer-events:none;opacity:0;transform:translate(-50%,-120%);
+     background:var(--uf-card);border:1px solid var(--uf-border);border-radius:var(--uf-r-control);
+     box-shadow:var(--uf-e2);padding:9px 11px;font-size:12px;white-space:nowrap;
+     transition:opacity var(--uf-dur-1) var(--uf-ease);z-index:4}
+.tip .k{color:var(--uf-ink-3);font-size:11px}
+.tip .v{font-family:var(--uf-font-mono);font-variant-numeric:tabular-nums;font-weight:500;color:var(--uf-ink)}
+.legend{display:flex;gap:var(--uf-s4);justify-content:center;margin-top:10px;font-size:12px;color:var(--uf-ink-2)}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}
+
+/* logo */
+.logo-lockup{display:inline-flex;align-items:center;gap:9px}
+.logo-lockup img{display:block;border-radius:22%;flex-shrink:0}
+.logo-lockup b{font-weight:800;letter-spacing:-.3px;line-height:1}
+.asset{border:1px solid var(--uf-border);border-radius:var(--uf-r-control);overflow:hidden}
+.asset .stage{height:86px;display:grid;place-items:center;background:var(--uf-surface)}
+.asset .stage img{max-width:132px;max-height:48px}
+.asset .cap{padding:10px 12px;background:var(--uf-card);border-top:1px solid var(--uf-border)}
+
+/* motion */
+.track{width:min(260px,48vw);height:10px;background:var(--uf-surface-2);border-radius:999px;overflow:hidden}
+.track > i{display:block;height:100%;background:var(--uf-teal);border-radius:999px;width:100%;
+           transform-origin:left center}
+.lane{width:min(260px,48vw);height:26px;position:relative}
+.lane > i{position:absolute;top:5px;left:0;width:16px;height:16px;border-radius:5px;background:var(--uf-green)}
+.run .track > i{animation:sweep var(--d) var(--uf-ease) both}
+.run .lane > i{animation:slide 620ms var(--e) both}
+@keyframes sweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes slide{from{left:0}to{left:calc(100% - 16px)}}
+@keyframes uf-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.run .rise{animation:uf-rise var(--uf-dur-4) var(--uf-ease) var(--delay) both}
+.rise{background:var(--uf-surface);border:1px solid var(--uf-border);
+      border-radius:var(--uf-r-control);padding:16px 18px}
+@media(prefers-reduced-motion:reduce){
+  .run .track > i,.run .lane > i,.run .rise{animation:none!important}
+}
+footer.ft{margin-top:56px;padding-top:20px;border-top:1px solid var(--uf-border);
+          font-size:13px;color:var(--uf-ink-3)}
+footer.ft code{font-family:var(--uf-font-mono)}
+</style>
+<div class="uf" id="uf" data-uf="light">
+<div class="wrap">
+
+<header class="hd">
+  <div style="flex:1 1 320px">
+    <div class="t-label hd-eyebrow">UntilFire design system</div>
+    <h1 class="t-h1" style="margin:10px 0 0">The UI kit</h1>
+    <p class="t-lead">Five primitives, the logo, the chart vocabulary and the motion scale — all drawn with
+      the real tokens from <code class="mono">app/globals.css</code>. Switch the theme to check both;
+      click any swatch to copy its value.</p>
+  </div>
+  <button class="btn secondary sm" id="themeBtn" aria-pressed="false">Dark</button>
+</header>
+
+<div class="counts" id="counts"></div>
+
+<nav class="idx" aria-label="Sections">
+  <a href="#logo">Logo</a><a href="#button">Button</a><a href="#badge">Badge</a>
+  <a href="#card">Card</a><a href="#field">Field</a><a href="#stat">Stat</a>
+  <a href="#symbols">Symbols</a><a href="#composition">Composition</a><a href="#alert">Alert</a><a href="#money">Money</a><a href="#charts">Charts</a><a href="#motion">Motion</a>
+  <a href="#colour">Colour</a><a href="#type">Type</a><a href="#shape">Shape</a>
+</nav>
+
+<!-- SYMBOLS -->
+<section id="symbols">
+  <div class="sec-h">
+    <h2 class="t-h2">Symbols</h2>
+    <p class="t-body">Eight glyphs: four for navigation, four for alert severity. Stroke-based on a 24px grid,
+      drawn in <code class="mono">currentColor</code> so a glyph takes the colour of the text beside it.
+      Never emoji — emoji render differently on every platform and cannot be recoloured.</p>
+    <span class="src">components/ui/Icon.tsx</span>
+  </div>
+  <div class="card">
+    <div class="t-label kicker">The set</div>
+    <div class="sym-grid" id="symGrid"></div>
+  </div>
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Sizes and colour</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 14px">A glyph inherits
+      <code class="mono">currentColor</code>, so it is coloured by its container rather than by a prop. That is
+      what keeps an icon and its label the same colour without anyone remembering to match them.</div>
+    <div id="symRows"></div>
+  </div>
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Why this is a primitive</div>
+    <p class="t-small" style="color:var(--uf-ink-2);margin:8px 0 0;max-width:64ch;line-height:1.6">
+      These four nav paths were typed out twice in <code class="mono">app/dashboard/page.tsx</code> — once in the
+      desktop nav array and again in <code class="mono">MOBILE_PRIMARY_ITEMS</code> — and Alert carried a third
+      private copy of the severity set. Two hand-kept copies of a nav is the failure
+      <code class="mono">docs/design/app-structure.md</code> calls load-bearing: it is how Categories and
+      Recurring shipped unreachable. It applies to the glyphs as much as to the routes.</p>
+  </div>
+</section>
+
+<!-- LOGO -->
+<section id="logo">
+  <div class="sec-h">
+    <h2 class="t-h2">Logo</h2>
+    <p class="t-body">Four SVGs and one component. Use <code class="mono">variant="auto"</code> anywhere the
+      surface can be either theme — <code class="mono">dark</code> and <code class="mono">light</code> are
+      fixed colours and disappear on the wrong ground.</p>
+    <span class="src">app/components/Logo.tsx · public/logo/</span>
+  </div>
+  <div class="card">
+    <div class="t-label kicker">Component variants</div>
+    <div class="row"><code>variant="auto"</code><div class="items" id="logoAuto"></div>
+      <span class="note">follows --uf-ink · the default</span></div>
+    <div class="row"><code>variant="light"</code><div class="items" id="logoLight"></div>
+      <span class="note">fixed #064E3B · light surfaces only</span></div>
+    <div class="row"><code>variant="dark"</code>
+      <div class="items"><span style="background:var(--uf-green-900);border-radius:var(--uf-r-control);padding:12px 16px;display:inline-flex" id="logoDark"></span></div>
+      <span class="note">fixed #ffffff · needs a dark plate</span></div>
+  </div>
+  <div class="card">
+    <div class="t-label kicker">Assets</div>
+    <div class="sw-grid" id="assets"></div>
+  </div>
+</section>
+
+<!-- BUTTON -->
+<section id="button">
+  <div class="sec-h">
+    <h2 class="t-h2">Button</h2>
+    <p class="t-body">Four variants, three sizes. Primary is the only green-filled button on a screen — if two
+      things are both primary, one of them is not. Teal is never a button.</p>
+    <span class="src">components/ui/Button.tsx</span>
+  </div>
+  <div class="card" id="buttons"></div>
+</section>
+
+<!-- BADGE -->
+<section id="badge">
+  <div class="sec-h">
+    <h2 class="t-h2">Badge</h2>
+    <p class="t-body">The status pill. <code class="mono">freedom</code> is the teal tone and belongs to
+      progress toward the freedom date — generic good news is <code class="mono">positive</code>.</p>
+    <span class="src">components/ui/Badge.tsx</span>
+  </div>
+  <div class="card" id="badges"></div>
+</section>
+
+<!-- CARD -->
+<section id="card">
+  <div class="sec-h">
+    <h2 class="t-h2">Card</h2>
+    <p class="t-body">Flat for anything already inside a card, raised for the default card, float for popovers
+      and modals.</p>
+    <span class="src">components/ui/Card.tsx</span>
+  </div>
+  <div class="grid g3">
+    <div class="card flat"><div class="t-label" style="color:var(--uf-ink-3)">elevation</div>
+      <div class="t-h3" style="margin-top:6px">flat</div><div class="t-small" style="color:var(--uf-ink-2);margin-top:8px">No shadow</div></div>
+    <div class="card"><div class="t-label" style="color:var(--uf-ink-3)">elevation</div>
+      <div class="t-h3" style="margin-top:6px">raised</div><div class="t-small" style="color:var(--uf-ink-2);margin-top:8px">--uf-e1</div></div>
+    <div class="card float"><div class="t-label" style="color:var(--uf-ink-3)">elevation</div>
+      <div class="t-h3" style="margin-top:6px">float</div><div class="t-small" style="color:var(--uf-ink-2);margin-top:8px">--uf-e2</div></div>
+  </div>
+</section>
+
+<!-- FIELD -->
+<section id="field">
+  <div class="sec-h">
+    <h2 class="t-h2">Field, Input, Select</h2>
+    <p class="t-body">A labelled control with an optional hint or error. Set <code class="mono">numeric</code>
+      on anything holding a figure — it switches to DM Mono with tabular numerals so decimals line up in a column.</p>
+    <span class="src">components/ui/Field.tsx</span>
+  </div>
+  <div class="card">
+    <div class="grid g2">
+      <div class="field"><label for="f1">Monthly savings</label>
+        <input class="ctl num" id="f1" value="1,500"><span class="hint">Whatever you put aside each month</span></div>
+      <div class="field"><label for="f2">Target city</label>
+        <select class="ctl" id="f2"><option>Lisbon, Portugal</option><option>New York City, NY</option></select></div>
+      <div class="field"><label for="f3">Net worth</label>
+        <input class="ctl" id="f3" value="abc"><span class="err">Enter a number</span></div>
+      <div class="field"><label for="f4">Plain text</label>
+        <input class="ctl" id="f4" value="Not a figure"><span class="hint">numeric is off, so this uses Manrope</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- STAT -->
+<section id="stat">
+  <div class="sec-h">
+    <h2 class="t-h2">Stat</h2>
+    <p class="t-body">Label, figure, delta. The figure is always DM Mono with tabular numerals.
+      <code class="mono">tone="freedom"</code> is the teal treatment and belongs only to the freedom date and
+      time saved.</p>
+    <span class="src">components/ui/Stat.tsx</span>
+  </div>
+  <div class="card"><div class="grid g4" id="stats"></div></div>
+  <div class="card"><div style="display:flex;align-items:flex-end;gap:var(--uf-s7);flex-wrap:wrap" id="statSizes"></div></div>
+</section>
+
+<!-- COMPOSITION -->
+<section id="composition">
+  <div class="sec-h">
+    <h2 class="t-h2">Composition</h2>
+    <p class="t-body">Tokens and primitives make a screen consistent; they do not make it usable. These are the
+      rules for arranging modules on a dashboard — the part usually decided by whatever fitted, and the
+      difference between a screen that looks designed and one that answers a question.</p>
+    <span class="src">how the modules sit together</span>
+  </div>
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Priority decides the grid</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 16px">Rank every module before you place any
+      of them. Reading order is top-left first, so that is where the highest priority goes.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--uf-s3)" id="tiles"></div>
+  </div>
+  <div class="card"><ol class="rules" id="rules"></ol></div>
+</section>
+
+<!-- ALERT -->
+<section id="alert">
+  <div class="sec-h">
+    <h2 class="t-h2">Alert</h2>
+    <p class="t-body">An alert is not a badge. A badge labels a state you are already looking at; an alert
+      interrupts to say something happened — and it is useless without the three facts that let you judge it:
+      how much, when, and where.</p>
+    <span class="src">components/ui/Alert.tsx</span>
+  </div>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:var(--uf-s3)" id="alerts"></div>
+    <p class="t-small" style="color:var(--uf-ink-2);margin:16px 0 0;max-width:64ch">
+      The icon is not ornament. It is the part that survives being read at a glance, and it carries severity to
+      a reader who cannot separate the tones by colour. An alert reading only &ldquo;Unusual activity
+      detected&rdquo; is decoration — it tells the reader nothing they can act on.</p>
+  </div>
+</section>
+
+<!-- MONEY -->
+<section id="money">
+  <div class="sec-h">
+    <h2 class="t-h2">Money, Delta, Progress</h2>
+    <p class="t-body">The part that makes this a personal-finance kit rather than a generic one. There were
+      39 hand-rolled money formatters in the app before <code class="mono">lib/money.ts</code>, and they
+      disagreed — the same balance printed $1.50M on one screen and $1,500,000 on the next. Most hardcoded
+      <code class="mono">$</code> while the app supports 34 currencies.</p>
+    <span class="src">components/ui/Money.tsx · Delta.tsx · Progress.tsx · lib/money.ts</span>
+  </div>
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Money — two formats, cents on their own axis</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 14px">The choice is about the reader&rsquo;s
+      job, not about space. Exact for anything someone will check, reconcile or type back; compact for
+      anything they will scan or compare.</div>
+    <div id="moneyRows"></div>
+  </div>
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Delta — direction is not meaning</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 14px">Spending down is good; income down is
+      bad. Both are a negative delta, so the caller says which direction is good rather than every screen
+      re-deciding — which is how a budget overspend ends up green.</div>
+    <div id="deltaRows"></div>
+  </div>
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Progress — the one place teal belongs</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 18px">Green acts, teal means freedom. This
+      bar is teal and the button beside it is green, deliberately. Drag the slider.</div>
+    <div class="bar-head"><span class="t-label" style="color:var(--uf-ink-3)">Toward your freedom date</span>
+      <span class="cap" id="barCap">$620k of $1.5M</span></div>
+    <div class="bar-track"><div class="bar-fill" id="barFill" style="width:41%"></div></div>
+    <input type="range" id="barRange" min="0" max="100" value="41" aria-label="Progress toward freedom"
+      style="width:100%;margin-top:16px;accent-color:var(--uf-teal)">
+    <div style="margin-top:22px">
+      <div class="bar-head"><span class="t-label" style="color:var(--uf-ink-3)">Scenario — not committed</span>
+        <span class="cap">provisional</span></div>
+      <div class="bar-track"><div class="bar-fill prov" style="width:23%"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CHARTS -->
+<section id="charts">
+  <div class="sec-h">
+    <h2 class="t-h2">Charts</h2>
+    <p class="t-body">Three series colours, and three is the ceiling rather than a starting point — no fourth
+      hue cleared the colour-blind separation floor against these three, so a fourth series folds into Other
+      or becomes a second chart.</p>
+    <span class="src">app/globals.css — --uf-chart-1..3</span>
+  </div>
+  <div class="card">
+    <div class="t-label kicker">Series palette</div>
+    <div class="sw-grid" id="chartSw" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
+    <p class="t-small" style="color:var(--uf-ink-2);margin:14px 0 0;max-width:64ch">
+      Assign in fixed order and let colour follow the entity, never its rank: when a filter changes how many
+      series show, the survivors keep the colours they had. The dark steps are chosen against the dark surface
+      rather than lightened from these, and they sit inside the tritan floor band — which is why a legend is
+      mandatory here rather than optional.</p>
+  </div>
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">One series — no legend, the title names it</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 14px">Portfolio against the FIRE target · straight segments, never a monotone spline</div>
+    <div class="plot" style="position:relative" id="plot1"></div>
+  </div>
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Two series — legend required</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 14px">One y-axis. Never a second scale on the right.</div>
+    <div class="plot" style="position:relative" id="plot2"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:var(--uf-s4);flex-wrap:wrap;margin-bottom:14px">
+      <div style="flex:1;min-width:240px">
+        <div class="t-label" style="color:var(--uf-ink-3)">Money in and money out — one axis, one zero line</div>
+        <div class="t-small" style="color:var(--uf-ink-3);margin-top:4px">Income and expenses are one quantity
+          with a direction, not two unrelated series. August nets negative and you can see it without reading
+          a number.</div>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Time range" id="seg">
+        <button role="radio" aria-checked="false" data-v="6m">6M</button>
+        <button role="radio" aria-checked="false" data-v="1y">1Y</button>
+        <button role="radio" aria-checked="true" data-v="all">All</button>
+      </div>
+    </div>
+    <div class="plot" style="position:relative" id="plot4"></div>
+    <p class="t-small" style="color:var(--uf-ink-2);margin:12px 0 0;max-width:64ch">
+      A chart without a time-scale control answers exactly one question. With one it answers four, for the cost
+      of a row of controls. (Live control, fixed sample data.)</p>
+  </div>
+
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Part to whole — a donut, used correctly</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 18px">Share at a glance, six segments or
+      fewer, every segment directly labelled. Spending categories are magnitudes rather than identities, so this
+      is one hue stepped light to dark — the order round the ring is the ranking.</div>
+    <div class="share"><div id="donut"></div><div class="share-legend" id="donutLegend"></div></div>
+    <p class="t-small" style="color:var(--uf-ink-2);margin:18px 0 0;max-width:64ch">
+      What a donut cannot do is let you compare close values: nobody ranks two arcs that are four percent apart.
+      That is why the figures sit beside it. If the reader&rsquo;s job is comparison rather than share, use the
+      bar below instead.</p>
+  </div>
+
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">One ratio against a limit — a meter, not a two-slice pie</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 20px">Credit used against the limit. The
+      number is the chart; the track is the context.</div>
+    <div class="meter" id="meter"></div>
+    <p class="t-small" style="color:var(--uf-ink-2);margin:20px 0 0;max-width:64ch">
+      This is the case a pie chart is most often reached for and worst at. &ldquo;Used vs available&rdquo; is one
+      number against a ceiling: a reader cannot judge 62% from two arcs, but reads it instantly off a track. The
+      band colours are a credit convention rather than decoration — past roughly 30% utilisation starts to affect
+      a score, past 70% reads as distress.</p>
+  </div>
+
+  <div class="card">
+    <div class="t-label" style="color:var(--uf-ink-3)">Magnitude — one hue, sorted, Other in muted</div>
+    <div class="t-small" style="color:var(--uf-ink-3);margin:4px 0 14px">Categories are magnitudes, not identities, so they do not need separate hues</div>
+    <div class="plot" style="position:relative" id="plot3"></div>
+  </div>
+</section>
+
+<!-- MOTION -->
+<section id="motion">
+  <div class="sec-h">
+    <h2 class="t-h2">Motion</h2>
+    <p class="t-body">Four durations and three curves. Before these existed the app carried six hand-typed
+      cubic-beziers and about thirty keyframes across seven files — seven of which were the same fade-and-rise.</p>
+    <span class="src">app/globals.css — --uf-dur-* / --uf-ease-*</span>
+  </div>
+  <div class="card run" id="motionCard">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <div class="t-label" style="color:var(--uf-ink-3)">Duration</div>
+      <div style="flex:1"></div>
+      <button class="btn secondary sm" id="replayBtn">Replay</button>
+    </div>
+    <div id="durations"></div>
+  </div>
+  <div class="card run" id="easeCard">
+    <div class="t-label kicker">Easing</div>
+    <div id="easings"></div>
+  </div>
+  <div class="card run" id="riseCard">
+    <div class="t-label kicker">The entrance</div>
+    <div class="grid g3" id="rises"></div>
+    <p class="t-small" style="color:var(--uf-ink-2);margin:14px 0 0;max-width:64ch">
+      One shared <code class="mono">uf-rise</code> keyframe, staggered 70ms. Reach for this before declaring
+      another fade-and-rise. Anything decorative also needs a
+      <code class="mono">prefers-reduced-motion</code> escape.</p>
+  </div>
+</section>
+
+<!-- COLOUR -->
+<section id="colour">
+  <div class="sec-h">
+    <h2 class="t-h2">Colour tokens</h2>
+    <p class="t-body">Values are read off the page you are looking at, so they are whatever the current theme
+      resolves to. Never write a hex in a component — a colour with no token needs a token.</p>
+    <span class="src">app/globals.css</span>
+  </div>
+  <div id="colourGroups"></div>
+</section>
+
+<!-- TYPE -->
+<section id="type">
+  <div class="sec-h">
+    <h2 class="t-h2">Type scale</h2>
+    <p class="t-body">Eight steps and nothing between them. Fraunces is display only, Manrope is body, DM Mono
+      with tabular numerals is every figure.</p>
+    <span class="src">app/globals.css — .uf-t-*</span>
+  </div>
+  <div class="card" id="typeScale"></div>
+</section>
+
+<!-- SHAPE -->
+<section id="shape">
+  <div class="sec-h">
+    <h2 class="t-h2">Radius, elevation, space</h2>
+    <p class="t-body">Pick the nearest step; never invent one in between. Buttons are always full pills.</p>
+    <span class="src">app/globals.css</span>
+  </div>
+  <div class="card"><div class="t-label kicker">Radius</div>
+    <div style="display:flex;gap:var(--uf-s4);flex-wrap:wrap" id="radii"></div></div>
+  <div class="card"><div class="t-label kicker">Elevation</div>
+    <div style="display:flex;gap:var(--uf-s6);flex-wrap:wrap" id="elevs"></div></div>
+  <div class="card"><div class="t-label kicker">Space</div>
+    <div style="display:flex;align-items:flex-end;gap:var(--uf-s4);flex-wrap:wrap" id="spaces"></div></div>
+</section>
+
+<footer class="ft">
+  Rules and rationale live in <code>docs/design/design-system.md</code>. The editable source for this page is
+  <code>app/styleguide/</code> in the repo — when you add a variant to a primitive, add it there.
+</footer>
+
+</div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var LOGOS = {"horizon-color.svg": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDY0RTNCIj48L3N0b3A+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwMzUyNyI+PC9zdG9wPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ2xvc3MiIHgxPSIwIiB5MT0iMCIgeDI9IjAiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZmZmZiIgc3RvcC1vcGFjaXR5PSIwLjA4Ij48L3N0b3A+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZmZmZmZmIiBzdG9wLW9wYWNpdHk9IjAiPjwvc3RvcD4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8Y2xpcFBhdGggaWQ9InNxdWlyY2xlQ2xpcCI+CiAgICAgIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHJ4PSIyMzAiIHJ5PSIyMzAiPjwvcmVjdD4KICAgIDwvY2xpcFBhdGg+CiAgPC9kZWZzPgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHJ4PSIyMzAiIHJ5PSIyMzAiIGZpbGw9InVybCgjYmcpIj48L3JlY3Q+CiAgPGcgY2xpcC1wYXRoPSJ1cmwoI3NxdWlyY2xlQ2xpcCkiPgogICAgPGNpcmNsZSBjeD0iNTEyIiBjeT0iNjIwIiByPSIyNjAiIGZpbGw9IiM2MkZBRTMiPjwvY2lyY2xlPgogICAgPHJlY3QgeD0iMCIgeT0iNjIwIiB3aWR0aD0iMTAyNCIgaGVpZ2h0PSI0MDQiIGZpbGw9IiMwMDM1MjciPjwvcmVjdD4KICAgIDxyZWN0IHg9IjEwMCIgeT0iNjE1IiB3aWR0aD0iODI0IiBoZWlnaHQ9IjgiIGZpbGw9IiM2MkZBRTMiIG9wYWNpdHk9IjAuNyI+PC9yZWN0PgogICAgPGxpbmUgeDE9IjMyNS42IiB5MT0iMzk3LjkiIHgyPSIyODcuMCIgeTI9IjM1MS45IiBzdHJva2U9IiM2MkZBRTMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PC9saW5lPgogICAgPGxpbmUgeDE9IjQxMi44IiB5MT0iMzQ3LjUiIHgyPSIzOTIuMyIgeTI9IjI5MS4xIiBzdHJva2U9IiM2MkZBRTMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PC9saW5lPgogICAgPGxpbmUgeDE9IjUxMiIgeTE9IjMzMCIgeDI9IjUxMiIgeTI9IjI3MCIgc3Ryb2tlPSIjNjJGQUUzIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjwvbGluZT4KICAgIDxsaW5lIHgxPSI2MTEuMiIgeTE9IjM0Ny41IiB4Mj0iNjMxLjciIHkyPSIyOTEuMSIgc3Ryb2tlPSIjNjJGQUUzIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjwvbGluZT4KICAgIDxsaW5lIHgxPSI2OTguNCIgeTE9IjM5Ny45IiB4Mj0iNzM3LjAiIHkyPSIzNTEuOSIgc3Ryb2tlPSIjNjJGQUUzIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjwvbGluZT4KICA8L2c+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMjQiIGhlaWdodD0iMTAyNCIgcng9IjIzMCIgcnk9IjIzMCIgZmlsbD0idXJsKCNnbG9zcykiPjwvcmVjdD4KPC9zdmc+", "horizon-mark-only.svg": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPgogIDxwYXRoIGQ9Ik0gMjUyIDYyMCBBIDI2MCAyNjAgMCAwIDEgNzcyIDYyMCBaIiBmaWxsPSIjMjBENEJGIj48L3BhdGg+CiAgPHJlY3QgeD0iMTAwIiB5PSI2MTUiIHdpZHRoPSI4MjQiIGhlaWdodD0iMTQiIHJ4PSI3IiBmaWxsPSIjMDAzNTI3Ij48L3JlY3Q+CiAgPGxpbmUgeDE9IjMyNS42IiB5MT0iMzk3LjkiIHgyPSIyODcuMCIgeTI9IjM1MS45IiBzdHJva2U9IiMyMEQ0QkYiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PC9saW5lPgogIDxsaW5lIHgxPSI0MTIuOCIgeTE9IjM0Ny41IiB4Mj0iMzkyLjMiIHkyPSIyOTEuMSIgc3Ryb2tlPSIjMjBENEJGIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjwvbGluZT4KICA8bGluZSB4MT0iNTEyIiB5MT0iMzMwIiB4Mj0iNTEyIiB5Mj0iMjcwIiBzdHJva2U9IiMyMEQ0QkYiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PC9saW5lPgogIDxsaW5lIHgxPSI2MTEuMiIgeTE9IjM0Ny41IiB4Mj0iNjMxLjciIHkyPSIyOTEuMSIgc3Ryb2tlPSIjMjBENEJGIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjwvbGluZT4KICA8bGluZSB4MT0iNjk4LjQiIHkxPSIzOTcuOSIgeDI9IjczNy4wIiB5Mj0iMzUxLjkiIHN0cm9rZT0iIzIwRDRCRiIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48L2xpbmU+Cjwvc3ZnPg==", "horizon-mono-light.svg": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPgogIDxkZWZzPjxjbGlwUGF0aCBpZD0iY2MiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHJ4PSIyMzAiIHJ5PSIyMzAiPjwvcmVjdD48L2NsaXBQYXRoPjwvZGVmcz4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiByeD0iMjMwIiByeT0iMjMwIiBmaWxsPSIjMDAwMDAwIj48L3JlY3Q+CiAgPGcgY2xpcC1wYXRoPSJ1cmwoI2NjKSI+CiAgICA8cGF0aCBkPSJNIDI1MiA2MjAgQSAyNjAgMjYwIDAgMCAxIDc3MiA2MjAgWiIgZmlsbD0iI2ZmZmZmZiI+PC9wYXRoPgogICAgPHJlY3QgeD0iMTAwIiB5PSI2MTUiIHdpZHRoPSI4MjQiIGhlaWdodD0iMTQiIHJ4PSI3IiBmaWxsPSIjZmZmZmZmIj48L3JlY3Q+CiAgICA8bGluZSB4MT0iMzI1LjYiIHkxPSIzOTcuOSIgeDI9IjI4Ny4wIiB5Mj0iMzUxLjkiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48L2xpbmU+CiAgICA8bGluZSB4MT0iNDEyLjgiIHkxPSIzNDcuNSIgeDI9IjM5Mi4zIiB5Mj0iMjkxLjEiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48L2xpbmU+CiAgICA8bGluZSB4MT0iNTEyIiB5MT0iMzMwIiB4Mj0iNTEyIiB5Mj0iMjcwIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PC9saW5lPgogICAgPGxpbmUgeDE9IjYxMS4yIiB5MT0iMzQ3LjUiIHgyPSI2MzEuNyIgeTI9IjI5MS4xIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PC9saW5lPgogICAgPGxpbmUgeDE9IjY5OC40IiB5MT0iMzk3LjkiIHgyPSI3MzcuMCIgeTI9IjM1MS45IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PC9saW5lPgogIDwvZz4KPC9zdmc+", "horizon-wordmark-horizontal.svg": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDE0MDAgNDAwIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjAiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzA2NEUzQiI+PC9zdG9wPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwMDM1MjciPjwvc3RvcD4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8Y2xpcFBhdGggaWQ9Imljb25DbGlwIj48cmVjdCB4PSIyMCIgeT0iNjAiIHdpZHRoPSIyODAiIGhlaWdodD0iMjgwIiByeD0iNjIiIHJ5PSI2MiI+PC9yZWN0PjwvY2xpcFBhdGg+CiAgPC9kZWZzPgogIDxyZWN0IHg9IjIwIiB5PSI2MCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIyODAiIHJ4PSI2MiIgcnk9IjYyIiBmaWxsPSJ1cmwoI2JnKSI+PC9yZWN0PgogIDxnIGNsaXAtcGF0aD0idXJsKCNpY29uQ2xpcCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIwIDYwKSBzY2FsZSgwLjI3MzQpIj4KICAgIDxjaXJjbGUgY3g9IjUxMiIgY3k9IjYyMCIgcj0iMjYwIiBmaWxsPSIjNjJGQUUzIj48L2NpcmNsZT4KICAgIDxyZWN0IHg9IjAiIHk9IjYyMCIgd2lkdGg9IjEwMjQiIGhlaWdodD0iNDA0IiBmaWxsPSIjMDAzNTI3Ij48L3JlY3Q+CiAgICA8cmVjdCB4PSIxMDAiIHk9IjYxNSIgd2lkdGg9IjgyNCIgaGVpZ2h0PSI4IiBmaWxsPSIjNjJGQUUzIiBvcGFjaXR5PSIwLjciPjwvcmVjdD4KICAgIDxsaW5lIHgxPSIzMjUuNiIgeTE9IjM5Ny45IiB4Mj0iMjg3LjAiIHkyPSIzNTEuOSIgc3Ryb2tlPSIjNjJGQUUzIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjwvbGluZT4KICAgIDxsaW5lIHgxPSI0MTIuOCIgeTE9IjM0Ny41IiB4Mj0iMzkyLjMiIHkyPSIyOTEuMSIgc3Ryb2tlPSIjNjJGQUUzIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjwvbGluZT4KICAgIDxsaW5lIHgxPSI1MTIiIHkxPSIzMzAiIHgyPSI1MTIiIHkyPSIyNzAiIHN0cm9rZT0iIzYyRkFFMyIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48L2xpbmU+CiAgICA8bGluZSB4MT0iNjExLjIiIHkxPSIzNDcuNSIgeDI9IjYzMS43IiB5Mj0iMjkxLjEiIHN0cm9rZT0iIzYyRkFFMyIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48L2xpbmU+CiAgICA8bGluZSB4MT0iNjk4LjQiIHkxPSIzOTcuOSIgeDI9IjczNy4wIiB5Mj0iMzUxLjkiIHN0cm9rZT0iIzYyRkFFMyIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48L2xpbmU+CiAgPC9nPgogIDx0ZXh0IHg9IjM0MCIgeT0iMjIwIiBmb250LWZhbWlseT0iTWFucm9wZSwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEzNSIgZm9udC13ZWlnaHQ9IjgwMCIgZmlsbD0iIzAwMzUyNyIgbGV0dGVyLXNwYWNpbmc9Ii01Ij5VbnRpbEZJUkU8L3RleHQ+CiAgPHRleHQgeD0iMzQ1IiB5PSIyODAiIGZvbnQtZmFtaWx5PSJNYW5yb3BlLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMyMEQ0QkYiIGxldHRlci1zcGFjaW5nPSIzLjUiPkZJTkFOQ0lBTCBJTkRFUEVOREVOQ0U8L3RleHQ+Cjwvc3ZnPg=="};
+  var root = document.getElementById("uf");
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, attrs, html) {
+    var n = document.createElement(tag);
+    if (attrs) for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (html != null) n.innerHTML = html;
+    return n;
+  };
+
+  /* Axis ticks go through the same fm() as every other figure on the page —
+     a reference that ships two money formatters is the problem it is
+     supposed to be teaching against. */
+  function money(n) { return fm(n, { format: "compact" }); }
+
+  var SYM = { USD: "$", EUR: "\u20AC", GBP: "\u00A3", JPY: "\u00A5", INR: "\u20B9" };
+  function fm(n, opt) {
+    opt = opt || {};
+    var sym = SYM[opt.currency || "USD"] || "$", abs = Math.abs(n), d = opt.decimals || 0, digits;
+    if (opt.format === "compact") {
+      // Trailing .0 is dropped: an axis labelled $5.0k · $10k looks like two
+      // formats on one scale. One decimal below $10k still keeps $1.6k and
+      // $2.2k apart, which a naive round would collapse to "$2k" twice.
+      var trim = function (x, dp) { return x.toFixed(dp).replace(/\.0$/, ""); };
+      digits = abs >= 1e6 ? trim(abs / 1e6, abs >= 1e7 ? 0 : 1) + "M"
+        : abs >= 1e4 ? Math.round(abs / 1e3) + "k"
+        : abs >= 1e3 ? trim(abs / 1e3, 1) + "k" : String(Math.round(abs));
+    } else {
+      digits = abs.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+    }
+    var sign = n < 0 ? "\u2212" : (opt.signed && n > 0 ? "+" : "");
+    return sign + sym + digits;
+  }
+
+  /* ── theme ─────────────────────────────────────────────────── */
+  var btn = $("themeBtn");
+  btn.addEventListener("click", function () {
+    var dark = root.getAttribute("data-uf") === "dark";
+    root.setAttribute("data-uf", dark ? "light" : "dark");
+    btn.textContent = dark ? "Dark" : "Cream";
+    btn.setAttribute("aria-pressed", String(!dark));
+    paintSwatches();
+    drawCharts();
+  });
+
+  /* ── counts ────────────────────────────────────────────────── */
+  var COUNTS = [["11","primitives"],["8","symbols"],["26","colour tokens"],["3","chart slots"],
+                ["8","type steps"],["4","durations"],["3","easings"],["4","logo assets"]];
+  COUNTS.forEach(function (c) {
+    var d = el("div"); d.appendChild(el("span", { "class": "n" }, c[0]));
+    d.appendChild(el("span", { "class": "l" }, c[1])); $("counts").appendChild(d);
+  });
+
+  /* ── logo ──────────────────────────────────────────────────── */
+  function lockup(color, size) {
+    var s = el("span", { "class": "logo-lockup" });
+    var img = el("img"); img.src = LOGOS["horizon-color.svg"];
+    img.width = size; img.height = size; img.alt = "UntilFire";
+    var b = el("b", { style: "font-size:" + (size * 0.86) + "px;color:" + color }, "UntilFire");
+    s.appendChild(img); s.appendChild(b); return s;
+  }
+  [22, 28, 38].forEach(function (n) { $("logoAuto").appendChild(lockup("var(--uf-ink)", n)); });
+  [22, 28, 38].forEach(function (n) { $("logoLight").appendChild(lockup("#064E3B", n)); });
+  $("logoDark").appendChild(lockup("#ffffff", 28));
+
+  var ASSETS = [
+    ["horizon-color.svg", "The mark. App icon, favicon, anywhere the wordmark will not fit."],
+    ["horizon-wordmark-horizontal.svg", "Mark plus wordmark, locked up. Headers and email."],
+    ["horizon-mark-only.svg", "Mark with no background plate."],
+    ["horizon-mono-light.svg", "Single colour, for dark or photographic backdrops."]
+  ];
+  ASSETS.forEach(function (a) {
+    var w = el("div", { "class": "asset" });
+    w.innerHTML = '<div class="stage"><img src="' + LOGOS[a[0]] + '" alt="' + a[0] + '"></div>' +
+      '<div class="cap"><div class="mono" style="font-size:10.5px;color:var(--uf-ink-2)">' + a[0] + '</div>' +
+      '<div class="t-small" style="color:var(--uf-ink-3);margin-top:4px">' + a[1] + '</div></div>';
+    $("assets").appendChild(w);
+  });
+
+  /* ── buttons ───────────────────────────────────────────────── */
+  var VARIANTS = ["primary", "secondary", "ghost", "danger"];
+  VARIANTS.forEach(function (v) {
+    var r = el("div", { "class": "row" });
+    r.appendChild(el("code", null, 'variant="' + v + '"'));
+    var items = el("div", { "class": "items" });
+    [["sm", "Small"], ["", "Medium"], ["lg", "Large"]].forEach(function (s) {
+      items.appendChild(el("button", { "class": "btn " + v + " " + s[0] }, s[1]));
+    });
+    r.appendChild(items); $("buttons").appendChild(r);
+  });
+  var rd = el("div", { "class": "row" }); rd.appendChild(el("code", null, "disabled"));
+  var di = el("div", { "class": "items" });
+  VARIANTS.forEach(function (v) {
+    var b = el("button", { "class": "btn " + v }, "Disabled"); b.disabled = true; di.appendChild(b);
+  });
+  rd.appendChild(di); $("buttons").appendChild(rd);
+  var rf = el("div", { "class": "row" }); rf.appendChild(el("code", null, "fullWidth"));
+  rf.appendChild(el("div", { "class": "items", style: "width:min(420px,100%)" },
+    '<button class="btn primary full">Find my freedom date</button>'));
+  $("buttons").appendChild(rf);
+
+  /* ── badges ────────────────────────────────────────────────── */
+  [["positive", "On track"], ["negative", "Over budget"], ["warning", "Needs input"],
+   ["freedom", "2.4 years earlier"], ["muted", "Draft"]].forEach(function (b) {
+    var r = el("div", { "class": "row" });
+    r.appendChild(el("code", null, 'tone="' + b[0] + '"'));
+    r.appendChild(el("div", { "class": "items" }, '<span class="badge ' + b[0] + '">' + b[1] + '</span>'));
+    $("badges").appendChild(r);
+  });
+
+  /* ── stats ─────────────────────────────────────────────────── */
+  [["default", "$1,500,000", "+$210 vs plan"], ["positive", "$1,500,000", "+$210 vs plan"],
+   ["negative", "$1,500,000", "−$210 vs plan"], ["freedom", "2044", "2.4 years earlier"]
+  ].forEach(function (s) {
+    $("stats").appendChild(el("div", { "class": "stat" },
+      '<div class="lab">tone ' + s[0] + '</div><div class="val tone-' + s[0] + '">' + s[1] +
+      '</div><div class="dl tone-' + s[0] + '">' + s[2] + '</div>'));
+  });
+  [["md", "$1,500,000", "default"], ["", "$1,500,000", "default"], ["display", "2044", "freedom"]
+  ].forEach(function (s) {
+    $("statSizes").appendChild(el("div", { "class": "stat" },
+      '<div class="lab">size ' + (s[0] || "lg") + '</div><div class="val ' + s[0] +
+      ' tone-' + s[2] + '">' + s[1] + '</div>'));
+  });
+
+  /* ── colour swatches ───────────────────────────────────────── */
+  var GROUPS = [
+    ["Ground and surfaces", ["--uf-ground","--uf-card","--uf-surface","--uf-surface-2","--uf-border","--uf-border-2"]],
+    ["Ink", ["--uf-ink","--uf-ink-2","--uf-ink-3"]],
+    ["Green — acts", ["--uf-green","--uf-green-700","--uf-green-900","--uf-green-100","--uf-green-50"]],
+    ["Teal — means freedom", ["--uf-teal","--uf-teal-deep","--uf-teal-soft","--uf-teal-line"]],
+    ["Status", ["--uf-pos","--uf-neg","--uf-neg-bg","--uf-warn","--uf-warn-bg"]],
+    ["Status ink — for 11px badge text", ["--uf-pos-ink","--uf-neg-ink","--uf-warn-ink"]]
+  ];
+  function swatch(token) {
+    var b = el("button", { "class": "sw", type: "button", "data-token": token,
+      title: "Copy " + token });
+    b.innerHTML = '<span class="chip" style="background:var(' + token + ')"></span>' +
+      '<span class="meta"><span class="tk">' + token + '</span><span class="hex"></span></span>';
+    b.addEventListener("click", function () {
+      var v = getComputedStyle(root).getPropertyValue(token).trim();
+      if (navigator.clipboard) navigator.clipboard.writeText(v)["catch"](function () {});
+      b.setAttribute("data-copied", "1");
+      setTimeout(function () { b.removeAttribute("data-copied"); }, 1100);
+    });
+    return b;
+  }
+  GROUPS.forEach(function (g) {
+    var wrap = el("div", { style: "margin-bottom:var(--uf-s5)" });
+    wrap.appendChild(el("div", { "class": "t-label", style: "color:var(--uf-ink-3);margin-bottom:10px" }, g[0]));
+    var grid = el("div", { "class": "sw-grid" });
+    g[1].forEach(function (t) { grid.appendChild(swatch(t)); });
+    wrap.appendChild(grid); $("colourGroups").appendChild(wrap);
+  });
+  ["--uf-chart-1", "--uf-chart-2", "--uf-chart-3"].forEach(function (t, i) {
+    var s = swatch(t);
+    s.querySelector(".tk").textContent = t + "  · slot " + (i + 1);
+    $("chartSw").appendChild(s);
+  });
+  function paintSwatches() {
+    var cs = getComputedStyle(root);
+    Array.prototype.forEach.call(document.querySelectorAll(".sw"), function (s) {
+      s.querySelector(".hex").textContent = cs.getPropertyValue(s.getAttribute("data-token")).trim();
+    });
+  }
+
+  /* ── symbols ──────────────────────────── */
+  var ICON = {
+    home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
+    money: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
+    plan: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    profile: '<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>',
+    critical: '<path d="M12 3.1l8.9 15.8H3.1z"/><path d="M12 9.6v4.1M12 16.8v.1"/>',
+    warning: '<circle cx="12" cy="12" r="9"/><path d="M12 7.2v5.5M12 16.3v.1"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 10.8v5.4M12 7.7v.1"/>',
+    positive: '<path d="M4.2 12.6l4.8 4.8L19.8 6.6"/>'
+  };
+  function icon(name, size) {
+    size = size || 24;
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" ' +
+      'aria-hidden="true" style="display:block;flex-shrink:0">' + ICON[name] + "</svg>";
+  }
+  [["home","dashboard nav"],["money","dashboard nav"],["plan","dashboard nav"],["profile","user menu"],
+   ["critical","Alert"],["warning","Alert"],["info","Alert"],["positive","Alert"]].forEach(function (it) {
+    $("symGrid").appendChild(el("div", { "class": "sym" },
+      '<span class="g">' + icon(it[0], 24) + '</span><span class="n">' + it[0] +
+      '</span><span class="u">' + it[1] + "</span>"));
+  });
+  $("symRows").appendChild(mrow("size", [16, 20, 24, 32].map(function (sz) {
+    return '<span style="color:var(--uf-ink);display:inline-flex;align-items:center;gap:6px">' +
+      icon("money", sz) + '<span class="note">' + sz + "</span></span>"; })));
+  $("symRows").appendChild(mrow("currentColor",
+    ["var(--uf-ink)", "var(--uf-ink-3)", "var(--uf-green)", "var(--uf-teal)", "var(--uf-neg)"].map(function (c) {
+      return '<span style="color:' + c + ';display:inline-flex">' + icon("positive", 22) + "</span>"; }),
+    "no colour prop \u2014 the parent decides"));
+
+  /* ── composition ───────────────────────── */
+  var TILES = [
+    ["High", "Freedom date \u00b7 This month\u2019s move", "var(--uf-teal-soft)", "var(--uf-teal-deep)", 2],
+    ["High", "Cashflow", "var(--uf-teal-soft)", "var(--uf-teal-deep)", 1],
+    ["Mid", "Portfolio", "var(--uf-surface-2)", "var(--uf-ink-2)", 1],
+    ["Mid", "Accounts", "var(--uf-surface-2)", "var(--uf-ink-2)", 1],
+    ["Low", "Cities", "var(--uf-surface)", "var(--uf-ink-3)", 1]
+  ];
+  TILES.forEach(function (t) {
+    $("tiles").appendChild(el("div", { "class": "tile",
+      style: "grid-column:span " + t[4] + ";background:" + t[2] + ";color:" + t[3] },
+      '<div class="tier">' + t[0] + '</div><div class="nm">' + t[1] + "</div>"));
+  });
+  var RULES = [
+    ["Rank before you place.", "Every module gets one of three priorities, and the grid follows: high goes top-left, because that is where the eye lands and what survives the fold. Here that means the freedom date and this month\u2019s move are high, the portfolio chart is mid, and the city comparison is low \u2014 not because the chart is uninteresting but because nobody needs it weekly."],
+    ["One job per module.", "If a card shows a growth rate and a chart of that same growth, one of them goes. Saying a number twice in two forms is not emphasis, it is noise, and it costs the space a second module needed."],
+    ["Merge what belongs together.", "A freeze-card control belongs on the card it freezes, not in a tile of its own. A tile that exists only to hold one control is a control that lost its home."],
+    ["A number without a label is decoration.", "Every figure has to state its unit, its period and its basis. \u201c$4,820\u201d answers nothing; \u201c$4,820 spent this month, against a $4,400 plan\u201d is a fact someone can act on."],
+    ["A control has to be possible.", "Do not put a Receive button on a credit card. In this product: do not offer Adjust on a figure the user cannot adjust, or Connect on an account type the integration does not support. An affordance that lies costs more trust than a missing feature."],
+    ["If it should not need a click, it is not a button.", "Anything the reader needs on arrival is a section, not something behind a button. Your next move is the clearest case: it is the whole point of the visit, so it cannot be one click away."],
+    ["Fit the count to the margin, not the margin to the count.", "Four items that force a module to break the margins every other module keeps become two items that hold them, plus a way to see the rest. Consistent gutters are what make a grid read as one surface."]
+  ];
+  RULES.forEach(function (r) {
+    $("rules").appendChild(el("li", null, '<div class="rt">' + r[0] + '</div><div class="rb">' + r[1] + "</div>"));
+  });
+
+  /* ── alerts ───────────────────────────── */
+  var ATONE = {
+    critical: ["var(--uf-neg-ink)", "var(--uf-neg-bg)", "var(--uf-neg)"],
+    warning: ["var(--uf-warn-ink)", "var(--uf-warn-bg)", "var(--uf-warn)"],
+    info: ["var(--uf-ink-2)", "var(--uf-surface-2)", "var(--uf-border-2)"],
+    positive: ["var(--uf-pos-ink)", "var(--uf-green-50)", "var(--uf-pos)"]
+  };
+  function glyph(tone) { return icon(tone, 16); }
+  var ALERTS = [
+    ["critical", "Unusual card activity", '<span class="m" style="color:var(--uf-neg)">' + fm(-482.5, { decimals: 2 }) + "</span>",
+      ["Today, 14:22", "Lisboa Eletr\u00f3nica \u00b7 Lisbon, PT"], '<button class="btn danger sm">Freeze card</button>'],
+    ["warning", "Card payment due", '<span class="m">' + fm(1240) + "</span>",
+      ["In 3 days \u00b7 15 Oct", "Chase Sapphire \u00b7\u00b7 4417"], '<button class="btn secondary sm">Pay</button>'],
+    ["info", "August spending is above your plan", "", ["This month", "Groceries and eating out"], ""],
+    ["positive", "Emergency fund is fully funded", '<span class="m" style="color:var(--uf-pos)">' + fm(18000) + "</span>",
+      ["Reached 2 Oct"], ""]
+  ];
+  ALERTS.forEach(function (a) {
+    var t = ATONE[a[0]];
+    var n = el("div", { "class": "alert", role: a[0] === "critical" ? "alert" : "status",
+      style: "background:" + t[1] + ";border:1px solid " + t[2] + "33" });
+    n.innerHTML = '<span style="color:' + t[0] + ';display:flex">' + glyph(a[0]) + "</span>" +
+      '<div style="flex:1;min-width:0"><div class="ttl">' + a[1] + "</div>" +
+      (a[3].length ? '<div class="facts">' + a[3].join(" \u00b7 ") + "</div>" : "") + "</div>" +
+      (a[2] ? '<div class="amt">' + a[2] + "</div>" : "") +
+      (a[4] ? '<div class="amt">' + a[4] + "</div>" : "");
+    $("alerts").appendChild(n);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#seg button"), function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(document.querySelectorAll("#seg button"), function (o) {
+        o.setAttribute("aria-checked", String(o === b));
+      });
+    });
+  });
+
+  /* ── money ─────────────────────────────────────────────────── */
+  function mrow(code, items, note) {
+    var r = el("div", { "class": "row" });
+    r.appendChild(el("code", null, code));
+    var box = el("div", { "class": "items" });
+    items.forEach(function (h) { box.appendChild(el("span", null, h)); });
+    if (note) box.appendChild(el("span", { "class": "note" }, note));
+    r.appendChild(box); return r;
+  }
+  var AMTS = [1500000, 62450, 1650, 420];
+  var mr = $("moneyRows");
+  mr.appendChild(mrow('format="exact"', AMTS.map(function (a) {
+    return '<span class="m" style="font-size:16px">' + fm(a) + "</span>"; }), "a figure someone will act on"));
+  mr.appendChild(mrow('format="compact"', AMTS.map(function (a) {
+    return '<span class="m" style="font-size:16px">' + fm(a, { format: "compact" }) + "</span>"; }), "charts, tiles, comparisons"));
+  mr.appendChild(mrow("decimals={2}", [1500000, 62450.5, 1650.25, 420.4].map(function (a) {
+    return '<span class="m" style="font-size:16px">' + fm(a, { decimals: 2 }) + "</span>"; }), "anything reconciled against a statement"));
+  mr.appendChild(mrow("currency", ["USD", "EUR", "GBP", "JPY", "INR"].map(function (c) {
+    return '<span class="m" style="font-size:16px">' + fm(1500000, { format: "compact", currency: c }) + "</span>"; }),
+    "34 supported — most of the old formatters hardcoded $"));
+  mr.appendChild(mrow("bySign", [
+    '<span class="m" style="font-size:16px;color:var(--uf-pos)">' + fm(2400, { signed: true }) + "</span>",
+    '<span class="m" style="font-size:16px;color:var(--uf-neg)">' + fm(-2400) + "</span>",
+    '<span class="m" style="font-size:16px;color:var(--uf-ink-3)">' + fm(0) + "</span>"
+  ], "the sign sits outside the symbol \u2014 \u2212$40, never $-40"));
+  mr.appendChild(mrow("masked", ['<span class="m" style="font-size:16px">\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022</span>'],
+    "visual privacy on a train, not security \u2014 the value stays in the DOM"));
+
+  function delta(v, goodWhen, ctx, label) {
+    var rising = v > 0, flat = v === 0;
+    var good = goodWhen === "neutral" ? null : goodWhen === "up" ? rising : !rising;
+    var col = flat || good === null ? "var(--uf-ink-3)" : good ? "var(--uf-pos)" : "var(--uf-neg)";
+    var fig = label || fm(v, { signed: true });
+    return '<span class="dl" style="color:' + col + '"><span style="font-size:10px">' +
+      (flat ? "\u2192" : rising ? "\u2191" : "\u2193") + '</span><span class="m">' + fig +
+      '</span><span class="ctx">' + ctx + "</span></span>";
+  }
+  var dr = $("deltaRows");
+  dr.appendChild(mrow('goodWhen="up"', [delta(210, "up", "income vs last month"),
+    delta(-210, "up", "income vs last month")]));
+  dr.appendChild(mrow('goodWhen="down"', [delta(210, "down", "spending vs plan"),
+    delta(-210, "down", "spending vs plan")]));
+  dr.appendChild(mrow('goodWhen="neutral"', [delta(210, "neutral", "transferred")]));
+  dr.appendChild(mrow("label", [delta(-2.4, "down", "freedom date", "2.4 years earlier")]));
+
+  var range = $("barRange");
+  range.addEventListener("input", function () {
+    var pct = Number(range.value);
+    $("barFill").style.width = pct + "%";
+    $("barCap").textContent = fm(1500000 * pct / 100, { format: "compact" }) + " of $1.5M";
+  });
+
+  /* ── charts ────────────────────────────────────────────────
+     Drawn to one scale: the same x()/y() place marks, gridlines
+     and every tick label, and each label names a value the plot
+     actually reaches. The viewBox carries the axis gutters so no
+     label sits outside the drawing.                            */
+  var VB = { w: 860, h: 220, l: 62, r: 14, t: 14, b: 30 };
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function frame(host) {
+    host.innerHTML = "";
+    var svg = svgEl("svg", { viewBox: "0 0 " + VB.w + " " + VB.h, width: "100%",
+      style: "min-width:600px", role: "img" });
+    host.appendChild(svg);
+    return svg;
+  }
+  function scales(maxY, nX) {
+    var x0 = VB.l, x1 = VB.w - VB.r, y0 = VB.h - VB.b, y1 = VB.t;
+    return {
+      x: function (i) { return x0 + (x1 - x0) * (i / (nX - 1)); },
+      y: function (v) { return y0 - (y0 - y1) * (v / maxY); },
+      x0: x0, x1: x1, y0: y0, y1: y1
+    };
+  }
+  function yAxis(svg, s, maxY, ticks) {
+    ticks.forEach(function (v) {
+      svg.appendChild(svgEl("line", { x1: s.x0, x2: s.x1, y1: s.y(v), y2: s.y(v),
+        "class": "gridline", fill: "none" }));
+      var t = svgEl("text", { x: s.x0 - 9, y: s.y(v) + 4, "class": "ax", "text-anchor": "end" });
+      t.textContent = money(v); svg.appendChild(t);
+    });
+  }
+  function xLabels(svg, s, labels) {
+    labels.forEach(function (lab, i) {
+      var t = svgEl("text", { x: s.x(i), y: VB.h - 9, "class": "ax",
+        "text-anchor": i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle" });
+      t.textContent = lab; svg.appendChild(t);
+    });
+  }
+  function tooltip(host) {
+    var tip = el("div", { "class": "tip" });
+    host.appendChild(tip);
+    return {
+      show: function (px, py, k, v, colour) {
+        tip.innerHTML = '<div class="k">' + k + '</div><div class="v" style="color:' +
+          (colour || "var(--uf-ink)") + '">' + v + "</div>";
+        tip.style.left = (px / VB.w * 100) + "%";
+        tip.style.top = (py / VB.h * 100) + "%";
+        tip.style.opacity = "1";
+      },
+      hide: function () { tip.style.opacity = "0"; }
+    };
+  }
+  function hotspot(svg, tip, cx, cy, label, value, colour) {
+    var hit = svgEl("circle", { cx: cx, cy: cy, r: 16, fill: "transparent",
+      style: "cursor:pointer" });
+    hit.addEventListener("mouseenter", function () { tip.show(cx, cy, label, value, colour); });
+    hit.addEventListener("mouseleave", tip.hide);
+    svg.appendChild(hit);
+  }
+
+  var R = 0.07, TARGET = 1500000;
+  function grow(monthly, yrs) {
+    var K = monthly * 12 / R;
+    return Math.round((50000 + K) * Math.pow(1 + R, yrs) - K);
+  }
+  var YEARS1 = [0, 5, 10, 15, 20, 25, 30];
+  var YEARS2 = [0, 5, 10, 15, 20, 25];
+  var SPEND = [["Housing", 2100], ["Food", 720], ["Transport", 430], ["Health", 260], ["Other", 490]];
+
+  function drawProjection() {
+    var host = $("plot1"), svg = frame(host), tip = tooltip(host);
+    var vals = YEARS1.map(function (y) { return grow(1500, y); });
+    var maxY = 2400000, s = scales(maxY, YEARS1.length);
+    yAxis(svg, s, maxY, [0, 600000, 1200000, 1800000, 2400000]);
+    xLabels(svg, s, YEARS1.map(function (y) { return "+" + y + "y"; }));
+
+    var gid = "ufFill";
+    var defs = svgEl("defs", {});
+    var lg = svgEl("linearGradient", { id: gid, x1: "0", y1: "0", x2: "0", y2: "1" });
+    lg.appendChild(svgEl("stop", { offset: "0%", "stop-color": "var(--uf-chart-1)", "stop-opacity": "0.30" }));
+    lg.appendChild(svgEl("stop", { offset: "100%", "stop-color": "var(--uf-chart-1)", "stop-opacity": "0.02" }));
+    defs.appendChild(lg); svg.appendChild(defs);
+
+    var pts = vals.map(function (v, i) { return s.x(i) + " " + s.y(v); });
+    svg.appendChild(svgEl("path", { d: "M " + pts.join(" L ") + " L " + s.x1 + " " + s.y0 +
+      " L " + s.x0 + " " + s.y0 + " Z", fill: "url(#" + gid + ")" }));
+    svg.appendChild(svgEl("path", { d: "M " + pts.join(" L "), fill: "none",
+      stroke: "var(--uf-chart-1)", "stroke-width": "2", "stroke-linejoin": "round" }));
+
+    svg.appendChild(svgEl("line", { x1: s.x0, x2: s.x1, y1: s.y(TARGET), y2: s.y(TARGET),
+      stroke: "var(--uf-ink-3)", "stroke-dasharray": "4 5", fill: "none" }));
+    var tl = svgEl("text", { x: s.x0 + 8, y: s.y(TARGET) - 8, "class": "ax", "text-anchor": "start" });
+    tl.textContent = "FIRE target  $1.5M"; svg.appendChild(tl);
+
+    vals.forEach(function (v, i) {
+      svg.appendChild(svgEl("circle", { cx: s.x(i), cy: s.y(v), r: "3.5",
+        fill: "var(--uf-chart-1)", stroke: "var(--uf-card)", "stroke-width": "2" }));
+      hotspot(svg, tip, s.x(i), s.y(v), "+" + YEARS1[i] + " years",
+        "$" + v.toLocaleString(), "var(--uf-chart-1)");
+    });
+  }
+
+  function drawCompare() {
+    var host = $("plot2"), svg = frame(host), tip = tooltip(host);
+    var a = YEARS2.map(function (y) { return grow(1500, y); });
+    var b = YEARS2.map(function (y) { return grow(2300, y); });
+    var maxY = 2400000, s = scales(maxY, YEARS2.length);
+    yAxis(svg, s, maxY, [0, 600000, 1200000, 1800000, 2400000]);
+    xLabels(svg, s, YEARS2.map(function (y) { return "+" + y + "y"; }));
+    [[a, "var(--uf-chart-2)", "Saving $1,500/mo"], [b, "var(--uf-chart-1)", "Saving $2,300/mo"]]
+      .forEach(function (ser) {
+        var pts = ser[0].map(function (v, i) { return s.x(i) + " " + s.y(v); });
+        svg.appendChild(svgEl("path", { d: "M " + pts.join(" L "), fill: "none",
+          stroke: ser[1], "stroke-width": "2", "stroke-linejoin": "round" }));
+        ser[0].forEach(function (v, i) {
+          svg.appendChild(svgEl("circle", { cx: s.x(i), cy: s.y(v), r: "3.5", fill: ser[1],
+            stroke: "var(--uf-card)", "stroke-width": "2" }));
+          hotspot(svg, tip, s.x(i), s.y(v), ser[2] + " · +" + YEARS2[i] + "y",
+            "$" + v.toLocaleString(), ser[1]);
+        });
+      });
+    var leg = el("div", { "class": "legend" });
+    leg.innerHTML = '<span><i style="background:var(--uf-chart-2)"></i>Saving $1,500/mo</span>' +
+      '<span><i style="background:var(--uf-chart-1)"></i>Saving $2,300/mo</span>';
+    host.appendChild(leg);
+  }
+
+  function drawSpend() {
+    var host = $("plot3"), svg = frame(host), tip = tooltip(host);
+    var maxX = 2400, left = 96, right = VB.w - 60, top = 18, rowH = 34;
+    [0, 600, 1200, 1800, 2400].forEach(function (v) {
+      var gx = left + (right - left) * (v / maxX);
+      svg.appendChild(svgEl("line", { x1: gx, x2: gx, y1: top - 6, y2: top + rowH * SPEND.length - 10,
+        "class": "gridline", fill: "none" }));
+      var t = svgEl("text", { x: gx, y: VB.h - 9, "class": "ax", "text-anchor": "middle" });
+      t.textContent = money(v); svg.appendChild(t);
+    });
+    SPEND.forEach(function (row, i) {
+      var y = top + i * rowH, w = (right - left) * (row[1] / maxX);
+      var lbl = svgEl("text", { x: left - 12, y: y + 15, "class": "ax", "text-anchor": "end" });
+      lbl.textContent = row[0]; svg.appendChild(lbl);
+      var bar = svgEl("rect", { x: left, y: y, width: Math.max(w, 2), height: 20, rx: "4",
+        fill: row[0] === "Other" ? "var(--uf-surface-2)" : "var(--uf-chart-1)",
+        style: "cursor:pointer" });
+      bar.addEventListener("mouseenter", function () {
+        tip.show(left + w, y, row[0], "$" + row[1].toLocaleString() + "/mo",
+          row[0] === "Other" ? "var(--uf-ink-2)" : "var(--uf-chart-1)");
+      });
+      bar.addEventListener("mouseleave", tip.hide);
+      svg.appendChild(bar);
+      var val = svgEl("text", { x: left + w + 10, y: y + 15, "class": "ax" });
+      val.textContent = "$" + row[1].toLocaleString(); svg.appendChild(val);
+    });
+  }
+
+  /* Income and expenses share one axis and one zero line: the month that nets
+     negative is visible without reading a number. Two charts would hide it. */
+  var CASHFLOW = [["Apr", 8000, -5200], ["May", 8000, -4900], ["Jun", 8000, -6400],
+                  ["Jul", 9600, -5100], ["Aug", 8000, -8700], ["Sep", 8000, -5000]];
+  function drawCashflow() {
+    var host = $("plot4"), svg = frame(host), tip = tooltip(host);
+    var maxY = 10000, left = VB.l, right = VB.w - VB.r, top = VB.t, bottom = VB.h - VB.b;
+    var y = function (v) { return bottom - (bottom - top) * ((v + maxY) / (2 * maxY)); };
+    [-10000, -5000, 0, 5000, 10000].forEach(function (v) {
+      svg.appendChild(svgEl("line", { x1: left, x2: right, y1: y(v), y2: y(v),
+        "class": "gridline", fill: "none" }));
+      var t = svgEl("text", { x: left - 9, y: y(v) + 4, "class": "ax", "text-anchor": "end" });
+      t.textContent = money(v); svg.appendChild(t);
+    });
+    svg.appendChild(svgEl("line", { x1: left, x2: right, y1: y(0), y2: y(0),
+      stroke: "var(--uf-chart-axis)", "stroke-width": "1", fill: "none" }));
+    var step = (right - left) / CASHFLOW.length, bw = Math.min(34, step * 0.44);
+    CASHFLOW.forEach(function (row, i) {
+      var cx = left + step * (i + 0.5);
+      [[row[1], "var(--uf-chart-1)", "Money in"], [row[2], "var(--uf-chart-3)", "Money out"]]
+        .forEach(function (s2, j) {
+          var v = s2[0], top2 = v >= 0 ? y(v) : y(0), h = Math.abs(y(v) - y(0));
+          var x = cx - bw - 2 + j * (bw + 4);
+          var r = svgEl("rect", { x: x, y: top2, width: bw, height: Math.max(h, 1),
+            rx: "4", fill: s2[1], style: "cursor:pointer" });
+          r.addEventListener("mouseenter", function () {
+            tip.show(x + bw / 2, top2, row[0] + " \u00b7 " + s2[2],
+              "$" + Math.abs(v).toLocaleString(), s2[1]);
+          });
+          r.addEventListener("mouseleave", tip.hide);
+          svg.appendChild(r);
+        });
+      var lab = svgEl("text", { x: cx, y: VB.h - 9, "class": "ax", "text-anchor": "middle" });
+      lab.textContent = row[0]; svg.appendChild(lab);
+    });
+    var leg = el("div", { "class": "legend" });
+    leg.innerHTML = '<span><i style="background:var(--uf-chart-1)"></i>Money in</span>' +
+      '<span><i style="background:var(--uf-chart-3)"></i>Money out</span>';
+    host.appendChild(leg);
+  }
+
+  /* Part to whole. One hue stepped by opacity: these categories are
+     magnitudes, not identities, so five categorical hues would be wrong
+     (and there are only three validated slots anyway). */
+  var SHARE = [["Housing",2100,1],["Food",720,.78],["Transport",430,.56],["Health",260,.34],["Other",490,0]];
+  function donutArc(cx, cy, ro, ri, a0, a1) {
+    var pt = function (r, a) { return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+    var large = (a1 - a0) > Math.PI ? 1 : 0;
+    var p0 = pt(ro, a0), p1 = pt(ro, a1), p2 = pt(ri, a1), p3 = pt(ri, a0);
+    return "M " + p0 + " A " + ro + " " + ro + " 0 " + large + " 1 " + p1 +
+           " L " + p2 + " A " + ri + " " + ri + " 0 " + large + " 0 " + p3 + " Z";
+  }
+  function drawDonut() {
+    var host = $("donut"); if (!host) return;
+    var total = SHARE.reduce(function (n, d) { return n + d[1]; }, 0);
+    var cx = 130, cy = 130, ro = 104, ri = 66, a = -Math.PI / 2, gap = 0.012, parts = [];
+    var svg = '<svg width="260" height="260" viewBox="0 0 260 260" role="img" aria-label="Spending share">';
+    SHARE.forEach(function (d) {
+      var sweep = (d[1] / total) * Math.PI * 2;
+      var fill = d[2] === 0 ? "var(--uf-surface-2)" : "var(--uf-chart-1)";
+      svg += '<path d="' + donutArc(cx, cy, ro, ri, a + gap / 2, a + sweep - gap / 2) +
+        '" fill="' + fill + '" fill-opacity="' + (d[2] === 0 ? 1 : d[2]) + '"/>';
+      parts.push([d[0], d[1], d[1] / total, fill, d[2] === 0 ? 1 : d[2]]);
+      a += sweep;
+    });
+    svg += '<text x="' + cx + '" y="' + (cy - 6) + '" text-anchor="middle" style="font-family:var(--uf-font-mono);' +
+      'font-size:19px;font-weight:500;fill:var(--uf-ink)">' + fm(total) + "</text>";
+    svg += '<text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" style="font-family:var(--uf-font);' +
+      'font-size:11px;fill:var(--uf-ink-3)">per month</text></svg>';
+    host.innerHTML = svg;
+    $("donutLegend").innerHTML = parts.map(function (p) {
+      return '<div class="r"><span class="sw2" style="background:' + p[3] + ';opacity:' + p[4] + '"></span>' +
+        '<span class="nm">' + p[0] + '</span><span class="amt">' + fm(p[1]) + "</span>" +
+        '<span class="pct">' + Math.round(p[2] * 100) + "%</span></div>";
+    }).join("");
+  }
+  function drawMeter(used, limit) {
+    var host = $("meter"); if (!host) return;
+    used = used || 6200; limit = limit || 10000;
+    var pct = Math.max(0, Math.min(1, used / limit));
+    var tone = pct > 0.7 ? "var(--uf-neg)" : pct > 0.3 ? "var(--uf-warn)" : "var(--uf-pos)";
+    // Ticks sit at their true value — evenly spaced, "30%" would land at a
+    // third of the width and name a position the scale never reaches.
+    var ticks = [0, 0.3, 0.7, 1].map(function (m) {
+      var tf = m === 0 ? "none" : m === 1 ? "translateX(-100%)" : "translateX(-50%)";
+      return '<span style="left:' + (m * 100) + "%;transform:" + tf + '">' + Math.round(m * 100) + "%</span>";
+    }).join("");
+    host.innerHTML =
+      '<div class="meter-head"><span class="meter-pct" style="color:' + tone + '">' + Math.round(pct * 100) +
+      '%</span><span style="font-size:13px;color:var(--uf-ink-2)">of your limit used</span>' +
+      '<span class="meter-of">' + fm(used) + " of " + fm(limit) + "</span></div>" +
+      '<div class="meter-track"><div class="meter-fill" style="width:' + (pct * 100) + "%;background:" + tone + '"></div></div>' +
+      '<div class="meter-ticks">' + ticks + "</div>";
+  }
+
+  function drawCharts() { drawProjection(); drawCompare(); drawCashflow(); drawDonut(); drawMeter(); drawSpend(); }
+
+  /* ── motion ────────────────────────────────────────────────── */
+  var DUR = [["--uf-dur-1", 120, "colour and hover"], ["--uf-dur-2", 180, "controls"],
+             ["--uf-dur-3", 240, "panels and drawers"], ["--uf-dur-4", 420, "entrances"]];
+  DUR.forEach(function (d) {
+    var r = el("div", { "class": "row" });
+    r.appendChild(el("code", null, d[0]));
+    r.appendChild(el("div", { "class": "items" },
+      '<span class="track" style="--d:' + d[1] + 'ms"><i></i></span>' +
+      '<span class="mono" style="font-size:12px;color:var(--uf-ink-2);width:54px;display:inline-block">' + d[1] + 'ms</span>' +
+      '<span class="note">' + d[2] + '</span>'));
+    $("durations").appendChild(r);
+  });
+  var EASE = [["--uf-ease", "the house curve — already 22 uses", "cubic-bezier(0.22, 1, 0.36, 1)"],
+              ["--uf-ease-standard", "symmetrical moves, toggles", "cubic-bezier(0.4, 0, 0.2, 1)"],
+              ["--uf-ease-spring", "overshoot — confirmations only", "cubic-bezier(0.34, 1.56, 0.64, 1)"]];
+  EASE.forEach(function (e) {
+    var r = el("div", { "class": "row" });
+    r.appendChild(el("code", null, e[0]));
+    r.appendChild(el("div", { "class": "items" },
+      '<span class="lane" style="--e:var(' + e[0] + ')"><i></i></span>' +
+      '<span class="mono" style="font-size:11px;color:var(--uf-ink-3)">' + e[2] + '</span>' +
+      '<span class="note">' + e[1] + '</span>'));
+    $("easings").appendChild(r);
+  });
+  [0, 70, 140].forEach(function (ms, i) {
+    $("rises").appendChild(el("div", { "class": "rise", style: "--delay:" + ms + "ms" },
+      '<div class="t-label" style="color:var(--uf-ink-3)">Card ' + (i + 1) + '</div>' +
+      '<div class="mono" style="font-size:18px;margin-top:6px">' + ms + 'ms</div>'));
+  });
+  $("replayBtn").addEventListener("click", function () {
+    ["motionCard", "easeCard", "riseCard"].forEach(function (id) {
+      var c = $(id); c.classList.remove("run"); void c.offsetWidth; c.classList.add("run");
+    });
+  });
+
+  /* ── type, radius, elevation, space ────────────────────────── */
+  [["t-display", "56 · Fraunces · the freedom date"], ["t-h1", "34 · Fraunces · page titles"],
+   ["t-h2", "24 · Fraunces · section titles"], ["t-h3", "18 · Manrope 700"],
+   ["t-lead", "16 · Manrope 400"], ["t-body", "14 · Manrope 400 · default"],
+   ["t-small", "13 · Manrope 400"], ["t-label", "11 · Manrope 700 · uppercase"]
+  ].forEach(function (t) {
+    var r = el("div", { "class": "row", style: "align-items:baseline" });
+    r.appendChild(el("code", null, ".uf-" + t[0]));
+    r.appendChild(el("div", { style: "flex:1;min-width:0" },
+      '<div class="' + t[0] + '">Make work optional</div>' +
+      '<div class="t-small" style="color:var(--uf-ink-3);margin-top:4px">' + t[1] + '</div>'));
+    $("typeScale").appendChild(r);
+  });
+  var rdata = el("div", { "class": "row", style: "align-items:baseline" });
+  rdata.appendChild(el("code", null, ".uf-t-data"));
+  rdata.appendChild(el("div", { "class": "mono", style: "font-size:20px" }, "1,234,567.89"));
+  $("typeScale").appendChild(rdata);
+
+  [["--uf-r-control", "12px", "control"], ["--uf-r-card", "20px", "card"],
+   ["--uf-r-modal", "28px", "modal"], ["--uf-r-pill", "999", "pill — every button"]
+  ].forEach(function (r) {
+    $("radii").appendChild(el("div", { style: "text-align:center" },
+      '<div style="width:92px;height:62px;background:var(--uf-surface-2);' +
+      'border:1px solid var(--uf-border-2);border-radius:var(' + r[0] + ')"></div>' +
+      '<div class="mono" style="font-size:10.5px;color:var(--uf-ink-3);margin-top:7px">' + r[1] + '</div>' +
+      '<div class="t-small" style="color:var(--uf-ink-2)">' + r[2] + '</div>'));
+  });
+  ["--uf-e1", "--uf-e2", "--uf-e3"].forEach(function (e) {
+    $("elevs").appendChild(el("div", { style: "text-align:center" },
+      '<div style="width:112px;height:62px;background:var(--uf-card);border:1px solid var(--uf-border);' +
+      'border-radius:var(--uf-r-card);box-shadow:var(' + e + ')"></div>' +
+      '<div class="mono" style="font-size:10.5px;color:var(--uf-ink-3);margin-top:9px">' + e + '</div>'));
+  });
+  [4, 8, 12, 16, 24, 32, 48].forEach(function (px, i) {
+    $("spaces").appendChild(el("div", { style: "text-align:center" },
+      '<div style="width:' + px + 'px;height:' + px + 'px;background:var(--uf-teal-line);border-radius:3px"></div>' +
+      '<div class="mono" style="font-size:10.5px;color:var(--uf-ink-3);margin-top:8px">' + px + '</div>'));
+  });
+
+  paintSwatches();
+  drawCharts();
+})();
+</script>
