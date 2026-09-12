@@ -5,7 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 // never reaches the client bundle. The composer and the renderer described the
 // same item in two places, which is how a field added to one silently goes
 // missing in the other.
-import type { UpdateItem } from "@/lib/email-html";
+import {
+  buildAdminAnnouncementEmail,
+  buildMonthlyUpdateEmail,
+  type UpdateItem,
+} from "@/lib/email-html";
 
 type Segment = "all" | "free" | "pro";
 type Template = "announcement" | "monthly_update";
@@ -126,6 +130,26 @@ export default function EmailsTab({ token }: { token: string }) {
     }
     setResult(null);
   }
+
+  // Mirrors app/api/admin/emails/send/route.ts. A name is passed so the
+  // greeting is visible here rather than only discovered after sending.
+  const previewHtml =
+    template === "monthly_update"
+      ? buildMonthlyUpdateEmail({
+          monthLabel: monthLabel || "this month",
+          intro: intro || "Your intro sentence here.",
+          newItems,
+          fixItems,
+          ctaLabel: ctaLabel || undefined,
+          ctaHref: ctaHref || undefined,
+          unsubscribeUrl: "#",
+          recipientName: "Alex Rivera",
+        })
+      : buildAdminAnnouncementEmail({
+          heading: heading || "Your heading here",
+          bodyHtml: paragraphsToHtml(body || "Your message here."),
+          unsubscribeUrl: "#",
+        });
 
   function currentContent(): Record<string, unknown> {
     if (template === "monthly_update") {
@@ -362,63 +386,24 @@ export default function EmailsTab({ token }: { token: string }) {
       </div>
 
       <div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: 8 }}>Preview</div>
-        {template === "announcement" ? (
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#22D3A5", textTransform: "uppercase", letterSpacing: 1 }}>Update</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#003527", margin: "6px 0 14px" }}>{heading || "Your heading here"}</div>
-            <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{body || "Your message here."}</div>
-            <p style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #F0F4F1", fontSize: 11, color: "#9CA3AF" }}>
-              You&apos;re receiving this because you have an UntilFire account. Unsubscribe from these emails.
-            </p>
-          </div>
-        ) : (
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#22D3A5", textTransform: "uppercase", letterSpacing: 1 }}>Monthly Update</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#003527", margin: "6px 0 8px" }}>{`What's new in ${monthLabel || "…"}`}</div>
-              <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.7 }}>{intro || "Intro sentence here."}</div>
-            </div>
-            {newItems.length > 0 && <PreviewItemSection label="New this month" items={newItems} />}
-            {fixItems.length > 0 && <PreviewItemSection label="Fixed & improved" items={fixItems} />}
-            {ctaLabel && ctaHref && (
-              <div>
-                <span style={{ display: "inline-block", background: "#059669", color: "#fff", fontWeight: 700, fontSize: 13, padding: "10px 18px", borderRadius: 8 }}>
-                  {ctaLabel}
-                </span>
-              </div>
-            )}
-            <p style={{ margin: 0, paddingTop: 16, borderTop: "1px solid #F0F4F1", fontSize: 11, color: "#9CA3AF" }}>
-              You&apos;re receiving this because you have an UntilFire account. Unsubscribe from these emails.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function PreviewItemSection({ label, items }: { label: string; items: UpdateItem[] }) {
-  return (
-    <div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {items.map((it, i) => (
-          <div key={i}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E" }}>{it.title || "Untitled"}</div>
-            {it.desc && <div style={{ fontSize: 13, color: "#64748B" }}>{it.desc}</div>}
-            {it.image ? (
-              // Arbitrary remote host in an admin-only preview — next/image
-              // cannot optimise a URL that is not in remotePatterns.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={it.image}
-                alt=""
-                style={{ display: "block", width: "100%", marginTop: 8, borderRadius: 8, border: "1px solid #E2E8F0" }}
-              />
-            ) : null}
-          </div>
-        ))}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>Preview</div>
+          <div style={{ fontSize: 11, color: "#94A3B8" }}>the real email, rendered</div>
+        </div>
+        {/* The preview used to be a hand-built React approximation of the
+            email, which meant it could look right while the thing that
+            actually sends looked wrong. This renders the exact HTML the send
+            route builds, in an iframe so the email's own CSS cannot leak into
+            the admin page. */}
+        <iframe
+          title="Email preview"
+          srcDoc={previewHtml}
+          sandbox=""
+          style={{
+            width: "100%", height: 900, border: "1px solid #E2E8F0",
+            borderRadius: 12, background: "#fff", display: "block",
+          }}
+        />
       </div>
     </div>
   );

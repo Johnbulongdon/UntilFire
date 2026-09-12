@@ -5,6 +5,28 @@ const SITE = "https://www.untilfire.com";
 const TWITTER_URL = "https://twitter.com/untilfire";
 const LINKEDIN_URL = "https://www.linkedin.com/company/untilfire";
 
+/* Design-system tokens, mirrored from app/globals.css. Email has no custom
+   properties to read, so the values are duplicated here deliberately; the
+   comment is the link back to the source of truth. */
+const GROUND = "#FDF8F1";
+const CARD = "#FFFDFA";
+const BORDER = "#EFE2D0";
+const INK = "#221B12";
+const INK_2 = "#6B5C48";
+const INK_3 = "#9A8B76";
+const GREEN = "#12856A";
+const TEAL = "#0E9C86";
+
+/**
+ * Design-system faces. Fraunces and Manrope will not load in most mail
+ * clients, so each falls back to something with the same posture rather than
+ * to whatever the client picks: Georgia is the closest widely-installed
+ * companion to Fraunces, and the system sans stack matches Manrope's
+ * humanist feel.
+ */
+const DISPLAY = "Fraunces,Georgia,'Times New Roman',serif";
+const BODY = "Manrope,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+
 const LOGO = `
   <table cellpadding="0" cellspacing="0" style="margin:0 auto">
     <tr>
@@ -12,7 +34,7 @@ const LOGO = `
         <img src="${SITE}/logo/horizon-color.svg" alt="" width="36" height="36" style="display:block;border-radius:8px;border:0" />
       </td>
       <td style="vertical-align:middle">
-        <span style="font-size:20px;font-weight:900;color:#059669;letter-spacing:-0.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Until</span><span style="font-size:20px;font-weight:900;color:#003527;letter-spacing:-0.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Fire</span>
+        <span style="font-size:20px;font-weight:900;color:${GREEN};letter-spacing:-0.5px;font-family:${BODY}">Until</span><span style="font-size:20px;font-weight:900;color:${INK};letter-spacing:-0.5px;font-family:${BODY}">Fire</span>
       </td>
     </tr>
   </table>`;
@@ -26,17 +48,17 @@ function base(preheader: string, body: string): string {
   <meta name="color-scheme" content="light">
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
-<body style="margin:0;padding:0;background:#F0F4F1;-webkit-text-size-adjust:100%;mso-line-height-rule:exactly">
+<body style="margin:0;padding:0;background:${GROUND};-webkit-text-size-adjust:100%;mso-line-height-rule:exactly">
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F0F4F1;padding:32px 16px 48px">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${GROUND};padding:32px 16px 48px">
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px">
         <tr><td style="padding:0 0 28px;text-align:center">${LOGO}</td></tr>
         ${body}
-        <tr><td style="padding:32px 0 0;text-align:center;border-top:1px solid #D1FAE5">
-          <p style="margin:0 0 4px;font-size:12px;color:#6B7280;line-height:1.6">UntilFire &mdash; Personal finance that sets you free.</p>
-          <p style="margin:0;font-size:11px;color:#9CA3AF;line-height:1.6">
-            <a href="${SITE}" style="color:#9CA3AF;text-decoration:none">untilfire.com</a>
+        <tr><td style="padding:32px 0 0;text-align:center;border-top:1px solid ${BORDER}">
+          <p style="margin:0 0 4px;font-size:12px;color:${INK_2};line-height:1.6">UntilFire &mdash; Personal finance that sets you free.</p>
+          <p style="margin:0;font-size:11px;color:${INK_3};line-height:1.6">
+            <a href="${SITE}" style="color:${INK_3};text-decoration:none">untilfire.com</a>
           </p>
         </td></tr>
       </table>
@@ -48,27 +70,27 @@ function base(preheader: string, body: string): string {
 
 function heroCard(eyebrow: string, headline: string, subtext: string, greeting = ""): string {
   const hello = greeting
-    ? `<p style="margin:0 0 8px;font-size:17px;font-weight:700;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">${greeting}</p>`
+    ? `<p style="margin:0 0 10px;font-size:15px;font-weight:700;color:${INK_2};font-family:${BODY}">${greeting}</p>`
     : "";
   return `
-  <tr><td style="background:linear-gradient(155deg,#059669 0%,#003527 100%);border-radius:20px;padding:40px 36px 36px">
-    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#22D3A5">${eyebrow}</p>${hello}
-    <h1 style="margin:0 0 14px;font-size:36px;font-weight:900;color:#ffffff;letter-spacing:-1.5px;line-height:1.1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">${headline}</h1>
-    <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7">${subtext}</p>
+  <tr><td style="background:${CARD};border:1px solid ${BORDER};border-radius:20px;padding:40px 36px 36px">
+    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${TEAL}">${eyebrow}</p>${hello}
+    <h1 style="margin:0 0 14px;font-size:34px;font-weight:700;color:${INK};letter-spacing:-0.8px;line-height:1.15;font-family:${DISPLAY}">${headline}</h1>
+    <p style="margin:0;font-size:15px;color:${INK_2};line-height:1.7;font-family:${BODY}">${subtext}</p>
   </td></tr>`;
 }
 
 function sectionCard(content: string): string {
   return `
   <tr><td style="padding:16px 0 0">
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border-radius:16px;padding:28px 28px 24px">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${CARD};border-radius:16px;padding:28px 28px 24px">
       <tr><td>${content}</td></tr>
     </table>
   </td></tr>`;
 }
 
 function sectionLabel(text: string): string {
-  return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:1.5px">${text}</p>`;
+  return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:${GREEN};text-transform:uppercase;letter-spacing:1.5px">${text}</p>`;
 }
 
 const escapeAttr = (s: string) =>
@@ -93,16 +115,16 @@ function bulletRow(title: string, desc: string, last = false, image?: string): s
   // title because most clients block images by default and the reader should
   // still learn what the item is.
   const shot = src
-    ? `<img src="${src}" alt="${escapeAttr(title)}" width="480" style="display:block;width:100%;max-width:480px;height:auto;margin-top:12px;border:1px solid #E5E7EB;border-radius:12px" />`
+    ? `<img src="${src}" alt="${escapeAttr(title)}" width="480" style="display:block;width:100%;max-width:480px;height:auto;margin-top:12px;border:1px solid ${BORDER};border-radius:12px" />`
     : "";
   return `
   <tr>
     <td style="vertical-align:top;padding-bottom:${last ? "0" : "18px"};width:10px">
-      <div style="width:6px;height:6px;border-radius:50%;background:#22D3A5;margin-top:7px"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:${TEAL};margin-top:7px"></div>
     </td>
     <td style="vertical-align:top;padding-left:14px;padding-bottom:${last ? "0" : "18px"}">
-      <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:#003527;line-height:1.4">${title}</p>
-      <p style="margin:0;font-size:13px;color:#6B7280;line-height:1.6">${desc}</p>${shot}
+      <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:${INK};line-height:1.4">${title}</p>
+      <p style="margin:0;font-size:13px;color:${INK_2};line-height:1.6">${desc}</p>${shot}
     </td>
   </tr>`;
 }
@@ -112,8 +134,8 @@ function ctaBlock(href: string, label: string): string {
   <tr><td style="padding:22px 0 0;text-align:center">
     <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto">
       <tr>
-        <td style="border-radius:12px;background:#059669">
-          <a href="${href}" style="display:inline-block;padding:15px 44px;font-size:15px;font-weight:800;color:#ffffff;text-decoration:none;letter-spacing:-0.2px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">${label} &rarr;</a>
+        <td style="border-radius:12px;background:${GREEN}">
+          <a href="${href}" style="display:inline-block;padding:15px 44px;font-size:15px;font-weight:800;color:${CARD};text-decoration:none;letter-spacing:-0.2px;font-family:${BODY}">${label} &rarr;</a>
         </td>
       </tr>
     </table>
@@ -146,9 +168,9 @@ export function buildWelcomeEmail(): string {
         true
       )}
     </table>
-    <p style="margin:24px 0 0;font-size:14px;color:#6B7280;line-height:1.7;border-top:1px solid #F0F4F1;padding-top:20px">
+    <p style="margin:24px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px">
       I hope what worked for me works for you.<br>
-      <span style="font-weight:700;color:#003527">&#8212; John, founder of UntilFire</span>
+      <span style="font-weight:700;color:${INK}">&#8212; John, founder of UntilFire</span>
     </p>
   `);
 
@@ -191,13 +213,13 @@ export function buildTrialReminderEmail(trialEndDate: string): string {
 
   const value = sectionCard(`
     ${sectionLabel("What Pro gives you")}
-    <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.75">
+    <p style="margin:0 0 14px;font-size:14px;color:${INK_2};line-height:1.75">
       Unlimited bank connections, auto-imported transactions, full cashflow tracking, and a live FIRE projection that updates as your finances do.
     </p>
-    <p style="margin:0;font-size:14px;color:#6B7280;line-height:1.75">
+    <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.75">
       If you&#39;ve been using the dashboard this month, you&#39;ve already seen what Pro does &#8212; it keeps doing exactly that.
     </p>
-    <p style="margin:20px 0 0;font-size:14px;color:#6B7280;line-height:1.7;border-top:1px solid #F0F4F1;padding-top:20px">
+    <p style="margin:20px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px">
       &#8212; John, founder of UntilFire
     </p>
   `);
@@ -221,34 +243,34 @@ export function buildRetentionEmail(): string {
 
   const checkin = sectionCard(`
     ${sectionLabel("A few things worth reflecting on")}
-    <p style="margin:0 0 18px;font-size:14px;color:#374151;line-height:1.75">
+    <p style="margin:0 0 18px;font-size:14px;color:${INK_2};line-height:1.75">
       Are you more aware of your spending than you were last week? More aware of what you earn, what you owe, and the time you trade for it every day?
     </p>
-    <p style="margin:0;font-size:14px;color:#374151;line-height:1.75">
+    <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.75">
       Even just noticing the numbers more clearly is progress. That awareness is what compounds &#8212; not just the savings.
     </p>
   `);
 
   const building = sectionCard(`
     ${sectionLabel("What we&#39;re building next")}
-    <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.75">
+    <p style="margin:0 0 16px;font-size:14px;color:${INK_2};line-height:1.75">
       We&#39;re adding more tools &#8212; better spending breakdowns, smarter projections, and ways to model big life decisions against your timeline. Your feedback is what shapes what gets built next.
     </p>
-    <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.75">
+    <p style="margin:0 0 20px;font-size:14px;color:${INK_2};line-height:1.75">
       If there&#39;s something you wish UntilFire did, or something that confused you, just reply to this email. I read every one.
     </p>
-    <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#003527">Follow along as we build:</p>
+    <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:${INK}">Follow along as we build:</p>
     <table cellpadding="0" cellspacing="0" role="presentation">
       <tr>
         <td style="padding-right:10px">
-          <a href="${TWITTER_URL}" style="display:inline-block;padding:9px 18px;border-radius:8px;background:#000000;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">&#120143; Follow on X</a>
+          <a href="${TWITTER_URL}" style="display:inline-block;padding:9px 18px;border-radius:8px;background:#000000;color:${CARD};font-size:13px;font-weight:700;text-decoration:none;font-family:${BODY}">&#120143; Follow on X</a>
         </td>
         <td>
-          <a href="${LINKEDIN_URL}" style="display:inline-block;padding:9px 18px;border-radius:8px;background:#0A66C2;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">in Follow on LinkedIn</a>
+          <a href="${LINKEDIN_URL}" style="display:inline-block;padding:9px 18px;border-radius:8px;background:#0A66C2;color:${CARD};font-size:13px;font-weight:700;text-decoration:none;font-family:${BODY}">in Follow on LinkedIn</a>
         </td>
       </tr>
     </table>
-    <p style="margin:20px 0 0;font-size:14px;color:#6B7280;line-height:1.7;border-top:1px solid #F0F4F1;padding-top:20px">
+    <p style="margin:20px 0 0;font-size:14px;color:${INK_2};line-height:1.7;border-top:1px solid ${GROUND};padding-top:20px">
       &#8212; John, founder of UntilFire
     </p>
   `);
@@ -265,18 +287,18 @@ export function buildRetentionEmail(): string {
 // always carry a one-click unsubscribe link.
 
 function founderSignoff(bordered = true): string {
-  const border = bordered ? "border-top:1px solid #F0F4F1;padding-top:20px" : "";
+  const border = bordered ? "border-top:1px solid ${GROUND};padding-top:20px" : "";
   return `
-    <p style="margin:24px 0 0;font-size:14px;color:#6B7280;line-height:1.7;${border}">
-      <span style="font-weight:700;color:#003527">&#8212; John, founder of UntilFire</span>
+    <p style="margin:24px 0 0;font-size:14px;color:${INK_2};line-height:1.7;${border}">
+      <span style="font-weight:700;color:${INK}">&#8212; John, founder of UntilFire</span>
     </p>`;
 }
 
 function unsubscribeNote(unsubscribeUrl: string): string {
   return `
-    <p style="margin:20px 0 0;font-size:11px;color:#9CA3AF;line-height:1.6">
+    <p style="margin:20px 0 0;font-size:11px;color:${INK_3};line-height:1.6">
       You're receiving this because you have an UntilFire account.
-      <a href="${unsubscribeUrl}" style="color:#9CA3AF;text-decoration:underline">Unsubscribe from these emails</a>.
+      <a href="${unsubscribeUrl}" style="color:${INK_3};text-decoration:underline">Unsubscribe from these emails</a>.
     </p>`;
 }
 
@@ -292,7 +314,7 @@ export function buildAdminAnnouncementEmail({
   const hero = heroCard("Update", heading, "A quick note from the UntilFire team.");
 
   const content = sectionCard(`
-    <div style="font-size:14px;color:#374151;line-height:1.75">${bodyHtml}</div>
+    <div style="font-size:14px;color:${INK_2};line-height:1.75">${bodyHtml}</div>
     ${founderSignoff()}
     ${unsubscribeNote(unsubscribeUrl)}
   `);
