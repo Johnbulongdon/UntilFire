@@ -32,7 +32,7 @@ import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
 import { EXPENSE_CATEGORIES } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Badge, ICON_PATHS } from "@/components/ui";
+import { Alert, Badge, Button, ICON_PATHS, Stat } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -432,14 +432,17 @@ function FieldRow({ label, hint, children }: { label: string; hint?: string; chi
   );
 }
 
-function KpiCard({ label, value, sub, color = "#19181E", glow = false }: {
-  label: string; value: string; sub?: string; color?: string; glow?: boolean;
+/* Wraps the kit's Stat primitive. Stat renders the figure in DM Mono with
+   tabular numerals, which is what makes a row of balances line up on the
+   decimal instead of drifting — this used to be Manrope with hand-typed hex
+   per card, so the four KPI figures never aligned. */
+function KpiCard({ label, value, sub, tone = "default", glow = false }: {
+  label: string; value: React.ReactNode; sub?: string;
+  tone?: "default" | "positive" | "negative" | "freedom"; glow?: boolean;
 }) {
   return (
     <div className={`uf-card ${glow ? "uf-card-glow" : ""}`} style={{ padding: "18px 20px" }}>
-      <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "#64748B", marginBottom: 8, fontFamily: "Manrope, sans-serif", fontWeight: 700 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, color, fontFamily: "Manrope, sans-serif", lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: "#64748B", marginTop: 5 }}>{sub}</div>}
+      <Stat label={label} value={value} delta={sub} deltaTone="default" tone={tone} size="lg" />
     </div>
   );
 }
@@ -3367,12 +3370,14 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
       {/* KPI row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
         {[
-          { label: "Investable Assets",  val: fmtMoney(investable, true),   color: "#059669",  sub: "All accounts" },
-          { label: "Net Worth",          val: fmtMoney(netWorth, true),      color: netWorth >= 0 ? "#059669" : "#DC2626", sub: "Assets − debt" },
-          { label: "Total Debt",         val: fmtMoney(totalDebt + mortgageBalance, true), color: "#DC2626", sub: "Consumer + mortgage" },
-          { label: "FIRE Progress",      val: `${progress.toFixed(0)}%`, color: progress >= 75 ? "#059669" : "#20D4BF", sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
+          // Tone carries meaning rather than taste: a balance is a fact, debt
+          // reads negative, and FIRE progress is the one figure teal belongs to.
+          { label: "Investable Assets", val: fmtMoney(investable, true), tone: "default" as const, sub: "All accounts" },
+          { label: "Net Worth", val: fmtMoney(netWorth, true), tone: netWorth >= 0 ? ("positive" as const) : ("negative" as const), sub: "Assets − debt" },
+          { label: "Total Debt", val: fmtMoney(totalDebt + mortgageBalance, true), tone: "negative" as const, sub: "Consumer + mortgage" },
+          { label: "FIRE Progress", val: `${progress.toFixed(0)}%`, tone: "freedom" as const, sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
         ].map(k => (
-          <KpiCard key={k.label} label={k.label} value={k.val} sub={k.sub} color={k.color} />
+          <KpiCard key={k.label} label={k.label} value={k.val} sub={k.sub} tone={k.tone} />
         ))}
       </div>
 
@@ -3777,9 +3782,12 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             {holdingsLoading && <span style={{ fontSize: 11, color: "#94A3B8" }}>Refreshing…</span>}
           </div>
           {holdingsNeedsReconnect.length > 0 && (
-            <div style={{ background: "#FEF9C3", border: "1px solid #FDE047", borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "#854D0E" }}>
-              ⚠️ {holdingsNeedsReconnect.join(", ")}: Disconnect and reconnect to enable holdings data.
-            </div>
+            <Alert
+              tone="warning"
+              title="Reconnect to enable holdings data"
+              where={holdingsNeedsReconnect.join(", ")}
+              style={{ marginBottom: 12 }}
+            />
           )}
           {plaidHoldings.length === 0 && !holdingsLoading ? (
             <div style={{ fontSize: 13, color: "#94A3B8", textAlign: "center", padding: "20px 0" }}>
@@ -5834,19 +5842,17 @@ export default function Dashboard() {
         <main className="uf-main">
           <div className="uf-content">
             {upgradedBanner && (
-              <div style={{
-                background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 10,
-                padding: "12px 18px", marginBottom: 16,
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-              }}>
-                <span style={{ fontSize: 14, color: "#065F46", fontWeight: 600 }}>
-                  🎉 Welcome to Pro! Your bank connections are now unlimited.
-                </span>
-                <button
-                  onClick={() => setUpgradedBanner(false)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#065F46", fontSize: 20, lineHeight: 1 }}
-                >×</button>
-              </div>
+              <Alert
+                tone="positive"
+                title="Welcome to Pro"
+                where="Your bank connections are now unlimited"
+                action={
+                  <Button size="sm" variant="ghost" aria-label="Dismiss" onClick={() => setUpgradedBanner(false)}>
+                    Dismiss
+                  </Button>
+                }
+                style={{ marginBottom: 16 }}
+              />
             )}
             {MONEY_SECTIONS.some(s => s.tab === tab) && (
               <nav className="uf-section-switch uf-cashflow-section-switch" aria-label="Money sections">
