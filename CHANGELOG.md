@@ -2,6 +2,11 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-12
+
+### Added
+- Per-month spending analysis on `Money → Insights` (`MonthInsight`) — pick any month with data, see its categories ranked by size, and switch individual categories off. The comparison baseline recomputes with the same exclusions applied to every other month, so excluding Travel drops both the headline and the median it is measured against rather than comparing a filtered month against an unfiltered one. Median rather than mean, since the outlier month is what the exclusions exist to see past. A conditional line translates the result into the FIRE target at 25× annual spending — phrased as "if every month looked like this one", because one month is not a rate.
+
 ## [Unreleased] - 2026-08-29
 
 ### Added
