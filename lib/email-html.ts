@@ -46,10 +46,13 @@ function base(preheader: string, body: string): string {
 </html>`;
 }
 
-function heroCard(eyebrow: string, headline: string, subtext: string): string {
+function heroCard(eyebrow: string, headline: string, subtext: string, greeting = ""): string {
+  const hello = greeting
+    ? `<p style="margin:0 0 8px;font-size:17px;font-weight:700;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">${greeting}</p>`
+    : "";
   return `
   <tr><td style="background:linear-gradient(155deg,#059669 0%,#003527 100%);border-radius:20px;padding:40px 36px 36px">
-    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#22D3A5">${eyebrow}</p>
+    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#22D3A5">${eyebrow}</p>${hello}
     <h1 style="margin:0 0 14px;font-size:36px;font-weight:900;color:#ffffff;letter-spacing:-1.5px;line-height:1.1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">${headline}</h1>
     <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7">${subtext}</p>
   </td></tr>`;
@@ -309,6 +312,27 @@ export interface UpdateItem {
   image?: string;
 }
 
+/**
+ * First name for a greeting, or "" when there is nothing usable.
+ *
+ * The name comes from OAuth metadata, which is user-controlled, so it is
+ * escaped before it ever reaches the HTML. Anything that would read as a
+ * machine artefact rather than a name — an email address, digits, an
+ * over-long string — is rejected in favour of a neutral greeting, because
+ * "Hi 447823," is worse than "Hi there,".
+ */
+export function firstNameFor(raw?: string | null): string {
+  const token = (raw || "").trim().split(/\s+/)[0] || "";
+  if (!token || token.length > 20) return "";
+  if (token.includes("@") || /^[0-9]+$/.test(token)) return "";
+  // Apostrophes and hyphens stay: O'Brien and Ana-Maria are names, not
+  // attacks. The value lands in element text, where an apostrophe means
+  // nothing, and escapeAttr below still neutralises & < > ".
+  if (/[<>"&/\\]/.test(token)) return "";
+  const cased = token === token.toLowerCase() ? token[0].toUpperCase() + token.slice(1) : token;
+  return escapeAttr(cased);
+}
+
 export function buildMonthlyUpdateEmail({
   monthLabel,
   intro,
@@ -317,6 +341,7 @@ export function buildMonthlyUpdateEmail({
   ctaLabel,
   ctaHref,
   unsubscribeUrl,
+  recipientName,
 }: {
   monthLabel: string;
   intro: string;
@@ -325,9 +350,11 @@ export function buildMonthlyUpdateEmail({
   ctaLabel?: string;
   ctaHref?: string;
   unsubscribeUrl: string;
+  recipientName?: string | null;
 }): string {
   const heading = `What's new in ${monthLabel}`;
-  const hero = heroCard("Monthly Update", heading, intro);
+  const name = firstNameFor(recipientName);
+  const hero = heroCard("Monthly Update", heading, intro, `Hi ${name || "there"},`);
 
   const itemList = (items: UpdateItem[]) => `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
@@ -346,5 +373,6 @@ export function buildMonthlyUpdateEmail({
 
   const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
 
-  return base(heading, hero + newSection + fixSection + cta + footer);
+  const preheader = intro.trim().slice(0, 140) || heading;
+  return base(preheader, hero + newSection + fixSection + cta + footer);
 }

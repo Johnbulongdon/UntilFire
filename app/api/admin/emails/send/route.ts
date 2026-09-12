@@ -108,6 +108,13 @@ export async function POST(req: NextRequest) {
             ctaLabel: ctaLabel || undefined,
             ctaHref: ctaHref || undefined,
             unsubscribeUrl,
+            // profiles.display_name is empty for every user on record; the
+            // name OAuth gives us lives in auth metadata instead. Reading the
+            // obvious column would greet everyone as "there".
+            recipientName:
+              (recipient.user_metadata?.full_name as string | undefined) ??
+              (recipient.user_metadata?.name as string | undefined) ??
+              null,
           })
         : buildAdminAnnouncementEmail({ heading, bodyHtml, unsubscribeUrl });
 
