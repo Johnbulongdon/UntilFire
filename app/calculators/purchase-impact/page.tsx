@@ -48,31 +48,31 @@ export default function PurchaseImpactPage() {
     <>
       <PurchaseImpactCalculator />
 
-      <section style={{ background: '#F7F9FB', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
+      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18 }}>
-          <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 24, letterSpacing: '-0.03em' }}>
+          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
+            <h2 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 24, letterSpacing: '-0.03em' }}>
               The real cost of any purchase
             </h2>
-            <p style={{ margin: '0 0 12px', color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
+            <p style={{ margin: '0 0 12px', color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
               Every dollar you spend has two costs: the price on the tag, and the compound growth it would have earned between now and your freedom date. This calculator makes both visible so you can make the tradeoff consciously — not accidentally.
             </p>
-            <p style={{ margin: 0, color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
+            <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
               Start with your{' '}
-              <Link href="/fire-calculator" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>freedom date calculator</Link>{' '}
+              <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>freedom date calculator</Link>{' '}
               to find your FIRE number and timeline, then come back here to test individual purchases against your plan.
             </p>
           </article>
 
-          <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 16px', color: '#064E3B', fontSize: 22, letterSpacing: '-0.03em' }}>
+          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
+            <h2 style={{ margin: '0 0 16px', color: 'var(--uf-green-900)', fontSize: 22, letterSpacing: '-0.03em' }}>
               Frequently asked questions
             </h2>
             <div style={{ display: 'grid', gap: 16 }}>
               {faqs.map(faq => (
-                <div key={faq.q} style={{ borderTop: '1px solid #E2E8F0', paddingTop: 16 }}>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: '#19181E' }}>{faq.q}</h3>
-                  <p style={{ margin: 0, color: '#64748B', fontSize: 15, lineHeight: 1.7 }}>{faq.a}</p>
+                <div key={faq.q} style={{ borderTop: '1px solid var(--uf-border)', paddingTop: 16 }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: 'var(--uf-ink)' }}>{faq.q}</h3>
+                  <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 15, lineHeight: 1.7 }}>{faq.a}</p>
                 </div>
               ))}
             </div>
@@ -89,9 +89,9 @@ export default function PurchaseImpactPage() {
                 key={link.href}
                 href={link.href}
                 style={{
-                  background: '#ffffff', border: '1px solid #E2E8F0',
+                  background: 'var(--uf-card)', border: '1px solid var(--uf-border)',
                   borderRadius: 10, padding: '10px 18px',
-                  fontSize: 13, fontWeight: 700, color: '#059669', textDecoration: 'none',
+                  fontSize: 13, fontWeight: 700, color: 'var(--uf-green)', textDecoration: 'none',
                 }}
               >
                 {link.label}

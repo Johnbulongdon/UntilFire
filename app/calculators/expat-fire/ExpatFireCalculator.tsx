@@ -88,17 +88,17 @@ export default function ExpatFireCalculator() {
   }, [router, savings, portfolio, age, cityKey]);
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+    <div style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #064E3B 0%, #065f46 100%)', padding: '48px 24px 40px', textAlign: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-900) 100%)', padding: '48px 24px 40px', textAlign: 'center' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
-          <div style={{ display: 'inline-block', background: 'rgba(34,211,165,0.15)', border: '1px solid rgba(34,211,165,0.3)', borderRadius: 99, padding: '4px 14px', fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', color: '#22d3a5', marginBottom: 16, textTransform: 'uppercase' }}>
+          <div style={{ display: 'inline-block', background: 'rgba(34,211,165,0.15)', border: '1px solid rgba(34,211,165,0.3)', borderRadius: 99, padding: '4px 14px', fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--uf-teal)', marginBottom: 16, textTransform: 'uppercase' }}>
             Geo-Arbitrage Calculator
           </div>
-          <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, color: '#ffffff', margin: '0 0 14px', lineHeight: 1.15 }}>
+          <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, color: 'var(--uf-card)', margin: '0 0 14px', lineHeight: 1.15 }}>
             Expat FIRE
           </h1>
-          <p style={{ color: '#a7f3d0', fontSize: 17, margin: 0, lineHeight: 1.65 }}>
+          <p style={{ color: 'var(--uf-green-100)', fontSize: 17, margin: 0, lineHeight: 1.65 }}>
             Spin the globe to find cities where your savings rate unlocks early retirement.
             Green = FIRE ready now. Yellow = Barista FIRE. Red = not yet.
           </p>
@@ -107,10 +107,10 @@ export default function ExpatFireCalculator() {
 
       {/* Inputs */}
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px 0' }}>
-        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20 }}>
+        <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 16, padding: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20 }}>
           {/* Current city */}
           <div style={{ position: 'relative' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--uf-ink-2)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
               Your current city
             </label>
             <input
@@ -119,15 +119,15 @@ export default function ExpatFireCalculator() {
               onFocus={() => setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
               placeholder="Search city…"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 14, color: '#0f172a', background: '#f8fafc', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid var(--uf-border)', fontSize: 14, color: 'var(--uf-ink)', background: 'var(--uf-surface)', boxSizing: 'border-box' }}
             />
             {showDropdown && filtered.length > 0 && (
-              <div style={{ position: 'absolute', zIndex: 50, top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, marginTop: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.10)', maxHeight: 220, overflowY: 'auto' }}>
+              <div style={{ position: 'absolute', zIndex: 50, top: '100%', left: 0, right: 0, background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 10, marginTop: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.10)', maxHeight: 220, overflowY: 'auto' }}>
                 {filtered.map(c => (
                   <button
                     key={c.key}
                     onMouseDown={() => { setCityKey(c.key); setCitySearch(c.name); setShowDropdown(false); }}
-                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', fontSize: 14, color: '#0f172a', background: c.key === cityKey ? '#f0fdf4' : 'transparent', border: 'none', cursor: 'pointer' }}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', fontSize: 14, color: 'var(--uf-ink)', background: c.key === cityKey ? 'var(--uf-green-50)' : 'transparent', border: 'none', cursor: 'pointer' }}
                   >
                     {c.flag} {c.name}
                   </button>
@@ -138,7 +138,7 @@ export default function ExpatFireCalculator() {
 
           {/* Monthly savings */}
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--uf-ink-2)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
               Monthly savings (USD)
             </label>
             <input
@@ -146,13 +146,13 @@ export default function ExpatFireCalculator() {
               min={0}
               value={savings}
               onChange={e => setSavings(Math.max(0, Number(e.target.value)))}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 14, color: '#0f172a', background: '#f8fafc', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid var(--uf-border)', fontSize: 14, color: 'var(--uf-ink)', background: 'var(--uf-surface)', boxSizing: 'border-box' }}
             />
           </div>
 
           {/* Portfolio */}
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--uf-ink-2)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
               Current portfolio (USD)
             </label>
             <input
@@ -160,13 +160,13 @@ export default function ExpatFireCalculator() {
               min={0}
               value={portfolio}
               onChange={e => setPortfolio(Math.max(0, Number(e.target.value)))}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 14, color: '#0f172a', background: '#f8fafc', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid var(--uf-border)', fontSize: 14, color: 'var(--uf-ink)', background: 'var(--uf-surface)', boxSizing: 'border-box' }}
             />
           </div>
 
           {/* Age */}
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--uf-ink-2)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
               Current age <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
             </label>
             <input
@@ -176,49 +176,49 @@ export default function ExpatFireCalculator() {
               value={age}
               onChange={e => setAge(e.target.value === '' ? '' : Number(e.target.value))}
               placeholder="e.g. 32"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 14, color: '#0f172a', background: '#f8fafc', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid var(--uf-border)', fontSize: 14, color: 'var(--uf-ink)', background: 'var(--uf-surface)', boxSizing: 'border-box' }}
             />
           </div>
         </div>
 
         {/* Current city result summary */}
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '16px 20px', marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
+        <div style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 12, padding: '16px 20px', marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 2 }}>Staying in {currentCity.name.split(',')[0]}</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#064E3B', fontFamily: 'Fraunces, Georgia, serif' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--uf-green)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 2 }}>Staying in {currentCity.name.split(',')[0]}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--uf-green-900)', fontFamily: 'Fraunces, Georgia, serif' }}>
               {result.years === null ? 'Not reached under these assumptions' : result.years <= 0 ? 'FIRE ready now 🎉' : `${result.years.toFixed(1)} years to FIRE`}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 2 }}>FIRE NUMBER</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{compactMoney(result.fireTarget)}</div>
+              <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 600, marginBottom: 2 }}>FIRE NUMBER</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--uf-ink)' }}>{compactMoney(result.fireTarget)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 2 }}>FREEDOM YEAR</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{result.retireYear ?? '—'}</div>
+              <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 600, marginBottom: 2 }}>FREEDOM YEAR</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--uf-ink)' }}>{result.retireYear ?? '—'}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 2 }}>ANNUAL COL</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{compactMoney(currentCity.col)}/yr</div>
+              <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 600, marginBottom: 2 }}>ANNUAL COL</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--uf-ink)' }}>{compactMoney(currentCity.col)}/yr</div>
             </div>
           </div>
         </div>
 
         {/* Freedom timeline — scrub forward to watch cities turn green */}
-        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '20px 20px 22px', marginTop: 16 }}>
+        <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 16, padding: '20px 20px 22px', marginTop: 16 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div>
-              <h3 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+              <h3 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 18, fontWeight: 800, color: 'var(--uf-ink)', margin: 0 }}>
                 Freedom timeline
               </h3>
-              <p style={{ color: '#64748b', fontSize: 13, margin: '2px 0 0', lineHeight: 1.5 }}>
+              <p style={{ color: 'var(--uf-ink-2)', fontSize: 13, margin: '2px 0 0', lineHeight: 1.5 }}>
                 Fast-forward to watch cities turn green — and see which unlock first{age ? ', and at what age' : ''}.
               </p>
             </div>
             <button
               onClick={() => setPlaying(p => !p)}
-              style={{ flexShrink: 0, background: playing ? '#ffffff' : '#059669', color: playing ? '#059669' : '#ffffff', border: '1.5px solid #059669', borderRadius: 99, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ flexShrink: 0, background: playing ? 'var(--uf-card)' : 'var(--uf-green)', color: playing ? 'var(--uf-green)' : 'var(--uf-card)', border: '1.5px solid var(--uf-green)', borderRadius: 99, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
             >
               {playing ? '❚❚ Pause' : '▶ Play'}
             </button>
@@ -233,28 +233,28 @@ export default function ExpatFireCalculator() {
             value={t}
             onChange={e => { setPlaying(false); setTimelineYears(Number(e.target.value)); }}
             aria-label="Years from today"
-            style={{ width: '100%', accentColor: '#059669', marginTop: 16, cursor: 'pointer' }}
+            style={{ width: '100%', accentColor: 'var(--uf-green)', marginTop: 16, cursor: 'pointer' }}
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--uf-ink-3)', fontWeight: 600, marginTop: 2 }}>
             <span>Today</span>
             <span>+{sliderMax} yrs</span>
           </div>
 
           {/* Readout */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-            <span style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', fontFamily: 'Fraunces, Georgia, serif' }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-ink)', fontFamily: 'Fraunces, Georgia, serif' }}>
               {t === 0 ? 'Today' : projAge ? `Age ${projAge}` : `In ${t} ${t === 1 ? 'year' : 'years'}`}
             </span>
             {t > 0 && (
-              <span style={{ fontSize: 13, color: '#64748b' }}>
+              <span style={{ fontSize: 13, color: 'var(--uf-ink-2)' }}>
                 {projAge ? `· ${thisYear + t}` : `· ${thisYear}`}
               </span>
             )}
-            <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 700, color: '#059669' }}>
+            <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 700, color: 'var(--uf-green)' }}>
               🟢 {readyCount} of {cityUnlocks.length} cities FIRE-ready
             </span>
           </div>
-          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: 'var(--uf-ink-3)', marginTop: 4 }}>
             Projected portfolio ~{compactMoney(projectedPortfolio)}
             {annualContribution > 0 ? ` · assumes you keep saving ${compactMoney(annualContribution)}/yr` : ''}
           </div>
@@ -270,23 +270,23 @@ export default function ExpatFireCalculator() {
                   style={{
                     flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                     padding: '8px 12px', borderRadius: 12, minWidth: 82,
-                    background: unlocked ? '#ecfdf5' : '#f8fafc',
-                    border: `1.5px solid ${unlocked ? '#6ee7b7' : '#e2e8f0'}`,
+                    background: unlocked ? 'var(--uf-green-50)' : 'var(--uf-surface)',
+                    border: `1.5px solid ${unlocked ? 'var(--uf-teal-line)' : 'var(--uf-border)'}`,
                     transition: 'background 0.2s, border-color 0.2s',
                   }}
                 >
                   <span style={{ fontSize: 18, lineHeight: 1 }}>{c.flag}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: unlocked ? '#047857' : '#334155', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: unlocked ? 'var(--uf-green-700)' : '#334155', whiteSpace: 'nowrap' }}>
                     {c.name.split(',')[0]}
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: unlocked ? '#059669' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: unlocked ? 'var(--uf-green)' : 'var(--uf-ink-3)', whiteSpace: 'nowrap' }}>
                     {unlocked ? '🟢 ' : ''}{badge}
                   </span>
                 </div>
               );
             })}
             {cityUnlocks.length > 18 && (
-              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 12, color: 'var(--uf-ink-3)', fontWeight: 600 }}>
                 +{cityUnlocks.length - 18} more
               </div>
             )}
@@ -295,10 +295,10 @@ export default function ExpatFireCalculator() {
 
         {/* Globe */}
         <div style={{ marginTop: 32, marginBottom: 8 }}>
-          <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+          <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, fontWeight: 800, color: 'var(--uf-ink)', margin: '0 0 6px' }}>
             Tap a city to compare
           </h2>
-          <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 20px' }}>
+          <p style={{ color: 'var(--uf-ink-2)', fontSize: 14, margin: '0 0 20px' }}>
             Drag to spin · {t === 0 ? '🟢 FIRE ready now' : `🟢 ${projAge ? `at age ${projAge}` : `in ${t} ${t === 1 ? 'yr' : 'yrs'}`}`} · 🟡 Barista FIRE · 🔴 Not yet
           </p>
           <GeoArbitrageGlobe

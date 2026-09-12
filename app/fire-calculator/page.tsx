@@ -141,36 +141,36 @@ const breadcrumbSchema = {
 export default function FireCalculatorLandingPage() {
   return (
     <>
-      <main style={{ background: '#F7F9FB', minHeight: '100vh', color: '#19181E', fontFamily: "'Manrope', sans-serif" }}>
+      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', color: 'var(--uf-ink)', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '56px 24px 88px' }}>
-          <nav style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28, display: 'flex', gap: 8 }}>
-            <Link href="/" style={{ color: '#64748B', textDecoration: 'none', fontWeight: 700 }}>UntilFire</Link>
+          <nav style={{ fontSize: 13, color: 'var(--uf-ink-3)', marginBottom: 28, display: 'flex', gap: 8 }}>
+            <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none', fontWeight: 700 }}>UntilFire</Link>
             <span>›</span>
-            <span style={{ color: '#064E3B', fontWeight: 800 }}>FIRE Calculator</span>
+            <span style={{ color: 'var(--uf-green-900)', fontWeight: 800 }}>FIRE Calculator</span>
           </nav>
 
           <header style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, 0.65fr)', gap: 28, alignItems: 'stretch', marginBottom: 34 }}>
-            <section style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 24, padding: '34px 30px' }}>
-              <p style={{ margin: '0 0 12px', color: '#059669', fontSize: 12, fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase' }}>
+            <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 24, padding: '34px 30px' }}>
+              <p style={{ margin: '0 0 12px', color: 'var(--uf-green)', fontSize: 12, fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase' }}>
                 FIRE calculator
               </p>
-              <h1 style={{ margin: '0 0 18px', fontSize: 'clamp(36px, 5vw, 64px)', lineHeight: 0.98, letterSpacing: '-0.055em', color: '#064E3B' }}>
+              <h1 style={{ margin: '0 0 18px', fontSize: 'clamp(36px, 5vw, 64px)', lineHeight: 0.98, letterSpacing: '-0.055em', color: 'var(--uf-green-900)' }}>
                 Find the date work becomes optional.
               </h1>
-              <p style={{ margin: '0 0 24px', maxWidth: 720, color: '#475569', fontSize: 18, lineHeight: 1.75 }}>
+              <p style={{ margin: '0 0 24px', maxWidth: 720, color: 'var(--uf-ink-2)', fontSize: 18, lineHeight: 1.75 }}>
                 UntilFire is a free financial independence calculator for people who want more than a retirement number. Estimate your FIRE number, your retire early timeline, your Coast FIRE milestone, and the monthly moves that can pull freedom closer.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                <Link href="/?source=fire-calculator" style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #059669, #064E3B)', color: '#ffffff', padding: '14px 20px', borderRadius: 12, fontWeight: 800, fontSize: 15 }}>
+                <Link href="/?source=fire-calculator" style={{ textDecoration: 'none', background: 'linear-gradient(135deg, var(--uf-green), var(--uf-green-900))', color: 'var(--uf-card)', padding: '14px 20px', borderRadius: 12, fontWeight: 800, fontSize: 15 }}>
                   Calculate my FIRE date
                 </Link>
-                <Link href="/calculators/4-percent-rule" style={{ textDecoration: 'none', background: '#F0FDF4', color: '#065F46', padding: '14px 20px', borderRadius: 12, fontWeight: 800, fontSize: 15, border: '1px solid #BBF7D0' }}>
+                <Link href="/calculators/4-percent-rule" style={{ textDecoration: 'none', background: 'var(--uf-green-50)', color: 'var(--uf-green-900)', padding: '14px 20px', borderRadius: 12, fontWeight: 800, fontSize: 15, border: '1px solid var(--uf-green-100)' }}>
                   Find my FIRE number
                 </Link>
               </div>
             </section>
 
-            <aside style={{ background: 'linear-gradient(160deg, #064E3B, #047857)', borderRadius: 24, padding: 26, color: '#ffffff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 320 }}>
+            <aside style={{ background: 'linear-gradient(160deg, var(--uf-green-900), var(--uf-green-700))', borderRadius: 24, padding: 26, color: 'var(--uf-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 320 }}>
               <div>
                 <p style={{ margin: '0 0 10px', opacity: 0.75, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.3px' }}>
                   What you’ll get
@@ -190,68 +190,68 @@ export default function FireCalculatorLandingPage() {
 
           <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 16, marginBottom: 34 }}>
             {calculators.map((calculator) => (
-              <Link key={calculator.href} href={calculator.href} style={{ textDecoration: 'none', background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ color: '#059669', fontSize: 11, fontWeight: 800, letterSpacing: '1.4px', textTransform: 'uppercase' }}>{calculator.label}</div>
-                <h2 style={{ margin: 0, color: '#19181E', fontSize: 21, lineHeight: 1.2, letterSpacing: '-0.025em' }}>{calculator.title}</h2>
-                <p style={{ margin: 0, color: '#64748B', fontSize: 14, lineHeight: 1.7 }}>{calculator.description}</p>
-                <div style={{ marginTop: 'auto', color: '#059669', fontSize: 13, fontWeight: 800 }}>Open tool →</div>
+              <Link key={calculator.href} href={calculator.href} style={{ textDecoration: 'none', background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ color: 'var(--uf-green)', fontSize: 11, fontWeight: 800, letterSpacing: '1.4px', textTransform: 'uppercase' }}>{calculator.label}</div>
+                <h2 style={{ margin: 0, color: 'var(--uf-ink)', fontSize: 21, lineHeight: 1.2, letterSpacing: '-0.025em' }}>{calculator.title}</h2>
+                <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 14, lineHeight: 1.7 }}>{calculator.description}</p>
+                <div style={{ marginTop: 'auto', color: 'var(--uf-green)', fontSize: 13, fontWeight: 800 }}>Open tool →</div>
               </Link>
             ))}
           </section>
 
-          <section style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 22, padding: '30px 26px', marginBottom: 24 }}>
-            <h2 style={{ margin: '0 0 12px', fontSize: 30, lineHeight: 1.15, letterSpacing: '-0.035em', color: '#064E3B' }}>
+          <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 22, padding: '30px 26px', marginBottom: 24 }}>
+            <h2 style={{ margin: '0 0 12px', fontSize: 30, lineHeight: 1.15, letterSpacing: '-0.035em', color: 'var(--uf-green-900)' }}>
               How a FIRE calculator works
             </h2>
-            <p style={{ margin: '0 0 22px', color: '#64748B', fontSize: 16, lineHeight: 1.8, maxWidth: 820 }}>
+            <p style={{ margin: '0 0 22px', color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.8, maxWidth: 820 }}>
               A good retire early calculator connects the classic financial independence formulas with real monthly behavior. The point is not only “how much money do I need to retire?” It is also “what can I change this month?”
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
               {steps.map((step, index) => (
-                <article key={step.title} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 16, padding: 20 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 12, background: '#D1FAE5', color: '#065F46', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, marginBottom: 12 }}>{index + 1}</div>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 19, color: '#19181E', letterSpacing: '-0.02em' }}>{step.title}</h3>
-                  <p style={{ margin: 0, color: '#64748B', fontSize: 14, lineHeight: 1.75 }}>{step.body}</p>
+                <article key={step.title} style={{ background: 'var(--uf-surface)', border: '1px solid var(--uf-border)', borderRadius: 16, padding: 20 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 12, background: 'var(--uf-green-100)', color: 'var(--uf-green-900)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, marginBottom: 12 }}>{index + 1}</div>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 19, color: 'var(--uf-ink)', letterSpacing: '-0.02em' }}>{step.title}</h3>
+                  <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 14, lineHeight: 1.75 }}>{step.body}</p>
                 </article>
               ))}
             </div>
           </section>
 
           <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, marginBottom: 24 }}>
-            <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: 24 }}>
-              <h2 style={{ margin: '0 0 10px', fontSize: 24, color: '#19181E' }}>Use this if you searched “FIRE number calculator”</h2>
-              <p style={{ margin: '0 0 14px', color: '#64748B', lineHeight: 1.75 }}>
+            <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: 24 }}>
+              <h2 style={{ margin: '0 0 10px', fontSize: 24, color: 'var(--uf-ink)' }}>Use this if you searched “FIRE number calculator”</h2>
+              <p style={{ margin: '0 0 14px', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
                 Start with the 4% rule calculator if you want the simplest target: annual spending multiplied by 25. Then come back to the full FIRE calculator to estimate your actual date.
               </p>
-              <Link href="/calculators/4-percent-rule" style={{ color: '#059669', textDecoration: 'none', fontWeight: 800 }}>Calculate FIRE number →</Link>
+              <Link href="/calculators/4-percent-rule" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontWeight: 800 }}>Calculate FIRE number →</Link>
             </article>
-            <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: 24 }}>
-              <h2 style={{ margin: '0 0 10px', fontSize: 24, color: '#19181E' }}>Use this if you searched “Coast FIRE calculator”</h2>
-              <p style={{ margin: '0 0 14px', color: '#64748B', lineHeight: 1.75 }}>
+            <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: 24 }}>
+              <h2 style={{ margin: '0 0 10px', fontSize: 24, color: 'var(--uf-ink)' }}>Use this if you searched “Coast FIRE calculator”</h2>
+              <p style={{ margin: '0 0 14px', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
                 Coast FIRE shows whether your current portfolio can compound into enough later. It is useful when you want work to feel less urgent before you reach full financial independence.
               </p>
-              <Link href="/calculators/coast-fire" style={{ color: '#059669', textDecoration: 'none', fontWeight: 800 }}>Find Coast FIRE number →</Link>
+              <Link href="/calculators/coast-fire" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontWeight: 800 }}>Find Coast FIRE number →</Link>
             </article>
           </section>
 
-          <section style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 22, padding: '30px 26px' }}>
-            <h2 style={{ margin: '0 0 18px', fontSize: 30, color: '#064E3B', letterSpacing: '-0.03em' }}>FIRE calculator FAQ</h2>
+          <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 22, padding: '30px 26px' }}>
+            <h2 style={{ margin: '0 0 18px', fontSize: 30, color: 'var(--uf-green-900)', letterSpacing: '-0.03em' }}>FIRE calculator FAQ</h2>
             <div style={{ display: 'grid', gap: 16 }}>
               {faqs.map((faq) => (
-                <article key={faq.question} style={{ borderTop: '1px solid #E2E8F0', paddingTop: 16 }}>
-                  <h3 style={{ margin: '0 0 8px', color: '#19181E', fontSize: 19 }}>{faq.question}</h3>
-                  <p style={{ margin: 0, color: '#64748B', fontSize: 15, lineHeight: 1.75 }}>{faq.answer}</p>
+                <article key={faq.question} style={{ borderTop: '1px solid var(--uf-border)', paddingTop: 16 }}>
+                  <h3 style={{ margin: '0 0 8px', color: 'var(--uf-ink)', fontSize: 19 }}>{faq.question}</h3>
+                  <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 15, lineHeight: 1.75 }}>{faq.answer}</p>
                 </article>
               ))}
             </div>
           </section>
 
-          <section style={{ marginTop: 24, background: '#ECFDF5', border: '1px solid #BBF7D0', borderRadius: 20, padding: '26px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 18 }}>
+          <section style={{ marginTop: 24, background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 20, padding: '26px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 18 }}>
             <div>
-              <h2 style={{ margin: '0 0 6px', color: '#064E3B', fontSize: 24 }}>Ready to find your freedom date?</h2>
-              <p style={{ margin: 0, color: '#047857', fontSize: 15 }}>Free, no login. Start with the full calculator, then use the focused tools when you want to pressure-test assumptions. New to the concept? Read <Link href="/learn/what-is-fire-financial-independence-retire-early" style={{ color: '#064E3B', fontWeight: 800, textDecoration: 'none' }}>what FIRE means</Link> first.</p>
+              <h2 style={{ margin: '0 0 6px', color: 'var(--uf-green-900)', fontSize: 24 }}>Ready to find your freedom date?</h2>
+              <p style={{ margin: 0, color: 'var(--uf-green-700)', fontSize: 15 }}>Free, no login. Start with the full calculator, then use the focused tools when you want to pressure-test assumptions. New to the concept? Read <Link href="/learn/what-is-fire-financial-independence-retire-early" style={{ color: 'var(--uf-green-900)', fontWeight: 800, textDecoration: 'none' }}>what FIRE means</Link> first.</p>
             </div>
-            <Link href="/?source=fire-calculator-bottom" style={{ textDecoration: 'none', background: '#064E3B', color: '#ffffff', padding: '13px 18px', borderRadius: 12, fontWeight: 800 }}>
+            <Link href="/?source=fire-calculator-bottom" style={{ textDecoration: 'none', background: 'var(--uf-green-900)', color: 'var(--uf-card)', padding: '13px 18px', borderRadius: 12, fontWeight: 800 }}>
               Start free
             </Link>
           </section>

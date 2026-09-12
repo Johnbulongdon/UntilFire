@@ -8,28 +8,28 @@ const CALCULATORS = [
     name: 'FIRE Calculator',
     description: 'Find your FIRE date, FIRE number, Coast FIRE milestone, savings rate, and monthly moves in one planning flow.',
     keyword: 'FIRE calculator',
-    accent: '#064E3B',
+    accent: 'var(--uf-green-900)',
   },
   {
     href: '/calculators/purchase-impact',
     name: 'Purchase Impact Calculator',
     description: 'See the compound value of any purchase at your freedom date and exactly how many days it delays your financial independence.',
     keyword: 'purchase opportunity cost calculator',
-    accent: '#f97316',
+    accent: 'var(--uf-warn)',
   },
   {
     href: '/calculators/4-percent-rule',
     name: 'FIRE Number Calculator',
     description: 'Estimate how much you need invested to retire using the 4% rule and adjustable withdrawal rates.',
     keyword: 'FIRE number calculator',
-    accent: '#059669',
+    accent: 'var(--uf-green)',
   },
   {
     href: '/calculators/coast-fire',
     name: 'Coast FIRE Calculator',
     description: 'Find the amount you need invested today so compound growth can carry you to retirement later.',
     keyword: 'coast FIRE calculator',
-    accent: '#7C3AED',
+    accent: 'var(--uf-chart-2)',
   },
   {
     href: '/calculators/savings-rate',
@@ -43,21 +43,21 @@ const CALCULATORS = [
     name: 'Compound Interest Calculator',
     description: 'Project investment growth over time with monthly contributions and compounding.',
     keyword: 'compound interest calculator',
-    accent: '#047857',
+    accent: 'var(--uf-green-700)',
   },
   {
     href: '/calculators/apy',
     name: 'APY Calculator',
     description: 'Convert APR to APY and see how compounding frequency changes your real annual yield.',
     keyword: 'APY calculator',
-    accent: '#20D4BF',
+    accent: 'var(--uf-teal)',
   },
   {
     href: '/calculators/expat-fire',
     name: 'Expat FIRE Calculator',
     description: 'Spin the globe to find cities where your savings unlocks early retirement. 392 cities, color-coded by FIRE readiness.',
     keyword: 'expat FIRE calculator',
-    accent: '#22d3a5',
+    accent: 'var(--uf-teal)',
   },
 ] as const
 
@@ -87,28 +87,28 @@ export const metadata: Metadata = {
 export default function CalculatorsHubPage() {
   return (
     <>
-      <main style={{ background: '#F7F9FB', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '56px 24px 88px' }}>
           <header style={{ marginBottom: 40 }}>
-            <p style={{ fontSize: 12, color: '#059669', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 12px' }}>
+            <p style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 12px' }}>
               Calculators
             </p>
-            <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.04em', color: '#19181E', margin: '0 0 16px' }}>
+            <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.04em', color: 'var(--uf-ink)', margin: '0 0 16px' }}>
               Free FIRE calculators that answer the questions people actually search for.
             </h1>
-            <p style={{ maxWidth: 760, fontSize: 17, lineHeight: 1.8, color: '#64748B', margin: 0 }}>
+            <p style={{ maxWidth: 760, fontSize: 17, lineHeight: 1.8, color: 'var(--uf-ink-2)', margin: 0 }}>
               Start with one specific question like your FIRE number, Coast FIRE target, savings rate, or APY. Then move into the full UntilFire calculator when you want your retirement date adjusted for your city, income, and spending.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 24 }}>
               <Link
                 href="/?source=calculators-hub"
-                style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #059669, #064E3B)', color: '#fff', padding: '12px 18px', borderRadius: 10, fontWeight: 700, fontSize: 14 }}
+                style={{ textDecoration: 'none', background: 'linear-gradient(135deg, var(--uf-green), var(--uf-green-900))', color: 'var(--uf-card)', padding: '12px 18px', borderRadius: 10, fontWeight: 700, fontSize: 14 }}
               >
                 Calculate full FIRE date
               </Link>
               <Link
                 href="/learn"
-                style={{ textDecoration: 'none', background: '#fff', color: '#19181E', padding: '12px 18px', borderRadius: 10, border: '1px solid #E2E8F0', fontWeight: 700, fontSize: 14 }}
+                style={{ textDecoration: 'none', background: 'var(--uf-card)', color: 'var(--uf-ink)', padding: '12px 18px', borderRadius: 10, border: '1px solid var(--uf-border)', fontWeight: 700, fontSize: 14 }}
               >
                 Read FIRE guides
               </Link>
@@ -129,8 +129,8 @@ export default function CalculatorsHubPage() {
                 href={calculator.href}
                 style={{
                   textDecoration: 'none',
-                  background: '#ffffff',
-                  border: '1px solid #E2E8F0',
+                  background: 'var(--uf-card)',
+                  border: '1px solid var(--uf-border)',
                   borderRadius: 16,
                   padding: '22px 20px',
                   display: 'flex',
@@ -159,10 +159,10 @@ export default function CalculatorsHubPage() {
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: calculator.accent }}>
                   {calculator.keyword}
                 </div>
-                <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.2, letterSpacing: '-0.02em', color: '#19181E' }}>
+                <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.2, letterSpacing: '-0.02em', color: 'var(--uf-ink)' }}>
                   {calculator.name}
                 </h2>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: '#64748B', flexGrow: 1 }}>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: 'var(--uf-ink-2)', flexGrow: 1 }}>
                   {calculator.description}
                 </p>
                 <div style={{ fontSize: 13, fontWeight: 700, color: calculator.accent }}>
@@ -172,29 +172,29 @@ export default function CalculatorsHubPage() {
             ))}
           </section>
 
-          <section style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '28px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', fontSize: 24, color: '#19181E', letterSpacing: '-0.02em' }}>
+          <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '28px 24px' }}>
+            <h2 style={{ margin: '0 0 12px', fontSize: 24, color: 'var(--uf-ink)', letterSpacing: '-0.02em' }}>
               How these calculators fit together
             </h2>
-            <p style={{ margin: '0 0 12px', fontSize: 15, lineHeight: 1.8, color: '#64748B' }}>
+            <p style={{ margin: '0 0 12px', fontSize: 15, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>
               The calculator pages are designed for high-intent search queries. Someone looking for an APY calculator has a different immediate question than someone looking for a FIRE number calculator. The goal is to answer both well, then connect them back to the full planning journey.
             </p>
-            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.8, color: '#64748B' }}>
-              If you are just starting, begin with the <Link href="/fire-calculator" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>FIRE Calculator</Link> for the full freedom-date view, then use the <Link href="/calculators/4-percent-rule" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>FIRE Number Calculator</Link> to pressure-test withdrawal rates. If you are comparing milestones, use the <Link href="/calculators/coast-fire" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Coast FIRE Calculator</Link>. If you want to understand the concepts before you model them, the <Link href="/learn" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Learning Hub</Link> explains the assumptions behind the math.
+            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>
+              If you are just starting, begin with the <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>FIRE Calculator</Link> for the full freedom-date view, then use the <Link href="/calculators/4-percent-rule" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>FIRE Number Calculator</Link> to pressure-test withdrawal rates. If you are comparing milestones, use the <Link href="/calculators/coast-fire" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>Coast FIRE Calculator</Link>. If you want to understand the concepts before you model them, the <Link href="/learn" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>Learning Hub</Link> explains the assumptions behind the math.
             </p>
           </section>
 
-          <section style={{ marginTop: 24, background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '28px 24px' }}>
+          <section style={{ marginTop: 24, background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '28px 24px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 18 }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#059669', marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: 'var(--uf-green)', marginBottom: 8 }}>
                   City intent pages
                 </div>
-                <h2 style={{ margin: 0, fontSize: 24, color: '#19181E', letterSpacing: '-0.02em' }}>
+                <h2 style={{ margin: 0, fontSize: 24, color: 'var(--uf-ink)', letterSpacing: '-0.02em' }}>
                   Compare FIRE math in the cities people actually search for.
                 </h2>
               </div>
-              <Link href="/learn/topics" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
+              <Link href="/learn/topics" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
                 See topic clusters
               </Link>
             </div>
@@ -205,8 +205,8 @@ export default function CalculatorsHubPage() {
                   href={`/fire-number/${page.slug}`}
                   style={{
                     textDecoration: 'none',
-                    background: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
+                    background: 'var(--uf-surface)',
+                    border: '1px solid var(--uf-border)',
                     borderRadius: 16,
                     padding: '18px 16px',
                     display: 'flex',
@@ -214,13 +214,13 @@ export default function CalculatorsHubPage() {
                     gap: 10,
                   }}
                 >
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#64748B' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--uf-ink-2)' }}>
                     {page.keyword}
                   </div>
-                  <div style={{ fontSize: 19, fontWeight: 800, color: '#19181E', letterSpacing: '-0.02em' }}>
+                  <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--uf-ink)', letterSpacing: '-0.02em' }}>
                     {page.city.name}
                   </div>
-                  <div style={{ fontSize: 14, lineHeight: 1.7, color: '#64748B' }}>
+                  <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--uf-ink-2)' }}>
                     Baseline spending ${Math.round(page.city.col).toLocaleString()} / year
                   </div>
                 </Link>
@@ -228,28 +228,28 @@ export default function CalculatorsHubPage() {
             </div>
           </section>
 
-          <section style={{ marginTop: 24, background: "#ffffff", border: "1px solid #E2E8F0", borderRadius: 18, padding: "28px 24px" }}>
-            <h2 style={{ margin: "0 0 18px", fontSize: 24, color: "#19181E", letterSpacing: "-0.02em" }}>Calculator tools FAQ</h2>
+          <section style={{ marginTop: 24, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 18, padding: "28px 24px" }}>
+            <h2 style={{ margin: "0 0 18px", fontSize: 24, color: "var(--uf-ink)", letterSpacing: "-0.02em" }}>Calculator tools FAQ</h2>
             <div style={{ display: "grid", gap: 16 }}>
-              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Which calculator should I use first?</h3>
-                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Start with the full FIRE calculator if you want a complete retirement date and plan. Use the individual calculators for specific questions: FIRE number calculator for a target, coast FIRE for a milestone, savings rate for understanding your lever, compound interest for growth, and APY for savings account comparisons.</p>
+              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Which calculator should I use first?</h3>
+                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>Start with the full FIRE calculator if you want a complete retirement date and plan. Use the individual calculators for specific questions: FIRE number calculator for a target, coast FIRE for a milestone, savings rate for understanding your lever, compound interest for growth, and APY for savings account comparisons.</p>
               </article>
-              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>What does the FIRE number calculator show?</h3>
-                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>It shows how much you need invested based on your annual spending and a withdrawal rate (3%, 4%, or 5%). The default 4% rule suggests multiplying spending by 25. Adjust the withdrawal rate to pressure-test your assumptions for a longer or earlier retirement.</p>
+              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>What does the FIRE number calculator show?</h3>
+                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>It shows how much you need invested based on your annual spending and a withdrawal rate (3%, 4%, or 5%). The default 4% rule suggests multiplying spending by 25. Adjust the withdrawal rate to pressure-test your assumptions for a longer or earlier retirement.</p>
               </article>
-              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>How is Coast FIRE different from regular FIRE?</h3>
-                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Coast FIRE is the point where your existing portfolio, untouched, will grow to your full FIRE number by age 65. Regular FIRE means having enough to retire immediately. Coast FIRE is useful when you want work to feel optional sooner but don&apos;t need to stop earning entirely.</p>
+              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>How is Coast FIRE different from regular FIRE?</h3>
+                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>Coast FIRE is the point where your existing portfolio, untouched, will grow to your full FIRE number by age 65. Regular FIRE means having enough to retire immediately. Coast FIRE is useful when you want work to feel optional sooner but don&apos;t need to stop earning entirely.</p>
               </article>
-              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Can I compare multiple cities at once?</h3>
-                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Use the FIRE number calculator for a baseline target, then visit the city pages in the calculators hub to see how the same target translates across different locations. Each city page shows the FIRE number, Coast FIRE number, and monthly savings timeline for that city&apos;s cost of living.</p>
+              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Can I compare multiple cities at once?</h3>
+                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>Use the FIRE number calculator for a baseline target, then visit the city pages in the calculators hub to see how the same target translates across different locations. Each city page shows the FIRE number, Coast FIRE number, and monthly savings timeline for that city&apos;s cost of living.</p>
               </article>
-              <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Are these calculators accurate for my situation?</h3>
-                <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>These tools give you a starting estimate based on standard assumptions. Your actual FIRE date depends on your specific income, spending, taxes, healthcare, Social Security, market returns, and flexibility. Use them to understand the levers, then refine with the full FIRE calculator or a financial adviser for major decisions.</p>
+              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Are these calculators accurate for my situation?</h3>
+                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>These tools give you a starting estimate based on standard assumptions. Your actual FIRE date depends on your specific income, spending, taxes, healthcare, Social Security, market returns, and flexibility. Use them to understand the levers, then refine with the full FIRE calculator or a financial adviser for major decisions.</p>
               </article>
             </div>
           </section>

@@ -25,12 +25,12 @@ export default function CityCalcWidget({ city }: { city: City }) {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 14px",
-    border: "1.5px solid #E2E8F0",
+    border: "1.5px solid var(--uf-border)",
     borderRadius: 8,
     fontSize: 15,
     fontWeight: 600,
-    color: "#064E3B",
-    background: "#fff",
+    color: "var(--uf-green-900)",
+    background: "var(--uf-card)",
     outline: "none",
     fontFamily: "inherit",
     boxSizing: "border-box",
@@ -40,15 +40,15 @@ export default function CityCalcWidget({ city }: { city: City }) {
     display: "block",
     fontSize: 12,
     fontWeight: 700,
-    color: "#64748B",
+    color: "var(--uf-ink-2)",
     letterSpacing: "0.05em",
     textTransform: "uppercase",
     marginBottom: 6,
   };
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "28px 32px", marginTop: 32 }}>
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: "#064E3B", margin: "0 0 24px" }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "28px 32px", marginTop: 32 }}>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 24px" }}>
         Calculate your FIRE number in {city.name}
       </h2>
 
@@ -96,27 +96,27 @@ export default function CityCalcWidget({ city }: { city: City }) {
             max={70}
             value={savingsRate}
             onChange={(e) => setSavingsRate(Number(e.target.value))}
-            style={{ width: "100%", marginTop: 10, accentColor: "#059669" }}
+            style={{ width: "100%", marginTop: 10, accentColor: "var(--uf-green)" }}
           />
         </div>
       </div>
 
       {result && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, borderTop: "1px solid #E2E8F0", paddingTop: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, borderTop: "1px solid var(--uf-border)", paddingTop: 24 }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>FIRE Target</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px" }}>{formatMoney(fireTarget)}</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>25× annual expenses</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>FIRE Target</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.5px" }}>{formatMoney(fireTarget)}</div>
+            <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>25× annual expenses</div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Years to FIRE</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px" }}>{result.years === null ? "Not reached" : Math.round(result.years)}</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>at {savingsRate}% savings rate</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Years to FIRE</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.5px" }}>{result.years === null ? "Not reached" : Math.round(result.years)}</div>
+            <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>at {savingsRate}% savings rate</div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Retire at Age</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#22d3a5", letterSpacing: "-0.5px" }}>{result.age ?? "—"}</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>{result.retireYear === null ? "Not reached within 65 years" : `in ${result.retireYear}`}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Retire at Age</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--uf-teal)", letterSpacing: "-0.5px" }}>{result.age ?? "—"}</div>
+            <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>{result.retireYear === null ? "Not reached within 65 years" : `in ${result.retireYear}`}</div>
           </div>
         </div>
       )}
@@ -126,8 +126,8 @@ export default function CityCalcWidget({ city }: { city: City }) {
           href="/dashboard"
           style={{
             display: "inline-block",
-            background: "#059669",
-            color: "#fff",
+            background: "var(--uf-green)",
+            color: "var(--uf-card)",
             padding: "12px 28px",
             borderRadius: 8,
             fontSize: 14,

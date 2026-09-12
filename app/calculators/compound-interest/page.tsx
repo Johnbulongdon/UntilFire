@@ -43,30 +43,30 @@ export default function CompoundInterestPage() {
     <>
       <CompoundInterestCalculator />
 
-      <section style={{ background: '#F7F9FB', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
+      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18 }}>
-          <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h1 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 28, letterSpacing: '-0.03em' }}>
+          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
+            <h1 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 28, letterSpacing: '-0.03em' }}>
               Compound Interest Calculator: See Your Investments Grow
             </h1>
-            <p style={{ margin: '0 0 12px', color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
+            <p style={{ margin: '0 0 12px', color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
               Compound interest earns returns on both your contributions and the growth they have already produced — the
               force that turns steady investing into financial independence. Set your starting balance, monthly contribution,
               and expected return above to watch the curve bend upward over time.
             </p>
-            <p style={{ margin: 0, color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
+            <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
               Once you see how your money compounds, turn it into a retirement date with the{' '}
-              <Link href="/fire-calculator" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>FIRE calculator</Link>, or
-              size your target with the <Link href="/calculators/4-percent-rule" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>FIRE number calculator</Link>. Read more in{' '}
-              <Link href="/learn/compound-interest-and-fire" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>compound interest and FIRE</Link>.
+              <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>FIRE calculator</Link>, or
+              size your target with the <Link href="/calculators/4-percent-rule" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>FIRE number calculator</Link>. Read more in{' '}
+              <Link href="/learn/compound-interest-and-fire" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>compound interest and FIRE</Link>.
             </p>
           </article>
-          <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 24 }}>Compound interest FAQ</h2>
+          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
+            <h2 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 24 }}>Compound interest FAQ</h2>
             {faqs.map((f) => (
               <div key={f.q} style={{ marginBottom: 14 }}>
-                <h3 style={{ margin: '0 0 8px', color: '#19181E', fontSize: 18 }}>{f.q}</h3>
-                <p style={{ margin: 0, color: '#64748B', lineHeight: 1.75 }}>{f.a}</p>
+                <h3 style={{ margin: '0 0 8px', color: 'var(--uf-ink)', fontSize: 18 }}>{f.q}</h3>
+                <p style={{ margin: 0, color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>{f.a}</p>
               </div>
             ))}
           </article>

@@ -8,19 +8,19 @@ import { formatMoney } from "@/lib/money";
 const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
 
 const C = {
-  bg: '#F7F9FB',
-  card: '#ffffff',
-  border: '#E2E8F0',
-  text: '#19181E',
-  muted: '#64748B',
-  mutedLight: '#94A3B8',
-  accent: '#059669',
-  teal: '#20D4BF',
-  purple: '#7C3AED',
+  bg: 'var(--uf-surface)',
+  card: 'var(--uf-card)',
+  border: 'var(--uf-border)',
+  text: 'var(--uf-ink)',
+  muted: 'var(--uf-ink-2)',
+  mutedLight: 'var(--uf-ink-3)',
+  accent: 'var(--uf-green)',
+  teal: 'var(--uf-teal)',
+  purple: 'var(--uf-chart-2)',
 }
 
 const inputStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: 'var(--uf-card)',
   border: `1px solid ${C.border}`,
   borderRadius: 8,
   color: C.text,
@@ -79,13 +79,13 @@ export default function CoastFireCalculator() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
-      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
           <Logo variant="light" size={22} />
         </Link>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>
-          <Link href="/?source=calculator-coast-fire" style={{ color: '#059669', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid #059669', padding: '6px 14px', borderRadius: 6 }}>
+          <Link href="/?source=calculator-coast-fire" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid var(--uf-green)', padding: '6px 14px', borderRadius: 6 }}>
             FIRE number →
           </Link>
         </div>
@@ -137,14 +137,14 @@ export default function CoastFireCalculator() {
 
         {/* Result */}
         <div style={{
-          background: result.alreadyCoast ? '#ECFDF5' : '#F5F3FF',
-          border: `1px solid ${result.alreadyCoast ? '#A7F3D0' : '#DDD6FE'}`,
+          background: result.alreadyCoast ? 'var(--uf-green-50)' : '#F5F3FF',
+          border: `1px solid ${result.alreadyCoast ? 'var(--uf-green-100)' : '#DDD6FE'}`,
           borderRadius: 16,
           padding: '28px 32px',
           marginBottom: 24,
         }}>
           {result.alreadyCoast ? (
-            <div style={{ marginBottom: 24, padding: '14px 18px', background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 10, color: '#065F46', fontWeight: 700, fontSize: 15 }}>
+            <div style={{ marginBottom: 24, padding: '14px 18px', background: 'var(--uf-green-100)', border: '1px solid var(--uf-teal-line)', borderRadius: 10, color: 'var(--uf-green-900)', fontWeight: 700, fontSize: 15 }}>
               You&apos;ve already hit your Coast FIRE number.
               If you stop contributing today, your investments will grow to {compactMoney(result.fireTarget)} by age {retireAge}.
             </div>
@@ -171,7 +171,7 @@ export default function CoastFireCalculator() {
                 {result.progressPct.toFixed(0)}%
               </span>
             </div>
-            <div style={{ height: 10, background: '#E2E8F0', borderRadius: 999, overflow: 'hidden' }}>
+            <div style={{ height: 10, background: 'var(--uf-border)', borderRadius: 999, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${result.progressPct}%`, background: result.alreadyCoast ? C.accent : C.purple, borderRadius: 999, transition: 'width 0.3s' }} />
             </div>
             {!result.alreadyCoast && (
@@ -189,7 +189,7 @@ export default function CoastFireCalculator() {
               </div>
               <div style={{ display: 'grid', gap: 8 }}>
                 {result.milestones.map(({ age: a, balance }) => (
-                  <div key={a} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8 }}>
+                  <div key={a} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--uf-surface)', border: '1px solid var(--uf-border)', borderRadius: 8 }}>
                     <span style={{ color: C.muted, fontSize: 14 }}>Age {a}</span>
                     <span style={{ color: balance >= result.fireTarget ? C.accent : C.text, fontWeight: 600, fontSize: 14 }}>
                       {formatMoney(balance)}{balance >= result.fireTarget ? ' ✓' : ''}

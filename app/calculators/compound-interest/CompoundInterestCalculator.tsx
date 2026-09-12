@@ -8,19 +8,19 @@ import { formatMoney } from "@/lib/money";
 const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
 
 const C = {
-  bg: '#F7F9FB',
-  card: '#ffffff',
-  border: '#E2E8F0',
-  text: '#19181E',
-  muted: '#64748B',
-  mutedLight: '#94A3B8',
-  accent: '#059669',
-  teal: '#20D4BF',
+  bg: 'var(--uf-surface)',
+  card: 'var(--uf-card)',
+  border: 'var(--uf-border)',
+  text: 'var(--uf-ink)',
+  muted: 'var(--uf-ink-2)',
+  mutedLight: 'var(--uf-ink-3)',
+  accent: 'var(--uf-green)',
+  teal: 'var(--uf-teal)',
 }
 
 
 const inputStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: 'var(--uf-card)',
   border: `1px solid ${C.border}`,
   borderRadius: 8,
   color: C.text,
@@ -72,13 +72,13 @@ export default function CompoundInterestCalculator() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
-      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
           <Logo variant="light" size={22} />
         </Link>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>
-          <Link href="/?source=calculator-compound-interest" style={{ color: '#059669', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid #059669', padding: '6px 14px', borderRadius: 6 }}>
+          <Link href="/?source=calculator-compound-interest" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid var(--uf-green)', padding: '6px 14px', borderRadius: 6 }}>
             FIRE number →
           </Link>
         </div>
@@ -123,7 +123,7 @@ export default function CompoundInterestCalculator() {
         </div>
 
         {/* Result summary */}
-        <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 16, padding: '28px 32px', marginBottom: 24 }}>
+        <div style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 16, padding: '28px 32px', marginBottom: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 28 }}>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Final balance</div>
@@ -136,7 +136,7 @@ export default function CompoundInterestCalculator() {
             </div>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Investment gains</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: '#047857', letterSpacing: '-0.04em' }}>{compactMoney(gains)}</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--uf-green-700)', letterSpacing: '-0.04em' }}>{compactMoney(gains)}</div>
               <div style={{ fontSize: 13, color: C.accent, marginTop: 2 }}>
                 {totalPrincipal > 0 ? `${Math.round((gains / totalPrincipal) * 100)}% of what you put in` : ''}
               </div>
@@ -144,7 +144,7 @@ export default function CompoundInterestCalculator() {
           </div>
 
           {/* Bar chart */}
-          <div style={{ borderTop: '1px solid #A7F3D0', paddingTop: 20 }}>
+          <div style={{ borderTop: '1px solid var(--uf-green-100)', paddingTop: 20 }}>
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 14, fontWeight: 600 }}>Growth over time</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {milestones.filter((_, i) => {
@@ -158,7 +158,7 @@ export default function CompoundInterestCalculator() {
                 return (
                   <div key={year} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 12, color: C.muted, width: 36, flexShrink: 0, textAlign: 'right' }}>yr {year}</span>
-                    <div style={{ flex: 1, position: 'relative', height: 20, borderRadius: 4, background: '#D1FAE5', overflow: 'hidden' }}>
+                    <div style={{ flex: 1, position: 'relative', height: 20, borderRadius: 4, background: 'var(--uf-green-100)', overflow: 'hidden' }}>
                       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${balancePct}%`, background: 'rgba(5,150,105,0.25)', borderRadius: 4 }} />
                       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${contribPct}%`, background: 'rgba(5,150,105,0.55)', borderRadius: 4 }} />
                     </div>

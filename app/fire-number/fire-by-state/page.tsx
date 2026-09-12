@@ -65,10 +65,10 @@ export default function FireByStatePage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { background: #F7F9FB; color: #19181E; font-family: 'Manrope', sans-serif; margin: 0; }
+        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
         a { color: inherit; }
         .state-row { transition: background 0.15s; }
-        .state-row:hover { background: #F0FDF4 !important; }
+        .state-row:hover { background: var(--uf-green-50) !important; }
         @media(max-width: 640px) {
           .ranking-hero { padding: 24px 16px !important; }
           .state-table { font-size: 13px !important; }
@@ -79,20 +79,20 @@ export default function FireByStatePage() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 80px' }}>
 
         {/* Breadcrumb */}
-        <nav style={{ fontSize: 13, color: '#94A3B8', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Link href="/" style={{ textDecoration: 'none', color: '#94A3B8' }}>UntilFire</Link>
+        <nav style={{ fontSize: 13, color: 'var(--uf-ink-3)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link href="/" style={{ textDecoration: 'none', color: 'var(--uf-ink-3)' }}>UntilFire</Link>
           <span>›</span>
-          <Link href="/fire-number" style={{ textDecoration: 'none', color: '#94A3B8' }}>FIRE Number by City</Link>
+          <Link href="/fire-number" style={{ textDecoration: 'none', color: 'var(--uf-ink-3)' }}>FIRE Number by City</Link>
           <span>›</span>
-          <span style={{ color: '#064E3B', fontWeight: 600 }}>By State</span>
+          <span style={{ color: 'var(--uf-green-900)', fontWeight: 600 }}>By State</span>
         </nav>
 
         {/* Hero */}
         <div className="ranking-hero" style={{ marginBottom: 48, padding: '32px 0' }}>
-          <h1 style={{ fontSize: 44, fontWeight: 800, color: '#064E3B', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 44, fontWeight: 800, color: 'var(--uf-green-900)', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
             FIRE Number by State: Compare Retirement Targets
           </h1>
-          <p style={{ fontSize: 17, color: '#475569', margin: '0 0 28px', lineHeight: 1.65, maxWidth: 700 }}>
+          <p style={{ fontSize: 17, color: 'var(--uf-ink-2)', margin: '0 0 28px', lineHeight: 1.65, maxWidth: 700 }}>
             Retirement costs vary dramatically by state — from $875k in Mississippi to $2.75M in San Francisco, CA. Compare average FIRE targets, state tax rates, and the cheapest/most expensive cities in all 50 US states. See how your home state stacks up for early retirement.
           </p>
 
@@ -103,23 +103,23 @@ export default function FireByStatePage() {
               { label: 'US avg annual cost', value: formatMoney(nationalAvg) },
               { label: 'Range', value: `${formatMoney(sortedStates[0].avgCol)} — ${formatMoney(sortedStates[sortedStates.length - 1].avgCol)}` },
             ].map(({ label, value }) => (
-              <div key={label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 18px' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#064E3B', letterSpacing: '-0.4px' }}>{value}</div>
+              <div key={label} style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 12, padding: '16px 18px' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--uf-ink-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-green-900)', letterSpacing: '-0.4px' }}>{value}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* State comparison table */}
-        <section style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, overflow: 'hidden', marginBottom: 48 }}>
-          <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #E2E8F0' }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: '#064E3B', margin: 0 }}>
+        <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 16, overflow: 'hidden', marginBottom: 48 }}>
+          <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--uf-border)' }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--uf-green-900)', margin: 0 }}>
               All 50 states ranked by average cost of living
             </h2>
           </div>
           <table className="state-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead style={{ background: '#F8FAFC', position: 'sticky', top: 0 }}>
+            <thead style={{ background: 'var(--uf-surface)', position: 'sticky', top: 0 }}>
               <tr>
                 {['State', 'Cities', 'Avg Cost', 'Avg FIRE Target', 'Cheapest City', 'Most Expensive', 'Tax Rate'].map((h) => (
                   <th
@@ -128,11 +128,11 @@ export default function FireByStatePage() {
                       padding: '12px 16px',
                       fontSize: 12,
                       fontWeight: 700,
-                      color: '#64748B',
+                      color: 'var(--uf-ink-2)',
                       textAlign: 'left',
                       letterSpacing: '0.05em',
                       textTransform: 'uppercase',
-                      borderBottom: '1px solid #E2E8F0',
+                      borderBottom: '1px solid var(--uf-border)',
                     }}
                   >
                     {h}
@@ -145,30 +145,30 @@ export default function FireByStatePage() {
                 <tr
                   key={state.stateKey}
                   className="state-row"
-                  style={{ borderBottom: idx < sortedStates.length - 1 ? '1px solid #F1F5F9' : 'none' }}
+                  style={{ borderBottom: idx < sortedStates.length - 1 ? '1px solid var(--uf-surface-2)' : 'none' }}
                 >
-                  <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 700, color: '#064E3B' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 700, color: 'var(--uf-green-900)' }}>
                     <Link
                       href={`/fire-number/states/${getStatePageSlug(state.stateKey)}`}
-                      style={{ color: '#059669', textDecoration: 'none' }}
+                      style={{ color: 'var(--uf-green)', textDecoration: 'none' }}
                     >
                       {state.stateName}
                     </Link>
                   </td>
-                  <td style={{ padding: '14px 16px', fontSize: 13, color: '#475569' }}>{state.cities.length}</td>
-                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#064E3B' }}>{formatMoney(state.avgCol)}</td>
-                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#22d3a5' }}>{formatMoney(state.fireTarget)}</td>
-                  <td style={{ padding: '14px 16px', fontSize: 12, color: '#64748B' }}>
-                    <Link href={`/fire-number/${state.cheapest.key}`} style={{ color: '#059669', textDecoration: 'none' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--uf-ink-2)' }}>{state.cities.length}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-green-900)' }}>{formatMoney(state.avgCol)}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-teal)' }}>{formatMoney(state.fireTarget)}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--uf-ink-2)' }}>
+                    <Link href={`/fire-number/${state.cheapest.key}`} style={{ color: 'var(--uf-green)', textDecoration: 'none' }}>
                       {state.cheapest.name.split(',')[0]}
                     </Link>
                   </td>
-                  <td style={{ padding: '14px 16px', fontSize: 12, color: '#64748B' }}>
-                    <Link href={`/fire-number/${state.mostExpensive.key}`} style={{ color: '#ef4444', textDecoration: 'none' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--uf-ink-2)' }}>
+                    <Link href={`/fire-number/${state.mostExpensive.key}`} style={{ color: 'var(--uf-neg)', textDecoration: 'none' }}>
                       {state.mostExpensive.name.split(',')[0]}
                     </Link>
                   </td>
-                  <td style={{ padding: '14px 16px', fontSize: 12, color: '#64748B' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--uf-ink-2)' }}>
                     {state.taxRate === 0 ? '0%' : `${(state.taxRate * 100).toFixed(1)}%`}
                   </td>
                 </tr>
@@ -178,8 +178,8 @@ export default function FireByStatePage() {
         </section>
 
         {/* Bottom CTA */}
-        <div style={{ background: 'linear-gradient(135deg, #064E3B 0%, #047857 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
+        <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-card)', margin: '0 0 10px' }}>
             Find your state&apos;s FIRE path
           </h2>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 24px' }}>
@@ -190,8 +190,8 @@ export default function FireByStatePage() {
               href="/?source=fire-by-state"
               style={{
                 display: 'inline-block',
-                background: '#22d3a5',
-                color: '#064E3B',
+                background: 'var(--uf-teal)',
+                color: 'var(--uf-green-900)',
                 padding: '12px 28px',
                 borderRadius: 8,
                 fontSize: 14,
@@ -206,7 +206,7 @@ export default function FireByStatePage() {
               style={{
                 display: 'inline-block',
                 background: 'rgba(255,255,255,0.15)',
-                color: '#fff',
+                color: 'var(--uf-card)',
                 padding: '12px 28px',
                 borderRadius: 8,
                 fontSize: 14,

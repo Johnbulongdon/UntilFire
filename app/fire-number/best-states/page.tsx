@@ -72,9 +72,9 @@ export default function BestStatesPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { background: #F7F9FB; color: #19181E; font-family: 'Manrope', sans-serif; margin: 0; }
+        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
         a { color: inherit; }
-        .score-badge { display: inline-block; background: #D1FAE5; color: #065F46; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
+        .score-badge { display: inline-block; background: var(--uf-green-100); color: var(--uf-green-900); padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
         .state-card { transition: transform 0.15s, box-shadow 0.15s; }
         .state-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         @media(max-width: 640px) {
@@ -86,28 +86,28 @@ export default function BestStatesPage() {
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 24px 80px' }}>
 
         {/* Breadcrumb */}
-        <nav style={{ fontSize: 13, color: '#94A3B8', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Link href="/" style={{ textDecoration: 'none', color: '#94A3B8' }}>UntilFire</Link>
+        <nav style={{ fontSize: 13, color: 'var(--uf-ink-3)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link href="/" style={{ textDecoration: 'none', color: 'var(--uf-ink-3)' }}>UntilFire</Link>
           <span>›</span>
-          <Link href="/fire-number" style={{ textDecoration: 'none', color: '#94A3B8' }}>FIRE Number by City</Link>
+          <Link href="/fire-number" style={{ textDecoration: 'none', color: 'var(--uf-ink-3)' }}>FIRE Number by City</Link>
           <span>›</span>
-          <span style={{ color: '#064E3B', fontWeight: 600 }}>Best States</span>
+          <span style={{ color: 'var(--uf-green-900)', fontWeight: 600 }}>Best States</span>
         </nav>
 
         {/* Hero */}
         <div className="ranking-hero" style={{ marginBottom: 48, padding: '32px 0' }}>
-          <h1 style={{ fontSize: 44, fontWeight: 800, color: '#064E3B', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 44, fontWeight: 800, color: 'var(--uf-green-900)', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
             Best States for FIRE: Tax Efficiency + Affordability
           </h1>
-          <p style={{ fontSize: 17, color: '#475569', margin: '0 0 28px', lineHeight: 1.65, maxWidth: 700 }}>
+          <p style={{ fontSize: 17, color: 'var(--uf-ink-2)', margin: '0 0 28px', lineHeight: 1.65, maxWidth: 700 }}>
             The best states for early retirement combine affordable living with low tax rates. Texas, Florida, Nevada, and Washington top the list with zero state income tax. But affordability matters too. Find the perfect blend of low cost and low taxes to maximize your FIRE timeline.
           </p>
 
-          <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: '20px', maxWidth: 600 }}>
-            <div style={{ fontSize: 14, color: '#047857', fontWeight: 700, marginBottom: 8 }}>
+          <div style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 12, padding: '20px', maxWidth: 600 }}>
+            <div style={{ fontSize: 14, color: 'var(--uf-green-700)', fontWeight: 700, marginBottom: 8 }}>
               🎯 How we score states
             </div>
-            <div style={{ fontSize: 13, color: '#065F46', lineHeight: 1.6, margin: 0 }}>
+            <div style={{ fontSize: 13, color: 'var(--uf-green-900)', lineHeight: 1.6, margin: 0 }}>
               Overall score combines tax efficiency (60%) and affordability (40%). Higher score = better for FIRE.
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function BestStatesPage() {
 
         {/* Top 10 states */}
         <section style={{ marginBottom: 48 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#064E3B', margin: '0 0 24px', letterSpacing: '-0.03em' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--uf-green-900)', margin: '0 0 24px', letterSpacing: '-0.03em' }}>
             Top 10 states for FIRE
           </h2>
 
@@ -127,51 +127,51 @@ export default function BestStatesPage() {
                 className="state-card"
                 style={{
                   textDecoration: 'none',
-                  background: '#fff',
-                  border: '1px solid #E2E8F0',
+                  background: 'var(--uf-card)',
+                  border: '1px solid var(--uf-border)',
                   borderRadius: 14,
                   padding: '22px',
                 }}
               >
                 <div style={{ marginBottom: 18 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 800, color: '#064E3B', margin: 0 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--uf-green-900)', margin: 0 }}>
                       #{idx + 1}
                     </h3>
                     <div className="score-badge">{state.overallScore.toFixed(1)}</div>
                   </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: '#064E3B', margin: '8px 0 0' }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-green-900)', margin: '8px 0 0' }}>
                     {state.stateName}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ padding: '10px', background: '#F8FAFC', borderRadius: 8 }}>
-                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                  <div style={{ padding: '10px', background: 'var(--uf-surface)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       Avg annual cost
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#19181E' }}>{formatMoney(state.avgCol)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--uf-ink)' }}>{formatMoney(state.avgCol)}</div>
                   </div>
 
-                  <div style={{ padding: '10px', background: '#F8FAFC', borderRadius: 8 }}>
-                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                  <div style={{ padding: '10px', background: 'var(--uf-surface)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       State tax rate
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: state.taxRate === 0 ? '#059669' : '#19181E' }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: state.taxRate === 0 ? 'var(--uf-green)' : 'var(--uf-ink)' }}>
                       {state.taxRate === 0 ? '0% — No tax' : `${(state.taxRate * 100).toFixed(1)}%`}
                     </div>
                   </div>
 
-                  <div style={{ padding: '10px', background: '#F8FAFC', borderRadius: 8 }}>
-                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                  <div style={{ padding: '10px', background: 'var(--uf-surface)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       FIRE target
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#22d3a5' }}>{formatMoney(state.fireTarget)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--uf-teal)' }}>{formatMoney(state.fireTarget)}</div>
                   </div>
                 </div>
 
-                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #E2E8F0' }}>
-                  <div style={{ fontSize: 12, color: '#059669', fontWeight: 700 }}>View all cities in {state.stateName} →</div>
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--uf-border)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 700 }}>View all cities in {state.stateName} →</div>
                 </div>
               </Link>
             ))}
@@ -179,8 +179,8 @@ export default function BestStatesPage() {
         </section>
 
         {/* Why these states */}
-        <section style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: '28px 24px', marginBottom: 48 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#064E3B', margin: '0 0 16px' }}>
+        <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 16, padding: '28px 24px', marginBottom: 48 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-green-900)', margin: '0 0 16px' }}>
             Why these states rank highest for FIRE
           </h2>
           <div style={{ display: 'grid', gap: 14 }}>
@@ -198,17 +198,17 @@ export default function BestStatesPage() {
                 desc: 'The best states for FIRE do both: low taxes AND affordable living. This compounds the advantage significantly.',
               },
             ].map((item) => (
-              <div key={item.title} style={{ paddingBottom: 14, borderBottom: '1px solid #E2E8F0' }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#064E3B', margin: '0 0 6px' }}>{item.title}</h3>
-                <p style={{ margin: 0, fontSize: 14, color: '#475569', lineHeight: 1.6 }}>{item.desc}</p>
+              <div key={item.title} style={{ paddingBottom: 14, borderBottom: '1px solid var(--uf-border)' }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--uf-green-900)', margin: '0 0 6px' }}>{item.title}</h3>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--uf-ink-2)', lineHeight: 1.6 }}>{item.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* Bottom CTA */}
-        <div style={{ background: 'linear-gradient(135deg, #064E3B 0%, #047857 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
+        <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-card)', margin: '0 0 10px' }}>
             Find your best-fit FIRE state
           </h2>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 24px' }}>
@@ -219,8 +219,8 @@ export default function BestStatesPage() {
               href="/?source=best-states"
               style={{
                 display: 'inline-block',
-                background: '#22d3a5',
-                color: '#064E3B',
+                background: 'var(--uf-teal)',
+                color: 'var(--uf-green-900)',
                 padding: '12px 28px',
                 borderRadius: 8,
                 fontSize: 14,
@@ -235,7 +235,7 @@ export default function BestStatesPage() {
               style={{
                 display: 'inline-block',
                 background: 'rgba(255,255,255,0.15)',
-                color: '#fff',
+                color: 'var(--uf-card)',
                 padding: '12px 28px',
                 borderRadius: 8,
                 fontSize: 14,

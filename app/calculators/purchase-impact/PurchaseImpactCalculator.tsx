@@ -6,13 +6,13 @@ import Logo from '@/app/components/Logo'
 import { calcPurchaseImpact, formatDelay, formatFV } from '@/lib/purchase-impact'
 
 const C = {
-  bg: '#F7F9FB',
-  card: '#ffffff',
-  border: '#E2E8F0',
-  text: '#19181E',
-  muted: '#64748B',
-  accent: '#059669',
-  orange: '#f97316',
+  bg: 'var(--uf-surface)',
+  card: 'var(--uf-card)',
+  border: 'var(--uf-border)',
+  text: 'var(--uf-ink)',
+  muted: 'var(--uf-ink-2)',
+  accent: 'var(--uf-green)',
+  orange: 'var(--uf-warn)',
 }
 
 const inputStyle: React.CSSProperties = {
@@ -144,7 +144,7 @@ export default function PurchaseImpactCalculator() {
                   <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 8 }}>
                     Freedom delayed by
                   </div>
-                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: '#FCA5A5', fontFamily: 'Manrope, sans-serif', letterSpacing: '-2px', lineHeight: 1 }}>
+                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: 'var(--uf-neg)', fontFamily: 'Manrope, sans-serif', letterSpacing: '-2px', lineHeight: 1 }}>
                     {formatDelay(result.delayDays)}
                   </div>
                   <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 10, lineHeight: 1.6 }}>
@@ -156,7 +156,7 @@ export default function PurchaseImpactCalculator() {
                   <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>
                     <strong style={{ color: C.text }}>Want a personalised calculation?</strong> Log in to UntilFire and this tool fills from your real savings, contribution, and FIRE target automatically.
                   </div>
-                  <Link href="/dashboard" style={{ display: 'inline-block', marginTop: 12, background: C.accent, color: '#fff', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+                  <Link href="/dashboard" style={{ display: 'inline-block', marginTop: 12, background: C.accent, color: 'var(--uf-card)', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
                     Use with my profile →
                   </Link>
                 </div>

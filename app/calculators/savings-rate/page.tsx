@@ -47,29 +47,29 @@ export default function SavingsRatePage() {
     <>
       <SavingsRateCalculator />
 
-      <section style={{ background: '#F7F9FB', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
+      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18 }}>
-          <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h1 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 28, letterSpacing: '-0.03em' }}>
+          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
+            <h1 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 28, letterSpacing: '-0.03em' }}>
               Savings Rate Calculator: The #1 Lever in FIRE
             </h1>
-            <p style={{ margin: '0 0 12px', color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
+            <p style={{ margin: '0 0 12px', color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
               Your savings rate — the share of take-home pay you invest each month — does more to set your retirement
               date than your income. Save 10% and financial independence is decades away; save 50% and it can arrive in
               under 20 years. Use the calculator above to find your rate, then see how raising it pulls your freedom date closer.
             </p>
-            <p style={{ margin: 0, color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
-              Turn your savings rate into a full timeline with the <Link href="/fire-calculator" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>FIRE calculator</Link>, or
-              size your end goal with the <Link href="/calculators/4-percent-rule" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>FIRE number calculator</Link>. To go deeper, read{' '}
-              <Link href="/learn/why-savings-rate-matters-more-than-income" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>why savings rate matters more than income</Link>.
+            <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
+              Turn your savings rate into a full timeline with the <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>FIRE calculator</Link>, or
+              size your end goal with the <Link href="/calculators/4-percent-rule" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>FIRE number calculator</Link>. To go deeper, read{' '}
+              <Link href="/learn/why-savings-rate-matters-more-than-income" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>why savings rate matters more than income</Link>.
             </p>
           </article>
-          <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 24 }}>Savings rate FAQ</h2>
+          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
+            <h2 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 24 }}>Savings rate FAQ</h2>
             {faqs.map((f) => (
               <div key={f.q} style={{ marginBottom: 14 }}>
-                <h3 style={{ margin: '0 0 8px', color: '#19181E', fontSize: 18 }}>{f.q}</h3>
-                <p style={{ margin: 0, color: '#64748B', lineHeight: 1.75 }}>{f.a}</p>
+                <h3 style={{ margin: '0 0 8px', color: 'var(--uf-ink)', fontSize: 18 }}>{f.q}</h3>
+                <p style={{ margin: 0, color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>{f.a}</p>
               </div>
             ))}
           </article>

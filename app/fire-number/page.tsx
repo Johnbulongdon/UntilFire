@@ -49,9 +49,9 @@ export default function FireNumberHubPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { background: #F7F9FB; color: #19181E; font-family: 'Manrope', sans-serif; margin: 0; }
+        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
         a { color: inherit; }
-        .city-card:hover { border-color: #059669 !important; background: #F0FDF4 !important; }
+        .city-card:hover { border-color: var(--uf-green) !important; background: var(--uf-green-50) !important; }
         @media(max-width: 640px) {
           .hub-hero h1 { font-size: 28px !important; }
           .hub-stats { grid-template-columns: repeat(2, 1fr) !important; }
@@ -62,21 +62,21 @@ export default function FireNumberHubPage() {
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px 80px" }}>
 
         {/* Breadcrumb */}
-        <nav style={{ fontSize: 13, color: "#94A3B8", marginBottom: 24, display: "flex", gap: 6 }}>
-          <Link href="/" style={{ textDecoration: "none", color: "#94A3B8" }}>UntilFire</Link>
+        <nav style={{ fontSize: 13, color: "var(--uf-ink-3)", marginBottom: 24, display: "flex", gap: 6 }}>
+          <Link href="/" style={{ textDecoration: "none", color: "var(--uf-ink-3)" }}>UntilFire</Link>
           <span>›</span>
-          <span style={{ color: "#064E3B", fontWeight: 600 }}>FIRE Number by City</span>
+          <span style={{ color: "var(--uf-green-900)", fontWeight: 600 }}>FIRE Number by City</span>
         </nav>
 
         {/* Hero */}
         <div className="hub-hero" style={{ marginBottom: 48 }}>
-          <h1 style={{ fontSize: 40, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.8px", margin: "0 0 16px", lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 40, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.8px", margin: "0 0 16px", lineHeight: 1.1 }}>
             FIRE Number by City
           </h1>
-          <p style={{ fontSize: 17, color: "#475569", margin: "0 0 32px", lineHeight: 1.65, maxWidth: 600 }}>
+          <p style={{ fontSize: 17, color: "var(--uf-ink-2)", margin: "0 0 32px", lineHeight: 1.65, maxWidth: 600 }}>
             The cost to retire varies enormously across the US — from{" "}
-            <strong style={{ color: "#064E3B" }}>$875k in Wichita, KS</strong> to{" "}
-            <strong style={{ color: "#064E3B" }}>$2.75M in San Francisco, CA</strong>. Pick your city to
+            <strong style={{ color: "var(--uf-green-900)" }}>$875k in Wichita, KS</strong> to{" "}
+            <strong style={{ color: "var(--uf-green-900)" }}>$2.75M in San Francisco, CA</strong>. Pick your city to
             find your exact FIRE number with local cost-of-living data and state tax rates.
           </p>
 
@@ -87,9 +87,9 @@ export default function FireNumberHubPage() {
               { label: "Avg FIRE target", value: formatMoney(US_CITIES.reduce((s, c) => s + c.col * 25, 0) / US_CITIES.length) },
               { label: "States with no income tax", value: "9" },
             ].map(({ label, value }) => (
-              <div key={label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "16px 18px" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.4px" }}>{value}</div>
-                <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontWeight: 600 }}>{label}</div>
+              <div key={label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "16px 18px" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.4px" }}>{value}</div>
+                <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4, fontWeight: 600 }}>{label}</div>
               </div>
             ))}
           </div>
@@ -97,7 +97,7 @@ export default function FireNumberHubPage() {
 
         {/* Browse by Region */}
         <section style={{ marginBottom: 52 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#064E3B", margin: "0 0 14px", letterSpacing: "-0.03em" }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 14px", letterSpacing: "-0.03em" }}>
             Browse by US region
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
@@ -114,15 +114,15 @@ export default function FireNumberHubPage() {
                 href={`/fire-number/regions/${r.slug}`}
                 style={{
                   textDecoration: "none",
-                  background: "#fff",
-                  border: "1px solid #E2E8F0",
+                  background: "var(--uf-card)",
+                  border: "1px solid var(--uf-border)",
                   borderRadius: 12,
                   padding: "16px 18px",
                   transition: "border-color 0.15s",
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#064E3B", marginBottom: 5 }}>{r.name} →</div>
-                <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.5 }}>{r.desc}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-green-900)", marginBottom: 5 }}>{r.name} →</div>
+                <div style={{ fontSize: 12, color: "var(--uf-ink-3)", lineHeight: 1.5 }}>{r.desc}</div>
               </Link>
             ))}
           </div>
@@ -131,10 +131,10 @@ export default function FireNumberHubPage() {
         {/* City grid by state */}
         {sortedStates.map((stateName) => (
           <div key={stateName} style={{ marginBottom: 40 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#064E3B", margin: "0 0 14px", letterSpacing: "-0.2px" }}>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 14px", letterSpacing: "-0.2px" }}>
               {stateName}
               {byState[stateName][0] && STATE_TAX[byState[stateName][0].state]?.rate === 0 && (
-                <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, background: "#D1FAE5", color: "#065F46", borderRadius: 4, padding: "2px 7px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, background: "var(--uf-green-100)", color: "var(--uf-green-900)", borderRadius: 4, padding: "2px 7px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
                   No income tax
                 </span>
               )}
@@ -150,8 +150,8 @@ export default function FireNumberHubPage() {
                     alignItems: "center",
                     gap: 12,
                     padding: "14px 16px",
-                    background: "#fff",
-                    border: "1px solid #E2E8F0",
+                    background: "var(--uf-card)",
+                    border: "1px solid var(--uf-border)",
                     borderRadius: 10,
                     textDecoration: "none",
                     transition: "border-color 0.15s, background 0.15s",
@@ -159,8 +159,8 @@ export default function FireNumberHubPage() {
                 >
                   <span style={{ fontSize: 22, flexShrink: 0 }}>{city.flag}</span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#064E3B", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</div>
-                    <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-green-900)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</div>
+                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 2 }}>
                       {formatMoney(city.col * 25)} target · {formatMoney(city.col)}/yr
                     </div>
                   </div>
@@ -172,7 +172,7 @@ export default function FireNumberHubPage() {
 
         {/* Ranking links section */}
         <section style={{ marginTop: 48, marginBottom: 40 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", margin: "0 0 20px", letterSpacing: "-0.03em" }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 20px", letterSpacing: "-0.03em" }}>
             Compare cities by cost, strategy, or state
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
@@ -188,17 +188,17 @@ export default function FireNumberHubPage() {
                 href={item.href}
                 style={{
                   textDecoration: "none",
-                  background: "#fff",
-                  border: "1px solid #E2E8F0",
+                  background: "var(--uf-card)",
+                  border: "1px solid var(--uf-border)",
                   borderRadius: 14,
                   padding: "18px 16px",
                   transition: "border-color 0.15s",
                 }}
               >
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", marginBottom: 6 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-green-900)", marginBottom: 6 }}>
                   {item.title}
                 </div>
-                <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.5 }}>
+                <div style={{ fontSize: 13, color: "var(--uf-ink-2)", lineHeight: 1.5 }}>
                   {item.desc}
                 </div>
               </Link>
@@ -207,37 +207,37 @@ export default function FireNumberHubPage() {
         </section>
 
         {/* FAQ Section */}
-        <section style={{ marginTop: 48, background: "#ffffff", border: "1px solid #E2E8F0", borderRadius: 18, padding: "28px 24px" }}>
-          <h2 style={{ fontSize: 24, color: "#064E3B", margin: "0 0 18px", letterSpacing: "-0.02em" }}>
+        <section style={{ marginTop: 48, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 18, padding: "28px 24px" }}>
+          <h2 style={{ fontSize: 24, color: "var(--uf-green-900)", margin: "0 0 18px", letterSpacing: "-0.02em" }}>
             FIRE number by city FAQ
           </h2>
           <div style={{ display: "grid", gap: 16 }}>
-            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Why does the FIRE number vary so much by city?</h3>
-              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Cost of living is the primary driver. Housing, food, transportation, and healthcare all vary significantly across US cities. San Francisco has a ~3.1x higher cost of living than Wichita, KS — which means a $100,000 annual budget in San Francisco requires roughly a $3.1M portfolio, versus $1M in Wichita.</p>
+            <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Why does the FIRE number vary so much by city?</h3>
+              <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>Cost of living is the primary driver. Housing, food, transportation, and healthcare all vary significantly across US cities. San Francisco has a ~3.1x higher cost of living than Wichita, KS — which means a $100,000 annual budget in San Francisco requires roughly a $3.1M portfolio, versus $1M in Wichita.</p>
             </article>
-            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Do I have to use the median cost of living for my city?</h3>
-              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>No. These pages show the baseline using each city&apos;s median cost of living, but your actual FIRE number depends on your desired retirement spending — which may be higher or lower than the median. Use the full FIRE calculator to input your specific number.</p>
+            <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Do I have to use the median cost of living for my city?</h3>
+              <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>No. These pages show the baseline using each city&apos;s median cost of living, but your actual FIRE number depends on your desired retirement spending — which may be higher or lower than the median. Use the full FIRE calculator to input your specific number.</p>
             </article>
-            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>What about state taxes — are they included?</h3>
-              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>The cost of living data is based on housing, food, transportation, and other cost factors, but does not embed income tax assumptions. States with no income tax (Florida, Texas, Nevada, Washington, etc.) have a structural tax advantage for retirees — something to consider when comparing cities across state lines.</p>
+            <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>What about state taxes — are they included?</h3>
+              <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>The cost of living data is based on housing, food, transportation, and other cost factors, but does not embed income tax assumptions. States with no income tax (Florida, Texas, Nevada, Washington, etc.) have a structural tax advantage for retirees — something to consider when comparing cities across state lines.</p>
             </article>
-            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>Can I use Lean FIRE or Fat FIRE targets instead?</h3>
-              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>Yes. Each city page shows Lean, Regular, and Fat FIRE targets as well as the monthly savings timeline to reach full FIRE in 10, 15, 20, or more years. Pick the variant that fits your desired lifestyle.</p>
+            <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Can I use Lean FIRE or Fat FIRE targets instead?</h3>
+              <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>Yes. Each city page shows Lean, Regular, and Fat FIRE targets as well as the monthly savings timeline to reach full FIRE in 10, 15, 20, or more years. Pick the variant that fits your desired lifestyle.</p>
             </article>
-            <article style={{ borderTop: "1px solid #E2E8F0", paddingTop: 16 }}>
-              <h3 style={{ margin: "0 0 8px", color: "#19181E", fontSize: 18 }}>How accurate is this for my exact situation?</h3>
-              <p style={{ margin: 0, color: "#64748B", fontSize: 15, lineHeight: 1.75 }}>These pages provide a realistic baseline, but your actual FIRE number depends on your specific spending, taxes, healthcare, Social Security timing, and withdrawal strategy. Use the full FIRE calculator and pressure-test your number with different assumptions before making major life decisions.</p>
+            <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>How accurate is this for my exact situation?</h3>
+              <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>These pages provide a realistic baseline, but your actual FIRE number depends on your specific spending, taxes, healthcare, Social Security timing, and withdrawal strategy. Use the full FIRE calculator and pressure-test your number with different assumptions before making major life decisions.</p>
             </article>
           </div>
         </section>
 
         {/* Bottom CTA */}
-        <div style={{ marginTop: 48, background: "linear-gradient(135deg, #064E3B 0%, #047857 100%)", borderRadius: 16, padding: "32px 36px", textAlign: "center" }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: "0 0 10px" }}>
+        <div style={{ marginTop: 48, background: "linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)", borderRadius: 16, padding: "32px 36px", textAlign: "center" }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-card)", margin: "0 0 10px" }}>
             Track your actual progress toward FIRE
           </h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", margin: "0 0 20px" }}>
@@ -247,8 +247,8 @@ export default function FireNumberHubPage() {
             href="/dashboard"
             style={{
               display: "inline-block",
-              background: "#22d3a5",
-              color: "#064E3B",
+              background: "var(--uf-teal)",
+              color: "var(--uf-green-900)",
               padding: "12px 28px",
               borderRadius: 8,
               fontSize: 14,

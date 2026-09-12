@@ -27,25 +27,25 @@ export default function FourPercentRulePage() {
   return (
     <>
       <FourPercentRuleCalculator />
-      <section style={{ background: '#F7F9FB', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
+      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18 }}>
-          <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h1 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 28, letterSpacing: '-0.03em' }}>
+          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
+            <h1 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 28, letterSpacing: '-0.03em' }}>
               FIRE Number Calculator: How Much Do You Need to Retire?
             </h1>
-            <p style={{ margin: '0 0 12px', color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
+            <p style={{ margin: '0 0 12px', color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
               Your FIRE number is the portfolio target that could support your annual spending without traditional work. A common starting point is the 4% rule: annual spending multiplied by 25. For a more conservative early-retirement plan, compare 3%, 3.5%, and 4% withdrawal rates instead of treating one number as final.
             </p>
-            <p style={{ margin: 0, color: '#64748B', fontSize: 16, lineHeight: 1.75 }}>
-              After you estimate the target, use the <Link href="/fire-calculator" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>FIRE calculator</Link> to turn it into a projected freedom date, or compare your compounding milestone with the <Link href="/calculators/coast-fire" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>Coast FIRE calculator</Link>.
+            <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
+              After you estimate the target, use the <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>FIRE calculator</Link> to turn it into a projected freedom date, or compare your compounding milestone with the <Link href="/calculators/coast-fire" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>Coast FIRE calculator</Link>.
             </p>
           </article>
-          <article style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', color: '#064E3B', fontSize: 24 }}>FIRE number FAQ</h2>
-            <h3 style={{ margin: '0 0 8px', color: '#19181E', fontSize: 18 }}>Is the 25x rule the same as the 4% rule?</h3>
-            <p style={{ margin: '0 0 14px', color: '#64748B', lineHeight: 1.75 }}>Yes. The 25x rule says you need about 25 times annual expenses invested. That is the inverse of a 4% withdrawal rate.</p>
-            <h3 style={{ margin: '0 0 8px', color: '#19181E', fontSize: 18 }}>Should early retirees use less than 4%?</h3>
-            <p style={{ margin: 0, color: '#64748B', lineHeight: 1.75 }}>Many early retirees model 3% to 3.5% because their retirement horizon can be much longer. Taxes, healthcare, market timing, flexibility, and part-time income all matter.</p>
+          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
+            <h2 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 24 }}>FIRE number FAQ</h2>
+            <h3 style={{ margin: '0 0 8px', color: 'var(--uf-ink)', fontSize: 18 }}>Is the 25x rule the same as the 4% rule?</h3>
+            <p style={{ margin: '0 0 14px', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>Yes. The 25x rule says you need about 25 times annual expenses invested. That is the inverse of a 4% withdrawal rate.</p>
+            <h3 style={{ margin: '0 0 8px', color: 'var(--uf-ink)', fontSize: 18 }}>Should early retirees use less than 4%?</h3>
+            <p style={{ margin: 0, color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>Many early retirees model 3% to 3.5% because their retirement horizon can be much longer. Taxes, healthcare, market timing, flexibility, and part-time income all matter.</p>
           </article>
         </div>
       </section>

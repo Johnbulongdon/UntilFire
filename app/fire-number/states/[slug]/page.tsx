@@ -58,10 +58,10 @@ export default async function StateFireNumberPage({ params }: Props) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { background: #F7F9FB; color: #19181E; font-family: 'Manrope', sans-serif; margin: 0; }
+        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
         a { color: inherit; }
         .state-city-card { transition: border-color 0.15s, background 0.15s; }
-        .state-city-card:hover { border-color: #059669 !important; background: #F0FDF4 !important; }
+        .state-city-card:hover { border-color: var(--uf-green) !important; background: var(--uf-green-50) !important; }
         @media(max-width: 640px) {
           .state-hero { padding: 24px 16px !important; }
           .state-stats { grid-template-columns: 1fr !important; }
@@ -72,20 +72,20 @@ export default async function StateFireNumberPage({ params }: Props) {
       <div style={{ maxWidth: 1120, margin: '0 auto', padding: '32px 24px 80px' }}>
 
         {/* Breadcrumb */}
-        <nav style={{ fontSize: 13, color: '#94A3B8', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Link href="/" style={{ textDecoration: 'none', color: '#94A3B8' }}>UntilFire</Link>
+        <nav style={{ fontSize: 13, color: 'var(--uf-ink-3)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link href="/" style={{ textDecoration: 'none', color: 'var(--uf-ink-3)' }}>UntilFire</Link>
           <span>›</span>
-          <Link href="/fire-number" style={{ textDecoration: 'none', color: '#94A3B8' }}>FIRE Number by City</Link>
+          <Link href="/fire-number" style={{ textDecoration: 'none', color: 'var(--uf-ink-3)' }}>FIRE Number by City</Link>
           <span>›</span>
-          <span style={{ color: '#064E3B', fontWeight: 600 }}>{page.stateName}</span>
+          <span style={{ color: 'var(--uf-green-900)', fontWeight: 600 }}>{page.stateName}</span>
         </nav>
 
         {/* Hero */}
         <div className="state-hero" style={{ marginBottom: 48, padding: '32px 0' }}>
-          <h1 style={{ fontSize: 44, fontWeight: 800, color: '#064E3B', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 44, fontWeight: 800, color: 'var(--uf-green-900)', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
             {page.heroTitle}
           </h1>
-          <p style={{ fontSize: 17, color: '#475569', margin: '0 0 32px', lineHeight: 1.65, maxWidth: 700 }}>
+          <p style={{ fontSize: 17, color: 'var(--uf-ink-2)', margin: '0 0 32px', lineHeight: 1.65, maxWidth: 700 }}>
             Explore FIRE baselines across {page.cities.length} cities in {page.stateName}. {page.noIncomeTax ? `No state income tax means more savings turn into invested capital.` : `State taxes affect your take-home, so we show local tax context for each city.`} Find your target and compare retirement timelines.
           </p>
 
@@ -96,9 +96,9 @@ export default async function StateFireNumberPage({ params }: Props) {
               { label: 'Avg FIRE target', value: formatMoney(page.fireTarget) },
               { label: 'Avg annual cost', value: formatMoney(page.avgCityColAccross) },
             ].map(({ label, value }) => (
-              <div key={label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '18px 20px' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{label}</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#064E3B', letterSpacing: '-0.4px' }}>{value}</div>
+              <div key={label} style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 12, padding: '18px 20px' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--uf-ink-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{label}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--uf-green-900)', letterSpacing: '-0.4px' }}>{value}</div>
               </div>
             ))}
           </div>
@@ -107,10 +107,10 @@ export default async function StateFireNumberPage({ params }: Props) {
         {/* Cities in state */}
         <section style={{ marginBottom: 48 }}>
           <div style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#064E3B', margin: '0 0 10px', letterSpacing: '-0.03em' }}>
+            <h2 style={{ fontSize: 26, fontWeight: 800, color: 'var(--uf-green-900)', margin: '0 0 10px', letterSpacing: '-0.03em' }}>
               All cities in {page.stateName}
             </h2>
-            <p style={{ fontSize: 15, color: '#475569', margin: 0, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 15, color: 'var(--uf-ink-2)', margin: 0, lineHeight: 1.6 }}>
               Ranked by cost of living. Pick a city to see detailed FIRE calculations, tax context, and retirement scenarios specific to that location.
             </p>
           </div>
@@ -123,8 +123,8 @@ export default async function StateFireNumberPage({ params }: Props) {
                 className="state-city-card"
                 style={{
                   textDecoration: 'none',
-                  background: '#fff',
-                  border: '1px solid #E2E8F0',
+                  background: 'var(--uf-card)',
+                  border: '1px solid var(--uf-border)',
                   borderRadius: 14,
                   padding: '18px 16px',
                   cursor: 'pointer',
@@ -133,14 +133,14 @@ export default async function StateFireNumberPage({ params }: Props) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <span style={{ fontSize: 24 }}>{city.flag}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#064E3B' }}>{city.name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--uf-green-900)' }}>{city.name}</div>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gap: 8 }}>
-                  <div style={{ fontSize: 13, color: '#475569' }}>
+                  <div style={{ fontSize: 13, color: 'var(--uf-ink-2)' }}>
                     <span style={{ fontWeight: 700 }}>{formatMoney(city.col)}</span>/year baseline
                   </div>
-                  <div style={{ fontSize: 13, color: '#64748B' }}>
+                  <div style={{ fontSize: 13, color: 'var(--uf-ink-2)' }}>
                     {formatMoney(city.col * 25)} FIRE target
                   </div>
                 </div>
@@ -150,8 +150,8 @@ export default async function StateFireNumberPage({ params }: Props) {
         </section>
 
         {/* Bottom CTA */}
-        <div style={{ background: 'linear-gradient(135deg, #064E3B 0%, #047857 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
+        <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-card)', margin: '0 0 10px' }}>
             Calculate your FIRE date for any city in {page.stateName}
           </h2>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 20px' }}>
@@ -161,8 +161,8 @@ export default async function StateFireNumberPage({ params }: Props) {
             href="/?source=state-hub"
             style={{
               display: 'inline-block',
-              background: '#22d3a5',
-              color: '#064E3B',
+              background: 'var(--uf-teal)',
+              color: 'var(--uf-green-900)',
               padding: '12px 28px',
               borderRadius: 8,
               fontSize: 14,

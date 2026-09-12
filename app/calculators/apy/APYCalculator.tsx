@@ -8,14 +8,14 @@ import { formatMoney } from "@/lib/money";
 const apyMoney = (n: number, decimals = 2) => formatMoney(n, { decimals });
 
 const C = {
-  bg: '#F7F9FB',
-  card: '#ffffff',
-  border: '#E2E8F0',
-  text: '#19181E',
-  muted: '#64748B',
-  mutedLight: '#94A3B8',
-  accent: '#059669',
-  teal: '#20D4BF',
+  bg: 'var(--uf-surface)',
+  card: 'var(--uf-card)',
+  border: 'var(--uf-border)',
+  text: 'var(--uf-ink)',
+  muted: 'var(--uf-ink-2)',
+  mutedLight: 'var(--uf-ink-3)',
+  accent: 'var(--uf-green)',
+  teal: 'var(--uf-teal)',
 }
 
 const FREQUENCIES = [
@@ -28,7 +28,7 @@ const FREQUENCIES = [
 
 
 const inputStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: 'var(--uf-card)',
   border: `1px solid ${C.border}`,
   borderRadius: 8,
   color: C.text,
@@ -74,7 +74,7 @@ export default function APYCalculator() {
       <nav style={{
         borderBottom: `1px solid ${C.border}`,
         padding: '16px 24px',
-        background: '#ffffff',
+        background: 'var(--uf-card)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -86,7 +86,7 @@ export default function APYCalculator() {
           <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>
             ← All calculators
           </Link>
-          <Link href="/?source=calculator-apy" style={{ color: '#059669', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid #059669', padding: '6px 14px', borderRadius: 6 }}>
+          <Link href="/?source=calculator-apy" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid var(--uf-green)', padding: '6px 14px', borderRadius: 6 }}>
             FIRE number →
           </Link>
         </div>
@@ -131,8 +131,8 @@ export default function APYCalculator() {
 
         {/* Results */}
         <div style={{
-          background: '#ECFDF5',
-          border: '1px solid #A7F3D0',
+          background: 'var(--uf-green-50)',
+          border: '1px solid var(--uf-green-100)',
           borderRadius: 16,
           padding: '28px 32px',
           marginBottom: 24,
@@ -153,7 +153,7 @@ export default function APYCalculator() {
           </div>
 
           {/* Growth table */}
-          <div style={{ borderTop: `1px solid #A7F3D0`, paddingTop: 20 }}>
+          <div style={{ borderTop: `1px solid var(--uf-green-100)`, paddingTop: 20 }}>
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 12, fontWeight: 600 }}>
               Growth of {apyMoney(parseFloat(principal) || 10000, 0)}
             </div>
@@ -164,8 +164,8 @@ export default function APYCalculator() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '10px 14px',
-                  background: '#ffffff',
-                  border: '1px solid #E2E8F0',
+                  background: 'var(--uf-card)',
+                  border: '1px solid var(--uf-border)',
                   borderRadius: 8,
                 }}>
                   <span style={{ color: C.muted, fontSize: 14 }}>{years} year{years !== 1 ? 's' : ''}</span>

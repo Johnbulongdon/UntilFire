@@ -41,10 +41,10 @@ export default function NoIncomeTaxStatesPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { background: #F7F9FB; color: #19181E; font-family: 'Manrope', sans-serif; margin: 0; }
+        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
         a { color: inherit; }
         .state-card { transition: border-color 0.15s, background 0.15s; }
-        .state-card:hover { border-color: #059669 !important; background: #F0FDF4 !important; }
+        .state-card:hover { border-color: var(--uf-green) !important; background: var(--uf-green-50) !important; }
         @media(max-width: 640px) {
           .ranking-hero { padding: 24px 16px !important; }
           .state-grid { grid-template-columns: 1fr !important; }
@@ -54,20 +54,20 @@ export default function NoIncomeTaxStatesPage() {
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 24px 80px' }}>
 
         {/* Breadcrumb */}
-        <nav style={{ fontSize: 13, color: '#94A3B8', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Link href="/" style={{ textDecoration: 'none', color: '#94A3B8' }}>UntilFire</Link>
+        <nav style={{ fontSize: 13, color: 'var(--uf-ink-3)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link href="/" style={{ textDecoration: 'none', color: 'var(--uf-ink-3)' }}>UntilFire</Link>
           <span>›</span>
-          <Link href="/fire-number" style={{ textDecoration: 'none', color: '#94A3B8' }}>FIRE Number by City</Link>
+          <Link href="/fire-number" style={{ textDecoration: 'none', color: 'var(--uf-ink-3)' }}>FIRE Number by City</Link>
           <span>›</span>
-          <span style={{ color: '#064E3B', fontWeight: 600 }}>No-Income-Tax States</span>
+          <span style={{ color: 'var(--uf-green-900)', fontWeight: 600 }}>No-Income-Tax States</span>
         </nav>
 
         {/* Hero */}
         <div className="ranking-hero" style={{ marginBottom: 48, padding: '32px 0' }}>
-          <h1 style={{ fontSize: 44, fontWeight: 800, color: '#064E3B', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 44, fontWeight: 800, color: 'var(--uf-green-900)', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
             FIRE in No-Income-Tax States: Tax-Efficient Retirement
           </h1>
-          <p style={{ fontSize: 17, color: '#475569', margin: '0 0 28px', lineHeight: 1.65, maxWidth: 700 }}>
+          <p style={{ fontSize: 17, color: 'var(--uf-ink-2)', margin: '0 0 28px', lineHeight: 1.65, maxWidth: 700 }}>
             Nine US states have zero income tax, keeping more of each raise invested. From Texas to Alaska, these states let you convert higher gross income directly into portfolio growth. Compare cost of living, FIRE targets, and tax savings across all nine no-tax states.
           </p>
 
@@ -78,9 +78,9 @@ export default function NoIncomeTaxStatesPage() {
               { label: 'Avg annual cost', value: formatMoney(avgCost) },
               { label: 'Potential tax savings', value: formatMoney(potentialTaxSavings) },
             ].map(({ label, value }) => (
-              <div key={label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 18px' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#064E3B', letterSpacing: '-0.4px' }}>{value}</div>
+              <div key={label} style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 12, padding: '16px 18px' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--uf-ink-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-green-900)', letterSpacing: '-0.4px' }}>{value}</div>
               </div>
             ))}
           </div>
@@ -88,7 +88,7 @@ export default function NoIncomeTaxStatesPage() {
 
         {/* State grid */}
         <section style={{ marginBottom: 48 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#064E3B', margin: '0 0 20px', letterSpacing: '-0.03em' }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--uf-green-900)', margin: '0 0 20px', letterSpacing: '-0.03em' }}>
             All 9 no-income-tax states, ranked by cost of living
           </h2>
 
@@ -100,42 +100,42 @@ export default function NoIncomeTaxStatesPage() {
                 className="state-card"
                 style={{
                   textDecoration: 'none',
-                  background: '#fff',
-                  border: '1px solid #E2E8F0',
+                  background: 'var(--uf-card)',
+                  border: '1px solid var(--uf-border)',
                   borderRadius: 14,
                   padding: '20px',
                 }}
               >
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--uf-green)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
                     Zero income tax
                   </div>
-                  <h3 style={{ fontSize: 20, fontWeight: 800, color: '#064E3B', margin: 0, lineHeight: 1.2 }}>
+                  <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-green-900)', margin: 0, lineHeight: 1.2 }}>
                     {STATE_NAMES[state.stateKey]}
                   </h3>
                 </div>
 
                 <div style={{ display: 'grid', gap: 10 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                    <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       Cities
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#19181E' }}>{state.count}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--uf-ink)' }}>{state.count}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                    <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       Avg annual cost
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#19181E' }}>{formatMoney(state.avgCol)}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--uf-ink)' }}>{formatMoney(state.avgCol)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                    <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       Avg FIRE target
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#22d3a5' }}>{formatMoney(state.fireTarget)}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--uf-teal)' }}>{formatMoney(state.fireTarget)}</div>
                   </div>
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: 12, color: '#059669', fontWeight: 700 }}>View all cities →</div>
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--uf-border)' }}>
+                    <div style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 700 }}>View all cities →</div>
                   </div>
                 </div>
               </Link>
@@ -144,18 +144,18 @@ export default function NoIncomeTaxStatesPage() {
         </section>
 
         {/* Tax benefit callout */}
-        <section style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 16, padding: '24px', marginBottom: 48 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#064E3B', margin: '0 0 12px' }}>
+        <section style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 16, padding: '24px', marginBottom: 48 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--uf-green-900)', margin: '0 0 12px' }}>
             Why no-income-tax states matter for FIRE
           </h2>
-          <p style={{ margin: 0, fontSize: 15, color: '#475569', lineHeight: 1.7 }}>
+          <p style={{ margin: 0, fontSize: 15, color: 'var(--uf-ink-2)', lineHeight: 1.7 }}>
             A 5% state tax on a $100k income means $5,000/year stays in your pocket instead of going to the state. Over 30 years, that compounds into meaningful portfolio growth. Combined with disciplined spending and a lower-cost city in these states, you can hit your FIRE target years faster.
           </p>
         </section>
 
         {/* Bottom CTA */}
-        <div style={{ background: 'linear-gradient(135deg, #064E3B 0%, #047857 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
+        <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-card)', margin: '0 0 10px' }}>
             Model your FIRE date in a no-tax state
           </h2>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 24px' }}>
@@ -166,8 +166,8 @@ export default function NoIncomeTaxStatesPage() {
               href="/?source=no-tax-states"
               style={{
                 display: 'inline-block',
-                background: '#22d3a5',
-                color: '#064E3B',
+                background: 'var(--uf-teal)',
+                color: 'var(--uf-green-900)',
                 padding: '12px 28px',
                 borderRadius: 8,
                 fontSize: 14,
@@ -182,7 +182,7 @@ export default function NoIncomeTaxStatesPage() {
               style={{
                 display: 'inline-block',
                 background: 'rgba(255,255,255,0.15)',
-                color: '#fff',
+                color: 'var(--uf-card)',
                 padding: '12px 28px',
                 borderRadius: 8,
                 fontSize: 14,

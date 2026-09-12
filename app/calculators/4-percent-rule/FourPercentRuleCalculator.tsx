@@ -8,18 +8,18 @@ import { formatMoney } from "@/lib/money";
 const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
 
 const C = {
-  bg: '#F7F9FB',
-  card: '#ffffff',
-  border: '#E2E8F0',
-  text: '#19181E',
-  muted: '#64748B',
-  mutedLight: '#94A3B8',
-  accent: '#059669',
-  teal: '#20D4BF',
+  bg: 'var(--uf-surface)',
+  card: 'var(--uf-card)',
+  border: 'var(--uf-border)',
+  text: 'var(--uf-ink)',
+  muted: 'var(--uf-ink-2)',
+  mutedLight: 'var(--uf-ink-3)',
+  accent: 'var(--uf-green)',
+  teal: 'var(--uf-teal)',
 }
 
 const inputStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: 'var(--uf-card)',
   border: `1px solid ${C.border}`,
   borderRadius: 8,
   color: C.text,
@@ -89,13 +89,13 @@ export default function FourPercentRuleCalculator() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
-      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
           <Logo variant="light" size={22} />
         </Link>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>
-          <Link href="/?source=calculator-4-percent-rule" style={{ color: '#059669', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid #059669', padding: '6px 14px', borderRadius: 6 }}>
+          <Link href="/?source=calculator-4-percent-rule" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid var(--uf-green)', padding: '6px 14px', borderRadius: 6 }}>
             FIRE date →
           </Link>
         </div>
@@ -124,7 +124,7 @@ export default function FourPercentRuleCalculator() {
               borderRadius: 7,
               border: 'none',
               background: mode === m ? C.accent : 'transparent',
-              color: mode === m ? '#ffffff' : C.muted,
+              color: mode === m ? 'var(--uf-card)' : C.muted,
               fontWeight: 600,
               fontSize: 14,
               cursor: 'pointer',
@@ -180,7 +180,7 @@ export default function FourPercentRuleCalculator() {
         </div>
 
         {/* Primary result */}
-        <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 16, padding: '28px 32px', marginBottom: 24 }}>
+        <div style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 16, padding: '28px 32px', marginBottom: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
@@ -204,7 +204,7 @@ export default function FourPercentRuleCalculator() {
                 <span style={{ fontSize: 13, color: C.muted }}>Progress to FIRE</span>
                 <span style={{ fontSize: 13, color: C.accent, fontWeight: 700 }}>{progressPct.toFixed(1)}%</span>
               </div>
-              <div style={{ height: 10, background: '#D1FAE5', borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ height: 10, background: 'var(--uf-green-100)', borderRadius: 999, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${progressPct}%`, background: C.accent, borderRadius: 999 }} />
               </div>
               {gap > 0 && (
@@ -216,7 +216,7 @@ export default function FourPercentRuleCalculator() {
           )}
 
           {/* Rate comparison table */}
-          <div style={{ borderTop: '1px solid #A7F3D0', paddingTop: 20 }}>
+          <div style={{ borderTop: '1px solid var(--uf-green-100)', paddingTop: 20 }}>
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 14, fontWeight: 600 }}>
               Compare withdrawal rates — click to select
             </div>
@@ -227,8 +227,8 @@ export default function FourPercentRuleCalculator() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '12px 16px',
-                  background: isSelected ? '#D1FAE5' : '#ffffff',
-                  border: isSelected ? '1px solid #6EE7B7' : '1px solid #E2E8F0',
+                  background: isSelected ? 'var(--uf-green-100)' : 'var(--uf-card)',
+                  border: isSelected ? '1px solid var(--uf-teal-line)' : '1px solid var(--uf-border)',
                   borderRadius: 8,
                   cursor: 'pointer',
                   textAlign: 'left',
