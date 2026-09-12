@@ -9,6 +9,7 @@ import {
 import { FALLBACK_RATES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { EXPENSE_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
+import MonthInsight from "./MonthInsight";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -186,10 +187,10 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
           <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
-            Reports
+            Insights
           </h2>
           <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
-            Monthly income, expenses, and savings trends.
+            Understand one month, then see the trend.
           </p>
         </div>
         <div style={{
@@ -255,10 +256,10 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       <div className="uf-report-header">
         <div>
           <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
-            Reports
+            Insights
           </h2>
           <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
-            Monthly income, expenses, and savings trends.
+            Understand one month, then see the trend.
           </p>
         </div>
         <div className="uf-report-controls">
@@ -276,6 +277,17 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
           )}
         </div>
       </div>
+
+      {/* ── One month, with exclusions ───────────────────────────────────
+          Sits above the trend deliberately: "why was this month like that"
+          is the question people arrive with, and the trend only makes sense
+          once the outlier months are explained. */}
+      <MonthInsight
+        transactions={transactions}
+        rates={rates}
+        displayCurrency={displayCurrency}
+        displayRates={displayRates}
+      />
 
       {/* ── KPI row ──────────────────────────────────────────────────────── */}
       <div className="uf-report-kpi-grid">
