@@ -5,6 +5,7 @@ import {
   ComposedChart, Area, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Cell,
 } from "recharts";
+import { formatMoney } from "@/lib/money";
 
 /* Fixed width rather than ResponsiveContainer.
  *
@@ -58,17 +59,11 @@ const CHART = {
   axis: "var(--uf-chart-axis)",
 };
 
-/* $1.5M / $850k / $420 — never "$16000k", which is what a naive
-   divide-by-1000 produces once a portfolio passes seven figures. */
-function money(n: number): string {
-  const v = Math.abs(n);
-  if (v >= 1_000_000) return `$${(n / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1)}M`;
-  if (v >= 10_000) return `$${Math.round(n / 1000)}k`;
-  // One decimal below $10k, or a $1,650 tick and a $2,200 tick both print "$2k"
-  // and the axis reads as though it repeats itself.
-  if (v >= 1_000) return `$${(n / 1000).toFixed(1)}k`;
-  return `$${Math.round(n)}`;
-}
+/* Axis ticks go through the shared formatter — a kit that ships its own
+   second money formatter is the exact problem lib/money.ts exists to end. It
+   also puts the sign outside the symbol, so a negative tick reads −$5k rather
+   than $-5k. */
+const money = (n: number) => formatMoney(n, { style: "compact" });
 
 const axisProps = {
   stroke: CHART.axis,

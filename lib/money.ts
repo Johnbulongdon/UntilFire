@@ -46,10 +46,13 @@ export interface FormatMoneyOptions {
  * $2,200 — two different ticks with the same label, which reads as a bug.
  */
 function compact(abs: number): string {
-  if (abs >= 1_000_000_000) return `${(abs / 1_000_000_000).toFixed(abs >= 10_000_000_000 ? 0 : 1)}B`;
-  if (abs >= 1_000_000) return `${(abs / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`;
+  // Trailing .0 is dropped so a row of round ticks reads uniformly: an axis
+  // labelled $5.0k · $10k looks like two different formats on one scale.
+  const trim = (n: number, dp: number) => n.toFixed(dp).replace(/\.0$/, "");
+  if (abs >= 1_000_000_000) return `${trim(abs / 1_000_000_000, abs >= 10_000_000_000 ? 0 : 1)}B`;
+  if (abs >= 1_000_000) return `${trim(abs / 1_000_000, abs >= 10_000_000 ? 0 : 1)}M`;
   if (abs >= 10_000) return `${Math.round(abs / 1000)}k`;
-  if (abs >= 1_000) return `${(abs / 1000).toFixed(1)}k`;
+  if (abs >= 1_000) return `${trim(abs / 1000, 1)}k`;
   return String(Math.round(abs));
 }
 
