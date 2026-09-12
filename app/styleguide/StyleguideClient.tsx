@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Button, Card, Field, Input, Select, Badge, Stat } from "@/components/ui";
+import { Button, Card, Field, Input, Select, Badge, Stat, Money, Delta, Progress } from "@/components/ui";
 import Logo from "@/app/components/Logo";
 import { ProjectionSpecimen, CompareSpecimen, SpendSpecimen } from "./ChartSpecimens";
 import type { ButtonVariant, ButtonSize } from "@/components/ui";
@@ -157,7 +157,7 @@ export default function StyleguideClient() {
         <Card elevation="flat" style={{ background: "var(--uf-surface)", marginBottom: 56 }}>
           <div style={{ display: "flex", gap: "var(--uf-s5)", flexWrap: "wrap" }}>
             {[
-              ["5", "primitives"],
+              ["8", "primitives"],
               [String(tokenCount), "colour tokens"],
               ["8", "type steps"],
               ["4", "radii"],
@@ -409,6 +409,87 @@ export default function StyleguideClient() {
                 </div>
               ))}
             </div>
+          </Card>
+        </Section>
+
+        {/* Money */}
+        <Section
+          id="money" title="Money, Delta, Progress" source="components/ui/Money.tsx · Delta.tsx · Progress.tsx · lib/money.ts"
+          subtitle="The part that makes this a personal-finance kit rather than a generic one. There were 39 hand-rolled money formatters in the app before lib/money.ts, and they disagreed — the same balance printed $1.50M on one screen and $1,500,000 on the next."
+        >
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Money — two formats, cents on their own axis</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>
+              The choice is about the reader&rsquo;s job, not about space. Exact for anything someone will check,
+              reconcile or type back; compact for anything they will scan or compare.
+            </div>
+            {([
+              ["exact", "a figure someone will act on"],
+              ["compact", "charts, tiles, comparisons"],
+            ] as const).map(([f, use]) => (
+              <Row key={f} label={`format="${f}"`}>
+                <Money amount={1500000} format={f} size={16} />
+                <Money amount={62450} format={f} size={16} />
+                <Money amount={1650} format={f} size={16} />
+                <Money amount={420} format={f} size={16} />
+                <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{use}</span>
+              </Row>
+            ))}
+            <Row label="decimals={2}">
+              <Money amount={1500000} decimals={2} size={16} />
+              <Money amount={62450.5} decimals={2} size={16} />
+              <Money amount={1650.25} decimals={2} size={16} />
+              <Money amount={420.4} decimals={2} size={16} />
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>anything reconciled against a statement</span>
+            </Row>
+            <Row label="currency">
+              {(["USD", "EUR", "GBP", "JPY", "INR"] as const).map(c => (
+                <Money key={c} amount={1500000} format="compact" currency={c} size={16} />
+              ))}
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>34 supported — most of the old formatters hardcoded $</span>
+            </Row>
+            <Row label="bySign">
+              <Money amount={2400} bySign signed size={16} />
+              <Money amount={-2400} bySign signed size={16} />
+              <Money amount={0} bySign size={16} />
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>the sign sits outside the symbol — &minus;$40, never $-40</span>
+            </Row>
+            <Row label="masked">
+              <Money amount={1500000} masked size={16} />
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>visual privacy on a train, not security — the value stays in the DOM</span>
+            </Row>
+          </Card>
+
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Delta — direction is not meaning</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>
+              Spending down is good; income down is bad. Both are a negative delta, so the caller says which
+              direction is good rather than every screen re-deciding — which is how a budget overspend ends up green.
+            </div>
+            <Row label={'goodWhen="up"'}>
+              <Delta value={210} goodWhen="up" currency="USD" context="income vs last month" />
+              <Delta value={-210} goodWhen="up" currency="USD" context="income vs last month" />
+            </Row>
+            <Row label={'goodWhen="down"'}>
+              <Delta value={210} goodWhen="down" currency="USD" context="spending vs plan" />
+              <Delta value={-210} goodWhen="down" currency="USD" context="spending vs plan" />
+            </Row>
+            <Row label={'goodWhen="neutral"'}>
+              <Delta value={210} goodWhen="neutral" currency="USD" context="transferred" />
+            </Row>
+            <Row label="label">
+              <Delta value={-2.4} goodWhen="down" label="2.4 years earlier" context="freedom date" />
+            </Row>
+          </Card>
+
+          <Card>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Progress — the one place teal belongs</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 18 }}>
+              Green acts, teal means freedom. This bar is teal and the button beside it is green, deliberately.
+            </div>
+            <Progress value={0.41} label="Toward your freedom date" caption="$620k of $1.5M" style={{ marginBottom: "var(--uf-s5)" }} />
+            <Progress value={0.86} label="Coast FIRE" caption="$1.29M of $1.5M" style={{ marginBottom: "var(--uf-s5)" }} />
+            <Progress value={0.23} label="Scenario — not committed" caption="provisional" provisional />
           </Card>
         </Section>
 
