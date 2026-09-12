@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { FALLBACK_RATES, SUPPORTED_CURRENCIES, formatUSDInCurrency } from "@/lib/currency";
+import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
+import { formatUSDInCurrency } from "@/lib/money";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;

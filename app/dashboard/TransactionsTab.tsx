@@ -5,7 +5,11 @@ import { supabase } from "@/lib/supabase";
 import CsvImportModal from "./CsvImportModal";
 import PlaidConnect from "./PlaidConnect";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, Line } from "recharts";
-import { formatUSDInCurrency, SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
+import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
+import { formatMoney, formatUSDInCurrency } from "@/lib/money";
+
+/* Transactions show cents: these are reconciled against a statement. */
+const txMoney = (n: number, currency = "USD") => formatMoney(n, { currency, decimals: 2 });
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES as ALL_CATEGORIES_BASE,
   COLOR_PALETTE, EMOJI_PALETTE,
@@ -36,8 +40,6 @@ const FALLBACK_RATES = LIB_FALLBACK_RATES;
 const DEFAULT_CAT_KEYS = new Set(EXPENSE_CATEGORIES.map((e) => e.key));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (n: number, currency = "USD") =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -768,7 +770,7 @@ function QuickAddForm({
               <div style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>
                 {parseFloat(draft.refund_amount) >= parseFloat(draft.amount)
                   ? "✓ Fully refunded — net cost: 0"
-                  : `Net cost: ${fmt(parseFloat(draft.amount) - parseFloat(draft.refund_amount), draft.currency)}`}
+                  : `Net cost: ${txMoney(parseFloat(draft.amount) - parseFloat(draft.refund_amount), draft.currency)}`}
               </div>
             )}
           </div>
@@ -1202,17 +1204,17 @@ function TransactionList({
                           {tx.refund_amount > 0 ? (
                             <>
                               <div style={{ fontSize: 14, fontWeight: 700, color: tx.refund_amount >= tx.amount ? "#94A3B8" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", textDecoration: tx.refund_amount >= tx.amount ? "line-through" : "none" }}>
-                                −{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                                −{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                               </div>
                               {tx.refund_amount >= tx.amount ? (
                                 <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
                               ) : (
-                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{fmt(tx.refund_amount, tx.currency).replace(/^−/, "")} net {fmt(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{txMoney(tx.refund_amount, tx.currency).replace(/^−/, "")} net {txMoney(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
                               )}
                             </>
                           ) : (
                             <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                              {isIncome ? "+" : "−"}{fmt(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                              {isIncome ? "+" : "−"}{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                             </div>
                           )}
                         </div>
@@ -1964,7 +1966,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       setJustAddedId(data.id);
       setTimeout(() => setJustAddedId(null), 1600);
       if (viewMonth !== data.date.slice(0, 7)) setViewMonth(data.date.slice(0, 7));
-      showToast(`Added — ${data.description || fmt(data.amount, data.currency)}`, data.id);
+      showToast(`Added — ${data.description || txMoney(data.amount, data.currency)}`, data.id);
       if (!keepOpen) {
         setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
       } else {

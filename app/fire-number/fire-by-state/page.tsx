@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CITIES, STATE_TAX, isUS } from '@/lib/fire-data'
 import { STATE_NAMES, getStatePageSlug } from '@/lib/state-pages'
+import { formatMoney } from "@/lib/money";
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
 
 export const metadata: Metadata = {
   title: 'FIRE Number by State | State-by-State Retirement Guide | UntilFire',
@@ -101,8 +100,8 @@ export default function FireByStatePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, maxWidth: 600 }}>
             {[
               { label: 'States covered', value: `${sortedStates.length}` },
-              { label: 'US avg annual cost', value: fmt(nationalAvg) },
-              { label: 'Range', value: `${fmt(sortedStates[0].avgCol)} — ${fmt(sortedStates[sortedStates.length - 1].avgCol)}` },
+              { label: 'US avg annual cost', value: formatMoney(nationalAvg) },
+              { label: 'Range', value: `${formatMoney(sortedStates[0].avgCol)} — ${formatMoney(sortedStates[sortedStates.length - 1].avgCol)}` },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 18px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
@@ -157,8 +156,8 @@ export default function FireByStatePage() {
                     </Link>
                   </td>
                   <td style={{ padding: '14px 16px', fontSize: 13, color: '#475569' }}>{state.cities.length}</td>
-                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#064E3B' }}>{fmt(state.avgCol)}</td>
-                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#22d3a5' }}>{fmt(state.fireTarget)}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#064E3B' }}>{formatMoney(state.avgCol)}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#22d3a5' }}>{formatMoney(state.fireTarget)}</td>
                   <td style={{ padding: '14px 16px', fontSize: 12, color: '#64748B' }}>
                     <Link href={`/fire-number/${state.cheapest.key}`} style={{ color: '#059669', textDecoration: 'none' }}>
                       {state.cheapest.name.split(',')[0]}

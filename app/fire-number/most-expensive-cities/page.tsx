@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getMostExpensiveCities } from '@/lib/ranking-pages'
+import { formatMoney } from "@/lib/money";
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
 
 export const metadata: Metadata = {
   title: 'Most Expensive US Cities for FIRE | Cost of Living Guide | UntilFire',
@@ -70,8 +69,8 @@ export default function MostExpensiveCitiesPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, maxWidth: 600 }}>
             {[
               { label: 'Cities listed', value: `${cities.length}` },
-              { label: 'Avg annual cost', value: fmt(avgCost) },
-              { label: 'Avg FIRE target', value: fmt(avgCost * 25) },
+              { label: 'Avg annual cost', value: formatMoney(avgCost) },
+              { label: 'Avg FIRE target', value: formatMoney(avgCost * 25) },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 18px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
@@ -126,8 +125,8 @@ export default function MostExpensiveCitiesPage() {
                       </Link>
                     </td>
                     <td style={{ padding: '14px 16px', fontSize: 13, color: '#475569' }}>{city.state.toUpperCase()}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#064E3B' }}>{fmt(city.col)}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#ef4444' }}>{fmt(city.col * 25)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#064E3B' }}>{formatMoney(city.col)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#ef4444' }}>{formatMoney(city.col * 25)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 12, color: '#64748B' }}>
                       {taxInfo?.rate === 0 ? '0%' : `${(taxInfo?.rate * 100).toFixed(1)}%`}
                     </td>

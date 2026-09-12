@@ -8,6 +8,7 @@ import { CITIES, STATE_TAX, isUS } from '@/lib/fire-data'
 import type { City } from '@/lib/fire-data'
 import { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'
 import CityCalcWidget from '../CityCalcWidget'
+import { formatMoney } from "@/lib/money";
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -18,12 +19,7 @@ const SORTED_US_CITIES_BY_COST = [...US_CITIES].sort((a, b) => b.col - a.col)
 const US_CITY_COUNT = US_CITIES.length
 const US_MEDIAN_COL = [...US_CITIES].sort((a, b) => a.col - b.col)[Math.floor(US_CITIES.length / 2)]?.col ?? 52_000
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
 
-function usd(amount: number) {
-  return `$${Math.round(amount).toLocaleString()}`
-}
 
 function ordinal(value: number) {
   const mod10 = value % 10
@@ -132,7 +128,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${data.name} FIRE Number Calculator | UntilFire`,
-    description: `How much do you need to retire in ${data.name}? Based on a local cost of living of ${fmt(data.col)}/year. Compare local tax context, see how ${data.name} ranks among US city baselines, and model your timeline.`,
+    description: `How much do you need to retire in ${data.name}? Based on a local cost of living of ${formatMoney(data.col)}/year. Compare local tax context, see how ${data.name} ranks among US city baselines, and model your timeline.`,
     keywords: `${data.name} FIRE number, ${data.name} FIRE calculator, retire in ${data.name}, ${data.name} cost of living, financial independence ${data.name}`,
     robots: {
       index: true,
@@ -149,7 +145,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: `${data.name} FIRE Number Calculator and Cost Guide`,
-      description: `${data.name} FIRE target: ${fmt(data.col * 25)} (based on ${fmt(data.col)}/year local cost of living).`,
+      description: `${data.name} FIRE target: ${formatMoney(data.col * 25)} (based on ${formatMoney(data.col)}/year local cost of living).`,
       images: [`/api/og/city/${data.key}`],
     },
   }
@@ -272,12 +268,12 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
                     label: 'Compared with a $52,000/year US baseline',
                     value:
                       page.comparedToUsAverage >= 0
-                        ? `${usd(page.comparedToUsAverage)} higher`
-                        : `${usd(Math.abs(page.comparedToUsAverage))} lower`,
+                        ? `${formatMoney(page.comparedToUsAverage)} higher`
+                        : `${formatMoney(Math.abs(page.comparedToUsAverage))} lower`,
                   },
                   {
                     label: '25x rule implication',
-                    value: `Every $1,000/year you cut lowers the target by ${usd(25_000)}.`,
+                    value: `Every $1,000/year you cut lowers the target by ${formatMoney(25_000)}.`,
                   },
                 ].map((item) => (
                   <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 6, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 14, padding: '16px 16px 14px' }}>
@@ -372,7 +368,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
                       {entry.city.name}
                     </div>
                     <div style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7 }}>
-                      Annual baseline {usd(entry.city.col)} · target {usd(entry.fireTarget)}
+                      Annual baseline {formatMoney(entry.city.col)} · target {formatMoney(entry.fireTarget)}
                     </div>
                   </Link>
                 ))}
@@ -457,10 +453,10 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   const coastTarget = Math.round(fireTarget / Math.pow(1 + COAST_REAL_RETURN, COAST_TO_AGE - COAST_FROM_AGE))
   const fireVariants = [
     { label: 'Coast FIRE', value: coastTarget, note: `Invest this by age ${COAST_FROM_AGE} and growth alone (≈7% real) can reach full FIRE by ${COAST_TO_AGE} — no further contributions needed.` },
-    { label: 'Barista FIRE', value: baristaTarget, note: `Portfolio covers roughly half of ${data.name}'s ${fmt(data.col)} annual spending; part-time work bridges the rest.` },
-    { label: 'Lean FIRE', value: leanTarget, note: `A leaner ${fmt(Math.round(data.col * 0.7))}/year lifestyle in ${data.name} (about 70% of the baseline), at the 25× rule.` },
-    { label: 'Full FIRE', value: fireTarget, note: `The standard 25× target on ${data.name}'s ${fmt(data.col)} annual baseline.` },
-    { label: 'Fat FIRE', value: fatTarget, note: `A more comfortable ${fmt(Math.round(data.col * 1.5))}/year lifestyle in ${data.name} (about 1.5× the baseline).` },
+    { label: 'Barista FIRE', value: baristaTarget, note: `Portfolio covers roughly half of ${data.name}'s ${formatMoney(data.col)} annual spending; part-time work bridges the rest.` },
+    { label: 'Lean FIRE', value: leanTarget, note: `A leaner ${formatMoney(Math.round(data.col * 0.7))}/year lifestyle in ${data.name} (about 70% of the baseline), at the 25× rule.` },
+    { label: 'Full FIRE', value: fireTarget, note: `The standard 25× target on ${data.name}'s ${formatMoney(data.col)} annual baseline.` },
+    { label: 'Fat FIRE', value: fatTarget, note: `A more comfortable ${formatMoney(Math.round(data.col * 1.5))}/year lifestyle in ${data.name} (about 1.5× the baseline).` },
   ]
 
   // How much to save each month to hit the full FIRE target over different timelines,
@@ -477,14 +473,14 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   const cityFaqs = [
     {
       question: `What FIRE number should I use for ${data.name}?`,
-      answer: `A simple baseline for ${data.name} is ${fmt(fireTarget)}, which comes from multiplying the local annual spending estimate of ${fmt(data.col)} by 25. That is a starting point, not a final answer: your housing, taxes, and personal spending rhythm still matter.`,
+      answer: `A simple baseline for ${data.name} is ${formatMoney(fireTarget)}, which comes from multiplying the local annual spending estimate of ${formatMoney(data.col)} by 25. That is a starting point, not a final answer: your housing, taxes, and personal spending rhythm still matter.`,
     },
     {
       question: `Is ${data.name} expensive for FIRE planning?`,
       answer:
         spendDelta >= 0
-          ? `${data.name} sits about ${fmt(spendDelta)} above the current UntilFire median US city baseline of ${fmt(US_MEDIAN_COL)} per year, so spending control matters more than average here.`
-          : `${data.name} sits about ${fmt(Math.abs(spendDelta))} below the current UntilFire median US city baseline of ${fmt(US_MEDIAN_COL)} per year, which can make the target easier to reach if income holds up.`,
+          ? `${data.name} sits about ${formatMoney(spendDelta)} above the current UntilFire median US city baseline of ${formatMoney(US_MEDIAN_COL)} per year, so spending control matters more than average here.`
+          : `${data.name} sits about ${formatMoney(Math.abs(spendDelta))} below the current UntilFire median US city baseline of ${formatMoney(US_MEDIAN_COL)} per year, which can make the target easier to reach if income holds up.`,
     },
     {
       question: `How do taxes affect FIRE in ${data.name}?`,
@@ -495,7 +491,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
     },
     {
       question: `What is the lean FIRE and fat FIRE number for ${data.name}?`,
-      answer: `Lean FIRE in ${data.name} — a leaner lifestyle at about 70% of the local baseline — works out to roughly ${fmt(leanTarget)}. Fat FIRE, a more comfortable lifestyle at about 1.5× the baseline, is closer to ${fmt(fatTarget)}. Standard (full) FIRE sits at ${fmt(fireTarget)}, and Coast FIRE — the amount that can grow into full FIRE on its own by age ${COAST_TO_AGE} if invested by age ${COAST_FROM_AGE} — is about ${fmt(coastTarget)}.`,
+      answer: `Lean FIRE in ${data.name} — a leaner lifestyle at about 70% of the local baseline — works out to roughly ${formatMoney(leanTarget)}. Fat FIRE, a more comfortable lifestyle at about 1.5× the baseline, is closer to ${formatMoney(fatTarget)}. Standard (full) FIRE sits at ${formatMoney(fireTarget)}, and Coast FIRE — the amount that can grow into full FIRE on its own by age ${COAST_TO_AGE} if invested by age ${COAST_FROM_AGE} — is about ${formatMoney(coastTarget)}.`,
     },
   ]
 
@@ -544,16 +540,16 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           </h1>
           <p style={{ fontSize: 17, color: "#475569", margin: 0, lineHeight: 1.6, maxWidth: 580 }}>
             How much do you need to retire in {data.name}? Based on a local cost of living of{" "}
-            <strong style={{ color: "#064E3B" }}>{fmt(data.col)}/year</strong>, your FIRE target is{" "}
-            <strong style={{ color: "#064E3B" }}>{fmt(fireTarget)}</strong>.
+            <strong style={{ color: "#064E3B" }}>{formatMoney(data.col)}/year</strong>, your FIRE target is{" "}
+            <strong style={{ color: "#064E3B" }}>{formatMoney(fireTarget)}</strong>.
           </p>
         </div>
 
         {/* Key stats */}
         <div className="city-hero-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
           {[
-            { label: "Annual cost of living", value: fmt(data.col), sub: "local baseline" },
-            { label: "FIRE target (25× rule)", value: fmt(fireTarget), sub: "4% withdrawal" },
+            { label: "Annual cost of living", value: formatMoney(data.col), sub: "local baseline" },
+            { label: "FIRE target (25× rule)", value: formatMoney(fireTarget), sub: "4% withdrawal" },
             { label: "State income tax", value: taxRate === 0 ? "0% — no income tax" : `${(taxRate * 100).toFixed(1)}%`, sub: taxLabel },
           ].map(({ label, value, sub }) => (
             <div key={label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "20px 22px" }}>
@@ -585,9 +581,9 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
             <tbody>
               {scenarios.map((s, i) => (
                 <tr key={s.gross} style={{ borderBottom: i < scenarios.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#19181E" }}>{fmt(s.gross)}</td>
-                  <td style={{ padding: "16px 24px", fontSize: 14, color: "#475569" }}>{fmt(s.takeHome)}</td>
-                  <td style={{ padding: "16px 24px", fontSize: 14, color: "#475569" }}>{fmt(s.monthlySavings)}</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#19181E" }}>{formatMoney(s.gross)}</td>
+                  <td style={{ padding: "16px 24px", fontSize: 14, color: "#475569" }}>{formatMoney(s.takeHome)}</td>
+                  <td style={{ padding: "16px 24px", fontSize: 14, color: "#475569" }}>{formatMoney(s.monthlySavings)}</td>
                   <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#064E3B" }}>{s.years === null ? "Not reached" : `${Math.round(s.years)} yrs`}</td>
                   <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "#22d3a5" }}>
                     {s.years === null ? "—" : START_AGE + Math.round(s.years)}
@@ -609,8 +605,8 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           <div style={{ fontSize: 15, color: "#475569", lineHeight: 1.75, display: "flex", flexDirection: "column", gap: 14 }}>
             <p style={{ margin: 0 }}>
               Using the 4% rule — the most widely used FIRE guideline — retiring in {data.name} requires a portfolio of{" "}
-              <strong style={{ color: "#064E3B" }}>{fmt(fireTarget)}</strong>. This assumes you&apos;ll spend{" "}
-              {fmt(data.col)} per year and withdraw 4% of your portfolio annually, which historical data suggests can
+              <strong style={{ color: "#064E3B" }}>{formatMoney(fireTarget)}</strong>. This assumes you&apos;ll spend{" "}
+              {formatMoney(data.col)} per year and withdraw 4% of your portfolio annually, which historical data suggests can
               sustain a 30+ year retirement.
             </p>
             <p style={{ margin: 0 }}>
@@ -640,13 +636,13 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           </h2>
           <p style={{ fontSize: 15, color: "#475569", lineHeight: 1.75, margin: "0 0 20px", maxWidth: 640 }}>
             Not everyone wants the same retirement. Here is how the main FIRE variants translate to {data.name}&apos;s{" "}
-            {fmt(data.col)}/year cost-of-living baseline, so you can target the lifestyle you actually want.
+            {formatMoney(data.col)}/year cost-of-living baseline, so you can target the lifestyle you actually want.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
             {fireVariants.map((v) => (
               <div key={v.label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "20px 18px" }}>
                 <div style={heading}>{v.label} in {data.name}</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px", marginBottom: 8 }}>{fmt(v.value)}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px", marginBottom: 8 }}>{formatMoney(v.value)}</div>
                 <p style={{ margin: 0, fontSize: 13.5, color: "#475569", lineHeight: 1.7 }}>{v.note}</p>
               </div>
             ))}
@@ -660,7 +656,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               How much to save each month to retire in {data.name}
             </h2>
             <p style={{ fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
-              Monthly investing needed to reach the {fmt(fireTarget)} target, starting from $0 at a ~7% average annual return after inflation
+              Monthly investing needed to reach the {formatMoney(fireTarget)} target, starting from $0 at a ~7% average annual return after inflation
             </p>
           </div>
           <table className="city-scenario-table">
@@ -675,7 +671,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               {savingsByTimeline.map((row, i) => (
                 <tr key={row.yrs} style={{ borderBottom: i < savingsByTimeline.length - 1 ? "1px solid #F1F5F9" : "none" }}>
                   <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#19181E" }}>{row.yrs} years</td>
-                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "#064E3B" }}>{fmt(row.monthly)}/mo</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "#064E3B" }}>{formatMoney(row.monthly)}/mo</td>
                   <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "#22d3a5" }}>{30 + row.yrs}</td>
                 </tr>
               ))}
@@ -697,20 +693,20 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "22px 20px" }}>
             <div style={heading}>Compared with the US median</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#064E3B", marginBottom: 8 }}>
-              {spendDelta >= 0 ? `${fmt(spendDelta)} higher` : `${fmt(Math.abs(spendDelta))} lower`}
+              {spendDelta >= 0 ? `${formatMoney(spendDelta)} higher` : `${formatMoney(Math.abs(spendDelta))} lower`}
             </div>
             <p style={{ margin: 0, fontSize: 14, color: "#475569", lineHeight: 1.7 }}>
-              The current UntilFire median US city baseline is {fmt(US_MEDIAN_COL)}/year. Every {fmt(1_000)} of annual spending changes the 25× target by {fmt(25_000)}.
+              The current UntilFire median US city baseline is {formatMoney(US_MEDIAN_COL)}/year. Every {formatMoney(1_000)} of annual spending changes the 25× target by {formatMoney(25_000)}.
             </p>
           </div>
 
           <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "22px 20px" }}>
             <div style={heading}>Closest cost comparisons</div>
             <p style={{ margin: 0, fontSize: 14, color: "#475569", lineHeight: 1.8 }}>
-              {nearestHigherCostCity ? `Nearest higher baseline: ${nearestHigherCostCity.name} at ${fmt(nearestHigherCostCity.col)}/year.` : 'This is already among the highest baselines in the current data set.'}
+              {nearestHigherCostCity ? `Nearest higher baseline: ${nearestHigherCostCity.name} at ${formatMoney(nearestHigherCostCity.col)}/year.` : 'This is already among the highest baselines in the current data set.'}
             </p>
             <p style={{ margin: "10px 0 0", fontSize: 14, color: "#475569", lineHeight: 1.8 }}>
-              {nearestLowerCostCity ? `Nearest lower baseline: ${nearestLowerCostCity.name} at ${fmt(nearestLowerCostCity.col)}/year.` : 'This is already among the lowest baselines in the current data set.'}
+              {nearestLowerCostCity ? `Nearest lower baseline: ${nearestLowerCostCity.name} at ${formatMoney(nearestLowerCostCity.col)}/year.` : 'This is already among the lowest baselines in the current data set.'}
             </p>
           </div>
         </div>
@@ -788,7 +784,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
                   <span style={{ fontSize: 20 }}>{c.flag}</span>
                   <div>
                     <div>{c.name}</div>
-                    <div style={{ fontSize: 12, color: "#94A3B8", fontWeight: 400 }}>{fmt(c.col * 25)} target</div>
+                    <div style={{ fontSize: 12, color: "#94A3B8", fontWeight: 400 }}>{formatMoney(c.col * 25)} target</div>
                   </div>
                 </Link>
               ))}
@@ -840,7 +836,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               '@context': 'https://schema.org',
               '@type': 'WebPage',
               name: `${data.name} FIRE Number Calculator and Cost Guide`,
-              description: `Estimate a realistic FIRE number for ${data.name} using local annual spending of ${fmt(data.col)}, state tax context, and retirement math.`,
+              description: `Estimate a realistic FIRE number for ${data.name} using local annual spending of ${formatMoney(data.col)}, state tax context, and retirement math.`,
               url: `https://www.untilfire.com/fire-number/${data.key}`,
               about: {
                 '@type': 'Thing',

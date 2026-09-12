@@ -3,6 +3,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import type { CellValue } from "read-excel-file/browser";
+import { formatMoney } from "@/lib/money";
 
 type Step = "upload" | "map" | "review" | "importing" | "done";
 
@@ -696,12 +697,7 @@ export default function CsvImportModal({
 
   const previewAmount = (value: number) => {
     if (formatAmount) return formatAmount(value);
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: displayCurrency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return formatMoney(value, { currency: displayCurrency, decimals: 2 });
   };
 
   const currencyOptions = Array.from(new Set([
@@ -1013,7 +1009,7 @@ export default function CsvImportModal({
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Description</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 600, textAlign: "right" }}>{sampleTransaction.description}</span></div>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Type</span><span style={{ color: sampleTransaction.transaction_type === "income" ? "#86EFAC" : "#FCA5A5", fontSize: 13, fontWeight: 700, textTransform: "capitalize" }}>{sampleTransaction.transaction_type}</span></div>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Currency</span><span style={{ color: "#cbd5e1", fontSize: 13 }}>{sampleTransaction.currency}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Amount stored</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 700 }}>{new Intl.NumberFormat("en-US", { style: "currency", currency: sampleTransaction.currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(sampleTransaction.amount)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Amount stored</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 700 }}>{formatMoney(sampleTransaction.amount, { currency: sampleTransaction.currency, decimals: 2 })}</span></div>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Category guess</span><span style={{ color: "#cbd5e1", fontSize: 13 }}>{sampleTransaction.category}</span></div>
                   </div>
                 ) : (
@@ -1123,7 +1119,7 @@ export default function CsvImportModal({
                         <td style={{ padding: "8px 10px", color: "#94a3b8", whiteSpace: "nowrap" }}>{row.date}</td>
                         <td style={{ padding: "8px 10px", color: "#e2e8f0", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.description}</td>
                         <td style={{ padding: "8px 10px", color: "#f8fafc", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                          {new Intl.NumberFormat("en-US", { style: "currency", currency: row.currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(row.amount)}
+                          {formatMoney(row.amount, { currency: row.currency, decimals: 2 })}
                         </td>
                         <td style={{ padding: "8px 10px", color: "#94a3b8" }}>{row.category}</td>
                       </tr>

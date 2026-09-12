@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { learnArticles } from "@/lib/learn";
 import { CITIES, STATE_TAX, isUS } from "@/lib/fire-data";
+import { formatMoney } from "@/lib/money";
 
 type SubTab = "articles" | "topics" | "calculators" | "cities";
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 const CATEGORY_COLORS: Record<string, string> = {
   "FIRE Basics":      "#059669",
@@ -313,7 +312,7 @@ export default function LearningHubTab() {
                       <span style={{ fontSize: 20, flexShrink: 0 }}>{city.flag}</span>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{city.name}</div>
-                        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{fmt(city.col * 25)} target</div>
+                        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{formatMoney(city.col * 25)} target</div>
                       </div>
                     </div>
                   </a>

@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CITIES, STATE_TAX, isUS } from '@/lib/fire-data'
 import { STATE_NAMES, getStatePageSlug } from '@/lib/state-pages'
+import { formatMoney } from "@/lib/money";
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
 
 export const metadata: Metadata = {
   title: 'Best States for FIRE: Early Retirement Tax & Cost Guide | UntilFire',
@@ -151,7 +150,7 @@ export default function BestStatesPage() {
                     <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       Avg annual cost
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#19181E' }}>{fmt(state.avgCol)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#19181E' }}>{formatMoney(state.avgCol)}</div>
                   </div>
 
                   <div style={{ padding: '10px', background: '#F8FAFC', borderRadius: 8 }}>
@@ -167,7 +166,7 @@ export default function BestStatesPage() {
                     <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       FIRE target
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#22d3a5' }}>{fmt(state.fireTarget)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#22d3a5' }}>{formatMoney(state.fireTarget)}</div>
                   </div>
                 </div>
 

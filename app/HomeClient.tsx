@@ -27,6 +27,7 @@ import CityScreen, { type CityState } from "@/app/components/landing/CityScreen"
 import { CITIES } from "@/lib/fire-data";
 import { FireTypeAvatar } from "@/app/fire-type/FireTypeAvatar";
 import { getTypeMeta, isValidFireTypeCode } from "@/app/fire-type/quiz-data";
+import { formatMoney } from "@/lib/money";
 import {
   CURRENCY_NAMES,
   FALLBACK_RATES,
@@ -39,9 +40,6 @@ import {
 // HELPERS
 // -----------------------------------------------------------------------------
 
-function fmtUSD(n: number) {
-  return "$" + Math.round(n).toLocaleString();
-}
 
 type IncomeMode = "annual" | "monthly" | "biweekly" | "hourly" | "takehome";
 type ShareCardKind = "identity" | "benchmark" | "year";
@@ -321,19 +319,19 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
           {displayGross !== null ? (
             <div className="uf-card">
               <div className="uf-card-sub">Annual gross</div>
-              <div className="uf-card-main">{isNonUSD ? localMoney(displayGross) : fmtUSD(displayGross)}</div>
+              <div className="uf-card-main">{isNonUSD ? localMoney(displayGross) : formatMoney(displayGross)}</div>
             </div>
           ) : null}
           <div className="uf-card">
             <div className="uf-card-sub">Annual take-home</div>
             <div className="uf-card-main">
-              {isNonUSD ? localMoney(displayTakeHome) : fmtUSD(displayTakeHome)}
+              {isNonUSD ? localMoney(displayTakeHome) : formatMoney(displayTakeHome)}
             </div>
           </div>
           <div className="uf-card">
             <div className="uf-card-sub">Monthly take-home</div>
             <div className="uf-card-main">
-              {isNonUSD ? localMoney(displayMonthly) : fmtUSD(displayMonthly)}
+              {isNonUSD ? localMoney(displayMonthly) : formatMoney(displayMonthly)}
             </div>
           </div>
           {displayEffRate !== null ? (

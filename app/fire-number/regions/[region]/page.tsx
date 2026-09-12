@@ -8,13 +8,12 @@ import {
   regionSlugs,
 } from '@/lib/regions'
 import { getStatePageSlug } from '@/lib/state-pages'
+import { formatMoney } from "@/lib/money";
 
 type Props = {
   params: Promise<{ region: string }>
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 
 export async function generateStaticParams() {
   return regionSlugs.map((region) => ({ region }))
@@ -29,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const stats = getRegionStats(cities)
 
   const title = `FIRE Number in the ${region.name} | Cost of Living & Retirement Guide | UntilFire`
-  const description = `Compare FIRE targets across ${cities.length} cities in the ${region.name}. Average annual cost ${fmt(stats.avgCost)}, FIRE target ${fmt(stats.avgFire)}. State tax context and retirement timelines for every city.`
+  const description = `Compare FIRE targets across ${cities.length} cities in the ${region.name}. Average annual cost ${formatMoney(stats.avgCost)}, FIRE target ${formatMoney(stats.avgFire)}. State tax context and retirement timelines for every city.`
 
   return {
     title,
@@ -121,8 +120,8 @@ export default async function RegionHubPage({ params }: Props) {
           <div className="region-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, maxWidth: 800 }}>
             {[
               { label: 'Cities covered', value: `${cities.length}` },
-              { label: 'Avg annual cost', value: fmt(stats.avgCost) },
-              { label: 'Avg FIRE target', value: fmt(stats.avgFire) },
+              { label: 'Avg annual cost', value: formatMoney(stats.avgCost) },
+              { label: 'Avg FIRE target', value: formatMoney(stats.avgFire) },
               { label: 'No-income-tax states', value: `${noTaxStates.length}` },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 18px' }}>
@@ -175,10 +174,10 @@ export default async function RegionHubPage({ params }: Props) {
                       </Link>
                     </td>
                     <td style={{ padding: '13px 16px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>
-                      {fmt(city.col)}
+                      {formatMoney(city.col)}
                     </td>
                     <td style={{ padding: '13px 16px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>
-                      {fmt(city.fireTarget)}
+                      {formatMoney(city.fireTarget)}
                     </td>
                     <td style={{ padding: '13px 16px', textAlign: 'right' }}>
                       {city.noIncomeTax ? (
@@ -223,7 +222,7 @@ export default async function RegionHubPage({ params }: Props) {
                       <span style={{ fontWeight: 600, color: '#0F172A' }}>{s.cities.length}</span> cities
                     </div>
                     <div style={{ fontSize: 12, color: '#64748B' }}>
-                      Avg <span style={{ fontWeight: 600, color: '#059669' }}>{fmt(avgCol)}</span>/yr
+                      Avg <span style={{ fontWeight: 600, color: '#059669' }}>{formatMoney(avgCol)}</span>/yr
                     </div>
                     {s.cities[0]?.noIncomeTax && (
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#059669', background: '#ECFDF5', padding: '2px 8px', borderRadius: 5 }}>No tax</span>
@@ -242,14 +241,14 @@ export default async function RegionHubPage({ params }: Props) {
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#059669', marginBottom: 8 }}>Cheapest in region</div>
               <Link href={`/fire-number/${stats.cheapest.key}`} style={{ textDecoration: 'none' }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: '#064E3B' }}>{stats.cheapest.name}</div>
-                <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>{fmt(stats.cheapest.col)}/yr · {fmt(stats.cheapest.fireTarget)} FIRE target</div>
+                <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>{formatMoney(stats.cheapest.col)}/yr · {formatMoney(stats.cheapest.fireTarget)} FIRE target</div>
               </Link>
             </div>
             <div style={{ background: '#FFF7ED', border: '1px solid #FDBA74', borderRadius: 14, padding: '20px 22px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#EA580C', marginBottom: 8 }}>Most expensive</div>
               <Link href={`/fire-number/${stats.mostExpensive.key}`} style={{ textDecoration: 'none' }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: '#9A3412' }}>{stats.mostExpensive.name}</div>
-                <div style={{ fontSize: 13, color: '#92400E', marginTop: 4 }}>{fmt(stats.mostExpensive.col)}/yr · {fmt(stats.mostExpensive.fireTarget)} FIRE target</div>
+                <div style={{ fontSize: 13, color: '#92400E', marginTop: 4 }}>{formatMoney(stats.mostExpensive.col)}/yr · {formatMoney(stats.mostExpensive.fireTarget)} FIRE target</div>
               </Link>
             </div>
           </section>

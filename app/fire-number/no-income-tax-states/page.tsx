@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getNoIncomeTaxStates, getStateStats } from '@/lib/ranking-pages'
 import { STATE_NAMES } from '@/lib/state-pages'
+import { formatMoney } from "@/lib/money";
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
 
 export const metadata: Metadata = {
   title: 'Best No-Income-Tax States for FIRE | Early Retirement Tax Guide | UntilFire',
@@ -76,8 +75,8 @@ export default function NoIncomeTaxStatesPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, maxWidth: 600 }}>
             {[
               { label: 'No-income-tax states', value: `${stateStats.length}` },
-              { label: 'Avg annual cost', value: fmt(avgCost) },
-              { label: 'Potential tax savings', value: fmt(potentialTaxSavings) },
+              { label: 'Avg annual cost', value: formatMoney(avgCost) },
+              { label: 'Potential tax savings', value: formatMoney(potentialTaxSavings) },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 18px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
@@ -127,13 +126,13 @@ export default function NoIncomeTaxStatesPage() {
                     <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       Avg annual cost
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#19181E' }}>{fmt(state.avgCol)}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#19181E' }}>{formatMoney(state.avgCol)}</div>
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       Avg FIRE target
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#22d3a5' }}>{fmt(state.fireTarget)}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#22d3a5' }}>{formatMoney(state.fireTarget)}</div>
                   </div>
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #E2E8F0' }}>
                     <div style={{ fontSize: 12, color: '#059669', fontWeight: 700 }}>View all cities →</div>

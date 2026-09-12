@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
+import { formatMoney } from "@/lib/money";
 
 interface PlaidItem {
   id: string;
@@ -158,7 +159,7 @@ export default function ProfileTab({
   const selectedLifestyle = lifestyleTiers.find(t => t.multiplier === lifestyleMultiplier) ?? lifestyleTiers[1];
   const targetAnnualSpend = retirementCityCol > 0 ? retirementCityCol * lifestyleMultiplier : 0;
   const targetFireNumber = targetAnnualSpend * 25;
-  const formatMoney = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: defaultCurrency, maximumFractionDigits: 0 }).format(n);
+  const showMoney = (n: number) => formatMoney(n, { currency: defaultCurrency });
 
   function markFireProfileSaved() {
     setFireProfileSaved(true);
@@ -490,7 +491,7 @@ export default function ProfileTab({
           </div>
           {targetFireNumber > 0 && (
             <div style={{ fontSize: 12, color: "var(--uf-text-2)", marginTop: 4 }}>
-              Rough target: {formatMoney(targetAnnualSpend)}/yr × 25 = {formatMoney(targetFireNumber)}
+              Rough target: {showMoney(targetAnnualSpend)}/yr × 25 = {showMoney(targetFireNumber)}
             </div>
           )}
         </div>

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { cityLandingPages } from '@/lib/city-pages'
 import { getStageArticles, learnStages } from '@/lib/learn'
 import { CITIES, isUS } from '@/lib/fire-data'
+import { formatMoney } from "@/lib/money";
 
 export const metadata = {
   title: 'FIRE Learning Hub — Financial Independence Guides by Stage | UntilFire',
@@ -16,8 +17,6 @@ const FEATURED_CITY_KEYS = ['austin', 'nyc', 'miami', 'seattle', 'denver', 'chic
 const ALL_US_CITIES = CITIES.filter((c) => isUS(c.state))
 const featuredCities = FEATURED_CITY_KEYS.map((key) => ALL_US_CITIES.find((c) => c.key === key)).filter(Boolean)
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 
 export default function LearnHubPage() {
   return (
@@ -192,11 +191,11 @@ export default function LearnHubPage() {
                 <article key={city.key} className="uf-hub-card">
                   <div className="uf-hub-card-meta">
                     <span>{city.flag} City Guide</span>
-                    <span>{fmt(city.col)}/yr COL</span>
+                    <span>{formatMoney(city.col)}/yr COL</span>
                   </div>
                   <h2 style={{ fontSize: '1.15rem' }}>Retire in {city.name}</h2>
                   <p>
-                    You&apos;ll need <strong>{fmt(fireTarget)}</strong> to reach FIRE in {city.name}, based on local
+                    You&apos;ll need <strong>{formatMoney(fireTarget)}</strong> to reach FIRE in {city.name}, based on local
                     cost-of-living data. See income scenarios and calculate your personal timeline.
                   </p>
                   <Link href={`/fire-number/${city.key}`} className="uf-hub-link">

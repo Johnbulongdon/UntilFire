@@ -3,6 +3,9 @@
 import { useState, useMemo } from 'react'
 import Logo from '@/app/components/Logo'
 import Link from 'next/link'
+import { formatMoney } from "@/lib/money";
+
+const apyMoney = (n: number, decimals = 2) => formatMoney(n, { decimals });
 
 const C = {
   bg: '#F7F9FB',
@@ -23,13 +26,6 @@ const FREQUENCIES = [
   { label: 'Annually (1×/year)', n: 1 },
 ]
 
-function fmt(n: number, decimals = 2) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: decimals,
-  }).format(n)
-}
 
 const inputStyle: React.CSSProperties = {
   background: '#ffffff',
@@ -159,7 +155,7 @@ export default function APYCalculator() {
           {/* Growth table */}
           <div style={{ borderTop: `1px solid #A7F3D0`, paddingTop: 20 }}>
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 12, fontWeight: 600 }}>
-              Growth of {fmt(parseFloat(principal) || 10000, 0)}
+              Growth of {apyMoney(parseFloat(principal) || 10000, 0)}
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               {growthRows.map(({ years, balance, gained }) => (
@@ -174,8 +170,8 @@ export default function APYCalculator() {
                 }}>
                   <span style={{ color: C.muted, fontSize: 14 }}>{years} year{years !== 1 ? 's' : ''}</span>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ color: C.text, fontWeight: 700, fontSize: 16 }}>{fmt(balance, 0)}</span>
-                    <span style={{ color: C.accent, fontSize: 13, marginLeft: 10 }}>+{fmt(gained, 0)}</span>
+                    <span style={{ color: C.text, fontWeight: 700, fontSize: 16 }}>{apyMoney(balance, 0)}</span>
+                    <span style={{ color: C.accent, fontSize: 13, marginLeft: 10 }}>+{apyMoney(gained, 0)}</span>
                   </div>
                 </div>
               ))}

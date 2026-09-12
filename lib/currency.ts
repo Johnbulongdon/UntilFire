@@ -45,27 +45,9 @@ export function convertUSDAmount(
   return rate ? amountUSD * rate : amountUSD;
 }
 
-export function formatUSDInCurrency(
-  amountUSD: number,
-  currency: string,
-  rates: Record<string, number>,
-  options?: {
-    compact?: boolean;
-    minimumFractionDigits?: number;
-    maximumFractionDigits?: number;
-  },
-) {
-  const converted = convertUSDAmount(amountUSD, currency, rates);
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency || "USD",
-    notation: options?.compact ? "compact" : "standard",
-    minimumFractionDigits: options?.minimumFractionDigits ?? 0,
-    maximumFractionDigits:
-      options?.maximumFractionDigits ?? (options?.compact ? 1 : 0),
-  }).format(converted);
-}
-
+/* formatUSDInCurrency moved to lib/money.ts: it needs formatMoney, and
+   money.ts already imports from here, so keeping it would make the two
+   modules import each other. */
 export function getCurrencySymbol(currency: string) {
   const parts = new Intl.NumberFormat("en-US", {
     style: "currency",

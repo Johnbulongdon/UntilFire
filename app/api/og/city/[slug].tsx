@@ -1,4 +1,5 @@
-import { ImageResponse } from '@vercel/og';
+
+import { formatMoney } from "@/lib/money";import { ImageResponse } from '@vercel/og';
 import { CITIES, STATE_TAX, isUS } from '@/lib/fire-data';
 
 export const runtime = 'nodejs';
@@ -22,8 +23,6 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   const rank = SORTED_BY_COST.findIndex(c => c.key === slug) + 1;
   const rankLabel = rank > 0 ? `#${rank} of ${US_CITIES.length} US cities by cost` : '';
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
   return new ImageResponse(
     (
@@ -127,7 +126,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
                 FIRE TARGET (25×)
               </div>
               <div style={{ fontSize: '34px', fontWeight: 800, color: '#22d3a5', letterSpacing: '-0.5px' }}>
-                {fmt(fireTarget)}
+                {formatMoney(fireTarget)}
               </div>
             </div>
 
@@ -148,7 +147,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
                 ANNUAL COST
               </div>
               <div style={{ fontSize: '34px', fontWeight: 800, color: '#f97316', letterSpacing: '-0.5px' }}>
-                {fmt(city.col)}
+                {formatMoney(city.col)}
               </div>
             </div>
 

@@ -4,9 +4,8 @@ import { useState, useMemo } from "react";
 import { calcFIRE } from "@/lib/fire";
 import { calcTakeHome } from "@/lib/fire";
 import type { City } from "@/lib/fire-data";
+import { formatMoney } from "@/lib/money";
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 export default function CityCalcWidget({ city }: { city: City }) {
   const [income, setIncome] = useState(100000);
@@ -106,7 +105,7 @@ export default function CityCalcWidget({ city }: { city: City }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, borderTop: "1px solid #E2E8F0", paddingTop: 24 }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>FIRE Target</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px" }}>{fmt(fireTarget)}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#064E3B", letterSpacing: "-0.5px" }}>{formatMoney(fireTarget)}</div>
             <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>25× annual expenses</div>
           </div>
           <div style={{ textAlign: "center" }}>

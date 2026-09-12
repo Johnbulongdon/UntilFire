@@ -3,6 +3,9 @@
 import { useState, useMemo } from 'react'
 import Logo from '@/app/components/Logo'
 import Link from 'next/link'
+import { formatMoney } from "@/lib/money";
+
+const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
 
 const C = {
   bg: '#F7F9FB',
@@ -36,15 +39,6 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500,
 }
 
-function fmt(n: number) {
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}k`
-  return `$${Math.round(n)}`
-}
-
-function fmtFull(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
-}
 
 export default function CoastFireCalculator() {
   const [annualExpenses, setAnnualExpenses] = useState('50000')
@@ -152,19 +146,19 @@ export default function CoastFireCalculator() {
           {result.alreadyCoast ? (
             <div style={{ marginBottom: 24, padding: '14px 18px', background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 10, color: '#065F46', fontWeight: 700, fontSize: 15 }}>
               You&apos;ve already hit your Coast FIRE number.
-              If you stop contributing today, your investments will grow to {fmt(result.fireTarget)} by age {retireAge}.
+              If you stop contributing today, your investments will grow to {compactMoney(result.fireTarget)} by age {retireAge}.
             </div>
           ) : null}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Coast FIRE number</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: C.purple, letterSpacing: '-0.04em' }}>{fmt(result.coastNumber)}</div>
-              <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{fmtFull(result.coastNumber)}</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: C.purple, letterSpacing: '-0.04em' }}>{compactMoney(result.coastNumber)}</div>
+              <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{formatMoney(result.coastNumber)}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Full FIRE target</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{fmt(result.fireTarget)}</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{compactMoney(result.fireTarget)}</div>
               <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>needed at age {retireAge}</div>
             </div>
           </div>
@@ -182,7 +176,7 @@ export default function CoastFireCalculator() {
             </div>
             {!result.alreadyCoast && (
               <div style={{ fontSize: 13, color: C.muted, marginTop: 8 }}>
-                You need <span style={{ color: C.text, fontWeight: 600 }}>{fmt(result.gap)} more</span> to reach Coast FIRE
+                You need <span style={{ color: C.text, fontWeight: 600 }}>{compactMoney(result.gap)} more</span> to reach Coast FIRE
               </div>
             )}
           </div>
@@ -198,7 +192,7 @@ export default function CoastFireCalculator() {
                   <div key={a} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8 }}>
                     <span style={{ color: C.muted, fontSize: 14 }}>Age {a}</span>
                     <span style={{ color: balance >= result.fireTarget ? C.accent : C.text, fontWeight: 600, fontSize: 14 }}>
-                      {fmtFull(balance)}{balance >= result.fireTarget ? ' ✓' : ''}
+                      {formatMoney(balance)}{balance >= result.fireTarget ? ' ✓' : ''}
                     </span>
                   </div>
                 ))}

@@ -25,7 +25,8 @@ import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
 import { calcFIRE, REAL_RETURN } from "@/lib/fire";
-import { FALLBACK_RATES, convertUSDAmount, formatUSDInCurrency, getCurrencySymbol } from "@/lib/currency";
+import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
+import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
@@ -2874,11 +2875,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
     setGoals(prev => prev.filter(g => g.id !== id));
   }
 
-  function fmtAmt(n: number) {
-    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-    if (n >= 1_000) return `$${Math.round(n).toLocaleString()}`;
-    return `$${Math.round(n)}`;
-  }
+  const fmtAmt = (n: number) => formatMoney(n, { style: "compact" });
 
   function goalStatus(g: Goal): { label: string; color: string; bg: string } {
     const pct = g.target_amount > 0 ? g.current_saved / g.target_amount : 0;
@@ -6238,10 +6235,7 @@ function ExpatFireDashTab({
     setSelectedCityKey(key);
   }
 
-  function fmt(n: number) {
-    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-    return `$${Math.round(n).toLocaleString()}`;
-  }
+  const fmt = (n: number) => formatMoney(n, { style: "compact" });
 
   if (selectedCityKey) {
     return (
@@ -6485,11 +6479,7 @@ function ExpatCityDetail({
   const isFireNow = portfolioBalance >= targetCol * 25;
   const monthlyDiff = Math.round((currentCol - targetCol) / 12);
 
-  function fmtUSD(n: number): string {
-    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-    if (n >= 1_000) return `$${Math.round(n).toLocaleString()}`;
-    return `$${Math.round(n)}`;
-  }
+  const fmtUSD = (n: number) => formatMoney(n, { style: "compact" });
 
   function readinessBadge() {
     if (portfolioBalance >= targetCol * 25) return { label: "FIRE ready", color: "#003527", bg: "#A7F3D0" };

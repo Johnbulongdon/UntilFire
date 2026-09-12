@@ -2,13 +2,12 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getStatePage, statePages } from '@/lib/state-pages'
+import { formatMoney } from "@/lib/money";
 
 type Props = {
   params: Promise<{ slug: string }>
 }
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
 
 export async function generateStaticParams() {
   return statePages.map((page) => ({ slug: page.slug }))
@@ -94,8 +93,8 @@ export default async function StateFireNumberPage({ params }: Props) {
           <div className="state-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, maxWidth: 800 }}>
             {[
               { label: 'Cities covered', value: `${page.cities.length}` },
-              { label: 'Avg FIRE target', value: fmt(page.fireTarget) },
-              { label: 'Avg annual cost', value: fmt(page.avgCityColAccross) },
+              { label: 'Avg FIRE target', value: formatMoney(page.fireTarget) },
+              { label: 'Avg annual cost', value: formatMoney(page.avgCityColAccross) },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '18px 20px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{label}</div>
@@ -139,10 +138,10 @@ export default async function StateFireNumberPage({ params }: Props) {
                 </div>
                 <div style={{ display: 'grid', gap: 8 }}>
                   <div style={{ fontSize: 13, color: '#475569' }}>
-                    <span style={{ fontWeight: 700 }}>{fmt(city.col)}</span>/year baseline
+                    <span style={{ fontWeight: 700 }}>{formatMoney(city.col)}</span>/year baseline
                   </div>
                   <div style={{ fontSize: 13, color: '#64748B' }}>
-                    {fmt(city.col * 25)} FIRE target
+                    {formatMoney(city.col * 25)} FIRE target
                   </div>
                 </div>
               </Link>

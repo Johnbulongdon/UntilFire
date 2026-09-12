@@ -27,7 +27,7 @@
  * does nothing teaches a distinction that is not real, so it is gone.)
  */
 
-import { getCurrencySymbol, type SupportedCurrency } from "./currency";
+import { convertUSDAmount, getCurrencySymbol, type SupportedCurrency } from "./currency";
 
 export type MoneyStyle = "exact" | "compact";
 
@@ -90,4 +90,30 @@ export function formatDuration(years: number): string {
     return months ? `1 year ${months}m` : "1 year";
   }
   return `${years.toFixed(1)} years`;
+}
+
+/**
+ * Convert a USD amount into the viewer's currency, then print it.
+ *
+ * Conversion and printing are separate jobs and this is the only place they
+ * meet. It previously lived in lib/currency.ts and formatted with Intl's
+ * compact notation, which prints $62K with a capital K while every other
+ * screen printed $62k — and rounds $1,650 to $2K, colliding with $2,200.
+ */
+export function formatUSDInCurrency(
+  amountUSD: number,
+  currency: string,
+  rates: Record<string, number>,
+  options?: {
+    compact?: boolean;
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
+  },
+): string {
+  const converted = convertUSDAmount(amountUSD, currency, rates);
+  return formatMoney(converted, {
+    currency,
+    style: options?.compact ? "compact" : "exact",
+    decimals: options?.maximumFractionDigits ?? 0,
+  });
 }

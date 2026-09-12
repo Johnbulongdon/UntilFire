@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { formatMoney } from "@/lib/money";
 import {
   AreaChart,
   Area,
@@ -30,17 +31,8 @@ const C = {
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const fmt = (n, compact = false) => {
-  if (compact && Math.abs(n) >= 1_000_000)
-    return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (compact && Math.abs(n) >= 1_000)
-    return `$${(n / 1_000).toFixed(0)}k`;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-};
+const fmt = (n, compact = false) =>
+  formatMoney(n, { style: compact ? "compact" : "exact" });
 
 const fmtYr = (n) => (n === 1 ? "1 yr" : `${Math.round(n)} yrs`);
 

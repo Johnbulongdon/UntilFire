@@ -3,6 +3,9 @@
 import { useState, useMemo } from 'react'
 import Logo from '@/app/components/Logo'
 import Link from 'next/link'
+import { formatMoney } from "@/lib/money";
+
+const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
 
 const C = {
   bg: '#F7F9FB',
@@ -15,15 +18,6 @@ const C = {
   teal: '#20D4BF',
 }
 
-function fmt(n: number) {
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(1)}k`
-  return `$${Math.round(n)}`
-}
-
-function fmtFull(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
-}
 
 const inputStyle: React.CSSProperties = {
   background: '#ffffff',
@@ -133,16 +127,16 @@ export default function CompoundInterestCalculator() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 28 }}>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Final balance</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: C.accent, letterSpacing: '-0.04em' }}>{fmt(finalBalance)}</div>
-              <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{fmtFull(finalBalance)}</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: C.accent, letterSpacing: '-0.04em' }}>{compactMoney(finalBalance)}</div>
+              <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{formatMoney(finalBalance)}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Total invested</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{fmt(totalPrincipal)}</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{compactMoney(totalPrincipal)}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Investment gains</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: '#047857', letterSpacing: '-0.04em' }}>{fmt(gains)}</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: '#047857', letterSpacing: '-0.04em' }}>{compactMoney(gains)}</div>
               <div style={{ fontSize: 13, color: C.accent, marginTop: 2 }}>
                 {totalPrincipal > 0 ? `${Math.round((gains / totalPrincipal) * 100)}% of what you put in` : ''}
               </div>
@@ -168,7 +162,7 @@ export default function CompoundInterestCalculator() {
                       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${balancePct}%`, background: 'rgba(5,150,105,0.25)', borderRadius: 4 }} />
                       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${contribPct}%`, background: 'rgba(5,150,105,0.55)', borderRadius: 4 }} />
                     </div>
-                    <span style={{ fontSize: 12, color: C.text, width: 64, flexShrink: 0, textAlign: 'right', fontWeight: 600 }}>{fmt(balance)}</span>
+                    <span style={{ fontSize: 12, color: C.text, width: 64, flexShrink: 0, textAlign: 'right', fontWeight: 600 }}>{compactMoney(balance)}</span>
                   </div>
                 )
               })}

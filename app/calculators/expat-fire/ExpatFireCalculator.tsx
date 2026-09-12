@@ -6,16 +6,15 @@ import { useRouter } from 'next/navigation';
 import { CITIES } from '@/lib/fire-data';
 import { CITY_COORDS } from '@/lib/city-coords';
 import { calcFIRE, REAL_RETURN } from '@/lib/fire';
+import { formatMoney } from "@/lib/money";
+
+const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
 
 const GeoArbitrageGlobe = dynamic(
   () => import('@/app/components/GeoArbitrageGlobe'),
   { ssr: false },
 );
 
-function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  return `$${Math.round(n).toLocaleString()}`;
-}
 
 export default function ExpatFireCalculator() {
   const router = useRouter();
@@ -193,7 +192,7 @@ export default function ExpatFireCalculator() {
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 2 }}>FIRE NUMBER</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{fmt(result.fireTarget)}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{compactMoney(result.fireTarget)}</div>
             </div>
             <div>
               <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 2 }}>FREEDOM YEAR</div>
@@ -201,7 +200,7 @@ export default function ExpatFireCalculator() {
             </div>
             <div>
               <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 2 }}>ANNUAL COL</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{fmt(currentCity.col)}/yr</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{compactMoney(currentCity.col)}/yr</div>
             </div>
           </div>
         </div>
@@ -256,8 +255,8 @@ export default function ExpatFireCalculator() {
             </span>
           </div>
           <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
-            Projected portfolio ~{fmt(projectedPortfolio)}
-            {annualContribution > 0 ? ` · assumes you keep saving ${fmt(annualContribution)}/yr` : ''}
+            Projected portfolio ~{compactMoney(projectedPortfolio)}
+            {annualContribution > 0 ? ` · assumes you keep saving ${compactMoney(annualContribution)}/yr` : ''}
           </div>
 
           {/* Ordered milestone strip — which cities turn green first */}

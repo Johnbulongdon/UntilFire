@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
+import { FALLBACK_RATES } from "@/lib/currency";
+import { formatUSDInCurrency } from "@/lib/money";
 import {
   EXPENSE_CATEGORIES,
   loadCatCustomizations, saveCatCustomizations,

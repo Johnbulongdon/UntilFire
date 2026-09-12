@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CITIES, STATE_TAX, isUS } from "@/lib/fire-data";
+import { formatMoney } from "@/lib/money";
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
 
@@ -85,7 +84,7 @@ export default function FireNumberHubPage() {
           <div className="hub-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 600 }}>
             {[
               { label: "US cities covered", value: `${US_CITIES.length}` },
-              { label: "Avg FIRE target", value: fmt(US_CITIES.reduce((s, c) => s + c.col * 25, 0) / US_CITIES.length) },
+              { label: "Avg FIRE target", value: formatMoney(US_CITIES.reduce((s, c) => s + c.col * 25, 0) / US_CITIES.length) },
               { label: "States with no income tax", value: "9" },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "16px 18px" }}>
@@ -162,7 +161,7 @@ export default function FireNumberHubPage() {
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "#064E3B", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</div>
                     <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
-                      {fmt(city.col * 25)} target · {fmt(city.col)}/yr
+                      {formatMoney(city.col * 25)} target · {formatMoney(city.col)}/yr
                     </div>
                   </div>
                 </Link>

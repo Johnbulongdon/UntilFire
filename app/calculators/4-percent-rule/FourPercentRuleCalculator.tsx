@@ -3,6 +3,9 @@
 import { useState, useMemo } from 'react'
 import Logo from '@/app/components/Logo'
 import Link from 'next/link'
+import { formatMoney } from "@/lib/money";
+
+const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
 
 const C = {
   bg: '#F7F9FB',
@@ -35,15 +38,6 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500,
 }
 
-function fmt(n: number) {
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}k`
-  return `$${Math.round(n)}`
-}
-
-function fmtFull(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
-}
 
 const RATES = [
   { rate: 3.0, label: '3.0%', note: 'Very conservative · 33× expenses' },
@@ -175,7 +169,7 @@ export default function FourPercentRuleCalculator() {
               ))}
               <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: C.muted, fontSize: 14, fontWeight: 600 }}>Monthly total</span>
-                <span style={{ color: C.text, fontWeight: 700, fontSize: 18 }}>{fmtFull(monthlyBudget)}</span>
+                <span style={{ color: C.text, fontWeight: 700, fontSize: 18 }}>{formatMoney(monthlyBudget)}</span>
               </div>
               <div style={{ marginTop: 8 }}>
                 <label style={labelStyle}>Current savings / investments ($)</label>
@@ -192,14 +186,14 @@ export default function FourPercentRuleCalculator() {
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
                 Your FIRE number at {selectedRate}%
               </div>
-              <div style={{ fontSize: 44, fontWeight: 800, color: C.accent, letterSpacing: '-0.04em' }}>{fmt(fireNumber)}</div>
-              <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{fmtFull(fireNumber)}</div>
+              <div style={{ fontSize: 44, fontWeight: 800, color: C.accent, letterSpacing: '-0.04em' }}>{compactMoney(fireNumber)}</div>
+              <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{formatMoney(fireNumber)}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
                 Annual spending covered
               </div>
-              <div style={{ fontSize: 44, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{fmtFull(exp)}</div>
+              <div style={{ fontSize: 44, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{formatMoney(exp)}</div>
             </div>
           </div>
 
@@ -215,7 +209,7 @@ export default function FourPercentRuleCalculator() {
               </div>
               {gap > 0 && (
                 <div style={{ fontSize: 13, color: C.muted, marginTop: 8 }}>
-                  <span style={{ color: C.text, fontWeight: 600 }}>{fmt(gap)}</span> to go
+                  <span style={{ color: C.text, fontWeight: 600 }}>{compactMoney(gap)}</span> to go
                 </div>
               )}
             </div>
@@ -247,7 +241,7 @@ export default function FourPercentRuleCalculator() {
                     </span>
                     <span style={{ color: C.muted, fontSize: 12, marginLeft: 10 }}>{note}</span>
                   </div>
-                  <span style={{ color: isSelected ? C.accent : C.text, fontWeight: 700, fontSize: 16 }}>{fmt(fn)}</span>
+                  <span style={{ color: isSelected ? C.accent : C.text, fontWeight: 700, fontSize: 16 }}>{compactMoney(fn)}</span>
                 </button>
               ))}
             </div>

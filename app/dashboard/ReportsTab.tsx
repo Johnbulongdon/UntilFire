@@ -6,7 +6,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer,
 } from "recharts";
-import { FALLBACK_RATES, formatUSDInCurrency } from "@/lib/currency";
+import { FALLBACK_RATES } from "@/lib/currency";
+import { formatUSDInCurrency } from "@/lib/money";
 import { EXPENSE_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {

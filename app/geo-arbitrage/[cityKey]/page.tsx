@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CITIES } from '@/lib/fire-data';
 import { calcFIRE } from '@/lib/fire';
+import { formatMoney } from "@/lib/money";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,11 +30,6 @@ const LS_HIDDEN_KEY = 'uf_geo_hidden';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function fmtUSD(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `$${Math.round(n).toLocaleString()}`;
-  return `$${Math.round(n)}`;
-}
 
 function fmtYears(y: number | null): string {
   return y === null ? 'Not reached within 65 years' : y.toFixed(1) + ' yrs';
@@ -425,13 +421,13 @@ export default function GeoArbitragePage() {
 
           {row(
             'Annual cost of living',
-            `${fmtUSD(currentCol)}/yr`,
-            `${fmtUSD(targetCol)}/yr`,
+            `${formatMoney(currentCol)}/yr`,
+            `${formatMoney(targetCol)}/yr`,
           )}
           {row(
             'FIRE number',
-            fmtUSD(currentFire.fireTarget),
-            fmtUSD(targetFire.fireTarget),
+            formatMoney(currentFire.fireTarget),
+            formatMoney(targetFire.fireTarget),
           )}
           {row(
             'Years to FIRE',

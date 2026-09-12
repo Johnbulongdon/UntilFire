@@ -1,4 +1,5 @@
-import { createClient } from "@supabase/supabase-js"
+
+import { formatMoney } from "@/lib/money";import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { getOptionalSupabaseEnv, getSupabaseEnvErrorMessage } from "@/lib/env"
 import { Resend } from "resend"
@@ -70,10 +71,7 @@ export async function POST(req: Request) {
 
   if (process.env.RESEND_API_KEY && fireTarget && retireYear) {
     const resend = new Resend(process.env.RESEND_API_KEY)
-    const fmt = (n: number) => {
-      const sym = currency === "AUD" ? "A$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : currency === "CAD" ? "C$" : "$"
-      return n >= 1_000_000 ? `${sym}${(n / 1_000_000).toFixed(2)}M` : `${sym}${Math.round(n).toLocaleString()}`
-    }
+    const fmt = (n: number) => formatMoney(n, { currency })
     try {
       const { error: sendError } = await resend.emails.send({
         from: "UntilFire <hello@untilfire.com>",

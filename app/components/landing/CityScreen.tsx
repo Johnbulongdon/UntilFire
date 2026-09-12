@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CITIES, City, STATE_TAX } from "@/lib/fire-data";
+import { formatMoney } from "@/lib/money";
 
 export interface CityState {
   name: string;
@@ -10,9 +11,6 @@ export interface CityState {
   isCustom: boolean;
 }
 
-function fmtUSD(n: number) {
-  return "$" + Math.round(n).toLocaleString();
-}
 
 export default function CityScreen({
   onNext,
@@ -151,7 +149,7 @@ export default function CityScreen({
                 <div>
                   <div className="uf-dropdown-name">{c.name}</div>
                   <div className="uf-dropdown-sub">
-                    Est. {fmtUSD(c.col)}/yr · Freedom target {fmtUSD(c.col * 25)}
+                    Est. {formatMoney(c.col)}/yr · Freedom target {formatMoney(c.col * 25)}
                   </div>
                 </div>
               </button>
@@ -220,12 +218,12 @@ export default function CityScreen({
           </div>
           <div className="uf-info-card">
             <div className="uf-info-col">
-              <div className="uf-info-val">{fmtUSD(selected.col)}</div>
+              <div className="uf-info-val">{formatMoney(selected.col)}</div>
               <div className="uf-info-lab">Est. annual expenses</div>
             </div>
             <div className="uf-info-divider" />
             <div className="uf-info-col">
-              <div className="uf-info-val">{fmtUSD(selected.col * 25)}</div>
+              <div className="uf-info-val">{formatMoney(selected.col * 25)}</div>
               <div className="uf-info-lab">FIRE target (25x rule)</div>
             </div>
             <div className="uf-info-divider" />
@@ -235,7 +233,7 @@ export default function CityScreen({
                 style={{ color: diff > 0 ? "var(--danger)" : "var(--teal)" }}
               >
                 {diff >= 0 ? "+" : ""}
-                {fmtUSD(diff)}
+                {formatMoney(diff)}
               </div>
               <div className="uf-info-lab">vs. US avg</div>
             </div>
