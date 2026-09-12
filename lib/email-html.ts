@@ -373,6 +373,5 @@ export function buildMonthlyUpdateEmail({
 
   const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
 
-  const preheader = intro.trim().slice(0, 140) || heading;
-  return base(preheader, hero + newSection + fixSection + cta + footer);
+  return base(heading, hero + newSection + fixSection + cta + footer);
 }
