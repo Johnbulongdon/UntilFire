@@ -46,3 +46,6 @@ export type { AlertProps, AlertTone } from "./Alert";
 
 export { default as SegmentedControl } from "./SegmentedControl";
 export type { SegmentedControlProps, SegmentedOption } from "./SegmentedControl";
+
+export { default as Icon, ICON_PATHS } from "./Icon";
+export type { IconProps, IconName } from "./Icon";

@@ -32,7 +32,7 @@ import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
 import { EXPENSE_CATEGORIES } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Badge } from "@/components/ui";
+import { Badge, ICON_PATHS } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -4810,19 +4810,19 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "overview",
     label: "Home",
-    svg: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
+    svg: ICON_PATHS.home,
   },
   {
     key: "cashflow",
     label: "Money",
     activeTabs: ["cashflow", "reports", "assets", "liabilities"],
-    svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
+    svg: ICON_PATHS.money,
   },
   {
     key: "fire-calculator",
     label: "Plan",
     activeTabs: ["fire-calculator", "expat-fire", "goals", "citizenship", "learning-hub"],
-    svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    svg: ICON_PATHS.plan,
   },
 ];
 
@@ -4869,22 +4869,22 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
   {
     key: "home",
     label: "Home",
-    svg: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
+    svg: ICON_PATHS.home,
   },
   {
     key: "cashflow",
     label: "Money",
-    svg: '<path d="M4 20h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M14 8h4v4"/>',
+    svg: ICON_PATHS.money,
   },
   {
     key: "plan",
     label: "Plan",
-    svg: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    svg: ICON_PATHS.plan,
   },
   {
     key: "profile",
     label: "Profile",
-    svg: '<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>',
+    svg: ICON_PATHS.profile,
   },
 ];
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Icon from "./Icon";
 
 /**
  * A thing that happened and needs a decision.
@@ -24,16 +25,6 @@ const TONES: Record<AlertTone, { fg: string; bg: string; ring: string }> = {
   info:     { fg: "var(--uf-ink-2)",    bg: "var(--uf-surface-2)", ring: "var(--uf-border-2)" },
   positive: { fg: "var(--uf-pos-ink)",  bg: "var(--uf-green-50)",  ring: "var(--uf-pos)" },
 };
-
-function Glyph({ tone }: { tone: AlertTone }) {
-  const common = { width: 16, height: 16, viewBox: "0 0 20 20", fill: "none",
-    stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const, "aria-hidden": true };
-  if (tone === "positive") return <svg {...common}><path d="M3.5 10.5l4 4 9-9" /></svg>;
-  if (tone === "info") return <svg {...common}><circle cx="10" cy="10" r="7.5" /><path d="M10 9v4.5M10 6.4v.1" /></svg>;
-  if (tone === "warning") return <svg {...common}><circle cx="10" cy="10" r="7.5" /><path d="M10 6v4.6M10 13.6v.1" /></svg>;
-  return <svg {...common}><path d="M10 2.6l7.4 13.2H2.6z" /><path d="M10 8v3.4M10 14v.1" /></svg>;
-}
 
 export interface AlertProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
   tone?: AlertTone;
@@ -62,7 +53,7 @@ export default function Alert({
       }}
       {...rest}
     >
-      <span style={{ color: t.fg, display: "flex", flexShrink: 0, marginTop: 1 }}><Glyph tone={tone} /></span>
+      <span style={{ color: t.fg, display: "flex", flexShrink: 0, marginTop: 1 }}><Icon name={tone} size={16} /></span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-ink)", lineHeight: 1.35 }}>{title}</div>
         {facts.length > 0 && (

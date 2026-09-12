@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Button, Card, Field, Input, Select, Badge, Stat, Money, Delta, Progress, Alert, SegmentedControl } from "@/components/ui";
+import { Button, Card, Field, Input, Select, Badge, Stat, Money, Delta, Progress, Alert, SegmentedControl, Icon } from "@/components/ui";
+import type { IconName } from "@/components/ui";
 import Logo from "@/app/components/Logo";
 import { ProjectionSpecimen, CompareSpecimen, SpendSpecimen, CashflowSpecimen } from "./ChartSpecimens";
 import type { ButtonVariant, ButtonSize } from "@/components/ui";
@@ -158,7 +159,7 @@ export default function StyleguideClient() {
         <Card elevation="flat" style={{ background: "var(--uf-surface)", marginBottom: 56 }}>
           <div style={{ display: "flex", gap: "var(--uf-s5)", flexWrap: "wrap" }}>
             {[
-              ["8", "primitives"],
+              ["11", "primitives"],
               [String(tokenCount), "colour tokens"],
               ["8", "type steps"],
               ["4", "radii"],
@@ -365,6 +366,68 @@ export default function StyleguideClient() {
                 </div>
               ))}
             </div>
+          </Card>
+        </Section>
+
+        {/* Symbols */}
+        <Section
+          id="symbols" title="Symbols" source="components/ui/Icon.tsx"
+          subtitle="Eight glyphs: four for navigation, four for alert severity. Stroke-based on a 24px grid, drawn in currentColor so a glyph takes the colour of the text beside it. Never emoji — emoji render differently on every platform and cannot be recoloured."
+        >
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 16 }}>The set</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(132px, 1fr))", gap: "var(--uf-s3)" }}>
+              {([
+                ["home", "dashboard nav"], ["money", "dashboard nav"], ["plan", "dashboard nav"],
+                ["profile", "user menu"], ["critical", "Alert"], ["warning", "Alert"],
+                ["info", "Alert"], ["positive", "Alert"],
+              ] as [IconName, string][]).map(([n, use]) => (
+                <div key={n} style={{
+                  border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-control)",
+                  padding: "16px 12px", display: "flex", flexDirection: "column",
+                  alignItems: "center", gap: 10, background: "var(--uf-card)",
+                }}>
+                  <span style={{ color: "var(--uf-ink)" }}><Icon name={n} size={24} /></span>
+                  <span style={{ fontFamily: "var(--uf-font-mono)", fontSize: 11, color: "var(--uf-ink-2)" }}>{n}</span>
+                  <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontSize: 11 }}>{use}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Sizes and colour</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 16 }}>
+              A glyph inherits <code className="mono">currentColor</code>, so it is coloured by its container
+              rather than by a prop. That is what keeps an icon and its label the same colour without anyone
+              remembering to match them.
+            </div>
+            <Row label="size">
+              {[16, 20, 24, 32].map(sz => (
+                <span key={sz} style={{ color: "var(--uf-ink)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Icon name="money" size={sz} />
+                  <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{sz}</span>
+                </span>
+              ))}
+            </Row>
+            <Row label="currentColor">
+              {(["var(--uf-ink)", "var(--uf-ink-3)", "var(--uf-green)", "var(--uf-teal)", "var(--uf-neg)"]).map(c => (
+                <span key={c} style={{ color: c }}><Icon name="positive" size={22} /></span>
+              ))}
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>no colour prop — the parent decides</span>
+            </Row>
+          </Card>
+
+          <Card>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Why this is a primitive</div>
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "8px 0 0", maxWidth: "64ch", lineHeight: 1.6 }}>
+              These four nav paths were typed out twice in <code className="mono">app/dashboard/page.tsx</code> —
+              once in the desktop nav array and again in <code className="mono">MOBILE_PRIMARY_ITEMS</code> — and
+              Alert carried a third private copy of the severity set.
+              Two hand-kept copies of a nav is the failure <code className="mono">docs/design/app-structure.md</code> calls
+              load-bearing: it is how Categories and Recurring shipped unreachable. It applies to the glyphs
+              as much as to the routes.
+            </p>
           </Card>
         </Section>
 
