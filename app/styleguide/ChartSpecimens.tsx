@@ -237,4 +237,138 @@ export function CashflowSpecimen() {
   );
 }
 
+/* ── 5. part to whole ────────────────────────────────────────────────
+ * A donut is legitimate for share-at-a-glance with six or fewer segments.
+ * It is the wrong form for comparing close values — the eye cannot rank
+ * arc lengths that are within a few percent of each other, which is why
+ * every segment here is also directly labelled with its figure.
+ *
+ * Spending categories are MAGNITUDES, not identities: "Housing" is not a
+ * different kind of thing from "Food", it is more of the same thing. So
+ * this uses one hue stepped light to dark rather than five categorical
+ * hues, and the order round the ring is the ranking.
+ */
+
+const SHARE = [
+  { label: "Housing", value: 2100, step: 1 },
+  { label: "Food", value: 720, step: 0.78 },
+  { label: "Transport", value: 430, step: 0.56 },
+  { label: "Health", value: 260, step: 0.34 },
+  { label: "Other", value: 490, step: 0 },
+];
+
+function donutArc(cx: number, cy: number, rOut: number, rIn: number, a0: number, a1: number) {
+  const pt = (r: number, a: number) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  const large = a1 - a0 > Math.PI ? 1 : 0;
+  const [x0, y0] = pt(rOut, a0);
+  const [x1, y1] = pt(rOut, a1);
+  const [x2, y2] = pt(rIn, a1);
+  const [x3, y3] = pt(rIn, a0);
+  return `M ${x0} ${y0} A ${rOut} ${rOut} 0 ${large} 1 ${x1} ${y1} ` +
+         `L ${x2} ${y2} A ${rIn} ${rIn} 0 ${large} 0 ${x3} ${y3} Z`;
+}
+
+export function ShareSpecimen() {
+  const total = SHARE.reduce((n, d) => n + d.value, 0);
+  const cx = 130, cy = 130, rOut = 104, rIn = 66;
+  let angle = -Math.PI / 2;
+  const segs = SHARE.map((d) => {
+    const sweep = (d.value / total) * Math.PI * 2;
+    // 2px of surface between segments — adjacent fills need a gap or the
+    // boundary between two steps of one hue disappears.
+    const gap = 0.012;
+    const seg = { ...d, a0: angle + gap / 2, a1: angle + sweep - gap / 2, pct: d.value / total };
+    angle += sweep;
+    return seg;
+  });
+
+  return (
+    <div style={{ display: "flex", gap: "var(--uf-s7)", alignItems: "center", flexWrap: "wrap" }}>
+      <svg width={260} height={260} viewBox="0 0 260 260" role="img" aria-label="Spending share by category">
+        {segs.map((s) => (
+          <path
+            key={s.label}
+            d={donutArc(cx, cy, rOut, rIn, s.a0, s.a1)}
+            fill={s.step === 0 ? "var(--uf-surface-2)" : "var(--uf-chart-1)"}
+            fillOpacity={s.step === 0 ? 1 : s.step}
+          />
+        ))}
+        <text x={cx} y={cy - 6} textAnchor="middle"
+              style={{ fontFamily: "var(--uf-font-mono)", fontSize: 19, fontWeight: 500, fill: "var(--uf-ink)" }}>
+          {formatMoney(total)}
+        </text>
+        <text x={cx} y={cy + 14} textAnchor="middle"
+              style={{ fontFamily: "var(--uf-font)", fontSize: 11, fill: "var(--uf-ink-3)" }}>
+          per month
+        </text>
+      </svg>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 220 }}>
+        {segs.map((s) => (
+          <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+            <span style={{
+              width: 11, height: 11, borderRadius: 3, flexShrink: 0,
+              background: s.step === 0 ? "var(--uf-surface-2)" : "var(--uf-chart-1)",
+              opacity: s.step === 0 ? 1 : s.step,
+            }} />
+            <span style={{ color: "var(--uf-ink-2)" }}>{s.label}</span>
+            <span style={{
+              marginLeft: "auto", fontFamily: "var(--uf-font-mono)",
+              fontVariantNumeric: "tabular-nums", color: "var(--uf-ink)",
+            }}>{formatMoney(s.value)}</span>
+            <span style={{
+              fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
+              color: "var(--uf-ink-3)", width: 40, textAlign: "right",
+            }}>{Math.round(s.pct * 100)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── 6. one ratio against a limit ────────────────────────────────────
+ * The case a two-slice pie is usually reached for, and the case it is
+ * worst at: "used vs available" is one number against a ceiling, and a
+ * reader cannot judge 62% from two arcs but can read it instantly off a
+ * track. The number is the chart; the track is the context.
+ */
+
+export function MeterSpecimen({ used = 6200, limit = 10000 }: { used?: number; limit?: number }) {
+  const pct = Math.max(0, Math.min(1, used / limit));
+  // Utilisation bands are a credit convention, not a design flourish: past
+  // ~30% starts to affect a score, past ~70% reads as distress.
+  const tone = pct > 0.7 ? "var(--uf-neg)" : pct > 0.3 ? "var(--uf-warn)" : "var(--uf-pos)";
+  return (
+    <div style={{ maxWidth: 520 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
+        <span style={{
+          fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
+          fontSize: 34, fontWeight: 500, color: tone,
+        }}>{Math.round(pct * 100)}%</span>
+        <span style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>of your limit used</span>
+        <span style={{
+          marginLeft: "auto", fontFamily: "var(--uf-font-mono)",
+          fontVariantNumeric: "tabular-nums", fontSize: 13, color: "var(--uf-ink-2)",
+        }}>{formatMoney(used)} of {formatMoney(limit)}</span>
+      </div>
+      <div style={{ height: 14, background: "var(--uf-surface-2)", borderRadius: 999, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct * 100}%`, background: tone, borderRadius: 999 }} />
+      </div>
+      {/* Ticks are positioned at their true value, not spaced evenly — an
+          evenly-spaced "30%" label sitting at a third of the width names a
+          position the scale never reaches. */}
+      <div style={{ position: "relative", height: 16, marginTop: 6 }}>
+        {[0, 0.3, 0.7, 1].map((m) => (
+          <span key={m} style={{
+            position: "absolute", left: `${m * 100}%`,
+            transform: m === 0 ? "none" : m === 1 ? "translateX(-100%)" : "translateX(-50%)",
+            fontFamily: "var(--uf-font-mono)", fontSize: 10.5, color: "var(--uf-ink-3)",
+          }}>{Math.round(m * 100)}%</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export { UfTooltip };

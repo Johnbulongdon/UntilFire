@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Card, Field, Input, Select, Badge, Stat, Money, Delta, Progress, Alert, SegmentedControl, Icon } from "@/components/ui";
 import type { IconName } from "@/components/ui";
 import Logo from "@/app/components/Logo";
-import { ProjectionSpecimen, CompareSpecimen, SpendSpecimen, CashflowSpecimen } from "./ChartSpecimens";
+import { ProjectionSpecimen, CompareSpecimen, SpendSpecimen, CashflowSpecimen, ShareSpecimen, MeterSpecimen } from "./ChartSpecimens";
 import type { ButtonVariant, ButtonSize } from "@/components/ui";
 import type { BadgeTone } from "@/components/ui";
 import type { CardElevation } from "@/components/ui";
@@ -720,6 +720,35 @@ export default function StyleguideClient() {
               A chart without a time-scale control answers exactly one question. With one it answers four, for
               the cost of a row of controls — which is why it is standard on every serious finance chart and
               conspicuous when missing. (The control here is live but the sample data is fixed.)
+            </p>
+          </Card>
+
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Part to whole — a donut, used correctly</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 18 }}>
+              Share at a glance, six segments or fewer, every segment directly labelled. Spending categories are
+              magnitudes rather than identities, so this is one hue stepped light to dark — the order round the
+              ring is the ranking.
+            </div>
+            <ShareSpecimen />
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "18px 0 0", maxWidth: "64ch" }}>
+              What a donut cannot do is let you compare close values: nobody ranks two arcs that are four percent
+              apart. That is why the figures sit beside it. If the reader&rsquo;s job is comparison rather than
+              share, use the bar below instead.
+            </p>
+          </Card>
+
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>One ratio against a limit — a meter, not a two-slice pie</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 20 }}>
+              Credit used against the limit. The number is the chart; the track is the context.
+            </div>
+            <MeterSpecimen />
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "20px 0 0", maxWidth: "64ch" }}>
+              This is the case a pie chart is most often reached for and worst at. &ldquo;Used vs available&rdquo;
+              is one number against a ceiling: a reader cannot judge 62% from two arcs, but reads it instantly off
+              a track. The band colours are a credit convention rather than decoration — past roughly 30%
+              utilisation starts to affect a score, past 70% reads as distress.
             </p>
           </Card>
 
