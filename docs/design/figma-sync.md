@@ -25,7 +25,7 @@ regenerate.
 |---|---|
 | Cover & Foundations | Cover, colour boards for both themes, type ramp, radius, elevation, space |
 | Components | Button (12 variants), Badge (5), Card (3), Alert (4) |
-| Charts, Logo & Motion | Empty — see "Not yet generated" |
+| Charts, Logo & Motion | Logo assets — the rest blocked, see below |
 
 Variables: 58 colour (29 tokens × 2 themes), 11 scale (4 radius + 7 space).
 Styles: 9 text, 3 elevation.
@@ -63,8 +63,21 @@ any change to:
 the code does: `Button.tsx` sets `color: "#fff"` on the primary variant. There is
 no `--uf-*` token for pure white on green. If a token is added, update both.
 
-## Not yet generated
+## Not yet generated — blocked on the plan's MCP call limit
 
-Charts, the logo lockups, motion, and the money primitives (`Money`, `Delta`,
-`Progress`, `SegmentedControl`, `Field`, `Stat`) are not in the file yet. The
-live reference at `/styleguide` covers all of them.
+The Starter plan caps how many Figma MCP tool calls an agent may make. The build
+hit that ceiling partway through the third page, so the following are specified
+and ready to generate but not yet in the file:
+
+- **Symbols** — the eight glyphs from `components/ui/Icon.tsx`, as a component
+  set for INSTANCE_SWAP
+- **Charts** — the three-slot series palette and the four chart specimens
+- **Motion** — the four durations and three easing curves
+- **Components** — `Money`, `Delta`, `Progress`, `Stat`, `Field`,
+  `SegmentedControl`
+
+Resume with the prompt under "Regenerating" once the limit resets; the scripts
+skip what already exists, so it continues rather than rebuilding.
+
+Until then `/styleguide` is the complete reference — it covers all of the above,
+and unlike Figma it renders the real components rather than a copy of them.
