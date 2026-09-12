@@ -11,10 +11,13 @@ type Template = "announcement" | "monthly_update";
 function parseUpdateItems(raw: unknown): UpdateItem[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .filter((it): it is { title: unknown; desc: unknown } => !!it && typeof it === "object")
+    .filter((it): it is { title: unknown; desc: unknown; image: unknown } => !!it && typeof it === "object")
     .map((it) => ({
       title: typeof it.title === "string" ? it.title.trim() : "",
       desc: typeof it.desc === "string" ? it.desc.trim() : "",
+      // The URL is validated again at render time (safeImageUrl); this only
+      // decides whether the field survives the request at all.
+      image: typeof it.image === "string" ? it.image.trim() : "",
     }))
     .filter((it) => it.title || it.desc);
 }

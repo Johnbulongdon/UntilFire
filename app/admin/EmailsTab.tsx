@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+// Type-only import: erased at compile time, so the server-side email builder
+// never reaches the client bundle. The composer and the renderer described the
+// same item in two places, which is how a field added to one silently goes
+// missing in the other.
+import type { UpdateItem } from "@/lib/email-html";
 
 type Segment = "all" | "free" | "pro";
 type Template = "announcement" | "monthly_update";
-type UpdateItem = { title: string; desc: string };
 type SendResult = { sent: number; total: number } | string | null;
 
 interface Draft {
@@ -403,6 +407,16 @@ function PreviewItemSection({ label, items }: { label: string; items: UpdateItem
           <div key={i}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#19181E" }}>{it.title || "Untitled"}</div>
             {it.desc && <div style={{ fontSize: 13, color: "#64748B" }}>{it.desc}</div>}
+            {it.image ? (
+              // Arbitrary remote host in an admin-only preview — next/image
+              // cannot optimise a URL that is not in remotePatterns.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={it.image}
+                alt=""
+                style={{ display: "block", width: "100%", marginTop: 8, borderRadius: 8, border: "1px solid #E2E8F0" }}
+              />
+            ) : null}
           </div>
         ))}
       </div>
@@ -419,7 +433,7 @@ function ItemListEditor({
   items: UpdateItem[];
   onChange: (items: UpdateItem[]) => void;
 }) {
-  function update(i: number, field: "title" | "desc", value: string) {
+  function update(i: number, field: "title" | "desc" | "image", value: string) {
     const next = items.slice();
     next[i] = { ...next[i], [field]: value };
     onChange(next);
@@ -439,6 +453,12 @@ function ItemListEditor({
           <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
             <input value={it.title} onChange={(e) => update(i, "title", e.target.value)} placeholder="Title" style={inputStyle} />
             <input value={it.desc} onChange={(e) => update(i, "desc", e.target.value)} placeholder="One-line description" style={inputStyle} />
+            <input
+              value={it.image || ""}
+              onChange={(e) => update(i, "image", e.target.value)}
+              placeholder="Screenshot URL (optional) — https://www.untilfire.com/email/..."
+              style={inputStyle}
+            />
           </div>
           <button onClick={() => remove(i)} style={smallBtn}>Remove</button>
         </div>

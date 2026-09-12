@@ -68,7 +68,30 @@ function sectionLabel(text: string): string {
   return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:1.5px">${text}</p>`;
 }
 
-function bulletRow(title: string, desc: string, last = false): string {
+const escapeAttr = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * Absolute https only. A relative path cannot resolve in a mail client — there
+ * is no page to be relative to — and javascript:/data: have no business in an
+ * <img src> even from an admin-only form. Anything else renders as no image
+ * rather than as a broken one.
+ */
+function safeImageUrl(raw?: string): string {
+  const url = (raw || "").trim();
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return "";
+  return url.replace(/&/g, "&amp;");
+}
+
+function bulletRow(title: string, desc: string, last = false, image?: string): string {
+  const src = safeImageUrl(image);
+  // 560px shell − 28px card padding × 2 − 24px bullet gutter = 480px usable.
+  // Export the asset at 960px so it stays sharp on retina; alt carries the
+  // title because most clients block images by default and the reader should
+  // still learn what the item is.
+  const shot = src
+    ? `<img src="${src}" alt="${escapeAttr(title)}" width="480" style="display:block;width:100%;max-width:480px;height:auto;margin-top:12px;border:1px solid #E5E7EB;border-radius:12px" />`
+    : "";
   return `
   <tr>
     <td style="vertical-align:top;padding-bottom:${last ? "0" : "18px"};width:10px">
@@ -76,7 +99,7 @@ function bulletRow(title: string, desc: string, last = false): string {
     </td>
     <td style="vertical-align:top;padding-left:14px;padding-bottom:${last ? "0" : "18px"}">
       <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:#003527;line-height:1.4">${title}</p>
-      <p style="margin:0;font-size:13px;color:#6B7280;line-height:1.6">${desc}</p>
+      <p style="margin:0;font-size:13px;color:#6B7280;line-height:1.6">${desc}</p>${shot}
     </td>
   </tr>`;
 }
@@ -282,6 +305,8 @@ export function buildAdminAnnouncementEmail({
 export interface UpdateItem {
   title: string;
   desc: string;
+  /** Absolute https URL to a screenshot. Optional — most items are text only. */
+  image?: string;
 }
 
 export function buildMonthlyUpdateEmail({
@@ -306,7 +331,7 @@ export function buildMonthlyUpdateEmail({
 
   const itemList = (items: UpdateItem[]) => `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-      ${items.map((it, i) => bulletRow(it.title, it.desc, i === items.length - 1)).join("")}
+      ${items.map((it, i) => bulletRow(it.title, it.desc, i === items.length - 1, it.image)).join("")}
     </table>`;
 
   const newSection = newItems.length
