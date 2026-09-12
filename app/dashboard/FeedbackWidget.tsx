@@ -20,6 +20,28 @@ export default function FeedbackWidget() {
   const backdropRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Deep link from outside the app — the monthly email's "tell me what to
+  // build" button lands on /dashboard?feedback=feature. Opening the widget
+  // on arrival is the whole point: a button that drops someone on the
+  // dashboard and leaves them to find a floating widget has not asked them
+  // anything. The param is stripped afterwards so a refresh does not reopen
+  // it, and an unrecognised value just opens on the default tab.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get("feedback");
+    if (requested === null) return;
+    if (TYPE_OPTIONS.some((o) => o.key === requested)) {
+      setType(requested as FeedbackType);
+    }
+    setOpen(true);
+    params.delete("feedback");
+    const qs = params.toString();
+    window.history.replaceState(
+      {}, "",
+      window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash,
+    );
+  }, []);
+
   useEffect(() => {
     if (open && status !== "sent") {
       setTimeout(() => textareaRef.current?.focus(), 80);

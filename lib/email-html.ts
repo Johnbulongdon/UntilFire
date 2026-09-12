@@ -149,6 +149,25 @@ function bulletRow(title: string, desc: string, last = false, image?: string): s
   </tr>`;
 }
 
+/**
+ * The quieter of two actions. Outlined rather than filled so it cannot
+ * compete with the primary button directly above it — two solid buttons
+ * side by side means neither is the next step.
+ */
+function askBlock(href: string, label: string): string {
+  return `
+  <tr><td style="padding:14px 0 0;text-align:center">
+    <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto">
+      <tr>
+        <td style="border-radius:12px;border:1px solid ${BORDER};background:${CARD}">
+          <a href="${href}" style="display:inline-block;padding:13px 30px;font-size:14px;font-weight:700;color:${GREEN};text-decoration:none;font-family:${BODY}">${label}</a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:10px 0 0;font-size:12px;color:${INK_3};font-family:${BODY}">I read every one.</p>
+  </td></tr>`;
+}
+
 function ctaBlock(href: string, label: string): string {
   return `
   <tr><td style="padding:22px 0 0;text-align:center">
@@ -412,8 +431,13 @@ export function buildMonthlyUpdateEmail({
     : "";
 
   const cta = ctaHref && ctaLabel ? ctaBlock(ctaHref, ctaLabel) : "";
+  // Always present on a monthly update: the reader has just been told what
+  // was built, which is the one moment they have an opinion about what to
+  // build next. The link opens the feedback widget on arrival rather than
+  // dropping them on the dashboard to find it.
+  const ask = askBlock(`${SITE}/dashboard?feedback=feature`, "Tell me what to build next");
 
   const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
 
-  return base(heading, hero + newSection + fixSection + cta + footer);
+  return base(heading, hero + newSection + fixSection + cta + ask + footer);
 }
