@@ -63,6 +63,28 @@
   --uf-e2: 0 6px 20px rgba(120,80,30,0.08);
   --uf-e3: 0 16px 40px rgba(120,80,30,0.13);
 
+  /* chart series — validated categorical, light surface (--uf-card).
+     Three slots by design: a fourth hue could not clear the colour-blind
+     separation floor against these three. A fourth series folds into
+     "Other", becomes small multiples, or is a second chart.
+     Assign in fixed order — slot 1 is always the same entity, never
+     reassigned when a filter changes how many series are showing. */
+  --uf-chart-1: #0E9C86;
+  --uf-chart-2: #5B5BD6;
+  --uf-chart-3: #B07A12;
+  --uf-chart-grid: var(--uf-border);
+  --uf-chart-axis: var(--uf-ink-3);
+
+  /* motion — 4 durations, 3 curves. The codebase had six hand-typed
+     cubic-beziers and durations from 120ms to 280ms before these existed. */
+  --uf-dur-1: 120ms;   /* colour and hover */
+  --uf-dur-2: 180ms;   /* controls */
+  --uf-dur-3: 240ms;   /* panels and drawers */
+  --uf-dur-4: 420ms;   /* entrances */
+  --uf-ease:          cubic-bezier(0.22, 1, 0.36, 1);    /* the house curve */
+  --uf-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --uf-ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+
   /* radius — 4 steps */
   --uf-r-control: 12px;
   --uf-r-card:    20px;
@@ -132,6 +154,12 @@
   --uf-e1: 0 1px 2px rgba(0,0,0,0.40);
   --uf-e2: 0 6px 20px rgba(0,0,0,0.45);
   --uf-e3: 0 16px 40px rgba(0,0,0,0.55);
+
+  /* chart series, selected against the dark surface and validated there —
+     not an automatic lightening of the light steps. */
+  --uf-chart-1: #26A68E;
+  --uf-chart-2: #8189E6;
+  --uf-chart-3: #B78A26;
 
   --uf-topbar-glass: rgba(31,26,19,0.96);
 }
@@ -396,6 +424,15 @@ a {
 }
 
 /* Floating action bar animation */
+/* The entrance. Seven near-identical fade-and-rise keyframes existed across
+   HomeClient, RevealFlow, AnimatedHero, ExpatFireGlobe and LandingPage before
+   this one; new code should use this rather than declare an eighth. */
+@keyframes uf-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .uf-anim { animation: none !important; transition: none !important; }
+}
+
 @keyframes slide-up {
   from {
     opacity: 0;

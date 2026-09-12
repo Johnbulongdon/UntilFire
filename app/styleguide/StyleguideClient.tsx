@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Button, Card, Field, Input, Select, Badge, Stat } from "@/components/ui";
+import Logo from "@/app/components/Logo";
+import { ProjectionSpecimen, CompareSpecimen, SpendSpecimen } from "./ChartSpecimens";
 import type { ButtonVariant, ButtonSize } from "@/components/ui";
 import type { BadgeTone } from "@/components/ui";
 import type { CardElevation } from "@/components/ui";
@@ -40,6 +42,26 @@ const SPACE = [
   ["--uf-s1", 4], ["--uf-s2", 8], ["--uf-s3", 12], ["--uf-s4", 16],
   ["--uf-s5", 24], ["--uf-s6", 32], ["--uf-s7", 48],
 ] as const;
+
+const LOGO_FILES = [
+  { file: "horizon-color.svg", use: "The mark. App icon, favicon, anywhere the wordmark will not fit." },
+  { file: "horizon-wordmark-horizontal.svg", use: "Mark plus wordmark, locked up. Headers and email." },
+  { file: "horizon-mark-only.svg", use: "Mark with no background plate." },
+  { file: "horizon-mono-light.svg", use: "Single colour, for dark or photographic backdrops." },
+];
+
+const DURATIONS = [
+  { token: "--uf-dur-1", ms: 120, use: "colour and hover" },
+  { token: "--uf-dur-2", ms: 180, use: "controls" },
+  { token: "--uf-dur-3", ms: 240, use: "panels and drawers" },
+  { token: "--uf-dur-4", ms: 420, use: "entrances" },
+];
+
+const EASINGS = [
+  { token: "--uf-ease", curve: "cubic-bezier(0.22, 1, 0.36, 1)", use: "the house curve — 22 uses already" },
+  { token: "--uf-ease-standard", curve: "cubic-bezier(0.4, 0, 0.2, 1)", use: "symmetrical moves, toggles" },
+  { token: "--uf-ease-spring", curve: "cubic-bezier(0.34, 1.56, 0.64, 1)", use: "overshoot — confirmations only" },
+];
 
 const BUTTON_VARIANTS: ButtonVariant[] = ["primary", "secondary", "ghost", "danger"];
 const BUTTON_SIZES: ButtonSize[] = ["sm", "md", "lg"];
@@ -83,6 +105,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export default function StyleguideClient() {
   const [dark, setDark] = useState(false);
   const [resolved, setResolved] = useState<Record<string, string>>({});
+  const [replay, setReplay] = useState(0);
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -108,6 +131,10 @@ export default function StyleguideClient() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--uf-ground)", color: "var(--uf-ink)", fontFamily: "var(--uf-font)" }}>
+      <style>{`
+        @keyframes uf-sg-sweep { from { width: 0%; } to { width: 100%; } }
+        @keyframes uf-sg-slide { from { transform: translateX(0); } to { transform: translateX(244px); } }
+      `}</style>
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "48px 24px 96px" }}>
 
         {/* Header */}
@@ -337,6 +364,174 @@ export default function StyleguideClient() {
                 </div>
               ))}
             </div>
+          </Card>
+        </Section>
+
+        {/* Logo */}
+        <Section
+          id="logo" title="Logo" source="app/components/Logo.tsx · public/logo/"
+          subtitle="Four SVG assets and one component. Use variant=auto anywhere the surface can be either theme — dark and light are fixed colours and will disappear on the wrong ground."
+        >
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 16 }}>Component variants</div>
+            {[
+              { v: "auto" as const, note: "follows --uf-ink · use this by default" },
+              { v: "light" as const, note: "fixed #064E3B · only on a light surface" },
+            ].map(({ v, note }) => (
+              <Row key={v} label={`variant="${v}"`}>
+                <Logo variant={v} size={22} />
+                <Logo variant={v} size={28} />
+                <Logo variant={v} size={38} />
+                <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{note}</span>
+              </Row>
+            ))}
+            <Row label={'variant="dark"'}>
+              <span style={{ background: "var(--uf-green-900)", borderRadius: "var(--uf-r-control)", padding: "12px 16px", display: "inline-flex" }}>
+                <Logo variant="dark" size={28} />
+              </span>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>fixed #ffffff · needs a dark plate, shown here on --uf-green-900</span>
+            </Row>
+          </Card>
+
+          <Card>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 16 }}>Assets</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: "var(--uf-s4)" }}>
+              {LOGO_FILES.map(l => (
+                <div key={l.file} style={{ border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-control)", overflow: "hidden" }}>
+                  <div style={{ height: 84, display: "grid", placeItems: "center", background: "var(--uf-surface)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/logo/${l.file}`} alt={l.file} style={{ maxWidth: 132, maxHeight: 46 }} />
+                  </div>
+                  <div style={{ padding: "10px 12px", background: "var(--uf-card)", borderTop: "1px solid var(--uf-border)" }}>
+                    <div style={{ fontFamily: "var(--uf-font-mono)", fontSize: 10.5, color: "var(--uf-ink-2)" }}>{l.file}</div>
+                    <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 4 }}>{l.use}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Section>
+
+        {/* Charts */}
+        <Section
+          id="charts" title="Charts" source="app/styleguide/ChartSpecimens.tsx · Recharts"
+          subtitle="Three series colours, and three is the ceiling rather than a starting point — a fourth hue could not clear the colour-blind separation floor against these three, so a fourth series folds into Other or becomes a second chart."
+        >
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 12 }}>Series palette</div>
+            <div style={{ display: "flex", gap: "var(--uf-s3)", flexWrap: "wrap", marginBottom: 14 }}>
+              {["--uf-chart-1", "--uf-chart-2", "--uf-chart-3"].map((t, i) => (
+                <div key={t} style={{ display: "flex", alignItems: "center", gap: 9, border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-control)", padding: "8px 12px" }}>
+                  <span style={{ width: 26, height: 26, borderRadius: 7, background: `var(${t})` }} />
+                  <span>
+                    <span style={{ fontFamily: "var(--uf-font-mono)", fontSize: 11, color: "var(--uf-ink-2)", display: "block" }}>{t}</span>
+                    <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>slot {i + 1}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: 0, maxWidth: 640 }}>
+              Assign in fixed order and let colour follow the entity, never its rank: if a filter changes how many
+              series are showing, the survivors keep the colours they had. The dark steps are chosen against the dark
+              surface rather than lightened from these, and they sit inside the tritan floor band — which is why a
+              legend is mandatory here rather than optional.
+            </p>
+          </Card>
+
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>One series — no legend, the title names it</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>Portfolio against the FIRE target</div>
+            <ProjectionSpecimen />
+          </Card>
+
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Two series — legend required</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>One y-axis. Never a second scale on the right.</div>
+            <CompareSpecimen />
+          </Card>
+
+          <Card>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Magnitude — one hue, sorted, Other in muted</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>Categories are magnitudes, not identities, so they do not need separate hues</div>
+            <SpendSpecimen />
+          </Card>
+        </Section>
+
+        {/* Motion */}
+        <Section
+          id="motion" title="Motion" source="app/globals.css — --uf-dur-* / --uf-ease-*"
+          subtitle="Four durations and three curves. Before these existed the app carried six hand-typed cubic-beziers and about thirty keyframes across seven files, seven of which were the same fade-and-rise."
+        >
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
+              <div className="uf-t-label" style={{ color: "var(--uf-ink-3)" }}>Duration</div>
+              <div style={{ flex: 1 }} />
+              <Button size="sm" variant="secondary" onClick={() => setReplay(n => n + 1)}>Replay</Button>
+            </div>
+            {DURATIONS.map(d => (
+              <Row key={d.token} label={d.token}>
+                <div style={{ width: 260, height: 10, background: "var(--uf-surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                  <div
+                    key={`${d.token}-${replay}`}
+                    style={{
+                      height: "100%", background: "var(--uf-teal)", borderRadius: 999,
+                      animation: `uf-sg-sweep ${d.ms}ms var(--uf-ease) both`,
+                    }}
+                  />
+                </div>
+                <span style={{ fontFamily: "var(--uf-font-mono)", fontSize: 12, color: "var(--uf-ink-2)", width: 54 }}>{d.ms}ms</span>
+                <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{d.use}</span>
+              </Row>
+            ))}
+          </Card>
+
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>Easing</div>
+            {EASINGS.map(e => (
+              <Row key={e.token} label={e.token}>
+                <div style={{ width: 260, height: 26, position: "relative" }}>
+                  <div
+                    key={`${e.token}-${replay}`}
+                    style={{
+                      position: "absolute", top: 5, left: 0, width: 16, height: 16, borderRadius: 5,
+                      background: "var(--uf-green)",
+                      animation: `uf-sg-slide 620ms var(${e.token}) both`,
+                    }}
+                  />
+                </div>
+                <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", maxWidth: 300 }}>{e.use}</span>
+              </Row>
+            ))}
+            <Row label="curve">
+              <code style={{ fontFamily: "var(--uf-font-mono)", fontSize: 11, color: "var(--uf-ink-2)" }}>
+                {EASINGS.map(e => e.curve).join("   ·   ")}
+              </code>
+            </Row>
+          </Card>
+
+          <Card>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>The entrance</div>
+            <div style={{ display: "flex", gap: "var(--uf-s3)", flexWrap: "wrap" }}>
+              {[0, 1, 2].map(i => (
+                <div
+                  key={`rise-${i}-${replay}`}
+                  style={{
+                    flex: "1 1 0", minWidth: 150, background: "var(--uf-surface)", border: "1px solid var(--uf-border)",
+                    borderRadius: "var(--uf-r-control)", padding: "16px 18px",
+                    animation: `uf-rise var(--uf-dur-4) var(--uf-ease) ${i * 70}ms both`,
+                  }}
+                >
+                  <div className="uf-t-label" style={{ color: "var(--uf-ink-3)" }}>Card {i + 1}</div>
+                  <div style={{ fontFamily: "var(--uf-font-mono)", fontSize: 18, marginTop: 6 }}>{i * 70}ms</div>
+                </div>
+              ))}
+            </div>
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "14px 0 0", maxWidth: 640 }}>
+              One shared <code style={{ fontFamily: "var(--uf-font-mono)" }}>uf-rise</code> keyframe, staggered 70ms.
+              Reach for this before declaring another fade-and-rise. Anything decorative also needs
+              a <code style={{ fontFamily: "var(--uf-font-mono)" }}>prefers-reduced-motion</code> escape — add
+              the <code style={{ fontFamily: "var(--uf-font-mono)" }}>uf-anim</code> class and globals.css handles it.
+            </p>
           </Card>
         </Section>
 
