@@ -40,3 +40,9 @@ export type { DeltaProps, GoodWhen } from "./Delta";
 
 export { default as Progress } from "./Progress";
 export type { ProgressProps } from "./Progress";
+
+export { default as Alert } from "./Alert";
+export type { AlertProps, AlertTone } from "./Alert";
+
+export { default as SegmentedControl } from "./SegmentedControl";
+export type { SegmentedControlProps, SegmentedOption } from "./SegmentedControl";

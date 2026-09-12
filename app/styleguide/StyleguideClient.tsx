@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Button, Card, Field, Input, Select, Badge, Stat, Money, Delta, Progress } from "@/components/ui";
+import { Button, Card, Field, Input, Select, Badge, Stat, Money, Delta, Progress, Alert, SegmentedControl } from "@/components/ui";
 import Logo from "@/app/components/Logo";
-import { ProjectionSpecimen, CompareSpecimen, SpendSpecimen } from "./ChartSpecimens";
+import { ProjectionSpecimen, CompareSpecimen, SpendSpecimen, CashflowSpecimen } from "./ChartSpecimens";
 import type { ButtonVariant, ButtonSize } from "@/components/ui";
 import type { BadgeTone } from "@/components/ui";
 import type { CardElevation } from "@/components/ui";
@@ -106,6 +106,7 @@ export default function StyleguideClient() {
   const [dark, setDark] = useState(false);
   const [resolved, setResolved] = useState<Record<string, string>>({});
   const [replay, setReplay] = useState(0);
+  const [range, setRange] = useState<"1y" | "5y" | "all">("all");
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -412,6 +413,111 @@ export default function StyleguideClient() {
           </Card>
         </Section>
 
+        {/* Composition */}
+        <Section
+          id="composition" title="Composition" source="how the modules sit together"
+          subtitle="Tokens and primitives make a screen consistent; they do not make it usable. These are the rules for arranging modules on a dashboard — the part that is usually decided by whatever fitted, and is the difference between a screen that looks designed and one that answers a question."
+        >
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Priority decides the grid</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 16 }}>
+              Rank every module before you place any of them. Reading order is top-left first, so that is where
+              the highest priority goes.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "var(--uf-s3)" }}>
+              <div style={{ gridColumn: "span 2", background: "var(--uf-teal-soft)", color: "var(--uf-teal-deep)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-control)", padding: "14px 16px", minHeight: 74 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.75 }}>High</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>Freedom date · This month&rsquo;s move</div>
+              </div>
+              <div style={{ gridColumn: "span 1", background: "var(--uf-teal-soft)", color: "var(--uf-teal-deep)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-control)", padding: "14px 16px", minHeight: 74 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.75 }}>High</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>Cashflow</div>
+              </div>
+              <div style={{ gridColumn: "span 1", background: "var(--uf-surface-2)", color: "var(--uf-ink-2)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-control)", padding: "14px 16px", minHeight: 74 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.75 }}>Mid</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>Portfolio</div>
+              </div>
+              <div style={{ gridColumn: "span 1", background: "var(--uf-surface-2)", color: "var(--uf-ink-2)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-control)", padding: "14px 16px", minHeight: 74 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.75 }}>Mid</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>Accounts</div>
+              </div>
+              <div style={{ gridColumn: "span 1", background: "var(--uf-surface)", color: "var(--uf-ink-3)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-control)", padding: "14px 16px", minHeight: 74 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.75 }}>Low</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>Cities</div>
+              </div>
+                          </div>
+          </Card>
+          <Card>
+            <ol style={{ margin: 0, paddingLeft: "1.3em" }}>
+            <li style={{ marginBottom: "var(--uf-s4)" }}>
+              <div className="uf-t-h3">Rank before you place.</div>
+              <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 5, lineHeight: 1.6 }}>Every module gets one of three priorities, and the grid follows: high goes top-left, because that is where the eye lands and what survives the fold. Here that means the freedom date and this month&rsquo;s move are high, the portfolio chart is mid, and the city comparison is low — not because the chart is uninteresting but because nobody needs it weekly.</div>
+            </li>
+            <li style={{ marginBottom: "var(--uf-s4)" }}>
+              <div className="uf-t-h3">One job per module.</div>
+              <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 5, lineHeight: 1.6 }}>If a card shows a growth rate and a chart of that same growth, one of them goes. Saying a number twice in two forms is not emphasis, it is noise, and it costs the space a second module needed.</div>
+            </li>
+            <li style={{ marginBottom: "var(--uf-s4)" }}>
+              <div className="uf-t-h3">Merge what belongs together.</div>
+              <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 5, lineHeight: 1.6 }}>A freeze-card control belongs on the card it freezes, not in a tile of its own. A tile that exists only to hold one control is a control that lost its home.</div>
+            </li>
+            <li style={{ marginBottom: "var(--uf-s4)" }}>
+              <div className="uf-t-h3">A number without a label is decoration.</div>
+              <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 5, lineHeight: 1.6 }}>Every figure has to state its unit, its period and its basis. &ldquo;$4,820&rdquo; answers nothing; &ldquo;$4,820 spent this month, against a $4,400 plan&rdquo; is a fact someone can act on.</div>
+            </li>
+            <li style={{ marginBottom: "var(--uf-s4)" }}>
+              <div className="uf-t-h3">A control has to be possible.</div>
+              <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 5, lineHeight: 1.6 }}>Do not put a Receive button on a credit card. In this product: do not offer Adjust on a figure the user cannot adjust, or Connect on an account type the integration does not support. An affordance that lies costs more trust than a missing feature.</div>
+            </li>
+            <li style={{ marginBottom: "var(--uf-s4)" }}>
+              <div className="uf-t-h3">If it should not need a click, it is not a button.</div>
+              <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 5, lineHeight: 1.6 }}>Anything the reader needs on arrival is a section, not something behind a button. Your next move is the clearest case: it is the whole point of the visit, so it cannot be one click away.</div>
+            </li>
+            <li style={{ marginBottom: "var(--uf-s4)" }}>
+              <div className="uf-t-h3">Fit the count to the margin, not the margin to the count.</div>
+              <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 5, lineHeight: 1.6 }}>Four items that force a module to break the margins every other module keeps become two items that hold them, plus a way to see the rest. Consistent gutters are what make a grid read as one surface.</div>
+            </li>
+            </ol>
+          </Card>
+        </Section>
+
+        {/* Alert */}
+        <Section
+          id="alert" title="Alert" source="components/ui/Alert.tsx"
+          subtitle="An alert is not a badge. A badge labels a state you are already looking at; an alert interrupts to say something happened — and it is useless without the three facts that let you judge it: how much, when, and where."
+        >
+          <Card style={{ display: "flex", flexDirection: "column", gap: "var(--uf-s3)" }}>
+            <Alert
+              tone="critical"
+              title="Unusual card activity"
+              amount={<Money amount={-482.5} decimals={2} bySign />}
+              when="Today, 14:22"
+              where="Lisboa Eletrónica · Lisbon, PT"
+              action={<Button size="sm" variant="danger">Freeze card</Button>}
+            />
+            <Alert
+              tone="warning"
+              title="Card payment due"
+              amount={<Money amount={1240} />}
+              when="In 3 days · 15 Oct"
+              where="Chase Sapphire ·· 4417"
+              action={<Button size="sm" variant="secondary">Pay</Button>}
+            />
+            <Alert tone="info" title="August spending is above your plan" when="This month" where="Groceries and eating out" />
+            <Alert
+              tone="positive"
+              title="Emergency fund is fully funded"
+              amount={<Money amount={18000} tone="positive" />}
+              when="Reached 2 Oct"
+            />
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "6px 0 0", maxWidth: "64ch" }}>
+              The icon is not ornament. It is the part that survives being read at a glance, and it carries
+              severity to a reader who cannot separate the tones by colour. An alert that reads only
+              &ldquo;Unusual activity detected&rdquo; is decoration — it tells the reader nothing they can act on.
+            </p>
+          </Card>
+        </Section>
+
         {/* Money */}
         <Section
           id="money" title="Money, Delta, Progress" source="components/ui/Money.tsx · Delta.tsx · Progress.tsx · lib/money.ts"
@@ -521,7 +627,7 @@ export default function StyleguideClient() {
 
           <Card style={{ marginBottom: "var(--uf-s4)" }}>
             <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>One series — no legend, the title names it</div>
-            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>Portfolio against the FIRE target</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>Portfolio against the FIRE target · straight segments, never a monotone spline</div>
             <ProjectionSpecimen />
           </Card>
 
@@ -529,6 +635,29 @@ export default function StyleguideClient() {
             <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Two series — legend required</div>
             <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 14 }}>One y-axis. Never a second scale on the right.</div>
             <CompareSpecimen />
+          </Card>
+
+          <Card style={{ marginBottom: "var(--uf-s4)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--uf-s4)", marginBottom: 14, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 240 }}>
+                <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>Money in and money out — one axis, one zero line</div>
+                <div className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
+                  Income and expenses are one quantity with a direction, not two unrelated series. August nets
+                  negative and you can see it without reading a number.
+                </div>
+              </div>
+              <SegmentedControl
+                options={[{ value: "1y", label: "1Y" }, { value: "5y", label: "5Y" }, { value: "all", label: "All" }] as const}
+                value={range}
+                onChange={setRange}
+              />
+            </div>
+            <CashflowSpecimen />
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "12px 0 0", maxWidth: "64ch" }}>
+              A chart without a time-scale control answers exactly one question. With one it answers four, for
+              the cost of a row of controls — which is why it is standard on every serious finance chart and
+              conspicuous when missing. (The control here is live but the sample data is fixed.)
+            </p>
           </Card>
 
           <Card>

@@ -32,6 +32,14 @@ function Plot({ children }: { children: React.ReactNode }) {
  * separation floor against these three, so a fourth series folds into "Other"
  * or becomes a second chart.
  *
+ * Data lines are `linear`, never `monotone`. A monotone spline draws a curve
+ * through the points, which means it invents values between them that the data
+ * never had — on a projection sampled every five years the curve bulges away
+ * from the true compound path in the gaps, and the reader has no way to know
+ * which parts they are allowed to trust. Straight segments are honest about
+ * where the measurements actually are. (The area FILL may still fade; it is
+ * the data line itself that must stay solid and unsmoothed.)
+ *
  * Every chart here follows the same rules the app should:
  *   · horizontal grid only, in --uf-chart-grid, never vertical
  *   · axes in --uf-chart-axis at 11px, no axis lines
@@ -136,7 +144,7 @@ export function ProjectionSpecimen() {
         <Tooltip content={<UfTooltip format={(n) => `$${Math.round(n).toLocaleString()}`} />} cursor={{ stroke: CHART.grid }} />
         <ReferenceLine y={FIRE_TARGET} stroke={CHART.axis} strokeDasharray="4 5"
           label={{ value: "FIRE target  $1.5M", position: "insideTopRight", fill: CHART.axis, fontSize: 11, offset: 8 }} />
-        <Area type="monotone" dataKey="portfolio" name="Portfolio" stroke={CHART.s1} strokeWidth={2} fill="url(#sgFill)" />
+        <Area type="linear" dataKey="portfolio" name="Portfolio" stroke={CHART.s1} strokeWidth={2} fill="url(#sgFill)" />
       </ComposedChart>
     </Plot>
   );
@@ -163,8 +171,8 @@ export function CompareSpecimen() {
         <YAxis {...axisProps} width={52} tickFormatter={money} />
         <Tooltip content={<UfTooltip format={(n) => `$${Math.round(n).toLocaleString()}`} />} cursor={{ stroke: CHART.grid }} />
         <Legend {...legendProps} />
-        <Line type="monotone" dataKey="base" name="Saving $1,500/mo" stroke={CHART.s2} strokeWidth={2} dot={false} />
-        <Line type="monotone" dataKey="boosted" name="Saving $2,300/mo" stroke={CHART.s1} strokeWidth={2} dot={false} />
+        <Line type="linear" dataKey="base" name="Saving $1,500/mo" stroke={CHART.s2} strokeWidth={2} dot={false} />
+        <Line type="linear" dataKey="boosted" name="Saving $2,300/mo" stroke={CHART.s1} strokeWidth={2} dot={false} />
       </ComposedChart>
     </Plot>
   );
@@ -193,6 +201,42 @@ export function SpendSpecimen() {
             <Cell key={d.cat} fill={d.cat === "Other" ? "var(--uf-surface-2)" : CHART.s1} />
           ))}
         </Bar>
+      </BarChart>
+    </Plot>
+  );
+}
+
+/* ── 4. money in and money out ───────────────────────────────────────
+ * Income and expenses are one quantity with a direction, not two unrelated
+ * series, so they share one axis and one zero line: bars up are money in,
+ * bars down are money out, and the month where the pair nets negative is
+ * visible without reading a single number. Two separate charts side by side
+ * would hide exactly that.
+ */
+
+const CASHFLOW = [
+  { month: "Apr", income: 8000, expenses: -5200 },
+  { month: "May", income: 8000, expenses: -4900 },
+  { month: "Jun", income: 8000, expenses: -6400 },
+  { month: "Jul", income: 9600, expenses: -5100 },
+  { month: "Aug", income: 8000, expenses: -8700 },
+  { month: "Sep", income: 8000, expenses: -5000 },
+];
+
+export function CashflowSpecimen() {
+  return (
+    <Plot>
+      <BarChart width={W} height={H} data={CASHFLOW} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+                barCategoryGap="26%" stackOffset="sign">
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+        <XAxis dataKey="month" {...axisProps} />
+        <YAxis {...axisProps} width={56} tickFormatter={money} />
+        <Tooltip content={<UfTooltip format={(n) => `$${Math.abs(Math.round(n)).toLocaleString()}`} />}
+                 cursor={{ fill: "var(--uf-surface)" }} />
+        <Legend {...legendProps} />
+        <ReferenceLine y={0} stroke={CHART.axis} strokeWidth={1} />
+        <Bar dataKey="income" name="Money in" fill={CHART.s1} radius={[4, 4, 0, 0]} />
+        <Bar dataKey="expenses" name="Money out" fill={CHART.s3} radius={[0, 0, 4, 4]} />
       </BarChart>
     </Plot>
   );
