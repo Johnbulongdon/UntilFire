@@ -124,3 +124,71 @@ export function detectRecurring(
     income:   sorted.filter((r) => r.transaction_type === "income"),
   };
 }
+
+/**
+ * Do two descriptions name the same thing?
+ *
+ * A bank writes "ANTHROPIC CLAUDE SUBSCR" where a person writes "Claude", so
+ * exact matching shows both and leaves the reader deciding which of their own
+ * bills is the real one. Matching on the meaningful words instead means an
+ * item you already added suppresses the suggestion for it.
+ *
+ * Deliberately biased toward declaring a match: a missed suggestion costs a
+ * few seconds of typing, a duplicate costs trust in the list.
+ */
+const NOISE = new Set([
+  "the", "inc", "llc", "ltd", "co", "com", "www", "payment", "payments", "pay",
+  "subscription", "subscr", "sub", "monthly", "annual", "yearly", "recurring",
+  "autopay", "auto", "ach", "pos", "debit", "credit", "card", "bill", "invoice",
+  "purchase", "online", "store", "and", "for", "from", "ref",
+]);
+
+function tokens(s: string): string[] {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]+/g, " ")
+    .split(/\s+/)
+    .filter((t) => t.length > 2 && !NOISE.has(t) && !/^\d+$/.test(t));
+}
+
+export function sameMerchant(a: string, b: string): boolean {
+  const ta = tokens(a);
+  const tb = tokens(b);
+  if (ta.length === 0 || tb.length === 0) return false;
+
+  const sa = new Set(ta);
+  const sb = new Set(tb);
+
+  // One name being wholly contained in the other covers the common case:
+  // a person's short label inside the bank's longer string.
+  const aInB = ta.every((t) => sb.has(t));
+  const bInA = tb.every((t) => sa.has(t));
+  if (aInB || bInA) return true;
+
+  // Otherwise a shared distinctive word is enough — "Spotify Family" and
+  // "Spotify UK" are one subscription, not two.
+  return ta.some((t) => t.length >= 4 && sb.has(t));
+}
+
+/**
+ * A recurrence is a frequency the user has committed to, plus "none" for a
+ * one-off. Detection deals in FrequencyLabel (which can be "irregular");
+ * stored rows deal in this. Keeping them as separate types stops an
+ * "irregular" ever being written as if someone had chosen it.
+ */
+export type Recurrence = "none" | "weekly" | "biweekly" | "monthly" | "quarterly" | "annual";
+
+export const RECURRENCE_LABEL: Record<Recurrence, string> = {
+  none: "One-off", weekly: "Weekly", biweekly: "Every 2 weeks",
+  monthly: "Monthly", quarterly: "Quarterly", annual: "Yearly",
+};
+
+/** Days to the next occurrence. A one-off has none, so 0. */
+export function recurrenceDays(r: Recurrence): number {
+  return r === "none" ? 0 : frequencyToDays(r);
+}
+
+/** What a repeating amount costs per month. A one-off costs nothing per month. */
+export function recurrenceToMonthly(amount: number, r: Recurrence): number {
+  return r === "none" ? 0 : toMonthly(amount, r);
+}

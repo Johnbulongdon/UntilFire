@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
-import { detectRecurring, toRecurrence, type DetectedItem, type RawTx } from "@/lib/recurring-detect";
+import {
+  detectRecurring, toRecurrence, sameMerchant,
+  recurrenceDays, recurrenceToMonthly, RECURRENCE_LABEL,
+  type DetectedItem, type RawTx, type Recurrence,
+} from "@/lib/recurring-detect";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -23,13 +27,6 @@ type ExpectedPayment = {
   due_date: string;
   completed_at: string | null;
   recurrence: Recurrence;
-};
-
-type Recurrence = "none" | "weekly" | "biweekly" | "monthly" | "quarterly" | "annual";
-
-const RECURRENCE_LABEL: Record<Recurrence, string> = {
-  none: "One-off", weekly: "Weekly", biweekly: "Every 2 weeks",
-  monthly: "Monthly", quarterly: "Quarterly", annual: "Yearly",
 };
 
 const SELECT_COLUMNS =
@@ -316,6 +313,21 @@ export default function ExpectedPaymentsTab({
   }
 
   async function toggleCompleted(item: ExpectedPayment) {
+    // A one-off that is paid is finished. A repeat that is paid is not — it is
+    // due again next period, and burying it in a completed pile is how rent
+    // disappears from a list whose whole job is telling you rent is coming.
+    if (item.recurrence !== "none" && !item.completed_at) {
+      const next = new Date(item.due_date + "T00:00:00");
+      next.setDate(next.getDate() + recurrenceDays(item.recurrence));
+      const due_date = next.toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("expected_payments").update({ due_date }).eq("id", item.id).select().single();
+      if (data) {
+        setPayments(prev => prev.map(p => p.id === item.id ? (data as ExpectedPayment) : p)
+                                .sort((a, b) => a.due_date.localeCompare(b.due_date)));
+      }
+      return;
+    }
     const completed_at = item.completed_at ? null : new Date().toISOString();
     const { data } = await supabase.from("expected_payments").update({ completed_at }).eq("id", item.id).select().single();
     if (data) setPayments(prev => prev.map(p => p.id === item.id ? (data as ExpectedPayment) : p));
@@ -357,7 +369,7 @@ export default function ExpectedPaymentsTab({
   // so accepting one does not leave its twin sitting in the strip.
   const visibleSuggestions = suggestions.filter(
     x => !dismissed.includes(x.key) &&
-         !payments.some(p => p.description.toLowerCase().trim() === x.description.toLowerCase().trim()),
+         !payments.some(p => sameMerchant(p.description, x.description)),
   );
 
   const pending = payments.filter(p => !p.completed_at);
@@ -367,6 +379,15 @@ export default function ExpectedPaymentsTab({
 
   const totalIncomingUSD = pending.filter(p => p.transaction_type === "income").reduce((s, p) => s + toUSD(p.amount, p.currency, displayRates), 0);
   const totalOutgoingUSD = pending.filter(p => p.transaction_type === "expense").reduce((s, p) => s + toUSD(p.amount, p.currency, displayRates), 0);
+
+  // Committed spending, normalised. Summing raw amounts made a £1,200 yearly
+  // policy weigh the same as £1,200 of rent every month, which is the figure
+  // people were reading off the top of the page.
+  const committedMonthlyUSD = payments
+    .filter(p => p.recurrence !== "none" && p.transaction_type === "expense")
+    .reduce((s, p) => s + recurrenceToMonthly(toUSD(p.amount, p.currency, displayRates), p.recurrence), 0);
+  // 25x annual spending — the same rule the freedom date uses.
+  const committedShareOfTarget = committedMonthlyUSD * 12 * 25;
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "10px 12px", borderRadius: 10,
@@ -444,12 +465,32 @@ export default function ExpectedPaymentsTab({
       {pending.length > 0 && (
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "14px 18px", flex: "1 1 200px" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", marginBottom: 4 }}>Expected in</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", marginBottom: 4 }}>Still to come in</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>+{formatAmount(totalIncomingUSD)}</div>
           </div>
           <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "14px 18px", flex: "1 1 200px" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", marginBottom: 4 }}>Expected out</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", marginBottom: 4 }}>Still to go out</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#DC2626", fontFamily: "Manrope, sans-serif" }}>−{formatAmount(totalOutgoingUSD)}</div>
+          </div>
+        </div>
+      )}
+
+      {/* The answer this page exists to give. The two figures below it are a
+          running balance that moves as things get paid; this one does not,
+          because a commitment is still a commitment after you have paid this
+          month's instalment. Kept separate so they stop being read as the
+          same kind of number. */}
+      {committedMonthlyUSD > 0 && (
+        <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "16px 18px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", marginBottom: 4 }}>
+            Committed every month
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 500, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--uf-text)" }}>
+            {formatAmount(committedMonthlyUSD)}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 6, lineHeight: 1.6 }}>
+            Your repeating bills, levelled to a monthly figure &mdash; {formatAmount(committedShareOfTarget)} of your
+            FIRE target at 25&times; annual spending.
           </div>
         </div>
       )}
