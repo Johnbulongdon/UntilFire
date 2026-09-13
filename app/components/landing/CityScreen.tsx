@@ -100,7 +100,8 @@ export default function CityScreen({
         or plan to <span className="uf-accent">live?</span>
       </h2>
       <p className="uf-body" style={{ marginBottom: 32 }}>
-        Cost of living and taxes change your freedom date. Pick a city if you know it, or use a rough expense estimate.
+        Your location sets the tax rates we apply to a pre-tax income. Your freedom date is built on your own
+        spending, which you enter next &mdash; never on a city average.
       </p>
 
       <label className="uf-label">Start typing your city or country</label>
@@ -219,12 +220,12 @@ export default function CityScreen({
           <div className="uf-info-card">
             <div className="uf-info-col">
               <div className="uf-info-val">{formatMoney(selected.col)}</div>
-              <div className="uf-info-lab">Est. annual expenses</div>
+              <div className="uf-info-lab">Typical annual expenses here</div>
             </div>
             <div className="uf-info-divider" />
             <div className="uf-info-col">
               <div className="uf-info-val">{formatMoney(selected.col * 25)}</div>
-              <div className="uf-info-lab">FIRE target (25x rule)</div>
+              <div className="uf-info-lab">Typical target here (25&times;)</div>
             </div>
             <div className="uf-info-divider" />
             <div className="uf-info-col">
