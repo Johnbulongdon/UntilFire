@@ -1983,10 +1983,12 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining = 0, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
+  /** Bills already committed for the rest of this month, from Upcoming. */
+  committedRemaining?: number;
   displayCurrency: string; displayRates: Record<string, number>;
   recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[] }[];
   freedomDateMonthYearLabel?: string | null;
@@ -2004,6 +2006,13 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
   );
 
   const totalExp = activeCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
+
+  // "Left this month" on its own overstates what is actually spendable, because
+  // some of it is already promised to bills. Free = left − committed, and can
+  // go negative, which is the single most useful thing this page can tell you.
+  const spentSoFar = activeCats.reduce((s, c) => s + (actuals[c.key] || 0), 0);
+  const leftThisMonth = totalExp - spentSoFar;
+  const freeToSpend = leftThisMonth - committedRemaining;
   const savings  = income - totalExp;
   const rate     = income > 0 ? (savings / income) * 100 : 0;
   const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
@@ -2168,6 +2177,29 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, displayC
 
   return (
     <div className="uf-budget-grid">
+      {/* The answer this tab exists to give, before any of the detail.
+          "Left this month" alone overstates what is spendable, because part of
+          it is already promised to bills that have not gone out yet — which is
+          why paying one used to feel like it changed nothing here. */}
+      <div className="uf-card" style={{ padding: "16px 18px", gridColumn: "1 / -1" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
+          Free to spend
+        </div>
+        <div style={{
+          fontSize: 28, fontWeight: 500, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
+          color: freeToSpend < 0 ? "var(--uf-neg)" : "var(--uf-text)",
+        }}>
+          {freeToSpend < 0 ? "−" : ""}{fmtMoney(Math.abs(freeToSpend))}
+        </div>
+        <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 6, lineHeight: 1.6 }}>
+          {fmtMoney(leftThisMonth)} left in your budget
+          {committedRemaining > 0
+            ? <> &mdash; {fmtMoney(committedRemaining)} of it already committed to bills in Upcoming.</>
+            : <> this month.</>}
+          {freeToSpend < 0 && committedRemaining > 0 && " Your committed bills alone are over what is left."}
+        </div>
+      </div>
+
       <div className="uf-card" style={{ padding: "6px 18px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)" }}>
           <span style={{ fontSize: 13, fontWeight: 700 }}>Monthly Budget</span>
@@ -5082,6 +5114,9 @@ export default function Dashboard() {
     return "starting-out";
   }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
+
+  type CommittedRow = { amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null };
+  const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
@@ -5153,6 +5188,13 @@ export default function Dashboard() {
     [effectiveExpenses],
   );
   const emergencyFundMonthlyBase = histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds;
+  // Already-committed outgoings still ahead of us this month, in USD.
+  // Overdue rows count too: an unpaid bill is still owed.
+  const committedRemainingUSD = useMemo(
+    () => committedRows.reduce((sum, r) => sum + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), 0),
+    [committedRows, rates],
+  );
+
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
     rawActuals
@@ -5286,6 +5328,19 @@ export default function Dashboard() {
           if (expData) {
             setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
           }
+        });
+
+      // Bills already committed for the rest of this month. Budget "remaining"
+      // is misleading without them: money earmarked for rent is not money you
+      // can spend, and until now the two tabs never spoke to each other.
+      supabase.from("expected_payments")
+        .select("amount, currency, transaction_type, due_date, completed_at")
+        .eq("user_id", session.user.id)
+        .is("completed_at", null)
+        .eq("transaction_type", "expense")
+        .lt("due_date", thisEnd)
+        .then(({ data: cmt }) => {
+          if (cmt) setCommittedRows(cmt as CommittedRow[]);
         });
 
       supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
@@ -5974,7 +6029,7 @@ export default function Dashboard() {
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
                 )}
               </div>
             )}

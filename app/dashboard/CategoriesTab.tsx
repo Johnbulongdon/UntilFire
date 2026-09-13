@@ -627,6 +627,19 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     [expTxns, rates]
   );
 
+  // The answer this tab exists to give. A ranked list makes you find the
+  // biggest category yourself; the page already knows it.
+  const biggestCat = useMemo(() => {
+    let best: { label: string; total: number } | null = null;
+    for (const cat of allExpenseCats) {
+      const total = expTxns
+        .filter((t) => t.category === cat.key)
+        .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
+      if (total > 0 && (!best || total > best.total)) best = { label: cat.label, total };
+    }
+    return best;
+  }, [allExpenseCats, expTxns, rates]);
+
   const primaryGroups = useMemo(() => {
     return allExpenseCats
       .map((cat) => {
@@ -732,7 +745,15 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <div style={{ fontWeight: 700, fontSize: 22, color: "var(--uf-text)", letterSpacing: "-0.4px" }}>{monthLabel}</div>
-          {totalSpend > 0 && <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 2 }}>Total spend: <strong>{fmtDisplay(totalSpend)}</strong></div>}
+          {totalSpend > 0 && (
+            <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 2 }}>
+              {fmtDisplay(totalSpend)} spent
+              {biggestCat && (
+                <> &mdash; <strong>{biggestCat.label}</strong> is your biggest at {Math.round((biggestCat.total / totalSpend) * 100)}%
+                  {" "}({fmtDisplay(biggestCat.total)})</>
+              )}
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <button onClick={handlePrevMonth} style={{ background: "transparent", border: "none", padding: "9px 12px", color: "var(--uf-text-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>

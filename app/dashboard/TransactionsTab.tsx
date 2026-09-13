@@ -955,6 +955,28 @@ function TransactionList({
     });
   }, [transactions, search, filter, tagFilter, allCategories]);
 
+  // The record's own health check: this month's net, and how much of it is
+  // still uncategorised — because Categories and Budget are both built on
+  // these rows, and an uncategorised one quietly breaks them both.
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const monthNetLabel = useMemo(() => {
+    const rows = transactions.filter((t) => t.date.startsWith(thisMonth));
+    if (rows.length === 0) return "";
+    let inUSD = 0, outUSD = 0;
+    for (const t of rows) {
+      const usd = toUSD(t.transaction_type === "expense" ? netAmt(t) : t.amount, t.currency, rates);
+      if (t.transaction_type === "income") inUSD += usd;
+      else if (t.transaction_type === "expense") outUSD += usd;
+    }
+    const net = inUSD - outUSD;
+    return `${formatAmount(inUSD)} in · ${formatAmount(outUSD)} out · ${net < 0 ? "−" : "+"}${formatAmount(Math.abs(net))} net`;
+  }, [transactions, thisMonth, rates, formatAmount]);
+
+  const uncategorisedCount = useMemo(
+    () => transactions.filter((t) => t.date.startsWith(thisMonth) && !t.category).length,
+    [transactions, thisMonth],
+  );
+
   const groups = useMemo(() => {
     const byDate: Record<string, Transaction[]> = {};
     filtered.forEach((t) => {
@@ -971,6 +993,17 @@ function TransactionList({
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", letterSpacing: "-0.2px" }}>Transactions</span>
           <span style={{ fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600, marginLeft: 8 }}>{filtered.length}</span>
+          {/* This tab is the record, so the answer it owes is whether the
+              record is right: what this month came to, and what still needs
+              a category before any of the other tabs can be trusted. */}
+          <span style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 600, marginLeft: 12 }}>
+            {monthNetLabel}
+          </span>
+          {uncategorisedCount > 0 && (
+            <span style={{ fontSize: 12, color: "#D97706", fontWeight: 700, marginLeft: 10 }}>
+              {uncategorisedCount} uncategorised
+            </span>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* Search */}

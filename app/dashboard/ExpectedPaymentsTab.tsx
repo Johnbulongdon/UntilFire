@@ -27,10 +27,11 @@ type ExpectedPayment = {
   due_date: string;
   completed_at: string | null;
   recurrence: Recurrence;
+  category: string | null;
 };
 
 const SELECT_COLUMNS =
-  "id, description, amount, currency, transaction_type, due_date, completed_at, recurrence";
+  "id, description, amount, currency, transaction_type, due_date, completed_at, recurrence, category";
 
 function todayStr(): string {
   return new Date().toISOString().split("T")[0];
@@ -151,6 +152,11 @@ function PaymentCard({
           }}>
             {isIncome ? "Incoming" : "Outgoing"}
           </span>
+          {item.category && (
+            <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
+              {item.category}
+            </span>
+          )}
           {item.recurrence !== "none" && (
             <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
               {RECURRENCE_LABEL[item.recurrence]}
@@ -448,6 +454,7 @@ export default function ExpectedPaymentsTab({
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)" }}>
                   {RECURRENCE_LABEL[toRecurrence(sug.frequency) as Recurrence]} &middot; seen {sug.occurrences}&times;
+                  {sug.category ? ` · ${sug.category}` : ""}
                 </span>
                 <button onClick={() => acceptSuggestion(sug)} style={{ background: "rgba(5,150,105,0.08)", color: "#059669", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   Add
