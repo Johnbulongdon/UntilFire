@@ -91,6 +91,18 @@ export async function POST(req: NextRequest) {
     return true;
   });
 
+  // The send row is created before the loop, not after, because each message
+  // is tagged with its id — that tag is the only thing tying a webhook event
+  // hours later back to the broadcast that caused it.
+  const { data: sendRow, error: sendRowErr } = await admin
+    .from("admin_email_sends")
+    .insert({ subject, segment, recipients: 0, sent_by: adminUser.id })
+    .select("id")
+    .single();
+  if (sendRowErr || !sendRow) {
+    return NextResponse.json({ error: sendRowErr?.message ?? "Could not start send" }, { status: 500 });
+  }
+
   const resend = new Resend(process.env.RESEND_API_KEY);
   let sent = 0;
   const failures: string[] = [];
@@ -124,6 +136,9 @@ export async function POST(req: NextRequest) {
         to: recipient.email!,
         subject,
         html,
+        // Resend tag values allow letters, digits, underscores and dashes,
+        // so a UUID passes as-is.
+        tags: [{ name: "broadcast_id", value: sendRow.id }],
       });
       if (error) {
         failures.push(recipient.email!);
@@ -136,12 +151,7 @@ export async function POST(req: NextRequest) {
     await sleep(SEND_DELAY_MS);
   }
 
-  await admin.from("admin_email_sends").insert({
-    subject,
-    segment,
-    recipients: sent,
-    sent_by: adminUser.id,
-  });
+  await admin.from("admin_email_sends").update({ recipients: sent }).eq("id", sendRow.id);
 
-  return NextResponse.json({ sent, total: recipients.length, failed: failures });
+  return NextResponse.json({ sent, total: recipients.length, failed: failures, sendId: sendRow.id });
 }

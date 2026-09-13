@@ -14,6 +14,12 @@ import {
 type Segment = "all" | "free" | "pro";
 type Template = "announcement" | "monthly_update";
 type SendResult = { sent: number; total: number } | string | null;
+type SendStat = {
+  id: string; subject: string; segment: string; recipients: number; sentAt: string;
+  tracked: boolean; delivered: number; opened: number; clicked: number;
+  openRate: number | null; clickRate: number | null;
+};
+type TrackingState = { domain?: string; status?: string; openTracking: boolean; clickTracking: boolean };
 
 interface Draft {
   id: string;
@@ -234,6 +240,8 @@ export default function EmailsTab({ token }: { token: string }) {
       : monthLabel.trim() && intro.trim() && (newItems.length > 0 || fixItems.length > 0));
 
   return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <SendStats token={token} />
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -405,6 +413,122 @@ export default function EmailsTab({ token }: { token: string }) {
           }}
         />
       </div>
+    </div>
+    </div>
+  );
+}
+
+/**
+ * What happened to the mail already sent. Lives above the composer because
+ * the last send is the most useful thing to know before writing the next one.
+ */
+function SendStats({ token }: { token: string | null }) {
+  const [rows, setRows] = useState<SendStat[] | null>(null);
+  const [tracking, setTracking] = useState<TrackingState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const load = useCallback(() => {
+    if (!token) return;
+    const h = { Authorization: `Bearer ${token}` };
+    fetch("/api/admin/emails/stats", { headers: h })
+      .then((r) => r.json())
+      .then((d) => setRows(d.sends ?? []))
+      .catch(() => setRows([]));
+    fetch("/api/admin/emails/tracking", { headers: h })
+      .then((r) => r.json())
+      .then((d) => setTracking(d.error ? null : d))
+      .catch(() => setTracking(null));
+  }, [token]);
+
+  useEffect(load, [load]);
+
+  async function enable() {
+    if (!token) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/admin/emails/tracking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ openTracking: true, clickTracking: true }),
+      });
+      const d = await res.json();
+      if (!res.ok) setErr(d.error ?? "Could not update tracking");
+      else load();
+    } catch {
+      setErr("Could not update tracking");
+    }
+    setBusy(false);
+  }
+
+  const on = tracking?.openTracking && tracking?.clickTracking;
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>Results</div>
+        {tracking && (
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999,
+            background: on ? "#ECFDF5" : "#FEF3C7", color: on ? "#065F46" : "#92400E",
+          }}>
+            {on ? "Tracking on" : "Tracking off"}
+          </span>
+        )}
+        {tracking && !on && (
+          <button onClick={enable} disabled={busy} style={smallBtn}>
+            {busy ? "Turning on…" : "Turn on open + click tracking"}
+          </button>
+        )}
+        {err && <span style={{ fontSize: 12, color: "#DC2626" }}>{err}</span>}
+      </div>
+
+      {tracking && !on && (
+        <p style={{ fontSize: 12, color: "#64748B", margin: "0 0 12px", lineHeight: 1.6 }}>
+          Tracking applies to mail sent after it is switched on — it cannot be applied to a send that already went out.
+        </p>
+      )}
+
+      {rows === null ? (
+        <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>Loading…</p>
+      ) : rows.length === 0 ? (
+        <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>Nothing sent yet.</p>
+      ) : (
+        <div style={{ overflow: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC", textAlign: "left" }}>
+                {["Subject", "Sent", "To", "Delivered", "Opened", "Clicked"].map((h) => (
+                  <th key={h} style={{ padding: "8px 10px", fontWeight: 700, color: "#64748B", fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} style={{ borderTop: "1px solid #F1F5F9" }}>
+                  <td style={{ padding: "8px 10px", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.subject}</td>
+                  <td style={{ padding: "8px 10px", color: "#64748B", whiteSpace: "nowrap" }}>
+                    {new Date(r.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </td>
+                  <td style={{ padding: "8px 10px", color: "#64748B" }}>{r.recipients}</td>
+                  {/* A send with no events at all is not a zero — it is a send
+                      that predates tracking, and saying "0%" would be a lie. */}
+                  {!r.tracked ? (
+                    <td colSpan={3} style={{ padding: "8px 10px", color: "#94A3B8" }}>Not tracked</td>
+                  ) : (
+                    <>
+                      <td style={{ padding: "8px 10px" }}>{r.delivered}</td>
+                      <td style={{ padding: "8px 10px" }}>{r.openRate === null ? "—" : `${r.openRate}% (${r.opened})`}</td>
+                      <td style={{ padding: "8px 10px" }}>{r.clickRate === null ? "—" : `${r.clickRate}% (${r.clicked})`}</td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
