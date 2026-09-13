@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
+import { detectRecurring, toRecurrence, type DetectedItem, type RawTx } from "@/lib/recurring-detect";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -21,7 +22,18 @@ type ExpectedPayment = {
   transaction_type: TransactionType;
   due_date: string;
   completed_at: string | null;
+  recurrence: Recurrence;
 };
+
+type Recurrence = "none" | "weekly" | "biweekly" | "monthly" | "quarterly" | "annual";
+
+const RECURRENCE_LABEL: Record<Recurrence, string> = {
+  none: "One-off", weekly: "Weekly", biweekly: "Every 2 weeks",
+  monthly: "Monthly", quarterly: "Quarterly", annual: "Yearly",
+};
+
+const SELECT_COLUMNS =
+  "id, description, amount, currency, transaction_type, due_date, completed_at, recurrence";
 
 function todayStr(): string {
   return new Date().toISOString().split("T")[0];
@@ -31,6 +43,63 @@ function daysUntil(dateStr: string): number {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const due = new Date(dateStr + "T00:00:00");
   return Math.round((due.getTime() - today.getTime()) / 86_400_000);
+}
+
+/**
+ * Move recurring items out of localStorage and into the table, once.
+ *
+ * The old Recurring tab kept hand-added bills in `uf_recurring_manual`, which
+ * meant they never left the browser that created them. Anyone who added bills
+ * on their phone had them only there. This runs before the first read, keeps
+ * the localStorage copy rather than deleting it (a failed insert should not
+ * lose the only copy), and marks itself done so it cannot double-insert.
+ */
+async function rescueLocalRecurring(userId: string): Promise<void> {
+  let raw: string | null = null;
+  try {
+    if (localStorage.getItem("uf_recurring_migrated") === "1") return;
+    raw = localStorage.getItem("uf_recurring_manual");
+  } catch {
+    return; // storage blocked — nothing to rescue
+  }
+  if (!raw) {
+    try { localStorage.setItem("uf_recurring_migrated", "1"); } catch {}
+    return;
+  }
+
+  type OldItem = {
+    description?: string; amount?: number; currency?: string;
+    transaction_type?: string; frequency?: string; nextDueDate?: string;
+  };
+  let items: OldItem[] = [];
+  try { items = JSON.parse(raw); } catch { return; }
+  if (!Array.isArray(items) || items.length === 0) {
+    try { localStorage.setItem("uf_recurring_migrated", "1"); } catch {}
+    return;
+  }
+
+  const rows = items
+    .filter((i) => i?.description && Number(i.amount) > 0)
+    .map((i) => ({
+      user_id: userId,
+      description: String(i.description).slice(0, 200),
+      amount: Number(i.amount),
+      currency: i.currency || "USD",
+      transaction_type: i.transaction_type === "income" ? "income" : "expense",
+      due_date: i.nextDueDate || todayStr(),
+      recurrence: toRecurrence((i.frequency as never) ?? "monthly"),
+    }));
+  if (rows.length === 0) {
+    try { localStorage.setItem("uf_recurring_migrated", "1"); } catch {}
+    return;
+  }
+
+  const { error } = await supabase.from("expected_payments").insert(rows);
+  // Only mark done on success, so a transient failure retries next load
+  // instead of silently dropping the items.
+  if (!error) {
+    try { localStorage.setItem("uf_recurring_migrated", "1"); } catch {}
+  }
 }
 
 function DueBadge({ daysUntilDue }: { daysUntilDue: number }) {
@@ -85,6 +154,11 @@ function PaymentCard({
           }}>
             {isIncome ? "Incoming" : "Outgoing"}
           </span>
+          {item.recurrence !== "none" && (
+            <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
+              {RECURRENCE_LABEL[item.recurrence]}
+            </span>
+          )}
           {isCompleted ? (
             <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-3)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
               {isIncome ? "Received" : "Paid"} {new Date(item.completed_at!).toLocaleDateString()}
@@ -154,25 +228,53 @@ export default function ExpectedPaymentsTab({
   const [formCurrency, setFormCurrency] = useState(defaultCurrency);
   const [formType, setFormType] = useState<TransactionType>("income");
   const [formDueDate, setFormDueDate] = useState(todayStr());
+  const [formRecurrence, setFormRecurrence] = useState<Recurrence>("none");
   const [saving, setSaving] = useState(false);
+  const [suggestions, setSuggestions] = useState<DetectedItem[]>([]);
+  const [dismissed, setDismissed] = useState<string[]>([]);
 
   useEffect(() => {
     if (!userId) return;
-    supabase
-      .from("expected_payments")
-      .select("id, description, amount, currency, transaction_type, due_date, completed_at")
-      .eq("user_id", userId)
-      .order("due_date")
-      .then(({ data }) => {
-        setPayments((data as ExpectedPayment[]) ?? []);
-        setLoading(false);
-      });
-  }, [userId]);
+    let cancelled = false;
+
+    (async () => {
+      // Recurring items used to live in localStorage, so they were device-local
+      // and invisible to the server. Move any that are still there into the
+      // table before the first render, once, rather than leaving someone's
+      // bills stranded in a browser.
+      await rescueLocalRecurring(userId);
+      if (cancelled) return;
+
+      const { data } = await supabase
+        .from("expected_payments")
+        .select(SELECT_COLUMNS)
+        .eq("user_id", userId)
+        .order("due_date");
+      if (cancelled) return;
+      setPayments((data as ExpectedPayment[]) ?? []);
+      setLoading(false);
+
+      // Detection is a suggestion feed, never a list in its own right.
+      const { data: txns } = await supabase
+        .from("expenses")
+        .select("id, date, amount, currency, description, category, transaction_type")
+        .eq("user_id", userId)
+        .order("date", { ascending: false });
+      if (cancelled || !txns) return;
+      const found = detectRecurring(txns as RawTx[], displayRates);
+      setSuggestions([...found.expenses, ...found.income].slice(0, 8));
+      try {
+        setDismissed(JSON.parse(localStorage.getItem("uf_expected_dismissed") || "[]"));
+      } catch { /* a browser with storage blocked simply sees every suggestion */ }
+    })();
+
+    return () => { cancelled = true; };
+  }, [userId, displayRates]);
 
   function openAddForm() {
     setEditingId(null);
     setFormDesc(""); setFormAmount(""); setFormCurrency(defaultCurrency);
-    setFormType("income"); setFormDueDate(todayStr());
+    setFormType("income"); setFormDueDate(todayStr()); setFormRecurrence("none");
     setShowForm(true);
   }
 
@@ -180,7 +282,7 @@ export default function ExpectedPaymentsTab({
     setEditingId(item.id);
     setFormDesc(item.description); setFormAmount(String(item.amount));
     setFormCurrency(item.currency); setFormType(item.transaction_type);
-    setFormDueDate(item.due_date);
+    setFormDueDate(item.due_date); setFormRecurrence(item.recurrence ?? "none");
     setShowForm(true);
   }
 
@@ -200,6 +302,7 @@ export default function ExpectedPaymentsTab({
       currency: formCurrency,
       transaction_type: formType,
       due_date: formDueDate,
+      recurrence: formRecurrence,
     };
     if (editingId) {
       const { data } = await supabase.from("expected_payments").update(payload).eq("id", editingId).select().single();
@@ -218,12 +321,44 @@ export default function ExpectedPaymentsTab({
     if (data) setPayments(prev => prev.map(p => p.id === item.id ? (data as ExpectedPayment) : p));
   }
 
+  /** Accepting a suggestion creates a real row the user owns and can edit. */
+  async function acceptSuggestion(sug: DetectedItem) {
+    const payload = {
+      user_id: userId,
+      description: sug.description,
+      amount: Math.round(sug.avgAmountUSD * 100) / 100,
+      currency: "USD",
+      transaction_type: sug.transaction_type,
+      due_date: sug.nextDueDate,
+      recurrence: toRecurrence(sug.frequency),
+      category: sug.category || null,
+    };
+    const { data } = await supabase.from("expected_payments").insert(payload).select().single();
+    if (data) {
+      setPayments((prev) => [...prev, data as ExpectedPayment].sort((a, b) => a.due_date.localeCompare(b.due_date)));
+      setSuggestions((prev) => prev.filter((x) => x.key !== sug.key));
+    }
+  }
+
+  function dismissSuggestion(key: string) {
+    const next = [...dismissed, key];
+    setDismissed(next);
+    try { localStorage.setItem("uf_expected_dismissed", JSON.stringify(next)); } catch {}
+  }
+
   async function deletePayment(id: string) {
     await supabase.from("expected_payments").delete().eq("id", id);
     setPayments(prev => prev.filter(p => p.id !== id));
   }
 
   const formatAmount = (usdValue: number) => formatUSDInCurrency(usdValue, displayCurrency, displayRates);
+
+  // Already-added and dismissed suggestions drop out, matched on description
+  // so accepting one does not leave its twin sitting in the strip.
+  const visibleSuggestions = suggestions.filter(
+    x => !dismissed.includes(x.key) &&
+         !payments.some(p => p.description.toLowerCase().trim() === x.description.toLowerCase().trim()),
+  );
 
   const pending = payments.filter(p => !p.completed_at);
   const completed = payments.filter(p => p.completed_at).sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
@@ -254,10 +389,10 @@ export default function ExpectedPaymentsTab({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", fontFamily: "Fraunces, Georgia, serif" }}>
-            Expected payments
+            Upcoming
           </h2>
           <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
-            One-time payments you&apos;re expecting to receive or owe by a specific date.
+            Money you expect in or out &mdash; a one-off, or a bill that repeats. Nothing is here unless you put it here.
           </p>
         </div>
         <button
@@ -272,6 +407,38 @@ export default function ExpectedPaymentsTab({
           {showForm ? "✕ Cancel" : "+ Add expected payment"}
         </button>
       </div>
+
+      {/* Spotted in transaction history. A guess until accepted — it never
+          joins the list on its own, which is the whole reason the list can be
+          trusted: everything in it is there because someone put it there. */}
+      {visibleSuggestions.length > 0 && (
+        <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-text-2)", marginBottom: 10 }}>
+            Spotted in your transactions
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {visibleSuggestions.map(sug => (
+              <div key={sug.key} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", flex: 1, minWidth: 130 }}>
+                  {sug.description}
+                </span>
+                <span style={{ fontSize: 13, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--uf-text-2)" }}>
+                  {formatAmount(sug.avgAmountUSD)}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)" }}>
+                  {RECURRENCE_LABEL[toRecurrence(sug.frequency) as Recurrence]} &middot; seen {sug.occurrences}&times;
+                </span>
+                <button onClick={() => acceptSuggestion(sug)} style={{ background: "rgba(5,150,105,0.08)", color: "#059669", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  Add
+                </button>
+                <button onClick={() => dismissSuggestion(sug.key)} style={{ background: "transparent", color: "var(--uf-text-3)", border: "none", padding: "5px 6px", fontSize: 12, cursor: "pointer" }}>
+                  Not this
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       {pending.length > 0 && (
@@ -316,7 +483,9 @@ export default function ExpectedPaymentsTab({
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>DUE DATE</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>
+                {formRecurrence === "none" ? "DUE DATE" : "NEXT DUE"}
+              </label>
               <input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} style={inputStyle} />
             </div>
             <div>
@@ -337,6 +506,15 @@ export default function ExpectedPaymentsTab({
                 ))}
               </div>
             </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>REPEATS</label>
+            <select value={formRecurrence} onChange={e => setFormRecurrence(e.target.value as Recurrence)} style={selectStyle}>
+              {(Object.keys(RECURRENCE_LABEL) as Recurrence[]).map(k => (
+                <option key={k} value={k}>{RECURRENCE_LABEL[k]}</option>
+              ))}
+            </select>
           </div>
 
           <button

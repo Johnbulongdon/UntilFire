@@ -16,7 +16,6 @@ import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import CategoriesTab from "./CategoriesTab";
-import RecurringTab from "./RecurringTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
 import ReportsTab from "./ReportsTab";
@@ -4858,15 +4857,17 @@ const PLAN_SECTIONS: PlanSection[] = [
   { label: "Learn",        tab: "learning-hub" },
 ];
 
-type CashflowSubTab = "cashflow" | "categories" | "recurring" | "expected" | "budgets";
+type CashflowSubTab = "cashflow" | "categories" | "expected" | "budgets";
 
 // Single source of truth for the Cashflow sub-nav — the sidebar sub-sub-nav and
 // the horizontal switcher both render from this. They used to be two hand-kept
 // arrays, which is how Categories and Recurring ended up rendered but unreachable.
 const CASHFLOW_SUB_TABS: { key: CashflowSubTab; label: string }[] = [
   { key: "cashflow",   label: "Transactions" },
-  { key: "recurring",  label: "Recurring"    },
-  { key: "expected",   label: "Expected"     },
+  // Recurring and Expected were one story told twice — what is coming and
+  // when, once by guessing and once by being told. They are now one tab, and
+  // detection feeds it as suggestions rather than as a second list.
+  { key: "expected",   label: "Upcoming"     },
   { key: "categories", label: "Categories"   },
   { key: "budgets",    label: "Budget"       },
 ];
@@ -5971,7 +5972,6 @@ export default function Dashboard() {
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
-                {cashflowSubTab === "recurring" && <RecurringTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
