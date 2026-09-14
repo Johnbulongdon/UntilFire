@@ -2019,7 +2019,10 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   const rate     = income > 0 ? (savings / income) * 100 : 0;
   const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [onTrackOpen, setOnTrackOpen] = useState(false);
+  // Open by default. Collapsed, the left column is shorter than the sticky
+  // 260px sidebar beside it, so the page opens on a tall empty gap — and the
+  // categories that are fine are still the ones you check first.
+  const [onTrackOpen, setOnTrackOpen] = useState(true);
   const isEmpty = totalExp === 0;
 
   const donutStops = useMemo(() => {
@@ -2161,8 +2164,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
 
     return (
       <div key={cat.key}>
-        <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}
-             style={{ display: "grid", gridTemplateColumns: "68px 1fr auto", alignItems: "center", gap: 16 }}>
+        <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}>
           <span style={{ width: 58, height: 58, borderRadius: "50%", background: ring, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <span style={{
               width: 44, height: 44, borderRadius: "50%", background: "var(--uf-card)",
@@ -2194,7 +2196,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
               />
             </div>
           ) : (
-            <span style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 2 }}>
+            <span className="uf-budget-figs">
               <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: 12.5, whiteSpace: "nowrap" }}>
                 {fmtMoney(spent)}
                 {hasBudget && <span style={{ color: "var(--uf-text-3)" }}> of {fmtMoney(budget)}</span>}
@@ -5642,7 +5644,15 @@ export default function Dashboard() {
         .uf-sidebar-freedom-value { font-size: 15px; font-weight: 800; color: var(--uf-text); font-family: 'Manrope', sans-serif; }
         .uf-budget-grid { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: start; }
         @media (max-width: 720px) { .uf-budget-grid { grid-template-columns: 1fr; } }
-        .uf-budget-row { display: flex; align-items: center; gap: 12px; padding: 10px 18px; margin: 0 -18px; border-bottom: 1px solid var(--uf-border); border-radius: 8px; transition: background 0.12s; cursor: pointer; }
+        .uf-budget-row { display: grid; grid-template-columns: 68px 1fr auto; align-items: center; gap: 16px; padding: 10px 18px; margin: 0 -18px; border-bottom: 1px solid var(--uf-border); border-radius: 8px; transition: background 0.12s; cursor: pointer; }
+        .uf-budget-figs { text-align: right; display: flex; flex-direction: column; gap: 2px; }
+        /* Narrow: the figures column has nowrap money in it, so at phone width
+           the 1fr collapses and the note runs underneath the amount. Drop the
+           figures to their own line instead of letting the two columns fight. */
+        @media (max-width: 560px) {
+          .uf-budget-row { grid-template-columns: 58px 1fr; gap: 12px; }
+          .uf-budget-figs { grid-column: 2; text-align: left; }
+        }
         .uf-budget-row:last-child { border-bottom: none; }
         .uf-budget-row:hover { background: var(--uf-surface); }
         .uf-budget-pencil { opacity: 0; transition: opacity 0.12s; }
