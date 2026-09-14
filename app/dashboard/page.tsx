@@ -2147,32 +2147,31 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
     const pctExp = hasBudget ? Math.min(100 - pctSpent, (expected / budget) * 100) : 0;
     const pctTotal = hasBudget ? Math.round((committed / budget) * 100) : 0;
     const ring = !hasBudget
-      ? "var(--uf-surface-2)"
+      ? "var(--uf-border-2)"
       : over
         ? `conic-gradient(var(--uf-neg) 0 100%)`
-        : `conic-gradient(${cat.color} 0 ${pctSpent}%, ${cat.color}59 ${pctSpent}% ${pctSpent + pctExp}%, var(--uf-surface-2) ${pctSpent + pctExp}% 100%)`;
+        : `conic-gradient(${cat.color} 0 ${pctSpent}%, ${cat.color}59 ${pctSpent}% ${pctSpent + pctExp}%, var(--uf-border-2) ${pctSpent + pctExp}% 100%)`;
     const note = !hasBudget ? "no budget set"
       : over ? `${fmtMoney(spent - budget)} over`
-      : left > 0 ? `${fmtMoney(left)} left`
+      : left >= 1 ? `${fmtMoney(left)} left`
       : "nothing left";
     const noteColor = !hasBudget ? "var(--uf-text-3)"
       : over ? "var(--uf-neg)"
-      : left > 0 ? "var(--uf-pos)" : "var(--uf-text-2)";
+      : left >= 1 ? "var(--uf-pos)" : "var(--uf-text-2)";
 
     return (
       <div key={cat.key}>
         <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}
              style={{ display: "grid", gridTemplateColumns: "68px 1fr auto", alignItems: "center", gap: 16 }}>
           <span style={{ width: 58, height: 58, borderRadius: "50%", background: ring, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--uf-card)", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 1, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
-              {hasBudget ? (
-                <>
-                  <b style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1, color: over ? "var(--uf-neg)" : "var(--uf-text)" }}>{pctTotal}</b>
-                  <span style={{ fontSize: 8, color: "var(--uf-text-3)", lineHeight: 1 }}>%</span>
-                </>
-              ) : (
-                <span style={{ fontSize: 13, color: "var(--uf-text-3)" }}>&mdash;</span>
-              )}
+            <span style={{
+              width: 44, height: 44, borderRadius: "50%", background: "var(--uf-card)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
+              fontSize: 11.5, fontWeight: 500, letterSpacing: "-0.02em",
+              color: hasBudget ? (over ? "var(--uf-neg)" : "var(--uf-text)") : "var(--uf-text-3)",
+            }}>
+              {hasBudget ? `${pctTotal}%` : "—"}
             </span>
           </span>
 
