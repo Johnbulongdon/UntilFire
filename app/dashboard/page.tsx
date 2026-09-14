@@ -1983,12 +1983,14 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining = 0, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining = 0, committedByCat = {}, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
   /** Bills already committed for the rest of this month, from Upcoming. */
   committedRemaining?: number;
+  /** The same, split by category, so each dial can show what is still promised. */
+  committedByCat?: Record<string, number>;
   displayCurrency: string; displayRates: Record<string, number>;
   recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[] }[];
   freedomDateMonthYearLabel?: string | null;
@@ -2130,14 +2132,58 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   function renderRow(cat: typeof activeCats[number], over: boolean) {
     const budget = expenses[cat.key] || 0;
     const spent = actuals[cat.key] || 0;
-    const barPct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+    const expected = committedByCat[cat.key] || 0;
     const isEditing = editingKey === cat.key;
     const suggestions = over ? suggestSlackCategories(cat.key) : [];
+
+    // The dial. The ring is the budget; it fills with what is spent, then with
+    // a paler arc for what is promised but not yet paid. Over-budget fills the
+    // whole ring in red — a ring cannot show more than one turn without lying
+    // about the geometry, so the figure carries how far over.
+    const hasBudget = budget > 0;
+    const committed = spent + expected;
+    const left = budget - committed;
+    const pctSpent = hasBudget ? Math.min(100, (spent / budget) * 100) : 0;
+    const pctExp = hasBudget ? Math.min(100 - pctSpent, (expected / budget) * 100) : 0;
+    const pctTotal = hasBudget ? Math.round((committed / budget) * 100) : 0;
+    const ring = !hasBudget
+      ? "var(--uf-surface-2)"
+      : over
+        ? `conic-gradient(var(--uf-neg) 0 100%)`
+        : `conic-gradient(${cat.color} 0 ${pctSpent}%, ${cat.color}59 ${pctSpent}% ${pctSpent + pctExp}%, var(--uf-surface-2) ${pctSpent + pctExp}% 100%)`;
+    const note = !hasBudget ? "no budget set"
+      : over ? `${fmtMoney(spent - budget)} over`
+      : left > 0 ? `${fmtMoney(left)} left`
+      : "nothing left";
+    const noteColor = !hasBudget ? "var(--uf-text-3)"
+      : over ? "var(--uf-neg)"
+      : left > 0 ? "var(--uf-pos)" : "var(--uf-text-2)";
+
     return (
       <div key={cat.key}>
-        <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}>
-          <span style={{ fontSize: 15, width: 20, flexShrink: 0 }}>{cat.emoji}</span>
-          <span style={{ flex: "0 0 110px", fontSize: 13, color: "var(--uf-text-2)" }}>{cat.label}</span>
+        <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}
+             style={{ display: "grid", gridTemplateColumns: "68px 1fr auto", alignItems: "center", gap: 16 }}>
+          <span style={{ width: 58, height: 58, borderRadius: "50%", background: ring, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--uf-card)", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 1, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
+              {hasBudget ? (
+                <>
+                  <b style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1, color: over ? "var(--uf-neg)" : "var(--uf-text)" }}>{pctTotal}</b>
+                  <span style={{ fontSize: 8, color: "var(--uf-text-3)", lineHeight: 1 }}>%</span>
+                </>
+              ) : (
+                <span style={{ fontSize: 13, color: "var(--uf-text-3)" }}>&mdash;</span>
+              )}
+            </span>
+          </span>
+
+          <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--uf-text)", display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ fontSize: 14 }}>{cat.emoji}</span>{cat.label}
+              <span className="uf-budget-pencil" style={{ fontSize: 11, color: "var(--uf-text-3)" }}>✎</span>
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: noteColor }}>{note}</span>
+          </span>
+
           {isEditing ? (
             <div style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
               <NumberInput
@@ -2149,17 +2195,18 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
               />
             </div>
           ) : (
-            <>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", flexShrink: 0, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmtMoney(budget)}</span>
-              <span className="uf-budget-pencil" style={{ fontSize: 11, color: "var(--uf-text-3)", flexShrink: 0 }}>✎</span>
-            </>
+            <span style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: 12.5, whiteSpace: "nowrap" }}>
+                {fmtMoney(spent)}
+                {hasBudget && <span style={{ color: "var(--uf-text-3)" }}> of {fmtMoney(budget)}</span>}
+              </span>
+              {expected > 0 && (
+                <span style={{ fontFamily: "var(--uf-font-mono)", fontSize: 10.5, color: "var(--uf-text-3)", whiteSpace: "nowrap" }}>
+                  + {fmtMoney(expected)} expected
+                </span>
+              )}
+            </span>
           )}
-          <div style={{ height: 4, flex: 1, background: "var(--uf-border)", borderRadius: 4, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${barPct}%`, background: over ? "#DC2626" : "#22d3a5", borderRadius: 4, transition: "width 0.4s" }} />
-          </div>
-          <span style={{ fontSize: 11, width: 90, textAlign: "right", flexShrink: 0, fontWeight: over ? 700 : 400, color: over ? "#DC2626" : "var(--uf-text-3)" }}>
-            {over ? `over ${fmtMoney(spent - budget)}` : spent > 0 ? `${fmtMoney(spent)} spent` : "—"}
-          </span>
         </div>
         {over && suggestions.length > 0 && (
           <div style={{ fontSize: 11, color: "#f97316", padding: "0 18px 10px", marginTop: -4 }}>
@@ -2209,6 +2256,14 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           >
             ✎ Guided setup
           </button>
+        </div>
+
+        {/* The pale arc is the one part of the dial nobody guesses. */}
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", padding: "12px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)", fontSize: 11.5, color: "var(--uf-text-2)", fontWeight: 600 }}>
+          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-text-2)", marginRight: 6, verticalAlign: -1 }} />spent</span>
+          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-border-2)", marginRight: 6, verticalAlign: -1 }} />expected, not yet paid</span>
+          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-surface-2)", marginRight: 6, verticalAlign: -1 }} />room left</span>
+          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-neg)", marginRight: 6, verticalAlign: -1 }} />over</span>
         </div>
 
         {(classifiedTotal > 0 || untaggedCount > 0) && (
@@ -5115,7 +5170,7 @@ export default function Dashboard() {
   }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
-  type CommittedRow = { amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null };
+  type CommittedRow = { amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null };
   const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string }[]>([]);
@@ -5194,6 +5249,15 @@ export default function Dashboard() {
     () => committedRows.reduce((sum, r) => sum + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), 0),
     [committedRows, rates],
   );
+
+  const committedByCat = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const r of committedRows) {
+      const k = r.category || "other";
+      m[k] = (m[k] || 0) + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates);
+    }
+    return m;
+  }, [committedRows, rates]);
 
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
@@ -5334,7 +5398,7 @@ export default function Dashboard() {
       // is misleading without them: money earmarked for rent is not money you
       // can spend, and until now the two tabs never spoke to each other.
       supabase.from("expected_payments")
-        .select("amount, currency, transaction_type, due_date, completed_at")
+        .select("amount, currency, transaction_type, due_date, completed_at, category")
         .eq("user_id", session.user.id)
         .is("completed_at", null)
         .eq("transaction_type", "expense")
@@ -6029,7 +6093,7 @@ export default function Dashboard() {
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
                 )}
               </div>
             )}
