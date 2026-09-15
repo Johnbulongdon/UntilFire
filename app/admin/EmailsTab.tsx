@@ -44,12 +44,29 @@ function defaultMonthLabel(): string {
   return new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
 }
 
+/**
+ * Turns the plain text of the composer into email HTML, and — the part that
+ * matters — turns bare URLs into real anchors.
+ *
+ * Resend's click tracking works by rewriting <a href> at send time. A URL
+ * typed into a textarea is just text, so it was never rewritten and never
+ * counted, even though most mail clients render it as clickable. That is why
+ * a link pasted into the body produced no click events.
+ */
 function paragraphsToHtml(body: string): string {
   return body
     .split(/\n{2,}/)
     .filter(Boolean)
-    .map((p) => `<p style="margin:0 0 14px">${p.replace(/\n/g, "<br>")}</p>`)
+    .map((p) => `<p style="margin:0 0 14px">${linkify(p).replace(/\n/g, "<br>")}</p>`)
     .join("");
+}
+
+function linkify(text: string): string {
+  return text.replace(
+    /(https?:\/\/[^\s<>"']+)/g,
+    (url) =>
+      `<a href="${url}" style="color:#12856A;text-decoration:underline">${url}</a>`,
+  );
 }
 
 export default function EmailsTab({ token }: { token: string }) {
@@ -140,8 +157,10 @@ export default function EmailsTab({ token }: { token: string }) {
       setIntro("");
       setNewItems([]);
       setFixItems([]);
-      setCtaLabel("");
-      setCtaHref("");
+      // Announcements carry a button too now, so it has to survive a reload —
+      // clearing it here would drop it from every saved draft on open.
+      setCtaLabel(typeof c.ctaLabel === "string" ? c.ctaLabel : "");
+      setCtaHref(typeof c.ctaHref === "string" ? c.ctaHref : "");
     }
     setResult(null);
   }
@@ -164,13 +183,15 @@ export default function EmailsTab({ token }: { token: string }) {
           heading: heading || "Your heading here",
           bodyHtml: paragraphsToHtml(body || "Your message here."),
           unsubscribeUrl: "#",
+          ctaLabel: ctaLabel || undefined,
+          ctaHref: ctaHref || undefined,
         });
 
   function currentContent(): Record<string, unknown> {
     if (template === "monthly_update") {
       return { monthLabel, intro, newItems, fixItems, ctaLabel, ctaHref };
     }
-    return { heading, body };
+    return { heading, body, ctaLabel, ctaHref };
   }
 
   async function saveDraft(asNew: boolean) {
@@ -226,7 +247,7 @@ export default function EmailsTab({ token }: { token: string }) {
     const payload =
       template === "monthly_update"
         ? { template, subject, segment, monthLabel, intro, newItems, fixItems, ctaLabel, ctaHref }
-        : { template, subject, segment, heading, bodyHtml };
+        : { template, subject, segment, heading, bodyHtml, ctaLabel, ctaHref };
     try {
       const res = await fetch("/api/admin/emails/send", {
         method: "POST",
@@ -368,15 +389,23 @@ export default function EmailsTab({ token }: { token: string }) {
             </Field>
             <ItemListEditor label="New this month" items={newItems} onChange={setNewItems} />
             <ItemListEditor label="Fixed & improved" items={fixItems} onChange={setFixItems} />
-            <div style={{ display: "flex", gap: 10 }}>
-              <Field label="CTA label (optional)">
-                <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} style={inputStyle} placeholder="e.g. See what's new" />
-              </Field>
-              <Field label="CTA link (optional)">
-                <input value={ctaHref} onChange={(e) => setCtaHref(e.target.value)} style={inputStyle} placeholder="https://untilfire.com/..." />
-              </Field>
-            </div>
           </>
+        )}
+
+        {/* Both templates take a button. A tracked click needs a real <a>, and
+            a button is the one the reader is most likely to press. */}
+        <div style={{ display: "flex", gap: 10 }}>
+          <Field label="Button label (optional)">
+            <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} style={inputStyle} placeholder="e.g. See what's new" />
+          </Field>
+          <Field label="Button link (optional)">
+            <input value={ctaHref} onChange={(e) => setCtaHref(e.target.value)} style={inputStyle} placeholder="https://www.untilfire.com/..." />
+          </Field>
+        </div>
+        {ctaHref && !/^https:\/\//i.test(ctaHref.trim()) && (
+          <p style={{ fontSize: 12, color: "#B45309", margin: 0 }}>
+            The button link must start with https:// or it will be dropped from the email.
+          </p>
         )}
 
         {!confirming ? (

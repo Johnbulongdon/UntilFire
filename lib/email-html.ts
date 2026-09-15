@@ -129,6 +129,17 @@ const escapeAttr = (s: string) =>
  * <img src> even from an admin-only form. Anything else renders as no image
  * rather than as a broken one.
  */
+/**
+ * Absolute https only, for a link the reader is invited to click. Blocks
+ * javascript: and data: outright, and neutralises the quote that would
+ * otherwise let a crafted value escape the href attribute.
+ */
+function safeLinkUrl(raw?: string): string {
+  const url = (raw || "").trim();
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return "";
+  return url.replace(/&/g, "&amp;");
+}
+
 function safeImageUrl(raw?: string): string {
   const url = (raw || "").trim();
   if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return "";
@@ -360,15 +371,28 @@ export function buildAdminAnnouncementEmail({
   heading,
   bodyHtml,
   unsubscribeUrl,
+  ctaLabel,
+  ctaHref,
 }: {
   heading: string;
   bodyHtml: string;
   unsubscribeUrl: string;
+  /** Both or neither — a button with no destination is worse than no button. */
+  ctaLabel?: string;
+  ctaHref?: string;
 }): string {
   const hero = heroCard("Update", heading, "A quick note from the UntilFire team.");
 
+  const href = safeLinkUrl(ctaHref);
+  // ctaBlock is a <tr>, so it needs a table of its own out here.
+  const cta =
+    href && ctaLabel
+      ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation">${ctaBlock(href, escapeAttr(ctaLabel))}</table>`
+      : "";
+
   const content = sectionCard(`
     <div style="font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">${bodyHtml}</div>
+    ${cta}
     ${founderSignoff()}
     ${unsubscribeNote(unsubscribeUrl)}
   `);

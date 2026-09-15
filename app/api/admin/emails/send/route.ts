@@ -128,7 +128,13 @@ export async function POST(req: NextRequest) {
               (recipient.user_metadata?.name as string | undefined) ??
               null,
           })
-        : buildAdminAnnouncementEmail({ heading, bodyHtml, unsubscribeUrl });
+        : buildAdminAnnouncementEmail({
+            heading,
+            bodyHtml,
+            unsubscribeUrl,
+            ctaLabel: ctaLabel || undefined,
+            ctaHref: ctaHref || undefined,
+          });
 
     try {
       const { error } = await resend.emails.send({
