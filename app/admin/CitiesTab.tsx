@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import HousingPanel from "./HousingPanel";
 
 /**
  * Cost of living — sync from BEA, then review before anything goes live.
@@ -112,8 +113,10 @@ export default function CitiesTab({ token }: { token: string }) {
 
   return (
     <div>
+      <HousingPanel token={token} />
+
       <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 800, color: INK, margin: "0 0 2px" }}>Cost of living</h2>
+        <h2 style={{ fontSize: 15, fontWeight: 800, color: INK, margin: "0 0 2px" }}>Cost of living — BEA (superseded)</h2>
         <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
           Pulls regional price parities and per-capita spending from the US Bureau of Economic
           Analysis. Syncing stores the figures here for review &mdash; the live site keeps showing
