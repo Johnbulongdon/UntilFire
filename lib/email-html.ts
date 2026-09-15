@@ -239,6 +239,122 @@ export function buildWelcomeEmail(): string {
   );
 }
 
+// ─── Onboarding nudges: day 1 and day 3 ──────────────────────────────────────
+//
+// These are not a fixed drip. Each one asks for the earliest thing the reader
+// has not done, and the sequence sends nothing at all when there is nothing
+// left to ask for — a nudge to someone who already did it is just noise, and
+// noise is what makes the next one get ignored.
+//
+// The two asks mirror the two places the funnel actually loses people:
+// signing up without entering real numbers, and entering numbers without ever
+// connecting an account.
+
+export type NudgeAsk = "numbers" | "bank";
+
+export function buildDay1Email(ask: NudgeAsk, unsubscribeUrl: string): string {
+  if (ask === "numbers") {
+    const hero = heroCard(
+      "Day one",
+      "Two numbers, and you have a real date.",
+      "You have an account. What it does not have yet is you in it."
+    );
+
+    const body = sectionCard(`
+      ${sectionLabel("What&#39;s missing")}
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        ${bulletRow(
+          "What you spend in a month",
+          "A rough number is fine. Most people are out by less than they think, and you can correct it later."
+        )}
+        ${bulletRow(
+          "What you have saved so far",
+          "Everything counts &#8212; pension, savings, investments. One total is enough to start.",
+          true
+        )}
+      </table>
+      <p style="margin:22px 0 0;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
+        That is the whole input. Two minutes, and the date stops being a guess.
+      </p>
+    `);
+
+    const cta = ctaBlock(`${SITE}/dashboard?source=day1-email`, "Put your numbers in");
+    const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
+    return base("Two numbers, and your freedom date stops being a guess.", hero + body + cta + footer);
+  }
+
+  const hero = heroCard(
+    "Day one",
+    "Your date is only as good as what sits behind it.",
+    "Right now it is built on what you typed. That is a fine start and a poor habit."
+  );
+
+  const body = sectionCard(`
+    <p style="margin:0 0 16px;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
+      Typed numbers go stale in about a week. You update them for a month, then you don&#39;t, and a
+      plan built on last month&#39;s spending quietly stops being a plan.
+    </p>
+    <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
+      Connect an account once and your spending arrives on its own. Nothing to keep up with, and the
+      date moves when your life does rather than when you remember to tell it.
+    </p>
+  `);
+
+  const cta = ctaBlock(`${SITE}/dashboard?source=day1-email`, "Connect an account");
+  const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
+  return base("Typed numbers go stale. Connected ones don&#39;t.", hero + body + cta + footer);
+}
+
+export function buildDay3Email(ask: NudgeAsk, unsubscribeUrl: string): string {
+  if (ask === "numbers") {
+    const hero = heroCard(
+      "Still here",
+      "It takes two minutes and I think you&#39;ll want the answer.",
+      "You signed up a few days ago and the numbers are still blank."
+    );
+
+    const body = sectionCard(`
+      <p style="margin:0 0 16px;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
+        No judgement &#8212; most people open a finance app, feel a small dread, and close it. The dread
+        is usually worse than the number.
+      </p>
+      <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.75;font-family:${BODY}">
+        What you spend in a month and what you have saved. That is all it needs, and then you get a
+        date instead of a feeling.
+      </p>
+    `);
+
+    const cta = ctaBlock(`${SITE}/dashboard?source=day3-email`, "See your date");
+    const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
+    return base("The dread is usually worse than the number.", hero + body + cta + footer);
+  }
+
+  const hero = heroCard(
+    "Still here",
+    "The bit that makes it stick.",
+    "You have a date. What you don&#39;t have yet is anything keeping it honest."
+  );
+
+  const body = sectionCard(`
+    ${sectionLabel("Why it matters")}
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      ${bulletRow(
+        "Your spending is the whole equation",
+        "Your target is twenty-five times what you spend in a year. Every real number you feed it makes the date truer."
+      )}
+      ${bulletRow(
+        "You stop having to remember",
+        "Transactions arrive on their own. The month adds itself up while you get on with your life.",
+        true
+      )}
+    </table>
+  `);
+
+  const cta = ctaBlock(`${SITE}/dashboard?source=day3-email`, "Connect an account");
+  const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
+  return base("Your target is twenty-five times what you spend.", hero + body + cta + footer);
+}
+
 // ─── Trial reminder email ─────────────────────────────────────────────────────
 
 export function buildTrialReminderEmail(
