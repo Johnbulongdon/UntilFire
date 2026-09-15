@@ -11,23 +11,38 @@
  *   node scripts/import-bea-col.mjs --report    inspect BEA, write nothing
  *   node scripts/import-bea-col.mjs --write     write lib/city-col.generated.ts
  *
- * --report exists because the person who wrote this could not reach BEA to
- * check its shape. It discovers the real table names, years and row format and
- * prints them, so the first run proves what is there instead of trusting the
- * table codes guessed below.
+ * --report discovers rather than assumes: the real table names, the LineCode
+ * for each row, the years actually covered, and the columns of a live data
+ * call. The table codes below were confirmed by running it — the first pass
+ * guessed SAPCE1 and the report is what caught that it should be SAPCE2.
  */
 
 const KEY = process.env.BEA_API_KEY;
 const BASE = "https://apps.bea.gov/api/data/";
 
-// Best guesses, to be confirmed by --report. MARPP/SARPP are the Regional
-// Price Parity tables; SAPCE1 is per-capita personal consumption expenditure.
-const GUESS = {
+/**
+ * Confirmed against a live GetParameterValues call, not guessed:
+ *
+ *   MARPP   Regional price parities by MSA        — ~384 metros
+ *   PARPP   Regional price parities by portion    — metro AND non-metro parts
+ *           of each state, so a city outside any MSA still gets a price level
+ *   SARPP   Regional price parities by state
+ *   SAPCE2  PER CAPITA personal consumption expenditures by major type
+ *
+ * SAPCE2, not SAPCE1. SAPCE1 is a state's total consumer spending — using it
+ * as one household's annual expenses yields a figure in the hundreds of
+ * billions, which would have propagated into every city page as a confident,
+ * sourced, absurd number.
+ */
+const TABLES = {
   metroRpp: "MARPP",
+  portionRpp: "PARPP",
   stateRpp: "SARPP",
-  statePce: "SAPCE1",
-  allItemsLineCode: "1",
+  statePce: "SAPCE2",
 };
+
+// Confirmed by the report before this is trusted.
+const METRO_ALL_ITEMS_LINE = "1";
 
 const args = new Set(process.argv.slice(2));
 const MODE = args.has("--write") ? "write" : "report";
@@ -103,10 +118,28 @@ async function report() {
       console.log(`  ${String(key).padEnd(12)} ${desc}`.slice(0, 150));
     }
   }
-  console.log("\nGuessed codes:", JSON.stringify(GUESS));
+  console.log("\nTables in use:", JSON.stringify(TABLES));
+
+  head("3b. Which LineCode is which? (all-items RPP, and total PCE)");
+  for (const table of [TABLES.metroRpp, TABLES.statePce]) {
+    try {
+      const lines = await bea({
+        method: "GetParameterValuesFiltered",
+        datasetname: "Regional",
+        TargetParameter: "LineCode",
+        TableName: table,
+      });
+      console.log(`  ${table}:`);
+      for (const l of (lines.ParamValue ?? []).slice(0, 12)) {
+        console.log(`     ${String(l.Key ?? l.LineCode ?? "").padEnd(5)} ${l.Desc ?? l.Description ?? ""}`.slice(0, 130));
+      }
+    } catch (e) {
+      console.log(`  ${table}: ${e.message}`);
+    }
+  }
 
   head("4. Which years are available? (settles the 2008 question)");
-  for (const table of [GUESS.metroRpp, GUESS.stateRpp]) {
+  for (const table of [TABLES.metroRpp, TABLES.stateRpp]) {
     try {
       const years = await bea({
         method: "GetParameterValuesFiltered",
@@ -126,8 +159,8 @@ async function report() {
     const data = await bea({
       method: "GetData",
       datasetname: "Regional",
-      TableName: GUESS.metroRpp,
-      LineCode: GUESS.allItemsLineCode,
+      TableName: TABLES.metroRpp,
+      LineCode: METRO_ALL_ITEMS_LINE,
       GeoFips: "MSA",
       Year: "LAST1",
     });
@@ -150,7 +183,7 @@ async function report() {
     const data = await bea({
       method: "GetData",
       datasetname: "Regional",
-      TableName: GUESS.statePce,
+      TableName: TABLES.statePce,
       LineCode: "1",
       GeoFips: "STATE",
       Year: "LAST1",
