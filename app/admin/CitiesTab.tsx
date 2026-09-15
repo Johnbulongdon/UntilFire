@@ -17,6 +17,10 @@ interface Row {
   name: string;
   col: number;
   rpp: number;
+  rpp_blended: number | null;
+  rpp_rents: number | null;
+  rpp_goods: number | null;
+  rpp_other: number | null;
   basis: "metro" | "state";
   geo: string;
   previous: number | null;
@@ -72,7 +76,14 @@ export default function CitiesTab({ token }: { token: string }) {
       if (!res.ok) {
         setError(d.error ?? "Sync failed");
       } else {
-        setNote(`BEA ${d.year}: ${d.count} cities, ${d.metroCount} at metro level.`);
+        // Naming which series arrived matters: a silently missing rents series
+        // renormalises the blend back towards all-items, which is the exact
+        // failure this weighting was added to fix.
+        const used = (d.components ?? []).filter((c: string) => c !== "all");
+        setNote(
+          `BEA ${d.year}: ${d.count} cities, ${d.metroCount} at metro level.` +
+            (used.length ? ` Weighted on ${used.join(", ")}.` : " No component series returned — all-items only."),
+        );
         setUnmatched(d.unmatched ?? []);
         load();
       }
@@ -83,6 +94,15 @@ export default function CitiesTab({ token }: { token: string }) {
   }
 
   const rows = data?.cities ?? [];
+  // Cheapest to dearest. All-items RPP gave 2.06x across the country, which is
+  // the compression this weighting exists to undo — so it is worth reading at
+  // a glance rather than inferring from the table.
+  const spread = (pick: (r: Row) => number | null) => {
+    const values = rows.map(pick).filter((v): v is number => v != null && v > 0);
+    return values.length ? Math.max(...values) / Math.min(...values) : null;
+  };
+  const colSpread = spread((r) => r.col);
+  const wasSpread = spread((r) => r.previous);
   // A tiny move is rounding, not news. Five percent is where a figure has
   // actually changed enough to be worth a second look.
   const changed = rows.filter(
@@ -98,6 +118,12 @@ export default function CitiesTab({ token }: { token: string }) {
           Pulls regional price parities and per-capita spending from the US Bureau of Economic
           Analysis. Syncing stores the figures here for review &mdash; the live site keeps showing
           its current numbers until they are promoted.
+        </p>
+        <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
+          Each city is priced on a housing-weighted blend of BEA&apos;s rents, goods and services
+          parities rather than the all-items headline. All-items weights housing at its share of
+          aggregate consumption, which averages the one price that really varies between cities
+          against goods that barely vary at all.
         </p>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -118,6 +144,9 @@ export default function CitiesTab({ token }: { token: string }) {
               Last synced {new Date(data.syncedAt).toLocaleString("en-GB", {
                 day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
               })} · BEA {data.year} · {rows.length} cities, {data.metroCount} at metro level
+              {colSpread && wasSpread && (
+                <> · spread {colSpread.toFixed(2)}&times; against {wasSpread.toFixed(2)}&times; hand-entered</>
+              )}
             </span>
           )}
           {!data?.syncedAt && !busy && (
@@ -153,15 +182,17 @@ export default function CitiesTab({ token }: { token: string }) {
             </label>
           </div>
           <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px" }}>
-            BEA against the hand-entered figure it would replace. A state basis means the city sits
-            in no metro area and carries its state&apos;s price level &mdash; an estimate.
+            BEA against the hand-entered figure it would replace. Rents is the housing parity,
+            blend is the weighted index <em>col</em> is actually computed from. A state basis means
+            the city sits in no metro area and carries its state&apos;s price level &mdash; an
+            estimate.
           </p>
 
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 640 }}>
               <thead>
                 <tr style={{ textAlign: "left", color: FAINT, background: "#F8FAFC" }}>
-                  {["City", "Was", "BEA", "Change", "RPP", "Basis", "Geography"].map((h) => (
+                  {["City", "Was", "BEA", "Change", "Rents", "Blend", "Basis", "Geography"].map((h) => (
                     <th key={h} style={{ padding: "8px 10px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -182,7 +213,12 @@ export default function CitiesTab({ token }: { token: string }) {
                       }}>
                         {delta == null ? "—" : `${delta > 0 ? "+" : ""}${Math.round(delta * 100)}%`}
                       </td>
-                      <td style={{ padding: "8px 10px", color: MUTED, fontFamily: "'DM Mono', monospace" }}>{r.rpp}</td>
+                      <td style={{ padding: "8px 10px", color: MUTED, fontFamily: "'DM Mono', monospace" }}>
+                        {r.rpp_rents != null ? Math.round(r.rpp_rents) : "\u2014"}
+                      </td>
+                      <td style={{ padding: "8px 10px", color: MUTED, fontFamily: "'DM Mono', monospace" }}>
+                        {Math.round(r.rpp_blended ?? r.rpp)}
+                      </td>
                       <td style={{ padding: "8px 10px" }}>
                         <span style={{
                           fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", padding: "2px 8px", borderRadius: 99,

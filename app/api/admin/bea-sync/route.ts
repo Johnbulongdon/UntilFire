@@ -56,6 +56,10 @@ export async function POST(req: NextRequest) {
         name: c.name,
         col: c.col,
         rpp: c.rpp,
+        rpp_blended: c.rppBlended,
+        rpp_rents: c.rppRents,
+        rpp_goods: c.rppGoods,
+        rpp_other: c.rppOther,
         basis: c.basis,
         geo: c.geo,
         previous: c.previous,
@@ -76,6 +80,7 @@ export async function POST(req: NextRequest) {
       year: result.year,
       count: result.cities.length,
       metroCount: result.metroCount,
+      components: result.components,
       unmatched: result.unmatched,
     });
   } catch (err) {
