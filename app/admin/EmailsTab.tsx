@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 // Type-only import: erased at compile time, so the server-side email builder
 // never reaches the client bundle. The composer and the renderer described the
 // same item in two places, which is how a field added to one silently goes
@@ -14,10 +14,19 @@ import {
 type Segment = "all" | "free" | "pro";
 type Template = "announcement" | "monthly_update";
 type SendResult = { sent: number; total: number } | string | null;
+type Stage = { key: string; label: string; count: number; of: number | null };
 type SendStat = {
   id: string; subject: string; segment: string; recipients: number; sentAt: string;
   tracked: boolean; delivered: number; opened: number; clicked: number;
   openRate: number | null; clickRate: number | null;
+  stages: Stage[];
+};
+type Recipient = {
+  email: string;
+  stage: "sent" | "delivered" | "opened" | "clicked";
+  at: Partial<Record<string, string>>;
+  opens: number; clicks: number; link: string | null;
+  bounced: boolean; complained: boolean;
 };
 type TrackingState = { domain?: string; status?: string; openTracking: boolean; clickTracking: boolean };
 
@@ -425,6 +434,9 @@ export default function EmailsTab({ token }: { token: string }) {
 function SendStats({ token }: { token: string | null }) {
   const [rows, setRows] = useState<SendStat[] | null>(null);
   const [tracking, setTracking] = useState<TrackingState | null>(null);
+  const [openSend, setOpenSend] = useState<string | null>(null);
+  // Cached per send so collapsing and reopening does not refetch.
+  const [people, setPeople] = useState<Record<string, Recipient[]>>({});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -442,6 +454,21 @@ function SendStats({ token }: { token: string | null }) {
   }, [token]);
 
   useEffect(load, [load]);
+
+  async function toggleSend(id: string) {
+    if (openSend === id) { setOpenSend(null); return; }
+    setOpenSend(id);
+    if (people[id] || !token) return;
+    try {
+      const res = await fetch(`/api/admin/emails/stats?sendId=${encodeURIComponent(id)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await res.json();
+      setPeople((p) => ({ ...p, [id]: d.recipients ?? [] }));
+    } catch {
+      setPeople((p) => ({ ...p, [id]: [] }));
+    }
+  }
 
   async function enable() {
     if (!token) return;
@@ -506,30 +533,131 @@ function SendStats({ token }: { token: string | null }) {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} style={{ borderTop: "1px solid #F1F5F9" }}>
-                  <td style={{ padding: "8px 10px", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.subject}</td>
-                  <td style={{ padding: "8px 10px", color: "#64748B", whiteSpace: "nowrap" }}>
-                    {new Date(r.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </td>
-                  <td style={{ padding: "8px 10px", color: "#64748B" }}>{r.recipients}</td>
-                  {/* A send with no events at all is not a zero — it is a send
-                      that predates tracking, and saying "0%" would be a lie. */}
-                  {!r.tracked ? (
-                    <td colSpan={3} style={{ padding: "8px 10px", color: "#94A3B8" }}>Not tracked</td>
-                  ) : (
-                    <>
-                      <td style={{ padding: "8px 10px" }}>{r.delivered}</td>
-                      <td style={{ padding: "8px 10px" }}>{r.openRate === null ? "—" : `${r.openRate}% (${r.opened})`}</td>
-                      <td style={{ padding: "8px 10px" }}>{r.clickRate === null ? "—" : `${r.clickRate}% (${r.clicked})`}</td>
-                    </>
+                <Fragment key={r.id}>
+                  <tr
+                    onClick={() => r.tracked && toggleSend(r.id)}
+                    style={{ borderTop: "1px solid #F1F5F9", cursor: r.tracked ? "pointer" : "default" }}
+                  >
+                    <td style={{ padding: "8px 10px", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {r.tracked && (
+                        <span style={{ color: "#94A3B8", marginRight: 6, fontSize: 10 }}>
+                          {openSend === r.id ? "\u25bc" : "\u25b6"}
+                        </span>
+                      )}
+                      {r.subject}
+                    </td>
+                    <td style={{ padding: "8px 10px", color: "#64748B", whiteSpace: "nowrap" }}>
+                      {new Date(r.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </td>
+                    <td style={{ padding: "8px 10px", color: "#64748B" }}>{r.recipients}</td>
+                    {/* A send with no events at all is not a zero — it is a send
+                        that predates tracking, and saying "0%" would be a lie. */}
+                    {!r.tracked ? (
+                      <td colSpan={3} style={{ padding: "8px 10px", color: "#94A3B8" }}>Not tracked</td>
+                    ) : (
+                      <>
+                        <td style={{ padding: "8px 10px" }}>{r.delivered}</td>
+                        <td style={{ padding: "8px 10px" }}>{r.openRate === null ? "—" : `${r.openRate}% (${r.opened})`}</td>
+                        <td style={{ padding: "8px 10px" }}>{r.clickRate === null ? "—" : `${r.clickRate}% (${r.clicked})`}</td>
+                      </>
+                    )}
+                  </tr>
+
+                  {openSend === r.id && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: "4px 10px 16px", background: "#F8FAFC" }}>
+                        <StageStrip stages={r.stages} />
+                        <RecipientList rows={people[r.id]} />
+                      </td>
+                    </tr>
                   )}
-                </tr>
+                </Fragment>
               ))}
             </tbody>
           </table>
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The stages of one send, each as a share of the stage before it.
+ *
+ * Opened and clicked are measured against DELIVERED, not against recipients:
+ * a message that bounced was never a chance to be opened, and dividing by it
+ * understates how the mail that actually arrived performed.
+ */
+function StageStrip({ stages }: { stages: Stage[] }) {
+  const top = stages[0]?.count || 1;
+  return (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "10px 0 14px" }}>
+      {stages.map((st) => (
+        <div key={st.key} style={{ flex: "1 1 120px", minWidth: 120 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>{st.label}</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: "#19181E" }}>{st.count}</span>
+          </div>
+          <div style={{ height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ width: `${Math.min(100, (st.count / top) * 100)}%`, height: "100%", background: "#059669", borderRadius: 99 }} />
+          </div>
+          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
+            {st.of === null ? "recipients" : `${st.of}% of previous`}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const STAGE_LABEL: Record<string, { text: string; fg: string; bg: string }> = {
+  sent: { text: "Sent", fg: "#64748B", bg: "#F1F5F9" },
+  delivered: { text: "Delivered", fg: "#0369A1", bg: "#E0F2FE" },
+  opened: { text: "Opened", fg: "#92400E", bg: "#FEF3C7" },
+  clicked: { text: "Clicked", fg: "#065F46", bg: "#ECFDF5" },
+};
+
+/** Who reached how far. At this list size the names matter more than the rate. */
+function RecipientList({ rows }: { rows: Recipient[] | undefined }) {
+  if (!rows) return <p style={{ fontSize: 12.5, color: "#94A3B8", margin: 0 }}>Loading recipients…</p>;
+  if (rows.length === 0) return <p style={{ fontSize: 12.5, color: "#94A3B8", margin: 0 }}>No events for this send.</p>;
+
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+      <thead>
+        <tr style={{ textAlign: "left", color: "#94A3B8" }}>
+          <th style={{ padding: "4px 8px 4px 0", fontWeight: 700 }}>Recipient</th>
+          <th style={{ padding: "4px 8px", fontWeight: 700 }}>Reached</th>
+          <th style={{ padding: "4px 8px", fontWeight: 700 }}>Opens</th>
+          <th style={{ padding: "4px 8px", fontWeight: 700 }}>Clicks</th>
+          <th style={{ padding: "4px 0", fontWeight: 700 }}>Link clicked</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((p) => {
+          const lab = STAGE_LABEL[p.stage] ?? STAGE_LABEL.sent;
+          return (
+            <tr key={p.email} style={{ borderTop: "1px solid #E2E8F0" }}>
+              <td style={{ padding: "6px 8px 6px 0", color: "#19181E", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {p.email}
+                {p.bounced && <span style={{ color: "#DC2626", fontWeight: 800, marginLeft: 6, fontSize: 10.5 }}>BOUNCED</span>}
+                {p.complained && <span style={{ color: "#DC2626", fontWeight: 800, marginLeft: 6, fontSize: 10.5 }}>SPAM</span>}
+              </td>
+              <td style={{ padding: "6px 8px" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: lab.fg, background: lab.bg, padding: "2px 8px", borderRadius: 99, textTransform: "uppercase" }}>
+                  {lab.text}
+                </span>
+              </td>
+              <td style={{ padding: "6px 8px", color: p.opens ? "#19181E" : "#CBD5E1" }}>{p.opens || "–"}</td>
+              <td style={{ padding: "6px 8px", color: p.clicks ? "#19181E" : "#CBD5E1" }}>{p.clicks || "–"}</td>
+              <td style={{ padding: "6px 0", color: "#64748B", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {p.link ?? ""}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 
