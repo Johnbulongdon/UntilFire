@@ -178,6 +178,56 @@ export async function fetchFmr(
  * sourced, wrong number, which is the failure mode that made the BEA import
  * unusable in the first place.
  */
+export async function resolveCounties(
+  known: Map<string, CountyRef>,
+  onBatch: (batch: CountyRef[]) => Promise<void>,
+): Promise<{ counties: Map<string, CountyRef>; failed: string[] }> {
+  const counties = new Map(known);
+  const failed: string[] = [];
+  const todo = CITIES.filter((c) => isUS(c.state) && !known.has(c.key));
+
+  // Persisted as we go rather than at the end. Two hundred-odd round trips is
+  // long enough to hit a function timeout, and a run that writes nothing on the
+  // way down means the next attempt starts from zero again — so each batch is
+  // banked, and a second click resumes rather than repeats.
+  let pending: CountyRef[] = [];
+  const flush = async () => {
+    if (!pending.length) return;
+    await onBatch(pending);
+    pending = [];
+  };
+
+  // Eight at a time: enough to turn minutes into seconds, gentle enough not to
+  // look like abuse of a free public geocoder.
+  const CONCURRENCY = 8;
+  for (let i = 0; i < todo.length; i += CONCURRENCY) {
+    const slice = todo.slice(i, i + CONCURRENCY);
+    const settled = await Promise.all(
+      slice.map(async (city) => {
+        try {
+          return { city, county: await resolveCounty(city) };
+        } catch (err) {
+          return { city, county: null, error: err instanceof Error ? err.message : String(err) };
+        }
+      }),
+    );
+    for (const r of settled) {
+      if (!r.county) {
+        failed.push(
+          `${r.city.name} — ${"error" in r && r.error ? `geocoder failed: ${r.error}` : "no county matched, needs a manual mapping"}`,
+        );
+        continue;
+      }
+      counties.set(r.city.key, r.county);
+      pending.push(r.county);
+    }
+    if (pending.length >= 25) await flush();
+  }
+  await flush();
+
+  return { counties, failed };
+}
+
 export async function fetchHousingCosts(
   token: string,
   year: number,
@@ -188,20 +238,12 @@ export async function fetchHousingCosts(
   // One county can hold several of our cities; HUD is asked once per county.
   const fmrCache = new Map<string, Awaited<ReturnType<typeof fetchFmr>>>();
 
-  for (const city of CITIES.filter((c) => isUS(c.state))) {
-    let county = known.get(city.key) ?? null;
-    if (!county) {
-      try {
-        county = await resolveCounty(city);
-      } catch (err) {
-        unresolved.push(`${city.name} — geocoder failed: ${err instanceof Error ? err.message : String(err)}`);
-        continue;
-      }
-    }
-    if (!county) {
-      unresolved.push(`${city.name} — no county matched, needs a manual mapping`);
-      continue;
-    }
+  // Only cities with a county. A city without one was already reported by
+  // resolveCounties, with the reason it failed; listing it again here would
+  // show every unresolvable city twice in the admin, each time saying
+  // something different about why.
+  for (const city of CITIES.filter((c) => isUS(c.state) && known.has(c.key))) {
+    const county = known.get(city.key)!;
 
     try {
       if (!fmrCache.has(county.countyFips)) {

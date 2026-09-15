@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin-auth";
-import { fetchHousingCosts, type CountyRef } from "@/lib/housing";
+import { fetchHousingCosts, resolveCounties, type CountyRef } from "@/lib/housing";
 import { JOBS, finishJobRun, startJobRun } from "@/lib/lifecycle";
 
 /**
@@ -62,19 +62,19 @@ export async function POST(req: NextRequest) {
       (cached ?? []).map((c) => [c.city_key, { cityKey: c.city_key, countyFips: c.county_fips, countyName: c.county_name }]),
     );
 
-    const result = await fetchHousingCosts(process.env.HUD_API_KEY, year, known);
+    // Resolve first, banking each batch. If the function times out during this
+    // phase the work survives and a second click carries on from here.
+    const { counties, failed } = await resolveCounties(known, async (batch) => {
+      await admin.from("city_county").upsert(
+        batch.map((c) => ({ city_key: c.cityKey, county_fips: c.countyFips, county_name: c.countyName, source: "geocoder" })),
+        { onConflict: "city_key" },
+      );
+    });
+
+    const result = await fetchHousingCosts(process.env.HUD_API_KEY, year, counties);
     if (!result.cities.length) {
       throw new Error(
-        `HUD returned no usable rents for ${year} — nothing was written. First problem: ${result.unresolved[0] ?? "none reported"}`,
-      );
-    }
-
-    // Newly resolved counties are cached so the geocoder is not called again.
-    const fresh = result.cities.filter((c) => !known.has(c.key));
-    if (fresh.length) {
-      await admin.from("city_county").upsert(
-        fresh.map((c) => ({ city_key: c.key, county_fips: c.countyFips, county_name: c.countyName, source: "geocoder" })),
-        { onConflict: "city_key" },
+        `HUD returned no usable rents for ${year} — nothing was written. First problem: ${result.unresolved[0] ?? failed[0] ?? "none reported"}`,
       );
     }
 
@@ -108,8 +108,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       year: result.year,
       count: result.cities.length,
-      newlyResolved: fresh.length,
-      unresolved: result.unresolved,
+      newlyResolved: counties.size - known.size,
+      unresolved: [...failed, ...result.unresolved],
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
