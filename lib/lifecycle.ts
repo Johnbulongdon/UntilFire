@@ -56,11 +56,15 @@ export const EMAIL_STEPS: { event: LifecycleEvent; label: string; dayOffset: num
 
 export const JOBS = {
   RETENTION_EMAIL: "retention_email",
+  BEA_SYNC: "bea_sync",
 } as const;
 
 /** How stale a job's last successful run can get before it is a problem. */
 export const JOB_EXPECTED_INTERVAL_HOURS: Record<string, number> = {
   [JOBS.RETENTION_EMAIL]: 24,
+  // BEA publishes once a year, so this is run by hand. A year of slack keeps
+  // it from sitting permanently red between releases.
+  [JOBS.BEA_SYNC]: 24 * 365,
 };
 
 /**
