@@ -130,13 +130,21 @@ export async function POST(req: NextRequest) {
         month: "long", day: "numeric", year: "numeric",
       });
 
+      // Read the charge off the subscription rather than off our own copy of
+      // the price — this line becomes a promise about the reader's card, and
+      // it has to match what Stripe is about to do, monthly or yearly.
+      const price = sub.items?.data?.[0]?.price;
+      const priceLabel = price?.unit_amount != null && price.recurring
+        ? `$${(price.unit_amount / 100).toFixed(2).replace(/\.00$/, "")}/${price.recurring.interval}`
+        : undefined;
+
       if (process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const { error: sendError } = await resend.emails.send({
           from: "UntilFire <hello@untilfire.com>",
           to: authUser.email,
           subject: `Your free trial ends on ${trialEndDate} — here's what happens next`,
-          html: buildTrialReminderEmail(trialEndDate),
+          html: buildTrialReminderEmail(trialEndDate, priceLabel),
         });
         if (sendError) {
           console.error("[webhook] trial_will_end Resend error:", sendError);

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 import { formatMoney } from "@/lib/money";
+import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 
 interface PlaidItem {
   id: string;
@@ -608,7 +609,7 @@ export default function ProfileTab({
             </span>
             <span style={{ fontSize: 13, color: "#6b7280" }}>
               {subscription?.plan === "pro"
-                ? "UntilFire Pro — $4.99/month"
+                ? `UntilFire Pro — ${PRO_MONTHLY_LABEL}/month`
                 : "Free plan — limited features"}
             </span>
           </div>
@@ -630,7 +631,7 @@ export default function ProfileTab({
         </div>
         {subscription?.plan !== "pro" && (
           <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10, marginBottom: 0 }}>
-            First 3 months free — then $4.99/mo. Unlimited bank connections and priority AI access.
+            {TRIAL_LABEL} — then {PRO_MONTHLY_LABEL}/mo, or {PRO_ANNUAL_LABEL}/yr. Unlimited bank connections and priority AI access.
           </p>
         )}
       </div>

@@ -5,6 +5,7 @@ import { peekCalculatorPrefill } from "@/lib/journey";
 import AnimatedHero from "./AnimatedHero";
 import Logo from "@/app/components/Logo";
 import { CITIES } from "@/lib/fire-data";
+import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL } from "@/lib/pricing";
 
 
 const F = "'Manrope', sans-serif";
@@ -383,7 +384,7 @@ function Pricing7({ onStart }: { onStart: () => void }) {
           </div>
           <div className="uf7-pcol uf7-rv">
             <div className="uf7-tier">Pro</div>
-            <div className="uf7-amount">$4.99 <small>/mo after trial</small></div>
+            <div className="uf7-amount">{PRO_MONTHLY_LABEL} <small>/mo after trial, or {PRO_ANNUAL_LABEL}/yr</small></div>
             <span className="uf7-trial-note">Three months free</span>
             <ul>
               <li>Everything in Free</li>

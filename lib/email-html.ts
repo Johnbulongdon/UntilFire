@@ -1,5 +1,12 @@
 // Shared HTML email builders — white background, brand green design system
 // All HTML is table-based for email client compatibility.
+//
+// lib/pricing is the one import allowed here: it is a constants-only module
+// with no dependencies of its own, so the admin can still render a preview
+// client-side. A price is worth the exception — the trial reminder is a
+// promise about someone's card, and it must not drift from what Stripe bills.
+
+import { PRO_MONTHLY_LABEL } from "./pricing";
 
 const SITE = "https://www.untilfire.com";
 const TWITTER_URL = "https://twitter.com/untilfire";
@@ -223,7 +230,11 @@ export function buildWelcomeEmail(): string {
 
 // ─── Trial reminder email ─────────────────────────────────────────────────────
 
-export function buildTrialReminderEmail(trialEndDate: string): string {
+export function buildTrialReminderEmail(
+  trialEndDate: string,
+  /** What Stripe will actually charge, e.g. "$3/month" or "$30/year". */
+  priceLabel: string = `${PRO_MONTHLY_LABEL}/month`,
+): string {
   const hero = heroCard(
     "Your free trial",
     `Your trial ends on ${trialEndDate}.`,
@@ -234,9 +245,8 @@ export function buildTrialReminderEmail(trialEndDate: string): string {
     ${sectionLabel("What happens next")}
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
       ${bulletRow(
-        "Your card will be charged $4.99/month",
-        "On ${trialEndDate}, your Pro subscription starts automatically at $4.99 per month. Cancel any time before then from your account settings to avoid being charged."
-          .replace("${trialEndDate}", trialEndDate)
+        `Your card will be charged ${escapeAttr(priceLabel)}`,
+        `On ${trialEndDate}, your Pro subscription starts automatically at ${escapeAttr(priceLabel)}. Cancel any time before then from your account settings to avoid being charged.`
       )}
       ${bulletRow(
         "Everything you&#39;ve set up stays intact",

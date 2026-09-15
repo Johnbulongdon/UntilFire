@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { trackCheckoutStarted, trackPaywallViewed } from "@/lib/analytics";
-import { Alert, Badge, Button, Icon } from "@/components/ui";
+import { Alert, Badge, Button, Icon, SegmentedControl } from "@/components/ui";
+import {
+  ANNUAL_PER_MONTH_LABEL, ANNUAL_SAVING_PCT,
+  PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL, type BillingInterval,
+} from "@/lib/pricing";
 
 /**
  * The Pro paywall.
@@ -60,6 +64,7 @@ const PRO_FEATURES: { title: string; detail: string }[] = [
 export default function UpgradeModal({ open, onClose, source = "dashboard_upgrade_modal" }: { open: boolean; onClose: () => void; source?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [billing, setBilling] = useState<BillingInterval>("year");
 
   useEffect(() => {
     if (!open) return;
@@ -89,6 +94,7 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
+        body: JSON.stringify({ interval: billing }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
@@ -165,23 +171,42 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
           ))}
         </div>
 
-        {/* The price, said plainly */}
+        {/* The price, said plainly — annual leads because it is the better deal */}
         <div style={{
           background: "var(--uf-surface)", border: "1px solid var(--uf-border)",
           borderRadius: "var(--uf-r-control)", padding: "var(--uf-s4)",
         }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "var(--uf-s2)", flexWrap: "wrap" }}>
-            <Badge tone="positive">3 months free</Badge>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: "var(--uf-s3)", flexWrap: "wrap",
+          }}>
+            <SegmentedControl
+              label="Billing period"
+              size="sm"
+              options={[{ value: "year", label: "Yearly" }, { value: "month", label: "Monthly" }] as const}
+              value={billing}
+              onChange={setBilling}
+            />
+            {billing === "year" && <Badge tone="positive">Save {ANNUAL_SAVING_PCT}%</Badge>}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "baseline", gap: "var(--uf-s2)", flexWrap: "wrap", marginTop: "var(--uf-s3)" }}>
             <span style={{
               fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
-              fontSize: 18, fontWeight: 500, color: "var(--uf-ink)",
+              fontSize: 24, fontWeight: 500, color: "var(--uf-ink)",
             }}>
-              $4.99
+              {billing === "year" ? ANNUAL_PER_MONTH_LABEL : PRO_MONTHLY_LABEL}
             </span>
-            <span style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>/month after</span>
+            <span style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>
+              {billing === "year"
+                ? `/month, billed ${PRO_ANNUAL_LABEL} a year`
+                : "/month"}
+            </span>
           </div>
+
           <div style={{ fontSize: 13, color: "var(--uf-ink-2)", marginTop: "var(--uf-s2)", lineHeight: 1.45 }}>
-            No charge today. We&apos;ll email you 3 days before the trial ends, and you can cancel any time before then.
+            {TRIAL_LABEL} — no charge today. We&apos;ll email you 3 days before the trial ends,
+            and you can cancel any time before then.
           </div>
         </div>
 
@@ -195,7 +220,7 @@ export default function UpgradeModal({ open, onClose, source = "dashboard_upgrad
           disabled={loading}
           style={{ marginTop: "var(--uf-s4)" }}
         >
-          {loading ? "Opening Stripe…" : "Start 3 months free"}
+          {loading ? "Opening Stripe…" : `Start ${TRIAL_LABEL}`}
         </Button>
         <Button
           variant="ghost"

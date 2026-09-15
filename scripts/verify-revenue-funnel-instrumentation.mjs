@@ -44,14 +44,21 @@ assert(
 );
 
 assert(
-  checkoutRoute.includes('priceId: STRIPE_PRO_PRICE_ID'),
-  'Stripe checkout route must return the configured price id for client analytics.',
+  checkoutRoute.includes('priceIdFor(interval)') && /return NextResponse\.json\(\{[^}]*priceId/.test(checkoutRoute),
+  'Stripe checkout route must return the price id it actually charged, for client analytics.',
 );
 
 assert(
   analyticsServer.includes('price_monthly: input.priceMonthly') &&
-    webhookRoute.includes('priceMonthly: 4.99'),
-  'Server checkout success analytics must include the current $4.99 monthly price.',
+    webhookRoute.includes('price?.unit_amount'),
+  'Server checkout success analytics must report the amount Stripe actually charged, not a hardcoded price.',
+);
+
+assert(
+  analyticsEvents.includes("from './pricing'") &&
+    analyticsEvents.includes('priceMonthly: PRO_MONTHLY_USD') &&
+    !/priceMonthly: [0-9]/.test(analyticsEvents),
+  'The analytics price must come from lib/pricing, never a literal — six copies of it is how it drifted before.',
 );
 
 assert(

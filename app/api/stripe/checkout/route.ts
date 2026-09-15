@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
-import { getStripe, STRIPE_PRO_PRICE_ID } from "@/lib/stripe";
+import { getStripe, priceIdFor } from "@/lib/stripe";
+import { TRIAL_DAYS } from "@/lib/pricing";
 
 
 export async function POST(req: NextRequest) {
@@ -14,6 +15,15 @@ export async function POST(req: NextRequest) {
   const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Which plan. Anything but an explicit "year" bills monthly, so a malformed
+  // body can never silently put someone on the more expensive line item.
+  const body = await req.json().catch(() => ({}));
+  const interval = body?.interval === "year" ? "year" : "month";
+  const priceId = priceIdFor(interval);
+  if (!priceId) {
+    return NextResponse.json({ error: "Billing is not configured — please try again later" }, { status: 503 });
   }
 
   const stripe = getStripe();
@@ -37,23 +47,23 @@ export async function POST(req: NextRequest) {
 
     const origin = req.headers.get("origin") || "https://www.untilfire.com";
 
-    // First-time subscribers get a 90-day free trial (3 months)
+    // First-time subscribers get the free trial; returning ones do not.
     const isFirstTimeSubscriber = !sub?.stripe_subscription_id;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
-      line_items: [{ price: STRIPE_PRO_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/dashboard?upgraded=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/dashboard`,
       metadata: { supabase_user_id: user.id },
       allow_promotion_codes: true,
       ...(isFirstTimeSubscriber && {
-        subscription_data: { trial_period_days: 90 },
+        subscription_data: { trial_period_days: TRIAL_DAYS },
       }),
     });
 
-    return NextResponse.json({ url: session.url, priceId: STRIPE_PRO_PRICE_ID });
+    return NextResponse.json({ url: session.url, priceId, interval, trial: isFirstTimeSubscriber });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Stripe error";
     console.error("[stripe/checkout]", err);

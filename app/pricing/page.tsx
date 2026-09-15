@@ -1,17 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import {
+  ANNUAL_MONTHS_FREE, ANNUAL_PER_MONTH_LABEL, PRO_ANNUAL_LABEL, PRO_ANNUAL_USD,
+  PRO_MONTHLY_LABEL, PRO_MONTHLY_USD, TRIAL_LABEL,
+} from "@/lib/pricing";
 import { siteUrl } from "@/lib/site";
 
 const pricingUrl = siteUrl('/pricing');
 
 export const metadata: Metadata = {
   title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
-  description: "Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for $4.99/mo to unlock unlimited bank connections and priority access to the AI adviser.",
+  description: `Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for ${PRO_MONTHLY_LABEL}/mo, or ${PRO_ANNUAL_LABEL}/yr, to unlock unlimited bank connections and priority access to the AI adviser.`,
   keywords: "untilfire pricing, fire planner cost, financial independence app price, fire calculator free",
   alternates: { canonical: pricingUrl },
   openGraph: {
     title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
-    description: "Free forever for the full calculator and dashboard. Upgrade to Pro for $4.99/mo.",
+    description: `Free forever for the full calculator and dashboard. Upgrade to Pro for ${PRO_MONTHLY_LABEL}/mo, or ${PRO_ANNUAL_LABEL}/yr.`,
     url: pricingUrl,
     siteName: "UntilFire",
     type: "website",
@@ -19,7 +23,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
-    description: "Free forever for the full calculator and dashboard. Upgrade to Pro for $4.99/mo.",
+    description: `Free forever for the full calculator and dashboard. Upgrade to Pro for ${PRO_MONTHLY_LABEL}/mo, or ${PRO_ANNUAL_LABEL}/yr.`,
   },
 };
 
@@ -56,14 +60,27 @@ export default function PricingPage() {
               {
                 "@type": "Offer",
                 name: "Pro Monthly",
-                price: "4.99",
+                price: String(PRO_MONTHLY_USD),
                 priceCurrency: "USD",
                 availability: "https://schema.org/InStock",
                 priceSpecification: {
                   "@type": "RecurringCharge",
-                  price: "4.99",
+                  price: String(PRO_MONTHLY_USD),
                   priceCurrency: "USD",
                   billingDuration: "P1M",
+                },
+              },
+              {
+                "@type": "Offer",
+                name: "Pro Yearly",
+                price: String(PRO_ANNUAL_USD),
+                priceCurrency: "USD",
+                availability: "https://schema.org/InStock",
+                priceSpecification: {
+                  "@type": "RecurringCharge",
+                  price: String(PRO_ANNUAL_USD),
+                  priceCurrency: "USD",
+                  billingDuration: "P1Y",
                 },
               },
             ],
@@ -207,17 +224,20 @@ export default function PricingPage() {
               textTransform: "uppercase",
             }}
           >
-            3 months free
+            {TRIAL_LABEL}
           </span>
 
           <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
             Pro
           </div>
           <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>$4.99</span>
+            <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>{PRO_MONTHLY_LABEL}</span>
             <span style={{ fontSize: 15, color: "#6b7280", marginLeft: 4 }}>/month after</span>
           </div>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>First 3 months free — no charge today. Cancel anytime.</p>
+          <p style={{ fontSize: 13, color: "#22d3a5", fontWeight: 600, margin: "0 0 6px" }}>
+            or {PRO_ANNUAL_LABEL}/year — {ANNUAL_MONTHS_FREE} months free, {ANNUAL_PER_MONTH_LABEL}/mo
+          </p>
+          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>{TRIAL_LABEL} — no charge today. Cancel anytime.</p>
 
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -255,7 +275,7 @@ export default function PricingPage() {
               fontFamily: "Manrope, sans-serif",
             }}
           >
-            Start 3 months free →
+            Start {TRIAL_LABEL} →
           </Link>
         </div>
       </div>

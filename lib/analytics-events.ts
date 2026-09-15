@@ -5,11 +5,13 @@
 // so a typo in a call site is a TypeScript error rather than a silently
 // renamed event in PostHog.
 
+import { PRO_MONTHLY_USD } from './pricing';
+
 export const FUNNEL_EVENT_VERSION = 1;
 
 export const PRO_PLAN_ANALYTICS = {
   plan: 'pro',
-  priceMonthly: 4.99,
+  priceMonthly: PRO_MONTHLY_USD,
 } as const;
 
 export const FunnelEvents = {
