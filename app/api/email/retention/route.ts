@@ -5,8 +5,10 @@ import {
   buildDay1Email,
   buildDay3Email,
   buildRetentionEmail,
+  firstNameFor,
   type NudgeAsk,
 } from "@/lib/email-html";
+import { summarise } from "@/lib/fire-summary";
 import { makeUnsubscribeToken } from "@/lib/unsubscribe-token";
 import {
   JOBS,
@@ -140,7 +142,7 @@ async function sendSequence(
   // stage they are due is decided per user below.
   const { data: profiles } = await admin
     .from("profiles")
-    .select("user_id, day1_email_sent_at, day3_email_sent_at, day7_email_sent_at")
+    .select("user_id, display_name, default_currency, day1_email_sent_at, day3_email_sent_at, day7_email_sent_at")
     .not("welcome_email_sent_at", "is", null)
     .is("marketing_unsubscribed_at", null);
 
@@ -162,6 +164,17 @@ async function sendSequence(
     done.get(e.user_id)!.add(e.event);
   }
 
+  // Their actual position, so the email can show it — and so "has real numbers"
+  // is read from the budget itself rather than from the activated event. A
+  // saved budget with every category at zero is a row, not an activation, and
+  // trusting the event would send the wrong nudge to someone who has nothing in.
+  const { data: budgets } = await admin
+    .from("user_budget")
+    .select("user_id, expenses")
+    .in("user_id", profiles.map((p) => p.user_id));
+
+  const budgetByUser = new Map((budgets ?? []).map((b) => [b.user_id, b.expenses]));
+
   let considered = 0;
   let sent = 0;
 
@@ -172,9 +185,10 @@ async function sendSequence(
     const ageDays = Math.floor((now - new Date(user.created_at).getTime()) / DAY);
     const idleDays = Math.floor((now - new Date(user.last_sign_in_at ?? user.created_at).getTime()) / DAY);
     const theirs = done.get(user.id) ?? new Set<string>();
+    const fire = summarise(budgetByUser.get(user.id) as Record<string, unknown> | undefined);
 
     // What is this person missing? The earliest gap is what we ask for.
-    const ask: NudgeAsk | "none" = !theirs.has(LIFECYCLE_EVENTS.ACTIVATED)
+    const ask: NudgeAsk | "none" = !fire.hasNumbers
       ? "numbers"
       : !theirs.has(LIFECYCLE_EVENTS.BANK_CONNECTED)
         ? "bank"
@@ -196,12 +210,17 @@ async function sendSequence(
     considered++;
 
     const unsubscribeUrl = `${SITE}/unsubscribe?u=${user.id}&t=${makeUnsubscribeToken(user.id)}`;
+    const ctx = {
+      firstName: firstNameFor(profile.display_name),
+      fire,
+      currency: profile.default_currency ?? "USD",
+    };
     const html =
       stage.key === "day1"
-        ? buildDay1Email(ask as NudgeAsk, unsubscribeUrl)
+        ? buildDay1Email(ask as NudgeAsk, unsubscribeUrl, ctx)
         : stage.key === "day3"
-          ? buildDay3Email(ask as NudgeAsk, unsubscribeUrl)
-          : buildRetentionEmail(unsubscribeUrl);
+          ? buildDay3Email(ask as NudgeAsk, unsubscribeUrl, ctx)
+          : buildRetentionEmail(unsubscribeUrl, ctx);
 
     try {
       const { error } = await resend.emails.send({

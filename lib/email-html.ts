@@ -7,6 +7,7 @@
 // promise about someone's card, and it must not drift from what Stripe bills.
 
 import { PRO_MONTHLY_LABEL } from "./pricing";
+import { formatAmount, type FireSummary } from "./fire-summary";
 
 const SITE = "https://www.untilfire.com";
 const TWITTER_URL = "https://twitter.com/untilfire";
@@ -239,6 +240,70 @@ export function buildWelcomeEmail(): string {
   );
 }
 
+// ─── Their own numbers ───────────────────────────────────────────────────────
+
+/**
+ * The reader's position, drawn as a bar made of table cells.
+ *
+ * Not an image. Most clients block remote images by default — it is the same
+ * blocking that makes the open rate a floor — so a rendered chart would be
+ * invisible to exactly the readers we most want back. Nested tables with a
+ * background colour render in every client including Outlook, with images off.
+ *
+ * Three states, because most people here have nothing saved yet and a bar
+ * reading "0.0% of the way there" is true, useless and faintly insulting:
+ *   - spending and assets  -> the bar
+ *   - spending only        -> the target on its own, which is still theirs
+ *   - neither              -> nothing at all
+ */
+export function buildProgressBlock(fire: FireSummary, currency = "USD"): string {
+  if (!fire.hasNumbers) return "";
+
+  const target = formatAmount(fire.target, currency);
+  const annual = formatAmount(fire.monthlySpend * 12, currency);
+
+  if (fire.pct === null) {
+    return sectionCard(`
+      ${sectionLabel("Where you are")}
+      <p style="margin:0 0 6px;font-size:13px;color:${INK_3};font-family:${BODY}">Your number</p>
+      <p style="margin:0 0 10px;font-size:34px;font-weight:700;color:${INK};line-height:1.1;font-family:${DISPLAY}">${target}</p>
+      <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.7;font-family:${BODY}">
+        That is what ${annual} a year of spending needs behind it. Add what you have saved and
+        this becomes a distance rather than a number.
+      </p>
+    `);
+  }
+
+  const pct = Math.round(fire.pct * 10) / 10;
+  // A sliver so that a very early position still reads as a start, not a bug.
+  const filled = Math.max(2, Math.min(100, Math.round(pct)));
+
+  return sectionCard(`
+    ${sectionLabel("Where you are")}
+    <p style="margin:0 0 6px;font-size:13px;color:${INK_3};font-family:${BODY}">You are here</p>
+    <p style="margin:0 0 14px;font-size:34px;font-weight:700;color:${TEAL};line-height:1.1;font-family:${DISPLAY}">${pct}%</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate">
+      <tr>
+        <td width="${filled}%" style="background:${TEAL};height:12px;border-radius:8px 0 0 8px;font-size:0;line-height:0">&nbsp;</td>
+        <td width="${100 - filled}%" style="background:${GROUND};height:12px;border-radius:0 8px 8px 0;font-size:0;line-height:0">&nbsp;</td>
+      </tr>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:8px">
+      <tr>
+        <td style="font-size:12px;color:${INK_3};font-family:${BODY}">${formatAmount(fire.assets, currency)} saved</td>
+        <td align="right" style="font-size:12px;color:${INK_3};font-family:${BODY}">${target} target</td>
+      </tr>
+    </table>
+
+    <p style="margin:16px 0 0;font-size:14px;color:${INK_2};line-height:1.7;font-family:${BODY}">
+      Your target is ${annual} a year of spending, ${fire.multiple} times over. Every real number you
+      feed it moves this bar honestly rather than hopefully.
+    </p>
+  `);
+}
+
 // ─── Onboarding nudges: day 1 and day 3 ──────────────────────────────────────
 //
 // These are not a fixed drip. Each one asks for the earliest thing the reader
@@ -252,11 +317,20 @@ export function buildWelcomeEmail(): string {
 
 export type NudgeAsk = "numbers" | "bank";
 
-export function buildDay1Email(ask: NudgeAsk, unsubscribeUrl: string): string {
+export interface NudgeContext {
+  /** Already escaped by firstNameFor; empty string when we have no usable name. */
+  firstName?: string;
+  fire?: FireSummary;
+  currency?: string;
+}
+
+export function buildDay1Email(ask: NudgeAsk, unsubscribeUrl: string, ctx: NudgeContext = {}): string {
+  const hi = ctx.firstName ? `${ctx.firstName}, ` : "";
+  const position = ctx.fire ? buildProgressBlock(ctx.fire, ctx.currency) : "";
   if (ask === "numbers") {
     const hero = heroCard(
       "Day one",
-      "Two numbers, and you have a real date.",
+      `${ctx.firstName ? ctx.firstName + ", two" : "Two"} numbers, and you have a real date.`,
       "You have an account. What it does not have yet is you in it."
     );
 
@@ -286,7 +360,7 @@ export function buildDay1Email(ask: NudgeAsk, unsubscribeUrl: string): string {
   const hero = heroCard(
     "Day one",
     "Your date is only as good as what sits behind it.",
-    "Right now it is built on what you typed. That is a fine start and a poor habit."
+    `${hi}right now it is built on what you typed. That is a fine start and a poor habit.`
   );
 
   const body = sectionCard(`
@@ -302,15 +376,17 @@ export function buildDay1Email(ask: NudgeAsk, unsubscribeUrl: string): string {
 
   const cta = ctaBlock(`${SITE}/dashboard?source=day1-email`, "Connect an account");
   const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
-  return base("Typed numbers go stale. Connected ones don&#39;t.", hero + body + cta + footer);
+  return base("Typed numbers go stale. Connected ones don&#39;t.", hero + position + body + cta + footer);
 }
 
-export function buildDay3Email(ask: NudgeAsk, unsubscribeUrl: string): string {
+export function buildDay3Email(ask: NudgeAsk, unsubscribeUrl: string, ctx: NudgeContext = {}): string {
+  const hi = ctx.firstName ? `${ctx.firstName}, ` : "";
+  const position = ctx.fire ? buildProgressBlock(ctx.fire, ctx.currency) : "";
   if (ask === "numbers") {
     const hero = heroCard(
       "Still here",
       "It takes two minutes and I think you&#39;ll want the answer.",
-      "You signed up a few days ago and the numbers are still blank."
+      `${hi}you signed up a few days ago and the numbers are still blank.`
     );
 
     const body = sectionCard(`
@@ -340,7 +416,7 @@ export function buildDay3Email(ask: NudgeAsk, unsubscribeUrl: string): string {
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
       ${bulletRow(
         "Your spending is the whole equation",
-        "Your target is twenty-five times what you spend in a year. Every real number you feed it makes the date truer."
+        "Your target is a multiple of what you spend in a year, so every real number you feed it makes the date truer."
       )}
       ${bulletRow(
         "You stop having to remember",
@@ -352,7 +428,7 @@ export function buildDay3Email(ask: NudgeAsk, unsubscribeUrl: string): string {
 
   const cta = ctaBlock(`${SITE}/dashboard?source=day3-email`, "Connect an account");
   const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
-  return base("Your target is twenty-five times what you spend.", hero + body + cta + footer);
+  return base("Your target is driven entirely by what you spend.", hero + position + body + cta + footer);
 }
 
 // ─── Trial reminder email ─────────────────────────────────────────────────────
@@ -410,12 +486,16 @@ export function buildTrialReminderEmail(
 
 // ─── Retention email (day 7) ──────────────────────────────────────────────────
 
-export function buildRetentionEmail(unsubscribeUrl: string): string {
+export function buildRetentionEmail(unsubscribeUrl: string, ctx: NudgeContext = {}): string {
   const hero = heroCard(
     "One week in",
-    "How are you feeling?",
+    ctx.firstName ? `How are you feeling, ${ctx.firstName}?` : "How are you feeling?",
     "Genuinely asking. Not a prompt from a playbook &#8212; I&#39;m curious how the first week landed for you."
   );
+
+  // Someone who drifted off gets the strongest possible reason to come back:
+  // where they actually stood when they left.
+  const position = ctx.fire ? buildProgressBlock(ctx.fire, ctx.currency) : "";
 
   const checkin = sectionCard(`
     ${sectionLabel("A few things worth reflecting on")}
@@ -458,7 +538,7 @@ export function buildRetentionEmail(unsubscribeUrl: string): string {
 
   return base(
     "One week in &#8212; how are you feeling? We want to hear from you.",
-    hero + checkin + building + footer
+    hero + position + checkin + building + footer
   );
 }
 
