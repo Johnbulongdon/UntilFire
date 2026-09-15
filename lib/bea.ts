@@ -142,7 +142,7 @@ function numeric(value: unknown): number | null {
  * code returns rents instead of all items, a real number of the wrong kind
  * that nothing downstream can detect.
  */
-async function findLineCode(key: string, table: string, matcher: RegExp, label: string): Promise<string> {
+async function findLineCode(key: string, table: string, matchers: RegExp[], label: string): Promise<string> {
   const res = await bea(key, {
     method: "GetParameterValuesFiltered",
     datasetname: "Regional",
@@ -150,13 +150,19 @@ async function findLineCode(key: string, table: string, matcher: RegExp, label: 
     TableName: table,
   });
   const lines = (res.ParamValue ?? []) as Record<string, string>[];
-  const hit = lines.find((l) => matcher.test(String(l.Desc ?? l.Description ?? "")));
-  if (!hit) {
-    throw new Error(
-      `No ${label} line in ${table}. Available: ${lines.map((l) => `${l.Key}=${l.Desc}`).join(" | ").slice(0, 400)}`,
-    );
+
+  // Patterns in priority order: the exact wording first, then the structural
+  // fallback. BEA's descriptions are prose and a single strict pattern breaks
+  // on a rewording — which is how the first attempt failed, looking for a line
+  // beginning "Total" against one that reads "…(PCE) by state".
+  for (const matcher of matchers) {
+    const hit = lines.find((l) => matcher.test(String(l.Desc ?? l.Description ?? "")));
+    if (hit) return String(hit.Key ?? hit.LineCode);
   }
-  return String(hit.Key ?? hit.LineCode);
+
+  throw new Error(
+    `No ${label} line in ${table}. Available: ${lines.map((l) => `${l.Key}=${l.Desc}`).join(" | ").slice(0, 600)}`,
+  );
 }
 
 async function latestYear(key: string, table: string): Promise<number> {
@@ -202,10 +208,22 @@ export async function fetchCityCosts(key: string): Promise<SyncResult> {
   const year = await latestYear(key, TABLES.metroRpp);
   const yr = String(year);
 
-  const [rppLine, pceLine] = await Promise.all([
-    findLineCode(key, TABLES.metroRpp, /all items/i, "all-items"),
-    findLineCode(key, TABLES.statePce, /^total|personal consumption expenditures$/i, "total PCE"),
-  ]);
+  // Sequential, not Promise.all: if the first fails its error names the lines
+  // that do exist, and a rejected Promise.all would discard the second's.
+  const rppLine = await findLineCode(
+    key,
+    TABLES.metroRpp,
+    [/all items/i, /^\s*(\[[^\]]*\]\s*)?regional price parities\s*$/i],
+    "all-items RPP",
+  );
+  // The total is the line with no category after the colon. Every other line
+  // in SAPCE2 reads "…expenditures: Clothing and footwear" and so on.
+  const pceLine = await findLineCode(
+    key,
+    TABLES.statePce,
+    [/expenditures\s*\(pce\)\s*by state\s*$/i, /expenditures[^:]*$/i, /^total/i],
+    "total per-capita PCE",
+  );
 
   const [metroRaw, stateRppRaw, statePceRaw] = await Promise.all([
     bea(key, { method: "GetData", datasetname: "Regional", TableName: TABLES.metroRpp, LineCode: rppLine, GeoFips: "MSA", Year: yr }),
