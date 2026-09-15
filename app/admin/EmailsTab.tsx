@@ -62,11 +62,26 @@ function paragraphsToHtml(body: string): string {
 }
 
 function linkify(text: string): string {
-  return text.replace(
-    /(https?:\/\/[^\s<>"']+)/g,
-    (url) =>
-      `<a href="${url}" style="color:#12856A;text-decoration:underline">${url}</a>`,
-  );
+  return text.replace(/(https?:\/\/[^\s<>"']+)/g, (raw) => {
+    // Peel trailing punctuation back out of the href. "…/dashboard." at the
+    // end of a sentence would otherwise link to a path with a full stop on
+    // it, and "(…/pricing)" would carry the bracket — both dead links, and
+    // dead in a way that still looks fine in the composer.
+    let url = raw;
+    let tail = "";
+    while (url.length > 0) {
+      const last = url[url.length - 1];
+      const isSentence = ".,;:!?".includes(last);
+      // Only strip a closing bracket the URL did not open itself — some real
+      // URLs legitimately contain a balanced pair.
+      const isStrayCloser = last === ")" && !url.includes("(");
+      if (!isSentence && !isStrayCloser) break;
+      tail = last + tail;
+      url = url.slice(0, -1);
+    }
+    if (!url) return raw;
+    return `<a href="${url}" style="color:#12856A;text-decoration:underline">${url}</a>${tail}`;
+  });
 }
 
 export default function EmailsTab({ token }: { token: string }) {
