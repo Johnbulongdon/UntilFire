@@ -63,6 +63,9 @@
   --uf-e2: 0 6px 20px rgba(120,80,30,0.08);
   --uf-e3: 0 16px 40px rgba(120,80,30,0.13);
 
+  /* modal scrim — warm, like every other neutral here */
+  --uf-scrim: rgba(34,27,18,0.50);
+
   /* chart series — validated categorical, light surface (--uf-card).
      Three slots by design: a fourth hue could not clear the colour-blind
      separation floor against these three. A fourth series folds into
@@ -154,6 +157,8 @@
   --uf-e1: 0 1px 2px rgba(0,0,0,0.40);
   --uf-e2: 0 6px 20px rgba(0,0,0,0.45);
   --uf-e3: 0 16px 40px rgba(0,0,0,0.55);
+
+  --uf-scrim: rgba(8,6,4,0.66);
 
   /* chart series, selected against the dark surface and validated there —
      not an automatic lightening of the light steps. */
