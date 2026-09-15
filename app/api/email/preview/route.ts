@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { buildWelcomeEmail, buildRetentionEmail } from "@/lib/email-html";
 
+const SITE = "https://www.untilfire.com";
+
 // GET /api/email/preview?type=welcome|retention&to=email&secret=CRON_SECRET
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -25,7 +27,8 @@ export async function GET(req: NextRequest) {
     subject: isRetention
       ? "Your path to financial freedom is waiting"
       : "Welcome to UntilFire — your path to financial freedom starts here",
-    html: isRetention ? buildRetentionEmail() : buildWelcomeEmail(),
+    // A preview goes to the sender, so the link only has to render, not resolve.
+    html: isRetention ? buildRetentionEmail(`${SITE}/unsubscribe?preview=1`) : buildWelcomeEmail(),
   });
 
   if (error) return NextResponse.json({ error }, { status: 500 });

@@ -283,7 +283,7 @@ export function buildTrialReminderEmail(
 
 // ─── Retention email (day 7) ──────────────────────────────────────────────────
 
-export function buildRetentionEmail(): string {
+export function buildRetentionEmail(unsubscribeUrl: string): string {
   const hero = heroCard(
     "One week in",
     "How are you feeling?",
@@ -324,9 +324,14 @@ export function buildRetentionEmail(): string {
     </p>
   `);
 
+  // Required, not optional: this is a lifecycle marketing email, and the one
+  // thing it must never do is reach someone with no way out. A default would
+  // just be a way to forget.
+  const footer = sectionCard(unsubscribeNote(unsubscribeUrl));
+
   return base(
     "One week in &#8212; how are you feeling? We want to hear from you.",
-    hero + checkin + building
+    hero + checkin + building + footer
   );
 }
 
