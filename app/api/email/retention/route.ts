@@ -3,6 +3,7 @@ import { adminClient } from "@/lib/supabase-admin";
 import { Resend } from "resend";
 import { buildRetentionEmail } from "@/lib/email-html";
 import { makeUnsubscribeToken } from "@/lib/unsubscribe-token";
+import { JOBS, LIFECYCLE_EVENTS, finishJobRun, recordEvent, startJobRun } from "@/lib/lifecycle";
 
 const SITE = "https://www.untilfire.com";
 
@@ -39,6 +40,27 @@ async function run(req: NextRequest) {
   const admin = adminClient();
   const resend = new Resend(process.env.RESEND_API_KEY);
 
+  // Opened before any work so that a crash mid-run leaves a 'running' row.
+  // A job that dies silently is the failure mode this whole table exists for.
+  const runId = await startJobRun(admin, JOBS.RETENTION_EMAIL);
+
+  try {
+    return await sendDay7(admin, resend, runId);
+  } catch (err) {
+    await finishJobRun(admin, runId, {
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
+async function sendDay7(
+  admin: ReturnType<typeof adminClient>,
+  resend: Resend,
+  runId: string | null,
+): Promise<NextResponse> {
+
   // Find users who signed up 7+ days ago, got a welcome email, but haven't
   // received a day-7 retention email yet.
   // We use auth.admin.listUsers() since we can't JOIN auth.users directly.
@@ -53,7 +75,10 @@ async function run(req: NextRequest) {
     .is("day7_email_sent_at", null)
     .is("marketing_unsubscribed_at", null);
 
-  if (!profiles?.length) return NextResponse.json({ sent: 0 });
+  if (!profiles?.length) {
+    await finishJobRun(admin, runId, { status: "ok", considered: 0, acted: 0 });
+    return NextResponse.json({ sent: 0 });
+  }
 
   const userIds = profiles.map((p) => p.user_id);
 
@@ -91,11 +116,18 @@ async function run(req: NextRequest) {
       await admin
         .from("profiles")
         .upsert({ user_id: user.id, day7_email_sent_at: new Date().toISOString() }, { onConflict: "user_id" });
+      await recordEvent(admin, user.id, LIFECYCLE_EVENTS.DAY7_EMAIL);
       sent++;
     } catch (err) {
       console.error(`[retention] threw for ${user.id}:`, err);
     }
   }
+
+  await finishJobRun(admin, runId, {
+    status: "ok",
+    considered: eligible.length,
+    acted: sent,
+  });
 
   return NextResponse.json({ sent, eligible: eligible.length });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { Resend } from "resend";
 import { buildWelcomeEmail } from "@/lib/email-html";
+import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
 
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -26,6 +27,8 @@ export async function POST(req: NextRequest) {
     { user_id: user.id, welcome_email_sent_at: new Date().toISOString() },
     { onConflict: "user_id" },
   );
+  await recordEvent(admin, user.id, LIFECYCLE_EVENTS.WELCOME_EMAIL);
+  await recordEvent(admin, user.id, LIFECYCLE_EVENTS.SIGNED_UP, user.created_at);
 
   if (process.env.RESEND_API_KEY && user.email) {
     const resend = new Resend(process.env.RESEND_API_KEY);

@@ -5,6 +5,7 @@ import Stripe from "stripe";
 import { trackCheckoutSucceededServer } from "@/lib/analytics-server";
 import { Resend } from "resend";
 import { buildTrialReminderEmail } from "@/lib/email-html";
+import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,12 @@ export async function POST(req: NextRequest) {
         current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
+
+      // subscriptions has no created_at, so without this the funnel could only
+      // ever see "is subscribed", never when they became one.
+      if (isActive) {
+        await recordEvent(supabaseAdmin, existing.user_id, LIFECYCLE_EVENTS.SUBSCRIBED);
+      }
       break;
     }
 

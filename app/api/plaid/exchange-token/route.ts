@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { Transaction as PlaidTransaction } from "plaid";
 import { getInstitutionBranding, getPlaidClient, mapPlaidTx } from "@/lib/plaid";
+import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -86,6 +87,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       console.error("[plaid/exchange-token] plaid_items upsert:", itemErr);
       return NextResponse.json({ error: "Failed to save connection" }, { status: 500 });
     }
+
+    // First bank only — the unique index keeps a reconnect or a second
+    // institution from overwriting the moment they first crossed this line.
+    await recordEvent(admin, user.id, LIFECYCLE_EVENTS.BANK_CONNECTED);
 
     // Map and bulk upsert into expenses
     const rows = allAdded.map((tx) => mapPlaidTx(tx, user.id)).filter(Boolean);

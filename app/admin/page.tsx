@@ -6,8 +6,9 @@ import OverviewTab from "./OverviewTab";
 import UsersTab from "./UsersTab";
 import EmailsTab from "./EmailsTab";
 import SupportTab from "./SupportTab";
+import RetentionTab from "./RetentionTab";
 
-type AdminTab = "overview" | "users" | "emails" | "support";
+type AdminTab = "overview" | "users" | "retention" | "emails" | "support";
 
 export default function AdminPage() {
   const [status, setStatus] = useState<"checking" | "denied" | "ok">("checking");
@@ -49,6 +50,7 @@ export default function AdminPage() {
           {([
             { key: "overview" as const, label: "Overview" },
             { key: "users" as const, label: "Users" },
+            { key: "retention" as const, label: "Retention" },
             { key: "emails" as const, label: "Emails" },
             { key: "support" as const, label: "Support" },
           ]).map((t) => (
@@ -74,6 +76,7 @@ export default function AdminPage() {
 
         {token && tab === "overview" && <OverviewTab token={token} />}
         {token && tab === "users" && <UsersTab token={token} />}
+        {token && tab === "retention" && <RetentionTab token={token} />}
         {token && tab === "emails" && <EmailsTab token={token} />}
         {token && tab === "support" && <SupportTab token={token} />}
       </div>
