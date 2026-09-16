@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin-auth";
-import { NON_HOUSING_ANNUAL_USD, fetchCityRents } from "@/lib/census";
+import {
+  NON_HOUSING_ANNUAL_USD,
+  fetchCityRents,
+  inspectRentTables,
+  inspectTableVariables,
+} from "@/lib/census";
 import { JOBS, finishJobRun, startJobRun } from "@/lib/lifecycle";
 
 /**
@@ -28,6 +33,26 @@ function candidateYears(): number[] {
 export async function GET(req: NextRequest) {
   const auth = await requireAdminUser(req);
   if ("error" in auth) return auth.error;
+
+  // ?inspect=1 lists rent tables cut by when the tenant moved in; ?inspect=B25xxx
+  // lists that table's variables. Read-only — it writes nothing and changes
+  // nothing, so a wrong guess costs a page refresh rather than 226 wrong rows.
+  const inspect = new URL(req.url).searchParams.get("inspect");
+  if (inspect) {
+    if (!process.env.CENSUS_API_KEY) {
+      return NextResponse.json({ error: "CENSUS_API_KEY is not set in this deployment." }, { status: 503 });
+    }
+    const year = new Date().getFullYear() - 2;
+    try {
+      const tables =
+        inspect === "1"
+          ? await inspectRentTables(year, process.env.CENSUS_API_KEY)
+          : await inspectTableVariables(year, process.env.CENSUS_API_KEY, inspect);
+      return NextResponse.json({ year, inspect, tables });
+    } catch (err) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 502 });
+    }
+  }
 
   const { data, error } = await auth.admin.from("city_rent").select("*").order("col", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -91,6 +116,7 @@ export async function POST(req: NextRequest) {
         col: c.col,
         geo: c.geo,
         basis: c.basis,
+        matched_by: c.matchedBy,
         previous: c.previous,
         acs_year: result.year,
         synced_at: syncedAt,
@@ -109,6 +135,7 @@ export async function POST(req: NextRequest) {
       year: result.year,
       count: result.cities.length,
       placeCount: result.cities.filter((c) => c.basis === "place").length,
+      looseCount: result.cities.filter((c) => c.matchedBy === "prefix" || c.matchedBy === "contains").length,
       nonHousing: NON_HOUSING_ANNUAL_USD,
       unmatched: result.unmatched,
     });

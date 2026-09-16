@@ -58,6 +58,8 @@ export interface CityRent {
   geo: string;
   /** "place" is the city itself; "county" is a borough or an unincorporated match. */
   basis: "place" | "county";
+  /** How the name was resolved, so a loose match can be checked rather than trusted. */
+  matchedBy: MatchKind;
   /** The hand-entered figure this would replace. */
   previous: number;
 }
@@ -134,10 +136,67 @@ const COUNTY_MATCH: Record<string, string> = {
  */
 const PLACE_ALIAS: Record<string, string> = {
   dc: "Washington",
+  // Ventura's legal name. Without this it is genuinely ambiguous — the fixture
+  // finds both this and "Ventura County CDP", and the matcher is right to
+  // refuse to pick between them.
+  ventura: "San Buenaventura (Ventura)",
 };
 
 /** Census places carry a type suffix: "Austin city, Texas". Strip it to compare. */
 const PLACE_SUFFIX = /\s+(city|town|village|borough|municipality|CDP|city and borough|urban county)$/i;
+
+export type MatchKind = "exact" | "prefix" | "contains" | "county";
+
+/**
+ * Find a city in one state's places.
+ *
+ * Exact first. The fallbacks exist because a US city's legal name is often not
+ * what anyone calls it: Census knows Nashville as "Nashville-Davidson
+ * metropolitan government (balance)", Boise as "Boise City city", Ventura as
+ * "San Buenaventura (Ventura)" and Honolulu as "Urban Honolulu". Eleven of our
+ * cities went unpriced for that reason alone.
+ *
+ * Both fallbacks require a WORD BOUNDARY, so "Athens" cannot land on "Athens
+ * Heights", and both refuse to choose when more than one place matches —
+ * "Springfield" against two Springfields is a question for a human, not a
+ * coin toss. The kind of match is carried out with the row so a loose one can
+ * be checked in review rather than taken on trust.
+ */
+function findPlace(
+  target: string,
+  places: { bare: string; rent: number; geo: string }[],
+): { hit: { rent: number; geo: string }; how: MatchKind } | { ambiguous: string[] } | null {
+  const exact = places.filter((p) => p.bare === target);
+  if (exact.length) return { hit: exact[0], how: "exact" };
+
+  // Both tiers are gathered BEFORE anything is chosen, and a single winner
+  // across the union is the only thing that gets picked automatically.
+  // Running them in sequence was worse than useless: "Ventura" matched
+  // "Ventura County CDP" on prefix and returned it as a confident answer,
+  // never noticing that "San Buenaventura (Ventura) city" — the actual city —
+  // matched on the next tier down. A place whose name merely starts with a
+  // city's name is not obviously the better answer, so when both tiers find
+  // something the question goes to a person.
+  const boundary = "[\\s\\-/(),.]";
+  const prefix = new RegExp(`^${escapeRe(target)}(?=${boundary}|$)`);
+  const token = new RegExp(`(?:^|${boundary})${escapeRe(target)}(?=${boundary}|$)`);
+
+  const candidates = new Map<string, { p: typeof places[number]; how: MatchKind }>();
+  for (const p of places) {
+    if (prefix.test(p.bare)) candidates.set(p.geo, { p, how: "prefix" });
+    else if (token.test(p.bare)) candidates.set(p.geo, { p, how: "contains" });
+  }
+
+  const found = [...candidates.values()];
+  if (found.length === 1) return { hit: found[0].p, how: found[0].how };
+  if (found.length > 1) return { ambiguous: found.map((f) => f.p.geo) };
+
+  return null;
+}
+
+function escapeRe(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 function normalise(value: string): string {
   return value.toLowerCase().replace(/[.'’]/g, "").replace(/\s+/g, " ").trim();
@@ -202,14 +261,19 @@ async function stateGeographies(year: number, key: string, fips: string) {
     censusRows(year, key, { get: `NAME,${MEDIAN_GROSS_RENT}`, for: "county:*", in: `state:${fips}` }),
   ]);
 
-  const byPlace = new Map<string, { rent: number; geo: string }>();
+  // A list rather than a map: the fallbacks in findPlace need to scan, and an
+  // exact-keyed map would have thrown away the very names they look for.
+  const placeList: { bare: string; rent: number; geo: string }[] = [];
+  const seen = new Set<string>();
   for (const [name, value] of places) {
     const rent = rentFrom(value);
     if (rent === null) continue;
     const bare = normalise(String(name).split(",")[0].replace(PLACE_SUFFIX, ""));
-    // First match wins: Census lists "Springfield city" before "Springfield CDP",
-    // and the incorporated city is the one anyone means.
-    if (!byPlace.has(bare)) byPlace.set(bare, { rent, geo: String(name) });
+    // First wins: Census lists "Springfield city" before "Springfield CDP", and
+    // the incorporated city is the one anyone means.
+    if (seen.has(bare)) continue;
+    seen.add(bare);
+    placeList.push({ bare, rent, geo: String(name) });
   }
 
   const byCounty = new Map<string, { rent: number; geo: string }>();
@@ -219,7 +283,7 @@ async function stateGeographies(year: number, key: string, fips: string) {
     byCounty.set(normalise(String(name).split(",")[0]), { rent, geo: String(name) });
   }
 
-  return { byPlace, byCounty };
+  return { placeList, byCounty };
 }
 
 export async function fetchCityRents(year: number, key: string): Promise<CensusResult> {
@@ -245,9 +309,25 @@ export async function fetchCityRents(year: number, key: string): Promise<CensusR
 
     const county = COUNTY_MATCH[city.key];
     const place = PLACE_ALIAS[city.key] ?? cityName(city);
-    const hit = county
-      ? geos.byCounty.get(normalise(county))
-      : geos.byPlace.get(normalise(place));
+
+    let hit: { rent: number; geo: string } | undefined;
+    let how: MatchKind = "county";
+
+    if (county) {
+      hit = geos.byCounty.get(normalise(county));
+    } else {
+      const found = findPlace(normalise(place), geos.placeList);
+      if (found !== null) {
+        if ("ambiguous" in found) {
+          unmatched.push(
+            `${city.name} — "${place}" matches several places in ${state.name}: ${found.ambiguous.join("; ")}`,
+          );
+          continue;
+        }
+        hit = found.hit;
+        how = found.how;
+      }
+    }
 
     if (!hit) {
       unmatched.push(`${city.name} — no Census ${county ? "county" : "place"} matched "${county ?? place}" in ${state.name}`);
@@ -261,9 +341,72 @@ export async function fetchCityRents(year: number, key: string): Promise<CensusR
       col: Math.round((hit.rent * 12 + NON_HOUSING_ANNUAL_USD) / 100) * 100,
       geo: hit.geo,
       basis: county ? "county" : "place",
+      matchedBy: how,
       previous: city.col,
     });
   }
 
   return { year, cities: out, unmatched };
+}
+
+
+/**
+ * What rent tables this ACS vintage publishes — read-only, writes nothing.
+ *
+ * Median gross rent (B25064) is what EVERY renter currently pays, which folds
+ * in leases signed years ago and rent-stabilised units. That is the wrong
+ * number for someone deciding whether they could afford to live somewhere: a
+ * sitting tenant's rent is not on offer to them. ACS also publishes rent cut by
+ * the year the household moved in, and the most recent cohort is close to what
+ * the market asks today.
+ *
+ * This exists rather than a hardcoded table number because guessing at an
+ * agency's table names has now cost this project twice — the wrong BEA table,
+ * and an assumption that Census needed no key. Look first, then build.
+ */
+export interface TableRef {
+  name: string;
+  description: string;
+}
+
+export async function inspectRentTables(year: number, key: string): Promise<TableRef[]> {
+  const url = new URL(`${BASE}/${year}/acs/acs5/groups.json`);
+  if (key) url.searchParams.set("key", key);
+
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  if (/<html/i.test(text)) {
+    const title = text.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim();
+    throw new Error(`Census returned an HTML error page${title ? ` (${title})` : ""} instead of the table list.`);
+  }
+
+  const body = JSON.parse(text) as { groups?: { name?: string; description?: string }[] };
+  const groups = body.groups ?? [];
+
+  // Rent, cut by when the household moved in or how long they have been there.
+  // Kept broad on purpose: the point is to see what is actually there, so a
+  // narrow filter that returns nothing would defeat it.
+  const wanted = /rent/i;
+  const cut = /(moved|mover|year householder|tenure|recent)/i;
+
+  return groups
+    .filter((g) => wanted.test(g.description ?? "") && cut.test(g.description ?? ""))
+    .map((g) => ({ name: String(g.name ?? ""), description: String(g.description ?? "") }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Every variable in one table, so a line code is read rather than assumed. */
+export async function inspectTableVariables(year: number, key: string, table: string): Promise<TableRef[]> {
+  const url = new URL(`${BASE}/${year}/acs/acs5/groups/${encodeURIComponent(table)}.json`);
+  if (key) url.searchParams.set("key", key);
+
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  if (/<html/i.test(text)) throw new Error(`Census has no table "${table}" for ${year}, or the request was rejected.`);
+
+  const body = JSON.parse(text) as { variables?: Record<string, { label?: string }> };
+  return Object.entries(body.variables ?? {})
+    .filter(([name]) => name.endsWith("E"))
+    .map(([name, v]) => ({ name, description: String(v.label ?? "").replace(/!!/g, " > ") }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }

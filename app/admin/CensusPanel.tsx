@@ -21,6 +21,7 @@ interface Row {
   col: number;
   geo: string;
   basis: "place" | "county";
+  matched_by: string | null;
   previous: number | null;
   acs_year: number;
   synced_at: string;
@@ -52,6 +53,7 @@ export default function CensusPanel({ token }: { token: string }) {
   const [note, setNote] = useState("");
   const [unmatched, setUnmatched] = useState<string[]>([]);
   const [onlyChanged, setOnlyChanged] = useState(false);
+  const [tables, setTables] = useState<{ name: string; description: string }[] | null>(null);
 
   const load = useCallback(() => {
     fetch("/api/admin/census-sync", { headers: { Authorization: `Bearer ${token}` } })
@@ -61,6 +63,24 @@ export default function CensusPanel({ token }: { token: string }) {
   }, [token]);
 
   useEffect(load, [load]);
+
+  // Read-only: shows which rent tables this vintage publishes cut by when the
+  // tenant moved in. Median gross rent includes leases signed years ago, which
+  // is the wrong number for someone deciding whether they could move somewhere.
+  async function inspect(what: string) {
+    setError("");
+    setTables(null);
+    try {
+      const res = await fetch(`/api/admin/census-sync?inspect=${encodeURIComponent(what)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await res.json();
+      if (!res.ok) setError(d.error ?? "Inspect failed");
+      else setTables(d.tables ?? []);
+    } catch {
+      setError("Inspect failed — the request did not complete.");
+    }
+  }
 
   async function sync() {
     setBusy(true);
@@ -72,7 +92,10 @@ export default function CensusPanel({ token }: { token: string }) {
       const d = await res.json();
       if (!res.ok) setError(d.error ?? "Sync failed");
       else {
-        setNote(`ACS ${d.year}: ${d.count} cities priced, ${d.placeCount} matched to the city itself.`);
+        setNote(
+          `ACS ${d.year}: ${d.count} cities priced, ${d.placeCount} matched to the city itself.` +
+            (d.looseCount ? ` ${d.looseCount} resolved by a loose name match — check those rows.` : ""),
+        );
         setUnmatched(d.unmatched ?? []);
         load();
       }
@@ -120,6 +143,16 @@ export default function CensusPanel({ token }: { token: string }) {
           {busy ? "Fetching from Census…" : "Sync city rents"}
         </button>
 
+        <button
+          onClick={() => inspect("1")}
+          style={{
+            fontSize: 13, fontWeight: 600, padding: "10px 14px", borderRadius: 8,
+            border: `1px solid ${LINE}`, background: "#fff", color: INK, cursor: "pointer", fontFamily: "inherit",
+          }}
+        >
+          What rent tables exist?
+        </button>
+
         {data?.syncedAt ? (
           <span style={{ fontSize: 12.5, color: MUTED }}>
             Last synced {new Date(data.syncedAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -146,6 +179,26 @@ export default function CensusPanel({ token }: { token: string }) {
         </div>
       )}
 
+      {tables && (
+        <div style={{ marginTop: 14, background: "#F8FAFC", border: `1px solid ${LINE}`, borderRadius: 8, padding: "12px 14px" }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: INK, marginBottom: 6 }}>
+            {tables.length} rent table{tables.length === 1 ? "" : "s"} cut by tenure or move-in year
+          </div>
+          {tables.length === 0 && (
+            <div style={{ fontSize: 12.5, color: MUTED }}>None found — this vintage does not publish one.</div>
+          )}
+          {tables.map((t) => (
+            <div key={t.name} style={{ fontSize: 12, color: MUTED, lineHeight: 1.6 }}>
+              <button
+                onClick={() => inspect(t.name)}
+                style={{ fontFamily: MONO, color: GOOD, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12 }}
+              >{t.name}</button>
+              {" — "}{t.description}
+            </div>
+          ))}
+        </div>
+      )}
+
       {rows.length > 0 && (
         <>
           <label style={{ fontSize: 12.5, color: MUTED, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", marginTop: 16 }}>
@@ -157,7 +210,7 @@ export default function CensusPanel({ token }: { token: string }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 660 }}>
               <thead>
                 <tr style={{ textAlign: "left", color: FAINT, background: "#F8FAFC" }}>
-                  {["City", "Rent / mo", "Was", "Now", "Change", "Basis", "Census geography"].map((h) => (
+                  {["City", "Rent / mo", "Was", "Now", "Change", "Basis", "Match", "Census geography"].map((h) => (
                     <th key={h} style={{ padding: "8px 10px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -183,6 +236,17 @@ export default function CensusPanel({ token }: { token: string }) {
                           color: r.basis === "place" ? GOOD : WARN,
                           background: r.basis === "place" ? "#ECFDF5" : "#FFFBEB",
                         }}>{r.basis}</span>
+                      </td>
+                      <td style={{ padding: "8px 10px" }}>
+                        {r.matched_by && r.matched_by !== "exact" && r.matched_by !== "county" && (
+                          <span
+                            title="Resolved by a fallback name match rather than an exact one — worth checking the geography is the city you mean."
+                            style={{
+                              fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", padding: "2px 8px",
+                              borderRadius: 99, color: WARN, background: "#FFFBEB", whiteSpace: "nowrap",
+                            }}
+                          >{r.matched_by}</span>
+                        )}
                       </td>
                       <td style={{ padding: "8px 10px", color: MUTED, maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.geo}</td>
                     </tr>
