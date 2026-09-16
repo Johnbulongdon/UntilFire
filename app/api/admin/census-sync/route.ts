@@ -47,6 +47,16 @@ export async function POST(req: NextRequest) {
   if ("error" in auth) return auth.error;
   const { admin } = auth;
 
+  if (!process.env.CENSUS_API_KEY) {
+    return NextResponse.json(
+      {
+        error:
+          "CENSUS_API_KEY is not set in this deployment. Request one free at api.census.gov/data/key_signup.html — it arrives by email in a minute. Add it in Vercel, then redeploy, since Vercel applies env vars at deploy time.",
+      },
+      { status: 503 },
+    );
+  }
+
   const runId = await startJobRun(admin, JOBS.CENSUS_SYNC);
 
   try {
@@ -55,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     for (const year of candidateYears()) {
       try {
-        const attempt = await fetchCityRents(year);
+        const attempt = await fetchCityRents(year, process.env.CENSUS_API_KEY);
         if (attempt.cities.length) { result = attempt; break; }
         failures.push(`${year}: matched nothing`);
       } catch (err) {
@@ -64,7 +74,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (!result) {
-      throw new Error(`No ACS vintage returned usable rents. Tried — ${failures.join(" | ")}`);
+      const distinct = [...new Set(failures.map((f) => f.replace(/^\d{4}: /, "")))];
+      throw new Error(
+        distinct.length === 1
+          ? distinct[0]
+          : `No ACS vintage returned usable rents. Tried — ${failures.join(" | ")}`,
+      );
     }
 
     const syncedAt = new Date().toISOString();

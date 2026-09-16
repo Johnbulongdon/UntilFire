@@ -9,10 +9,14 @@ import { CITIES, isUS, type City } from "./fire-data";
  * right granularity, but its API needs a key from a site that is unreachable
  * from some networks — including the one this project is run from.
  *
- * ACS needs no key at this volume, and it is published per PLACE: roughly
- * 29,500 incorporated cities and towns, which is every US city anyone might
- * type. One request returns every place in a state, so 51 requests cover the
- * country.
+ * ACS is published per PLACE: roughly 29,500 incorporated cities and towns,
+ * which is every US city anyone might type. One request returns every place in
+ * a state, so 51 requests cover the country.
+ *
+ * It needs a key. That was an assumption worth checking and was not checked —
+ * the first live run came back with an HTML "Missing Key" page. Unlike HUD's,
+ * the key is issued instantly by email from api.census.gov and the signup is on
+ * the API domain rather than a separate portal.
  *
  * What it measures, stated plainly because it matters: B25064 is MEDIAN GROSS
  * RENT — what sitting tenants currently pay, including long and rent-stabilised
@@ -154,12 +158,25 @@ function rentFrom(value: string | null): number | null {
   return Number.isFinite(n) && n > 50 ? n : null;
 }
 
-async function censusRows(year: number, params: Record<string, string>): Promise<string[][]> {
+async function censusRows(year: number, key: string, params: Record<string, string>): Promise<string[][]> {
   const url = new URL(`${BASE}/${year}/acs/acs5`);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  url.searchParams.set("key", key);
 
   const res = await fetch(url, { cache: "no-store" });
   const text = await res.text();
+
+  // Census answers an auth problem with an HTML error page, not a status code
+  // or JSON. Left alone it surfaced as 200 lines of markup in the admin, which
+  // says nothing about what to do. Never echo the URL — it carries the key.
+  if (/<html/i.test(text)) {
+    const title = text.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim();
+    throw new Error(
+      title && /key/i.test(title)
+        ? `Census rejected the request: ${title}. CENSUS_API_KEY is missing or not valid for this deployment.`
+        : `Census returned an HTML error page${title ? ` (${title})` : ""} rather than data.`,
+    );
+  }
   if (!res.ok) throw new Error(`Census HTTP ${res.status}: ${text.slice(0, 160)}`);
 
   let rows: unknown;
@@ -179,10 +196,10 @@ async function censusRows(year: number, params: Record<string, string>): Promise
  * that have no place record. Two requests per state, 102 for the country,
  * which is well inside what Census allows without a key.
  */
-async function stateGeographies(year: number, fips: string) {
+async function stateGeographies(year: number, key: string, fips: string) {
   const [places, counties] = await Promise.all([
-    censusRows(year, { get: `NAME,${MEDIAN_GROSS_RENT}`, for: "place:*", in: `state:${fips}` }),
-    censusRows(year, { get: `NAME,${MEDIAN_GROSS_RENT}`, for: "county:*", in: `state:${fips}` }),
+    censusRows(year, key, { get: `NAME,${MEDIAN_GROSS_RENT}`, for: "place:*", in: `state:${fips}` }),
+    censusRows(year, key, { get: `NAME,${MEDIAN_GROSS_RENT}`, for: "county:*", in: `state:${fips}` }),
   ]);
 
   const byPlace = new Map<string, { rent: number; geo: string }>();
@@ -205,7 +222,7 @@ async function stateGeographies(year: number, fips: string) {
   return { byPlace, byCounty };
 }
 
-export async function fetchCityRents(year: number): Promise<CensusResult> {
+export async function fetchCityRents(year: number, key: string): Promise<CensusResult> {
   const cities = CITIES.filter((c) => isUS(c.state));
 
   // One fetch per state rather than per city: 51 states against 226 cities, and
@@ -213,7 +230,7 @@ export async function fetchCityRents(year: number): Promise<CensusResult> {
   const needed = [...new Set(cities.map((c) => STATES[c.state]?.fips).filter(Boolean) as string[])];
   const loaded = new Map<string, Awaited<ReturnType<typeof stateGeographies>>>();
   for (const fips of needed) {
-    loaded.set(fips, await stateGeographies(year, fips));
+    loaded.set(fips, await stateGeographies(year, key, fips));
   }
 
   const out: CityRent[] = [];
