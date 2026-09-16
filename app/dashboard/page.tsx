@@ -5013,7 +5013,10 @@ export default function Dashboard() {
   }
 
   const wasUpgradedRef = useRef(false);
-  const [subscription, setSubscription] = useState<{ plan: "free" | "pro" } | null>(null);
+  // hadSubscription, not just plan: someone who subscribed once and cancelled
+  // cannot have another trial, and the upgrade modal has to know that before it
+  // offers one. Same source of truth the checkout route uses.
+  const [subscription, setSubscription] = useState<{ plan: "free" | "pro"; hadSubscription: boolean } | null>(null);
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [plaidHoldings, setPlaidHoldings] = useState<PlaidHolding[]>([]);
   const [plaidSecurities, setPlaidSecurities] = useState<Record<string, PlaidSecurity>>({});
@@ -5118,17 +5121,20 @@ export default function Dashboard() {
     if (!userId) return;
     supabase
       .from("subscriptions")
-      .select("plan")
+      .select("plan, stripe_subscription_id")
       .eq("user_id", userId)
       .maybeSingle()
       .then(({ data }) => {
-        setSubscription({ plan: (data?.plan as "free" | "pro") ?? "free" });
+        setSubscription({
+          plan: (data?.plan as "free" | "pro") ?? "free",
+          hadSubscription: Boolean(data?.stripe_subscription_id),
+        });
       });
   }, [userId]);
 
   useEffect(() => {
     if (!upgradedBanner || !userId) return;
-    setSubscription({ plan: "pro" });
+    setSubscription({ plan: "pro", hadSubscription: true });
   }, [upgradedBanner, userId]);
 
   async function handleManageBilling() {
@@ -6257,7 +6263,12 @@ export default function Dashboard() {
         </main>
       </div>
       <FeedbackWidget />
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} source={upgradeSource} />
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        source={upgradeSource}
+        trialAvailable={subscription ? !subscription.hadSubscription : null}
+      />
     </>
   );
 }
