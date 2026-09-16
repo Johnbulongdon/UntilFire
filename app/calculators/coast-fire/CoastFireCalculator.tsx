@@ -81,6 +81,7 @@ export default function CoastFireCalculator() {
   const [withdrawalRate, setWithdrawalRate] = useState(4)
 
   const [chartRef, chartWidth] = useWidth<HTMLDivElement>(320)
+  const [dragging, setDragging] = useState(false)
 
   const result = useMemo(() => {
     const r = returnRate / 100
@@ -150,10 +151,57 @@ export default function CoastFireCalculator() {
     }
   }, [currentAge, currentSavings, monthlyContribution, retireAge, annualExpenses, returnRate, withdrawalRate])
 
+  /**
+   * What you would have to pay in each month to be able to stop at `stopAt`.
+   *
+   *   S(1+r)^n + X·[((1+r)^n − 1)/r] = coast number at that age
+   *
+   * solved for X. Contribution stays the single source of truth — dragging the
+   * dot sets it, rather than introducing a second mode with its own state that
+   * can disagree with the sliders sitting right next to it.
+   */
+  const contributionFor = (stopAt: number) => {
+    const r = returnRate / 100
+    const wr = withdrawalRate / 100
+    const retire = Math.max(currentAge + 1, retireAge)
+    const target = wr > 0 ? annualExpenses / wr : 0
+    const stop = Math.min(retire, Math.max(currentAge + 1, stopAt))
+    const years = stop - currentAge
+    if (years <= 0 || r <= 0) return monthlyContribution
+
+    const needed = target / Math.pow(1 + r, Math.max(0, retire - stop))
+    const grown = currentSavings * Math.pow(1 + r, years)
+    const factor = (Math.pow(1 + r, years) - 1) / r
+    const annual = (needed - grown) / factor
+    // Snapped to the slider's own step so the two controls cannot disagree by
+    // a few pounds and render different numbers for the same state.
+    return Math.max(0, Math.min(10_000, Math.round(annual / 12 / 100) * 100))
+  }
+
   // Shorter on a phone: the results card is sticky, so every pixel it takes is
   // a pixel of sliders the reader cannot see while dragging them.
   const narrow = chartWidth < 420
   const chartHeight = narrow ? 150 : 250
+
+  /**
+   * Where an age sits in pixels, and back again.
+   *
+   * The plot runs from the y-axis to the right margin; the category axis
+   * spaces the years evenly across it. Good enough to grab by — this maps a
+   * finger to a year, not to a pixel.
+   */
+  const plotLeft = 4 + 52                                   // margin.left + YAxis width
+  const plotRight = Math.max(280, chartWidth) - (narrow ? 12 : 56)
+  const points = Math.max(1, result.series.length - 1)
+  const xForAge = (a: number) => plotLeft + ((a - currentAge) / points) * (plotRight - plotLeft)
+  const ageForX = (px: number) =>
+    Math.round(currentAge + ((px - plotLeft) / Math.max(1, plotRight - plotLeft)) * points)
+
+  const onDrag = (clientX: number) => {
+    const rect = chartRef.current?.getBoundingClientRect()
+    if (!rect) return
+    setMonthlyContribution(contributionFor(ageForX(clientX - rect.left)))
+  }
 
   return (
     <div style={{ background: 'var(--uf-ground)', minHeight: '100vh', color: 'var(--uf-ink)' }}>
@@ -234,7 +282,7 @@ export default function CoastFireCalculator() {
                     : `Paying in to ${result.coastAge}, coasting to ${result.retire}, then spending`}
                 </h2>
 
-                <div ref={chartRef} style={{ width: '100%' }}>
+                <div ref={chartRef} style={{ width: '100%', position: 'relative', userSelect: dragging ? 'none' : undefined }}>
                   <ComposedChart
                     width={Math.max(280, chartWidth)}
                     height={chartHeight}
@@ -296,8 +344,8 @@ export default function CoastFireCalculator() {
                     />
                     {result.coastAge !== null && (
                       <ReferenceDot
-                        x={result.coastAge} y={result.series.find((p) => p.age === result.coastAge)?.coasting ?? 0} r={5}
-                        fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
+                        x={result.coastAge} y={result.series.find((p) => p.age === result.coastAge)?.coasting ?? 0} r={dragging ? 8 : 5}
+                        fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={dragging ? 3 : 2}
                       />
                     )}
                     <ReferenceLine
@@ -308,7 +356,72 @@ export default function CoastFireCalculator() {
                       }}
                     />
                   </ComposedChart>
+
+                  {/* A 48px strip, not the 12px dot.
+                      The visible dot is a marker; the thing you grab is a
+                      full-height band around it, which clears the 44px touch
+                      minimum without drawing a 44px circle on a 280px chart.
+                      touch-action is off on the strip alone, so a drag here
+                      never becomes a page scroll and a drag anywhere else
+                      still does. */}
+                  {result.coastAge !== null && (
+                    <div
+                      role="slider"
+                      aria-label="Age you stop paying in"
+                      aria-valuenow={result.coastAge}
+                      aria-valuemin={currentAge + 1}
+                      aria-valuemax={result.retire}
+                      tabIndex={0}
+                      onPointerDown={(e) => {
+                        e.currentTarget.setPointerCapture(e.pointerId)
+                        setDragging(true)
+                        onDrag(e.clientX)
+                      }}
+                      onPointerMove={(e) => { if (dragging) onDrag(e.clientX) }}
+                      onPointerUp={(e) => {
+                        e.currentTarget.releasePointerCapture(e.pointerId)
+                        setDragging(false)
+                      }}
+                      onPointerCancel={() => setDragging(false)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+                        e.preventDefault()
+                        setMonthlyContribution(contributionFor(result.coastAge! + (e.key === 'ArrowRight' ? 1 : -1)))
+                      }}
+                      style={{
+                        position: 'absolute',
+                        left: xForAge(result.coastAge) - 24,
+                        top: 0,
+                        width: 48,
+                        height: chartHeight - 52,
+                        touchAction: 'none',
+                        cursor: dragging ? 'grabbing' : 'grab',
+                        borderRadius: 999,
+                        background: dragging ? 'var(--uf-teal-soft)' : 'transparent',
+                        opacity: dragging ? 0.45 : 1,
+                      }}
+                    />
+                  )}
+
+                  {dragging && result.coastAge !== null && (
+                    <div
+                      className="uf-t-data"
+                      style={{
+                        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+                        background: 'var(--uf-ink)', color: 'var(--uf-ground)',
+                        padding: 'var(--uf-s2) var(--uf-s3)', borderRadius: 999,
+                        fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap',
+                        pointerEvents: 'none', boxShadow: 'var(--uf-e2)',
+                      }}
+                    >
+                      Stop at {result.coastAge} · {formatMoney(monthlyContribution)}/mo
+                    </div>
+                  )}
                 </div>
+
+                <p className="uf-t-small" style={{ color: 'var(--uf-ink-3)', margin: 'var(--uf-s2) 0 0' }}>
+                  Drag the dot to choose when you stop paying in — the monthly figure follows.
+                </p>
               </div>
             </Card>
           </div>
