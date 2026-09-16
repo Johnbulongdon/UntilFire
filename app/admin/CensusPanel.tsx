@@ -21,6 +21,10 @@ interface Row {
   market_rent: number | null;
   rent_source: string | null;
   col: number;
+  housing_annual: number | null;
+  non_housing_annual: number | null;
+  non_housing_index: number | null;
+  rent_capped: boolean;
   geo: string;
   basis: "place" | "county";
   matched_by: string | null;
@@ -35,6 +39,7 @@ interface Data {
   syncedAt: string | null;
   placeCount: number;
   marketCount: number;
+  cappedCount: number;
   nonHousing: number;
 }
 
@@ -98,6 +103,8 @@ export default function CensusPanel({ token }: { token: string }) {
         setNote(
           `ACS ${d.year}: ${d.count} cities priced, ${d.placeCount} matched to the city itself.` +
             (d.marketCount ? ` ${d.marketCount} on mover rent${d.moverLabel ? ` (${d.moverLabel})` : ""}.` : "") +
+            (d.scaledCount ? ` ${d.scaledCount} non-housing figures re-priced by BEA.` : "") +
+            (d.cappedCount ? ` ${d.cappedCount} at Census's rent ceiling — understated.` : "") +
             (d.looseCount ? ` ${d.looseCount} resolved by a loose name match — check those rows.` : ""),
         );
         setUnmatched(d.unmatched ?? []);
@@ -133,6 +140,12 @@ export default function CensusPanel({ token }: { token: string }) {
         signed years ago included &mdash; not a price on offer to anyone. <strong>Movers</strong> is
         the same rent among the most recent arrivals, which is close to what the market asks today.
         Cost of living is built from the mover figure wherever Census publishes one.
+      </p>
+      <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
+        The total is shown as two halves because only one of them is measured.{" "}
+        <strong>Housing</strong> is this city&apos;s rent. <strong>Non-housing</strong> is a national
+        baseline of {money(data?.nonHousing ?? 0)} re-priced by BEA&apos;s goods and services
+        parities &mdash; an estimate, and the half a reader should replace with their own spending.
       </p>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -215,7 +228,7 @@ export default function CensusPanel({ token }: { token: string }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 660 }}>
               <thead>
                 <tr style={{ textAlign: "left", color: FAINT, background: "#F8FAFC" }}>
-                  {["City", "All renters", "Movers", "Was", "Now", "Change", "Basis", "Match", "Census geography"].map((h) => (
+                  {["City", "Rent / mo", "Housing", "Non-housing", "Total", "Was", "Change", "Match", "Census geography"].map((h) => (
                     <th key={h} style={{ padding: "8px 10px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -226,27 +239,29 @@ export default function CensusPanel({ token }: { token: string }) {
                   return (
                     <tr key={r.city_key} style={{ borderTop: "1px solid #F1F5F9" }}>
                       <td style={{ padding: "8px 10px", color: INK, whiteSpace: "nowrap" }}>{r.name}</td>
-                      <td style={{ padding: "8px 10px", color: MUTED, fontFamily: MONO }}>{money(r.rent)}</td>
-                      <td style={{
-                        padding: "8px 10px", fontFamily: MONO, fontWeight: 700,
-                        color: r.market_rent == null ? FAINT : INK,
-                      }}>
-                        {r.market_rent == null ? "—" : money(r.market_rent)}
+                      <td style={{ padding: "8px 10px", fontFamily: MONO, color: INK, whiteSpace: "nowrap" }}>
+                        {money(r.market_rent ?? r.rent)}
+                        {r.rent_capped && (
+                          <span
+                            title="Census publishes no median gross rent above 3501, so this is its ceiling rather than this city's rent. The real figure is higher."
+                            style={{ color: BAD, fontWeight: 800, marginLeft: 4 }}
+                          >+</span>
+                        )}
                       </td>
+                      <td style={{ padding: "8px 10px", color: INK, fontFamily: MONO }}>{money(r.housing_annual)}</td>
+                      <td style={{ padding: "8px 10px", color: MUTED, fontFamily: MONO }}>
+                        {money(r.non_housing_annual)}
+                        {r.non_housing_index != null && (
+                          <span style={{ color: FAINT, fontSize: 11 }}> ×{(r.non_housing_index / 100).toFixed(2)}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "8px 10px", color: INK, fontWeight: 700, fontFamily: MONO }}>{money(r.col)}</td>
                       <td style={{ padding: "8px 10px", color: MUTED, fontFamily: MONO }}>{money(r.previous)}</td>
-                      <td style={{ padding: "8px 10px", color: INK, fontFamily: MONO }}>{money(r.col)}</td>
                       <td style={{
                         padding: "8px 10px", fontFamily: MONO,
                         color: delta == null ? FAINT : Math.abs(delta) > 0.25 ? BAD : Math.abs(delta) > 0.05 ? WARN : MUTED,
                       }}>
                         {delta == null ? "—" : `${delta > 0 ? "+" : ""}${Math.round(delta * 100)}%`}
-                      </td>
-                      <td style={{ padding: "8px 10px" }}>
-                        <span style={{
-                          fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", padding: "2px 8px", borderRadius: 99,
-                          color: r.basis === "place" ? GOOD : WARN,
-                          background: r.basis === "place" ? "#ECFDF5" : "#FFFBEB",
-                        }}>{r.basis}</span>
                       </td>
                       <td style={{ padding: "8px 10px" }}>
                         {r.matched_by && r.matched_by !== "exact" && r.matched_by !== "county" && (

@@ -61,6 +61,18 @@ const MOVER_TABLE = "B25113";
  */
 export const NON_HOUSING_ANNUAL_USD = 34_000;
 
+/**
+ * Census top-codes a median gross rent at 3501.
+ *
+ * Not a rent anyone pays — it is the ceiling of the published scale, so every
+ * place above it reports the same figure. Hoboken, Huntington and Palo Alto all
+ * came back at exactly 3501 and all produced an identical cost of living, which
+ * put Huntington above New York City. Capped rows are marked rather than
+ * invented: the honest statement is "at least this", and a fabricated number
+ * above the ceiling would be a guess wearing a citation.
+ */
+export const CENSUS_RENT_CAP = 3500;
+
 export interface CityRent {
   key: string;
   name: string;
@@ -78,6 +90,14 @@ export interface CityRent {
   matchedBy: MatchKind;
   /** Which rent col was built from: recent movers where published, else all renters. */
   rentSource: "market" | "all";
+  /** Rent x 12. The part of col that is actually measured for this city. */
+  housingAnnual: number;
+  /** The national baseline, re-priced to this city. An estimate, and labelled as one. */
+  nonHousingAnnual: number;
+  /** The non-housing price level used, US average = 100. Null when unscaled. */
+  nonHousingIndex: number | null;
+  /** True when Census returned its ceiling rather than a real median. */
+  capped: boolean;
   /** The hand-entered figure this would replace. */
   previous: number;
 }
@@ -357,7 +377,25 @@ async function findRecentMoverVariable(
   return best ? { id: best.id, label: best.label } : null;
 }
 
-export async function fetchCityRents(year: number, key: string): Promise<CensusResult> {
+/**
+ * Annual living costs, split into the half we measure and the half we estimate.
+ *
+ * Keeping them apart is the point. A single blended number hid that rents
+ * spread 3.89x across these cities while the total spread only 1.70x — the flat
+ * baseline was three quarters of the cheapest city's figure and under half of
+ * the dearest's, quietly flattening everything. Split, each half can be shown
+ * for what it is, and the reader can replace the estimated half with their own
+ * spending.
+ *
+ * `nonHousingIndex` re-prices the baseline using BEA's goods and services
+ * parities, which the BEA import already stores. Housing is deliberately not in
+ * that blend: it is the other half of this sum and would be counted twice.
+ */
+export async function fetchCityRents(
+  year: number,
+  key: string,
+  nonHousingIndex: Map<string, number> = new Map(),
+): Promise<CensusResult> {
   const cities = CITIES.filter((c) => isUS(c.state));
 
   const mover = await findRecentMoverVariable(year, key);
@@ -414,12 +452,25 @@ export async function fetchCityRents(year: number, key: string): Promise<CensusR
     // better than dropping the city.
     const used = hit.marketRent ?? hit.rent;
 
+    // Both halves are rounded, then the total is their sum — never rounded
+    // again. Rounding the total independently left Palo Alto's $42,012 and
+    // $37,900 adding up to $79,912 against a displayed $79,900, and a
+    // breakdown whose parts do not make the whole is worse than no breakdown
+    // at all on a page about somebody's money.
+    const index = nonHousingIndex.get(city.key) ?? null;
+    const housingAnnual = Math.round((used * 12) / 100) * 100;
+    const nonHousingAnnual = Math.round((NON_HOUSING_ANNUAL_USD * (index ?? 100)) / 100 / 100) * 100;
+
     out.push({
       key: city.key,
       name: city.name,
       rent: hit.rent,
       marketRent: hit.marketRent,
-      col: Math.round((used * 12 + NON_HOUSING_ANNUAL_USD) / 100) * 100,
+      col: housingAnnual + nonHousingAnnual,
+      housingAnnual,
+      nonHousingAnnual,
+      nonHousingIndex: index,
+      capped: used >= CENSUS_RENT_CAP,
       geo: hit.geo,
       basis: county ? "county" : "place",
       matchedBy: how,

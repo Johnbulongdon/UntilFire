@@ -7,6 +7,7 @@ import {
   inspectTableVariables,
 } from "@/lib/census";
 import { JOBS, finishJobRun, startJobRun } from "@/lib/lifecycle";
+import { BUDGET_WEIGHTS } from "@/lib/bea";
 
 /**
  * GET  — what is stored, so the tab renders without calling Census.
@@ -64,6 +65,7 @@ export async function GET(req: NextRequest) {
     syncedAt: rows[0]?.synced_at ?? null,
     placeCount: rows.filter((r) => r.basis === "place").length,
     marketCount: rows.filter((r) => r.rent_source === "market").length,
+    cappedCount: rows.filter((r) => r.rent_capped).length,
     nonHousing: NON_HOUSING_ANNUAL_USD,
   });
 }
@@ -86,12 +88,32 @@ export async function POST(req: NextRequest) {
   const runId = await startJobRun(admin, JOBS.CENSUS_SYNC);
 
   try {
+    // Non-housing price level per city, from the BEA components already stored.
+    // Rents are excluded on purpose — housing is the other half of the sum and
+    // including it here would price the same thing twice. Cities with no BEA
+    // row simply carry the national baseline unscaled.
+    const { data: parities } = await admin
+      .from("city_col")
+      .select("city_key, rpp_goods, rpp_other");
+
+    const weight = BUDGET_WEIGHTS.goods + BUDGET_WEIGHTS.other;
+    const nonHousingIndex = new Map<string, number>();
+    for (const p of parities ?? []) {
+      const goods = Number(p.rpp_goods);
+      const other = Number(p.rpp_other);
+      if (!Number.isFinite(goods) || !Number.isFinite(other)) continue;
+      nonHousingIndex.set(
+        p.city_key,
+        (goods * BUDGET_WEIGHTS.goods + other * BUDGET_WEIGHTS.other) / weight,
+      );
+    }
+
     let result: Awaited<ReturnType<typeof fetchCityRents>> | null = null;
     const failures: string[] = [];
 
     for (const year of candidateYears()) {
       try {
-        const attempt = await fetchCityRents(year, process.env.CENSUS_API_KEY);
+        const attempt = await fetchCityRents(year, process.env.CENSUS_API_KEY, nonHousingIndex);
         if (attempt.cities.length) { result = attempt; break; }
         failures.push(`${year}: matched nothing`);
       } catch (err) {
@@ -117,6 +139,10 @@ export async function POST(req: NextRequest) {
         market_rent: c.marketRent,
         rent_source: c.rentSource,
         col: c.col,
+        housing_annual: c.housingAnnual,
+        non_housing_annual: c.nonHousingAnnual,
+        non_housing_index: c.nonHousingIndex,
+        rent_capped: c.capped,
         geo: c.geo,
         basis: c.basis,
         matched_by: c.matchedBy,
@@ -140,6 +166,8 @@ export async function POST(req: NextRequest) {
       placeCount: result.cities.filter((c) => c.basis === "place").length,
       looseCount: result.cities.filter((c) => c.matchedBy === "prefix" || c.matchedBy === "contains").length,
       marketCount: result.cities.filter((c) => c.rentSource === "market").length,
+      cappedCount: result.cities.filter((c) => c.capped).length,
+      scaledCount: result.cities.filter((c) => c.nonHousingIndex !== null).length,
       moverLabel: result.moverLabel,
       nonHousing: NON_HOUSING_ANNUAL_USD,
       unmatched: result.unmatched,
