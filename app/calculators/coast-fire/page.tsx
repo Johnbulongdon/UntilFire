@@ -27,25 +27,53 @@ export default function CoastFirePage() {
   return (
     <>
       <CoastFireCalculator />
-      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
-        <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18 }}>
-          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
-            <h1 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 28, letterSpacing: '-0.03em' }}>
-              Coast FIRE Calculator: When Can You Stop Contributing?
-            </h1>
-            <p style={{ margin: '0 0 12px', color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
-              Coast FIRE estimates the amount you need invested today so growth can do the remaining retirement work by your target age. It is not full financial independence yet; it is the milestone where future retirement contributions may become optional.
+      {/* One h1 per page. The calculator owns it — this section used to open
+          with a second one, and its intro paragraph repeated what the
+          calculator now says above the fold. The FAQ stays because it is the
+          text behind the FAQPage schema below and answers things the
+          calculator does not. */}
+      <section style={{ background: 'var(--uf-ground)', padding: '0 var(--uf-s6) var(--uf-s7)' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <article
+            style={{
+              background: 'var(--uf-card)', border: '1px solid var(--uf-border)',
+              borderRadius: 20, padding: 'var(--uf-s5)',
+            }}
+          >
+            <h2 className="uf-t-h2" style={{ margin: '0 0 var(--uf-s4)' }}>Coast FIRE FAQ</h2>
+
+            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
+              Is Coast FIRE the same as Barista FIRE?
+            </h3>
+            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
+              No. Coast FIRE means your existing investments can grow into a full retirement on
+              their own. Barista FIRE usually means you still work part time to cover today&apos;s
+              expenses while they do it.
             </p>
-            <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
-              Use this page after the <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>FIRE calculator</Link> if you want to compare full FIRE with a more flexible milestone. Then pressure-test your final target with the <Link href="/calculators/4-percent-rule" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>FIRE number calculator</Link>.
+
+            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
+              What inputs matter most?
+            </h3>
+            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
+              Expected return and years remaining, by a wide margin. Both sit in an exponent, so a
+              single percentage point moves the Coast number far more than a change to your
+              spending does. Try 6% against 7% above and watch the curve.
             </p>
-          </article>
-          <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 24 }}>Coast FIRE FAQ</h2>
-            <h3 style={{ margin: '0 0 8px', color: 'var(--uf-ink)', fontSize: 18 }}>Is Coast FIRE the same as Barista FIRE?</h3>
-            <p style={{ margin: '0 0 14px', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>No. Coast FIRE means existing investments can grow enough for retirement later. Barista FIRE usually means you still work part time to cover current expenses before full retirement.</p>
-            <h3 style={{ margin: '0 0 8px', color: 'var(--uf-ink)', fontSize: 18 }}>What inputs matter most?</h3>
-            <p style={{ margin: 0, color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>Current portfolio, target retirement age, expected return, inflation, future annual spending, and withdrawal rate drive the estimate. Small assumption changes can move the Coast FIRE number materially.</p>
+
+            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
+              Where does this fit with the rest?
+            </h3>
+            <p className="uf-t-body" style={{ margin: 0, color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
+              Use the{' '}
+              <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>
+                FIRE calculator
+              </Link>{' '}
+              for the full number and a date, then{' '}
+              <Link href="/calculators/4-percent-rule" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>
+                pressure-test the withdrawal rate
+              </Link>
+              . Coast FIRE is the milestone between where you are and either of those.
+            </p>
           </article>
         </div>
       </section>
@@ -84,7 +112,7 @@ export default function CoastFirePage() {
                 name: 'Is Coast FIRE the same as Barista FIRE?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'No. Coast FIRE means existing investments can grow enough for retirement later. Barista FIRE usually means you still work part time to cover current expenses before full retirement.',
+                  text: 'No. Coast FIRE means your existing investments can grow into a full retirement on their own. Barista FIRE usually means you still work part time to cover today\u2019s expenses while they do it.',
                 },
               },
               {
@@ -92,7 +120,15 @@ export default function CoastFirePage() {
                 name: 'What inputs matter most for Coast FIRE?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Current portfolio, target retirement age, expected return, inflation, future annual spending, and withdrawal rate drive the estimate. Small assumption changes can move the Coast FIRE number materially.',
+                  text: 'Expected return and years remaining, by a wide margin. Both sit in an exponent, so a single percentage point moves the Coast FIRE number far more than a change to your spending does.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Where does Coast FIRE fit with a full FIRE number?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Coast FIRE is the milestone before full financial independence. Work out the full number and a date first, then treat Coast FIRE as the earlier point where contributions become optional.',
                 },
               },
             ],
