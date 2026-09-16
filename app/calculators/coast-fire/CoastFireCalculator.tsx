@@ -181,15 +181,20 @@ export default function CoastFireCalculator() {
 
             <div style={{ borderTop: '1px solid var(--uf-border)', paddingTop: 'var(--uf-s4)' }}>
               <h2 className="uf-t-small" style={{ margin: '0 0 var(--uf-s2)', fontWeight: 700, color: 'var(--uf-ink-2)' }}>
-                {narrow ? 'Growth with no further contributions' : "What today's savings grow into, with no further contributions"}
+                {narrow
+                  ? `${result.years} years of growth, nothing added`
+                  : `${result.years} years of growth from age ${currentAge} to ${retireAge}, with no further contributions`}
               </h2>
               {/* The caption explains the dashed line, but on a phone it costs
                   three lines of a card that has to stay short enough to leave
                   the sliders it controls on screen. */}
               <p className="uf-t-small" style={{ color: 'var(--uf-ink-3)', margin: '0 0 var(--uf-s3)', display: narrow ? 'none' : 'block' }}>
+                From {formatMoney(currentSavings)} today to{' '}
+                <strong style={{ color: 'var(--uf-ink)' }}>{formatMoney(result.endBalance)}</strong> at {retireAge},
+                adding nothing.{' '}
                 {result.alreadyCoast
-                  ? `Your balance clears the target at age ${result.crossing?.age ?? retireAge}. The dashed line is the minimum path that just makes it.`
-                  : 'The dashed line is where you would need to be today to coast. The gap between them is what is still missing.'}
+                  ? `That clears the target at age ${result.crossing?.age ?? retireAge}; the dashed line is the minimum path that just makes it.`
+                  : 'The dashed line is where you would need to be to coast — the gap between them is what is still missing.'}
               </p>
 
               <div ref={chartRef} style={{ width: '100%' }}>
@@ -197,7 +202,7 @@ export default function CoastFireCalculator() {
                   width={Math.max(280, chartWidth)}
                   height={chartHeight}
                   data={result.series}
-                  margin={{ top: 8, right: 12, bottom: 4, left: 4 }}
+                  margin={{ top: 18, right: narrow ? 12 : 56, bottom: 4, left: 4 }}
                 >
                   <defs>
                     <linearGradient id="coastFill" x1="0" y1="0" x2="0" y2="1">
@@ -230,9 +235,9 @@ export default function CoastFireCalculator() {
                   <ReferenceLine
                     y={result.fireTarget}
                     stroke="var(--uf-ink-3)" strokeDasharray="4 4"
-                    label={{
-                      value: `Full FIRE ${formatMoney(result.fireTarget, { style: 'compact' })}`,
-                      position: 'insideTopRight', fill: 'var(--uf-ink-3)', fontSize: 11,
+                    label={narrow ? undefined : {
+                      value: formatMoney(result.fireTarget, { style: 'compact' }),
+                      position: 'right', fill: 'var(--uf-ink-3)', fontSize: 11,
                     }}
                   />
                   {/* linear, never monotone: a spline draws balances between the
@@ -247,10 +252,32 @@ export default function CoastFireCalculator() {
                     strokeDasharray="5 4" dot={false} isAnimationActive={false}
                     name="If you were coasting"
                   />
-                  {result.crossing && (
+                  {/* Both ends of the curve, marked. Without them the chart
+                      showed a line rising between two axes and left the reader
+                      to work out what it started from and what it came to —
+                      which are the two numbers the whole page compares.
+                      Labels are dropped on a phone, where 280px cannot hold
+                      them without overlapping the line they annotate. */}
+                  <ReferenceDot
+                    x={currentAge} y={Math.max(0, currentSavings)} r={4}
+                    fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={2}
+                  />
+                  <ReferenceDot
+                    x={retireAge} y={result.endBalance} r={5}
+                    fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
+                    label={narrow ? undefined : {
+                      value: `Age ${retireAge} · ${formatMoney(result.endBalance, { style: 'compact' })}`,
+                      position: 'left', fill: 'var(--uf-ink)', fontSize: 11, offset: 12,
+                    }}
+                  />
+                  {result.crossing && result.crossing.age < retireAge && (
                     <ReferenceDot
                       x={result.crossing.age} y={result.crossing.balance} r={5}
                       fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
+                      label={narrow ? undefined : {
+                        value: `Covered at ${result.crossing.age}`,
+                        position: 'top', fill: 'var(--uf-teal-deep)', fontSize: 11,
+                      }}
                     />
                   )}
                 </ComposedChart>
