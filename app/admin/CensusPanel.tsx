@@ -200,7 +200,7 @@ export default function CensusPanel({ token }: { token: string }) {
       {tables && (
         <div style={{ marginTop: 14, background: "#F8FAFC", border: `1px solid ${LINE}`, borderRadius: 8, padding: "12px 14px" }}>
           <div style={{ fontSize: 12.5, fontWeight: 700, color: INK, marginBottom: 6 }}>
-            {tables.length} rent table{tables.length === 1 ? "" : "s"} cut by tenure or move-in year
+            {tables.length} rent table{tables.length === 1 ? "" : "s"} cut by move-in year, tenure or bedrooms
           </div>
           {tables.length === 0 && (
             <div style={{ fontSize: 12.5, color: MUTED }}>None found — this vintage does not publish one.</div>

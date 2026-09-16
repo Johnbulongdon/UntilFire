@@ -516,11 +516,15 @@ export async function inspectRentTables(year: number, key: string): Promise<Tabl
   const body = JSON.parse(text) as { groups?: { name?: string; description?: string }[] };
   const groups = body.groups ?? [];
 
-  // Rent, cut by when the household moved in or how long they have been there.
-  // Kept broad on purpose: the point is to see what is actually there, so a
-  // narrow filter that returns nothing would defeat it.
+  // Every dimension Census cuts rent by, not just move-in year. Bedrooms is
+  // the one that gives a household size — a one-bed for a single person against
+  // a three-bed for a family — which is the honest way to answer "who is this
+  // number for" instead of picking a household on the reader's behalf.
+  //
+  // Kept broad on purpose: the point is to see what is actually published, so a
+  // narrow filter that quietly returns nothing would defeat it.
   const wanted = /rent/i;
-  const cut = /(moved|mover|year householder|tenure|recent)/i;
+  const cut = /(moved|mover|year householder|tenure|recent|bedroom|household size|persons in)/i;
 
   return groups
     .filter((g) => wanted.test(g.description ?? "") && cut.test(g.description ?? ""))
