@@ -30,8 +30,22 @@ import { CITIES, isUS, type City } from "./fire-data";
 
 const BASE = "https://api.census.gov/data";
 
-/** Median gross rent, monthly USD. */
+/** Median gross rent across every renter, monthly USD. */
 const MEDIAN_GROSS_RENT = "B25064_001E";
+
+/**
+ * Median gross rent by the year the household moved in.
+ *
+ * The whole point of this table: B25064 averages in leases signed years ago and
+ * rent-stabilised units, and a sitting tenant's rent is not on offer to anyone
+ * deciding whether they could move somewhere. The most recent move-in cohort is
+ * close to what the market asks today.
+ *
+ * Confirmed present in ACS 2024 by the inspector rather than assumed. The
+ * variable inside it is still discovered at runtime, because which cohort is
+ * "most recent" changes with every vintage.
+ */
+const MOVER_TABLE = "B25113";
 
 /**
  * Everything that is not rent, annually.
@@ -50,8 +64,10 @@ export const NON_HOUSING_ANNUAL_USD = 34_000;
 export interface CityRent {
   key: string;
   name: string;
-  /** Median gross rent, monthly USD. */
+  /** Median gross rent across all renters, monthly USD. Kept for comparison. */
   rent: number;
+  /** Median rent among the most recent movers, monthly USD. Null where suppressed. */
+  marketRent: number | null;
   /** rent x 12 + the non-housing baseline, to the nearest hundred. */
   col: number;
   /** The Census geography this came from, verbatim, for display and audit. */
@@ -60,6 +76,8 @@ export interface CityRent {
   basis: "place" | "county";
   /** How the name was resolved, so a loose match can be checked rather than trusted. */
   matchedBy: MatchKind;
+  /** Which rent col was built from: recent movers where published, else all renters. */
+  rentSource: "market" | "all";
   /** The hand-entered figure this would replace. */
   previous: number;
 }
@@ -68,6 +86,8 @@ export interface CensusResult {
   year: number;
   cities: CityRent[];
   unmatched: string[];
+  /** The move-in cohort used, verbatim, so the table can say what it is showing. */
+  moverLabel: string | null;
 }
 
 /** Our state keys to Census state FIPS and full names. */
@@ -136,6 +156,11 @@ const COUNTY_MATCH: Record<string, string> = {
  */
 const PLACE_ALIAS: Record<string, string> = {
   dc: "Washington",
+  // Hawaii has three places whose names contain "Honolulu" and two Kailuas told
+  // apart only by a parenthetical county, so the matcher was right to refuse
+  // both. These are the intended ones.
+  honolulu: "Urban Honolulu",
+  kailuakona: "Kailua CDP (Hawaii County)",
   // Ventura's legal name. Without this it is genuinely ambiguous — the fixture
   // finds both this and "Ventura County CDP", and the matcher is right to
   // refuse to pick between them.
@@ -162,10 +187,12 @@ export type MatchKind = "exact" | "prefix" | "contains" | "county";
  * coin toss. The kind of match is carried out with the row so a loose one can
  * be checked in review rather than taken on trust.
  */
+interface PlaceHit { rent: number; marketRent: number | null; geo: string }
+
 function findPlace(
   target: string,
-  places: { bare: string; rent: number; geo: string }[],
-): { hit: { rent: number; geo: string }; how: MatchKind } | { ambiguous: string[] } | null {
+  places: { bare: string; rent: number; marketRent: number | null; geo: string }[],
+): { hit: PlaceHit; how: MatchKind } | { ambiguous: string[] } | null {
   const exact = places.filter((p) => p.bare === target);
   if (exact.length) return { hit: exact[0], how: "exact" };
 
@@ -255,46 +282,94 @@ async function censusRows(year: number, key: string, params: Record<string, stri
  * that have no place record. Two requests per state, 102 for the country,
  * which is well inside what Census allows without a key.
  */
-async function stateGeographies(year: number, key: string, fips: string) {
+async function stateGeographies(year: number, key: string, fips: string, moverVar: string | null) {
+  // Census takes several variables in one request, so asking for the mover rent
+  // alongside costs no extra round trips.
+  const get = `NAME,${MEDIAN_GROSS_RENT}${moverVar ? `,${moverVar}` : ""}`;
   const [places, counties] = await Promise.all([
-    censusRows(year, key, { get: `NAME,${MEDIAN_GROSS_RENT}`, for: "place:*", in: `state:${fips}` }),
-    censusRows(year, key, { get: `NAME,${MEDIAN_GROSS_RENT}`, for: "county:*", in: `state:${fips}` }),
+    censusRows(year, key, { get, for: "place:*", in: `state:${fips}` }),
+    censusRows(year, key, { get, for: "county:*", in: `state:${fips}` }),
   ]);
 
   // A list rather than a map: the fallbacks in findPlace need to scan, and an
   // exact-keyed map would have thrown away the very names they look for.
-  const placeList: { bare: string; rent: number; geo: string }[] = [];
+  const placeList: { bare: string; rent: number; marketRent: number | null; geo: string }[] = [];
   const seen = new Set<string>();
-  for (const [name, value] of places) {
+  for (const [name, value, mover] of places) {
     const rent = rentFrom(value);
     if (rent === null) continue;
+    const marketRent = moverVar ? rentFrom(mover) : null;
     const bare = normalise(String(name).split(",")[0].replace(PLACE_SUFFIX, ""));
     // First wins: Census lists "Springfield city" before "Springfield CDP", and
     // the incorporated city is the one anyone means.
     if (seen.has(bare)) continue;
     seen.add(bare);
-    placeList.push({ bare, rent, geo: String(name) });
+    placeList.push({ bare, rent, marketRent, geo: String(name) });
   }
 
-  const byCounty = new Map<string, { rent: number; geo: string }>();
-  for (const [name, value] of counties) {
+  const byCounty = new Map<string, { rent: number; marketRent: number | null; geo: string }>();
+  for (const [name, value, mover] of counties) {
     const rent = rentFrom(value);
     if (rent === null) continue;
-    byCounty.set(normalise(String(name).split(",")[0]), { rent, geo: String(name) });
+    byCounty.set(normalise(String(name).split(",")[0]), {
+      rent,
+      marketRent: moverVar ? rentFrom(mover) : null,
+      geo: String(name),
+    });
   }
 
   return { placeList, byCounty };
 }
 
+/**
+ * Which B25113 column holds the most recent move-in cohort.
+ *
+ * Discovered, never hardcoded. The cohorts shift with every vintage — what is
+ * "moved in 2021 or later" this year is a closed range the next — so a pinned
+ * variable would quietly start reporting an older and older cohort while still
+ * returning a perfectly plausible number.
+ */
+async function findRecentMoverVariable(
+  year: number,
+  key: string,
+): Promise<{ id: string; label: string } | null> {
+  let variables: TableRef[];
+  try {
+    variables = await inspectTableVariables(year, key, MOVER_TABLE);
+  } catch {
+    return null; // The table is optional; without it we use all renters.
+  }
+
+  let best: { id: string; label: string; since: number } | null = null;
+  for (const v of variables) {
+    const label = v.description;
+    // "Total" is every renter, which is the number this table exists to improve on.
+    if (/total/i.test(label) && !/moved/i.test(label)) continue;
+    if (!/moved/i.test(label)) continue;
+
+    const years = [...label.matchAll(/\b(?:19|20)\d{2}\b/g)].map((m) => Number(m[0]));
+    if (!years.length) continue;
+    // "or later" is the open-ended newest bucket and beats any closed range.
+    const since = Math.max(...years) + (/or later/i.test(label) ? 1000 : 0);
+    if (!best || since > best.since) best = { id: v.name, label: label.split(" > ").pop() ?? label, since };
+  }
+
+  return best ? { id: best.id, label: best.label } : null;
+}
+
 export async function fetchCityRents(year: number, key: string): Promise<CensusResult> {
   const cities = CITIES.filter((c) => isUS(c.state));
+
+  const mover = await findRecentMoverVariable(year, key);
+  const moverVar = mover?.id ?? null;
+  const moverLabel = mover?.label ?? null;
 
   // One fetch per state rather than per city: 51 states against 226 cities, and
   // it stays that way however many cities get added later.
   const needed = [...new Set(cities.map((c) => STATES[c.state]?.fips).filter(Boolean) as string[])];
   const loaded = new Map<string, Awaited<ReturnType<typeof stateGeographies>>>();
   for (const fips of needed) {
-    loaded.set(fips, await stateGeographies(year, key, fips));
+    loaded.set(fips, await stateGeographies(year, key, fips, moverVar));
   }
 
   const out: CityRent[] = [];
@@ -310,7 +385,7 @@ export async function fetchCityRents(year: number, key: string): Promise<CensusR
     const county = COUNTY_MATCH[city.key];
     const place = PLACE_ALIAS[city.key] ?? cityName(city);
 
-    let hit: { rent: number; geo: string } | undefined;
+    let hit: PlaceHit | undefined;
     let how: MatchKind = "county";
 
     if (county) {
@@ -334,19 +409,26 @@ export async function fetchCityRents(year: number, key: string): Promise<CensusR
       continue;
     }
 
+    // The mover figure where Census publishes one, otherwise all renters. A
+    // suppressed cohort is common in small places, and falling back is far
+    // better than dropping the city.
+    const used = hit.marketRent ?? hit.rent;
+
     out.push({
       key: city.key,
       name: city.name,
       rent: hit.rent,
-      col: Math.round((hit.rent * 12 + NON_HOUSING_ANNUAL_USD) / 100) * 100,
+      marketRent: hit.marketRent,
+      col: Math.round((used * 12 + NON_HOUSING_ANNUAL_USD) / 100) * 100,
       geo: hit.geo,
       basis: county ? "county" : "place",
       matchedBy: how,
+      rentSource: hit.marketRent !== null ? "market" : "all",
       previous: city.col,
     });
   }
 
-  return { year, cities: out, unmatched };
+  return { year, cities: out, unmatched, moverLabel };
 }
 
 

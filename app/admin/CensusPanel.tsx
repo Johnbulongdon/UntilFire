@@ -18,6 +18,8 @@ interface Row {
   city_key: string;
   name: string;
   rent: number;
+  market_rent: number | null;
+  rent_source: string | null;
   col: number;
   geo: string;
   basis: "place" | "county";
@@ -32,6 +34,7 @@ interface Data {
   year: number | null;
   syncedAt: string | null;
   placeCount: number;
+  marketCount: number;
   nonHousing: number;
 }
 
@@ -94,6 +97,7 @@ export default function CensusPanel({ token }: { token: string }) {
       else {
         setNote(
           `ACS ${d.year}: ${d.count} cities priced, ${d.placeCount} matched to the city itself.` +
+            (d.marketCount ? ` ${d.marketCount} on mover rent${d.moverLabel ? ` (${d.moverLabel})` : ""}.` : "") +
             (d.looseCount ? ` ${d.looseCount} resolved by a loose name match — check those rows.` : ""),
         );
         setUnmatched(d.unmatched ?? []);
@@ -124,10 +128,11 @@ export default function CensusPanel({ token }: { token: string }) {
         national baseline of {money(data?.nonHousing ?? 0)} a year. Nothing a visitor sees changes
         until these are promoted.
       </p>
-      <p style={{ fontSize: 12.5, color: WARN, margin: "0 0 14px", lineHeight: 1.6 }}>
-        Worth remembering when reading the table: gross rent is what sitting tenants pay, including
-        long and rent-stabilised leases. It runs below the market rent someone moving in today would
-        face, most of all in expensive cities. It is a starting estimate the user can overwrite.
+      <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
+        Two rents are shown. <strong>All renters</strong> is what everybody currently pays, leases
+        signed years ago included &mdash; not a price on offer to anyone. <strong>Movers</strong> is
+        the same rent among the most recent arrivals, which is close to what the market asks today.
+        Cost of living is built from the mover figure wherever Census publishes one.
       </p>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -210,7 +215,7 @@ export default function CensusPanel({ token }: { token: string }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 660 }}>
               <thead>
                 <tr style={{ textAlign: "left", color: FAINT, background: "#F8FAFC" }}>
-                  {["City", "Rent / mo", "Was", "Now", "Change", "Basis", "Match", "Census geography"].map((h) => (
+                  {["City", "All renters", "Movers", "Was", "Now", "Change", "Basis", "Match", "Census geography"].map((h) => (
                     <th key={h} style={{ padding: "8px 10px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -221,7 +226,13 @@ export default function CensusPanel({ token }: { token: string }) {
                   return (
                     <tr key={r.city_key} style={{ borderTop: "1px solid #F1F5F9" }}>
                       <td style={{ padding: "8px 10px", color: INK, whiteSpace: "nowrap" }}>{r.name}</td>
-                      <td style={{ padding: "8px 10px", color: INK, fontWeight: 700, fontFamily: MONO }}>{money(r.rent)}</td>
+                      <td style={{ padding: "8px 10px", color: MUTED, fontFamily: MONO }}>{money(r.rent)}</td>
+                      <td style={{
+                        padding: "8px 10px", fontFamily: MONO, fontWeight: 700,
+                        color: r.market_rent == null ? FAINT : INK,
+                      }}>
+                        {r.market_rent == null ? "—" : money(r.market_rent)}
+                      </td>
                       <td style={{ padding: "8px 10px", color: MUTED, fontFamily: MONO }}>{money(r.previous)}</td>
                       <td style={{ padding: "8px 10px", color: INK, fontFamily: MONO }}>{money(r.col)}</td>
                       <td style={{

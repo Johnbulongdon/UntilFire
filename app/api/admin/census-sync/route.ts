@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
     year: rows[0]?.acs_year ?? null,
     syncedAt: rows[0]?.synced_at ?? null,
     placeCount: rows.filter((r) => r.basis === "place").length,
+    marketCount: rows.filter((r) => r.rent_source === "market").length,
     nonHousing: NON_HOUSING_ANNUAL_USD,
   });
 }
@@ -113,6 +114,8 @@ export async function POST(req: NextRequest) {
         city_key: c.key,
         name: c.name,
         rent: c.rent,
+        market_rent: c.marketRent,
+        rent_source: c.rentSource,
         col: c.col,
         geo: c.geo,
         basis: c.basis,
@@ -136,6 +139,8 @@ export async function POST(req: NextRequest) {
       count: result.cities.length,
       placeCount: result.cities.filter((c) => c.basis === "place").length,
       looseCount: result.cities.filter((c) => c.matchedBy === "prefix" || c.matchedBy === "contains").length,
+      marketCount: result.cities.filter((c) => c.rentSource === "market").length,
+      moverLabel: result.moverLabel,
       nonHousing: NON_HOUSING_ANNUAL_USD,
       unmatched: result.unmatched,
     });
