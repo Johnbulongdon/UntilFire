@@ -27,18 +27,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.9,
     },
-    {
-      url: siteUrl('/calculators/apy'),
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: siteUrl('/calculators/compound-interest'),
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
+    // /calculators/apy and /calculators/compound-interest are deliberately
+    // absent: both are noindex. A sitemap entry is a request to index, so
+    // listing a noindex page asks Google for the opposite of what the page
+    // says and wastes the crawl budget the request was meant to save.
     {
       url: siteUrl('/calculators/savings-rate'),
       lastModified: new Date(),

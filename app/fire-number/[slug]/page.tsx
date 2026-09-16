@@ -126,9 +126,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const rank = getNationalCostRank(data)
 
+  // Lead with the answer, not the category.
+  //
+  // These pages rank 3rd to 9th and take 2.4% of the clicks, against roughly
+  // 5% normal for those positions. The old title — "<City> FIRE Number
+  // Calculator" — is the same shape as every competing result, so nothing in
+  // the SERP distinguishes it. Someone searching "seattle fire number" wants
+  // the number; showing it is the strongest signal that this page has what
+  // they asked for, and the description carries the reason to click anyway:
+  // the generic figure is not theirs until they put their own savings rate in.
+  const target = formatMoney(data.col * 25, { style: "compact" })
+
   return {
-    title: `${data.name} FIRE Number Calculator | UntilFire`,
-    description: `How much do you need to retire in ${data.name}? Based on a local cost of living of ${formatMoney(data.col)}/year. Compare local tax context, see how ${data.name} ranks among US city baselines, and model your timeline.`,
+    title: `Retire in ${data.name}: You Need ${target} | UntilFire`,
+    description: `${target} is the FIRE number for ${data.name} — 25× a local cost of living of ${formatMoney(data.col)}/year. See how many years that is at your savings rate, and what a move would change.`,
     keywords: `${data.name} FIRE number, ${data.name} FIRE calculator, retire in ${data.name}, ${data.name} cost of living, financial independence ${data.name}`,
     robots: {
       index: true,

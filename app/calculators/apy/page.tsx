@@ -2,7 +2,14 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import APYCalculator from './APYCalculator'
 
+// Deliberately not indexed. APR/APY conversion is a generic banking tool, not a financial-independence page: it
+// ranks 50th to 94th for head terms owned by sites with a thousand referring
+// domains, and in three months produced hundreds of impressions and no clicks.
+// Left indexed it spends crawl budget and blurs what this site is about, which
+// is the one ranking signal a four-month-old domain fully controls. The page
+// stays for people who are already here and follow a link to it.
 export const metadata: Metadata = {
+  robots: { index: false, follow: true },
   title: 'APY Calculator -Convert APR to Annual Percentage Yield | UntilFire',
   description:
     'Free APY calculator. Enter your APR and compounding frequency to get your true annual percentage yield. See exactly how much your savings will grow over 1, 5, and 10 years.',

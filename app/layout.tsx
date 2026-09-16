@@ -9,7 +9,7 @@ import {
   UNTILFIRE_ANCHOR_COPY,
   UNTILFIRE_ANCHOR_DESCRIPTION,
 } from '@/lib/positioning'
-import { SITE_URL } from '@/lib/site'
+import { BRAND_PROFILES, SITE_URL } from '@/lib/site'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -225,9 +225,7 @@ export default function RootLayout({
               url: SITE_URL,
               logo: `${SITE_URL}/icon.png`,
               description: 'Personal finance that sets you free. UntilFire helps you calculate your FIRE number, freedom date, and monthly plan to reach financial independence.',
-              sameAs: [
-                'https://twitter.com/untilfire',
-              ],
+              sameAs: BRAND_PROFILES,
               contactPoint: {
                 '@type': 'ContactPoint',
                 email: 'hello@untilfire.com',
