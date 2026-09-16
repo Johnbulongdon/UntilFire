@@ -29,6 +29,9 @@ export type { FieldProps, InputProps, SelectProps } from "./Field";
 export { default as Badge } from "./Badge";
 export type { BadgeProps, BadgeTone } from "./Badge";
 
+export { default as Slider } from "./Slider";
+export type { SliderProps } from "./Slider";
+
 export { default as Stat } from "./Stat";
 export type { StatProps, StatTone, StatSize } from "./Stat";
 

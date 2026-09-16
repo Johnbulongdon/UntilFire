@@ -484,3 +484,105 @@ html[data-splash="1"] #uf-splash {
     display: none !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Calculator layout and range control
+
+   A calculator is a thing people play with, and the old one made the second
+   question expensive: select the field, delete, retype. Sliders make "what if
+   I retired at 60" free, which is the reason the page is interactive at all.
+
+   The layout exists for a narrower reason. On a phone the inputs, the numbers
+   and the chart could not be on screen together, so changing an assumption
+   meant scrolling up, dragging, and scrolling back down to see what happened —
+   which is the same as not being able to see it happen. Results come first in
+   the markup and stick to the top of the viewport; on a wide screen they move
+   to the right column and stick there instead.
+
+   Green, not teal: these are controls the reader acts on.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.uf-calc {
+  display: grid;
+  gap: var(--uf-s5);
+  align-items: start;
+}
+
+/* min-width: 0 is load-bearing, not tidying.
+   A grid item defaults to min-width: auto, so it refuses to shrink below its
+   content. The chart is an SVG with a pixel width measured from this very
+   container, which makes a one-way ratchet: the SVG renders at its fallback
+   width, the item grows to fit it, the ResizeObserver reads the grown width,
+   and the chart stays wide forever. On a 390px phone the whole results card
+   was overflowing the viewport. */
+.uf-calc > * {
+  min-width: 0;
+}
+
+.uf-calc-results {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  /* The ground colour, so content scrolling underneath does not show through
+     the card's own corner radii. */
+  background: var(--uf-ground);
+  padding-top: var(--uf-s2);
+}
+
+@media (min-width: 900px) {
+  .uf-calc {
+    grid-template-columns: minmax(280px, 340px) 1fr;
+  }
+  /* Results are first in the DOM so the sticky-to-top behaviour works on a
+     phone. On a wide screen they belong on the right, beside the inputs
+     rather than above them. */
+  .uf-calc-inputs  { grid-column: 1; grid-row: 1; }
+  .uf-calc-results { grid-column: 2; grid-row: 1; top: var(--uf-s4); }
+}
+
+.uf-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;              /* touch target, not track height */
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+.uf-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--uf-border);
+}
+.uf-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 999px;
+  background: var(--uf-green);
+  border: 2px solid var(--uf-card);
+  box-shadow: var(--uf-e1);
+}
+
+.uf-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--uf-border);
+}
+.uf-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--uf-green);
+  border: 2px solid var(--uf-card);
+  box-shadow: var(--uf-e1);
+}
+
+.uf-slider:focus-visible::-webkit-slider-thumb,
+.uf-slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--uf-green);
+  outline-offset: 2px;
+}
