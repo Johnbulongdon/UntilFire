@@ -58,6 +58,7 @@ export const JOBS = {
   RETENTION_EMAIL: "retention_email",
   BEA_SYNC: "bea_sync",
   HOUSING_SYNC: "housing_sync",
+  CENSUS_SYNC: "census_sync",
 } as const;
 
 /** How stale a job's last successful run can get before it is a problem. */
@@ -68,6 +69,8 @@ export const JOB_EXPECTED_INTERVAL_HOURS: Record<string, number> = {
   [JOBS.BEA_SYNC]: 24 * 365,
   // HUD publishes Fair Market Rents annually, on the same footing.
   [JOBS.HOUSING_SYNC]: 24 * 365,
+  // ACS 5-year estimates are annual too.
+  [JOBS.CENSUS_SYNC]: 24 * 365,
 };
 
 /**
