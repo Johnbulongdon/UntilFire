@@ -87,11 +87,41 @@ it if a key ever becomes available.
    city" looked entirely certain.
 4. **Nothing reaches the site without promotion.**
 
+## Promoted, 17 Sep 2026
+
+All 226 US cities in `lib/fire-data.ts` now carry measured figures. `col` is
+the mover-cohort rent plus `NON_HOUSING_ANNUAL_USD`; `colLow`/`colHigh` are the
+two rent measurements widened by the Census margin of error. The median city
+moved 12%; the largest single move was San Francisco, $110,000 to $72,700.
+
+The hand-entered numbers they replaced were not research: 139 of 226 shared
+just eight round values, $42,000 appearing 25 times. Measured figures that
+disagree with a placeholder are not a regression.
+
+Two consequences worth knowing before reading the table:
+
+- **The spread compressed**, from roughly 3x to 1.8x — $43,500 in Fargo to
+  $77,900 in Huntington. Only rent varies in this model; non-housing is a flat
+  $34,000 everywhere. Real non-housing costs do vary, just far less than rent,
+  so the true spread sits somewhere above what is shown. Geo-arbitrage claims
+  should be read as conservative, not inflated.
+- **Three cities sit at the Census rent ceiling** of $3,501 (`rent_capped` in
+  `city_rent`): Palo Alto, Hoboken and Huntington NY. Their `col` is a floor,
+  and `colHigh` equals `col` because the cap truncates the upper end. Left
+  alone that renders as "plausibly $77,300 to $77,500" — a $200 band, claiming
+  precision in the one place the data is blindest. So `costRangeFor()` flags
+  them `capped` (the signal is `colHigh === col`, which no measured city has)
+  and the page says "plausibly $77,300 or more" instead. A floor, not a band.
+
+Jackson, WY has no mover cohort published, so its range is zero-width.
+`costRangeFor()` rejects it and the page falls back to the plain figure; no
+range is written to the file, because data nothing can read is not data.
+
 ## Open
 
-- Promote `city_rent` into `lib/fire-data.ts` — not done. Review the table
-  first; the figures move both ways against the hand-entered ones.
 - Show the split on city pages, in the app's own budget categories.
+- Non-housing is still one national number. Census has the tables to vary it;
+  doing so would widen the spread back toward reality.
 - Expanding the city list is cheap now, but Search Console says indexing
   plateaued at 223 pages with 30 declined, so more near-identical pages likely
   grow the "crawled, not indexed" pile rather than traffic. Depth first.

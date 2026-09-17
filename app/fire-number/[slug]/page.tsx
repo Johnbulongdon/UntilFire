@@ -557,7 +557,9 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
             How much do you need to retire in {data.name}? Based on a local cost of living of{" "}
             <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(data.col)}/year</strong>
             {costRange && (
-              <> &mdash; plausibly {formatMoney(costRange.low)} to {formatMoney(costRange.high)}</>
+              costRange.capped
+                ? <> &mdash; plausibly {formatMoney(costRange.low)} or more</>
+                : <> &mdash; plausibly {formatMoney(costRange.low)} to {formatMoney(costRange.high)}</>
             )}
             , your FIRE target is{" "}
             <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(fireTarget)}</strong>.
@@ -574,7 +576,9 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               // reader who can see the spread knows how far to trust the
               // middle of it — and knows to put their own number in.
               sub: costRange
-                ? `typically ${formatMoney(costRange.low)}\u2013${formatMoney(costRange.high)}`
+                ? costRange.capped
+                  ? `typically ${formatMoney(costRange.low)} and up`
+                  : `typically ${formatMoney(costRange.low)}\u2013${formatMoney(costRange.high)}`
                 : "local baseline",
             },
             { label: "FIRE target (25× rule)", value: formatMoney(fireTarget), sub: "4% withdrawal" },

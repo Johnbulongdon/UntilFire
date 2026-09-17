@@ -61,10 +61,10 @@ Building the FIRE path that does it with you → untilfire.com
 ```
 Most FIRE calculators use "national average" cost of living.
 
-The US national average is $52,000/yr.
+The median US city we price is $53,900/yr.
 
-San Francisco is $110,000/yr.
-That's a $1.45M difference in your FIRE number.
+San Francisco is $72,700/yr.
+That's a $470K difference in your FIRE number.
 
 That is why the number needs context.
 But the real product is the plan that tells you what to do next.

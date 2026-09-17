@@ -9,8 +9,16 @@ if (!cityBlock || !taxBlock || !intlBlock) {
   throw new Error('Could not find city, tax, or US_INTL blocks in fire-data.ts');
 }
 
-const cityRows = [...cityBlock.matchAll(/\{ name: (?:'([^']+)'|\"([^\"]+)\"),\s*key:\s*'([^']+)',\s*col:\s*(\d+),\s*state:\s*'([^']+)'/g)]
-  .map((m) => ({ name: m[1] ?? m[2], key: m[3], col: Number(m[4]), state: m[5] }));
+// colLow/colHigh are optional: cities with no measured range carry neither.
+const cityRows = [...cityBlock.matchAll(/\{ name: (?:'([^']+)'|\"([^\"]+)\"),\s*key:\s*'([^']+)',\s*col:\s*(\d+),(?:\s*colLow:\s*(\d+),\s*colHigh:\s*(\d+),)?\s*state:\s*'([^']+)'/g)]
+  .map((m) => ({
+    name: m[1] ?? m[2],
+    key: m[3],
+    col: Number(m[4]),
+    colLow: m[5] === undefined ? null : Number(m[5]),
+    colHigh: m[6] === undefined ? null : Number(m[6]),
+    state: m[7],
+  }));
 const taxKeys = new Set([...taxBlock.matchAll(/^\s*([a-z0-9_]+):\s*\{/gm)].map((m) => m[1]));
 const intlKeys = new Set([...intlBlock.matchAll(/'([^']+)'/g)].map((m) => m[1]));
 const usCities = cityRows.filter((city) => !intlKeys.has(city.state));
@@ -31,6 +39,19 @@ if (duplicateKeys.length) {
 if (missingTax.length) {
   throw new Error(`City states missing STATE_TAX entries: ${missingTax.join(', ')}`);
 }
+// A range that does not contain its own figure, or that has collapsed to a
+// point, is silently dropped by costRangeFor() — the page still renders, so
+// nothing catches it. Catch it here instead.
+const badRange = cityRows.filter((city) => {
+  const half = (city.colLow === null) !== (city.colHigh === null);
+  if (half) return true;
+  if (city.colLow === null) return false;
+  return !(city.colLow <= city.col && city.col <= city.colHigh) || city.colHigh <= city.colLow;
+});
+if (badRange.length) {
+  throw new Error(`Cities with a broken cost range: ${badRange.map((city) => city.key).join(', ')}`);
+}
+
 if (lowCost.length) {
   throw new Error(`Cities with suspicious annual costs: ${lowCost.map((city) => city.key).join(', ')}`);
 }
