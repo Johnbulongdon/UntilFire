@@ -24,8 +24,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ skipped: true });
   }
 
+  // The name is already here and was simply never copied across. Twelve of
+  // thirteen users signed in with Google, which hands over full_name, and the
+  // emails greeted every one of them as nobody because profiles.display_name
+  // stayed null. Captured at the one place a profile row is created.
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const claimed = [metadata.full_name, metadata.name, metadata.given_name]
+    .find((v): v is string => typeof v === "string" && v.trim().length > 0);
+
   await admin.from("profiles").upsert(
-    { user_id: user.id, welcome_email_sent_at: new Date().toISOString() },
+    {
+      user_id: user.id,
+      welcome_email_sent_at: new Date().toISOString(),
+      ...(claimed ? { display_name: claimed.trim().slice(0, 120) } : {}),
+    },
     { onConflict: "user_id" },
   );
   await recordEvent(admin, user.id, LIFECYCLE_EVENTS.WELCOME_EMAIL);
