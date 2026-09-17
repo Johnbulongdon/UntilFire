@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { getLearnArticle } from '@/lib/learn'
 import { cityLandingPages, getCityLandingPage } from '@/lib/city-pages'
 import type { CityLandingPage } from '@/lib/city-pages'
-import { CITIES, STATE_TAX, isUS } from '@/lib/fire-data'
+import { CITIES, STATE_TAX, costRangeFor, isUS } from '@/lib/fire-data'
 import type { City } from '@/lib/fire-data'
 import { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'
 import CityCalcWidget from '../CityCalcWidget'
@@ -422,6 +422,10 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
 function GenericCityFireNumberPage({ data }: { data: City }) {
 
   const fireTarget = data.col * 25;
+  // Null where nothing was measured, in which case the page shows the plain
+  // figure. Never a made-up band: dressing a guess as a measurement is the
+  // failure this range exists to avoid.
+  const costRange = costRangeFor(data);
   const tax = STATE_TAX[data.state];
   const taxRate = tax?.rate ?? 0;
   const taxLabel = tax?.label ?? data.state.toUpperCase();
@@ -551,7 +555,11 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           </h1>
           <p style={{ fontSize: 17, color: "var(--uf-ink-2)", margin: 0, lineHeight: 1.6, maxWidth: 580 }}>
             How much do you need to retire in {data.name}? Based on a local cost of living of{" "}
-            <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(data.col)}/year</strong>, your FIRE target is{" "}
+            <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(data.col)}/year</strong>
+            {costRange && (
+              <> &mdash; plausibly {formatMoney(costRange.low)} to {formatMoney(costRange.high)}</>
+            )}
+            , your FIRE target is{" "}
             <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(fireTarget)}</strong>.
           </p>
         </div>
@@ -559,7 +567,16 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
         {/* Key stats */}
         <div className="city-hero-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
           {[
-            { label: "Annual cost of living", value: formatMoney(data.col), sub: "local baseline" },
+            {
+              label: "Annual cost of living",
+              value: formatMoney(data.col),
+              // The range replaces "local baseline", which said nothing. A
+              // reader who can see the spread knows how far to trust the
+              // middle of it — and knows to put their own number in.
+              sub: costRange
+                ? `typically ${formatMoney(costRange.low)}\u2013${formatMoney(costRange.high)}`
+                : "local baseline",
+            },
             { label: "FIRE target (25× rule)", value: formatMoney(fireTarget), sub: "4% withdrawal" },
             { label: "State income tax", value: taxRate === 0 ? "0% — no income tax" : `${(taxRate * 100).toFixed(1)}%`, sub: taxLabel },
           ].map(({ label, value, sub }) => (

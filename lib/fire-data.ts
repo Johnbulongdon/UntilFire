@@ -7,9 +7,47 @@
 export interface City {
   name: string;
   key: string;
-  col: number;      // annual USD expenses
+  col: number;      // annual USD expenses — the one number everything calculates from
   state: string;    // tax key
   flag: string;
+  /**
+   * A plausible range around `col`, for display only.
+   *
+   * A single figure has to be right; a range only has to contain the truth,
+   * which is a burden this data can actually carry — and showing one tells the
+   * reader plainly that it is an estimate. The ends are measurements rather
+   * than error bars: what sitting tenants pay against what recent arrivals
+   * pay, widened by the Census margin of error. See docs/cost-of-living.md.
+   *
+   * Deliberately NOT used in any calculation. A FIRE target cannot be
+   * multiplied out of an interval, so `col` stays the single input and these
+   * only ever reach the page.
+   */
+  colLow?: number;
+  colHigh?: number;
+}
+
+export interface CityCostRange {
+  /** The figure to lead with, and the only one anything is calculated from. */
+  mid: number;
+  low: number;
+  high: number;
+}
+
+/**
+ * The range to show for a city, or null where there is nothing measured.
+ *
+ * Null rather than a made-up band: a city whose range we have not imported
+ * gets a plain number, which is honest. Inventing a spread around it would
+ * dress a guess up as a measurement, which is the whole failure this range
+ * exists to avoid.
+ */
+export function costRangeFor(city: Pick<City, "col" | "colLow" | "colHigh">): CityCostRange | null {
+  const { col, colLow, colHigh } = city;
+  if (colLow == null || colHigh == null) return null;
+  if (!(colLow <= col && col <= colHigh)) return null;
+  if (colHigh <= colLow) return null;
+  return { mid: col, low: colLow, high: colHigh };
 }
 
 export const CITIES: City[] = [
