@@ -185,6 +185,9 @@ Use the narrowest verification that matches the change. For broad or risky chang
 - `app/dashboard/UpgradeModal.tsx` — Pro upgrade modal and checkout start.
 - `app/api/*` — server routes for waitlist, Stripe, Plaid, AI categorisation, etc.
 - `lib/fire-data.ts` — city data, tax assumptions, FIRE calculation helpers.
+- `docs/cost-of-living.md` — how a city is priced, and why the BEA and HUD
+  importers are in the tree but not in the product. Read before touching
+  `lib/census.ts`, `lib/bea.ts` or `lib/housing.ts`.
 - `lib/analytics*.ts` and `docs/analytics/EVENTS.md` — analytics event names and payload contracts.
 - `components/` — reusable UI and product components.
 - `docs/CONTEXT.md` — broader product and strategy context.
@@ -245,14 +248,20 @@ earlier". Teal is never a button and never means generic success (`--uf-pos`).
 
 Scales — use these steps, nothing between them:
 
-- Type: 56 · 34 · 24 · 18 · 16 · 14 · 13 · 11 (classes `.uf-t-*` in globals.css)
-- Space: 4 · 8 · 12 · 16 · 24 · 32 · 48
+- Type: 56 · 34 · 24 · 18 · 16 · 14 · 13 · 11 — the classes are **named, not numeric**:
+  `.uf-t-display` `.uf-t-h1` `.uf-t-h2` `.uf-t-h3` `.uf-t-lead` `.uf-t-body`
+  `.uf-t-small` `.uf-t-label` `.uf-t-data`. There is no `.uf-t-34`; a class that
+  does not exist matches no rule and renders at the browser default, silently.
+  `uf-t-display/h1/h2` already carry Fraunces — do not add `fontFamily` as well.
+- Space: 4 · 8 · 12 · 16 · 24 · 32 · 48 — tokens `--uf-s1` … `--uf-s7`. **There
+  is no `--uf-s8`.** Text on a green fill is `#fff` (as `Button` does); there is
+  no `--uf-on-green` token.
 - Radius: 12 control · 20 card · 28 modal · 999 pill (buttons are full pills)
 - Elevation: `--uf-e1` · `--uf-e2` · `--uf-e3`
 
 Rules for new code:
 
-1. Never hand-roll a button, card, labelled input, status pill, or label-figure-delta block — import `Button`, `Card`, `Field`, `Badge`, `Stat` from `@/components/ui`.
+1. Never hand-roll a button, card, labelled input, status pill, range control, or label-figure-delta block — import `Button`, `Card`, `Field`, `Badge`, `Slider`, `Stat`, `Money`, `Progress` from `@/components/ui`.
 2. Never write a hex colour. Use a token. A colour with no token needs a token, not a literal.
 3. Never invent a size, radius, or gap. Pick the nearest step on the scale.
 4. Every figure uses DM Mono with tabular numerals.
@@ -268,6 +277,27 @@ aliases; migrate what you touch, and build new surfaces on the system from the s
 - Keep broader strategy/knowledge in the Obsidian vault, not duplicated in the repo.
 - If code behavior and docs disagree, inspect the code and update stale docs as part of the task only when in scope.
 - Design docs from gstack sessions go in `docs/design/` with short kebab-case filenames.
+
+## Verifying UI: look at it
+
+Typecheck and lint do not see design. Every real defect in the last round of
+calculator work passed both and was found only by rendering the page:
+
+- `uf-t-34` and `--uf-s8` matched no rule, so text and spacing fell back silently
+- a chart's target line was drawn off the top of the plot, so the curve appeared
+  to stop for no reason
+- a grid item's default `min-width: auto` let a measured-width SVG ratchet itself
+  wider every frame, overflowing a 390px viewport
+- a breakdown whose two halves were rounded separately did not sum to its own total
+- a derived marker computed itself into `null` and vanished under the user's thumb
+
+So for any visual change: `npm run build`, `npx next start -p <port>`, and drive
+it with Playwright (`/opt/node22/lib/node_modules/playwright/index.mjs`, Chromium
+at `/opt/pw-browsers/chromium`). Screenshot **390px and 1280px**, and assert the
+things eyes miss — `document.documentElement.scrollWidth <= window.innerWidth`,
+element heights, that the state you expect is actually on screen. Use a real
+touch context (`hasTouch`, `isMobile`) for anything draggable; a narrow desktop
+window is not a phone.
 
 ## Before Finishing Any Task
 
