@@ -70,7 +70,12 @@ async function sendRowFor(admin: Admin, campaign: string, label: string): Promis
 
     const { data: created, error } = await admin
       .from("admin_email_sends")
-      .insert({ subject: label, segment: campaign, campaign, kind: "campaign", recipients: 0, sent_by: null })
+      // segment is constrained to all | free | pro — it describes a plan
+      // audience, which an automated send does not have. The campaign key has
+      // its own column. Setting it here failed the CHECK, which would have
+      // left every automated send with no row, no tag, and no way to be
+      // measured: the exact failure this file exists to end.
+      .insert({ subject: label, segment: "all", campaign, kind: "campaign", recipients: 0, sent_by: null })
       .select("id")
       .single();
     if (!error && created?.id) return created.id as string;
