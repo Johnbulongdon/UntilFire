@@ -21,6 +21,8 @@ interface Row {
   market_rent: number | null;
   rent_source: string | null;
   col: number;
+  col_low: number | null;
+  col_high: number | null;
   housing_annual: number | null;
   non_housing_annual: number | null;
   non_housing_index: number | null;
@@ -142,6 +144,12 @@ export default function CensusPanel({ token }: { token: string }) {
         Cost of living is built from the mover figure wherever Census publishes one.
       </p>
       <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
+        <strong>Range</strong> is what the city page should show alongside the figure. A single
+        number has to be right; a range only has to contain the truth, and it tells the reader
+        plainly that this is an estimate. Its ends are the two rent bases, widened by Census&apos;s
+        own margin of error so it never collapses to a point.
+      </p>
+      <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
         The total is shown as two halves because only one of them is measured.{" "}
         <strong>Housing</strong> is this city&apos;s rent. <strong>Non-housing</strong> is a national
         baseline of {money(data?.nonHousing ?? 0)} re-priced by BEA&apos;s goods and services
@@ -228,7 +236,7 @@ export default function CensusPanel({ token }: { token: string }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 660 }}>
               <thead>
                 <tr style={{ textAlign: "left", color: FAINT, background: "#F8FAFC" }}>
-                  {["City", "Rent / mo", "Housing", "Non-housing", "Total", "Was", "Change", "Match", "Census geography"].map((h) => (
+                  {["City", "Rent / mo", "Housing", "Non-housing", "Total", "Range", "Was", "Change", "Match", "Census geography"].map((h) => (
                     <th key={h} style={{ padding: "8px 10px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -256,6 +264,14 @@ export default function CensusPanel({ token }: { token: string }) {
                         )}
                       </td>
                       <td style={{ padding: "8px 10px", color: INK, fontWeight: 700, fontFamily: MONO }}>{money(r.col)}</td>
+                      <td
+                        title="What sitting tenants pay against what recent arrivals pay, widened by Census's margin of error. Display only — col is what the maths uses."
+                        style={{ padding: "8px 10px", color: MUTED, fontFamily: MONO, whiteSpace: "nowrap" }}
+                      >
+                        {r.col_low != null && r.col_high != null
+                          ? `${money(r.col_low)}\u2013${money(r.col_high)}`
+                          : "\u2014"}
+                      </td>
                       <td style={{ padding: "8px 10px", color: MUTED, fontFamily: MONO }}>{money(r.previous)}</td>
                       <td style={{
                         padding: "8px 10px", fontFamily: MONO,

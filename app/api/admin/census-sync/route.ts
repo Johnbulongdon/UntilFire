@@ -139,6 +139,8 @@ export async function POST(req: NextRequest) {
         market_rent: c.marketRent,
         rent_source: c.rentSource,
         col: c.col,
+        col_low: c.colLow,
+        col_high: c.colHigh,
         housing_annual: c.housingAnnual,
         non_housing_annual: c.nonHousingAnnual,
         non_housing_index: c.nonHousingIndex,

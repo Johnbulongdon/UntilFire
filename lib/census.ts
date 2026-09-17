@@ -92,6 +92,9 @@ export interface CityRent {
   rentSource: "market" | "all";
   /** Rent x 12. The part of col that is actually measured for this city. */
   housingAnnual: number;
+  /** Low and high ends of a plausible annual cost. Display only — col is what maths uses. */
+  colLow: number;
+  colHigh: number;
   /** The national baseline, re-priced to this city. An estimate, and labelled as one. */
   nonHousingAnnual: number;
   /** The non-housing price level used, US average = 100. Null when unscaled. */
@@ -207,11 +210,11 @@ export type MatchKind = "exact" | "prefix" | "contains" | "county";
  * coin toss. The kind of match is carried out with the row so a loose one can
  * be checked in review rather than taken on trust.
  */
-interface PlaceHit { rent: number; marketRent: number | null; geo: string }
+interface PlaceHit { rent: number; marketRent: number | null; moe: number | null; geo: string }
 
 function findPlace(
   target: string,
-  places: { bare: string; rent: number; marketRent: number | null; geo: string }[],
+  places: { bare: string; rent: number; marketRent: number | null; moe: number | null; geo: string }[],
 ): { hit: PlaceHit; how: MatchKind } | { ambiguous: string[] } | null {
   const exact = places.filter((p) => p.bare === target);
   if (exact.length) return { hit: exact[0], how: "exact" };
@@ -252,6 +255,19 @@ function normalise(value: string): string {
 /** The bare city name, without our ", ST" suffix. */
 function cityName(city: City): string {
   return normalise(city.name.split(",")[0]);
+}
+
+/**
+ * A margin of error, which is not a rent and must not be parsed like one.
+ *
+ * Census publishes one alongside every estimate at 90% confidence, and uses
+ * large negative sentinels where it cannot be computed. Zero is legitimate, so
+ * the rent parser's "must exceed 50" floor would silently discard the small
+ * ones — which are exactly the cities where the range most needs a floor.
+ */
+function moeFrom(value: string | null): number | null {
+  const n = Number(String(value ?? "").replace(/,/g, "").trim());
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 /**
@@ -305,7 +321,12 @@ async function censusRows(year: number, key: string, params: Record<string, stri
 async function stateGeographies(year: number, key: string, fips: string, moverVar: string | null) {
   // Census takes several variables in one request, so asking for the mover rent
   // alongside costs no extra round trips.
-  const get = `NAME,${MEDIAN_GROSS_RENT}${moverVar ? `,${moverVar}` : ""}`;
+  // The margin of error rides along in the same request. It is what stops the
+  // range collapsing to a point where sitting tenants and new arrivals happen
+  // to pay the same — Toledo and Palo Alto both show a 0% gap, and a range of
+  // zero width is not a range.
+  const moeVar = moverVar ? moverVar.replace(/E$/, "M") : null;
+  const get = `NAME,${MEDIAN_GROSS_RENT}${moverVar ? `,${moverVar}` : ""}${moeVar ? `,${moeVar}` : ""}`;
   const [places, counties] = await Promise.all([
     censusRows(year, key, { get, for: "place:*", in: `state:${fips}` }),
     censusRows(year, key, { get, for: "county:*", in: `state:${fips}` }),
@@ -313,27 +334,29 @@ async function stateGeographies(year: number, key: string, fips: string, moverVa
 
   // A list rather than a map: the fallbacks in findPlace need to scan, and an
   // exact-keyed map would have thrown away the very names they look for.
-  const placeList: { bare: string; rent: number; marketRent: number | null; geo: string }[] = [];
+  const placeList: { bare: string; rent: number; marketRent: number | null; moe: number | null; geo: string }[] = [];
   const seen = new Set<string>();
-  for (const [name, value, mover] of places) {
+  for (const [name, value, mover, moe] of places) {
     const rent = rentFrom(value);
     if (rent === null) continue;
     const marketRent = moverVar ? rentFrom(mover) : null;
+    const moeValue = moeVar ? moeFrom(moe) : null;
     const bare = normalise(String(name).split(",")[0].replace(PLACE_SUFFIX, ""));
     // First wins: Census lists "Springfield city" before "Springfield CDP", and
     // the incorporated city is the one anyone means.
     if (seen.has(bare)) continue;
     seen.add(bare);
-    placeList.push({ bare, rent, marketRent, geo: String(name) });
+    placeList.push({ bare, rent, marketRent, moe: moeValue, geo: String(name) });
   }
 
-  const byCounty = new Map<string, { rent: number; marketRent: number | null; geo: string }>();
-  for (const [name, value, mover] of counties) {
+  const byCounty = new Map<string, { rent: number; marketRent: number | null; moe: number | null; geo: string }>();
+  for (const [name, value, mover, moe] of counties) {
     const rent = rentFrom(value);
     if (rent === null) continue;
     byCounty.set(normalise(String(name).split(",")[0]), {
       rent,
       marketRent: moverVar ? rentFrom(mover) : null,
+      moe: moeVar ? moeFrom(moe) : null,
       geo: String(name),
     });
   }
@@ -452,6 +475,25 @@ export async function fetchCityRents(
     // better than dropping the city.
     const used = hit.marketRent ?? hit.rent;
 
+    /**
+     * A range, not just a number.
+     *
+     * A single figure has to be right; a range only has to contain the truth,
+     * which is a burden this data can actually carry. Two honest bounds are
+     * already in hand — what sitting tenants pay and what arrivals pay — and
+     * they bracket the real answer for anyone deciding whether they could
+     * live somewhere. Census's own margin of error widens them, which matters
+     * where the two happen to coincide and the range would otherwise have no
+     * width at all.
+     *
+     * Display only. `col` stays the single number everything is calculated
+     * from, because a FIRE target cannot be multiplied out of an interval.
+     */
+    const bounds = [hit.rent, hit.marketRent].filter((v): v is number => v !== null);
+    const moe = hit.moe ?? 0;
+    const lowRent = Math.max(0, Math.min(...bounds) - moe);
+    const highRent = Math.max(...bounds) + moe;
+
     // Both halves are rounded, then the total is their sum — never rounded
     // again. Rounding the total independently left Palo Alto's $42,012 and
     // $37,900 adding up to $79,912 against a displayed $79,900, and a
@@ -467,6 +509,8 @@ export async function fetchCityRents(
       rent: hit.rent,
       marketRent: hit.marketRent,
       col: housingAnnual + nonHousingAnnual,
+      colLow: Math.round((lowRent * 12 + nonHousingAnnual) / 100) * 100,
+      colHigh: Math.round((highRent * 12 + nonHousingAnnual) / 100) * 100,
       housingAnnual,
       nonHousingAnnual,
       nonHousingIndex: index,
