@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { buildWelcomeEmail, buildRetentionEmail } from "@/lib/email-html";
+import { adminClient } from "@/lib/supabase-admin";
+import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
 
 const SITE = "https://www.untilfire.com";
 
@@ -19,9 +21,12 @@ export async function GET(req: NextRequest) {
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
+  const admin = adminClient();
   const isRetention = type === "retention";
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendTagged(resend, admin, {
+    campaign: CAMPAIGNS.PREVIEW,
+    label: `Preview \u2014 ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`,
     from: "UntilFire <hello@untilfire.com>",
     to,
     subject: isRetention

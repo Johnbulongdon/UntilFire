@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { Resend } from "resend";
+import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
 import { buildWelcomeEmail } from "@/lib/email-html";
 import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
 
@@ -33,7 +34,9 @@ export async function POST(req: NextRequest) {
   if (process.env.RESEND_API_KEY && user.email) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
-      const { error: sendError } = await resend.emails.send({
+      const { error: sendError } = await sendTagged(resend, admin, {
+        campaign: CAMPAIGNS.WELCOME,
+        label: `Welcome \u2014 ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`,
         from: "UntilFire <hello@untilfire.com>",
         to: user.email,
         subject: "Welcome to UntilFire — your path to financial freedom starts here",

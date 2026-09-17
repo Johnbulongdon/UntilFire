@@ -9,6 +9,7 @@ import {
   type NudgeAsk,
 } from "@/lib/email-html";
 import { summarise } from "@/lib/fire-summary";
+import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
 import { makeUnsubscribeToken } from "@/lib/unsubscribe-token";
 import {
   JOBS,
@@ -223,7 +224,9 @@ async function sendSequence(
           : buildRetentionEmail(unsubscribeUrl, ctx);
 
     try {
-      const { error } = await resend.emails.send({
+      const { error } = await sendTagged(resend, admin, {
+        campaign: CAMPAIGNS[stage.key.toUpperCase() as "DAY1" | "DAY3" | "DAY7"],
+        label: `${stage.key === "day1" ? "Day 1" : stage.key === "day3" ? "Day 3" : "Day 7"} \u2014 ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`,
         from: "UntilFire <hello@untilfire.com>",
         to: user.email,
         subject: SUBJECTS[stage.key][ask],

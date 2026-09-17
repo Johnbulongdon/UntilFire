@@ -30,7 +30,8 @@
     "test:manual-category-icons": "node scripts/verify-manual-category-icons.mjs",
     "test:monthly-checkin": "node scripts/verify-monthly-checkin-card.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build",
-    "test:fire-projection": "node scripts/verify-fire-projection.mjs"
+    "test:fire-projection": "node scripts/verify-fire-projection.mjs",
+    "test:email-tagging": "node scripts/verify-email-tagging.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
+import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
 import { getStripe } from "@/lib/stripe";
 import Stripe from "stripe";
 import { trackCheckoutSucceededServer } from "@/lib/analytics-server";
@@ -147,7 +148,9 @@ export async function POST(req: NextRequest) {
 
       if (process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const { error: sendError } = await resend.emails.send({
+        const { error: sendError } = await sendTagged(resend, supabaseAdmin, {
+          campaign: CAMPAIGNS.TRIAL_ENDING,
+          label: `Trial ending \u2014 ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`,
           from: "UntilFire <hello@untilfire.com>",
           to: authUser.email,
           subject: `Your free trial ends on ${trialEndDate} — here's what happens next`,

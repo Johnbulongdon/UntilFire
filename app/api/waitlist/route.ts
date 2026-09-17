@@ -3,6 +3,8 @@ import { formatMoney } from "@/lib/money";import { createClient } from "@supabas
 import { NextResponse } from "next/server"
 import { getOptionalSupabaseEnv, getSupabaseEnvErrorMessage } from "@/lib/env"
 import { Resend } from "resend"
+import { adminClient } from "@/lib/supabase-admin"
+import { CAMPAIGNS, sendTagged } from "@/lib/email-send"
 
 const WAITLIST_EMAIL_MAX_LENGTH = 254
 const WAITLIST_BURST_WINDOW_MS = 15_000
@@ -71,9 +73,12 @@ export async function POST(req: Request) {
 
   if (process.env.RESEND_API_KEY && fireTarget && retireYear) {
     const resend = new Resend(process.env.RESEND_API_KEY)
+    const admin = adminClient()
     const fmt = (n: number) => formatMoney(n, { currency })
     try {
-      const { error: sendError } = await resend.emails.send({
+      const { error: sendError } = await sendTagged(resend, admin, {
+        campaign: CAMPAIGNS.WAITLIST_RESULT,
+        label: `Waitlist result \u2014 ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`,
         from: "UntilFire <hello@untilfire.com>",
         to: normalizedEmail,
         subject: `Your FIRE number: ${fmt(fireTarget)} by ${retireYear}`,

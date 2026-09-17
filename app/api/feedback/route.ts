@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
+import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
 import { Resend } from "resend";
 
 
@@ -33,7 +34,9 @@ export async function POST(req: NextRequest) {
 
   if (process.env.RESEND_API_KEY && process.env.FEEDBACK_TO_EMAIL) {
     const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
+    await sendTagged(resend, admin, {
+      campaign: CAMPAIGNS.FEEDBACK,
+      label: `Feedback \u2014 ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`,
       from: "feedback@untilfire.com",
       to: process.env.FEEDBACK_TO_EMAIL,
       subject: `[UntilFire Feedback] ${type} — ${user.email}`,
