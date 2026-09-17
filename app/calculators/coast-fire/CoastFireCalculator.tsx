@@ -75,6 +75,7 @@ export default function CoastFireCalculator() {
   const [currentAge, setCurrentAge] = useState(30)
   const [currentSavings, setCurrentSavings] = useState(50_000)
   const [monthlyContribution, setMonthlyContribution] = useState(1_000)
+  const [stopAge, setStopAge] = useState(45)
   const [retireAge, setRetireAge] = useState(65)
   const [annualExpenses, setAnnualExpenses] = useState(50_000)
   const [returnRate, setReturnRate] = useState(7)
@@ -82,7 +83,6 @@ export default function CoastFireCalculator() {
 
   const [chartRef, chartWidth] = useWidth<HTMLDivElement>(320)
   const [dragging, setDragging] = useState(false)
-  const lastCoastAge = useRef<number | null>(null)
 
   const result = useMemo(() => {
     const r = returnRate / 100
@@ -91,21 +91,10 @@ export default function CoastFireCalculator() {
     const retire = Math.max(currentAge + 1, retireAge)
     const planTo = retire + YEARS_PAST_RETIREMENT
     const fireTarget = wr > 0 ? annualExpenses / wr : 0
-
-    /** What you need at a given age for growth alone to finish by retirement. */
-    const coastNumberAt = (a: number) => fireTarget / Math.pow(1 + r, Math.max(0, retire - a))
-
-    /**
-     * The earliest age the balance can carry itself. Found by walking forward
-     * rather than solved in closed form: with contributions in the mix there
-     * is no clean inverse, and a loop over sixty-five integers is free.
-     */
-    let coastAge: number | null = null
-    let balance = currentSavings
-    for (let a = currentAge; a <= retire; a++) {
-      if (balance >= coastNumberAt(a)) { coastAge = a; break }
-      balance = balance * (1 + r) + contribution
-    }
+    // Clamped here rather than pushed back into state: the age sliders can
+    // move underneath this one, and correcting state from a render is how you
+    // get a loop.
+    const stop = Math.min(retire, Math.max(currentAge, stopAge))
 
     /** One path. Contributions stop at `stopAt`; spending starts at retirement. */
     const project = (stopAt: number) => {
@@ -121,76 +110,49 @@ export default function CoastFireCalculator() {
       return out
     }
 
-    const coasting = project(coastAge ?? retire)
+    const chosen = project(stop)
     const contributing = project(retire)
 
-    const series = coasting.map((p, i) => ({
+    const series = chosen.map((p, i) => ({
       age: p.age,
       coasting: p.value,
-      // Only worth drawing where the two differ; before the coast age they are
-      // the same line and a second stroke on top of the first reads as an
-      // artefact rather than a comparison.
       contributing: contributing[i].value,
     }))
 
     const at = (list: { age: number; value: number }[], a: number) =>
       list.find((p) => p.age === a)?.value ?? 0
 
-    const atRetireCoasting = at(coasting, retire)
+    /**
+     * The earliest you COULD stop and still land on the target. Still worth
+     * computing — it is the classic Coast FIRE answer — but it is now a fact
+     * shown alongside the plan rather than the thing that positions the dot.
+     */
+    const coastNumberAt = (a: number) => fireTarget / Math.pow(1 + r, Math.max(0, retire - a))
+    let earliest: number | null = null
+    let bal = currentSavings
+    for (let a = currentAge; a <= retire; a++) {
+      if (bal >= coastNumberAt(a)) { earliest = a; break }
+      bal = bal * (1 + r) + contribution
+    }
+
+    const atStop = at(chosen, stop)
+    const atRetire = at(chosen, retire)
     const atRetireContributing = at(contributing, retire)
 
-    /** The age the money runs out, if it does. */
-    const depletedAt = coasting.find((p) => p.age > retire && p.value <= 0)?.age ?? null
-
     return {
-      fireTarget, coastAge, series, retire,
-      atRetireCoasting, atRetireContributing, depletedAt,
-      incomeCoasting: atRetireCoasting * wr,
+      fireTarget, series, retire, stop, earliest,
+      atStop, atRetire, atRetireContributing,
+      income: atRetire * wr,
       incomeContributing: atRetireContributing * wr,
+      shortfall: Math.max(0, fireTarget - atRetire),
+      depletedAt: chosen.find((p) => p.age > retire && p.value <= 0)?.age ?? null,
       ceiling: Math.max(fireTarget, ...series.map((p) => Math.max(p.coasting, p.contributing))) * 1.08,
-      yearsCoasting: coastAge === null ? null : Math.max(0, coastAge - currentAge),
+      yearsPayingIn: Math.max(0, stop - currentAge),
     }
-  }, [currentAge, currentSavings, monthlyContribution, retireAge, annualExpenses, returnRate, withdrawalRate])
-
-  /**
-   * What you would have to pay in each month to be able to stop at `stopAt`.
-   *
-   *   S(1+r)^n + X·[((1+r)^n − 1)/r] = coast number at that age
-   *
-   * solved for X. Contribution stays the single source of truth — dragging the
-   * dot sets it, rather than introducing a second mode with its own state that
-   * can disagree with the sliders sitting right next to it.
-   */
-  const contributionFor = (stopAt: number) => {
-    const r = returnRate / 100
-    const wr = withdrawalRate / 100
-    const retire = Math.max(currentAge + 1, retireAge)
-    const target = wr > 0 ? annualExpenses / wr : 0
-    const stop = Math.min(retire, Math.max(currentAge + 1, stopAt))
-    const years = stop - currentAge
-    if (years <= 0 || r <= 0) return monthlyContribution
-
-    const needed = target / Math.pow(1 + r, Math.max(0, retire - stop))
-    const grown = currentSavings * Math.pow(1 + r, years)
-    const factor = (Math.pow(1 + r, years) - 1) / r
-    const annual = (needed - grown) / factor
-
-    // Ceil to whole pounds, and emphatically NOT to the £100 the slider used
-    // to step in. Rounding to 100 rounded DOWN as often as up, and a
-    // contribution a few pounds short of the requirement never reaches the
-    // coast number at all — so coastAge came back null, the dot stopped being
-    // rendered, and dragging right far enough made it vanish. The same
-    // coarseness also made the dot lag the finger: every target from 50 to 64
-    // collapsed onto the same £500 and the same age 53.
-    //
-    // Ceiling guarantees the requested age is actually reachable, and whole
-    // pounds make it land on the year asked for rather than near it.
-    return Math.max(0, Math.min(10_000, Math.ceil(annual / 12)))
-  }
+  }, [currentAge, currentSavings, monthlyContribution, stopAge, retireAge, annualExpenses, returnRate, withdrawalRate])
 
   // Shorter on a phone: the results card is sticky, so every pixel it takes is
   // a pixel of sliders the reader cannot see while dragging them.
-  if (result.coastAge !== null) lastCoastAge.current = result.coastAge
 
   const narrow = chartWidth < 420
   const chartHeight = narrow ? 150 : 250
@@ -212,7 +174,7 @@ export default function CoastFireCalculator() {
   const onDrag = (clientX: number) => {
     const rect = chartRef.current?.getBoundingClientRect()
     if (!rect) return
-    setMonthlyContribution(contributionFor(ageForX(clientX - rect.left)))
+    setStopAge(Math.min(result.retire, Math.max(currentAge, ageForX(clientX - rect.left))))
   }
 
   return (
@@ -263,35 +225,40 @@ export default function CoastFireCalculator() {
             <Card>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--uf-s4)', marginBottom: 'var(--uf-s4)' }}>
                 <Stat
-                  label="Stop contributing at"
-                  value={
-                    result.coastAge === null
-                      ? <span className="uf-t-data" style={{ fontSize: narrow ? 20 : 28, fontWeight: 700 }}>Not yet</span>
-                      : <span className="uf-t-data" style={{ fontSize: narrow ? 24 : 34, fontWeight: 700, color: 'var(--uf-teal)' }}>{result.coastAge}</span>
-                  }
+                  label="Stop paying in at"
+                  value={<span className="uf-t-data" style={{ fontSize: narrow ? 24 : 34, fontWeight: 700, color: 'var(--uf-teal)' }}>{result.stop}</span>}
                   delta={
-                    result.yearsCoasting === null
-                      ? 'Raise the contribution or the return'
-                      : result.yearsCoasting === 0 ? 'You are already there' : `${result.yearsCoasting} years away`
+                    result.earliest !== null && result.stop > result.earliest
+                      ? `You could stop at ${result.earliest}`
+                      : `${result.yearsPayingIn} more years of paying in`
                   }
                 />
                 <Stat
                   label={`Pot at ${result.retire}`}
-                  value={<Money amount={result.atRetireCoasting} format="compact" size={narrow ? 24 : 34} />}
-                  delta={`${formatMoney(result.fireTarget, { style: 'compact' })} target`}
+                  value={<Money amount={result.atRetire} format="compact" size={narrow ? 24 : 34} />}
+                  delta={
+                    result.shortfall > 0
+                      ? `${formatMoney(result.shortfall, { style: 'compact' })} short of target`
+                      : `${formatMoney(result.fireTarget, { style: 'compact' })} target, cleared`
+                  }
                 />
                 <Stat
                   label={`Income from ${result.retire}`}
-                  value={<span className="uf-t-data" style={{ fontSize: narrow ? 20 : 26, fontWeight: 700 }}>{perMonth(result.incomeCoasting)}</span>}
-                  delta={`${formatMoney(result.incomeCoasting)} a year at ${withdrawalRate}%`}
+                  value={<span className="uf-t-data" style={{ fontSize: narrow ? 20 : 26, fontWeight: 700 }}>{perMonth(result.income)}</span>}
+                  delta={`${formatMoney(result.income)} a year at ${withdrawalRate}%`}
                 />
               </div>
 
               <div style={{ borderTop: '1px solid var(--uf-border)', paddingTop: 'var(--uf-s4)' }}>
                 <h2 className="uf-t-small" style={{ margin: '0 0 var(--uf-s2)', fontWeight: 700, color: 'var(--uf-ink-2)' }}>
-                  {result.coastAge === null
-                    ? `Your pot from ${currentAge} onward`
-                    : `Paying in to ${result.coastAge}, coasting to ${result.retire}, then spending`}
+                  {/* The two ends of the slider are not a coast at all —
+                      one pays in the whole way, the other never pays in — and
+                      "coasting to 65" when you stop at 65 is nonsense. */}
+                  {result.stop >= result.retire
+                    ? `Paying in all the way to ${result.retire}, then spending`
+                    : result.stop <= currentAge
+                      ? `Coasting from today to ${result.retire}, then spending`
+                      : `Paying in to ${result.stop}, coasting to ${result.retire}, then spending`}
                 </h2>
 
                 <div ref={chartRef} style={{ width: '100%', position: 'relative', userSelect: dragging ? 'none' : undefined }}>
@@ -354,12 +321,10 @@ export default function CoastFireCalculator() {
                       stroke="var(--uf-chart-2)" strokeWidth={1.5} strokeDasharray="5 4"
                       dot={false} isAnimationActive={false}
                     />
-                    {result.coastAge !== null && (
-                      <ReferenceDot
-                        x={result.coastAge} y={result.series.find((p) => p.age === result.coastAge)?.coasting ?? 0} r={dragging ? 8 : 5}
-                        fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={dragging ? 3 : 2}
-                      />
-                    )}
+                    <ReferenceDot
+                      x={result.stop} y={result.series.find((p) => p.age === result.stop)?.coasting ?? 0} r={dragging ? 8 : 5}
+                      fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={dragging ? 3 : 2}
+                    />
                     <ReferenceLine
                       x={result.retire} stroke="var(--uf-border-2)"
                       label={narrow ? undefined : {
@@ -376,12 +341,11 @@ export default function CoastFireCalculator() {
                       touch-action is off on the strip alone, so a drag here
                       never becomes a page scroll and a drag anywhere else
                       still does. */}
-                  {(result.coastAge ?? (dragging ? lastCoastAge.current : null)) !== null && (
-                    <div
+                  <div
                       role="slider"
                       aria-label="Age you stop paying in"
-                      aria-valuenow={(result.coastAge ?? lastCoastAge.current) as number}
-                      aria-valuemin={currentAge + 1}
+                      aria-valuenow={result.stop}
+                      aria-valuemin={currentAge}
                       aria-valuemax={result.retire}
                       tabIndex={0}
                       onPointerDown={(e) => {
@@ -398,12 +362,11 @@ export default function CoastFireCalculator() {
                       onKeyDown={(e) => {
                         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
                         e.preventDefault()
-                        const from = (result.coastAge ?? lastCoastAge.current) as number
-                        setMonthlyContribution(contributionFor(from + (e.key === 'ArrowRight' ? 1 : -1)))
+                        setStopAge(Math.min(result.retire, Math.max(currentAge, result.stop + (e.key === 'ArrowRight' ? 1 : -1))))
                       }}
                       style={{
                         position: 'absolute',
-                        left: xForAge((result.coastAge ?? lastCoastAge.current) as number) - 24,
+                        left: xForAge(result.stop) - 24,
                         top: 0,
                         width: 48,
                         height: chartHeight - 52,
@@ -414,9 +377,8 @@ export default function CoastFireCalculator() {
                         opacity: dragging ? 0.45 : 1,
                       }}
                     />
-                  )}
 
-                  {dragging && result.coastAge !== null && (
+                  {dragging && (
                     <div
                       className="uf-t-data"
                       style={{
@@ -427,7 +389,7 @@ export default function CoastFireCalculator() {
                         pointerEvents: 'none', boxShadow: 'var(--uf-e2)',
                       }}
                     >
-                      Stop at {result.coastAge} · {formatMoney(monthlyContribution)}/mo
+                      Stop at {result.stop} · {formatMoney(result.atRetire, { style: 'compact' })} at {result.retire}
                     </div>
                   )}
                 </div>
@@ -449,6 +411,9 @@ export default function CoastFireCalculator() {
                 <Slider label="Paying in each month" value={monthlyContribution} onChange={setMonthlyContribution}
                   min={0} max={10_000} step={1} format={money}
                   hint="What you add to investments now. Coasting is when this can stop." />
+                <Slider label="Stop paying in at" value={Math.min(result.retire, Math.max(currentAge, stopAge))} onChange={setStopAge}
+                  min={currentAge} max={retireAge} step={1} format={ageLabel}
+                  hint="The dot on the chart. Drag either." />
                 <Slider label="Retire at" value={retireAge} onChange={setRetireAge}
                   min={currentAge + 1} max={85} step={1} format={ageLabel}
                   hint="When spending starts, not when contributions stop." />
@@ -467,21 +432,17 @@ export default function CoastFireCalculator() {
 
         <Card style={{ marginTop: 'var(--uf-s5)', marginBottom: 'var(--uf-s5)', maxWidth: 760 }}>
           <p className="uf-t-body" style={{ color: 'var(--uf-ink-2)', margin: 0, lineHeight: 1.75 }}>
-            {result.coastAge === null ? (
-              <>
-                On these numbers the pot never reaches the point where it can finish alone before {result.retire}.
-                Raising what you pay in, retiring later or spending less in retirement all move it.
-              </>
-            ) : (
-              <>
-                Paying in {formatMoney(monthlyContribution)} a month, you reach Coast FIRE at{' '}
-                <strong style={{ color: 'var(--uf-ink)' }}>{result.coastAge}</strong>. Stop there and you retire at{' '}
-                {result.retire} on <strong style={{ color: 'var(--uf-ink)' }}>{perMonth(result.incomeCoasting)}</strong>.
-                Keep paying in the whole way and it is {perMonth(result.incomeContributing)} instead — the difference
-                between those two is what the extra {result.retire - result.coastAge} years of contributions buy you.
-                {result.depletedAt && <> On this spending the pot runs out at {result.depletedAt}.</>}
-              </>
+            Paying in {formatMoney(monthlyContribution)} a month until{' '}
+            <strong style={{ color: 'var(--uf-ink)' }}>{result.stop}</strong>, you retire at {result.retire}
+            {' '}on <strong style={{ color: 'var(--uf-ink)' }}>{perMonth(result.income)}</strong>.
+            {result.shortfall > 0
+              ? ` That is ${formatMoney(result.shortfall)} short of the ${formatMoney(result.fireTarget)} your spending needs — pay in for longer, or spend less.`
+              : ' That clears the target.'}
+            {result.earliest !== null && result.earliest < result.stop && (
+              <> You could stop as early as <strong style={{ color: 'var(--uf-ink)' }}>{result.earliest}</strong> and still get there.</>
             )}
+            {' '}Keeping it up all the way to {result.retire} would make it {perMonth(result.incomeContributing)} instead.
+            {result.depletedAt && <> On this spending the pot runs out at {result.depletedAt}.</>}
           </p>
         </Card>
 
