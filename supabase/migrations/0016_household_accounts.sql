@@ -234,6 +234,46 @@ CREATE POLICY "net_worth_snapshots owner update" ON net_worth_snapshots
 CREATE POLICY "net_worth_snapshots owner delete" ON net_worth_snapshots
   FOR DELETE USING (auth.uid() = user_id);
 
+-- ─── added 2026-09-17: tables this migration missed ──────────────────────────
+-- This file was written on 16 Aug and never applied. Migrations 0017-0034
+-- landed in the meantime, and re-checking the live schema turned up three
+-- financial tables carrying user data that the amendments above do not cover.
+
+-- scenarios: THE IMPORTANT ONE. scenario_assumptions is already extended
+-- above, but every read of it goes through lib/fire/scenarios.ts, which
+-- selects `scenarios!inner(user_id, is_default)` — a PostgREST inner join.
+-- An embedded resource is filtered by its OWN select policy, so without this
+-- swap a peer's assumptions row is dropped by the join and comes back empty.
+-- P3's combined freedom date is computed from exactly that query, so the
+-- headline feature would have returned nothing for the partner.
+DROP POLICY IF EXISTS "scenarios owner select" ON scenarios;
+CREATE POLICY "scenarios owner select" ON scenarios
+  FOR SELECT USING (auth.uid() = user_id OR is_household_peer(user_id));
+
+-- user_budget: the legacy fallback in loadDefaultScenario() reads this when
+-- an account predates the scenarios schema. Per-action shape already, so a
+-- simple swap. Without it a household peer on an older account falls back to
+-- defaults rather than their real numbers.
+DROP POLICY IF EXISTS "Users can view own budget" ON user_budget;
+CREATE POLICY "Users can view own budget" ON user_budget
+  FOR SELECT USING (auth.uid() = user_id OR is_household_peer(user_id));
+
+-- expected_payments: created by 0019, five days after this file was written,
+-- so it could not have been covered. It has the same single FOR ALL policy
+-- that goals and net_worth_snapshots had, and therefore the same trap — an
+-- in-place OR-extension would reuse USING as WITH CHECK and hand a partner
+-- write access. Split into four, peer clause on SELECT only.
+DROP POLICY IF EXISTS "users can manage own expected payments" ON expected_payments;
+
+CREATE POLICY "expected_payments owner select" ON expected_payments
+  FOR SELECT USING (auth.uid() = user_id OR is_household_peer(user_id));
+CREATE POLICY "expected_payments owner insert" ON expected_payments
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "expected_payments owner update" ON expected_payments
+  FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "expected_payments owner delete" ON expected_payments
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- ─── explicitly NOT amended here ─────────────────────────────────────────────
 -- classification_rules and plaid_items (which holds the Plaid access token)
 -- stay fully private — a partner doesn't need raw bank credentials or the

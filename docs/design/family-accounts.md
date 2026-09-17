@@ -23,7 +23,7 @@ it reached production. Confirmed two ways:
 Nothing is broken by this — no app code depends on those tables yet. But
 anyone reading "P0 — done" would build P1 on a foundation that isn't there.
 
-### 2. Plaid probably cannot reach the card this is for
+### 2. Plaid reaches the card — but it is not how this household's money arrives
 
 The motivating case is seeing a partner's credit-card spending. Plaid is the
 assumed mechanism. The production data says it mostly isn't the mechanism
@@ -54,10 +54,15 @@ identical whichever way transactions arrive — only the ingest differs. So:
   detection (`institution_id` + `mask`) applies.
 - **Partner's card is HK or mainland** → she imports statements through the
   path that already carries 97% of the data. P2's Plaid-based dedup does not
-  apply, and the v1 note that manual entries aren't deduplicated becomes the
-  main case rather than an edge case.
+  apply.
 
-Confirm which before building P2, since P2 is entirely Plaid-shaped.
+**Resolved 17 Sep 2026: the card is US-issued.** Plaid works, P2 stands as
+written, and no ingest rework is needed. Worth keeping the table above
+anyway — the household's own spending is 85% CNY, so the *combined* view
+still has to reconcile a US-Plaid card against CNY/HKD imports, and the FX
+layer (`FALLBACK_RATES`, `convertUSDAmount`, live rates from Frankfurter in
+`app/dashboard/page.tsx`) is load-bearing for the household totals from day
+one, not a later polish item.
 
 ### 3. Exactly one query would silently go household-wide
 
@@ -85,6 +90,41 @@ the harder kind to notice.
 change. Everything else already filters explicitly, and the five unfiltered
 reads in `app/api/` are admin and cron routes on the service-role client,
 which bypasses RLS regardless.
+
+### 4. The migration was missing three tables — now added
+
+0016's six live-policy names all still match production, so it has not
+drifted in that sense. But it was written on 16 Aug and 0017-0034 landed
+afterwards. Re-checking the live schema found three financial tables it does
+not cover. All three are now amended in the file:
+
+- **`scenarios` — this one would have broken the headline feature.**
+  `scenario_assumptions` was already extended, but every read of it goes
+  through `lib/fire/scenarios.ts`, which selects
+  `scenarios!inner(user_id, is_default)`. A PostgREST embedded resource is
+  filtered by its *own* SELECT policy, so with `scenarios` unextended the
+  inner join drops the peer's assumptions row and returns nothing. P3's
+  combined freedom date is computed from exactly that query — the one number
+  this whole feature exists to produce.
+- **`user_budget`** — the legacy fallback in `loadDefaultScenario()`. Without
+  it a peer on an older account silently falls back to defaults.
+- **`expected_payments`** — created by 0019, five days after 0016 was
+  written. Carries the same single `FOR ALL` policy that goals and
+  net_worth_snapshots had, so it needed the same four-way split rather than
+  an in-place OR-extension, for the same reason: Postgres reuses `USING` as
+  `WITH CHECK`, which would have handed a partner write access.
+
+The lesson generalises: **an unapplied migration keeps ageing.** Re-run the
+live-schema check against `pg_policies` and `information_schema.tables`
+immediately before applying 0016, not just before writing it.
+
+### 5. The one unfiltered read is fixed
+
+`app/dashboard/page.tsx` now filters `net_worth_snapshots` by `user_id`
+explicitly. A repo-wide scan of all 213 files in `app/`, `components/` and
+`lib/` reports **zero** client-side reads on a to-be-widened table that rely
+on RLS alone, so the peer policies can land without silently changing any
+existing screen. Re-run that scan before applying.
 
 ## Product decisions (confirmed 2026-08-16)
 

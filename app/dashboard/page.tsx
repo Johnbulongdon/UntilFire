@@ -5557,9 +5557,16 @@ export default function Dashboard() {
           trackDashboardFirstView({ hadCalculatorPrefill: hadPrefill, viaUpgrade: wasUpgradedRef.current });
         }
       });
-      // Load net worth snapshot history for the "actual progress" chart line
+      // Load net worth snapshot history for the "actual progress" chart line.
+      // The user_id filter is redundant against today's RLS, which already
+      // scopes this to the owner — but it is the only client-side read that
+      // relies on RLS alone, so it is the only one that would silently start
+      // returning a partner's rows when the household peer-read policies land
+      // (docs/design/family-accounts.md). Interleaved with limit(120) that
+      // renders a wrong line rather than an obviously merged one.
       supabase.from("net_worth_snapshots")
         .select("portfolio_value, captured_at")
+        .eq("user_id", session.user.id)
         .order("captured_at", { ascending: true })
         .limit(120)
         .then(({ data: snaps }) => { if (snaps) setNwSnapshots(snaps); });
