@@ -155,7 +155,7 @@ export default function CoastFireCalculator() {
   // a pixel of sliders the reader cannot see while dragging them.
 
   const narrow = chartWidth < 420
-  const chartHeight = narrow ? 150 : 250
+  const chartHeight = narrow ? 138 : 250
 
   /**
    * Where an age sits in pixels, and back again.
@@ -238,14 +238,14 @@ export default function CoastFireCalculator() {
                   value={<Money amount={result.atRetire} format="compact" size={narrow ? 24 : 34} />}
                   delta={
                     result.shortfall > 0
-                      ? `${formatMoney(result.shortfall, { style: 'compact' })} short of target`
+                      ? `${formatMoney(result.shortfall, { style: 'compact' })} short`
                       : `${formatMoney(result.fireTarget, { style: 'compact' })} target, cleared`
                   }
                 />
                 <Stat
                   label={`Income from ${result.retire}`}
                   value={<span className="uf-t-data" style={{ fontSize: narrow ? 20 : 26, fontWeight: 700 }}>{perMonth(result.income)}</span>}
-                  delta={`${formatMoney(result.income)} a year at ${withdrawalRate}%`}
+                  delta={narrow ? `at ${withdrawalRate}%` : `${formatMoney(result.income)} a year at ${withdrawalRate}%`}
                 />
               </div>
 
