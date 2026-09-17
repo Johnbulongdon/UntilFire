@@ -3,6 +3,89 @@
 Confirmed with John on 2026-08-16. Two partners link accounts and see one
 combined FIRE plan — a shared freedom date instead of two separate ones.
 
+## Status check — 17 Sep 2026
+
+Three findings from re-reading this against the live database and codebase.
+The product decisions below still stand; these change what is *true* and what
+to build first.
+
+### 1. P0 is not done. It was never applied.
+
+`supabase/migrations/0016_household_accounts.sql` is in the repo, but none of
+it reached production. Confirmed two ways:
+
+- `information_schema.tables` has no `households`, `household_members`,
+  `household_invites` or `shared_account_links`; `pg_proc` has neither
+  `my_household_id()` nor `is_household_peer()`.
+- The applied migration ledger jumps straight from `csv_source_file` (0015,
+  10 Jul) to `0017_admin_email` (21 Aug). 0016 was skipped.
+
+Nothing is broken by this — no app code depends on those tables yet. But
+anyone reading "P0 — done" would build P1 on a foundation that isn't there.
+
+### 2. Plaid probably cannot reach the card this is for
+
+The motivating case is seeing a partner's credit-card spending. Plaid is the
+assumed mechanism. The production data says it mostly isn't the mechanism
+here already:
+
+| Signal | Value |
+|---|---|
+| Plaid items connected | 4 — Wise (US), Capital One, Interactive Brokers – US, Non Custodial Wallet |
+| `create-link-token` country codes | `[CountryCode.Us]` only |
+| Transactions from Plaid | 43 of 1,338 — **3%** |
+| From manual entry | 842 — 63% |
+| From CSV import | 453 — 34% |
+| Spending currency | CNY 1,132 (85%), HKD 139 (10%), USD 67 (5%) |
+
+Every Plaid item is a US investment or transfer account. Actual day-to-day
+spending is overwhelmingly CNY and HKD, and it arrives by manual entry and
+CSV — which is why the WeChat Pay Excel importer and the PDF statement
+reader exist.
+
+**Plaid has no coverage in mainland China or Hong Kong.** For a card issued
+there, no amount of work on this feature connects it. That is vendor
+coverage, not a gap in our integration.
+
+This does not kill the feature; it reorders it. The household layer is
+identical whichever way transactions arrive — only the ingest differs. So:
+
+- **Partner's card is US-issued** → Plaid works as designed. P2's duplicate
+  detection (`institution_id` + `mask`) applies.
+- **Partner's card is HK or mainland** → she imports statements through the
+  path that already carries 97% of the data. P2's Plaid-based dedup does not
+  apply, and the v1 note that manual entries aren't deduplicated becomes the
+  main case rather than an edge case.
+
+Confirm which before building P2, since P2 is entirely Plaid-shaped.
+
+### 3. Exactly one query would silently go household-wide
+
+The RLS plan below extends each SELECT policy to
+`auth.uid() = user_id OR is_household_peer(user_id)`. That widens what a
+query *can* return, so any client-side read that does not also filter
+`user_id` explicitly would start returning both partners' rows with no code
+change and nothing in the diff.
+
+A scan of all 213 files in `app/`, `components/` and `lib/` found exactly
+one such read:
+
+```
+app/dashboard/page.tsx:5561   net_worth_snapshots
+```
+
+It is the "actual progress" chart line — `.select("portfolio_value,
+captured_at").order("captured_at").limit(120)` with no `user_id` filter.
+Under widened RLS it would interleave both partners' snapshots into one
+line, and `limit(120)` would then truncate across both histories — so it
+would render a *wrong* line rather than an obviously merged one, which is
+the harder kind to notice.
+
+**Add `.eq("user_id", userId)` there as part of P0**, before the policies
+change. Everything else already filters explicitly, and the five unfiltered
+reads in `app/api/` are admin and cron routes on the service-role client,
+which bypasses RLS regardless.
+
 ## Product decisions (confirmed 2026-08-16)
 
 - **Aggregate, not pooled.** Each partner keeps their own accounts, income,
@@ -130,9 +213,9 @@ immediately per the instant-revoke decision above.
 
 ## Phasing
 
-- **P0 — done.** Schema (4 tables) + RLS + the two helper functions.
-  SQL-only; no app code touches this yet. Verify with direct SQL queries as
-  a different simulated user before building UI on top.
+- **P0 — written, NOT applied.** See "Status check" at the top: the
+  migration file exists but none of it is in the live database. Applying it
+  is the first task, not a completed one.
 - **P1** — invite → accept → join, leave/remove. Server routes using the
   service-role client (create household + first membership atomically, mint
   invite tokens, send via Resend, accept-by-token, self-leave).
