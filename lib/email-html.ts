@@ -202,10 +202,16 @@ function ctaBlock(href: string, label: string): string {
 
 // ─── Welcome email ────────────────────────────────────────────────────────────
 
-export function buildWelcomeEmail(): string {
+/**
+ * `firstName` is already escaped by firstNameFor, and empty when there is no
+ * usable one. The very first email anyone receives was the only one in the
+ * sequence that could not say their name — worth fixing, because it is the
+ * one that decides whether this reads as a person or a system.
+ */
+export function buildWelcomeEmail(firstName?: string): string {
   const hero = heroCard(
     "Welcome",
-    "Three things I want you to know.",
+    firstName ? `${firstName}, three things I want you to know.` : "Three things I want you to know.",
     "Before you dive in, here&#39;s what I&#39;d tell a friend sitting across from me."
   );
 

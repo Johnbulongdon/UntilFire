@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { Resend } from "resend";
 import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
-import { buildWelcomeEmail } from "@/lib/email-html";
+import { buildWelcomeEmail, firstNameFor } from "@/lib/email-html";
 import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
 
 export async function POST(req: NextRequest) {
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         from: "UntilFire <hello@untilfire.com>",
         to: user.email,
         subject: "Welcome to UntilFire — your path to financial freedom starts here",
-        html: buildWelcomeEmail(),
+        html: buildWelcomeEmail(firstNameFor(claimed)),
       });
       if (sendError) console.error("[welcome] Resend error:", sendError);
     } catch (err) {

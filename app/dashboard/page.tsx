@@ -3371,9 +3371,29 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
 // ─── User Nav ─────────────────────────────────────────────────────────────────
 function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => void; isProfileActive: boolean }) {
   const [email, setEmail] = useState<string | null>(null);
+  // Google hands over the name and picture on every sign-in and both were
+  // already sitting on the auth user — the sidebar just showed a generic
+  // outline and an email address. No round trip and no new column: this is
+  // the same call that was being made anyway.
+  const [name, setName] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setEmail(user?.email ?? null));
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setEmail(user?.email ?? null);
+      const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+      const full = [meta.full_name, meta.name].find((v): v is string => typeof v === "string" && v.trim().length > 0);
+      setName(full?.trim() ?? null);
+      const pic = [meta.avatar_url, meta.picture].find((v): v is string => typeof v === "string" && v.startsWith("https://"));
+      setAvatar(pic ?? null);
+    });
   }, []);
+
+  // Initials, so someone whose picture fails to load still gets something
+  // that is theirs rather than the same outline as everybody else.
+  const initials = (name ?? email ?? "")
+    .split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
   const handleSignOut = async () => { await supabase.auth.signOut(); window.location.href = "/"; };
 
   if (!email) return (
@@ -3387,12 +3407,38 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
         style={{ width: "100%" }}
       >
         <span className="uf-sidebar-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
+          {avatar && !avatarFailed ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a Google
+            // avatar URL on an arbitrary host; next/image would need every
+            // provider domain allow-listed for a 22px decoration.
+            <img
+              src={avatar}
+              alt=""
+              width={22}
+              height={22}
+              referrerPolicy="no-referrer"
+              onError={() => setAvatarFailed(true)}
+              style={{ width: 22, height: 22, borderRadius: 999, objectFit: "cover", display: "block" }}
+            />
+          ) : initials ? (
+            <span
+              aria-hidden
+              style={{
+                width: 22, height: 22, borderRadius: 999, display: "grid", placeItems: "center",
+                background: "var(--uf-green-100)", color: "var(--uf-green-900)",
+                fontSize: 10, fontWeight: 800, letterSpacing: "0.02em",
+              }}
+            >{initials}</span>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+          )}
         </span>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0, flex: 1 }}>
-          <span>Profile</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+            {name ?? "Profile"}
+          </span>
           <span style={{ fontSize: 11, fontWeight: 400, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{email}</span>
         </div>
       </button>
