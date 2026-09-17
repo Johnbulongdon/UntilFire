@@ -82,6 +82,7 @@ export default function CoastFireCalculator() {
 
   const [chartRef, chartWidth] = useWidth<HTMLDivElement>(320)
   const [dragging, setDragging] = useState(false)
+  const lastCoastAge = useRef<number | null>(null)
 
   const result = useMemo(() => {
     const r = returnRate / 100
@@ -173,13 +174,24 @@ export default function CoastFireCalculator() {
     const grown = currentSavings * Math.pow(1 + r, years)
     const factor = (Math.pow(1 + r, years) - 1) / r
     const annual = (needed - grown) / factor
-    // Snapped to the slider's own step so the two controls cannot disagree by
-    // a few pounds and render different numbers for the same state.
-    return Math.max(0, Math.min(10_000, Math.round(annual / 12 / 100) * 100))
+
+    // Ceil to whole pounds, and emphatically NOT to the £100 the slider used
+    // to step in. Rounding to 100 rounded DOWN as often as up, and a
+    // contribution a few pounds short of the requirement never reaches the
+    // coast number at all — so coastAge came back null, the dot stopped being
+    // rendered, and dragging right far enough made it vanish. The same
+    // coarseness also made the dot lag the finger: every target from 50 to 64
+    // collapsed onto the same £500 and the same age 53.
+    //
+    // Ceiling guarantees the requested age is actually reachable, and whole
+    // pounds make it land on the year asked for rather than near it.
+    return Math.max(0, Math.min(10_000, Math.ceil(annual / 12)))
   }
 
   // Shorter on a phone: the results card is sticky, so every pixel it takes is
   // a pixel of sliders the reader cannot see while dragging them.
+  if (result.coastAge !== null) lastCoastAge.current = result.coastAge
+
   const narrow = chartWidth < 420
   const chartHeight = narrow ? 150 : 250
 
@@ -364,11 +376,11 @@ export default function CoastFireCalculator() {
                       touch-action is off on the strip alone, so a drag here
                       never becomes a page scroll and a drag anywhere else
                       still does. */}
-                  {result.coastAge !== null && (
+                  {(result.coastAge ?? (dragging ? lastCoastAge.current : null)) !== null && (
                     <div
                       role="slider"
                       aria-label="Age you stop paying in"
-                      aria-valuenow={result.coastAge}
+                      aria-valuenow={(result.coastAge ?? lastCoastAge.current) as number}
                       aria-valuemin={currentAge + 1}
                       aria-valuemax={result.retire}
                       tabIndex={0}
@@ -386,11 +398,12 @@ export default function CoastFireCalculator() {
                       onKeyDown={(e) => {
                         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
                         e.preventDefault()
-                        setMonthlyContribution(contributionFor(result.coastAge! + (e.key === 'ArrowRight' ? 1 : -1)))
+                        const from = (result.coastAge ?? lastCoastAge.current) as number
+                        setMonthlyContribution(contributionFor(from + (e.key === 'ArrowRight' ? 1 : -1)))
                       }}
                       style={{
                         position: 'absolute',
-                        left: xForAge(result.coastAge) - 24,
+                        left: xForAge((result.coastAge ?? lastCoastAge.current) as number) - 24,
                         top: 0,
                         width: 48,
                         height: chartHeight - 52,
@@ -434,7 +447,7 @@ export default function CoastFireCalculator() {
                 <Slider label="Current savings and investments" value={currentSavings} onChange={setCurrentSavings}
                   min={0} max={2_000_000} step={5_000} format={money} />
                 <Slider label="Paying in each month" value={monthlyContribution} onChange={setMonthlyContribution}
-                  min={0} max={10_000} step={100} format={money}
+                  min={0} max={10_000} step={1} format={money}
                   hint="What you add to investments now. Coasting is when this can stop." />
                 <Slider label="Retire at" value={retireAge} onChange={setRetireAge}
                   min={currentAge + 1} max={85} step={1} format={ageLabel}
