@@ -682,3 +682,45 @@ export function buildMonthlyUpdateEmail({
 
   return base(heading, hero + newSection + fixSection + cta + ask + footer);
 }
+
+// ─── Household invitation ────────────────────────────────────────────────────
+
+/**
+ * The one email in this file that goes to someone who is not a user yet.
+ *
+ * So it says as little as possible. No figures, no freedom date, no net worth
+ * — not the inviter's and certainly not a household's. A mistyped address
+ * should reveal nothing beyond "somebody with this name uses UntilFire and
+ * wanted to share a plan with you", which is the minimum an invitation can
+ * carry and still be one.
+ */
+export function buildHouseholdInviteEmail(inviterLabel: string, acceptUrl: string): string {
+  const hero = heroCard(
+    "Invitation",
+    `${inviterLabel} wants to plan with you.`,
+    "UntilFire works out when work becomes optional. Together, it does it for both of you at once."
+  );
+
+  const body = sectionCard(`
+    ${sectionLabel("What this means")}
+    <p style="margin:0 0 14px;font-size:15px;color:${INK_2};line-height:1.7;font-family:${BODY}">
+      You&#39;ll each keep your own account, your own login and your own numbers.
+      Joining a household adds one shared view on top: a combined freedom date,
+      and what the two of you spend together.
+    </p>
+    <p style="margin:0 0 14px;font-size:15px;color:${INK_2};line-height:1.7;font-family:${BODY}">
+      You&#39;ll both see the same thing about each other &#8212; it is the same
+      view from either side. Neither of you can change the other&#39;s numbers,
+      and either of you can disconnect at any time, on your own, without asking.
+    </p>
+    <p style="margin:0;font-size:14px;color:${INK_2};line-height:1.7;font-family:${BODY};border-top:1px solid ${GROUND};padding-top:18px">
+      This invitation expires in 14 days. If you weren&#39;t expecting it, you can
+      ignore it &#8212; nothing is shared until you accept.
+    </p>
+  `);
+
+  return base(
+    `${inviterLabel} invited you to share a household on UntilFire.`,
+    hero + body + ctaBlock(acceptUrl, "See the invitation")
+  );
+}

@@ -2,6 +2,23 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-18
+
+### Added
+- **Household (P1)** — invite one partner to share a household, from `Profile → Household`. They create their own account, keep their own login and their own numbers; joining adds a shared view on top rather than merging anything. Invite by email, one live invitation at a time (re-inviting supersedes rather than stacks, so a corrected address cannot leave an old link redeemable), 14-day expiry, and **Disconnect** — one symmetric action either person can take instantly without the other's approval, because at two members with symmetric visibility "I leave" and "I remove you" have the same outcome.
+- Accepting requires the signed-in address to match the address the invitation was sent to, not just possession of the link. A forwarded link is not enough to obtain read access to someone's complete financial history; a mismatch names the expected address, since the usual cause is signing in with a different Google account.
+- `/household/join` survives the signup round trip. Most invitees are signed out and many have no account, and `/login` takes no return path, so the token is stashed in `localStorage` and the dashboard hands it back once a session exists.
+- Household invitation email (`CAMPAIGNS.HOUSEHOLD_INVITE`) — the only email that reaches someone who is not a user yet, so it carries no figures at all. A mistyped address reveals nothing beyond a first name and that they were invited.
+- `npm run test:household-rls` — fails on any client-side read of a household-shared table that relies on RLS alone for scoping. Those reads silently start returning a partner's rows once the peer policies are active, with nothing in the diff to notice.
+
+### Changed
+- `net_worth_snapshots` on the dashboard's progress chart now filters `user_id` explicitly. It was the only client-side read scoped by RLS alone; under peer-read policies it would have interleaved both partners' histories and then truncated at `limit(120)` across them — a wrong line rather than an obviously merged one.
+
+### Database
+- `0016_household_accounts` applied — `households`, `household_members`, `household_invites`, `shared_account_links`, two `SECURITY DEFINER` helpers, and peer **read** access on nine financial tables. Writes stay owner-only everywhere: `goals`, `net_worth_snapshots` and `expected_payments` each had a single `FOR ALL` policy, which Postgres reuses as `WITH CHECK`, so each was split four ways to keep the peer clause on `SELECT` alone.
+- A household holds exactly two people, enforced by `member_slot` + `UNIQUE (household_id, member_slot)` — a slot rather than a count trigger, because a unique index cannot be raced.
+- `0035_household_revoke_anon` — Supabase grants EXECUTE on new `public` functions to `anon` individually, so `REVOKE ... FROM PUBLIC` in 0016 did not achieve what its comment claimed.
+
 ## [Unreleased] - 2026-09-12
 
 ### Added

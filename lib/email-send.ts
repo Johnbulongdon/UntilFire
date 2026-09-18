@@ -33,6 +33,7 @@ export const CAMPAIGNS = {
   TRIAL_ENDING: "billing_trial_ending",
   FEEDBACK: "internal_feedback",
   PREVIEW: "preview",
+  HOUSEHOLD_INVITE: "household_invite",
 } as const;
 
 export interface TaggedSend {

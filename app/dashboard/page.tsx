@@ -25,6 +25,7 @@ import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
 import { calcFIRE, REAL_RETURN } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
+import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
@@ -5182,6 +5183,16 @@ export default function Dashboard() {
     if (!upgradedBanner || !userId) return;
     setSubscription({ plan: "pro", hadSubscription: true });
   }, [upgradedBanner, userId]);
+
+  // A household invitation clicked while signed out stashes its token, then
+  // goes through Google and lands here, because /login takes no return path.
+  // Hand it back to the page that knows what to do with it.
+  useEffect(() => {
+    if (!userId) return;
+    let pending: string | null = null;
+    try { pending = localStorage.getItem(HOUSEHOLD_INVITE_KEY); } catch { return; }
+    if (pending) window.location.replace(`/household/join?token=${encodeURIComponent(pending)}`);
+  }, [userId]);
 
   async function handleManageBilling() {
     const { data: { session } } = await supabase.auth.getSession();

@@ -6,6 +6,7 @@ import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 import { formatMoney } from "@/lib/money";
 import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
+import HouseholdSection from "./HouseholdSection";
 
 interface PlaidItem {
   id: string;
@@ -312,6 +313,9 @@ export default function ProfileTab({
           This is how your name appears in the dashboard greeting.
         </p>
       </div>
+
+      {/* Household — account, not money (app-structure rule 4). */}
+      <HouseholdSection />
 
       {/* Preferences */}
       <div style={cardStyle}>

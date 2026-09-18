@@ -399,9 +399,13 @@ household Pro runs to `current_period_end` and then stops for both.
 - **P0 — applied 18 Sep 2026.** Schema, helpers and peer-read policies are
   live and verified (see Status check). `0035` follows it to revoke anon
   EXECUTE. Nothing in the app reads any of it yet — P1 is the next task.
-- **P1** — invite → accept → join, leave/remove. Server routes using the
-  service-role client (create household + first membership atomically, mint
-  invite tokens, send via Resend, accept-by-token, self-leave).
+- **P1 — shipped 18 Sep 2026.** `Profile → Household`: invite by email,
+  pending state, connected partner, Disconnect. Five service-role routes under
+  `app/api/household/`, `lib/household.ts`, `app/dashboard/HouseholdSection.tsx`
+  and the `/household/join` landing page. Two notes for whoever picks up P2:
+  accepting requires the signed-in address to match the invited one (a
+  forwarded link must not buy access to someone's finances), and the join page
+  carries the token through `localStorage` because `/login` has no return path.
 - **P2** — Plaid duplicate-account detection (match on `institution_id` +
   `mask` across the two members' `plaid_accounts`) + the confirm prompt +
   writes to `shared_account_links`.
