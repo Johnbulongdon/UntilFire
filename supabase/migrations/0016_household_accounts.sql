@@ -295,6 +295,11 @@ CREATE POLICY "expected_payments owner delete" ON expected_payments
 -- classification_rules and plaid_items (which holds the Plaid access token)
 -- stay fully private — a partner doesn't need raw bank credentials or the
 -- other person's auto-categorization rules to see the combined numbers.
--- subscriptions is untouched in this migration; household billing (P4) adds
--- a nullable household_id column and its own policy change separately, once
--- the billing-check application logic exists to go with it.
+-- subscriptions is untouched in this migration, and stays that way: household
+-- billing (P4) reads entitlement through a SECURITY DEFINER function returning
+-- a boolean, NOT a peer-readable subscriptions row. The row carries amount,
+-- status, renewal date and Stripe IDs; a partner needs to know the household
+-- is Pro, not what the other is charged. See docs/design/family-accounts.md.
+--
+-- APPLIED 18 Sep 2026. See 0035 for the anon EXECUTE revoke this file's
+-- REVOKE ... FROM PUBLIC did not actually achieve.

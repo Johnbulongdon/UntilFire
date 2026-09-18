@@ -9,7 +9,7 @@ Three findings from re-reading this against the live database and codebase.
 The product decisions below still stand; these change what is *true* and what
 to build first.
 
-### 1. P0 is not done. It was never applied.
+### 1. P0 was never applied — resolved, applied 18 Sep 2026
 
 `supabase/migrations/0016_household_accounts.sql` is in the repo, but none of
 it reached production. Confirmed two ways:
@@ -20,8 +20,40 @@ it reached production. Confirmed two ways:
 - The applied migration ledger jumps straight from `csv_source_file` (0015,
   10 Jul) to `0017_admin_email` (21 Aug). 0016 was skipped.
 
-Nothing is broken by this — no app code depends on those tables yet. But
-anyone reading "P0 — done" would build P1 on a foundation that isn't there.
+Nothing was broken by this — no app code depended on those tables. But
+anyone reading "P0 — done" would have built P1 on a foundation that wasn't
+there.
+
+**Applied 18 Sep 2026**, after a full dry run inside a rolled-back
+transaction. Verified in production:
+
+- 4 tables, 2 `SECURITY DEFINER` helpers, 9 peer-read SELECT policies
+- **0 peer clauses on any write policy** — the `FOR ALL` split worked on all
+  three of goals, net_worth_snapshots and expected_payments, so a partner can
+  read but never write
+- The two-person cap rejects a third member at slot 2 (unique violation), at
+  slot 3 (check violation), and rejects a user joining a second household
+- `is_household_peer()` returns false for every user and `my_household_id()`
+  is null while no household exists, so behaviour is identical to before for
+  all 13 existing users. Data untouched: 13 profiles, 1,338 expenses.
+
+### 1b. `REVOKE ... FROM PUBLIC` is not enough on Supabase
+
+0016 ends each helper with `REVOKE ALL ... FROM PUBLIC` then `GRANT EXECUTE
+... TO authenticated`, and its comment claims the helpers are therefore
+exposed only to signed-in users. The linter disagreed the moment it was
+applied, and the linter was right: Supabase ships `ALTER DEFAULT PRIVILEGES`
+granting EXECUTE on new `public` functions to anon, authenticated and
+service_role *individually*, so the ACL already reads
+`{...,anon=X/postgres,authenticated=X/postgres,...}`. Revoking from PUBLIC
+removes only the PUBLIC entry; the per-role grants are separate and survive.
+
+Closed by `0035_household_revoke_anon.sql`. It was never exploitable — both
+helpers key off `auth.uid()`, which is NULL for an anonymous caller, so they
+return null and false for every input and enumerate nothing — but the grant
+contradicted the migration's own stated intent.
+
+**Name the roles explicitly on any future SECURITY DEFINER helper here.**
 
 ### 2. Plaid reaches the card — but it is not how this household's money arrives
 
@@ -364,9 +396,9 @@ household Pro runs to `current_period_end` and then stops for both.
 
 ## Phasing
 
-- **P0 — written, NOT applied.** See "Status check" at the top: the
-  migration file exists but none of it is in the live database. Applying it
-  is the first task, not a completed one.
+- **P0 — applied 18 Sep 2026.** Schema, helpers and peer-read policies are
+  live and verified (see Status check). `0035` follows it to revoke anon
+  EXECUTE. Nothing in the app reads any of it yet — P1 is the next task.
 - **P1** — invite → accept → join, leave/remove. Server routes using the
   service-role client (create household + first membership atomically, mint
   invite tokens, send via Resend, accept-by-token, self-leave).
