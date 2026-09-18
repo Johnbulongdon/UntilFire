@@ -5,6 +5,7 @@ import {
   PRO_MONTHLY_LABEL, PRO_MONTHLY_USD, TRIAL_LABEL,
 } from "@/lib/pricing";
 import { siteUrl } from "@/lib/site";
+import { Badge, Card } from "@/components/ui";
 
 const pricingUrl = siteUrl('/pricing');
 
@@ -90,202 +91,98 @@ export default function PricingPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#08080e",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "64px 24px 120px",
-        fontFamily: "Manrope, sans-serif",
+        background: "var(--uf-ground)",
+        padding: "var(--uf-s6) var(--uf-s4) var(--uf-s7)",
       }}
     >
-      <Link
-        href="/"
-        style={{
-          fontSize: 13,
-          color: "#6b7280",
-          textDecoration: "none",
-          marginBottom: 48,
-          alignSelf: "flex-start",
-          maxWidth: 800,
-          width: "100%",
-          margin: "0 auto 48px",
-        }}
-      >
-        ← untilfire.com
-      </Link>
-
-      <div style={{ textAlign: "center", marginBottom: 56 }}>
-        <h1
-          style={{
-            fontFamily: "Manrope, sans-serif",
-            fontSize: 40,
-            fontWeight: 800,
-            color: "#f1f5f9",
-            margin: "0 0 12px",
-            letterSpacing: "-0.02em",
-          }}
+      <div style={{ maxWidth: 820, margin: "0 auto" }}>
+        <Link
+          href="/"
+          className="uf-t-small"
+          style={{ color: "var(--uf-ink-3)", textDecoration: "none", display: "inline-block", marginBottom: "var(--uf-s6)" }}
         >
-          Simple pricing
-        </h1>
-        <p style={{ fontSize: 17, color: "#9ca3af", margin: 0 }}>
-          Free forever. Upgrade when you&apos;re ready.
+          &larr; untilfire.com
+        </Link>
+
+        <div style={{ textAlign: "center", marginBottom: "var(--uf-s6)" }}>
+          <h1 className="uf-t-h1" style={{ margin: "0 0 var(--uf-s2)" }}>Simple pricing</h1>
+          <p className="uf-t-lead" style={{ color: "var(--uf-ink-2)", margin: 0 }}>
+            Free forever. Upgrade when you&apos;re ready.
+          </p>
+        </div>
+
+        <div className="uf-pricing-grid">
+          <Card style={{ display: "flex", flexDirection: "column", padding: "var(--uf-s6)" }}>
+            <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: "var(--uf-s2)" }}>FREE</div>
+            <div style={{ display: "flex", alignItems: "baseline", marginBottom: "var(--uf-s1)" }}>
+              <span className="uf-t-display" style={{ color: "var(--uf-ink)" }}>$0</span>
+              <span className="uf-t-body" style={{ color: "var(--uf-ink-3)", marginLeft: 4 }}>/month</span>
+            </div>
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "0 0 var(--uf-s5)" }}>
+              No account required to get started.
+            </p>
+
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 var(--uf-s5)", display: "grid", gap: "var(--uf-s3)" }}>
+              {FREE_FEATURES.map((f) => (
+                <li key={f} className="uf-t-body" style={{ display: "flex", gap: "var(--uf-s2)", color: "var(--uf-ink-2)" }}>
+                  <span aria-hidden style={{ color: "var(--uf-green)", flexShrink: 0 }}>&#10003;</span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link href="/login" className="uf-pricing-cta uf-pricing-cta--secondary">
+              Get started free
+            </Link>
+          </Card>
+
+          <Card
+            elevation="float"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              padding: "var(--uf-s6)",
+              border: "1.5px solid var(--uf-green)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--uf-s2)", marginBottom: "var(--uf-s2)" }}>
+              <span className="uf-t-label" style={{ color: "var(--uf-ink-3)" }}>PRO</span>
+              <Badge tone="positive">{TRIAL_LABEL}</Badge>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "baseline", marginBottom: "var(--uf-s1)" }}>
+              <span className="uf-t-display" style={{ color: "var(--uf-ink)" }}>{PRO_MONTHLY_LABEL}</span>
+              <span className="uf-t-body" style={{ color: "var(--uf-ink-3)", marginLeft: 4 }}>/month after</span>
+            </div>
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "0 0 4px" }}>
+              or {PRO_ANNUAL_LABEL}/year &mdash; {ANNUAL_MONTHS_FREE} months free, {ANNUAL_PER_MONTH_LABEL}/mo
+            </p>
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "0 0 var(--uf-s5)" }}>
+              {TRIAL_LABEL} &mdash; no charge today. Cancel anytime.
+            </p>
+
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 var(--uf-s5)", display: "grid", gap: "var(--uf-s3)" }}>
+              {PRO_FEATURES.map((f) => (
+                <li key={f} className="uf-t-body" style={{ display: "flex", gap: "var(--uf-s2)", color: "var(--uf-ink-2)" }}>
+                  <span aria-hidden style={{ color: "var(--uf-green)", flexShrink: 0 }}>&#10003;</span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link href="/login?intent=pro" className="uf-pricing-cta uf-pricing-cta--primary">
+              Start {TRIAL_LABEL} &rarr;
+            </Link>
+          </Card>
+        </div>
+
+        <p className="uf-t-small" style={{ marginTop: "var(--uf-s6)", color: "var(--uf-ink-3)", textAlign: "center" }}>
+          Questions?{" "}
+          <a href="mailto:hello@untilfire.com" style={{ color: "var(--uf-green)", textDecoration: "none" }}>
+            hello@untilfire.com
+          </a>
         </p>
       </div>
-
-      <div
-        style={{
-          display: "flex",
-          gap: 20,
-          flexWrap: "wrap",
-          justifyContent: "center",
-          maxWidth: 780,
-          width: "100%",
-        }}
-      >
-        {/* FREE */}
-        <div
-          style={{
-            flex: 1,
-            minWidth: 300,
-            background: "#111118",
-            border: "1px solid #23232d",
-            borderRadius: 20,
-            padding: "36px 32px",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-            Free
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>$0</span>
-            <span style={{ fontSize: 15, color: "#6b7280", marginLeft: 4 }}>/month</span>
-          </div>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 28px" }}>No account required to get started.</p>
-
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-            {FREE_FEATURES.map((f) => (
-              <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#d1d5db" }}>
-                <span style={{ color: "#22d3a5", fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          <Link
-            href="/login"
-            style={{
-              display: "block",
-              textAlign: "center",
-              padding: "12px 24px",
-              borderRadius: 10,
-              border: "1px solid #374151",
-              background: "transparent",
-              color: "#d1d5db",
-              fontSize: 14,
-              fontWeight: 700,
-              textDecoration: "none",
-              fontFamily: "Manrope, sans-serif",
-            }}
-          >
-            Get started free
-          </Link>
-        </div>
-
-        {/* PRO */}
-        <div
-          style={{
-            flex: 1,
-            minWidth: 300,
-            background: "#111118",
-            border: "1.5px solid #059669",
-            borderRadius: 20,
-            padding: "36px 32px",
-            display: "flex",
-            flexDirection: "column",
-            position: "relative",
-          }}
-        >
-          <span
-            style={{
-              position: "absolute",
-              top: -13,
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "#22d3a5",
-              color: "#064E3B",
-              fontSize: 11,
-              fontWeight: 800,
-              padding: "3px 12px",
-              borderRadius: 20,
-              whiteSpace: "nowrap",
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-            }}
-          >
-            {TRIAL_LABEL}
-          </span>
-
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-            Pro
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 42, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>{PRO_MONTHLY_LABEL}</span>
-            <span style={{ fontSize: 15, color: "#6b7280", marginLeft: 4 }}>/month after</span>
-          </div>
-          <p style={{ fontSize: 13, color: "#22d3a5", fontWeight: 600, margin: "0 0 6px" }}>
-            or {PRO_ANNUAL_LABEL}/year — {ANNUAL_MONTHS_FREE} months free, {ANNUAL_PER_MONTH_LABEL}/mo
-          </p>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>{TRIAL_LABEL} — no charge today. Cancel anytime.</p>
-
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: "#0f2a1f", border: "1px solid #059669",
-            borderRadius: 8, padding: "10px 12px", marginBottom: 24,
-          }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>✉️</span>
-            <span style={{ fontSize: 13, color: "#22d3a5", fontWeight: 600, lineHeight: 1.4 }}>
-              We&apos;ll email you 3 days before your trial ends.
-            </span>
-          </div>
-
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-            {PRO_FEATURES.map((f) => (
-              <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#d1d5db" }}>
-                <span style={{ color: "#22d3a5", fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          <Link
-            href="/login"
-            style={{
-              display: "block",
-              textAlign: "center",
-              padding: "12px 24px",
-              borderRadius: 10,
-              border: "none",
-              background: "#059669",
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 700,
-              textDecoration: "none",
-              fontFamily: "Manrope, sans-serif",
-            }}
-          >
-            Start {TRIAL_LABEL} →
-          </Link>
-        </div>
-      </div>
-
-      <p style={{ marginTop: 52, fontSize: 13, color: "#4b5563", textAlign: "center" }}>
-        Questions?{" "}
-        <a href="mailto:hello@untilfire.com" style={{ color: "#22d3a5", textDecoration: "none" }}>
-          hello@untilfire.com
-        </a>
-      </p>
     </main>
     </>
   );

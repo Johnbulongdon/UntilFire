@@ -602,3 +602,44 @@ html[data-splash="1"] #uf-splash {
   .uf-household-split { grid-template-columns: 1fr 1fr; }
   .uf-household-split > :last-child { grid-column: 1 / -1; }
 }
+
+/* Pricing — two plans side by side, stacking on a phone.
+   The CTAs are links rather than <Button>, because a <button> inside a <Link>
+   nests two interactive elements; these carry the same pill treatment so the
+   page still reads as one product with the rest of the app. */
+.uf-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--uf-s4);
+  align-items: stretch;
+}
+
+@media (max-width: 720px) {
+  .uf-pricing-grid { grid-template-columns: 1fr; }
+}
+
+.uf-pricing-cta {
+  margin-top: auto;
+  display: block;
+  text-align: center;
+  padding: 12px 20px;
+  border-radius: var(--uf-r-pill);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.uf-pricing-cta--primary {
+  background: var(--uf-green);
+  color: #fff;
+  border: 1px solid var(--uf-green);
+}
+.uf-pricing-cta--primary:hover { background: var(--uf-green-700); border-color: var(--uf-green-700); }
+
+.uf-pricing-cta--secondary {
+  background: transparent;
+  color: var(--uf-green);
+  border: 1px solid var(--uf-border);
+}
+.uf-pricing-cta--secondary:hover { border-color: var(--uf-green); }
