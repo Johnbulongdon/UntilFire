@@ -40,9 +40,26 @@ CREATE TABLE IF NOT EXISTS household_members (
   household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   user_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   role         TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'member')),
+  -- Caps a household at two people, decided 18 Sep 2026. Nothing else in this
+  -- schema limits membership: is_household_peer() is a set-membership join and
+  -- works for any N, so without this a third member would silently receive
+  -- full read access while P3's combined math still assumed two — misreporting
+  -- the one number this feature exists to produce.
+  --
+  -- A slot rather than a trigger, because a unique index cannot be raced: two
+  -- concurrent accepts both checking "does this household already have 2?"
+  -- can both pass, two inserts against slot 2 cannot. Slot 1 is assigned on
+  -- create, slot 2 on accept.
+  --
+  -- Households of 3+ are common (multi-generational especially), but households
+  -- sharing ONE freedom date are not — that is a shared-expenses feature, not
+  -- this one. Raising the cap later is a one-line CHECK change; un-shipping a
+  -- broken three-person experience is not.
+  member_slot  SMALLINT NOT NULL CHECK (member_slot IN (1, 2)),
   joined_at    TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW()),
   PRIMARY KEY (household_id, user_id),
-  UNIQUE (user_id)
+  UNIQUE (user_id),
+  UNIQUE (household_id, member_slot)
 );
 
 CREATE INDEX IF NOT EXISTS household_members_household_id_idx

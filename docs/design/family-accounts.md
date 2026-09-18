@@ -165,14 +165,119 @@ existing screen. Re-run that scan before applying.
   deleting the `household_members` row *is* the revoke, since every
   peer-read policy keys off that table.
 
+## Decisions — 18 Sep 2026
+
+### Exactly two people, enforced in the schema
+
+Committed to two. `household_members` gains `member_slot SMALLINT CHECK (IN
+(1,2))` with `UNIQUE (household_id, member_slot)` — a slot rather than a
+trigger, because a unique index cannot be raced where a count check can.
+
+This matters because **nothing else caps membership.** `is_household_peer()`
+is a set-membership join that works for any N, so a third member would have
+received full read access while P3's combined math still assumed two.
+
+Households of three or more are common — multi-generational ones especially,
+and that is the norm in the CNY/HKD market this household actually spends in.
+But households sharing *one freedom date* are not. Parents living with the
+couple share costs and have their own, usually already-retired, finances; an
+adult child shares rent and has their own freedom date decades out. If that
+becomes a real ask it is a **shared-expenses** feature, not this one — rule 5,
+two groups means two features. Raising the CHECK later is one line;
+un-shipping a broken three-person experience is not.
+
+### Power is four axes, not one — and three of them are symmetric
+
+"Owner vs member" overstates the hierarchy. Splitting it out:
+
+| Axis | Design | Equal? |
+|---|---|---|
+| Seeing each other's money | both see everything | yes |
+| Editing each other's money | neither, ever | yes |
+| Paying | one card is charged | no — Stripe, not hierarchy |
+| Admin | **symmetric Disconnect** | yes, as of this decision |
+
+Neither person is a sub-account. `role` stays in the schema because billing
+needs to know whose card is on file, but it no longer confers authority.
+
+**Disconnect replaces leave-vs-remove.** At exactly two, and with symmetric
+visibility, "I leave" and "I remove you" have the identical outcome: the
+household ends and both stop seeing each other. So they are one action either
+person can take instantly, without the other's approval. This is both fairer
+and less code — and it is *only* available because the cap is two. At three,
+leave and remove diverge and real roles come back.
+
+### When the payer leaves
+
+Not previously covered. Household Pro runs to `current_period_end` and then
+stops for both. The period is paid for; cutting a partner off mid-month
+because the other cancelled reads as a bug and feels punitive.
+
+### `household_has_pro()` rather than peer-readable subscriptions
+
+P4 below says the Pro check becomes "any active subscription owned by me, or
+by my household." Do not implement that by extending `subscriptions` RLS: the
+row carries amount, status, renewal date and Stripe IDs, so a partner would
+learn the billing detail, not just the entitlement.
+
+A `SECURITY DEFINER` function returning a boolean instead. The partner learns
+*the household is Pro*, never *your card renews on the 14th*. `subscriptions`
+RLS stays exactly as it is, which is what 0016 already assumes.
+
+Two call sites: `lib/supabase.ts:81` (`isPro()`) and
+`app/dashboard/page.tsx:5167` (the dashboard's own subscription load). Both
+currently filter `.eq("user_id", ...)`, so both need it.
+
+### Where it lives: no new tab, no empty widget
+
+The sidebar is three items — Home, Money, Plan — with Profile in the user
+menu. A fourth item would cost every user permanent space for something
+almost none of them use, and an empty-state widget is a permanent
+advertisement on the screen that is meant to feel calm. Neither. Three
+conditional surfaces in places that already exist:
+
+| Surface | Group | Renders when |
+|---|---|---|
+| Invite, pending state, partner, Disconnect | **Profile** | always (it is account settings) |
+| Combined freedom date, You / Partner / Together | **Home** | only with a household — absent otherwise, not empty |
+| `You / Together` **scope toggle** on Cashflow and Insights | **Money** | only with a household |
+
+The toggle is the load-bearing choice. "What did *we* spend on dining" is the
+same question as "what did *I* spend on dining" at a wider scope, so a
+separate Household tab would duplicate every existing view and leave two of
+each to maintain. **Household is not a new place; it is a new lens on places
+that already exist.** It also avoids rule 6 entirely — a toggle is not a nav
+entry, so there is no second array to fall out of sync.
+
+Two consequences:
+
+- **Discoverability is earned, not permanent.** One line in Profile, plus the
+  "Planning with a partner? Invite them →" prompt *after* the reveal. That is
+  the only mechanism in the product where one user brings another, so it is a
+  genuine acquisition loop — but it goes after value, never as first-run
+  friction.
+- **The toggle must show its FX working.** This household spends 85% CNY
+  against a USD card, so "Together" is always a converted figure. Say so in
+  the UI. A silently converted combined total just looks wrong.
+
+**Build order: Profile → Money toggle → Home card.** Profile ships alone with
+no money data involved; the toggle needs the peer policies live; the Home card
+needs P3's math. Easiest to hardest, which is also safest to riskiest.
+
 ## Data model
 
 ```
 households               id, name, created_by, created_at
-household_members        household_id, user_id, role('owner'|'member'), joined_at
+household_members        household_id, user_id, role('owner'|'member'),
+                          member_slot(1|2), joined_at
                           PK(household_id, user_id) · UNIQUE(user_id)
-                          — one household per user in v1; deleting this row
-                            is how a member leaves or is removed
+                          · UNIQUE(household_id, member_slot)
+                          — UNIQUE(user_id) is one household per user;
+                            UNIQUE(household_id, member_slot) is two people
+                            per household (see Decisions, 18 Sep)
+                          — deleting this row is Disconnect: at two members
+                            with symmetric visibility, leave and remove are
+                            the same action, so either person may take it
 household_invites        id, household_id, inviter_id, invitee_email,
                           token(unique), status, expires_at, accepted_by
 shared_account_links      id, household_id, plaid_account_id_a, plaid_account_id_b,
@@ -245,11 +350,17 @@ freedom **date**. Since a date can map to two different ages, show both:
 
 ## Billing (P4)
 
-`subscriptions` gets a nullable `household_id` column (not added by the P0
-migration — comes with this phase, once the app-side Pro-check logic exists
-to go with it). The Pro check becomes "any active subscription owned by me,
-or by my household." Owner pays; leaving reverts the leaver to free
-immediately per the instant-revoke decision above.
+Owner pays; both members get Pro.
+
+**Superseded 18 Sep:** this section previously proposed a nullable
+`subscriptions.household_id` and a Pro check reading "any active subscription
+owned by me, or by my household". Implement it as a `SECURITY DEFINER`
+function returning a boolean instead — see Decisions above. Reading the
+owner's `subscriptions` row to answer an entitlement question would hand the
+partner the amount, status, renewal date and Stripe IDs along with it.
+
+Disconnecting reverts the leaver to free immediately. If the *payer* leaves,
+household Pro runs to `current_period_end` and then stops for both.
 
 ## Phasing
 
@@ -266,12 +377,19 @@ immediately per the instant-revoke decision above.
   household freedom date).
 - **P4** — household billing (`subscriptions.household_id` + the Pro-check
   logic change).
-- **P5 (later, not scoped)** — more than two members, shared editing
-  (currently read-only for a partner), manual-entry dedup tags for unlinked
-  shared costs.
+- **P5 (later, not scoped)** — shared editing (currently read-only for a
+  partner), manual-entry dedup tags for unlinked shared costs. **Three or
+  more members is no longer on this list**: the cap is deliberate and the
+  symmetric Disconnect depends on it. A multi-generational household is a
+  shared-expenses feature, not a shared-freedom-date one.
 
-## Open product idea (not yet decided)
+## Decided 18 Sep: the invite prompt is the discoverability plan
 
-A "Planning with a partner? Invite them →" CTA after the reveal could double
-as a referral/growth loop — worth revisiting once P1 ships and there's a
-real invite flow to point it at.
+The "Planning with a partner? Invite them →" CTA after the reveal is no
+longer just an idea — it is how this feature gets found, since there is no
+sidebar entry advertising it. It is also the only mechanism in the product
+where one user brings another, which makes it an acquisition loop rather
+than a nicety.
+
+It goes *after* the reveal, never before. Same rule as feedback: user-initiated
+after value, not first-run friction.
