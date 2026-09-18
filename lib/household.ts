@@ -193,3 +193,235 @@ export async function householdFor(admin: Admin, userId: string, userEmail: stri
     incomingInvite: null,
   };
 }
+
+// ─── P2: accounts both partners linked ───────────────────────────────────────
+
+export interface DuplicateCandidate {
+  /** plaid_account_id belonging to the caller. */
+  a: string;
+  /** plaid_account_id belonging to the partner. */
+  b: string;
+  institution: string;
+  mask: string;
+  /** What the pair is worth, so the prompt can say what is at stake. */
+  balance: number;
+  currency: string;
+}
+
+interface AccountRow {
+  plaid_account_id: string;
+  user_id: string;
+  mask: string | null;
+  name: string | null;
+  balance_current: number | null;
+  iso_currency_code: string | null;
+  plaid_item_id: string;
+}
+
+/**
+ * Pairs of accounts, one from each partner, that look like the same account.
+ *
+ * Matched on institution plus mask. That is enough to raise the question and
+ * not enough to answer it, so nothing here changes a total on its own — a
+ * confirmation does. Pairs already decided (either way) are filtered out, so
+ * the prompt appears once rather than on every page load.
+ */
+export async function duplicateCandidates(admin: Admin, userId: string): Promise<DuplicateCandidate[]> {
+  const { data: mine } = await admin
+    .from("household_members")
+    .select("household_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!mine) return [];
+
+  const { data: members } = await admin
+    .from("household_members")
+    .select("user_id")
+    .eq("household_id", mine.household_id);
+  const ids = (members ?? []).map((m) => m.user_id as string);
+  if (ids.length < 2) return [];
+
+  const { data: accounts } = await admin
+    .from("plaid_accounts")
+    .select("plaid_account_id, user_id, mask, name, balance_current, iso_currency_code, plaid_item_id")
+    .in("user_id", ids);
+  if (!accounts?.length) return [];
+
+  // institution_id is on plaid_items, which authenticated cannot read at all.
+  const itemIds = [...new Set((accounts as AccountRow[]).map((a) => a.plaid_item_id))];
+  const { data: items } = await admin
+    .from("plaid_items")
+    .select("id, institution_id, institution_name")
+    .in("id", itemIds);
+  const institutionOf = new Map<string, { id: string | null; name: string | null }>();
+  for (const it of items ?? []) {
+    institutionOf.set(it.id as string, {
+      id: (it.institution_id as string) ?? null,
+      name: (it.institution_name as string) ?? null,
+    });
+  }
+
+  const { data: decided } = await admin
+    .from("shared_account_links")
+    .select("plaid_account_id_a, plaid_account_id_b")
+    .eq("household_id", mine.household_id);
+  const settled = new Set((decided ?? []).map((d) => `${d.plaid_account_id_a}|${d.plaid_account_id_b}`));
+
+  const rows = accounts as AccountRow[];
+  const out: DuplicateCandidate[] = [];
+
+  for (const mineRow of rows.filter((r) => r.user_id === userId)) {
+    if (!mineRow.mask) continue;
+    const mineInst = institutionOf.get(mineRow.plaid_item_id);
+    if (!mineInst?.id) continue;
+
+    for (const theirs of rows.filter((r) => r.user_id !== userId)) {
+      if (theirs.mask !== mineRow.mask) continue;
+      const theirInst = institutionOf.get(theirs.plaid_item_id);
+      if (theirInst?.id !== mineInst.id) continue;
+
+      const [lo, hi] = mineRow.plaid_account_id < theirs.plaid_account_id
+        ? [mineRow.plaid_account_id, theirs.plaid_account_id]
+        : [theirs.plaid_account_id, mineRow.plaid_account_id];
+      if (settled.has(`${lo}|${hi}`)) continue;
+
+      out.push({
+        a: mineRow.plaid_account_id,
+        b: theirs.plaid_account_id,
+        institution: mineInst.name ?? "your bank",
+        mask: mineRow.mask,
+        balance: Number(mineRow.balance_current ?? 0),
+        currency: mineRow.iso_currency_code ?? "USD",
+      });
+    }
+  }
+  return out;
+}
+
+// ─── P3: the household's combined position ───────────────────────────────────
+
+export interface MemberPosition {
+  userId: string;
+  name: string;
+  isYou: boolean;
+  age: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  monthlySavings: number;
+  portfolio: number;
+}
+
+export interface HouseholdPosition {
+  members: MemberPosition[];
+  combined: {
+    monthlyIncome: number;
+    monthlyExpenses: number;
+    monthlySavings: number;
+    portfolio: number;
+    annualExpenses: number;
+  };
+  /** Balance removed because both partners had linked the same account. */
+  dedupedBalance: number;
+  /** Candidate pairs nobody has ruled on yet — the total is provisional while any exist. */
+  undecidedDuplicates: number;
+}
+
+/**
+ * Both partners' numbers, summed.
+ *
+ * Aggregate, not pooled: each person's own figures are untouched and this only
+ * ever adds them up. Read through the service-role client because it needs
+ * both members at once, and every value comes from scenario_assumptions, which
+ * is the same source each person's own dashboard reads.
+ *
+ * Portfolio is 401k + Roth + taxable. Cash savings live outside
+ * scenario_assumptions, so they are deliberately absent rather than guessed —
+ * a household total that quietly invents a number is worse than one that is
+ * visibly conservative.
+ */
+export async function householdPosition(admin: Admin, userId: string): Promise<HouseholdPosition | null> {
+  const { data: mine } = await admin
+    .from("household_members")
+    .select("household_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!mine) return null;
+
+  const { data: memberRows } = await admin
+    .from("household_members")
+    .select("user_id")
+    .eq("household_id", mine.household_id)
+    .order("member_slot");
+  const ids = (memberRows ?? []).map((m) => m.user_id as string);
+  if (ids.length < 2) return null;
+
+  const members: MemberPosition[] = [];
+  for (const id of ids) {
+    const [{ data: prof }, { data: assumptions }, auth] = await Promise.all([
+      admin.from("profiles").select("display_name").eq("user_id", id).maybeSingle(),
+      admin
+        .from("scenario_assumptions")
+        .select("monthly_income, fire_age, k401, roth_ira, taxable, budget_categories, scenarios!inner(is_default)")
+        .eq("user_id", id)
+        .eq("scenarios.is_default", true)
+        .maybeSingle(),
+      admin.auth.admin.getUserById(id),
+    ]);
+
+    const categories = (assumptions?.budget_categories ?? {}) as Record<string, number>;
+    const monthlyExpenses = Object.values(categories).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    const monthlyIncome = Number(assumptions?.monthly_income ?? 0);
+    const portfolio =
+      Number(assumptions?.k401 ?? 0) + Number(assumptions?.roth_ira ?? 0) + Number(assumptions?.taxable ?? 0);
+
+    members.push({
+      userId: id,
+      name: (prof?.display_name as string)?.trim()
+        || auth.data?.user?.email?.split("@")[0]
+        || "Partner",
+      isYou: id === userId,
+      age: Number(assumptions?.fire_age ?? 0),
+      monthlyIncome,
+      monthlyExpenses,
+      monthlySavings: Math.max(0, monthlyIncome - monthlyExpenses),
+      portfolio,
+    });
+  }
+
+  // Confirmed duplicates are counted once. Undecided ones stay counted for
+  // both — overstating a household total is a smaller failure than silently
+  // halving it — but the caller is told how many are outstanding so it can say so.
+  const { data: links } = await admin
+    .from("shared_account_links")
+    .select("plaid_account_id_b, status")
+    .eq("household_id", mine.household_id);
+
+  const confirmed = (links ?? []).filter((l) => l.status === "confirmed");
+  let dedupedBalance = 0;
+  if (confirmed.length) {
+    const { data: dupAccounts } = await admin
+      .from("plaid_accounts")
+      .select("balance_current")
+      .in("plaid_account_id", confirmed.map((l) => l.plaid_account_id_b as string));
+    dedupedBalance = (dupAccounts ?? []).reduce((sum, a) => sum + Number(a.balance_current ?? 0), 0);
+  }
+
+  const undecided = await duplicateCandidates(admin, userId);
+
+  const monthlyIncome = members.reduce((s, m) => s + m.monthlyIncome, 0);
+  const monthlyExpenses = members.reduce((s, m) => s + m.monthlyExpenses, 0);
+  const portfolio = Math.max(0, members.reduce((s, m) => s + m.portfolio, 0) - dedupedBalance);
+
+  return {
+    members,
+    combined: {
+      monthlyIncome,
+      monthlyExpenses,
+      monthlySavings: Math.max(0, monthlyIncome - monthlyExpenses),
+      portfolio,
+      annualExpenses: monthlyExpenses * 12,
+    },
+    dedupedBalance,
+    undecidedDuplicates: undecided.length,
+  };
+}

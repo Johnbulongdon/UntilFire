@@ -10,8 +10,15 @@ import path from 'node:path';
  * not also filter `user_id` itself would begin returning a partner's rows —
  * with no code change and nothing in the diff to notice.
  *
- * Server routes are exempt: they use the service-role client, which bypasses
- * RLS entirely, and the admin/cron routes read across users deliberately.
+ * Service-role code is exempt, and the exemption is by what a file actually
+ * does rather than where it lives: a module that builds its client from
+ * lib/supabase-admin bypasses RLS altogether, so the premise here — that RLS
+ * is the only thing scoping the read — is simply false for it. Route handlers
+ * under app/api and the household helpers in lib/household.ts both qualify,
+ * and both read across members on purpose.
+ *
+ * A file that imports BOTH clients is not exempt: its browser-side reads still
+ * depend on RLS, and that is exactly the mix worth catching.
  *
  * See docs/design/family-accounts.md.
  */
@@ -45,8 +52,12 @@ function walk(dir) {
 
 const offenders = [];
 for (const file of files) {
-  if (file.startsWith(`app${path.sep}api${path.sep}`)) continue; // service-role
   const src = fs.readFileSync(file, 'utf8');
+  // The browser client is the only one RLS applies to. A file that never
+  // imports it is reading through the service role, where RLS is bypassed and
+  // this guard's premise does not hold — route handlers and server-side
+  // helpers both land here, and both read across members deliberately.
+  if (!/from ['"]@\/lib\/supabase['"]/.test(src)) continue;
   const re = /\.from\(\s*["']([a-z_]+)["']\s*\)/g;
   let m;
   while ((m = re.exec(src))) {

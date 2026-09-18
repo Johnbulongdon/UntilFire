@@ -78,7 +78,25 @@ export const getSubscription = async () => {
   return data
 }
 
+/**
+ * Pro for this user, or Pro because their household is.
+ *
+ * The household check is a boolean over RPC rather than a read of the other
+ * person's subscriptions row. A partner needs to know the household is Pro;
+ * they do not need the amount, the status, the renewal date or the Stripe
+ * IDs that come with the row. subscriptions' RLS stays owner-only.
+ *
+ * Own subscription first, so the common case costs no extra round trip, and
+ * so a household lookup failing can only ever withhold a shared entitlement
+ * — never someone's own.
+ */
 export const isPro = async () => {
   const sub = await getSubscription()
-  return sub?.status === 'active' && sub?.plan === 'pro'
+  if (sub?.status === 'active' && sub?.plan === 'pro') return true
+  try {
+    const { data } = await supabase.rpc('household_has_pro')
+    return data === true
+  } catch {
+    return false
+  }
 }

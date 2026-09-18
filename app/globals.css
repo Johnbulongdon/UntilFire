@@ -586,3 +586,19 @@ html[data-splash="1"] #uf-splash {
   outline: 2px solid var(--uf-green);
   outline-offset: 2px;
 }
+
+/* Household breakdown — You / Partner / Together.
+   Three equal columns do not survive a 390px viewport: "Together" ellipsised
+   itself to "TOGET…" and the figure crowded its own cell. Two up with Together
+   spanning the row underneath keeps every label whole and gives the combined
+   figure — the one the card exists for — the most room rather than the least. */
+.uf-household-split {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--uf-s2);
+}
+
+@media (max-width: 460px) {
+  .uf-household-split { grid-template-columns: 1fr 1fr; }
+  .uf-household-split > :last-child { grid-column: 1 / -1; }
+}

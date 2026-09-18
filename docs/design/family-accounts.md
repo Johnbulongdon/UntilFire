@@ -406,13 +406,31 @@ household Pro runs to `current_period_end` and then stops for both.
   accepting requires the signed-in address to match the invited one (a
   forwarded link must not buy access to someone's finances), and the join page
   carries the token through `localStorage` because `/login` has no return path.
-- **P2** — Plaid duplicate-account detection (match on `institution_id` +
-  `mask` across the two members' `plaid_accounts`) + the confirm prompt +
-  writes to `shared_account_links`.
-- **P3** — combined dashboard (You / Partner / Together breakdown, one
-  household freedom date).
-- **P4** — household billing (`subscriptions.household_id` + the Pro-check
-  logic change).
+- **P2 — shipped 18 Sep 2026.** `app/api/household/duplicates`, detection in
+  `duplicateCandidates()`. `institution_id` lives on `plaid_items`, which has
+  RLS with no policies at all, so detection is necessarily server-side — the
+  right place for it anyway. `shared_account_links` gained a `status` column:
+  the table recorded only confirmations, leaving no way to say "we looked,
+  they are different", so the prompt would have returned forever.
+- **P3 — shipped 18 Sep 2026.** `app/api/household/summary` +
+  `HouseholdCard` on Home. The date is anchored on the *younger* partner's
+  age and then reports each person's age at that date — a household reaches
+  freedom together, and the older partner getting there first is not the
+  question being asked. Portfolio is 401k + Roth + taxable; cash savings live
+  outside `scenario_assumptions` and are left out rather than guessed.
+- **P4 — shipped 18 Sep 2026.** `household_has_pro()` in migration 0036, wired
+  into `lib/supabase.ts` and the dashboard's subscription load. Own
+  subscription is checked first, so the payer never waits on a household
+  lookup and a failed lookup can only withhold a shared entitlement, never
+  someone's own.
+
+  **Known gap:** the "payer leaves, household Pro runs to `current_period_end`"
+  decision is *not* implemented. Disconnect deletes the household, so there is
+  nothing left for the entitlement to hang on — honouring the grace period
+  needs state that outlives the household. Today disconnect revokes shared Pro
+  immediately for the non-paying partner, which matches the original August
+  decision ("leaving is instant and total") rather than the softer one added on
+  18 Sep. Worth building before the first household exists that could hit it.
 - **P5 (later, not scoped)** — shared editing (currently read-only for a
   partner), manual-entry dedup tags for unlinked shared costs. **Three or
   more members is no longer on this list**: the cap is deliberate and the

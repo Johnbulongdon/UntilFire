@@ -27,6 +27,7 @@ import { calcFIRE, REAL_RETURN } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
+import HouseholdCard from "./HouseholdCard";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
@@ -5162,11 +5163,24 @@ export default function Dashboard() {
       .select("plan, stripe_subscription_id")
       .eq("user_id", userId)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
+        const ownPlan = (data?.plan as "free" | "pro") ?? "free";
         setSubscription({
-          plan: (data?.plan as "free" | "pro") ?? "free",
+          plan: ownPlan,
           hadSubscription: Boolean(data?.stripe_subscription_id),
         });
+        // One Pro subscription covers the household. Checked only when this
+        // user has none of their own, so the paying member never waits on it,
+        // and asked as a boolean so the partner learns the entitlement
+        // without the billing detail attached to it.
+        if (ownPlan !== "pro") {
+          try {
+            const { data: shared } = await supabase.rpc("household_has_pro");
+            if (shared === true) {
+              setSubscription({ plan: "pro", hadSubscription: Boolean(data?.stripe_subscription_id) });
+            }
+          } catch { /* a household lookup must never remove your own access */ }
+        }
       });
   }, [userId]);
 
@@ -6115,6 +6129,13 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+            {/* Household, on Home: it interprets both people's Money and Plan,
+                which is rule 3. Renders nothing without a household. */}
+            {tab === "overview" && (
+              <div style={{ marginBottom: 24 }}>
+                <HouseholdCard displayCurrency={defaultCurrency} />
               </div>
             )}
             {tab === "overview" && (
