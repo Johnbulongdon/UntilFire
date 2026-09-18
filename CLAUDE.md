@@ -172,7 +172,7 @@ npm run test:achieved-fire-reveal
 npm run test:fire-type-cta
 npm run test:revenue-funnel
 npm run test:holdings-mobile-layout
-npm run test:profile-single-location
+npm run test:single-location
 ```
 
 Use the narrowest verification that matches the change. For broad or risky changes, run `npm run validate`.

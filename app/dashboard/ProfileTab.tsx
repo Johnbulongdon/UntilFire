@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
-import { formatMoney } from "@/lib/money";
 import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import HouseholdSection from "./HouseholdSection";
 
@@ -35,15 +33,6 @@ interface Props {
   subscription: { plan: "free" | "pro" } | null;
   onUpgradeClick: () => void;
   onManageBilling: () => void;
-  fireAge: number;
-  onFireAgeChange: (age: number) => void;
-  retirementCityName: string;
-  retirementCityCol: number;
-  lifestyleMultiplier: number;
-  onRetirementCityChange: (name: string, col: number) => void;
-  onLifestyleChange: (multiplier: number) => void;
-  taxKey: string;
-  onTaxKeyChange: (key: string) => void;
 }
 
 export default function ProfileTab({
@@ -56,25 +45,11 @@ export default function ProfileTab({
   subscription,
   onUpgradeClick,
   onManageBilling,
-  fireAge,
-  onFireAgeChange,
-  retirementCityName,
-  retirementCityCol,
-  lifestyleMultiplier,
-  onRetirementCityChange,
-  onLifestyleChange,
-  taxKey,
-  onTaxKeyChange,
 }: Props) {
   const [displayName, setDisplayName] = useState("");
 
-  const [taxSearch, setTaxSearch] = useState("");
-  const [showTaxDropdown, setShowTaxDropdown] = useState(false);
   const [currencySearch, setCurrencySearch] = useState("");
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
-  const [retirementCitySearch, setRetirementCitySearch] = useState(retirementCityName);
-  const [showRetirementCityDropdown, setShowRetirementCityDropdown] = useState(false);
-  const [fireProfileSaved, setFireProfileSaved] = useState(false);
   const [fireTypeResult, setFireTypeResult] = useState<{ code: string; name: string } | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState(initialDefaultCurrency || "USD");
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
@@ -135,50 +110,11 @@ export default function ProfileTab({
   }, [initialDefaultCurrency]);
 
   useEffect(() => {
-    setRetirementCitySearch(retirementCityName);
-  }, [retirementCityName]);
-
-  useEffect(() => {
     try {
       const raw = localStorage.getItem("uf_fire_type_result");
       if (raw) setFireTypeResult(JSON.parse(raw));
     } catch { /* ignore */ }
   }, []);
-
-  const retirementCitySearchTrimmed = retirementCitySearch.trim();
-  const filteredRetirementCities = retirementCitySearchTrimmed.length >= 2
-    ? CITIES.filter((c) => c.name.toLowerCase().includes(retirementCitySearchTrimmed.toLowerCase())).slice(0, 8)
-    : [];
-  const canUseTypedRetirementCity = retirementCitySearchTrimmed.length >= 2
-    && !filteredRetirementCities.some((c) => c.name.toLowerCase() === retirementCitySearchTrimmed.toLowerCase());
-
-  const lifestyleTiers = [
-    { label: "Frugal", multiplier: 0.7, icon: "🌱" },
-    { label: "Standard", multiplier: 1.0, icon: "🏡" },
-    { label: "Lavish", multiplier: 1.5, icon: "💎" },
-  ];
-
-  const selectedLifestyle = lifestyleTiers.find(t => t.multiplier === lifestyleMultiplier) ?? lifestyleTiers[1];
-  const targetAnnualSpend = retirementCityCol > 0 ? retirementCityCol * lifestyleMultiplier : 0;
-  const targetFireNumber = targetAnnualSpend * 25;
-  const showMoney = (n: number) => formatMoney(n, { currency: defaultCurrency });
-
-  function markFireProfileSaved() {
-    setFireProfileSaved(true);
-    setTimeout(() => setFireProfileSaved(false), 2000);
-  }
-
-  function updateFireAge(nextAge: number) {
-    onFireAgeChange(nextAge);
-    markFireProfileSaved();
-  }
-
-  function updateRetirementCity(name: string, col: number) {
-    onRetirementCityChange(name, col);
-    setRetirementCitySearch(name);
-    setShowRetirementCityDropdown(false);
-    markFireProfileSaved();
-  }
 
   function flash(key: "name" | "currency") {
     setSaved((prev) => ({ ...prev, [key]: true }));
@@ -399,160 +335,16 @@ export default function ProfileTab({
         </div>
       </div>
 
-      {/* FIRE profile */}
+      {/* FIRE type — a personality result, not a projection input, so it stays
+          here. The assumptions that drive the freedom date moved to Plan on
+          18 Sep 2026 (app-structure rule 2). */}
       <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
-          <div>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 6px" }}>FIRE profile</h3>
-            <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: 0 }}>
-              These assumptions personalize your freedom date across the dashboard.
-            </p>
-          </div>
-          {fireProfileSaved && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>Saved ✓</span>}
-        </div>
-
-        <label style={labelStyle}>Current age</label>
-        <input
-          type="number"
-          min={18}
-          max={100}
-          value={fireAge || ""}
-          onChange={(e) => updateFireAge(Number(e.target.value))}
-          style={{ ...inputStyle, maxWidth: 140, marginBottom: 16 }}
-          placeholder="30"
-        />
-
-        <label style={labelStyle}>Retirement target city</label>
-        <div style={{ position: "relative", marginBottom: 12 }}>
-          <input
-            style={inputStyle}
-            value={retirementCitySearch}
-            onChange={(e) => {
-              setRetirementCitySearch(e.target.value);
-              setShowRetirementCityDropdown(true);
-            }}
-            onFocus={() => setShowRetirementCityDropdown(true)}
-            placeholder="Where should freedom be priced?"
-          />
-          {showRetirementCityDropdown && retirementCitySearchTrimmed.length >= 2 && (filteredRetirementCities.length > 0 || canUseTypedRetirementCity) && (
-            <div style={{
-              position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
-              background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto",
-              marginTop: 4,
-            }}>
-              {filteredRetirementCities.map((c) => (
-                <div
-                  key={c.key}
-                  onMouseDown={() => updateRetirementCity(c.name, c.col)}
-                  style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid #f1f5f9" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-                >
-                  {c.flag} {c.name}
-                </div>
-              ))}
-              {canUseTypedRetirementCity && (
-                <div
-                  onMouseDown={() => updateRetirementCity(retirementCitySearchTrimmed, 0)}
-                  style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, color: "#047857", fontWeight: 700 }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-                >
-                  📍 Use &quot;{retirementCitySearchTrimmed}&quot;
-                  <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
-                    We&apos;ll save the city name even if it is not in our estimate list yet.
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <label style={labelStyle}>Lifestyle target</label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
-          {lifestyleTiers.map((tier) => (
-            <button
-              key={tier.label}
-              onClick={() => { onLifestyleChange(tier.multiplier); markFireProfileSaved(); }}
-              style={{
-                padding: "10px 8px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
-                border: lifestyleMultiplier === tier.multiplier ? "1.5px solid #059669" : "1px solid #E2E8F0",
-                background: lifestyleMultiplier === tier.multiplier ? "#F0FDF4" : "#fff",
-                color: lifestyleMultiplier === tier.multiplier ? "#047857" : "#374151",
-                fontWeight: 700,
-              }}
-            >
-              <span style={{ display: "block", fontSize: 18 }}>{tier.icon}</span>
-              <span style={{ fontSize: 12 }}>{tier.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: "var(--uf-text-2)", marginBottom: 4 }}>Current target</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)" }}>
-            {retirementCityName ? `${retirementCityName} · ${selectedLifestyle.label}` : "Choose a city to price your freedom date"}
-          </div>
-          {targetFireNumber > 0 && (
-            <div style={{ fontSize: 12, color: "var(--uf-text-2)", marginTop: 4 }}>
-              Rough target: {showMoney(targetAnnualSpend)}/yr × 25 = {showMoney(targetFireNumber)}
-            </div>
-          )}
-        </div>
-
-        {/* Tax home */}
-        <label style={labelStyle}>Tax home</label>
-        {taxKey && STATE_TAX[taxKey] && !taxSearch && (
-          <p style={{ fontSize: 12, color: "var(--uf-text-2)", margin: "0 0 8px", lineHeight: 1.5 }}>
-            {STATE_TAX[taxKey].label}
+        <div style={{ marginBottom: 14 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 6px" }}>FIRE type</h3>
+          <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: 0 }}>
+            Your age, target city, lifestyle and tax home now live with your plan,
+            next to the freedom date they produce.
           </p>
-        )}
-        <div style={{ position: "relative", marginBottom: 12 }}>
-          <input
-            style={inputStyle}
-            value={taxSearch}
-            onChange={(e) => { setTaxSearch(e.target.value); setShowTaxDropdown(true); }}
-            onFocus={() => setShowTaxDropdown(true)}
-            onBlur={() => setTimeout(() => setShowTaxDropdown(false), 150)}
-            placeholder={taxKey && STATE_TAX[taxKey] ? `Change: ${STATE_TAX[taxKey].label}` : "Search city or state to set tax home…"}
-          />
-          {showTaxDropdown && taxSearch.trim().length >= 2 && (() => {
-            const matches = CITIES.filter(c =>
-              c.name.toLowerCase().includes(taxSearch.trim().toLowerCase()) && c.state && STATE_TAX[c.state]
-            ).slice(0, 8);
-            if (!matches.length) return null;
-            const seen = new Set<string>();
-            const unique = matches.filter(c => { if (seen.has(c.state)) return false; seen.add(c.state); return true; });
-            return (
-              <div style={{
-                position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
-                background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8,
-                boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto",
-                marginTop: 4,
-              }}>
-                {unique.map((c) => (
-                  <div
-                    key={c.state}
-                    onMouseDown={() => {
-                      onTaxKeyChange(c.state);
-                      setTaxSearch("");
-                      setShowTaxDropdown(false);
-                      markFireProfileSaved();
-                    }}
-                    style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-                  >
-                    {c.flag} {c.name}
-                    <span style={{ fontSize: 12, color: "var(--uf-text-2)", marginLeft: 6 }}>
-                      · {STATE_TAX[c.state]?.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", maxWidth: "100%" }}>

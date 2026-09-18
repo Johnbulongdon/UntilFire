@@ -26,6 +26,7 @@ import FeedbackWidget from "./FeedbackWidget";
 import { calcFIRE, REAL_RETURN } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
+import FireAssumptionsCard from "./FireAssumptionsCard";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
@@ -4764,11 +4765,9 @@ function TaxProfileCard({
 // ─── FIRE Calculator Menu Tab ────────────────────────────────────────────────
 function FireCalcMenuTab({
   fireAge,
-  onOpenProfile,
   onOpenInvestSim,
 }: {
   fireAge: number;
-  onOpenProfile: () => void;
   onOpenInvestSim: () => void;
 }) {
   const [fireTypeResult, setFireTypeResult] = useState<{ code: string; name: string } | null>(null);
@@ -4780,14 +4779,6 @@ function FireCalcMenuTab({
   }, []);
 
   const tools = [
-    {
-      icon: "🎯",
-      title: "Profile Assumptions",
-      desc: "Keep your age, target city, lifestyle, and FIRE type in Profile so every freedom-date calculation uses the same source of truth.",
-      meta: `Current age: ${fireAge}`,
-      label: "Edit in Profile →",
-      onClick: onOpenProfile,
-    },
     {
       icon: "📈",
       title: "Advanced Investing Simulator",
@@ -5193,6 +5184,24 @@ export default function Dashboard() {
     try { pending = localStorage.getItem(HOUSEHOLD_INVITE_KEY); } catch { return; }
     if (pending) window.location.replace(`/household/join?token=${encodeURIComponent(pending)}`);
   }, [userId]);
+
+  // Picking a tax home also moves the dashboard's city and suggests a
+  // retirement tax rate from that jurisdiction. Named rather than inlined
+  // because the assumptions card in Plan is now its only caller, and an
+  // inline copy at the call site was how it read when Profile owned it.
+  function handleTaxKeyChange(key: string) {
+    const repCity = CITIES.find(c => c.state === key);
+    if (repCity) setCityName(repCity.name);
+    const taxInfo = STATE_TAX[key];
+    if (taxInfo) {
+      const isUSKey = !key.startsWith("ca_");
+      const stateRate = taxInfo.rate;
+      const suggested = isUSKey
+        ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35))
+        : Math.max(0.05, Math.min(stateRate * 0.75, 0.40));
+      setRetirementTaxRate(suggested);
+    }
+  }
 
   async function handleManageBilling() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -6241,9 +6250,22 @@ export default function Dashboard() {
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 {fireCalcSubTab === "menu" && (
                   <>
+                    {/* The inputs the freedom date is computed from, next to the
+                        date itself. They lived in Profile until 18 Sep 2026. */}
+                    <FireAssumptionsCard
+                      fireAge={fireAge}
+                      onFireAgeChange={setFireAge}
+                      retirementCityName={retirementCityName}
+                      retirementCityCol={retirementCityCol}
+                      onRetirementCityChange={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
+                      lifestyleMultiplier={lifestyleMultiplier}
+                      onLifestyleChange={setLifestyleMultiplier}
+                      taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
+                      onTaxKeyChange={handleTaxKeyChange}
+                      displayCurrency={defaultCurrency}
+                    />
                     <FireCalcMenuTab
                       fireAge={fireAge}
-                      onOpenProfile={() => setTab("profile")}
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
                     <TaxProfileCard
@@ -6286,7 +6308,7 @@ export default function Dashboard() {
                 age={fireAge}
                 cityName={cityName}
                 isDark={isDark}
-                onOpenProfile={() => openDashboardTab("profile")}
+                onEditAssumptions={() => { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }}
               />
             )}
             {tab === "profile" && userId && (
@@ -6300,27 +6322,6 @@ export default function Dashboard() {
                 subscription={subscription}
                 onUpgradeClick={() => { setUpgradeSource("profile"); setUpgradeOpen(true); }}
                 onManageBilling={handleManageBilling}
-                fireAge={fireAge}
-                onFireAgeChange={setFireAge}
-                retirementCityName={retirementCityName}
-                retirementCityCol={retirementCityCol}
-                lifestyleMultiplier={lifestyleMultiplier}
-                onRetirementCityChange={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
-                onLifestyleChange={setLifestyleMultiplier}
-                taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
-                onTaxKeyChange={(key) => {
-                  const repCity = CITIES.find(c => c.state === key);
-                  if (repCity) setCityName(repCity.name);
-                  const taxInfo = STATE_TAX[key];
-                  if (taxInfo) {
-                    const isUSKey = !key.startsWith("ca_");
-                    const stateRate = taxInfo.rate;
-                    const suggested = isUSKey
-                      ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35))
-                      : Math.max(0.05, Math.min(stateRate * 0.75, 0.40));
-                    setRetirementTaxRate(suggested);
-                  }
-                }}
               />
             )}
           </div>
@@ -6345,14 +6346,14 @@ function ExpatFireDashTab({
   age,
   cityName,
   isDark,
-  onOpenProfile,
+  onEditAssumptions,
 }: {
   portfolioBalance: number;
   monthlySavings: number;
   age: number;
   cityName: string;
   isDark: boolean;
-  onOpenProfile: () => void;
+  onEditAssumptions: () => void;
 }) {
   const [panelOpen, setPanelOpen] = useState(true);
   const [selectedCityKey, setSelectedCityKey] = useState<string | null>(null);
@@ -6527,7 +6528,7 @@ function ExpatFireDashTab({
           </div>
         ))}
         <button
-          onClick={onOpenProfile}
+          onClick={onEditAssumptions}
           style={{
             background: "rgba(34,211,165,0.11)", border: "1px solid rgba(34,211,165,0.22)",
             borderRadius: 9, padding: "9px 0", color: "#22d3a5",
@@ -6535,7 +6536,7 @@ function ExpatFireDashTab({
             fontFamily: "inherit", marginTop: 3, letterSpacing: "0.01em",
           }}
         >
-          Edit in Profile →
+          Edit assumptions →
         </button>
       </div>
 

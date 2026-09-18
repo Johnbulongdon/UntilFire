@@ -57,6 +57,29 @@ Profile                       account, not money — lives in the user menu
 3. **Home** — if it interprets the other two, it goes here. Home never gets its
    own inputs.
 4. **Profile** — if it's about the account rather than the money, it goes here.
+
+### Worked example: the FIRE profile, moved 18 Sep 2026
+
+Age, retirement target city, lifestyle target and tax home sat in Profile
+until this date. Every one of them models something that hasn't happened yet,
+so rule 2 puts them in Plan — and the card said so itself: *"These assumptions
+personalize your freedom date across the dashboard."*
+
+What makes this worth recording is how the app grew around the mistake instead
+of fixing it. Plan carried a tile titled **"Profile Assumptions"** whose entire
+purpose was a button reading *"Edit in Profile →"*, and Expat FIRE carried a
+second one. Its description even rationalised the placement: *"Keep your age,
+target city, lifestyle, and FIRE type in Profile so every freedom-date
+calculation uses the same source of truth."* Single-source-of-truth needs
+**one** edit location; it never required that location to be Profile.
+
+**A tab that needs a permanent link out to account settings to edit its own
+inputs is the structure telling on itself.** When you find one of those
+buttons, move the input rather than keep the link.
+
+The FIRE *type* stayed in Profile — a personality result is not a projection
+input, and the onboarding rules place it outside the planning flow. That split
+is rule 5 doing its job: one card was two features.
 5. If a feature seems to fit two groups, it is **two features**. Split it.
 6. Every tab must be reachable from a nav array. **One array per nav — never a
    hand-kept second copy.**

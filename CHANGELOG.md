@@ -12,6 +12,8 @@ All notable changes to UntilFire are documented here.
 - `npm run test:household-rls` — fails on any client-side read of a household-shared table that relies on RLS alone for scoping. Those reads silently start returning a partner's rows once the peer policies are active, with nothing in the diff to notice.
 
 ### Changed
+- **FIRE profile moved from Profile to `Plan → Freedom Date`** as `Your assumptions` — age, retirement target city, lifestyle target and tax home. All four model something that hasn't happened yet, which is Plan by app-structure rule 2; they sat in account settings, and Plan and Expat FIRE had each grown an "Edit in Profile →" button to reach them. Both escape hatches are gone: the inputs now sit directly above the date they produce. The FIRE *type* stays in Profile, since a personality result is not a projection input.
+- `test:profile-single-location` → `test:single-location`. It asserted the one canonical location input lives in ProfileTab; it now asserts the stronger invariant — exactly one such input across the whole dashboard, that it lives with the plan, that Profile holds no planning assumptions, and that no "Edit in Profile" escape hatch has reappeared.
 - `net_worth_snapshots` on the dashboard's progress chart now filters `user_id` explicitly. It was the only client-side read scoped by RLS alone; under peer-read policies it would have interleaved both partners' histories and then truncated at `limit(120)` across them — a wrong line rather than an obviously merged one.
 
 ### Database

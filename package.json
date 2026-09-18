@@ -24,7 +24,7 @@
     "test:emergency-fund-needs": "node scripts/verify-emergency-fund-needs-only.mjs",
     "test:revenue-funnel": "node scripts/verify-revenue-funnel-instrumentation.mjs",
     "test:holdings-mobile-layout": "node scripts/verify-holdings-mobile-layout.mjs",
-    "test:profile-single-location": "node scripts/verify-profile-single-location-card.mjs",
+    "test:single-location": "node scripts/verify-single-location-input.mjs",
     "test:profile-mobile-cta-layout": "node scripts/verify-profile-mobile-cta-layout.mjs",
     "test:reveal-save-plan-cta": "node scripts/verify-reveal-save-plan-cta.mjs",
     "test:categories-management": "node scripts/verify-categories-management.mjs",
