@@ -6,7 +6,7 @@
  * them throw.
  */
 import assert from "node:assert/strict";
-import { CARDS, defaultLayout, normaliseLayout, moveCard, setCard } from "../lib/dashboard-layout.ts";
+import { CARDS, defaultLayout, normaliseLayout, moveCard, setCard, pinnedCount } from "../lib/dashboard-layout.ts";
 
 const ids = (l: { cards: { id: string }[] }) => l.cards.map((c) => c.id);
 
@@ -46,13 +46,37 @@ assert.equal(badSpan.cards.find((c) => c.id === "hero")?.span, "full", "an unkno
 const dupe = normaliseLayout({ cards: [{ id: "hero", visible: true, span: "full" }, { id: "hero", visible: false, span: "half" }] });
 assert.equal(dupe.cards.filter((c) => c.id === "hero").length, 1, "duplicate ids collapse to one");
 
-// Moving is bounded at both ends.
+// Pinned cards lead and stay put.
 const base = defaultLayout();
-assert.deepEqual(ids(moveCard(base, base.cards[0].id, -1)), ids(base), "cannot move the first card up");
+const pins = pinnedCount(base);
+assert.ok(pins >= 1, "at least one card is pinned");
+for (let i = 0; i < pins; i++) {
+  const pinned = CARDS.find((c) => c.id === base.cards[i].id);
+  assert.ok(pinned?.pinned, `card ${i} is one of the pinned ones`);
+}
+const pinnedId = base.cards[0].id;
+assert.deepEqual(ids(moveCard(base, pinnedId, 1)), ids(base), "a pinned card cannot be moved down");
+assert.deepEqual(ids(moveCard(base, pinnedId, -1)), ids(base), "a pinned card cannot be moved up");
+assert.deepEqual(
+  ids(moveCard(base, base.cards[pins].id, -1)), ids(base),
+  "nothing can be moved above a pinned card",
+);
+
+// A stored layout that puts a pinned card mid-stack is corrected on load.
+const scrambled = normaliseLayout({
+  cards: [
+    { id: base.cards[1].id, visible: true, span: "full" },
+    { id: base.cards[2].id, visible: true, span: "full" },
+    { id: pinnedId, visible: true, span: "full" },
+  ],
+});
+assert.equal(scrambled.cards[0].id, pinnedId, "a pinned card is pulled back to the front on load");
+
+// Moving is bounded at both ends.
 assert.deepEqual(ids(moveCard(base, base.cards[base.cards.length - 1].id, 1)), ids(base), "cannot move the last card down");
-const moved = moveCard(base, base.cards[1].id, -1);
-assert.equal(moved.cards[0].id, base.cards[1].id, "moving up swaps with the card above");
-assert.equal(moved.cards[1].id, base.cards[0].id, "and the card above moves down");
+const moved = moveCard(base, base.cards[pins + 1].id, -1);
+assert.equal(moved.cards[pins].id, base.cards[pins + 1].id, "moving up swaps with the card above");
+assert.equal(moved.cards[pins + 1].id, base.cards[pins].id, "and the card above moves down");
 
 // Round trip: what we save is what we load.
 const custom = setCard(moveCard(defaultLayout(), "goals", -1), "support", { visible: false, span: "half" });
@@ -61,4 +85,4 @@ assert.deepEqual(ids(round), ids(custom), "order survives a save/load round trip
 assert.equal(round.cards.find((c) => c.id === "support")?.visible, false);
 assert.equal(round.cards.find((c) => c.id === "support")?.span, "half");
 
-console.log(`Dashboard layout ok: ${CARDS.length} cards, merge//move/set and round trip all hold.`);
+console.log(`Dashboard layout ok: ${CARDS.length} cards, ${pinnedCount(defaultLayout())} pinned; merge, move, pin and round trip all hold.`);

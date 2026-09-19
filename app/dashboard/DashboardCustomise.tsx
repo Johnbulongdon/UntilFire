@@ -2,7 +2,7 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
-  CARDS, cardDef, moveCard, setCard,
+  CARDS, cardDef, moveCard, pinnedCount, setCard,
   type CardPref, type DashboardLayout,
 } from "@/lib/dashboard-layout";
 
@@ -101,14 +101,17 @@ function useFlip(
 
 /**
  * How far past a card's midpoint the pointer must travel before the card
- * swaps, and how far back before it swaps again.
+ * swaps, as a share of that card's own height.
  *
- * Without a dead band the insertion point is recomputed from the raw pointer
- * position on every pointermove — over a hundred times a second — so a hand
- * resting near a boundary flips the order back and forth every frame. That is
- * the flicker: not an animation problem, a decision being remade constantly.
+ * A fixed pixel band was the first attempt and it was still twitchy, because
+ * 34px is a lot next to a 60px greeting and almost nothing next to a 420px
+ * chart — the same number means "deliberate" in one place and "a tremor" in
+ * another. Scaling to the card means you always have to drag a real part of
+ * the way into something before it gives way, whatever its size.
  */
-const HYSTERESIS = 34;
+const BAND_RATIO = 0.22;
+const BAND_MIN = 44;
+const BAND_MAX = 110;
 
 /** A drag has to mean it before anything reorders. */
 const DRAG_THRESHOLD = 8;
@@ -155,13 +158,18 @@ export function useCardSort(
      * feed back into itself.
      */
     const reference = layoutRef.current.cards
-      .filter((c) => c.visible && c.id !== id)
+      .filter((c) => c.visible && c.id !== id && !cardDef(c.id)?.pinned)
       .map((c) => {
         const el = slots.current.get(c.id);
         const r = el?.getBoundingClientRect();
-        return r ? { id: c.id, mid: r.top + r.height / 2 + window.scrollY } : null;
+        if (!r) return null;
+        return {
+          id: c.id,
+          mid: r.top + r.height / 2 + window.scrollY,
+          band: Math.min(BAND_MAX, Math.max(BAND_MIN, r.height * BAND_RATIO)),
+        };
       })
-      .filter((v): v is { id: string; mid: number } => v !== null)
+      .filter((v): v is { id: string; mid: number; band: number } => v !== null)
       .sort((a, b) => a.mid - b.mid);
 
     // Hold the slot open at the height the card had. Lifting the card to
@@ -216,9 +224,10 @@ export function useCardSort(
       for (let i = 0; i < reference.length; i++) {
         const wasPast = i < settledAbove;
         const mid = reference[i].mid;
+        const band = reference[i].band;
         const isPast = wasPast
-          ? pointerDoc > mid - HYSTERESIS
-          : pointerDoc > mid + HYSTERESIS;
+          ? pointerDoc > mid - band
+          : pointerDoc > mid + band;
         if (!isPast) break;         // reference is sorted; nothing after can be past
         above++;
       }
@@ -228,16 +237,25 @@ export function useCardSort(
       const from = cards.findIndex((c) => c.id === id);
       if (from === -1) return;
 
-      // Translate "after N of the other cards" into an index in the full list.
-      const others = cards.filter((c) => c.id !== id);
-      const target = others[above - 1];
-      const to = target ? cards.findIndex((c) => c.id === target.id) : 0;
-      const dest = to > from ? to : Math.max(0, to);
-      if (dest === from) return;
+      // `above` counts cards in `reference`, which excludes the pinned ones
+      // and the card in hand. Indexing the full list with it put the card
+      // after whatever happened to sit at that position — usually the pinned
+      // header — so the destination came out as where it already was and
+      // nothing ever moved. Resolve through the reference list's own ids.
+      const rest = cards.filter((c) => c.id !== id);
+      let insertAt: number;
+      if (above === 0) {
+        const firstFree = rest.findIndex((c) => !cardDef(c.id)?.pinned);
+        insertAt = firstFree === -1 ? rest.length : firstFree;
+      } else {
+        insertAt = rest.findIndex((c) => c.id === reference[above - 1].id) + 1;
+      }
 
-      const [moved] = cards.splice(from, 1);
-      cards.splice(dest, 0, moved);
-      const next = { cards };
+      const reordered = [...rest];
+      reordered.splice(insertAt, 0, cards[from]);
+      if (reordered.every((c, i) => c.id === cards[i].id)) return;
+
+      const next = { cards: reordered };
       layoutRef.current = next;
       onPreview(next);
     };
@@ -335,17 +353,21 @@ export function DashSlot({
       ref={(el) => onRegister?.(id, el)}
       className={`uf-dash-slot${editing ? " is-editing" : ""}${dragging ? " is-dragging" : ""}`}
       data-span={pref?.span ?? "full"}
-      style={{ order: index + 1 }}
+      style={{ order: cardDef(id)?.pinned ? -1 : index + 1 }}
     >
       {editing && (
         <div className="uf-dash-tools">
-          <button
-            className="uf-dash-tool uf-dash-grip"
-            aria-label={`Drag ${def?.label ?? id}`}
-            onPointerDown={(e) => onDragStart?.(id, e)}
-          >
-            {GRIP}
-          </button>
+          {def?.pinned ? (
+            <span className="uf-dash-pin" title={`${def.label} stays at the top`}>Pinned</span>
+          ) : (
+            <button
+              className="uf-dash-tool uf-dash-grip"
+              aria-label={`Drag ${def?.label ?? id}`}
+              onPointerDown={(e) => onDragStart?.(id, e)}
+            >
+              {GRIP}
+            </button>
+          )}
           <div style={{ display: "flex", gap: 6 }}>
             {/* One icon doing two opposite jobs reads as neither. The label
                 says what pressing it will do, not what the card currently is. */}

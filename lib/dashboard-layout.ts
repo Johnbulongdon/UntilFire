@@ -36,11 +36,21 @@ export interface CardDef {
    * card that genuinely cannot be absent has somewhere to say so.
    */
   required?: boolean;
+  /**
+   * A card that stays where it is. No drag handle, always first, never a drop
+   * target for anything else.
+   *
+   * The greeting is a page header more than a card — it says who you are and
+   * what day it is. Letting it be dragged into the middle of the stack made
+   * dragging harder for no gain, because there is no arrangement anyone wants
+   * where the greeting sits between two charts. It can still be turned off.
+   */
+  pinned?: boolean;
 }
 
 /** The order here is the default order. */
 export const CARDS: CardDef[] = [
-  { id: "greeting",  label: "Greeting",          hint: "Your name and today's date.",                      defaultVisible: true, defaultSpan: "full" },
+  { id: "greeting",  label: "Greeting",          hint: "Your name and today's date. Stays at the top.",    defaultVisible: true, defaultSpan: "full", pinned: true },
   { id: "setup",     label: "Setup checklist",   hint: "The remaining steps to a complete plan. Disappears once you finish them.", defaultVisible: true, defaultSpan: "full" },
   { id: "hero",      label: "Progress chart",    hint: "Your portfolio against your FIRE target over time.", defaultVisible: true, defaultSpan: "full" },
   { id: "ontrack",   label: "On-track score",    hint: "Whether your recent months keep your freedom date where it is.", defaultVisible: true, defaultSpan: "full" },
@@ -120,14 +130,24 @@ export function normaliseLayout(stored: unknown): DashboardLayout {
     if (at === -1) out.push(pref); else out.splice(at, 0, pref);
   }
 
+  // Pinned cards lead, whatever a stored layout says. Anything else would let
+  // an old preference — or a hand-edited one — leave the header mid-stack.
+  out.sort((a, b) => Number(cardDef(b.id)?.pinned ?? false) - Number(cardDef(a.id)?.pinned ?? false));
+
   return { cards: out };
 }
 
+/** How many cards are pinned to the top; nothing may be dropped above them. */
+export function pinnedCount(layout: DashboardLayout): number {
+  return layout.cards.filter((c) => cardDef(c.id)?.pinned).length;
+}
+
 export function moveCard(layout: DashboardLayout, id: string, dir: -1 | 1): DashboardLayout {
+  if (cardDef(id)?.pinned) return layout;
   const cards = [...layout.cards];
   const i = cards.findIndex((c) => c.id === id);
   const j = i + dir;
-  if (i === -1 || j < 0 || j >= cards.length) return layout;
+  if (i === -1 || j < pinnedCount(layout) || j >= cards.length) return layout;
   [cards[i], cards[j]] = [cards[j], cards[i]];
   return { cards };
 }
