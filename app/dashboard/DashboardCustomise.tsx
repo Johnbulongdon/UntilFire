@@ -43,7 +43,11 @@ const EDGE_SPEED = 14;
  *
  * Skips straight to the end under prefers-reduced-motion.
  */
-function useFlip(slots: React.RefObject<Map<string, HTMLElement>>, key: string) {
+function useFlip(
+  slots: React.RefObject<Map<string, HTMLElement>>,
+  key: string,
+  skipId: React.RefObject<string | null>,
+) {
   const previous = useRef(new Map<string, DOMRect>());
 
   useLayoutEffect(() => {
@@ -55,6 +59,11 @@ function useFlip(slots: React.RefObject<Map<string, HTMLElement>>, key: string) 
 
     if (!reduced) {
       for (const [id, el] of slots.current ?? []) {
+        // Never transform the slot of the card being carried. A transformed
+        // ancestor becomes the containing block for position:fixed, so the
+        // lifted card would start positioning against its own slot instead of
+        // the viewport and leap away from the finger mid-drag.
+        if (id === skipId.current) continue;
         const before = previous.current.get(id);
         const after = now.get(id);
         if (!before || !after) continue;
@@ -80,84 +89,143 @@ function useFlip(slots: React.RefObject<Map<string, HTMLElement>>, key: string) 
 export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardLayout) => void) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const slots = useRef(new Map<string, HTMLElement>());
-  // The drag reads the freshest layout without re-binding its listeners, so a
-  // reorder mid-drag does not leave the pointer working against a stale copy.
   const layoutRef = useRef(layout);
   layoutRef.current = layout;
 
-  // Re-runs on any order, visibility or width change — exactly when a card
-  // needs to be seen moving rather than jumping.
-  useFlip(slots, layout.cards.map((c) => `${c.id}:${c.visible ? 1 : 0}:${c.span}`).join("|"));
-  const scrollTimer = useRef<number | null>(null);
+  // A ref, not the state, because useFlip reads it during the layout effect
+  // that the same reorder triggers — state would still be a frame behind.
+  const draggingRef = useRef<string | null>(null);
+  useFlip(slots, layout.cards.map((c) => `${c.id}:${c.visible ? 1 : 0}:${c.span}`).join("|"), draggingRef);
 
   const register = useCallback((id: string, el: HTMLElement | null) => {
     if (el) slots.current.set(id, el);
     else slots.current.delete(id);
   }, []);
 
-  const stopScrolling = () => {
-    if (scrollTimer.current !== null) {
-      cancelAnimationFrame(scrollTimer.current);
-      scrollTimer.current = null;
-    }
-  };
-
   const begin = useCallback((id: string, e: React.PointerEvent) => {
     e.preventDefault();
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    const slot = slots.current.get(id);
+    const lifted = slot?.querySelector<HTMLElement>(".uf-dash-inert");
+    if (!slot || !lifted) return;
+
+    const startRect = lifted.getBoundingClientRect();
+    const grabX = e.clientX - startRect.left;
+    const grabY = e.clientY - startRect.top;
+
+    /**
+     * The order the pointer is measured against, frozen at drag start.
+     *
+     * The previous version measured live and reordered off the *nearest* card
+     * including the one being dragged. Every reorder moved that card, which
+     * changed what was nearest, which triggered another reorder — the card
+     * oscillated hundreds of pixels a frame. A static reference frame cannot
+     * feed back into itself.
+     */
+    const reference = layoutRef.current.cards
+      .filter((c) => c.visible && c.id !== id)
+      .map((c) => {
+        const el = slots.current.get(c.id);
+        const r = el?.getBoundingClientRect();
+        return r ? { id: c.id, mid: r.top + r.height / 2 + window.scrollY } : null;
+      })
+      .filter((v): v is { id: string; mid: number } => v !== null)
+      .sort((a, b) => a.mid - b.mid);
+
+    // Lift the card out of flow so it can follow the finger while its slot
+    // keeps the space and goes on taking part in the reordering underneath.
+    lifted.style.position = "fixed";
+    lifted.style.left = "0";
+    lifted.style.top = "0";
+    lifted.style.width = `${startRect.width}px`;
+    lifted.style.zIndex = "60";
+    lifted.style.pointerEvents = "none";
+    lifted.style.transition = "none";
+    lifted.style.willChange = "transform";
+
+    let x = e.clientX, y = e.clientY;
+    const place = () => { lifted.style.transform = `translate(${x - grabX}px, ${y - grabY}px)`; };
+    place();
+    draggingRef.current = id;
     setDraggingId(id);
 
-    let clientY = e.clientY;
-    let clientX = e.clientX;
+    let raf = 0;
+    const frame = () => {
+      // Edge scrolling, so a card can be carried past the fold on a phone.
+      const top = y - EDGE;
+      const bottom = window.innerHeight - y - EDGE;
+      if (top < 0) window.scrollBy(0, -EDGE_SPEED);
+      else if (bottom < 0) window.scrollBy(0, EDGE_SPEED);
+      place();
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
 
-    const reorderTo = () => {
-      // Which card is the pointer over? Nearest centre wins, so a gap between
-      // cards still resolves rather than doing nothing.
-      let bestId: string | null = null;
-      let bestDist = Infinity;
-      for (const [otherId, el] of slots.current) {
-        const r = el.getBoundingClientRect();
-        if (r.height === 0) continue;
-        const dy = clientY - (r.top + r.height / 2);
-        const dx = clientX - (r.left + r.width / 2);
-        const d = dy * dy + dx * dx;
-        if (d < bestDist) { bestDist = d; bestId = otherId; }
-      }
-      if (!bestId || bestId === id) return;
-
-      const from = layoutRef.current.cards.findIndex((c) => c.id === id);
-      const to = layoutRef.current.cards.findIndex((c) => c.id === bestId);
-      if (from === -1 || to === -1 || from === to) return;
+    const settleIndex = () => {
+      const pointerDoc = y + window.scrollY;
+      const above = reference.filter((r) => r.mid < pointerDoc).length;
 
       const cards = [...layoutRef.current.cards];
+      const from = cards.findIndex((c) => c.id === id);
+      if (from === -1) return;
+
+      // Translate "after N of the other cards" into an index in the full list.
+      const others = cards.filter((c) => c.id !== id);
+      const target = others[above - 1];
+      const to = target ? cards.findIndex((c) => c.id === target.id) : 0;
+      const dest = to > from ? to : Math.max(0, to);
+      if (dest === from) return;
+
       const [moved] = cards.splice(from, 1);
-      cards.splice(to, 0, moved);
+      cards.splice(dest, 0, moved);
       const next = { cards };
       layoutRef.current = next;
       onChange(next);
     };
 
-    const edgeScroll = () => {
-      const top = clientY - EDGE;
-      const bottom = window.innerHeight - clientY - EDGE;
-      if (top < 0) window.scrollBy(0, -EDGE_SPEED);
-      else if (bottom < 0) window.scrollBy(0, EDGE_SPEED);
-      scrollTimer.current = requestAnimationFrame(edgeScroll);
-    };
-    scrollTimer.current = requestAnimationFrame(edgeScroll);
-
     const move = (ev: PointerEvent) => {
-      clientY = ev.clientY;
-      clientX = ev.clientX;
-      reorderTo();
+      x = ev.clientX; y = ev.clientY;
+      settleIndex();
     };
+
     const end = () => {
-      stopScrolling();
-      setDraggingId(null);
+      cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", end);
       window.removeEventListener("pointercancel", end);
+
+      // Drop: FLIP the card from where the finger left it back into its slot,
+      // so it glides home rather than snapping.
+      const liftedRect = lifted.getBoundingClientRect();
+      lifted.style.position = "";
+      lifted.style.left = "";
+      lifted.style.top = "";
+      lifted.style.width = "";
+      lifted.style.zIndex = "";
+      lifted.style.pointerEvents = "";
+      lifted.style.transform = "";
+      const homeRect = lifted.getBoundingClientRect();
+
+      const dx = liftedRect.left - homeRect.left;
+      const dy = liftedRect.top - homeRect.top;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+        lifted.style.transition = "none";
+        lifted.style.transform = `translate(${dx}px, ${dy}px)`;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          lifted.style.transition = "transform 200ms cubic-bezier(0.2, 0, 0, 1)";
+          lifted.style.transform = "";
+        }));
+      } else {
+        lifted.style.transition = "";
+      }
+      window.setTimeout(() => {
+        lifted.style.transition = "";
+        lifted.style.willChange = "";
+      }, 240);
+
+      draggingRef.current = null;
+      setDraggingId(null);
     };
+
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", end);
     window.addEventListener("pointercancel", end);

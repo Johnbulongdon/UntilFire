@@ -714,7 +714,14 @@ html[data-splash="1"] #uf-splash {
   z-index: 20;
   box-shadow: 0 0 0 2px var(--uf-green), var(--uf-e3);
 }
-.uf-dash-slot.is-dragging > .uf-dash-inert { opacity: 0.9; }
+/* The lifted card is fixed-position and follows the finger; the slot beneath
+   keeps its space so the grid does not jump when the card leaves flow. */
+.uf-dash-slot.is-dragging > .uf-dash-inert {
+  box-shadow: var(--uf-e3);
+  border-radius: var(--uf-r-card, 20px);
+  cursor: grabbing;
+}
+.uf-dash-slot.is-dragging { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--uf-green) 55%, transparent); }
 
 .uf-dash-tools {
   position: absolute;
