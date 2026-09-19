@@ -643,3 +643,52 @@ html[data-splash="1"] #uf-splash {
   border: 1px solid var(--uf-border);
 }
 .uf-pricing-cta--secondary:hover { border-color: var(--uf-green); }
+
+/* ── Customisable Home ────────────────────────────────────────────────────
+   Cards are reordered with `order` on this grid rather than by moving JSX,
+   so every card's internals stay exactly as they were. A slot whose card
+   renders nothing (a dismissed check-in, a section gated on having data)
+   collapses via :empty — without that, hiding the content would still leave
+   its gap and Home would gain mysterious blank space. */
+.uf-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.uf-dash-slot { min-width: 0; }
+.uf-dash-slot[data-span="full"] { grid-column: span 2; }
+.uf-dash-slot[data-span="half"] { grid-column: span 1; }
+.uf-dash-slot:empty { display: none; }
+
+/* One column on a phone: a half-width card at 390px is unreadable, so the
+   width choice is a desktop one and narrow screens ignore it. */
+@media (max-width: 900px) {
+  .uf-dash-grid { grid-template-columns: 1fr; }
+  .uf-dash-slot[data-span="full"],
+  .uf-dash-slot[data-span="half"] { grid-column: span 1; }
+}
+
+.uf-dash-customise {
+  background: var(--uf-card);
+  border: 1px solid var(--uf-border);
+  border-radius: var(--uf-r-card, 20px);
+  padding: var(--uf-s4);
+  margin-bottom: 20px;
+}
+
+.uf-dash-nudge {
+  width: 28px;
+  height: 24px;
+  border: 1px solid var(--uf-border);
+  border-radius: 8px;
+  background: var(--uf-card);
+  color: var(--uf-ink-2);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+}
+.uf-dash-nudge:hover:not(:disabled) { border-color: var(--uf-green); color: var(--uf-green); }
+.uf-dash-nudge:disabled { opacity: 0.35; cursor: not-allowed; }

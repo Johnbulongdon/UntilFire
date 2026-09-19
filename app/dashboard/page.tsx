@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 const GeoArbitrageGlobe = dynamic(() => import("@/app/components/GeoArbitrageGlobe"), { ssr: false });
 import { supabase } from "@/lib/supabase";
@@ -28,6 +28,8 @@ import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/curre
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
 import HouseholdCard from "./HouseholdCard";
+import { CustomisePanel, DashSlot } from "./DashboardCustomise";
+import { defaultLayout, normaliseLayout, type DashboardLayout } from "@/lib/dashboard-layout";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
@@ -488,6 +490,39 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
   const [showBreakdown, setShowBreakdown] = useState(true);
+
+  // Home's arrangement. Loaded once per user; saved on every change rather
+  // than behind a Save button, because there is nothing to lose by saving and
+  // an arrangement that silently reverted would be worse than one that did
+  // not move. A failed save leaves the on-screen layout alone — the next
+  // change retries it.
+  const [layout, setLayout] = useState<DashboardLayout>(() => defaultLayout());
+  const [customising, setCustomising] = useState(false);
+  const [savingLayout, setSavingLayout] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("profiles")
+      .select("dashboard_layout")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => setLayout(normaliseLayout(data?.dashboard_layout)));
+  }, [userId]);
+
+  const persistLayout = useCallback(async (next: DashboardLayout) => {
+    setLayout(next);
+    if (!userId) return;
+    setSavingLayout(true);
+    try {
+      await supabase.from("profiles").update({ dashboard_layout: next }).eq("user_id", userId);
+    } catch {
+      // Keep what is on screen. A lost preference is a small thing; a card
+      // jumping back under the user's cursor is not.
+    } finally {
+      setSavingLayout(false);
+    }
+  }, [userId]);
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
   const chartMonthTooltipFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }), []);
@@ -1245,9 +1280,31 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   }, [userId]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+        <button
+          className="uf-dash-nudge"
+          style={{ width: "auto", padding: "0 12px", height: 28 }}
+          onClick={() => setCustomising((v) => !v)}
+        >
+          {customising ? "Close" : "Arrange"}
+        </button>
+      </div>
+
+      {customising && (
+        <CustomisePanel
+          layout={layout}
+          onChange={persistLayout}
+          onReset={() => persistLayout(defaultLayout())}
+          onClose={() => setCustomising(false)}
+          saving={savingLayout}
+        />
+      )}
+
+    <div className="uf-dash-grid">
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
+      <DashSlot id="greeting" layout={layout}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
           <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>
@@ -1262,7 +1319,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </span>
       </div>
 
+      </DashSlot>
       {/* ── Setup checklist (hidden once all 4 steps done) ─────────────── */}
+      <DashSlot id="setup" layout={layout}>
       <SetupChecklist
         income={income}
         expenses={expenses}
@@ -1276,10 +1335,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         onOpenOnboarding={onOpenOnboarding}
       />
 
+      </DashSlot>
       {/* ── Hero: chart-led progress card. Fixed dark treatment regardless of
           the dashboard's light/dark setting — a deliberate hero moment, same
           idea as the free-calculator reveal — so it forces the `.dark` token
           scope rather than following the ambient theme. ─────────────────── */}
+      <DashSlot id="hero" layout={layout}>
       <div className="uf-card dark" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(180deg, var(--uf-green-50) 0%, var(--uf-ground) 100%)", borderColor: "transparent" }}>
         <div style={{ padding: "22px 22px 0", position: "relative" }}>
           <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top right, rgba(53,201,174,0.14), transparent 38%)", pointerEvents: "none" }} />
@@ -1464,9 +1525,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
+      </DashSlot>
       {/* ── On-track score: not how independent you are (the freedom date
           answers that) — how well you're keeping up the habits that get you
           there. ─────────────────────────────────────────────────────────── */}
+      <DashSlot id="ontrack" layout={layout}>
       <div className="uf-card" style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}>
           {(() => {
@@ -1508,9 +1571,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
+      </DashSlot>
       {/* ── Your month: closes last month's loop and points at this month's
           move. Dismissible per calendar month (uf_checkin_dismissed_YYYY-MM)
           so it reads as a check-in ritual, not a permanent fixture. ────── */}
+      <DashSlot id="yourmonth" layout={layout}>
       {!checkinDismissed && topTasks.length > 0 && (
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -1541,7 +1606,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       )}
 
+      </DashSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
+      <DashSlot id="freedom" layout={layout}>
       {efMonthlyBase > 0 && (
         <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
           <div>
@@ -1732,9 +1799,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
+      </DashSlot>
       {/* ── Your goals: the measurable targets set via the PERMA intro flow
           or added by hand in Plan -> Goals. Read-only here — Home never
           gets its own inputs, per docs/design/app-structure.md. ───────── */}
+      <DashSlot id="goals" layout={layout}>
       <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -1776,7 +1845,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         )}
       </div>
 
+      </DashSlot>
       {/* ── Monthly operating row ────────────────────────────────────────── */}
+      <DashSlot id="operating" layout={layout}>
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
@@ -1868,7 +1939,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
+      </DashSlot>
       {/* ── Lower support row ────────────────────────────────────────────── */}
+      <DashSlot id="support" layout={layout}>
       <div>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
@@ -1908,7 +1981,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
+      </DashSlot>
     </div>
+    </>
   );
 }
 

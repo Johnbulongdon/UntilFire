@@ -173,6 +173,7 @@ npm run test:fire-type-cta
 npm run test:revenue-funnel
 npm run test:holdings-mobile-layout
 npm run test:single-location
+npm run test:dashboard-layout
 ```
 
 Use the narrowest verification that matches the change. For broad or risky changes, run `npm run validate`.
