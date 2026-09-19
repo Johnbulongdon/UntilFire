@@ -28,8 +28,8 @@ import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/curre
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
 import HouseholdCard from "./HouseholdCard";
-import { CustomisePanel, DashSlot } from "./DashboardCustomise";
-import { defaultLayout, normaliseLayout, type DashboardLayout } from "@/lib/dashboard-layout";
+import { DashSlot, HiddenCardsTray, useCardSort } from "./DashboardCustomise";
+import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
@@ -497,7 +497,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // not move. A failed save leaves the on-screen layout alone — the next
   // change retries it.
   const [layout, setLayout] = useState<DashboardLayout>(() => defaultLayout());
-  const [customising, setCustomising] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [savingLayout, setSavingLayout] = useState(false);
 
   useEffect(() => {
@@ -523,6 +523,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       setSavingLayout(false);
     }
   }, [userId]);
+
+  const { draggingId, register, begin } = useCardSort(layout, persistLayout);
+
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
   const chartMonthTooltipFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }), []);
@@ -1281,30 +1284,26 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: editing ? 24 : 12 }}>
+        {editing && (
+          <button className="uf-dash-nudge" style={{ width: "auto", padding: "0 12px", height: 28 }}
+            onClick={() => persistLayout(defaultLayout())}>
+            Reset
+          </button>
+        )}
         <button
           className="uf-dash-nudge"
           style={{ width: "auto", padding: "0 12px", height: 28 }}
-          onClick={() => setCustomising((v) => !v)}
+          onClick={() => setEditing((v) => !v)}
         >
-          {customising ? "Close" : "Arrange"}
+          {editing ? (savingLayout ? "Saving\u2026" : "Done") : "Edit"}
         </button>
       </div>
-
-      {customising && (
-        <CustomisePanel
-          layout={layout}
-          onChange={persistLayout}
-          onReset={() => persistLayout(defaultLayout())}
-          onClose={() => setCustomising(false)}
-          saving={savingLayout}
-        />
-      )}
 
     <div className="uf-dash-grid">
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
-      <DashSlot id="greeting" layout={layout}>
+      <DashSlot id="greeting" layout={layout} editing={editing} dragging={draggingId === "greeting"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
           <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>
@@ -1321,7 +1320,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       </DashSlot>
       {/* ── Setup checklist (hidden once all 4 steps done) ─────────────── */}
-      <DashSlot id="setup" layout={layout}>
+      <DashSlot id="setup" layout={layout} editing={editing} dragging={draggingId === "setup"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <SetupChecklist
         income={income}
         expenses={expenses}
@@ -1340,7 +1339,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           the dashboard's light/dark setting — a deliberate hero moment, same
           idea as the free-calculator reveal — so it forces the `.dark` token
           scope rather than following the ambient theme. ─────────────────── */}
-      <DashSlot id="hero" layout={layout}>
+      <DashSlot id="hero" layout={layout} editing={editing} dragging={draggingId === "hero"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <div className="uf-card dark" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(180deg, var(--uf-green-50) 0%, var(--uf-ground) 100%)", borderColor: "transparent" }}>
         <div style={{ padding: "22px 22px 0", position: "relative" }}>
           <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top right, rgba(53,201,174,0.14), transparent 38%)", pointerEvents: "none" }} />
@@ -1529,7 +1528,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       {/* ── On-track score: not how independent you are (the freedom date
           answers that) — how well you're keeping up the habits that get you
           there. ─────────────────────────────────────────────────────────── */}
-      <DashSlot id="ontrack" layout={layout}>
+      <DashSlot id="ontrack" layout={layout} editing={editing} dragging={draggingId === "ontrack"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <div className="uf-card" style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}>
           {(() => {
@@ -1575,7 +1574,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       {/* ── Your month: closes last month's loop and points at this month's
           move. Dismissible per calendar month (uf_checkin_dismissed_YYYY-MM)
           so it reads as a check-in ritual, not a permanent fixture. ────── */}
-      <DashSlot id="yourmonth" layout={layout}>
+      <DashSlot id="yourmonth" layout={layout} editing={editing} dragging={draggingId === "yourmonth"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       {!checkinDismissed && topTasks.length > 0 && (
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -1608,7 +1607,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       </DashSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
-      <DashSlot id="freedom" layout={layout}>
+      <DashSlot id="freedom" layout={layout} editing={editing} dragging={draggingId === "freedom"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       {efMonthlyBase > 0 && (
         <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
           <div>
@@ -1803,7 +1802,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       {/* ── Your goals: the measurable targets set via the PERMA intro flow
           or added by hand in Plan -> Goals. Read-only here — Home never
           gets its own inputs, per docs/design/app-structure.md. ───────── */}
-      <DashSlot id="goals" layout={layout}>
+      <DashSlot id="goals" layout={layout} editing={editing} dragging={draggingId === "goals"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -1847,7 +1846,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       </DashSlot>
       {/* ── Monthly operating row ────────────────────────────────────────── */}
-      <DashSlot id="operating" layout={layout}>
+      <DashSlot id="operating" layout={layout} editing={editing} dragging={draggingId === "operating"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
@@ -1941,7 +1940,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       </DashSlot>
       {/* ── Lower support row ────────────────────────────────────────────── */}
-      <DashSlot id="support" layout={layout}>
+      <DashSlot id="support" layout={layout} editing={editing} dragging={draggingId === "support"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <div>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
@@ -1983,6 +1982,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       </DashSlot>
     </div>
+      {editing && (
+        <HiddenCardsTray
+          layout={layout}
+          onRestore={(id) => persistLayout(setCard(layout, id, { visible: true }))}
+        />
+      )}
     </>
   );
 }

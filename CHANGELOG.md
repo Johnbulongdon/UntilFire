@@ -2,6 +2,13 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-19
+
+### Added
+- **Home is arrangeable.** An **Edit** button turns Home's cards into draggable tiles: drag by the grip to reorder, press × to remove one, press the width control to make it narrow or wide, and put anything you removed back from the tray underneath. Saved per user in `profiles.dashboard_layout`. Defaults are exactly the current layout, so nothing changes until you change it.
+- Dragging is pointer-based rather than HTML5 drag-and-drop, which never fires on touch. Reordering still happens through CSS `order`, so a card's contents never move in the DOM mid-drag. Card content is inert while editing, so a drag can't also press something inside a card.
+- `npm run test:dashboard-layout` — covers the layout merge, which fails silently in every direction: a card added later must appear for someone who customised before it existed, an id since removed must drop, a corrupt value must fall back rather than empty the page, and a required card must stay visible however it was stored.
+
 ## [Unreleased] - 2026-09-18
 
 ### Added

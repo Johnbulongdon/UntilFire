@@ -692,3 +692,81 @@ html[data-splash="1"] #uf-splash {
 }
 .uf-dash-nudge:hover:not(:disabled) { border-color: var(--uf-green); color: var(--uf-green); }
 .uf-dash-nudge:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Home edit mode ───────────────────────────────────────────────────────
+   Pressing Edit puts a toolbar on each card: a grip to drag it, a control to
+   change its width, and an X to drop it. The card's own content is made inert
+   underneath so a drag or a tap does not also press something inside it. */
+.uf-dash-slot.is-editing {
+  position: relative;
+  outline: 1.5px dashed var(--uf-border);
+  outline-offset: 4px;
+  border-radius: var(--uf-r-card, 20px);
+}
+
+.uf-dash-slot.is-dragging {
+  opacity: 0.55;
+  transform: scale(0.99);
+}
+
+.uf-dash-tools {
+  position: absolute;
+  top: -12px;
+  left: 8px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.uf-dash-tools > * { pointer-events: auto; }
+
+.uf-dash-tool {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--uf-border);
+  background: var(--uf-card);
+  color: var(--uf-ink-2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: var(--uf-e1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.uf-dash-tool:hover { border-color: var(--uf-green); color: var(--uf-green); }
+
+/* touch-action:none is what makes a touch drag work: without it the browser
+   claims the gesture for scrolling and pointermove never arrives. */
+.uf-dash-grip { cursor: grab; touch-action: none; }
+.uf-dash-grip:active { cursor: grabbing; }
+
+.uf-dash-remove:hover { border-color: var(--uf-neg); color: var(--uf-neg); }
+
+/* Editing is about the arrangement, not the contents. */
+.uf-dash-inert { pointer-events: none; user-select: none; }
+
+.uf-dash-tray {
+  margin-top: 20px;
+  padding: var(--uf-s4);
+  background: var(--uf-card);
+  border: 1px solid var(--uf-border);
+  border-radius: var(--uf-r-card, 20px);
+}
+
+.uf-dash-restore {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px dashed var(--uf-border);
+  background: transparent;
+  color: var(--uf-green);
+  font-weight: 700;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.uf-dash-restore:hover { border-color: var(--uf-green); border-style: solid; }
