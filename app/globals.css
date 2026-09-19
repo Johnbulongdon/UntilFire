@@ -697,17 +697,24 @@ html[data-splash="1"] #uf-splash {
    Pressing Edit puts a toolbar on each card: a grip to drag it, a control to
    change its width, and an X to drop it. The card's own content is made inert
    underneath so a drag or a tap does not also press something inside it. */
+/* A dashed outline reads as disabled or struck through — the opposite of
+   "you can pick this up". A solid ring in the action colour plus a small lift
+   reads as liftable, which is what editing means here. */
 .uf-dash-slot.is-editing {
   position: relative;
-  outline: 1.5px dashed var(--uf-border);
-  outline-offset: 4px;
   border-radius: var(--uf-r-card, 20px);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--uf-green) 38%, transparent);
+  transition: box-shadow 160ms ease;
 }
 
+/* The card being carried lifts above the rest and follows the finger; the
+   others slide under it via FLIP, so transform here is set inline and must
+   not be fought by a transition. */
 .uf-dash-slot.is-dragging {
-  opacity: 0.55;
-  transform: scale(0.99);
+  z-index: 20;
+  box-shadow: 0 0 0 2px var(--uf-green), var(--uf-e3);
 }
+.uf-dash-slot.is-dragging > .uf-dash-inert { opacity: 0.9; }
 
 .uf-dash-tools {
   position: absolute;
@@ -743,6 +750,14 @@ html[data-splash="1"] #uf-splash {
 /* touch-action:none is what makes a touch drag work: without it the browser
    claims the gesture for scrolling and pointermove never arrives. */
 .uf-dash-grip { cursor: grab; touch-action: none; }
+
+/* Wider than the round tools because it carries a word rather than a glyph. */
+.uf-dash-width {
+  width: auto;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
 .uf-dash-grip:active { cursor: grabbing; }
 
 .uf-dash-remove:hover { border-color: var(--uf-neg); color: var(--uf-neg); }
@@ -758,15 +773,28 @@ html[data-splash="1"] #uf-splash {
   border-radius: var(--uf-r-card, 20px);
 }
 
-.uf-dash-restore {
+.uf-dash-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px dashed var(--uf-border);
+  border: 1px solid var(--uf-border);
   background: transparent;
-  color: var(--uf-green);
+  color: var(--uf-ink-3);
   font-weight: 700;
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
-.uf-dash-restore:hover { border-color: var(--uf-green); border-style: solid; }
+.uf-dash-chip:hover:not(:disabled) { border-color: var(--uf-green); color: var(--uf-green); }
+
+/* Filled means on. The difference has to survive a glance, because this panel
+   exists to answer "what have I got" without reading it. */
+.uf-dash-chip.is-on {
+  background: color-mix(in srgb, var(--uf-green) 12%, transparent);
+  border-color: color-mix(in srgb, var(--uf-green) 45%, transparent);
+  color: var(--uf-green);
+}
+.uf-dash-chip:disabled { opacity: 0.6; cursor: default; }

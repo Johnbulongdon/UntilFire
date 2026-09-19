@@ -28,7 +28,7 @@ import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/curre
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
 import HouseholdCard from "./HouseholdCard";
-import { DashSlot, HiddenCardsTray, useCardSort } from "./DashboardCustomise";
+import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
 import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
@@ -1983,9 +1983,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </DashSlot>
     </div>
       {editing && (
-        <HiddenCardsTray
+        <CardInventory
           layout={layout}
-          onRestore={(id) => persistLayout(setCard(layout, id, { visible: true }))}
+          onToggle={(id, visible) => persistLayout(setCard(layout, id, { visible }))}
         />
       )}
     </>

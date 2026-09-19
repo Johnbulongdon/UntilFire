@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   CARDS, cardDef, moveCard, setCard,
   type CardPref, type DashboardLayout,
@@ -24,11 +24,58 @@ import {
 
 const GRIP = "≡";   // ≡
 const CROSS = "×";  // ×
-const WIDE = "⤡";   // ⤡
 
 /** How close to the viewport edge before a drag starts scrolling the page. */
 const EDGE = 90;
 const EDGE_SPEED = 14;
+
+/**
+ * Animate cards between positions instead of teleporting them.
+ *
+ * Reordering changes a CSS `order` value, which the browser applies in one
+ * frame — correct, and unreadable. A card vanishes from one place and appears
+ * in another with no sense that it travelled.
+ *
+ * FLIP fixes that without animating layout: measure where every card was
+ * (First), let the reorder happen (Last), transform each card back to where it
+ * started (Invert), then release on the next frame so the browser animates it
+ * forwards (Play). Only transform moves, so no layout pass happens mid-drag.
+ *
+ * Skips straight to the end under prefers-reduced-motion.
+ */
+function useFlip(slots: React.RefObject<Map<string, HTMLElement>>, key: string) {
+  const previous = useRef(new Map<string, DOMRect>());
+
+  useLayoutEffect(() => {
+    const reduced = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    const now = new Map<string, DOMRect>();
+    for (const [id, el] of slots.current ?? []) now.set(id, el.getBoundingClientRect());
+
+    if (!reduced) {
+      for (const [id, el] of slots.current ?? []) {
+        const before = previous.current.get(id);
+        const after = now.get(id);
+        if (!before || !after) continue;
+        const dx = before.left - after.left;
+        const dy = before.top - after.top;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+
+        el.style.transition = "none";
+        el.style.transform = `translate(${dx}px, ${dy}px)`;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            el.style.transition = "transform 220ms cubic-bezier(0.2, 0, 0, 1)";
+            el.style.transform = "";
+          });
+        });
+      }
+    }
+
+    previous.current = now;
+  }, [key, slots]);
+}
 
 export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardLayout) => void) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -37,6 +84,10 @@ export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardL
   // reorder mid-drag does not leave the pointer working against a stale copy.
   const layoutRef = useRef(layout);
   layoutRef.current = layout;
+
+  // Re-runs on any order, visibility or width change — exactly when a card
+  // needs to be seen moving rather than jumping.
+  useFlip(slots, layout.cards.map((c) => `${c.id}:${c.visible ? 1 : 0}:${c.span}`).join("|"));
   const scrollTimer = useRef<number | null>(null);
 
   const register = useCallback((id: string, el: HTMLElement | null) => {
@@ -159,12 +210,14 @@ export function DashSlot({
             {GRIP}
           </button>
           <div style={{ display: "flex", gap: 6 }}>
+            {/* One icon doing two opposite jobs reads as neither. The label
+                says what pressing it will do, not what the card currently is. */}
             <button
-              className="uf-dash-tool"
-              aria-label={`Change width of ${def?.label ?? id}`}
+              className="uf-dash-tool uf-dash-width"
+              aria-label={pref?.span === "full" ? `Make ${def?.label ?? id} narrow` : `Make ${def?.label ?? id} wide`}
               onClick={() => onToggleWidth?.(id)}
             >
-              {WIDE}
+              {pref?.span === "full" ? "Narrow" : "Wide"}
             </button>
             {!def?.required && (
               <button
@@ -183,37 +236,56 @@ export function DashSlot({
   );
 }
 
-/** The cards someone has dropped, so they are never gone for good. */
-export function HiddenCardsTray({
+/**
+ * Everything Home can show, and whether it is showing.
+ *
+ * The first version listed only what you had removed, which answered "what
+ * did I delete" and not "what have I got" — and if you had deleted nothing it
+ * showed nothing, so there was no way to discover that removing was even
+ * reversible. This lists every card either way. Filled means on, outlined
+ * means off, and tapping toggles.
+ */
+export function CardInventory({
   layout,
-  onRestore,
+  onToggle,
 }: {
   layout: DashboardLayout;
-  onRestore: (id: string) => void;
+  onToggle: (id: string, visible: boolean) => void;
 }) {
-  const hidden = layout.cards.filter((c) => !c.visible);
-  if (!hidden.length) {
-    return (
-      <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "16px 0 0", textAlign: "center" }}>
-        Drag a card by its {GRIP} handle to move it. Press {CROSS} to remove one.
-      </p>
-    );
-  }
+  const on = layout.cards.filter((c) => c.visible).length;
+
   return (
     <div className="uf-dash-tray">
-      <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: "var(--uf-s2)" }}>
-        REMOVED &mdash; TAP TO PUT BACK
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--uf-s2)", flexWrap: "wrap", marginBottom: "var(--uf-s3)" }}>
+        <span className="uf-t-label" style={{ color: "var(--uf-ink-3)" }}>YOUR CARDS</span>
+        <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
+          {on} of {layout.cards.length} showing
+        </span>
       </div>
+
       <div style={{ display: "flex", gap: "var(--uf-s2)", flexWrap: "wrap" }}>
-        {hidden.map((c) => {
+        {layout.cards.map((c) => {
           const def = cardDef(c.id);
+          if (!def) return null;
           return (
-            <button key={c.id} className="uf-dash-restore" onClick={() => onRestore(c.id)}>
-              + {def?.label ?? c.id}
+            <button
+              key={c.id}
+              className={`uf-dash-chip${c.visible ? " is-on" : ""}`}
+              aria-pressed={c.visible}
+              disabled={def.required}
+              title={def.required ? `${def.label} is always shown` : def.hint}
+              onClick={() => onToggle(c.id, !c.visible)}
+            >
+              <span aria-hidden>{c.visible ? "\u2713" : "+"}</span> {def.label}
             </button>
           );
         })}
       </div>
+
+      <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "var(--uf-s3) 0 0" }}>
+        Drag a card by its {GRIP} handle to move it. Nothing is deleted &mdash; anything
+        you turn off comes back from here.
+      </p>
     </div>
   );
 }
