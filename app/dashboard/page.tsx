@@ -524,7 +524,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     }
   }, [userId]);
 
-  const { draggingId, register, begin } = useCardSort(layout, persistLayout);
+  // Live updates stay local while dragging; the save happens once on drop.
+  const { draggingId, register, begin } = useCardSort(layout, setLayout, persistLayout);
 
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);

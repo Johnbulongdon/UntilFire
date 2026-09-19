@@ -99,7 +99,27 @@ function useFlip(
   }, [key, slots]);
 }
 
-export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardLayout) => void) {
+/**
+ * How far past a card's midpoint the pointer must travel before the card
+ * swaps, and how far back before it swaps again.
+ *
+ * Without a dead band the insertion point is recomputed from the raw pointer
+ * position on every pointermove — over a hundred times a second — so a hand
+ * resting near a boundary flips the order back and forth every frame. That is
+ * the flicker: not an animation problem, a decision being remade constantly.
+ */
+const HYSTERESIS = 34;
+
+/** A drag has to mean it before anything reorders. */
+const DRAG_THRESHOLD = 8;
+
+export function useCardSort(
+  layout: DashboardLayout,
+  /** Live, local, called freely while dragging. */
+  onPreview: (next: DashboardLayout) => void,
+  /** Called once when the card is dropped — this is the one that saves. */
+  onCommit?: (next: DashboardLayout) => void,
+) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const slots = useRef(new Map<string, HTMLElement>());
   const layoutRef = useRef(layout);
@@ -182,9 +202,27 @@ export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardL
     };
     raf = requestAnimationFrame(frame);
 
+    // How many of the other cards the pointer currently sits below. Kept
+    // between moves so the dead band has a previous decision to hold onto.
+    let settledAbove = reference.filter((r) => r.mid < e.clientY + window.scrollY).length;
+
     const settleIndex = () => {
       const pointerDoc = y + window.scrollY;
-      const above = reference.filter((r) => r.mid < pointerDoc).length;
+
+      // Hysteresis: a boundary already crossed stays crossed until the pointer
+      // comes back a clear distance, and one not yet crossed needs a clear
+      // distance to cross. A pointer sitting inside the band changes nothing.
+      let above = 0;
+      for (let i = 0; i < reference.length; i++) {
+        const wasPast = i < settledAbove;
+        const mid = reference[i].mid;
+        const isPast = wasPast
+          ? pointerDoc > mid - HYSTERESIS
+          : pointerDoc > mid + HYSTERESIS;
+        if (!isPast) break;         // reference is sorted; nothing after can be past
+        above++;
+      }
+      settledAbove = above;
 
       const cards = [...layoutRef.current.cards];
       const from = cards.findIndex((c) => c.id === id);
@@ -201,12 +239,15 @@ export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardL
       cards.splice(dest, 0, moved);
       const next = { cards };
       layoutRef.current = next;
-      onChange(next);
+      onPreview(next);
     };
 
+    let travelled = 0;
     const move = (ev: PointerEvent) => {
+      travelled = Math.max(travelled, Math.abs(ev.clientY - e.clientY) + Math.abs(ev.clientX - e.clientX));
       x = ev.clientX; y = ev.clientY;
-      settleIndex();
+      // A press with a tremor in it is not a drag.
+      if (travelled >= DRAG_THRESHOLD) settleIndex();
     };
 
     const end = () => {
@@ -249,12 +290,15 @@ export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardL
 
       draggingRef.current = null;
       setDraggingId(null);
+      // One save, at the end. Persisting on every reorder meant a network
+      // write per frame of a drag.
+      onCommit?.(layoutRef.current);
     };
 
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", end);
     window.addEventListener("pointercancel", end);
-  }, [onChange]);
+  }, [onPreview, onCommit]);
 
   return { draggingId, register, begin };
 }
