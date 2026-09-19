@@ -32,53 +32,66 @@ const EDGE_SPEED = 14;
 /**
  * Animate cards between positions instead of teleporting them.
  *
- * Reordering changes a CSS `order` value, which the browser applies in one
- * frame — correct, and unreadable. A card vanishes from one place and appears
- * in another with no sense that it travelled.
+ * FLIP: measure where each card was, let the reorder happen, transform it back
+ * to where it started, then release so the browser animates it forward.
  *
- * FLIP fixes that without animating layout: measure where every card was
- * (First), let the reorder happen (Last), transform each card back to where it
- * started (Invert), then release on the next frame so the browser animates it
- * forwards (Play). Only transform moves, so no layout pass happens mid-drag.
+ * Two details make the difference between this working and the card visibly
+ * jumping, and the first version got both wrong.
  *
- * Skips straight to the end under prefers-reduced-motion.
+ * Positions are measured from `offsetTop`/`offsetLeft`, not
+ * `getBoundingClientRect()`. A bounding rect includes any transform currently
+ * being animated, so during a drag — where reorders arrive faster than the
+ * 220ms animation finishes — each new animation measured a half-animated
+ * position, computed a wrong delta, and produced a jump instead of a glide.
+ * Offsets are layout positions and ignore transforms entirely. They are also
+ * document-relative, so edge-scrolling mid-drag cannot skew them.
+ *
+ * And an interrupted card carries its in-flight offset into the next
+ * animation. Where it *looks* right now is its old layout position plus
+ * whatever transform is mid-flight, so the new animation starts from
+ * (oldLayout - newLayout) + currentTransform. Without that term a card
+ * re-targeted mid-glide snaps to its layout position first.
  */
 function useFlip(
   slots: React.RefObject<Map<string, HTMLElement>>,
   key: string,
   skipId: React.RefObject<string | null>,
 ) {
-  const previous = useRef(new Map<string, DOMRect>());
+  const previous = useRef(new Map<string, { left: number; top: number }>());
 
   useLayoutEffect(() => {
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-    const now = new Map<string, DOMRect>();
-    for (const [id, el] of slots.current ?? []) now.set(id, el.getBoundingClientRect());
+    const now = new Map<string, { left: number; top: number }>();
+    for (const [id, el] of slots.current ?? []) {
+      now.set(id, { left: el.offsetLeft, top: el.offsetTop });
+    }
 
     if (!reduced) {
       for (const [id, el] of slots.current ?? []) {
-        // Never transform the slot of the card being carried. A transformed
-        // ancestor becomes the containing block for position:fixed, so the
-        // lifted card would start positioning against its own slot instead of
-        // the viewport and leap away from the finger mid-drag.
+        // The carried card is position:fixed and follows the pointer. A
+        // transform on its slot would become the containing block for that
+        // fixed element and tear it away from the finger.
         if (id === skipId.current) continue;
+
         const before = previous.current.get(id);
         const after = now.get(id);
         if (!before || !after) continue;
-        const dx = before.left - after.left;
-        const dy = before.top - after.top;
+
+        const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+        const dx = before.left - after.left + matrix.m41;
+        const dy = before.top - after.top + matrix.m42;
         if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
 
-        el.style.transition = "none";
-        el.style.transform = `translate(${dx}px, ${dy}px)`;
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            el.style.transition = "transform 220ms cubic-bezier(0.2, 0, 0, 1)";
-            el.style.transform = "";
-          });
-        });
+        // Web Animations rather than a CSS transition: starting a new one
+        // cleanly replaces the old, which a transition restarted through
+        // inline styles does not do reliably when interrupted every frame.
+        for (const running of el.getAnimations()) running.cancel();
+        el.animate(
+          [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0px, 0px)" }],
+          { duration: 260, easing: "cubic-bezier(0.2, 0, 0, 1)", fill: "none" },
+        );
       }
     }
 
@@ -130,6 +143,15 @@ export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardL
       })
       .filter((v): v is { id: string; mid: number } => v !== null)
       .sort((a, b) => a.mid - b.mid);
+
+    // Hold the slot open at the height the card had. Lifting the card to
+    // position:fixed takes it out of flow *inside its own slot*, so without
+    // this the slot collapses to nothing the instant the drag starts and
+    // every card below snaps up by the card's height. That collapse was the
+    // jump that read as "no animation" — the reordering was gliding fine
+    // underneath it.
+    const slotRect = slot.getBoundingClientRect();
+    slot.style.height = `${slotRect.height}px`;
 
     // Lift the card out of flow so it can follow the finger while its slot
     // keeps the space and goes on taking part in the reordering underneath.
@@ -194,8 +216,11 @@ export function useCardSort(layout: DashboardLayout, onChange: (next: DashboardL
       window.removeEventListener("pointercancel", end);
 
       // Drop: FLIP the card from where the finger left it back into its slot,
-      // so it glides home rather than snapping.
+      // so it glides home rather than snapping. The slot's held height is
+      // released in the same frame the card rejoins flow, so the two cancel
+      // out and nothing below moves.
       const liftedRect = lifted.getBoundingClientRect();
+      slot.style.height = "";
       lifted.style.position = "";
       lifted.style.left = "";
       lifted.style.top = "";

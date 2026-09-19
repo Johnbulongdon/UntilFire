@@ -26,13 +26,21 @@ export interface CardDef {
   /** Hidden by default for nobody today; here so a future card can ship opt-in. */
   defaultVisible: boolean;
   defaultSpan: CardSpan;
-  /** A card that is never worth hiding — removing it would leave Home meaningless. */
+  /**
+   * A card that cannot be turned off.
+   *
+   * Nothing uses this today, deliberately. The greeting was marked required on
+   * the first pass and it was the wrong call: Edit and the card inventory both
+   * live outside the grid, so an empty Home is always one tap from being
+   * repopulated and there is nothing to protect anyone from. Kept so a future
+   * card that genuinely cannot be absent has somewhere to say so.
+   */
   required?: boolean;
 }
 
 /** The order here is the default order. */
 export const CARDS: CardDef[] = [
-  { id: "greeting",  label: "Greeting",          hint: "Your name and today's date.",                      defaultVisible: true, defaultSpan: "full", required: true },
+  { id: "greeting",  label: "Greeting",          hint: "Your name and today's date.",                      defaultVisible: true, defaultSpan: "full" },
   { id: "setup",     label: "Setup checklist",   hint: "The remaining steps to a complete plan. Disappears once you finish them.", defaultVisible: true, defaultSpan: "full" },
   { id: "hero",      label: "Progress chart",    hint: "Your portfolio against your FIRE target over time.", defaultVisible: true, defaultSpan: "full" },
   { id: "ontrack",   label: "On-track score",    hint: "Whether your recent months keep your freedom date where it is.", defaultVisible: true, defaultSpan: "full" },
