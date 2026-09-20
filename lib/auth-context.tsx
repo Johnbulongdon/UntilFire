@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import { identifyUser } from './analytics'
 import { useRouter } from 'next/navigation'
 
 interface AuthContextType {
@@ -27,6 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
+      // Identify here rather than on any one page: this provider is in the
+      // root layout, so it runs on every route. Hanging it off the dashboard
+      // instead meant a session that opened the dashboard and clicked away
+      // inside 200ms never got identified at all, and /admin, /login and the
+      // landing page never did either.
+      if (session?.user) identifyUser(session.user.id)
       setLoading(false)
     }
 
@@ -36,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null)
+        if (session?.user) identifyUser(session.user.id)
         setLoading(false)
 
         // Refresh the page to update server components
