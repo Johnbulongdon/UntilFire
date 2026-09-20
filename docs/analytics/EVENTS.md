@@ -60,6 +60,35 @@ Do not wire a new screen to `step_id=currency`.
   `calculator-savings-rate`, or `fire-number-austin-tx`. It is used for
   acquisition attribution, not personal identification.
 
+## Person properties
+
+One property, set on every `identify`:
+
+| Property | Meaning |
+|---|---|
+| `is_internal` | `true` for the founder's own account, `false` for everyone else. |
+
+Membership comes from `NEXT_PUBLIC_INTERNAL_USER_IDS` — a comma-separated
+list of Supabase user ids. Ids rather than emails: the user id is already
+the `distinct_id` on every event the browser sends, so a public variable
+holding it reveals nothing new, while an email would become readable in the
+client bundle.
+
+It is set explicitly for everyone, not only for internal users, so that
+"is_internal is not true" means "we checked and they are a visitor" rather
+than "the property never arrived".
+
+**To use it**, turn it into the project's internal-user filter:
+`Settings → Project → Filter out internal and test users → is_internal
+does not equal true`. The project already filters `$host` for localhost;
+that catches local development but not the founder browsing the live site,
+which over one 30-day window was 72% of all recorded events.
+
+Person properties are stamped onto events at ingestion, so the filter
+applies from the day it is set forward. Events already recorded keep
+whatever they had at the time — exclude those by `distinct_id` when
+querying history.
+
 ## Events
 
 ### `funnel_landing_viewed`

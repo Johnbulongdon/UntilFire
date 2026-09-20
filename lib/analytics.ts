@@ -37,6 +37,32 @@ function isClient(): boolean {
   return typeof window !== 'undefined';
 }
 
+/**
+ * Whose activity is the founder's own, and whose is a real visitor.
+ *
+ * PostHog had no way to tell the two apart: identify() sent a bare user id
+ * and no person properties at all, so there was nothing to filter on and
+ * every insight mixed developer sessions in with the public. Over one
+ * 30-day window that was 72% of all recorded events.
+ *
+ * Supabase user ids, not emails — the id is already the distinct_id on
+ * every event this browser sends, so putting it in a NEXT_PUBLIC variable
+ * exposes nothing that PostHog is not already being told, while an email
+ * would be newly readable in the client bundle.
+ *
+ * The existing $host filter already excludes localhost. This covers the
+ * other half: the founder using the real site in a real browser.
+ */
+const INTERNAL_USER_IDS = (process.env.NEXT_PUBLIC_INTERNAL_USER_IDS ?? '')
+  .split(',')
+  .map((id) => id.trim().toLowerCase())
+  .filter(Boolean);
+
+export function isInternalUser(userId: string | null | undefined): boolean {
+  if (!userId) return false;
+  return INTERNAL_USER_IDS.includes(userId.toLowerCase());
+}
+
 function capture(
   event: string,
   properties: object,
@@ -54,10 +80,16 @@ function capture(
   }
 }
 
+/**
+ * Safe to call on every page load — identify is idempotent, and it is what
+ * puts is_internal on the person. Set explicitly either way rather than only
+ * on internal users: "is_internal is not true" then means "we checked", not
+ * "the property never arrived".
+ */
 export function identifyUser(userId: string) {
   if (!isClient() || !userId) return;
   try {
-    posthog.identify(userId);
+    posthog.identify(userId, { is_internal: isInternalUser(userId) });
   } catch {}
 }
 

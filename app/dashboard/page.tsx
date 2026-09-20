@@ -33,7 +33,7 @@ import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
-import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
+import { identifyUser, trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
 import { EXPENSE_CATEGORIES } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { Alert, Badge, Button, ICON_PATHS, Stat } from "@/components/ui";
@@ -5510,6 +5510,9 @@ export default function Dashboard() {
       if (!session) { window.location.href = "/login"; return; }
 
       setUserId(session.user.id);
+      // Not only at the OAuth callback: that fires once, so a person who
+      // signed in months ago never gets today's person properties.
+      identifyUser(session.user.id);
       setUserEmail(session.user.email ?? "");
       setUserJoinedAt(session.user.created_at ?? "");
 
