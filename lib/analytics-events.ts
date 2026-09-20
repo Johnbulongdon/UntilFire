@@ -18,6 +18,12 @@ export const FunnelEvents = {
   LANDING_VIEWED: 'funnel_landing_viewed',
   CALCULATOR_STEP_VIEWED: 'funnel_calculator_step_viewed',
   CALCULATOR_REVEALED: 'funnel_calculator_revealed',
+  // The reveal's own CTA, which is not the same moment as SIGNUP_STARTED:
+  // that one fires on the login page's Google button. Without this event the
+  // whole span between seeing a freedom date and choosing to sign in is one
+  // unexplained drop, and a reveal that does not persuade looks identical to
+  // a login page nobody trusts.
+  REVEAL_CTA_CLICKED: 'funnel_reveal_cta_clicked',
   SIGNUP_STARTED: 'funnel_signup_started',
   SIGNUP_COMPLETED: 'funnel_signup_completed',
   DASHBOARD_FIRST_VIEW: 'funnel_dashboard_first_view',
@@ -86,6 +92,13 @@ export interface CalculatorRevealedProperties extends BaseFunnelProperties {
   is_custom_city: boolean;
   fire_target_bucket: string;
   years_to_fire_bucket: string;
+  landing_source?: string;
+}
+
+export type RevealCtaPlacement = 'reveal_save_step' | 'unreachable';
+
+export interface RevealCtaClickedProperties extends BaseFunnelProperties {
+  placement: RevealCtaPlacement;
   landing_source?: string;
 }
 

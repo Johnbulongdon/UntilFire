@@ -19,6 +19,7 @@ funnel_landing_viewed
            → funnel_calculator_step_viewed (step_id=savings)
            → funnel_calculator_step_viewed (step_id=portfolio)
            → funnel_calculator_revealed
+           → funnel_reveal_cta_clicked
            → funnel_signup_started
            → funnel_signup_completed
            → funnel_dashboard_first_view
@@ -26,7 +27,6 @@ funnel_landing_viewed
            → funnel_checkout_started   (Stripe checkout URL returned)
            → funnel_checkout_succeeded (server, Stripe webhook)
 
-  → [reveal, no-signup branch] funnel_email_capture_submitted (waitlist email form on the reveal screen)
 
   → [quiz branch] funnel_fire_type_started  (on first answer)
                → funnel_fire_type_completed (on result mount)
@@ -123,6 +123,24 @@ querying history.
     | `2m_5m` | `gte_5m`.
   - `years_to_fire_bucket` - `lt_5` | `5_10` | `10_20` | `20_30` | `gte_30`.
   - `landing_source` - optional route/source label.
+
+### `funnel_reveal_cta_clicked`
+
+- **Where**: `app/HomeClient.tsx`, `onSave`, before the push to `/login`.
+  Sent instantly, because the navigation follows immediately and a queued
+  event loses the race with the unload.
+- **Why it exists**: `funnel_signup_started` fires on the login page's Google
+  button, not on the reveal. Everything between the two was one unexplained
+  drop, and it hides three different failures that need three different
+  fixes: never reaching the save step of the reveal sequence, reaching it and
+  not clicking, or clicking and then balking at Google sign-in.
+- **Properties**:
+  - `placement` — `reveal_save_step` (step 7 of the reveal sequence) or
+    `unreachable` (the variant shown when the inputs never reach the freedom
+    number within the 65-year projection). Worth separating: whether someone
+    just told their plan does not get there still saves it is a different
+    question from ordinary conversion.
+  - `landing_source` — optional.
 
 ### `funnel_signup_started`
 
@@ -227,6 +245,16 @@ client-side experience without double-counting conversions.
   - `source` — optional.
 
 ### `funnel_email_capture_submitted`
+
+> **Not currently wired.** `trackEmailCaptureSubmitted` exists in
+> `lib/analytics.ts` but nothing calls it: the reveal screen no longer offers
+> an email capture, and `/api/waitlist` has no caller in the app. The
+> `waitlist` table holds 6 rows, the newest from 25 July 2026. Treat the
+> absence of this event as "the door was removed", not "the door is
+> untracked" — an earlier audit read it the other way round and concluded the
+> reveal-to-signup rate was better than measured. It is not; there is no
+> second path.
+
 
 - **Where**: `app/HomeClient.tsx`, `RevealScreen`'s `handleEmailCapture`, after
   the `/api/waitlist` POST resolves without throwing.

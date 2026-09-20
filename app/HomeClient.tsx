@@ -14,7 +14,9 @@ import {
   trackLandingViewed,
   trackCalculatorStepViewed,
   trackCalculatorRevealed,
+  trackRevealCtaClicked,
 } from "@/lib/analytics";
+import type { RevealCtaPlacement } from "@/lib/analytics-events";
 import type { CalculatorStepId } from "@/lib/analytics-events";
 import {
   getAcquisitionSource,
@@ -1030,7 +1032,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     return `${symbol}${Math.round(v)}`;
   };
 
-  const onSave = () => {
+  const onSave = (placement: RevealCtaPlacement) => {
+    trackRevealCtaClicked({ placement, landingSource });
     saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
     router.push("/login");
   };

@@ -832,14 +832,33 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     onFreedomDateChange?.(exactFreedomDate);
   }, [exactFreedomDate, onFreedomDateChange]);
 
-  // Greeting
-  const now = new Date();
-  const hour = now.getHours();
-  const timeOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  // Greeting — resolved after mount, never during the server render.
+  //
+  // The server has no idea what time it is where the reader is. Vercel runs
+  // in UTC, so at 17:12 UTC it rendered "evening" and "Sunday · September
+  // 20" while a reader in Tokyo saw 02:12 on Monday the 21st. React found
+  // two text nodes that did not match its server HTML, threw away the whole
+  // server render and rebuilt the page: React error #418, 41 times in 30
+  // days across every person who loaded the dashboard from outside UTC.
+  //
+  // There is no fix that keeps a server-rendered greeting, because the
+  // server genuinely does not have the information. So it waits for the
+  // browser's own clock, and the first paint says "Hello" rather than
+  // guessing.
+  const [mountedNow, setMountedNow] = useState<Date | null>(null);
+  useEffect(() => { setMountedNow(new Date()); }, []);
+  // Only the greeting has to wait. The month-pacing and consistency figures
+  // below also read the clock, but every one of them is derived from loaded
+  // transactions, which are empty until the browser has fetched them — so
+  // none of it reaches the DOM before mount, and they can keep a plain date.
+  const now = mountedNow ?? new Date();
+  const timeOfDay = !mountedNow ? null : now.getHours() < 12 ? "morning" : now.getHours() < 18 ? "afternoon" : "evening";
   const firstName = (userName.split(" ")[0] || "").trim();
   const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const formattedDate = `${DAY_NAMES[now.getDay()]} · ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+  const formattedDate = mountedNow
+    ? `${DAY_NAMES[now.getDay()]} · ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`
+    : null;
 
   // Chart period filter
   const periodData = useMemo(() => {
@@ -1308,10 +1327,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
           <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>
-            Good {timeOfDay}{firstName ? `, ${firstName}` : ""}
+            {timeOfDay ? `Good ${timeOfDay}` : "Hello"}{firstName ? `, ${firstName}` : ""}
           </div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 3, fontFamily: "Manrope, sans-serif" }}>
-            {formattedDate}{cityName ? ` · ${cityName}` : ""}
+            {formattedDate ? `${formattedDate}${cityName ? ` · ${cityName}` : ""}` : "\u00A0"}
           </div>
         </div>
         <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 99, background: `${statusColor}18`, color: statusColor, fontFamily: "Manrope, sans-serif", border: `1px solid ${statusColor}35` }}>

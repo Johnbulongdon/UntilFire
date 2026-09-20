@@ -16,6 +16,8 @@ import {
   type CalculatorStepId,
   type CalculatorStepProperties,
   type CalculatorRevealedProperties,
+  type RevealCtaClickedProperties,
+  type RevealCtaPlacement,
   type SignupStartedProperties,
   type SignupCompletedProperties,
   type DashboardFirstViewProperties,
@@ -237,6 +239,19 @@ export function trackHysaEmptyStateCtaClicked(input: {
     placement: input.placement ?? 'assets_empty_state',
   });
   capture(FunnelEvents.HYSA_EMPTY_STATE_CTA_CLICKED, props);
+}
+
+export function trackRevealCtaClicked(input: {
+  placement: RevealCtaPlacement;
+  landingSource?: string;
+}) {
+  const props: RevealCtaClickedProperties = withVersion({
+    placement: input.placement,
+    ...(input.landingSource ? { landing_source: input.landingSource } : {}),
+  });
+  // sendInstantly: the click navigates to /login immediately after, and a
+  // queued event can lose the race with the unload.
+  capture(FunnelEvents.REVEAL_CTA_CLICKED, props, { sendInstantly: true });
 }
 
 export function trackEmailCaptureSubmitted(input: { landingSource?: string }) {
