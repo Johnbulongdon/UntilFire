@@ -1,4 +1,9 @@
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Transaction as PlaidTransaction } from "plaid";
+import { PLAID_CATEGORY_MAP, PLAID_SKIP_CATEGORIES, prettifyPfcDetailed } from "./plaid-category";
+
+// Re-exported so existing importers keep working; the definitions moved to
+// lib/plaid-category.ts so they can be tested without loading the SDK.
+export { PLAID_CATEGORY_MAP, PLAID_SKIP_CATEGORIES, prettifyPfcDetailed };
 
 /**
  * Which countries Plaid Link offers banks from.
@@ -74,30 +79,9 @@ export async function getInstitutionBranding(
   }
 }
 
-// Plaid personal_finance_category.primary → UntilFire category
-export const PLAID_CATEGORY_MAP: Record<string, string> = {
-  FOOD_AND_DRINK:            "food",
-  TRANSPORTATION:            "transport",
-  TRAVEL:                    "travel",
-  RENT_AND_UTILITIES:        "housing",
-  HOME_IMPROVEMENT:          "housing",
-  GENERAL_MERCHANDISE:       "shopping",
-  ENTERTAINMENT:             "entertainment",
-  PERSONAL_CARE:             "healthcare",
-  MEDICAL:                   "healthcare",
-  SUBSCRIPTION:              "subscriptions",
-  INCOME:                    "salary",
-};
-
-// TRANSFER_OUT = own-account moves (skip to avoid double counting)
-// TRANSFER_IN is kept so that Wise/international bank income shows up correctly
-export const PLAID_SKIP_CATEGORIES = new Set([
-  "TRANSFER_OUT",
-  "LOAN_PAYMENTS",
-]);
-
 export function mapPlaidTx(tx: PlaidTransaction, userId: string) {
-  const primary = tx.personal_finance_category?.primary ?? "";
+  const pfc = tx.personal_finance_category;
+  const primary = pfc?.primary ?? "";
   if (PLAID_SKIP_CATEGORIES.has(primary)) return null;
 
   // Plaid: positive amount = debit (money out), negative = credit (money in)
@@ -116,10 +100,19 @@ export function mapPlaidTx(tx: PlaidTransaction, userId: string) {
     description: tx.merchant_name ?? tx.name,
     category,
     tags: [] as string[],
-    sub_category: null as string | null,
+    // Plaid's granular category, which used to be discarded. The user owns
+    // sub_category from here; pfc_detailed below keeps what Plaid said, so
+    // the two can disagree visibly.
+    sub_category: prettifyPfcDetailed(primary, pfc?.detailed ?? ""),
     transaction_type: isIncome ? "income" : "expense",
     plaid_transaction_id: tx.transaction_id,
     source: "plaid",
+    // Stored unmapped so an unmapped primary is findable later. Three of the
+    // first forty-three imports landed in "other" with no way to tell what
+    // they had been.
+    pfc_primary: primary || null,
+    pfc_detailed: pfc?.detailed ?? null,
+    pfc_confidence: pfc?.confidence_level ?? null,
   };
 }
 

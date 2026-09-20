@@ -174,6 +174,7 @@ npm run test:revenue-funnel
 npm run test:holdings-mobile-layout
 npm run test:single-location
 npm run test:dashboard-layout
+npm run test:plaid-pfc
 ```
 
 Use the narrowest verification that matches the change. For broad or risky changes, run `npm run validate`.
