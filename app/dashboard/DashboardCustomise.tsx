@@ -90,7 +90,7 @@ function useFlip(
         for (const running of el.getAnimations()) running.cancel();
         el.animate(
           [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0px, 0px)" }],
-          { duration: 260, easing: "cubic-bezier(0.2, 0, 0, 1)", fill: "none" },
+          { duration: SHIFT_MS, easing: "cubic-bezier(0.22, 0.61, 0.36, 1)", fill: "none" },
         );
       }
     }
@@ -109,9 +109,20 @@ function useFlip(
  * another. Scaling to the card means you always have to drag a real part of
  * the way into something before it gives way, whatever its size.
  */
-const BAND_RATIO = 0.22;
-const BAND_MIN = 44;
-const BAND_MAX = 110;
+const BAND_RATIO = 0.38;
+const BAND_MIN = 72;
+const BAND_MAX = 170;
+
+/**
+ * How long a displaced card takes to travel to its new place.
+ *
+ * Reordering is a decision the reader has to follow, not a transition to get
+ * out of the way. 260ms was quick enough that several cards resettling at
+ * once still read as a flash. Slower is calmer here, and the drop is kept a
+ * little quicker than the shuffle so releasing still feels like a release.
+ */
+const SHIFT_MS = 460;
+const DROP_MS = 300;
 
 /** A drag has to mean it before anything reorders. */
 const DRAG_THRESHOLD = 8;
@@ -295,7 +306,7 @@ export function useCardSort(
         lifted.style.transition = "none";
         lifted.style.transform = `translate(${dx}px, ${dy}px)`;
         requestAnimationFrame(() => requestAnimationFrame(() => {
-          lifted.style.transition = "transform 200ms cubic-bezier(0.2, 0, 0, 1)";
+          lifted.style.transition = `transform ${DROP_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
           lifted.style.transform = "";
         }));
       } else {
@@ -304,7 +315,7 @@ export function useCardSort(
       window.setTimeout(() => {
         lifted.style.transition = "";
         lifted.style.willChange = "";
-      }, 240);
+      }, DROP_MS + 40);
 
       draggingRef.current = null;
       setDraggingId(null);
