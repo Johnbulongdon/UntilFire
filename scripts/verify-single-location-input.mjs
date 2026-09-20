@@ -69,6 +69,13 @@ check(
   /\{ label: "Set your city"[\s\S]{0,200}?onTabChange\?\.\("fire-calculator"\)/.test(dashboard),
 );
 
+check(
+  "no onboarding step can only be completed through Plaid",
+  // Plaid does not cover every market the product is used in, so a setup step
+  // keyed purely on a Plaid connection is unfinishable for some users.
+  !/done: hasBankConnected/.test(dashboard),
+);
+
 const failed = checks.filter((c) => !c.ok);
 for (const c of checks) console.log(`${c.ok ? "✓" : "✗"} ${c.name}`);
 if (failed.length) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
-import { CountryCode, Products } from "plaid";
-import { getPlaidClient } from "@/lib/plaid";
+import { Products } from "plaid";
+import { getPlaidClient, plaidCountries } from "@/lib/plaid";
 
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       user: { client_user_id: user.id },
       client_name: "UntilFire",
       products: [Products.Transactions, Products.Investments],
-      country_codes: [CountryCode.Us],
+      country_codes: plaidCountries(),
       language: "en",
     });
     return NextResponse.json({ link_token: response.data.link_token });

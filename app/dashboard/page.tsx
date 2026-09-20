@@ -2814,11 +2814,17 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
   onOpenOnboarding?: () => void;
 }) {
   const hasExpenses = Object.values(expenses).some(v => (v ?? 0) > 0);
-  const hasBankConnected = plaidAccounts.length > 0;
+  // Connected *or* entered. Plaid has no coverage in Hong Kong or mainland
+  // China, so keying this step on a Plaid connection left the people who
+  // cannot use it with a step that could never be completed — nagging them
+  // about something impossible, forever. The balances were already being
+  // passed to this component and ignored.
+  const hasAccounts = plaidAccounts.length > 0
+    || (k401 + rothIRA + taxable + cashSavings) > 0;
   const steps = [
     { label: "Set your income", done: income > 0, action: () => onOpenOnboarding?.(), cta: "Add income" },
     { label: "Add your expenses", done: hasExpenses, action: () => onTabChange?.("cashflow"), cta: "Go to Cashflow" },
-    { label: "Connect your bank", done: hasBankConnected, action: () => onTabChange?.("assets"), cta: "Connect accounts" },
+    { label: "Add your accounts", done: hasAccounts, action: () => onTabChange?.("assets"), cta: "Add accounts" },
     // Plan, not Profile: the assumptions moved there on 18 Sep and this step
     // kept pointing at account settings, so the last thing a new user was
     // asked to do sent them to a page that no longer had the field.

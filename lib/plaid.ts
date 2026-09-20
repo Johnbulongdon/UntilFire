@@ -1,5 +1,36 @@
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Transaction as PlaidTransaction } from "plaid";
 
+/**
+ * Which countries Plaid Link offers banks from.
+ *
+ * Was hardcoded to US, which meant a UK user was shown an empty institution
+ * list and no reason why — Plaid serves GB perfectly well, the request simply
+ * never asked for it.
+ *
+ * Environment-driven rather than a wider hardcoded default, because a country
+ * has to be enabled on the Plaid dashboard before Link will accept it: asking
+ * for one you are not approved for fails the whole token request, so turning
+ * GB on here without turning it on there would break the connect flow for
+ * everyone rather than just leaving it unavailable. Set PLAID_COUNTRY_CODES
+ * once the countries are live on the account, e.g. "US,GB,IE,CA".
+ *
+ * Plaid has no coverage in Hong Kong or mainland China at all, which is why
+ * connecting a bank cannot be the only route into the product — see the
+ * import path in the Cashflow tab.
+ */
+const SUPPORTED = new Set<string>(Object.values(CountryCode));
+
+export function plaidCountries(): CountryCode[] {
+  const configured = (process.env.PLAID_COUNTRY_CODES ?? "US")
+    .split(",")
+    .map((c) => c.trim().toUpperCase())
+    .filter((c) => SUPPORTED.has(c)) as CountryCode[];
+
+  // An empty or entirely invalid setting falls back rather than sending Plaid
+  // a request with no countries in it, which fails as a bad request.
+  return configured.length ? Array.from(new Set(configured)) : [CountryCode.Us];
+}
+
 let _client: PlaidApi | null = null;
 
 export function getPlaidClient(): PlaidApi {
@@ -29,7 +60,7 @@ export async function getInstitutionBranding(
     const plaid = getPlaidClient();
     const resp = await plaid.institutionsGetById({
       institution_id: institutionId,
-      country_codes: [CountryCode.Us],
+      country_codes: plaidCountries(),
       options: { include_optional_metadata: true },
     });
     const institution = resp.data.institution;
