@@ -2819,7 +2819,10 @@ function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings,
     { label: "Set your income", done: income > 0, action: () => onOpenOnboarding?.(), cta: "Add income" },
     { label: "Add your expenses", done: hasExpenses, action: () => onTabChange?.("cashflow"), cta: "Go to Cashflow" },
     { label: "Connect your bank", done: hasBankConnected, action: () => onTabChange?.("assets"), cta: "Connect accounts" },
-    { label: "Set your city", done: cityName !== "", action: () => onTabChange?.("profile"), cta: "Go to Profile" },
+    // Plan, not Profile: the assumptions moved there on 18 Sep and this step
+    // kept pointing at account settings, so the last thing a new user was
+    // asked to do sent them to a page that no longer had the field.
+    { label: "Set your city", done: cityName !== "", action: () => onTabChange?.("fire-calculator"), cta: "Go to Plan" },
   ];
   const completedCount = steps.filter(s => s.done).length;
   if (completedCount === 4) return null;

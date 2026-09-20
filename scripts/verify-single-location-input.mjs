@@ -64,6 +64,11 @@ check(
   !/Edit in Profile/.test(dashboard),
 );
 
+check(
+  "the setup checklist sends 'Set your city' where the city input actually is",
+  /\{ label: "Set your city"[\s\S]{0,200}?onTabChange\?\.\("fire-calculator"\)/.test(dashboard),
+);
+
 const failed = checks.filter((c) => !c.ok);
 for (const c of checks) console.log(`${c.ok ? "✓" : "✗"} ${c.name}`);
 if (failed.length) {
