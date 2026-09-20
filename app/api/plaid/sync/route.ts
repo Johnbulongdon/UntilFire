@@ -67,6 +67,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           amount: row.amount,
           description: row.description,
           category: row.category,
+          // A pending transaction that posts is exactly when Plaid starts
+          // sending a real time and a settled category, so re-read both.
+          occurred_at: row.occurred_at,
+          pfc_primary: row.pfc_primary,
+          pfc_detailed: row.pfc_detailed,
+          pfc_confidence: row.pfc_confidence,
           updated_at: new Date().toISOString(),
         })
         .eq("plaid_transaction_id", tx.transaction_id)

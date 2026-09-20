@@ -16,6 +16,7 @@ import {
   loadCatCustomizations, saveCatCustomizations, CatCustomizations, resolveDisplay,
 } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
+import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
@@ -74,6 +75,8 @@ type Transaction = {
   transaction_type: "expense" | "income" | "transfer";
   sub_category: string | null;
   source_file?: string | null;
+  // Optional: most rows have no time. date stays authoritative for grouping.
+  occurred_at?: string | null;
 };
 
 type ClassificationRule = {
@@ -92,6 +95,7 @@ type DraftTransaction = {
   description: string;
   notes: string;
   date: string;
+  time: string;
   category: string;
   sub_category: string;
   tags: string[];
@@ -107,6 +111,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   description: "",
   notes: "",
   date: new Date().toISOString().split("T")[0],
+  time: "",
   category: "",
   sub_category: "",
   tags: [],
@@ -472,16 +477,27 @@ function QuickAddForm({
           </button>
         )}
 
-        {/* Date */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Date</label>
-          <input
-            type="date"
-            value={draft.date}
-            max={new Date().toISOString().split("T")[0]}
-            onChange={(e) => setField("date", e.target.value)}
-            style={{ border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
-          />
+        {/* Date, and optionally the time of day */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 2, minWidth: 0 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Date</label>
+            <input
+              type="date"
+              value={draft.date}
+              max={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setField("date", e.target.value)}
+              style={{ border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 0 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Time <span style={{ fontWeight: 600, textTransform: "none", letterSpacing: 0, opacity: 0.7 }}>optional</span></label>
+            <input
+              type="time"
+              value={draft.time}
+              onChange={(e) => setField("time", e.target.value)}
+              style={{ border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
+            />
+          </div>
         </div>
 
         {/* Category grid */}
@@ -1112,6 +1128,9 @@ function TransactionList({
                     const needOrWant = txTags.includes("need") ? "need" : txTags.includes("want") ? "want" : null;
                     const isWorkCost = txTags.includes("work");
                     const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work").slice(0, 2);
+                    // Null for most rows — only Plaid, an import that carried
+                    // one, or a hand-typed time produces a time to show.
+                    const txTime = formatTime(tx.occurred_at);
 
                     return (
                       <div key={tx.id} style={{ position: "relative", overflow: "hidden" }}>
@@ -1192,6 +1211,9 @@ function TransactionList({
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+                            {txTime && (
+                              <span style={{ fontSize: 11.5, color: "var(--uf-text-3)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{txTime} ·</span>
+                            )}
                             <span style={{ fontSize: 11.5, color: "var(--uf-text-3)" }}>{cat?.label || tx.category}</span>
                             {tx.sub_category && <span style={{ fontSize: 11, color: "var(--uf-text-2)" }}>· {tx.sub_category}</span>}
                             {tx.transaction_type === "expense" && needOrWant && (
@@ -1966,6 +1988,9 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     const payload = {
       user_id: session.user.id,
       date: draft.date,
+      // Null when the field is left blank — an unknown time stays unknown
+      // rather than becoming a confident midnight.
+      occurred_at: combineDateAndTime(draft.date, draft.time),
       amount: parseFloat(draft.amount),
       refund_amount: Math.min(parseFloat(draft.refund_amount) || 0, parseFloat(draft.amount) || 0),
       currency: draft.currency,
@@ -2020,6 +2045,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       description: tx.description,
       notes: tx.notes || "",
       date: tx.date,
+      time: timeInputValue(tx.occurred_at),
       category: tx.category,
       sub_category: tx.sub_category || "",
       tags: [...(tx.tags || [])],

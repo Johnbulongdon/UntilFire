@@ -1,5 +1,6 @@
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Transaction as PlaidTransaction } from "plaid";
 import { PLAID_CATEGORY_MAP, PLAID_SKIP_CATEGORIES, prettifyPfcDetailed } from "./plaid-category";
+import { plaidOccurredAt } from "./transaction-time";
 
 // Re-exported so existing importers keep working; the definitions moved to
 // lib/plaid-category.ts so they can be tested without loading the SDK.
@@ -113,6 +114,11 @@ export function mapPlaidTx(tx: PlaidTransaction, userId: string) {
     pfc_primary: primary || null,
     pfc_detailed: pfc?.detailed ?? null,
     pfc_confidence: pfc?.confidence_level ?? null,
+    // authorized_datetime over datetime on Plaid's own advice: for a posted
+    // transaction the latter is when the bank posted it, the former is when
+    // the person actually paid. Null when neither is real — Plaid documents
+    // that both may carry a 00:00:00 placeholder.
+    occurred_at: plaidOccurredAt(tx.authorized_datetime, tx.datetime),
   };
 }
 

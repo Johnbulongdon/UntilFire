@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import type { CellValue } from "read-excel-file/browser";
 import { formatMoney } from "@/lib/money";
+import { combineDateAndTime, timeFromCell } from "@/lib/transaction-time";
 
 type Step = "upload" | "map" | "review" | "importing" | "done";
 
@@ -29,6 +30,7 @@ type Props = {
 
 type ParsedImportTransaction = {
   date: string;
+  occurred_at: string | null;
   description: string;
   notes: string;
   amount: number;
@@ -659,6 +661,10 @@ export default function CsvImportModal({
       const currency = normalizeCurrencyCode(rawCurrency) || detectCurrencyFromValue(rawAmount, importCurrency) || importCurrency;
       parsed.push({
         date,
+        // Statement exports put the whole timestamp in the column mapped as
+        // the date — WeChat's 交易时间 is literally "transaction time" — and
+        // parseDate throws the time away. Recover it from the same cell.
+        occurred_at: combineDateAndTime(date, timeFromCell(rawDate)),
         description: rawDesc.trim(),
         notes: rawNotes.trim(),
         amount,
@@ -738,6 +744,7 @@ export default function CsvImportModal({
       const batch = toInsert.slice(i, i + BATCH).map((tx) => ({
         user_id: session.user.id,
         date: tx.date,
+        occurred_at: tx.occurred_at,
         amount: tx.amount,
         currency: tx.currency,
         description: tx.description,

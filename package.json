@@ -17,6 +17,7 @@
     "test:household-rls": "node scripts/verify-household-rls-safety.mjs",
     "test:dashboard-layout": "node --experimental-strip-types --no-warnings scripts/verify-dashboard-layout.ts",
     "test:plaid-pfc": "node --experimental-strip-types --no-warnings scripts/verify-plaid-pfc.ts",
+    "test:transaction-time": "node --experimental-strip-types --no-warnings scripts/verify-transaction-time.ts",
     "test:city-page-seo": "node scripts/verify-city-page-seo.mjs",
     "test:income-default": "node scripts/verify-income-default.mjs",
     "test:savings-period-input": "node scripts/verify-savings-period-input.mjs",
