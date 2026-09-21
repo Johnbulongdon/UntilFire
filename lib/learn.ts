@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,121 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'estate-planning-basics-for-fire-retirees',
+    title: 'Estate Planning Basics for FIRE Retirees',
+    description: 'Why early retirees need estate planning more urgently than most — and the essential documents, beneficiary rules, and account titling steps to get right.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why FIRE retirees need estate planning now'),
+      p('Estate planning is easy to defer. It requires confronting mortality, involves legal fees, and does not feel urgent when you are healthy and young. But early retirees face a particular imperative: they have accumulated significant assets, often without the institutional default structures (pension beneficiaries, employer life insurance, HR-managed paperwork) that traditional employees carry automatically. If something happens to you without a plan, the outcomes are entirely state-controlled.'),
+      p('The good news: basic estate planning is neither complex nor expensive for most people. Getting the essentials right takes a few hours and a few hundred dollars. The cost of not doing it — assets tied up in probate for months, wrong people inheriting your accounts, no one legally authorized to make medical decisions — can be enormous.'),
+      h2('The four core documents'),
+      ul([
+        'Will: directs who receives your probate assets (those not automatically transferred by beneficiary designation or joint ownership), names guardians for minor children, and designates an executor to administer the estate.',
+        'Durable Power of Attorney (DPOA): authorizes someone to make financial decisions on your behalf if you become incapacitated. Without one, a court proceeding may be required to appoint a conservator.',
+        'Healthcare Power of Attorney / Healthcare Proxy: names someone to make medical decisions if you cannot. Separate from a financial POA.',
+        'Advance Healthcare Directive / Living Will: states your wishes for end-of-life medical care, including resuscitation, life support, and organ donation. Removes ambiguity from the proxy\'s decisions.',
+      ]),
+      h2('Beneficiary designations: the most important estate planning step'),
+      p('Beneficiary designations on retirement accounts (401k, IRA, Roth IRA) and life insurance policies transfer assets directly to the named beneficiary outside of probate. They override your will. If your will says your estate goes to your spouse but your old 401k still names an ex-partner as beneficiary, the ex-partner inherits — the will is irrelevant.'),
+      p('Review and update beneficiary designations for every account you hold. This includes:'),
+      ul([
+        'Traditional and Roth IRAs',
+        '401k and 403b plans from current and former employers',
+        'Life insurance policies',
+        'Annuities',
+        'Health savings accounts',
+      ]),
+      p('Add contingent beneficiaries (backup recipients if the primary predeceases you). Never leave accounts with no beneficiary or with "Estate" as beneficiary — this forces probate and can trigger unfavorable tax treatment for inherited IRAs.'),
+      h2('Account titling and transfer-on-death designations'),
+      p('How accounts are titled affects how they transfer at death. Joint tenancy with right of survivorship (JTWROS) means the surviving joint owner inherits automatically, bypassing probate. Transfer-on-death (TOD) designations on brokerage accounts work similarly — the named beneficiary inherits the account directly without probate.'),
+      p('For most FIRE retirees with a spouse or domestic partner, titling joint accounts as JTWROS and adding TOD designations to individual brokerage accounts handles most asset transfers efficiently. Combined with beneficiary designations on retirement accounts, this can substantially reduce or eliminate the probate estate.'),
+      h2('Trusts: when they make sense'),
+      p('A revocable living trust holds assets during your lifetime and transfers them to named beneficiaries at death — bypassing probate entirely. The main advantages over a will with TOD/beneficiary designations:'),
+      ul([
+        'Privacy: trusts are not public record; wills often are after probate.',
+        'Multi-state real estate: if you own property in multiple states, a trust avoids probate in each state.',
+        'Incapacity management: a successor trustee takes over management immediately upon incapacity, without a court order.',
+        'Control over inheritance: you can set conditions on distributions (age, milestone-based, etc.).',
+      ]),
+      p('For most FIRE retirees with a relatively simple estate — no real estate in multiple states, no complex family situations, no desire to condition distributions — a trust adds complexity without proportionate benefit. A well-drafted will with TOD designations and beneficiary designations accomplishes the same goals for less cost. Consult an estate attorney to assess whether a trust makes sense for your specific situation.'),
+      h2('Life insurance for early retirees'),
+      p('Once you reach financial independence, the traditional purpose of life insurance — replacing lost income for dependents — diminishes. If your portfolio can support your family indefinitely, term life insurance may no longer be necessary. The evaluation: does your surviving partner/family need additional financial support beyond the investment portfolio if you died today? If yes, maintain coverage. If no, cancelling term insurance after FIRE frees up hundreds or thousands per year.'),
+      p('Exception: if you have minor children, substantial debt, or a surviving partner with significantly lower income or earning capacity, maintaining term coverage through the children\'s independence or debt payoff may still make sense.'),
+    ],
+  },
+  {
+    slug: 'values-based-spending-fire-mindset',
+    title: 'Values-Based Spending: The FIRE Mindset That Makes the Journey Sustainable',
+    description: 'How aligning spending with genuine values — rather than social expectations or default habits — is both the most powerful FIRE accelerator and the key to enjoying the journey.',
+    category: 'Psychology & Behaviour',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The spending problem at the core of FIRE'),
+      p('Most people who pursue FIRE initially frame the problem as: "How do I save more?" The answer they reach quickly is: "Spend less." And so begins a phase of frugality — cutting subscriptions, meal prepping, avoiding restaurants, driving old cars — that can feel like deprivation if the underlying motivation is not clear.'),
+      p('The reframe that makes the FIRE path sustainable is not spending less. It is spending intentionally. The question is not "can I cut this?" but "does this purchase reflect what I actually value, or is it noise?" The distinction is enormous. Cutting things you value makes you miserable. Cutting things you did not care about anyway — the default spending, the social performance spending, the convenience spending on things that are not actually convenient — makes you wealthier and more satisfied simultaneously.'),
+      h2('What values-based spending looks like in practice'),
+      p('Values-based spending starts with honest reflection on what generates genuine satisfaction in your life. Not what should generate satisfaction. Not what your social circle treats as normal. Not what advertising has convinced you to want. What actually does.'),
+      p('Common patterns FIRE seekers discover:'),
+      ul([
+        'Experiences over things: for most people, memorable experiences (travel, concerts, shared meals) generate more lasting satisfaction than possessions. This does not mean buying every experience — it means identifying which experiences matter and defunding the ones that are more social obligation than genuine enjoyment.',
+        'Quality over quantity in possessions: buying fewer, higher-quality things that last and bring sustained use is often cheaper long-term than cycling through cheaper alternatives.',
+        'Time over money, eventually: the discovery that buying time back (outsourcing tasks you genuinely hate, paying for convenience in specific areas) can be more valuable than the equivalent savings — but only for things where the time truly matters.',
+        'Freedom over comfort: the realization that a slightly smaller home, older car, or less lavish vacation is barely noticeable in daily life but adds years to the FIRE timeline.',
+      ]),
+      h2('Lifestyle inflation: the silent FIRE killer'),
+      p('Lifestyle inflation happens when spending rises in proportion to income, preventing savings rate from improving even as earnings grow. It is not a moral failure — it is the default human response to having more. Better apartment. Newer car. More expensive restaurants. The reference point shifts upward and the new baseline feels normal within months.'),
+      p('FIRE seekers who resist lifestyle inflation at each income increase capture the full benefit of income growth. If your income rises $20,000 and your spending stays flat, your savings rate improves dramatically. If your income rises $20,000 and your spending rises $15,000, you captured $5,000 — a fraction of the potential.'),
+      p('The practical defense: automate savings increases when income rises. Set a rule like "50% of any raise goes directly to investments before it hits my checking account." You never see it, you never adjust to it, and the savings rate improves automatically.'),
+      h2('Distinguishing values spending from performance spending'),
+      p('A large proportion of consumer spending is not about the thing itself — it is about the signal the spending sends. The car that communicates status. The vacation that makes a good Instagram post. The restaurant that demonstrates sophistication. The home in the right neighborhood.'),
+      p('This is not inherently wrong, but it is worth naming. If you genuinely value what the signal represents and the spending aligns with your values, it belongs in your budget. If you are spending primarily to manage what others think of you — to maintain a social performance that you have never consciously chosen — that is the most expensive and least satisfying category of spending you carry.'),
+      p('The FIRE community\'s insight, borrowed from Vicki Robin\'s "Your Money or Your Life," is that money represents life energy — the hours you traded for it. Every purchase is implicitly a decision about what your finite hours are worth. Framed that way, performance spending that does not reflect genuine values becomes much easier to question.'),
+      h2('The sustainability paradox'),
+      p('The most counterintuitive finding for many FIRE pursuers: spending less on things that do not matter makes it easier to spend confidently on things that do. When your default is intentional rather than habitual, spending on what genuinely matters feels earned and clear rather than guilty. The psychological burden of spending — the vague discomfort that comes from consuming without reflection — disappears when consumption is deliberate.'),
+      p('This is the FIRE mindset at its core: not frugality for its own sake, but alignment between money and meaning. The goal is not a bare-bones life. It is a life in which every dollar is doing something you actually want it to do.'),
+    ],
+  },
+  {
+    slug: 'lump-sum-vs-dollar-cost-averaging',
+    title: 'Lump Sum vs. Dollar-Cost Averaging: What the Data Says',
+    description: 'When you have a windfall to invest, should you put it all in at once or spread it over time? The research is clear — and the emotional case for DCA is worth understanding too.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('The question every windfall investor faces'),
+      p('You receive a large sum — an inheritance, a bonus, a business sale, a 401k rollover from a previous employer. The money is sitting in cash and needs to be invested. Do you put it all in immediately, or spread it across several months of purchases to reduce the risk of investing right before a crash?'),
+      p('This question generates significant anxiety because it feels asymmetric: if you invest all at once and the market drops immediately, you feel foolish. If you dollar-cost average and the market rises, you missed out. The emotional weight of timing is real, even when the financial stakes are identical over long horizons.'),
+      h2('What lump sum investing means'),
+      p('Lump sum (LS) investing means deploying the full amount on day one into your target allocation — say, putting the entire $150,000 into a three-fund portfolio immediately. The logic is simple: equity markets spend more time going up than going down. Every day the money sits in cash rather than the market is a day it is not earning the expected equity risk premium.'),
+      h2('What dollar-cost averaging means'),
+      p('Dollar-cost averaging (DCA) means dividing the investment into equal portions and deploying them at regular intervals — $30,000 per month for five months, for example. The intent is to average into the market across different price points, reducing the risk of a single poorly timed entry.'),
+      h2('What the evidence shows'),
+      p('Vanguard published a widely cited study comparing lump sum investing to 12-month DCA across 3 different markets (US, UK, Australia) using rolling historical periods. The result: lump sum outperformed DCA approximately two-thirds of the time, with an average outperformance margin of roughly 2.3 percentage points in the US market.'),
+      p('The reason is mechanical: markets trend upward over time. On any given day, you are more likely to be in a period where the market will be higher in the future than lower. By holding cash while dollar-cost averaging, you forgo the expected equity return on the undeployed portion.'),
+      h3('When DCA wins'),
+      p('In approximately one-third of historical scenarios, DCA outperformed lump sum — specifically, when the market dropped significantly shortly after a hypothetical lump sum deployment. DCA wins in bad-timing scenarios. The problem is you cannot know in advance which scenario you are in.'),
+      h2('The behavioral case for DCA'),
+      p('Despite the mathematical edge for lump sum, DCA has a strong behavioral argument. If you invest a large sum all at once and the market immediately falls 20%, the psychological pain may cause you to sell — locking in the loss and turning a temporary decline into a permanent one. DCA reduces regret risk and provides a commitment device: you are not betting everything on a single moment.'),
+      p('The cost of DCA is opportunity cost — roughly 1–2% lower expected returns on the uninvested portion over the deployment period. The benefit is reduced behavioral risk. Whether that trade-off is worth it depends entirely on your own psychology and your history of making good or bad decisions under financial stress.'),
+      h2('A practical framework'),
+      p('For most FIRE investors deploying a windfall:'),
+      ul([
+        'If the sum is small relative to your existing portfolio (less than 25%), invest as a lump sum. The potential regret is limited and the opportunity cost of DCA is not worth the comfort.',
+        'If the sum is large relative to your portfolio (50%+), a 3–6 month DCA schedule is a reasonable compromise — it captures most of the expected long-term return while reducing the worst-case immediate regret.',
+        'If you have a demonstrated history of panic-selling in downturns, DCA is the right choice regardless of size. Protecting yourself from your own reactions is worth more than the expected return differential.',
+        'Never extend DCA beyond 12 months. Beyond a year, the opportunity cost becomes material and the behavioral benefit diminishes as the decision recedes in time.',
+      ]),
+      h2('The FIRE context'),
+      p('For regular monthly investing during the accumulation phase — contributing your savings to index funds each month — DCA is simply what happens naturally. You invest when you have money; there is no lump sum decision. The lump sum vs. DCA question only arises with windfalls, rollovers, or other concentrated cash events.'),
+      p('The most important thing is not the deployment schedule — it is that the money gets invested at all. Every month of delay in any form is the enemy of compounding. Whether you invest all at once or over three months matters far less than the difference between investing and leaving the money in a savings account for a year while you deliberate.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +870,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'estate-planning-basics-for-fire-retirees': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-estate', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-estate',
+      label: 'Calculate your FIRE number →',
+      source: 'learn-estate',
+    },
+  },
+  'values-based-spending-fire-mindset': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-values-spending', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-values-spending',
+      label: 'Run your FIRE projection →',
+      source: 'learn-values-spending',
+    },
+  },
+  'lump-sum-vs-dollar-cost-averaging': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['starting-out'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/?source=learn-lump-sum-dca', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-lump-sum-dca',
+      label: 'Run your FIRE projection →',
+      source: 'learn-lump-sum-dca',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +924,7 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'values-based-spending-fire-mindset',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -789,6 +949,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'lump-sum-vs-dollar-cost-averaging',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
@@ -809,6 +970,7 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'estate-planning-basics-for-fire-retirees',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
