@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,181 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'bond-tent-strategy-protecting-fire-transition',
+    title: 'The Bond Tent Strategy: Protecting Your Portfolio at the FIRE Transition',
+    description: 'The years just before and after you stop working are when sequence-of-returns risk is highest. The bond tent is the strategy designed to protect you during that window.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why the FIRE transition is the most dangerous period'),
+      p('Sequence-of-returns risk — the danger of a market crash in the early years of retirement — is highest during a specific window: roughly five years before and five years after you stop working. During this window, your portfolio is at its largest ever balance, and a crash forces you to sell assets at depressed prices to fund living expenses. Losses in this window are permanent because they prevent your remaining portfolio from recovering fully during the subsequent bull market.'),
+      p('The bond tent strategy addresses this vulnerability directly by temporarily increasing your bond allocation into and through this transition window, then gradually returning to a higher equity allocation as the risk period passes.'),
+      h2('What a bond tent looks like'),
+      p('The "tent" shape describes the bond allocation over time: it rises gradually in the years before FIRE, peaks at the retirement date, then gradually descends in the years after. A typical bond tent might look like this:'),
+      ul([
+        '10 years before FIRE: 20% bonds (standard accumulation allocation)',
+        '5 years before FIRE: 35% bonds (gradually increasing)',
+        'FIRE date: 50–60% bonds (peak — the top of the tent)',
+        '5 years after FIRE: 40% bonds (beginning to descend)',
+        '10 years after FIRE: 30% bonds (settling toward long-term allocation)',
+        '20+ years after FIRE: 20–25% bonds (standard long-term retirement allocation)',
+      ]),
+      p('The tent shape is intentional. You are most exposed to sequence risk at and just after retirement, so that is where you hold the most bonds. As years pass without a catastrophic crash, you convert bonds back to equities to restore long-term growth potential.'),
+      h2('The research behind the bond tent'),
+      p('Financial researcher Michael Kitces popularised the "rising equity glidepath" concept — which is essentially the mirror image of the bond tent. His research showed that retirees who start retirement with a higher bond allocation and gradually increase equity exposure over time have better retirement outcomes than those who maintain a static allocation throughout.'),
+      p('The intuition: if a crash happens early in retirement (the dangerous scenario), you draw down bonds first while equities are cheap, and your equity position recovers strongly when markets rebound. If you avoid the crash and markets rise steadily, you still have equity exposure growing your portfolio — you just kept more bonds than optimal during a period that turned out not to need the protection.'),
+      h2('How much protection does the bond tent provide?'),
+      p('Kitces\' analysis found that a rising equity glidepath (starting at 30% equity and rising to 60% by year 15) improved retirement success rates by 5–15 percentage points compared to a static allocation, depending on the specific market sequence. In the worst historical scenarios — retiring just before major bear markets — the bond tent reduced the probability of portfolio depletion significantly.'),
+      p('The cost in good scenarios is modest: a few percentage points of return given up in years when markets rise strongly. The asymmetry makes it attractive: protection is large when you need it, cost is small when you do not.'),
+      h2('Practical implementation'),
+      h3('Before FIRE'),
+      ul([
+        'Start increasing bond allocation 3–5 years before your target FIRE date',
+        'Use new contributions to buy bonds rather than selling equities (avoids taxable events in taxable accounts)',
+        'In tax-advantaged accounts, shift existing equity funds to bond funds without tax consequences',
+        'Target a peak bond allocation of 40–60% at your FIRE date',
+      ]),
+      h3('After FIRE'),
+      ul([
+        'Fund expenses primarily from bonds (and cash) in the first 1–3 years',
+        'Rebalance annually, but let equities run when markets are up',
+        'After 5–7 years without a major crash, begin systematically reducing bond allocation by 2–3% per year',
+        'Over 10–15 years, return to a long-term allocation of 20–30% bonds',
+      ]),
+      h2('The bond tent vs cash buffer vs floor-and-upside'),
+      p('The bond tent is one of several strategies for managing sequence risk at retirement. Alternatives include:'),
+      ul([
+        'Cash buffer: hold 1–2 years of expenses in cash/savings at retirement, draw from it in downturns to avoid selling equities',
+        'Floor-and-upside: use bonds and annuities to "floor" guaranteed income covering essential expenses; hold equities only for discretionary spending',
+        'Dynamic withdrawal: reduce withdrawals in down years (guardrails method) rather than pre-positioning defensively',
+      ]),
+      p('The bond tent works best for people who want a systematic, pre-planned approach rather than reactive spending adjustments. It is compatible with other strategies — some FIRE practitioners use a cash buffer alongside the bond tent for added protection.'),
+      h2('Common mistakes'),
+      ul([
+        'Not starting early enough: a bond tent that starts one year before retirement provides much less protection than one started five years out',
+        'Forgetting to bring equities back up: the "tent" must come back down or long-run returns suffer',
+        'Using the wrong bond duration: long-duration bonds have high interest rate risk; intermediate-term bond index funds (5–7 year duration) are typically preferred',
+        'Conflating the bond tent with permanent conservatism: the whole point is that the high bond allocation is temporary, not permanent',
+      ]),
+    ],
+  },
+  {
+    slug: 'tax-efficient-withdrawal-order-in-retirement',
+    title: 'Tax-Efficient Withdrawal Order in Retirement',
+    description: 'Which accounts you draw from first in retirement affects how much tax you pay and how long your money lasts. Here is the optimal sequence — and when to deviate from it.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why withdrawal order matters'),
+      p('By retirement, most FIRE savers have money in three types of accounts: taxable brokerage accounts, traditional pre-tax accounts (401k, traditional IRA), and Roth accounts (Roth IRA, Roth 401k). Each has different tax treatment on withdrawal:'),
+      ul([
+        'Taxable brokerage: you pay capital gains tax on gains (0–23.8% depending on income); principal is not taxed again',
+        'Traditional pre-tax: withdrawals are taxed as ordinary income — every dollar withdrawn adds to your taxable income',
+        'Roth: qualified withdrawals are entirely tax-free — principal and earnings',
+      ]),
+      p('The sequence in which you draw down these accounts determines your tax bill across decades of retirement. A poorly ordered withdrawal strategy can add tens or hundreds of thousands in unnecessary taxes over a 30-year retirement.'),
+      h2('The conventional withdrawal order'),
+      p('The standard rule taught in financial planning:'),
+      ol([
+        'Taxable brokerage accounts first (pay capital gains, which are taxed at preferential rates)',
+        'Traditional pre-tax accounts second (pay ordinary income tax)',
+        'Roth accounts last (tax-free; let them grow as long as possible)',
+      ]),
+      p('This order works reasonably well for most people. Taxable accounts often have relatively low embedded gains (especially index funds with low turnover), capital gains rates are lower than ordinary income rates, and Roth accounts are the most tax-advantaged so you want them to compound longest.'),
+      h2('Why early retirees should deviate from the conventional order'),
+      p('The conventional order was designed for people retiring at 65 with 20–25 years of retirement. Early retirees at 40–55 have 40–55 years of retirement and face a different problem: a large traditional IRA or 401k that will generate mandatory taxable income via Required Minimum Distributions (RMDs) starting at age 73, whether they want it or not.'),
+      p('If you spend decades leaving your traditional accounts untouched while drawing taxable and Roth first, those accounts can grow to the point where RMDs push you into high tax brackets involuntarily. The solution: fill low tax brackets intentionally during early retirement.'),
+      h2('The bracket-filling strategy for early retirees'),
+      p('During early retirement, when your earned income is zero or very low, you can withdraw traditional IRA/401k funds — or convert them to Roth — at very low tax rates. The strategy:'),
+      ul([
+        'Calculate your "headroom" to the top of the 12% bracket each year',
+        'Withdraw or convert traditional funds to fill that bracket',
+        'Pay 10–12% tax on these conversions now rather than 22–32% later when RMDs force it',
+        'The converted funds then sit in Roth accounts growing tax-free forever',
+      ]),
+      p('This is exactly how the Roth conversion ladder works — but here the goal is not just early access, it is long-term tax minimisation across a 40+ year retirement.'),
+      h2('The 0% capital gains bracket'),
+      p('In 2024, long-term capital gains are taxed at 0% for married filers with income below $94,050 (single filers: $47,025). This is one of the most powerful tax strategies available to early retirees.'),
+      p('Strategy: Keep your taxable income below the 0% capital gains threshold by drawing from Roth accounts or by managing traditional withdrawals carefully. Realise capital gains in taxable accounts at 0% tax. You are effectively selling appreciated index fund shares and repurchasing at a higher cost basis — the same position, but with a stepped-up basis and no tax owed.'),
+      p('This "capital gains harvesting" is legal, well-documented, and dramatically reduces your long-term tax burden.'),
+      h2('The optimal order for early retirees (simplified)'),
+      ol([
+        'Taxable brokerage for living expenses, while simultaneously harvesting gains at 0%',
+        'Traditional IRA/401k withdrawals or Roth conversions up to the top of the 12% bracket — even if not needed for expenses',
+        'Roth accounts for any remaining expenses (or let them continue compounding)',
+        'Adjust annually based on actual income, market performance, and tax law changes',
+      ]),
+      h2('RMDs: the landmine to defuse early'),
+      p('Required Minimum Distributions force traditional account withdrawals starting at age 73. For a large traditional IRA that has grown for 30 years without withdrawals, RMDs can be $50,000–$100,000+ per year — fully taxable as ordinary income. At that point, you are in the 22–32% bracket involuntarily.'),
+      p('The time to address this is during early retirement when income is low. Every year you convert $40,000–$60,000 of traditional funds to Roth at 10–12% is one less year of forced high-bracket RMD income later. The math consistently favours conversion — run it with a financial planning tool or a tax professional to confirm your specific numbers.'),
+      h2('Account sequencing and ACA subsidies'),
+      p('As covered in healthcare planning: ACA premium subsidies phase out above 400% of the federal poverty line ($120,000 for a family of four in 2024). Every dollar of traditional IRA withdrawal or Roth conversion above this threshold increases taxable income and potentially reduces healthcare subsidies.'),
+      p('For early retirees on ACA plans, the withdrawal order decision is intertwined with healthcare cost management. A year where you take larger traditional withdrawals may cost more in premiums. Model both together rather than optimising withdrawal order in isolation.'),
+    ],
+  },
+  {
+    slug: 'how-to-budget-in-early-retirement',
+    title: 'How to Budget in Early Retirement',
+    description: 'Retirement budgeting is different from working-life budgeting. Here is how to structure a spending plan that is both sustainable and flexible enough for a 40-year retirement.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why retirement budgeting is different'),
+      p('A working-life budget has one primary constraint: do not spend more than you earn. A retirement budget has a more complex constraint: do not deplete your portfolio faster than it can sustain over an unknown lifespan. The mechanics are different, and the psychological relationship with spending changes substantially.'),
+      p('Many people find retirement spending harder to manage than working-life spending — not because they overspend, but because every purchase feels different when the money is coming from a finite pool rather than a salary that refills each month. Building a clear, sustainable spending framework prevents both over-restriction and over-spending.'),
+      h2('The two-bucket framework'),
+      p('A simple and effective retirement budget divides spending into two categories:'),
+      h3('Fixed (essential) spending'),
+      p('Expenses that recur predictably and are difficult to reduce: housing (rent or property tax), healthcare premiums, utilities, groceries, insurance, basic transportation. These are the expenses you must cover regardless of market conditions. Calculate the annual total. This is your floor — the minimum portfolio draw rate required to stay housed, insured, and fed.'),
+      h3('Variable (discretionary) spending'),
+      p('Expenses that vary and can be reduced in difficult years: travel, dining, entertainment, clothing, home upgrades, gifts, hobbies. These are where you have flexibility. In strong market years, you spend freely. In bad market years, you cut this category first.'),
+      p('Knowing the split between fixed and variable spending is the foundation of a dynamic withdrawal strategy. A household with $60,000 in fixed spending and $20,000 in variable has much more resilience than one with $75,000 in fixed spending and $5,000 variable — even though total spending is identical.'),
+      h2('The guardrails method'),
+      p('The guardrails withdrawal strategy (developed by financial planner Jonathan Guyton) uses market performance to dynamically adjust spending. The rules:'),
+      ul([
+        'Establish an initial withdrawal rate (typically 4–5%)',
+        'If the portfolio grows enough that the current withdrawal represents less than 80% of the initial rate (i.e., your portfolio is outperforming), you can increase spending by 10%',
+        'If the portfolio falls enough that the current withdrawal represents more than 120% of the initial rate (i.e., your portfolio is underperforming), you reduce spending by 10%',
+        'The 10% adjustments are the guardrails — you stay within a spending corridor rather than cutting to zero or ignoring reality',
+      ]),
+      p('Research shows the guardrails method significantly extends portfolio longevity compared to a rigid 4% rule, because it prevents excessive early spending and forces early spending cuts when needed — before the situation becomes critical.'),
+      h2('The annual budget review'),
+      p('At least once per year — ideally at the start of the calendar year — review your retirement budget against four factors:'),
+      ul([
+        'Portfolio value: has it grown, shrunk, or held steady relative to your plan?',
+        'Current withdrawal rate: if your portfolio is down significantly, your effective withdrawal rate has risen — note this and plan accordingly',
+        'Spending categories: are actual expenses tracking your plan? Which categories surprised you?',
+        'Life changes: children, health, housing, relationships — these change spending significantly and often suddenly',
+      ]),
+      p('The annual review is not about restriction. It is about visibility. Most retirement spending problems develop gradually and could have been corrected with a modest early adjustment. The review creates the visibility to catch drift before it becomes a crisis.'),
+      h2('One-time vs recurring expenses'),
+      p('One of the most common budgeting mistakes in early retirement is failing to budget for irregular large expenses: car replacement, roof repair, travel splurges, medical procedures, family events. These are predictable in category but unpredictable in timing.'),
+      p('The solution: a "sinking fund" or irregular expenses category in the annual budget. If you expect to replace a car every 10 years at $35,000, budget $3,500 per year in the plan — even though the actual outflow happens once a decade. Same logic for home maintenance (budget 1–2% of home value annually), irregular travel, and healthcare deductibles.'),
+      h2('Inflation protection in the budget'),
+      p('The 4% rule is designed to be inflation-adjusted — you increase the dollar amount withdrawn each year by the prior year\'s inflation rate. But actual spending does not inflate uniformly. Housing (if owned) may have low inflation. Healthcare tends to inflate faster than CPI. Travel inflation varies.'),
+      p('Rather than mechanically applying a single inflation rate, review actual spending categories each year and adjust the budget based on observed cost changes in your specific spending mix. This produces a more accurate picture than applying CPI broadly.'),
+      h2('What a practical early retirement budget looks like'),
+      p('A sample budget for a couple retiring at 45 in a moderate-cost US city, spending $70,000/year:'),
+      ul([
+        'Housing (own home, property tax + insurance + maintenance): $12,000',
+        'Healthcare (ACA plan premiums + estimated out-of-pocket): $10,000',
+        'Food and groceries: $9,600',
+        'Transportation (car ownership, insurance, fuel, public transit): $6,000',
+        'Travel and experiences: $12,000',
+        'Dining and entertainment: $4,800',
+        'Utilities and subscriptions: $3,600',
+        'Clothing and personal care: $2,400',
+        'Irregular/sinking fund (car, home, medical): $5,600',
+        'Gifts and giving: $2,400',
+        'Miscellaneous buffer: $1,600',
+      ]),
+      p('Total: $70,000. Of this, roughly $48,000 is fixed/essential and $22,000 is variable. In a bad market year, cutting variable spending by 30% reduces total spending to $63,400 — a meaningful reduction that preserves portfolio health without cutting into necessities.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +930,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'bond-tent-strategy-protecting-fire-transition': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/dashboard', label: 'Dashboard' },
+    ],
+    primaryCta: {
+      href: '/calculators/4-percent-rule',
+      label: 'Stress-Test Your Withdrawal Plan',
+      source: 'learn-bond-tent',
+    },
+  },
+  'tax-efficient-withdrawal-order-in-retirement': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/dashboard', label: 'Dashboard' },
+    ],
+    primaryCta: {
+      href: '/dashboard',
+      label: 'Plan Your Withdrawal Sequence',
+      source: 'learn-withdrawal-order',
+    },
+  },
+  'how-to-budget-in-early-retirement': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-retirement-budget', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-retirement-budget',
+      label: 'Run Your FIRE Projection',
+      source: 'learn-retirement-budget',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -809,6 +1028,7 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'bond-tent-strategy-protecting-fire-transition',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
@@ -828,6 +1048,8 @@ export const learnStages: LearnStage[] = [
       'sequence-of-returns-risk',
       'barista-fire',
       'roth-ira-vs-401k-for-fire',
+      'tax-efficient-withdrawal-order-in-retirement',
+      'how-to-budget-in-early-retirement',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
