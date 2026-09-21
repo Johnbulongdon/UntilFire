@@ -35,7 +35,8 @@
     "test:monthly-checkin": "node scripts/verify-monthly-checkin-card.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build",
     "test:fire-projection": "node scripts/verify-fire-projection.mjs",
-    "test:email-tagging": "node scripts/verify-email-tagging.mjs"
+    "test:email-tagging": "node scripts/verify-email-tagging.mjs",
+    "test:search-console": "node --experimental-strip-types --no-warnings scripts/verify-search-console.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

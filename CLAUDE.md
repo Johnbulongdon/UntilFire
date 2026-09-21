@@ -176,6 +176,7 @@ npm run test:single-location
 npm run test:dashboard-layout
 npm run test:plaid-pfc
 npm run test:transaction-time
+npm run test:search-console
 ```
 
 Use the narrowest verification that matches the change. For broad or risky changes, run `npm run validate`.
@@ -192,6 +193,8 @@ Use the narrowest verification that matches the change. For broad or risky chang
   importers are in the tree but not in the product. Read before touching
   `lib/census.ts`, `lib/bea.ts` or `lib/housing.ts`.
 - `lib/analytics*.ts` and `docs/analytics/EVENTS.md` — analytics event names and payload contracts.
+- `docs/search-console.md` — how Search Console data reaches `seo_search_console`,
+  what to set up once, and the caveats before drawing conclusions from it.
 - `components/` — reusable UI and product components.
 - `docs/CONTEXT.md` — broader product and strategy context.
 - `docs/ROADMAP.md` — current product phase and task list.

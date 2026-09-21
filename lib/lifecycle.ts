@@ -59,6 +59,7 @@ export const JOBS = {
   BEA_SYNC: "bea_sync",
   HOUSING_SYNC: "housing_sync",
   CENSUS_SYNC: "census_sync",
+  GSC_SYNC: "gsc_sync",
 } as const;
 
 /** How stale a job's last successful run can get before it is a problem. */
