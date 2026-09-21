@@ -23,8 +23,23 @@ export async function generateMetadata({ params }: Props) {
   return {
     title: `${stageData.label} FIRE Guides | UntilFire`,
     description: stageData.description,
+    keywords: `${stageData.label}, financial independence, FIRE, retire early, ${stageData.shortLabel}`,
     alternates: {
       canonical: `https://www.untilfire.com/learn/stages/${stageData.id}`,
+    },
+    openGraph: {
+      title: `${stageData.label} FIRE Guides`,
+      description: stageData.description,
+      type: 'website',
+      url: `https://www.untilfire.com/learn/stages/${stageData.id}`,
+      siteName: 'UntilFire',
+      images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${stageData.label} FIRE Guides`,
+      description: stageData.description,
+      images: [`${SITE_URL}/opengraph-image`],
     },
   }
 }
