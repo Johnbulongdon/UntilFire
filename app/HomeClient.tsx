@@ -16,6 +16,7 @@ import {
   trackCalculatorRevealed,
   trackRevealCtaClicked,
   isInternalTestSession,
+  isInternalUser,
 } from "@/lib/analytics";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
 import type { CalculatorStepId } from "@/lib/analytics-events";
@@ -1144,20 +1145,28 @@ export default function HomeClient() {
     }
   }, []);
 
-  // Auth redirect -keep existing behaviour, except for a flagged test run.
+  // Auth redirect — kept for real users, skipped for anyone internal.
   //
-  // Sending a signed-in visitor to the dashboard is right for real users and
-  // was the reason funnel testing had to happen in an incognito window, which
-  // minted a fresh anonymous person — a phantom first-time visitor — on every
-  // run. With ?uf_internal=1 the funnel can be walked while signed in, as a
-  // person both internal filters already know about.
+  // Sending a signed-in visitor to the dashboard is right: they came back for
+  // their own numbers, not the sales pitch. But it also meant the only way to
+  // walk the funnel was an incognito window, and incognito mints a fresh
+  // PostHog id every session — so every test run arrived as another
+  // brand-new visitor who happened to convert perfectly, in the two numbers
+  // we are trying to read.
+  //
+  // Two escapes, both landing on the page as a person the internal filters
+  // already know about. ?uf_internal=1 works signed out; an account listed in
+  // NEXT_PUBLIC_INTERNAL_USER_IDS needs no flag at all, because the whole
+  // point is to test without remembering to do anything special first.
   useEffect(() => {
     if (isInternalTestSession()) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push("/dashboard");
+      if (session && !isInternalUser(session.user.id)) router.push("/dashboard");
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) router.push("/dashboard");
+      if (event === "SIGNED_IN" && session && !isInternalUser(session.user.id)) {
+        router.push("/dashboard");
+      }
     });
     return () => subscription.unsubscribe();
   }, [router]);

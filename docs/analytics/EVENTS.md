@@ -82,7 +82,10 @@ than "the property never arrived".
 signed-in visitor to the dashboard, so walking the funnel used to mean an
 incognito window — and incognito mints a fresh PostHog id every session, so
 each test run appeared as another brand-new visitor who converted perfectly.
-Start a test run at `/?uf_internal=1` instead: the landing page skips the
+An account listed in `NEXT_PUBLIC_INTERNAL_USER_IDS` now skips the landing
+page's dashboard redirect entirely, so signing in and visiting the site is
+enough — no flag to remember. Real users still go straight to their
+dashboard. Start a signed-out test run at `/?uf_internal=1` instead: the landing page skips the
 redirect so the run can happen while signed in, and a run that is still
 signed out identifies as the fixed `uf-internal-tester` person rather than a
 new one each time. Either way both filters catch it. The flag persists in
