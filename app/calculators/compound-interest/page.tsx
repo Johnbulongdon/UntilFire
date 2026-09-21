@@ -10,7 +10,7 @@ import CompoundInterestCalculator from './CompoundInterestCalculator'
 // stays for people who are already here and follow a link to it.
 export const metadata: Metadata = {
   robots: { index: false, follow: true },
-  title: 'Compound Interest Calculator -Investment Growth Projector | UntilFire',
+  title: 'Compound Interest Calculator — Investment Growth Projector | UntilFire',
   description:
     'Free compound interest calculator. Enter your starting balance, monthly contributions, and expected return to see how your investments grow over time. Visualize the power of compounding.',
   keywords:
