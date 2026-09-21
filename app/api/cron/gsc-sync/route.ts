@@ -43,22 +43,30 @@ async function run(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const admin = adminClient();
+
+  // Opened before the config check, not after. A 503 that left no job_runs
+  // row made "I ran it and nothing happened" indistinguishable from "it never
+  // ran" — which cost a round trip to work out from the Vercel logs.
+  const runId = await startJobRun(admin, JOBS.GSC_SYNC);
+
   const config = gscConfig();
   if (!config) {
-    // Not an error: the job is switched off until the service account exists.
-    return NextResponse.json(
-      { status: "not_configured", need: ["GSC_CLIENT_EMAIL", "GSC_PRIVATE_KEY", "GSC_SITE_URL"] },
-      { status: 503 },
+    const missing = (["GSC_CLIENT_EMAIL", "GSC_PRIVATE_KEY", "GSC_SITE_URL"] as const).filter(
+      (name) => !process.env[name]?.trim(),
     );
+    await finishJobRun(admin, runId, {
+      status: "error",
+      error: `not configured: ${missing.join(", ") || "key present but unusable"}`,
+    });
+    // Still a 503 rather than a 500: the job is switched off, not broken.
+    return NextResponse.json({ status: "not_configured", missing }, { status: 503 });
   }
 
   // ?days= backfills further on a manual run. Google serves at most 16 months.
   const requested = Number(new URL(req.url).searchParams.get("days"));
   const totalsDays = Number.isFinite(requested) && requested > 0 ? Math.min(requested, 480) : TOTALS_DAYS;
   const breakdownDays = Number.isFinite(requested) && requested > 0 ? Math.min(requested, 480) : BREAKDOWN_DAYS;
-
-  const admin = adminClient();
-  const runId = await startJobRun(admin, JOBS.GSC_SYNC);
 
   try {
     const endDate = dayOffset(1);
