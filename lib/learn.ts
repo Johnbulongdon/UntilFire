@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,138 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'health-insurance-before-medicare-fire-healthcare-gap',
+    title: 'Health Insurance Before Medicare: Bridging the FIRE Healthcare Gap',
+    description: 'How to get affordable health coverage between early retirement and Medicare at 65 — ACA marketplace plans, HSA strategy, and managing income to qualify for subsidies.',
+    category: 'Healthcare & Planning',
+    publishedAt: '2026-06-17',
+    readTime: '8 min read',
+    body: [
+      h2('The healthcare gap is the biggest practical obstacle to early retirement'),
+      p('For most people who retire before 65, health insurance is the most expensive and most anxiety-inducing line item in the budget. In the US, employer-sponsored health insurance typically disappears the day you leave work. Medicare eligibility begins at 65. That gap — potentially 20 or 30 years — is real, it is expensive, and it requires a deliberate plan.'),
+      p('The good news: workable options exist. The ACA marketplace, HSA drawdowns, COBRA as a bridge, and strategic income management can all reduce the cost to something manageable. Understanding these tools is a non-negotiable part of any serious early retirement plan.'),
+      h2('Option 1: ACA marketplace plans'),
+      p('The Affordable Care Act marketplace is the primary option for most early retirees. Plans are available with no medical underwriting — you cannot be denied or charged more for pre-existing conditions. Premium costs are heavily influenced by your income (specifically, your Modified Adjusted Gross Income, or MAGI).'),
+      h3('Income-based subsidies are the key lever'),
+      p('Premium tax credits on the ACA marketplace are available to households earning between 100% and 400% of the Federal Poverty Level (FPL). The Inflation Reduction Act extended enhanced subsidies beyond that cap through 2025 and potentially beyond, capping premiums at 8.5% of income regardless of how high income rises. This changes the calculus significantly for early retirees with moderate investment income.'),
+      p('Early retirees living off investment accounts have unusual control over their taxable income in any given year. Roth conversions, capital gain harvesting, and the mix of taxable vs. tax-deferred withdrawals all affect MAGI. This is one area where careful income planning can save tens of thousands of dollars per year in healthcare premiums.'),
+      h3('Practical example'),
+      p('A single person spending $45,000 per year in early retirement, with a MAGI of $35,000 (achieved by living off Roth accounts and taxable investment accounts with low realised gains), could qualify for substantial subsidies — potentially paying $200–$400 per month for a Silver-tier plan rather than $600–$900 at full price. The difference compounds across decades of early retirement.'),
+      h2('Option 2: Health Savings Account (HSA) strategy'),
+      p('If you were enrolled in a High Deductible Health Plan (HDHP) while working, you may have an HSA. HSAs are among the most tax-advantaged accounts in the US tax code — contributions are pre-tax, growth is tax-free, and withdrawals for qualified medical expenses are tax-free. After age 65, you can withdraw HSA funds for any purpose (ordinary income tax applies, like a traditional IRA, but no penalty).'),
+      p('Early retirees who max HSA contributions throughout their working years can accumulate a significant medical expense reserve. Paying out of pocket for qualifying expenses during high-income working years — and saving receipts — allows you to reimburse yourself tax-free from the HSA at any future point with no time limit. This creates a powerful tax-free cash reserve for early retirement healthcare costs.'),
+      h2('Option 3: COBRA as a short bridge'),
+      p('When you leave employment, COBRA allows you to continue your employer plan for up to 18 months — but you pay the full premium, including the employer contribution. COBRA is typically expensive ($500–$1,800+ per month for individual coverage). However, it can be worth using for a short bridge period: you know exactly what you are getting, your doctors and prescriptions carry over, and it buys time to plan your ACA transition thoughtfully.'),
+      p('COBRA is rarely the long-term solution, but it can cover the first 6–12 months of early retirement while you get your income structure and ACA plan selection right.'),
+      h2('Option 4: Spousal coverage'),
+      p('If a partner is still working and has employer health benefits, coverage under their plan is often the simplest and cheapest solution. Loss of employment typically qualifies as a life event allowing you to join mid-year. This option eliminates the marketplace complexity entirely until both partners retire.'),
+      h2('Managing income to optimize ACA subsidies'),
+      p('The most powerful healthcare cost tool for early retirees is controlling MAGI. Since ACA subsidies phase out with income, early retirees with flexibility over how they access their money have enormous leverage.'),
+      ul([
+        'Living off Roth accounts generates no taxable income.',
+        'Taxable brokerage withdrawals generate capital gains — qualified dividends and long-term capital gains at 0% for income under ~$47,000 single / ~$94,000 married (2024 figures).',
+        'Traditional 401k and IRA withdrawals count as ordinary income — they push MAGI up significantly.',
+        'Roth conversions (converting traditional to Roth) also count as income — plan the size carefully.',
+      ]),
+      p('The ideal early retirement income structure layers these sources to keep MAGI in the subsidy-eligible zone while maximising tax-free or low-tax access to savings. This usually requires building at least three buckets during accumulation: Roth, taxable brokerage, and traditional tax-deferred.'),
+      h2('Healthcare in your FIRE number'),
+      p('Health insurance costs must appear explicitly in your retirement spending budget. If you plan to spend $50,000 per year but have not included health insurance, your real spending target is higher. Budget conservatively: assume $500–$1,000 per month per person for premiums and out-of-pocket costs until Medicare kicks in at 65. This adds $6,000–$12,000 per year to your retirement spending, or $150,000–$300,000 to your FIRE number using the 25x rule.'),
+      p('This is not a reason to avoid early retirement — it is a reason to plan for it explicitly. Healthcare is predictable if you model it, and catastrophic if you ignore it.'),
+    ],
+  },
+  {
+    slug: 'psychology-of-spending-in-early-retirement',
+    title: 'The Psychology of Spending in Early Retirement',
+    description: 'Why so many FIRE achievers struggle to actually spend their savings — and how to shift from accumulation mode to enjoying the freedom you built.',
+    category: 'Psychology & Behaviour',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The spend-down problem no one warns you about'),
+      p('The FIRE community talks constantly about how to accumulate wealth. Very little attention goes to what happens after you cross the finish line. And for a surprising number of people who reach financial independence, the hardest part is not the accumulation — it is the spending.'),
+      p('After years of aggressive saving and frugality, many early retirees find they cannot bring themselves to spend. They watch their portfolio balance anxiously. They return to part-time work for income they do not need. They deny themselves expenses they can clearly afford. The mindset that made them wealthy — save more, spend less, defer gratification — becomes the thing that prevents them from enjoying the freedom they worked so hard to build.'),
+      h2('"One more year" syndrome'),
+      p('The most common trap in the transition to FIRE is "one more year" syndrome. The portfolio hit the target, but somehow $1.5M does not feel as safe as $1.6M. Or the market dipped 10% in the final year and now the target feels inadequate. Or the fear of healthcare costs, unexpected expenses, or sequence-of-returns risk keeps the finish line moving.'),
+      p('"Just one more year" is a reasonable response to genuine uncertainty. It is also a rationalisation for identity-level resistance to change. Paid work provides structure, purpose, social connection, and a clear measure of success. The anxiety about stopping is often not really about money — it is about what comes next.'),
+      h3('Recognising the difference'),
+      p('Legitimate "one more year" reasons: meaningful sequence-of-returns risk in a bad market, a specific expense coming (kid starting college, home purchase), or an identified gap in the retirement income plan. These have finite end points.'),
+      p('Identity-level "one more year" reasons: general anxiety about leaving a stable situation, uncertainty about what you will do with your time, fear that spending will feel wrong, or a vague sense that the number should be higher. These do not have finite end points — the extra year rarely resolves them.'),
+      h2('The identity shift from accumulator to spender'),
+      p('Psychologically, the transition from FIRE accumulator to early retiree requires a genuine identity shift. You spent years optimising for a higher savings rate. Your sense of financial competence was tied to watching the number go up. Now the goal changes: the portfolio should serve you, not the other way around.'),
+      p('This shift is difficult partly because the financial habits that work during accumulation are the opposite of what works during decumulation. Frugality, deferred gratification, and minimising spending — all virtues during the saving phase — can become anxiety-driven over-restriction during retirement.'),
+      h2('Permission to spend: making it concrete'),
+      p('Several frameworks help retirees give themselves concrete permission to spend:'),
+      ul([
+        'Safe withdrawal math: if your portfolio is 30x your spending (a 3.3% withdrawal rate), even a 40% market crash does not immediately threaten your financial position. Understanding the math reduces the emotional weight of each spending decision.',
+        'Bucket strategy: divide your portfolio into short-term cash (1–2 years of spending), medium-term bonds (3–7 years), and long-term equities. Spending from the cash bucket feels different from selling stocks in a down market — because it is.',
+        'Annual spending review: track actual spending vs. plan. Seeing that you spent $42,000 against a $50,000 budget does not feel like a win — it often feels like you failed to enjoy what you planned. This reframes underspending as a problem to solve.',
+        'Planned non-essential spending: explicitly budget for experiences, travel, or gifts. If spending on the people you love is in the plan, it is not wasteful — it is the plan.',
+      ]),
+      h2('Redefining productivity and purpose'),
+      p('Early retirees who thrive tend to have a clear answer to what they are moving toward, not just what they are moving away from. Work provides structure, purpose, and social engagement by default. Without it, those needs do not disappear — they just become the retiree\'s explicit responsibility to meet.'),
+      p('The most successful transitions involve building a rich life architecture before leaving work: deep relationships, regular physical activity, creative or learning projects, contribution to something outside yourself, and genuine leisure that feels restorative. These are not things that simply happen when you stop working. They are designed.'),
+      h2('The paradox of financial success'),
+      p('There is a peculiar irony at the heart of FIRE: the same discipline and frugality that built the wealth can prevent you from using it. Many early retirees discover that their relationship with money — not their portfolio size — is the biggest limiting factor in enjoying financial independence.'),
+      p('Money is a tool. It was always meant to expand your life, not become the thing you manage compulsively after reaching independence. Recognising this, and actively working to change your relationship with spending after FIRE, is part of the work. The financial plan got you here. Now the psychological plan takes over.'),
+    ],
+  },
+  {
+    slug: 'real-estate-as-a-path-to-fire',
+    title: 'Real Estate as a Path to FIRE: Rental Income, House Hacking, and REITs',
+    description: 'How real estate fits into a FIRE strategy — from house hacking your first property to building a rental portfolio and using REITs for passive exposure.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '8 min read',
+    body: [
+      h2('Why real estate appeals to FIRE seekers'),
+      p('Real estate offers something the stock market does not: a tangible asset that generates monthly income, appreciates over time, and can be acquired with leverage. For FIRE seekers, rental income has a particular appeal — it can replace a salary with relatively predictable cash flow, and it is not correlated to stock market volatility in the same way.'),
+      p('That said, real estate is not passive in the way index fund investing is. Tenants call at midnight. Properties need maintenance. Markets cycle. Understanding the real trade-offs helps you decide whether real estate belongs in your FIRE strategy — and if so, how much.'),
+      h2('House hacking: the most accessible entry point'),
+      p('House hacking means buying a multi-unit property (duplex, triplex, or fourplex), living in one unit, and renting out the others. The rental income from the other units offsets — or in strong markets, fully covers — your mortgage payment.'),
+      h3('Why it works so well early in the FIRE journey'),
+      ul([
+        'Owner-occupant financing: you can buy with a 3.5% FHA down payment or 5% conventional, far less than the 20–25% required for investment properties.',
+        'Your housing cost drops to near zero while you build equity.',
+        'You gain real landlord experience in a low-risk context — you live on site.',
+        'The property income counts toward your savings rate, accelerating your timeline.',
+      ]),
+      p('A house hacker paying $2,400 per month in mortgage and receiving $1,800 in rent from adjacent units has reduced their effective housing cost to $600 per month. At a $60,000 income, that is a meaningful difference in savings rate.'),
+      h2('The BRRRR strategy for accelerated portfolio building'),
+      p('BRRRR stands for Buy, Rehab, Rent, Refinance, Repeat. The strategy involves purchasing a distressed property below market value, renovating it to increase its value, renting it out, then refinancing at the higher appraised value to pull out most or all of your initial capital — which you then deploy into the next property.'),
+      p('In ideal execution, the investor recycles a single pool of capital across multiple properties. The catch: BRRRR requires construction knowledge, reliable contractor relationships, accurate renovation cost estimation, and the ability to carry costs during rehab. It is more active than most passive FIRE strategies, but it can dramatically compress the timeline for building a meaningful rental portfolio.'),
+      h2('Evaluating rental property returns'),
+      p('Before buying a rental property, understand the key return metrics:'),
+      ul([
+        'Gross rent multiplier (GRM): purchase price ÷ annual rent. Lower is better; under 10× is often considered strong.',
+        'Cap rate: net operating income ÷ purchase price. 6–8% is typical in many markets; higher indicates better cash flow relative to price.',
+        'Cash-on-cash return: annual cash flow after debt service ÷ cash invested. Targets vary but 8–12% is a reasonable benchmark for most markets.',
+        'The 1% rule of thumb: monthly rent should equal approximately 1% of purchase price ($200,000 property → $2,000/month rent). In most major markets today, the 1% rule is nearly impossible to hit — which is a signal to either widen your search geography or adjust return expectations.',
+      ]),
+      h2('REITs: real estate exposure without the landlord work'),
+      p('Real Estate Investment Trusts (REITs) own and operate income-producing real estate — apartments, offices, retail centers, industrial warehouses, data centers — and are legally required to distribute 90% of taxable income to shareholders as dividends. You can buy them in a brokerage account like any stock.'),
+      h3('Advantages of REITs for FIRE investors'),
+      ul([
+        'Instant diversification: a REIT ETF holds hundreds of properties across multiple property types and geographies.',
+        'Liquidity: you can sell in seconds, unlike a physical property.',
+        'No management responsibilities: no tenants, no maintenance calls, no vacancies to fill.',
+        'Accessibility: you can invest $500, not $50,000.',
+      ]),
+      h3('Disadvantages of REITs'),
+      ul([
+        'Returns are correlated to interest rates — REITs tend to fall when rates rise.',
+        'Dividends are generally taxed as ordinary income, not qualified dividends, making them less tax-efficient in taxable accounts.',
+        'You have no control over property selection or management.',
+        'Historical returns have been slightly below direct real estate in some periods, after accounting for management expenses.',
+      ]),
+      h2('How real estate fits into a FIRE number'),
+      p('Rental income changes your FIRE calculation. If you own properties generating $2,000 per month in net cash flow, your investment portfolio only needs to cover the remaining gap in your spending — not the full amount. A household spending $60,000 per year with $24,000 in rental income needs a stock portfolio covering only $36,000 per year — a target of $900,000 rather than $1,500,000.'),
+      p('This is the core appeal of real estate in a FIRE context: it provides income that reduces the portfolio size required, potentially allowing earlier financial independence. The risk is that the income is not as passive or reliable as dividend distributions from a diversified fund — tenants leave, markets soften, maintenance costs spike.'),
+      h2('The real estate vs. index funds debate'),
+      p('There is a long-running FIRE community debate about whether real estate or index funds produce better FIRE outcomes. The honest answer: it depends on the investor. Real estate outperforms for people with the skills, appetite, and time to manage properties well. Index funds outperform for people who want to be entirely hands-off.'),
+      p('Most serious FIRE plans include both. The stock and bond portfolio provides liquidity, diversification, and truly passive income. Real estate — whether direct properties or REITs — adds a different return stream with different risk characteristics. The combination is generally more resilient than either alone.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +887,46 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'health-insurance-before-medicare-fire-healthcare-gap': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-healthcare', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-healthcare',
+      label: 'Calculate your FIRE number with healthcare costs →',
+      source: 'learn-healthcare',
+    },
+  },
+  'psychology-of-spending-in-early-retirement': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/dashboard', label: 'Open Dashboard' },
+    ],
+    primaryCta: {
+      href: '/dashboard',
+      label: 'Open your FIRE dashboard →',
+      source: 'learn-psychology-spending',
+    },
+  },
+  'real-estate-as-a-path-to-fire': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/?source=learn-real-estate', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-real-estate',
+      label: 'Run your FIRE projection →',
+      source: 'learn-real-estate',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -789,6 +966,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'real-estate-as-a-path-to-fire',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
@@ -809,6 +987,7 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'health-insurance-before-medicare-fire-healthcare-gap',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
@@ -828,6 +1007,7 @@ export const learnStages: LearnStage[] = [
       'sequence-of-returns-risk',
       'barista-fire',
       'roth-ira-vs-401k-for-fire',
+      'psychology-of-spending-in-early-retirement',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
