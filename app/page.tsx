@@ -16,7 +16,7 @@ export const metadata = {
 }
 
 const seoHeading: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 800,
   color: "var(--uf-teal)",
   letterSpacing: "0.12em",
@@ -75,7 +75,7 @@ export default function Home() {
           <h1 style={{ fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif", fontSize: "clamp(32px, 4.6vw, 46px)", fontWeight: 400, lineHeight: 1.12, letterSpacing: "-0.02em", color: "var(--uf-ink)", margin: "0 0 16px" }}>
             FIRE Calculator — Find Your Freedom Date and FIRE Number
           </h1>
-          <p style={{ fontSize: 17, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 16px", maxWidth: 720 }}>
+          <p style={{ fontSize: 18, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 16px", maxWidth: 720 }}>
             UntilFire is a free FIRE calculator and personal finance planner for anyone chasing financial
             independence and early retirement. Enter your income, spending, and savings, and we&apos;ll show your{" "}
             <strong style={{ color: "var(--uf-teal)" }}>FIRE number</strong>, your{" "}
@@ -98,9 +98,9 @@ export default function Home() {
               { n: "3", t: "Find your next move", d: "See how saving more, spending less, or earning more pulls your retirement date earlier." },
             ].map((s) => (
               <div key={s.n} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "20px 18px" }}>
-                <div style={{ width: 28, height: 28, borderRadius: 999, background: "rgba(98,250,227,0.12)", color: "var(--uf-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, marginBottom: 12 }}>{s.n}</div>
-                <h3 style={{ fontSize: 17, color: "var(--uf-ink)", margin: "0 0 8px" }}>{s.t}</h3>
-                <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>{s.d}</p>
+                <div style={{ width: 28, height: 28, borderRadius: 999, background: "rgba(98,250,227,0.12)", color: "var(--uf-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, marginBottom: 12 }}>{s.n}</div>
+                <h3 style={{ fontSize: 18, color: "var(--uf-ink)", margin: "0 0 8px" }}>{s.t}</h3>
+                <p style={{ margin: 0, fontSize: 16, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>{s.d}</p>
               </div>
             ))}
           </div>
@@ -113,7 +113,7 @@ export default function Home() {
             {calculators.map((c) => (
               <Link key={c.href} href={c.href} style={{ textDecoration: "none", background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "18px 16px", display: "block" }}>
                 <div style={{ fontSize: 16, fontWeight: 800, color: "var(--uf-teal)", marginBottom: 6 }}>{c.label}</div>
-                <div style={{ fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.6 }}>{c.desc}</div>
+                <div style={{ fontSize: 16, color: "var(--uf-ink-2)", lineHeight: 1.6 }}>{c.desc}</div>
               </Link>
             ))}
           </div>
@@ -122,13 +122,13 @@ export default function Home() {
           <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-0.03em", margin: "0 0 8px" }}>
             FIRE number by city
           </h2>
-          <p style={{ fontSize: 15, color: "var(--uf-ink-2)", lineHeight: 1.7, margin: "0 0 18px", maxWidth: 680 }}>
+          <p style={{ fontSize: 16, color: "var(--uf-ink-2)", lineHeight: 1.7, margin: "0 0 18px", maxWidth: 680 }}>
             How much you need to retire depends on where you live. Explore FIRE numbers and cost-of-living context for
             popular cities, or <Link href="/fire-number" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>browse all city FIRE guides</Link>.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 40 }}>
             {cityLandingPages.map((c) => (
-              <Link key={c.slug} href={`/fire-number/${c.slug}`} style={{ textDecoration: "none", background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 2, padding: "8px 16px", fontSize: 14, fontWeight: 700, color: "var(--uf-ink-2)" }}>
+              <Link key={c.slug} href={`/fire-number/${c.slug}`} style={{ textDecoration: "none", background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 2, padding: "8px 16px", fontSize: 16, fontWeight: 700, color: "var(--uf-ink-2)" }}>
                 {c.city.name} FIRE number
               </Link>
             ))}
@@ -141,13 +141,13 @@ export default function Home() {
           <div style={{ display: "grid", gap: 12, marginBottom: 32 }}>
             {homeFaqs.map((f) => (
               <div key={f.q} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: "18px 18px 16px" }}>
-                <h3 style={{ margin: "0 0 8px", fontSize: 17, color: "var(--uf-ink)" }}>{f.q}</h3>
-                <p style={{ margin: 0, fontSize: 14.5, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>{f.a}</p>
+                <h3 style={{ margin: "0 0 8px", fontSize: 18, color: "var(--uf-ink)" }}>{f.q}</h3>
+                <p style={{ margin: 0, fontSize: 16, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>{f.a}</p>
               </div>
             ))}
           </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 14 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 16 }}>
             <Link href="/learn" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>FIRE learning hub →</Link>
             <Link href="/learn/what-is-fire-financial-independence-retire-early" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>What is FIRE? →</Link>
             <Link href="/calculators" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>All calculators →</Link>
