@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,140 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'how-to-increase-income-to-reach-fire-faster',
+    title: 'How to Increase Your Income to Reach FIRE Faster',
+    description: 'Raising income is the most powerful FIRE accelerator once you have your spending under control. Here are the highest-leverage moves for each career stage.',
+    category: 'Saving',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('Income is the ceiling on your savings rate'),
+      p('Every FIRE framework starts with a savings rate, but savings rate has two levers: spend less and earn more. Most FIRE content focuses on spending, but income growth compounds faster over time and has no floor — you can keep raising income indefinitely, while spending can only drop to zero.'),
+      p('The asymmetry is worth understanding: a household earning $60,000 who cuts spending from $50,000 to $40,000 saves an extra $10,000 per year. That same household raising income from $60,000 to $80,000 with flat spending saves an extra $20,000 — and creates the option to cut spending further from a position of strength.'),
+      h2('Salary negotiation: the highest-ROI hour you will ever spend'),
+      p('The single highest-leverage income action most people never take is negotiating their salary. Research consistently shows that candidates who negotiate receive 5–15% higher starting salaries. On a $70,000 base, a 10% negotiation gain is $7,000 per year — every year, for as long as you stay in that role. Compounded over a career, this is hundreds of thousands of dollars.'),
+      ul([
+        'Negotiate every offer: always counter a job offer. The worst outcome is the employer says no. Most do not.',
+        'Get a competing offer: the fastest way to increase salary at an existing job is an outside offer. Recruiters exist to help you get them — respond to LinkedIn messages.',
+        'Time your raise requests: ask after a win, a promotion cycle, or a major project delivery — not out of the blue.',
+        'Research market rates: use Levels.fyi (tech), Glassdoor, Payscale, and Bureau of Labor Statistics data to know your market value before negotiating.',
+      ]),
+      h2('Switching jobs as an income lever'),
+      p('Annual raise cycles at most companies produce 2–4% increases. Switching jobs commonly produces 10–20% jumps. Research from the Federal Reserve Bank of Atlanta has consistently found that job switchers earn more than job stayers over time.'),
+      p('For FIRE timelines, strategic job hopping in the early and mid career can add years of financial independence. A professional earning $80,000 who makes two well-timed switches to $95,000 and then $115,000 over 6 years earns roughly $100,000 more in cumulative salary than the peer who stays put.'),
+      h2('Skills that compound: high-income career moves'),
+      p('Certain skills consistently command wage premiums and are learnable:'),
+      ul([
+        'Software engineering: strong demand, remote-friendly, high salary floor. Self-taught paths via bootcamps or online courses are viable.',
+        'Data and analytics: SQL, Python, and data visualisation. Applicable across industries, strong demand growth.',
+        'Sales: commission-based income with theoretically no ceiling. High performers in B2B sales routinely earn $150,000–$300,000+.',
+        'Skilled trades: electricians, plumbers, HVAC technicians. Shortage-driven wages, often $60,000–$100,000+ with overtime.',
+        'Healthcare: nursing, allied health, and PA/NP roles offer strong wages, job security, and geographic flexibility.',
+      ]),
+      h2('Side income and second income streams'),
+      p('A side income stream adds dollars while keeping the main job, and gives FIRE planning optionality — the side income can bridge the gap in early retirement even if the portfolio is not fully ready.'),
+      ul([
+        'Freelancing in your primary skill: consultants, designers, writers, developers, and marketers can often bill 2–3x their effective hourly rate independently.',
+        'Teaching or coaching: online courses, workshops, or 1:1 coaching in areas you are already expert in.',
+        'Content creation: YouTube, newsletters, podcasting. Long lead time before income, but can produce passive income at scale.',
+        'Rental income: renting out a spare room (Airbnb), parking space, or storage generates income from assets you already have.',
+      ]),
+      h2('The income-savings rate compounding effect'),
+      p('When income increases and spending stays flat, the savings rate rises steeply. A household earning $70,000 with $50,000 in spending has a 28% savings rate. Raise income to $90,000 with flat spending: savings rate jumps to 44%. That shift — in the savings rate calculator — cuts the FIRE timeline by roughly 6 years.'),
+      p('This is why FIRE planners focus on both sides of the equation: cutting spending reduces the FIRE number, while raising income accelerates the rate at which you hit it. The fastest FIRE paths optimise both simultaneously.'),
+    ],
+  },
+  {
+    slug: 'frugality-and-spending-the-other-half-of-fire',
+    title: 'Frugality and Spending: The Spending Side of the FIRE Equation',
+    description: 'FIRE is not about deprivation — it is about intentional spending. How to cut costs that do not matter without sacrificing what does, and why the big three expenses are where to start.',
+    category: 'Saving',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Frugality is not the point — optionality is'),
+      p('The FIRE frugality conversation gets misrepresented as deprivation: no coffee, no vacations, endless coupon-clipping. That framing misses the point. The goal is intentional spending — cutting costs that do not contribute to happiness while protecting costs that do. Money spent on things that genuinely improve your life is not the enemy. Money spent on things you barely notice is.'),
+      p('The practical effect of frugality for FIRE is twofold: it raises your savings rate immediately, and it lowers the FIRE number you need permanently. Every dollar per year you stop spending reduces the required portfolio by $25 (25× rule). Eliminating a $3,000/year subscription habit removes $75,000 from your FIRE target.'),
+      h2('Start with the big three'),
+      p('Most spending advice focuses on lattes and lunches. But the three largest expenses in the average US household are housing, transportation, and food — and optimising them produces 10–50x more savings than any other category.'),
+      ul([
+        'Housing: the single largest expense. Every dollar per month in rent or mortgage is $12,000 per year in annual spending and $300,000 in FIRE number (25x). Strategies: house hacking, downsizing, moving to a lower-cost city or neighbourhood, getting a roommate.',
+        'Transportation: the second largest. The average American car costs $10,000–$12,000 per year (payment, insurance, gas, maintenance, depreciation). Going from two cars to one saves $8,000–$12,000/year. Using a paid-off older car vs financing a new one saves $5,000–$7,000/year.',
+        'Food: the most discretionary of the big three. Cooking at home vs restaurants saves $200–$500 per month for most households. Meal planning and grocery lists reduce waste. This is not about never eating out — it is about the ratio.',
+      ]),
+      h2('The value-per-dollar audit'),
+      p('The most useful frugality exercise is a spending audit by satisfaction — not just amount. Review three months of transactions and rate each category: high value (would not cut this), medium (could reduce), low (get almost nothing from this).'),
+      p('Low-value categories are candidates for cuts that genuinely do not hurt. Common findings: multiple streaming services only one is used, gym memberships unused for months, subscription boxes, delivery service fees on top of restaurant prices, premium versions of apps when the free tier is sufficient.'),
+      h2('Fixed vs variable costs'),
+      p('Fixed costs (rent, car payment, insurance) recur automatically and compound. Cutting a fixed cost saves money every month without ongoing effort. Variable costs (restaurants, shopping) require ongoing discipline. This is why housing and car decisions matter so much — one decision at lease or purchase time determines the fixed cost for years.'),
+      p('FIRE-focused households generally try to keep fixed costs as low as possible, which gives maximum flexibility in variable spending. A household with $1,500/month in rent and a paid-off car has enormous latitude in variable spending. A household with $2,800/month rent and $700/month car payment has almost none.'),
+      h2('The subscription audit'),
+      p('Subscriptions are the most invisible spending category. They bill monthly and often go unreviewed for years. Common audit finds: streaming services ($15–$20 each), gym memberships ($30–$80), cloud storage ($3–$10), news subscriptions ($5–$30), software tools ($10–$50), meal kit deliveries ($100–$150). A thorough audit often finds $150–$400/month in subscriptions that are used infrequently or not at all.'),
+      h2('Lifestyle creep: the FIRE killer'),
+      p('Lifestyle creep is the tendency for spending to expand as income grows. It is the reason high earners can still feel broke. A household earning $120,000 who has expanded spending to $100,000 has a 17% savings rate — barely better than one earning $60,000 with $50,000 in spending. The rate is what matters.'),
+      p('The most effective FIRE defence against lifestyle creep: automate savings on every income increase. When a raise or bonus arrives, route the additional income to investment accounts before it hits the checking account. Automate the investment and live on what remains. If the increase does not touch your daily life, it will not inflate your spending.'),
+      h2('What frugality actually looks like in practice'),
+      ul([
+        'Cook 4–5 nights per week; eating out 2–3 times per week is a treat, not a habit.',
+        'Buy used cars instead of new; drive them for 10+ years.',
+        'Review subscriptions quarterly and cancel anything unused for 30+ days.',
+        'Buy quality over quantity on durable goods — cheaper to buy one $120 item than three $40 items that each last a year.',
+        'Distinguish "want now" from "want always" — impulse purchases fail the "want always" test most of the time.',
+        'Protect the high-value categories: the vacation you actually want, the dinner out that is genuinely enjoyable, the gym membership you use consistently.',
+      ]),
+    ],
+  },
+  {
+    slug: 'net-worth-tracking-how-to-measure-fire-progress',
+    title: 'Net Worth Tracking: How to Measure Your FIRE Progress',
+    description: 'Net worth is the scoreboard for FIRE. Here is how to calculate it, what to track, and how to use it to stay on course toward your freedom date.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('What is net worth?'),
+      p('Net worth is the total value of everything you own (assets) minus everything you owe (liabilities). It is the most honest snapshot of your financial position — more useful than income, credit score, or any single account balance.'),
+      p('Net worth formula: Assets − Liabilities = Net Worth'),
+      ul([
+        'Assets: bank accounts, investment accounts (401k, Roth IRA, brokerage), home equity, vehicles, rental properties, business equity.',
+        'Liabilities: mortgage balance, car loans, student loans, credit card balances, any other debt.',
+      ]),
+      h2('Why net worth matters for FIRE'),
+      p('FIRE is a net worth milestone. Your FIRE number (25× annual spending) is a net worth target, not an income target. Reaching financial independence means your investable net worth — the portion that can generate returns — exceeds the threshold where passive income covers your spending.'),
+      p('Tracking net worth monthly gives you a feedback loop that income and budgeting alone do not: are your assets growing faster than your liabilities? Is the gap widening or narrowing? Is compound growth doing its job?'),
+      h2('Investable net worth vs total net worth'),
+      p('For FIRE calculations, the distinction between investable net worth and total net worth matters.'),
+      ul([
+        'Total net worth: includes all assets — home equity, cars, furniture, collectibles.',
+        'Investable net worth: only the assets that generate returns — index funds, ETFs, bonds, cash savings, rental property equity.',
+      ]),
+      p('Your FIRE number is a target for investable net worth, not total net worth. A household with $1.2M in total net worth ($900k investable + $300k home equity) with $50,000 in annual spending needs $1.25M investable to be FIRE-ready — they are not there yet despite the impressive total. Home equity does not generate returns unless converted (sold, rented, or used as reverse mortgage).'),
+      h2('How to track net worth'),
+      p('Track net worth monthly. A simple spreadsheet works: list every account, update balances, subtract liabilities. Total and record the date. Over months and years, the trend reveals your FIRE progress more clearly than any single data point.'),
+      ol([
+        'List all asset accounts: checking, savings, Roth IRA, traditional 401k, brokerage, crypto, HSA.',
+        'Estimate home value (Zillow or recent comps) and subtract the remaining mortgage balance for home equity.',
+        'List all liabilities: remaining loan balances, credit card balances.',
+        'Net worth = total assets − total liabilities.',
+        'Track every month and plot the trend.',
+      ]),
+      h2('What good progress looks like'),
+      p('In the early years, net worth growth is slow — contributions dominate over returns. In later years, investment returns on a large base can exceed annual contributions. A $50,000 portfolio growing at 7% adds $3,500/year from returns. A $500,000 portfolio adds $35,000/year. A $1M portfolio adds $70,000/year — often more than the household saves from income.'),
+      p('This is the FIRE acceleration curve: slow start, then increasingly powerful compounding. Tracking net worth monthly makes this curve visible and motivating.'),
+      h2('FIRE milestone benchmarks'),
+      ul([
+        '10% of FIRE number: the foundation is set. Compounding has started.',
+        '25% of FIRE number: the portfolio is generating meaningful returns. This is often called "The Crossover Point" where returns start meaningfully supplementing contributions.',
+        '50% of FIRE number: halfway — but more than halfway in time, because compounding accelerates from here.',
+        '75% of FIRE number: the final stretch. Many FIRE planners transition to more conservative planning here.',
+        '100% of FIRE number: work becomes optional.',
+      ]),
+      h2('Using UntilFire to track your progress'),
+      p('The UntilFire dashboard shows your investable net worth position relative to your FIRE target — the number calculated from your spending and the 4% rule. Each month you update balances, you can see the percentage progress, the years remaining at current trajectory, and how changes in savings rate or spending affect your freedom date.'),
+      p('The most motivating thing about net worth tracking is that it makes progress visible. Even in a down market, contributions add to net worth. Understanding that the trajectory matters more than any single monthly reading is what keeps FIRE savers on course through volatile periods.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +889,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'how-to-increase-income-to-reach-fire-faster': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-income-growth', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate?source=learn-income-growth',
+      label: 'See how income growth changes your timeline',
+      source: 'learn-income-growth',
+    },
+  },
+  'frugality-and-spending-the-other-half-of-fire': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-frugality', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate?source=learn-frugality',
+      label: 'Calculate your savings rate after spending cuts',
+      source: 'learn-frugality',
+    },
+  },
+  'net-worth-tracking-how-to-measure-fire-progress': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['starting-out', 'approaching-fire'],
+    relatedCalculators: [
+      { href: '/?source=learn-net-worth', label: 'FIRE Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-net-worth',
+      label: 'Calculate your FIRE number and track your progress',
+      source: 'learn-net-worth',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -762,6 +940,8 @@ export const learnStages: LearnStage[] = [
     articleSlugs: [
       'what-is-fire-financial-independence-retire-early',
       'why-savings-rate-matters-more-than-income',
+      'how-to-increase-income-to-reach-fire-faster',
+      'frugality-and-spending-the-other-half-of-fire',
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
@@ -781,6 +961,7 @@ export const learnStages: LearnStage[] = [
     whatMattersNow: 'Invest your savings wisely using low-cost index funds. Master your allocation, rebalance annually, and reduce taxes. Combine this with account strategy (401k, Roth) to improve the machine.',
     articleSlugs: [
       'index-funds-101-what-to-invest-in',
+      'net-worth-tracking-how-to-measure-fire-progress',
       'diversification-why-eggs-in-many-baskets',
       'asset-allocation-stocks-vs-bonds',
       'roth-ira-vs-401k-for-fire',
