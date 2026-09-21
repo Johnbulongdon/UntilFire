@@ -59,6 +59,57 @@ const INTERNAL_USER_IDS = (process.env.NEXT_PUBLIC_INTERNAL_USER_IDS ?? '')
   .map((id) => id.trim().toLowerCase())
   .filter(Boolean);
 
+/**
+ * A test run through the funnel, flagged before it pollutes anything.
+ *
+ * The landing page sends a signed-in visitor straight to the dashboard, so
+ * the only way to walk the funnel as a visitor was an incognito window — and
+ * incognito gets a fresh PostHog id every session, which is a brand-new
+ * "visitor" in the numbers every single time. `?uf_internal=1` fixes both
+ * ends: HomeClient skips the redirect, so testing while signed in works, and
+ * a run that is still signed out identifies as one fixed internal tester
+ * rather than an endless supply of phantom first-time visitors.
+ *
+ * Persisted, because the flag is set on the landing URL and the run
+ * continues through pages that do not carry it. localStorage in an incognito
+ * window lives exactly as long as the window does, which is the right
+ * lifetime.
+ */
+const INTERNAL_FLAG_KEY = 'uf_internal';
+export const INTERNAL_TEST_DISTINCT_ID = 'uf-internal-tester';
+
+export function isInternalTestSession(): boolean {
+  if (!isClient()) return false;
+  try {
+    if (new URLSearchParams(window.location.search).get(INTERNAL_FLAG_KEY) === '1') {
+      window.localStorage.setItem(INTERNAL_FLAG_KEY, '1');
+      return true;
+    }
+    return window.localStorage.getItem(INTERNAL_FLAG_KEY) === '1';
+  } catch {
+    // Private-mode storage can throw. The URL alone still flags the page.
+    try {
+      return new URLSearchParams(window.location.search).get(INTERNAL_FLAG_KEY) === '1';
+    } catch { return false; }
+  }
+}
+
+/**
+ * Identify a signed-out test run as the internal tester.
+ *
+ * identify() rather than setPersonProperties(): under `identified_only`
+ * person profiles an anonymous visitor may have no profile to write a
+ * property to, and identify creates one either way. Every signed-out test
+ * run therefore collapses into the same flagged person instead of adding
+ * another visitor to the funnel.
+ */
+export function markInternalTester() {
+  if (!isClient()) return;
+  try {
+    posthog.identify(INTERNAL_TEST_DISTINCT_ID, { is_internal: true });
+  } catch {}
+}
+
 export function isInternalUser(userId: string | null | undefined): boolean {
   if (!userId) return false;
   return INTERNAL_USER_IDS.includes(userId.toLowerCase());

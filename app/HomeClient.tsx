@@ -15,6 +15,7 @@ import {
   trackCalculatorStepViewed,
   trackCalculatorRevealed,
   trackRevealCtaClicked,
+  isInternalTestSession,
 } from "@/lib/analytics";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
 import type { CalculatorStepId } from "@/lib/analytics-events";
@@ -1143,8 +1144,15 @@ export default function HomeClient() {
     }
   }, []);
 
-  // Auth redirect -keep existing behaviour
+  // Auth redirect -keep existing behaviour, except for a flagged test run.
+  //
+  // Sending a signed-in visitor to the dashboard is right for real users and
+  // was the reason funnel testing had to happen in an incognito window, which
+  // minted a fresh anonymous person — a phantom first-time visitor — on every
+  // run. With ?uf_internal=1 the funnel can be walked while signed in, as a
+  // person both internal filters already know about.
   useEffect(() => {
+    if (isInternalTestSession()) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) router.push("/dashboard");
     });

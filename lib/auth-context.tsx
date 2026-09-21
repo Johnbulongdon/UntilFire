@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import { identifyUser } from './analytics'
+import { identifyUser, isInternalTestSession, markInternalTester } from './analytics'
 import { useRouter } from 'next/navigation'
 
 interface AuthContextType {
@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // inside 200ms never got identified at all, and /admin, /login and the
       // landing page never did either.
       if (session?.user) identifyUser(session.user.id)
+      else if (isInternalTestSession()) markInternalTester()
       setLoading(false)
     }
 

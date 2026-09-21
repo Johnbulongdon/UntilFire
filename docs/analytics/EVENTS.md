@@ -78,6 +78,17 @@ It is set explicitly for everyone, not only for internal users, so that
 "is_internal is not true" means "we checked and they are a visitor" rather
 than "the property never arrived".
 
+**Testing the funnel without becoming a visitor.** The landing page sends a
+signed-in visitor to the dashboard, so walking the funnel used to mean an
+incognito window — and incognito mints a fresh PostHog id every session, so
+each test run appeared as another brand-new visitor who converted perfectly.
+Start a test run at `/?uf_internal=1` instead: the landing page skips the
+redirect so the run can happen while signed in, and a run that is still
+signed out identifies as the fixed `uf-internal-tester` person rather than a
+new one each time. Either way both filters catch it. The flag persists in
+`localStorage` for the rest of the session, so it survives the pages that do
+not carry the parameter.
+
 **To use it**, turn it into the project's internal-user filter:
 `Settings → Project → Filter out internal and test users → is_internal
 does not equal true`. The project already filters `$host` for localhost;
