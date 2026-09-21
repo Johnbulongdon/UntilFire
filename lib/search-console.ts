@@ -40,11 +40,57 @@ export interface GscConfig {
 export function gscConfig(): GscConfig | null {
   const clientEmail = process.env.GSC_CLIENT_EMAIL?.trim();
   const siteUrl = process.env.GSC_SITE_URL?.trim();
-  // Vercel stores the PEM on one line, so the newlines arrive escaped.
-  // crypto rejects the key outright if they are left that way.
-  const privateKey = process.env.GSC_PRIVATE_KEY?.replace(/\\n/g, "\n").trim();
+  const privateKey = normalisePrivateKey(process.env.GSC_PRIVATE_KEY);
   if (!clientEmail || !privateKey || !siteUrl) return null;
   return { clientEmail, privateKey, siteUrl };
+}
+
+/**
+ * Turn whatever survived the copy-paste back into a PEM.
+ *
+ * The key travels from a JSON file, through a clipboard, into a dashboard
+ * field, and each leg can mangle it in a way that OpenSSL reports only as
+ * `DECODER routines::unsupported` — which says nothing about which leg. The
+ * three that actually happen:
+ *
+ *   - the surrounding double quotes come along from the JSON value
+ *   - the newlines stay escaped as the two characters \ and n
+ *   - the newlines arrive as CRLF
+ *
+ * All three are recoverable, so recover them rather than making someone
+ * guess which one they hit.
+ */
+export function normalisePrivateKey(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  let key = raw.trim();
+  // JSON's own quotes, if the value was copied including them.
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1);
+  }
+  key = key.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n").trim();
+  // OpenSSL wants the final newline; a trimmed PEM fails on some versions.
+  return key.endsWith("\n") ? key : `${key}\n`;
+}
+
+/**
+ * What is wrong with the key, in terms that do not print it.
+ *
+ * Structure only — whether it has the armour, how long it is, how many lines.
+ * Enough to tell a truncated paste from a quoted one from a wrong-field one,
+ * and it lands in a job_runs row that anyone with database access can read,
+ * so it must never carry key material.
+ */
+function describeKey(key: string): string {
+  const hasHeader = /^-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(key);
+  const hasFooter = /-----END [A-Z ]*PRIVATE KEY-----\s*$/.test(key);
+  const escaped = key.includes("\\n");
+  return [
+    `length=${key.length}`,
+    `lines=${key.split("\n").length}`,
+    `header=${hasHeader}`,
+    `footer=${hasFooter}`,
+    `literal_backslash_n=${escaped}`,
+  ].join(" ");
 }
 
 function base64url(input: Buffer | string): string {
@@ -74,9 +120,21 @@ async function accessToken(config: GscConfig): Promise<string> {
       exp: now + 3600,
     }),
   );
-  const signature = base64url(
-    crypto.createSign("RSA-SHA256").update(`${header}.${claims}`).sign(config.privateKey),
-  );
+  let signature: string;
+  try {
+    signature = base64url(
+      crypto.createSign("RSA-SHA256").update(`${header}.${claims}`).sign(config.privateKey),
+    );
+  } catch (err) {
+    // OpenSSL's own message for a bad PEM is "DECODER routines::unsupported",
+    // which is true and useless. Say what the key looks like instead.
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `GSC_PRIVATE_KEY could not be used to sign (${reason}). ` +
+        `Key structure: ${describeKey(config.privateKey)}. ` +
+        `Expected header=true footer=true literal_backslash_n=false and about 28 lines.`,
+    );
+  }
 
   const res = await fetch(TOKEN_URL, {
     method: "POST",

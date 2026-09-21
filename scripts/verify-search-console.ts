@@ -22,7 +22,33 @@ process.env.GSC_CLIENT_EMAIL = "untilfire-seo@example.iam.gserviceaccount.com";
 process.env.GSC_PRIVATE_KEY = privateKey.replace(/\n/g, "\\n");
 process.env.GSC_SITE_URL = "sc-domain:untilfire.com";
 
-const { gscConfig, querySearchAnalytics, dayOffset } = await import("../lib/search-console.ts");
+const { gscConfig, normalisePrivateKey, querySearchAnalytics, dayOffset } = await import(
+  "../lib/search-console.ts"
+);
+
+// ── The ways a pasted key arrives mangled ──────────────────────────────────
+// A real run failed with OpenSSL's "DECODER routines::unsupported", which
+// names none of these. Each has to survive normalisation and then actually
+// sign, because a key that parses but produces a bad signature fails later
+// and further away.
+const mangled: Record<string, string> = {
+  "escaped newlines": privateKey.replace(/\n/g, "\\n"),
+  "wrapped in JSON quotes": `"${privateKey.replace(/\n/g, "\\n")}"`,
+  "CRLF line endings": privateKey.replace(/\n/g, "\r\n"),
+  "no trailing newline": privateKey.trimEnd(),
+  "leading and trailing spaces": `  ${privateKey}  `,
+};
+for (const [label, variant] of Object.entries(mangled)) {
+  const restored = normalisePrivateKey(variant);
+  assert(restored, `${label}: normalise returned nothing`);
+  assert.doesNotThrow(
+    () => crypto.createSign("RSA-SHA256").update("probe").sign(restored),
+    `${label}: normalised key still will not sign`,
+  );
+}
+assert.equal(normalisePrivateKey(undefined), undefined);
+assert.equal(normalisePrivateKey(""), undefined);
+
 
 const config = gscConfig();
 assert(config, "gscConfig returned null with all three variables set");
@@ -119,5 +145,6 @@ for (const missing of ["GSC_CLIENT_EMAIL", "GSC_PRIVATE_KEY", "GSC_SITE_URL"]) {
 
 console.log(
   "Search Console ok: JWT verifies, base64url clean, scope and lifetime valid, " +
-    "site url encoded, rows parsed, missing config returns null.",
+    "site url encoded, rows parsed, missing config returns null, " +
+    `${Object.keys(mangled).length} mangled key formats recovered.`,
 );
