@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CITIES, STATE_TAX, isUS } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
+import { countriesByCost } from "@/lib/country-pages";
 
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
@@ -94,6 +95,43 @@ export default function FireNumberHubPage() {
             ))}
           </div>
         </div>
+
+        {/* Browse by country — cheapest first, which is the question people
+            actually arrive with. These pages exist because a country changes
+            the arithmetic (tax and cost base both move) where a US city does
+            not, and they are worthless to Google if nothing links to them. */}
+        <section style={{ marginBottom: 52 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 14px", letterSpacing: "-0.03em" }}>
+            Browse by country
+          </h2>
+          <p style={{ fontSize: 13, color: "var(--uf-ink-2)", margin: "0 0 14px", lineHeight: 1.6 }}>
+            Cheapest first. Moving country changes both what you spend and what you are taxed,
+            which is why it can move a freedom date by years.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            {countriesByCost().map((c) => (
+              <Link
+                key={c.slug}
+                href={`/fire-number/countries/${c.slug}`}
+                style={{
+                  textDecoration: "none",
+                  background: "var(--uf-card)",
+                  border: "1px solid var(--uf-border)",
+                  borderRadius: 12,
+                  padding: "14px 16px",
+                  minWidth: 0,
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-green-900)", marginBottom: 4 }}>
+                  {c.flag} {c.shortName} →
+                </div>
+                <div style={{ fontSize: 12, color: "var(--uf-ink-3)", lineHeight: 1.5, fontVariantNumeric: "tabular-nums" }}>
+                  ${c.avgCol.toLocaleString("en-US")}/yr · {c.noIncomeTax ? "no income tax" : `~${Math.round(c.taxRate * 100)}% tax`}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         {/* Browse by Region */}
         <section style={{ marginBottom: 52 }}>

@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { cityLandingPages } from '@/lib/city-pages'
 import { CITIES, isUS } from '@/lib/fire-data'
+import { countryPages } from '@/lib/country-pages'
 import { statePages } from '@/lib/state-pages'
 import { rankingPagesList } from '@/lib/ranking-pages'
 import { regionSlugs } from '@/lib/regions'
@@ -119,6 +120,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.65,
     }))
 
+  const countryRoutes: MetadataRoute.Sitemap = countryPages.map((page) => ({
+    url: siteUrl(`/fire-number/countries/${page.slug}`),
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }))
+
   const stateRoutes: MetadataRoute.Sitemap = statePages.map((page) => ({
     url: siteUrl(`/fire-number/states/${page.slug}`),
     lastModified: new Date(),
@@ -140,5 +148,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }))
 
-  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...stateRoutes, ...rankingRoutes, ...regionRoutes]
+  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...countryRoutes, ...stateRoutes, ...rankingRoutes, ...regionRoutes]
 }
