@@ -35,6 +35,11 @@ export const FunnelEvents = {
   FIRE_TYPE_SHARED: 'funnel_fire_type_shared',
   FIRE_TYPE_CTA_CLICKED: 'funnel_fire_type_cta_clicked',
   HYSA_EMPTY_STATE_CTA_CLICKED: 'funnel_hysa_empty_state_cta_clicked',
+  // Tombstone, like step_id=currency below. The reveal once offered "or get
+  // it by email" instead of an account; the form and its route are gone and
+  // nothing emits this any more. The name stays so historical queries still
+  // resolve, and so the next reader does not mistake a retired door for an
+  // untracked one — an audit already made that mistake once.
   EMAIL_CAPTURE_SUBMITTED: 'funnel_email_capture_submitted',
   NEXT_MOVE_VIEWED: 'funnel_next_move_viewed',
   NEXT_MOVE_OPENED: 'funnel_next_move_opened',
@@ -168,10 +173,6 @@ export interface HysaEmptyStateCtaClickedProperties extends BaseFunnelProperties
   cta: 'learn_more' | 'connect_account';
   destination: 'apy_calculator' | 'plaid_connect';
   placement: 'assets_empty_state';
-}
-
-export interface EmailCaptureSubmittedProperties extends BaseFunnelProperties {
-  landing_source?: string;
 }
 
 export interface NextMoveViewedProperties extends BaseFunnelProperties {

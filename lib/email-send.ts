@@ -29,6 +29,8 @@ export const CAMPAIGNS = {
   DAY1: "lifecycle_day1",
   DAY3: "lifecycle_day3",
   DAY7: "lifecycle_day7",
+  // Retired with the waitlist form; kept so already-sent emails tagged
+  // waitlist_result still resolve to a known campaign.
   WAITLIST_RESULT: "waitlist_result",
   TRIAL_ENDING: "billing_trial_ending",
   FEEDBACK: "internal_feedback",

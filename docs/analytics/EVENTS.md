@@ -246,14 +246,17 @@ client-side experience without double-counting conversions.
 
 ### `funnel_email_capture_submitted`
 
-> **Not currently wired.** `trackEmailCaptureSubmitted` exists in
-> `lib/analytics.ts` but nothing calls it: the reveal screen no longer offers
-> an email capture, and `/api/waitlist` has no caller in the app. The
-> `waitlist` table holds 6 rows, the newest from 25 July 2026. Treat the
-> absence of this event as "the door was removed", not "the door is
+> **Retired — tombstone only.** The reveal once offered "or get it by email"
+> instead of an account. The form, the `trackEmailCaptureSubmitted` helper and
+> the `/api/waitlist` route are all gone; the name survives in `FunnelEvents`
+> so historical queries still resolve. The `waitlist` table keeps its 6 rows
+> (24 March – 25 July 2026) and the admin overview still counts them.
+>
+> Treat the absence of this event as "the door was removed", not "the door is
 > untracked" — an earlier audit read it the other way round and concluded the
 > reveal-to-signup rate was better than measured. It is not; there is no
-> second path.
+> second path. `funnel_reveal_cta_clicked` is the only thing between a
+> freedom date and a signup.
 
 
 - **Where**: `app/HomeClient.tsx`, `RevealScreen`'s `handleEmailCapture`, after

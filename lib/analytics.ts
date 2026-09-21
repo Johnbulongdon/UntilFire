@@ -28,7 +28,6 @@ import {
   type FireTypeSharedProperties,
   type FireTypeCtaClickedProperties,
   type HysaEmptyStateCtaClickedProperties,
-  type EmailCaptureSubmittedProperties,
   type NextMoveViewedProperties,
   type NextMoveOpenedProperties,
   type ScenarioTestedProperties,
@@ -252,13 +251,6 @@ export function trackRevealCtaClicked(input: {
   // sendInstantly: the click navigates to /login immediately after, and a
   // queued event can lose the race with the unload.
   capture(FunnelEvents.REVEAL_CTA_CLICKED, props, { sendInstantly: true });
-}
-
-export function trackEmailCaptureSubmitted(input: { landingSource?: string }) {
-  const props: EmailCaptureSubmittedProperties = withVersion({
-    ...(input.landingSource ? { landing_source: input.landingSource } : {}),
-  });
-  capture(FunnelEvents.EMAIL_CAPTURE_SUBMITTED, props);
 }
 
 export function trackNextMoveViewed(input: { moveCount: number; topPriority: number }) {
