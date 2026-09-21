@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,163 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'roth-conversion-ladder-early-retirement',
+    title: 'The Roth Conversion Ladder: Tax-Free Access Before 59½',
+    description: 'How to access your 401(k) and IRA money in early retirement without penalties — the Roth conversion ladder strategy explained step by step.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('The problem: your money is locked up'),
+      p('The standard retirement account structure has a design flaw for early retirees. 401(k)s and traditional IRAs offer excellent tax advantages during accumulation, but withdrawals before age 59½ carry a 10% early withdrawal penalty plus income tax. If you retire at 40 with $800,000 in a traditional 401(k), you technically cannot access most of it without penalty for nearly 20 years.'),
+      p('The Roth conversion ladder is the most widely used strategy to solve this problem. It lets you convert traditional retirement funds to Roth funds, pay ordinary income tax on the conversion, then withdraw those converted funds penalty-free after a five-year holding period.'),
+      h2('How the Roth conversion ladder works'),
+      p('The mechanics are straightforward, but the timing is critical:'),
+      ol([
+        'Each year in early retirement, convert a chunk of your traditional IRA or 401(k) to a Roth IRA. You pay ordinary income tax on the amount converted — but no 10% penalty.',
+        'After exactly five tax years, the converted principal (not earnings) can be withdrawn penalty-free and tax-free.',
+        'Repeat annually so a new tranche of Roth principal becomes available each year, creating a rolling five-year ladder.',
+      ]),
+      p('Example: You retire at 42. In year one, you convert $40,000 from your traditional IRA to a Roth IRA. You pay income tax on $40,000. In year six (when you are 47), you can withdraw that $40,000 penalty-free. Meanwhile you repeat the conversion every year, so by year six you have a fully flowing pipeline of accessible funds each year.'),
+      h2('The five-year rule in detail'),
+      p('The five-year rule for Roth conversions is different from the five-year rule for Roth IRA contributions — a common source of confusion:'),
+      ul([
+        'Roth contribution rule: your original Roth IRA must be open for five years before earnings can be withdrawn tax-free.',
+        'Roth conversion rule: each converted amount has its own five-year clock, starting January 1 of the year the conversion occurred.',
+        'These are tracked separately. The IRS uses FIFO (first in, first out) ordering for Roth withdrawals: contributions first, then conversions in order, then earnings.',
+      ]),
+      h2('What you live on during the five-year gap'),
+      p('If you retire before the first conversion becomes accessible, you need a bridge strategy for five years of living expenses. Common approaches:'),
+      ul([
+        'Taxable brokerage account: capital gains are taxed at 0–20%; long-term gains below ~$94,000 (married filing jointly in 2024) are taxed at 0%.',
+        'Roth IRA contributions (not conversions): original contributions can always be withdrawn at any time, penalty-free, tax-free.',
+        'Cash buffer: hold one to two years of expenses in high-yield savings as a runway.',
+        'Part-time income: even modest income in early retirement can cover expenses while the ladder builds.',
+      ]),
+      h2('Tax efficiency during the conversion'),
+      p('The conversion ladder works best when you are in a low tax bracket — which is often true in early retirement if you have no salary income. For a married couple with no earned income and $40,000–$60,000 in annual expenses, much of the conversion may fall in the 12% bracket.'),
+      p('The goal is to fill the bracket without pushing into higher brackets. In 2024, the 12% bracket ends at $94,300 for married filing jointly. If your living expenses are $50,000 and you convert $44,300 of traditional IRA funds, you pay roughly $5,300 in federal tax on the conversion and stay entirely within the 12% bracket.'),
+      h2('72(t) distributions as an alternative'),
+      p('Section 72(t) of the tax code allows "substantially equal periodic payments" (SEPPs) from traditional accounts before age 59½ without the 10% penalty. The required payment amount is calculated using IRS-approved methods based on your account balance and life expectancy.'),
+      p('SEPPs are inflexible: once started, you must continue for at least five years or until age 59½, whichever is later. Missing a payment or taking a different amount restores all past penalties retroactively. For most early retirees, the Roth conversion ladder is more flexible and preferable.'),
+      h2('Roth conversion ladder checklist'),
+      ul([
+        'Roll your 401(k) to a traditional IRA when you leave your employer — Roth conversions happen from IRA, not 401(k)',
+        'Open a Roth IRA if you do not have one (opening it starts the five-year contribution clock)',
+        'Plan your annual conversion amounts to stay in your target tax bracket',
+        'Keep records of each conversion year — you will need these to track the five-year clocks',
+        'Build a five-year bridge from taxable accounts, Roth contributions, or other income',
+        'Consult a tax professional in your first year — the structure is sound but the execution has details worth reviewing',
+      ]),
+    ],
+  },
+  {
+    slug: 'hsa-triple-tax-advantage-for-fire',
+    title: 'HSA: The Triple Tax Advantage Account for FIRE',
+    description: 'Health Savings Accounts offer the best tax treatment in the US tax code. Here is how to use an HSA as a stealth retirement account on the path to FIRE.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '5 min read',
+    body: [
+      h2('What makes an HSA different'),
+      p('A Health Savings Account (HSA) is the only account in the US tax code with a triple tax advantage:'),
+      ul([
+        'Contributions are pre-tax (or tax-deductible if made directly) — reduces your taxable income',
+        'Growth is tax-free — investments inside an HSA compound without annual tax drag',
+        'Withdrawals for qualified medical expenses are tax-free — at any age',
+      ]),
+      p('A traditional 401(k) gets one benefit: pre-tax contributions. A Roth IRA gets two: tax-free growth and tax-free withdrawals. An HSA gets all three. For FIRE planners, this makes it arguably the single highest-priority account to max out after capturing any employer 401(k) match.'),
+      h2('Who qualifies for an HSA'),
+      p('To contribute to an HSA, you must be enrolled in a High-Deductible Health Plan (HDHP). In 2024, an HDHP is defined as a plan with a deductible of at least $1,600 (individual) or $3,200 (family) and out-of-pocket maximums of no more than $8,050 (individual) or $16,100 (family).'),
+      p('You cannot contribute to an HSA if you are enrolled in Medicare, are claimed as a dependent on someone else\'s return, or have any other non-HDHP health coverage. Many employers offer HDHP options specifically to enable HSA eligibility.'),
+      h2('The 2024 contribution limits'),
+      ul([
+        'Individual coverage: $4,150 per year',
+        'Family coverage: $8,300 per year',
+        'Age 55+ catch-up: additional $1,000 per year',
+      ]),
+      p('These limits are per person, not per household. If both spouses are eligible and enrolled in family HDHPs separately, each can contribute up to the family limit — though the combined total cannot exceed one family limit without HSA guidance from a tax professional.'),
+      h2('The stealth retirement account strategy'),
+      p('The key FIRE insight about HSAs: you do not have to spend the money on medical expenses immediately. You can invest the HSA balance in index funds, let it grow for decades, and reimburse yourself for past medical expenses at any future point. There is no time limit on reimbursements.'),
+      p('This creates a powerful strategy: pay all current medical expenses out-of-pocket, keep receipts, and let the HSA grow tax-free. In retirement, withdraw the cumulative receipt total tax-free to cover living expenses — while the rest continues to compound. After age 65, HSA funds can be withdrawn for any purpose (not just medical), paying only ordinary income tax like a traditional IRA.'),
+      h3('The receipt-tracking playbook'),
+      ul([
+        'Every time you pay a medical expense out-of-pocket, save the receipt (digital or paper)',
+        'Invest your HSA in low-cost index funds — do not leave it in the default cash option',
+        'Contribute the maximum every year you are eligible',
+        'In early retirement, withdraw accumulated receipt amounts as tax-free income',
+        'After age 65, withdraw anything remaining as ordinary income (same as a traditional IRA, without the medical restriction)',
+      ]),
+      h2('HSA vs FSA: the key difference'),
+      p('A Flexible Spending Account (FSA) is superficially similar but fundamentally different. FSA funds must be spent each year (with a small carryover option). HSA funds roll over indefinitely — the balance is yours forever, regardless of whether you stay with the same employer or health plan. For FIRE purposes, only the HSA functions as a long-term investment vehicle.'),
+      h2('Where to invest your HSA'),
+      p('Employer-sponsored HSAs often have limited, high-cost investment options. Once your balance exceeds the employer\'s minimum threshold (usually $1,000–$2,000), transfer the excess to a self-directed HSA with better fund options. Fidelity, HSA Bank, and Lively are commonly recommended for their access to low-cost Vanguard and Fidelity index funds.'),
+      h2('FIRE account priority order'),
+      ul([
+        '1. 401(k) up to employer match (free money)',
+        '2. HSA to maximum (triple tax advantage)',
+        '3. Roth IRA to maximum (tax-free growth in retirement)',
+        '4. 401(k) beyond match (tax-deferred growth)',
+        '5. Taxable brokerage account (flexibility, capital gains rates)',
+      ]),
+      p('The HSA sits at step two because the triple advantage is difficult to match anywhere else in the tax code. Even FIRE plans that prioritise low expenses and high savings rates benefit significantly from maximising HSA contributions over a working career.'),
+    ],
+  },
+  {
+    slug: 'side-hustles-and-fire-when-extra-income-helps',
+    title: 'Side Hustles and FIRE: When Extra Income Actually Helps',
+    description: 'A practical framework for evaluating whether a side hustle accelerates your FIRE timeline or just adds complexity — and which types of income make the most difference.',
+    category: 'Saving',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The honest math of side income'),
+      p('Side hustle advice often focuses on the income number — "$2,000 per month from freelancing" — without addressing the real question for FIRE planning: how does this income compare to the time invested, and what does it do to your FIRE timeline?'),
+      p('The FIRE framework gives a crisp answer. At a 7% real return, every $1 invested today is worth roughly $7.60 in 20 years. Every $1,000 per month in additional savings cuts roughly 2–4 years off a typical 20-year FIRE timeline. Side income matters — but only if it is actually saved and invested, not absorbed into lifestyle spending.'),
+      h2('Type 1: Time-for-money side hustles'),
+      p('Freelancing, consulting, rideshare driving, tutoring, delivery — these exchange time for money at a known hourly rate. They are low-friction to start and can generate meaningful income quickly. The FIRE-relevant question is net hourly rate after expenses, tax, and opportunity cost.'),
+      ul([
+        'Rideshare driving: gross $20–$30/hr but vehicle depreciation, insurance, and taxes bring effective net to $8–$15/hr',
+        'Freelance writing or design: $25–$100/hr depending on skill level and client quality',
+        'Consulting in your existing field: often $75–$300/hr — highest hourly rate but requires reputation building',
+        'Tutoring or teaching: $30–$80/hr with low overhead',
+      ]),
+      p('The risk with time-for-money hustles: they can become a second job that adds income but also adds stress and reduces the time available to build skills, health, relationships, and the energy needed to reach FIRE. Be honest about whether the net-per-hour justifies the trade.'),
+      h2('Type 2: Asset-building side income'),
+      p('Some side income builds an asset that continues generating returns without proportional ongoing time: a blog or YouTube channel with SEO traffic, a digital product or course, a small rental property, a software tool. These require significant upfront investment in time or capital but can generate recurring income with lower ongoing maintenance.'),
+      p('These are more valuable than time-for-money income because they compress the FIRE timeline on two fronts: they can generate income in retirement and increase savings during accumulation. A content website generating $2,000/month passively is worth $600,000 at a 4% withdrawal rate — equivalent to that much more in your FIRE portfolio.'),
+      h2('The opportunity cost question'),
+      p('The most overlooked side hustle calculation is what you give up. If freelancing at $50/hr takes 15 hours per week but prevents you from doing the focused work to earn a promotion that would add $20,000/year to your salary, the math runs the other way. If a side hustle requires capital that would otherwise compound in index funds, that capital cost must be included.'),
+      p('Before starting a time-intensive side hustle, ask: could the same time spent networking, improving skills, or resting produce a better primary career outcome? For most early-career professionals, the marginal value of a salary increase beats the marginal value of a side hustle at the same time investment.'),
+      h2('Tax treatment of side income'),
+      p('Self-employment income is taxed differently from W-2 income. You owe:'),
+      ul([
+        'Federal income tax at your marginal rate (same as W-2)',
+        'Self-employment tax: 15.3% on net self-employment income (covers Social Security and Medicare)',
+        'State income tax in most states',
+      ]),
+      p('At a 22% federal bracket plus 15.3% self-employment tax plus state tax, effective marginal rates on side income can reach 40–50%. A $2,000/month side hustle may net only $1,000–$1,200 after tax. This is still meaningful, but budget the tax correctly.'),
+      p('The silver lining: self-employment income unlocks a Solo 401(k) or SEP-IRA. A Solo 401(k) allows contributions of up to 100% of self-employment income (up to the $69,000 limit in 2024), dramatically reducing the tax drag on side hustle income. If you already max your W-2 401(k), a Solo 401(k) can still absorb a significant additional contribution from self-employment income.'),
+      h2('The verdict: when side income genuinely helps'),
+      p('Side income accelerates FIRE when it:'),
+      ul([
+        'Earns above your primary marginal rate per hour after all costs',
+        'Is fully invested rather than absorbed by lifestyle inflation',
+        'Does not materially compromise your primary career trajectory, health, or relationships',
+        'Builds toward an asset or skill rather than pure time-for-money',
+      ]),
+      p('Side income hurts FIRE (or at minimum, is neutral) when it:'),
+      ul([
+        'Fills the budget hole caused by lifestyle creep rather than adding to savings',
+        'Crowds out rest and recovery that would make the primary career more productive',
+        'Requires capital that would compound better in index funds',
+        'Creates a psychological excuse not to address spending or career positioning',
+      ]),
+      h2('The simplest path'),
+      p('For most FIRE-seekers, the highest-return use of time is improving primary income through career moves, negotiation, or skill development. If you have already optimised your primary income, the second priority is reducing spending. Side income becomes a third lever — powerful when it is managed correctly, but not a substitute for the fundamentals.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +912,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'roth-conversion-ladder-early-retirement': {
+    primaryStage: 'living-in-fire',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/dashboard', label: 'Dashboard' },
+    ],
+    primaryCta: {
+      href: '/calculators/4-percent-rule',
+      label: 'Plan Your Withdrawal Strategy',
+      source: 'learn-roth-ladder',
+    },
+  },
+  'hsa-triple-tax-advantage-for-fire': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['starting-out'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-hsa', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate',
+      label: 'See How HSA Boosts Your Rate',
+      source: 'learn-hsa',
+    },
+  },
+  'side-hustles-and-fire-when-extra-income-helps': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-side-hustle', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate',
+      label: 'Calculate Your Savings Rate',
+      source: 'learn-side-hustle',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +966,7 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'side-hustles-and-fire-when-extra-income-helps',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -789,6 +991,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'hsa-triple-tax-advantage-for-fire',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
@@ -828,6 +1031,7 @@ export const learnStages: LearnStage[] = [
       'sequence-of-returns-risk',
       'barista-fire',
       'roth-ira-vs-401k-for-fire',
+      'roth-conversion-ladder-early-retirement',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
