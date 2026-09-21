@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,182 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'backdoor-roth-ira-high-earners',
+    title: 'The Backdoor Roth IRA: How High Earners Access Tax-Free Growth',
+    description: 'Roth IRA income limits block direct contributions for high earners — but the backdoor Roth is a legal workaround. Here is exactly how to execute it and what to watch out for.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why high earners need the backdoor'),
+      p('Roth IRA contributions are limited by income. In 2024, the ability to contribute phases out between $146,000–$161,000 for single filers and $230,000–$240,000 for married filing jointly. Above these thresholds, you cannot contribute directly to a Roth IRA.'),
+      p('For FIRE seekers earning above these limits — which increasingly includes many tech workers, dual-income households, and career professionals — the Roth\'s tax-free growth and tax-free retirement withdrawals would be valuable but appear inaccessible. The backdoor Roth IRA is the legal workaround that restores access.'),
+      h2('The two-step process'),
+      p('The backdoor Roth consists of two steps:'),
+      ol([
+        'Make a non-deductible traditional IRA contribution. There are no income limits on non-deductible traditional IRA contributions — anyone can contribute up to $7,000 ($8,000 if 50+) in 2024, regardless of income. The contribution goes in after-tax.',
+        'Convert the traditional IRA to a Roth IRA. Roth conversions have no income limit. You simply request the conversion from your IRA custodian. Since the contribution was after-tax (no deduction was taken), only investment gains — if any — are taxable at conversion. If you convert promptly, gains are minimal.',
+      ]),
+      p('The result: $7,000 that started as a non-deductible traditional IRA contribution is now in a Roth IRA, growing tax-free. Executed correctly, only a few dollars of gain (if any) are taxable.'),
+      h2('The pro-rata rule: the critical pitfall'),
+      p('The backdoor Roth works cleanly only if you have no pre-tax money in any traditional IRA. The IRS applies the "pro-rata rule" when calculating the taxable portion of a Roth conversion: it looks at all your traditional IRA assets combined, not just the account you are converting.'),
+      p('Example: You have $90,000 in a pre-tax rollover IRA and you make a $7,000 non-deductible contribution and immediately convert it. The IRS sees $97,000 total IRA assets, of which $7,000 ($7,000/$97,000 = 7.2%) is after-tax. Your conversion is 7.2% tax-free and 92.8% taxable. You owe tax on $6,490 of the $7,000 conversion. The backdoor did not work.'),
+      p('The fix: roll pre-tax IRA money into a current employer\'s 401(k) before executing the backdoor. Most 401(k) plans accept rollovers. Once the pre-tax IRA balance is $0, the non-deductible contribution and immediate conversion are clean.'),
+      h2('Step-by-step execution'),
+      ol([
+        'Confirm you have no pre-tax money in any traditional, SEP, or SIMPLE IRA. If you do, roll it into a 401(k) first.',
+        'Open a traditional IRA at Fidelity, Schwab, or Vanguard if you do not have one. Leave it in cash or a money market fund — do not invest it.',
+        'Make a $7,000 non-deductible contribution to the traditional IRA for the current tax year.',
+        'Wait 1–3 business days for the funds to settle.',
+        'Request the conversion from traditional IRA to Roth IRA through the same custodian\'s website. This is usually a straightforward online process.',
+        'Complete Form 8606 with your tax return to report the non-deductible contribution and conversion. This form is what prevents you from being taxed on basis you already paid tax on.',
+      ]),
+      h2('The mega backdoor Roth: larger amounts'),
+      p('Some 401(k) plans allow a related strategy called the mega backdoor Roth, which can shelter significantly more after-tax money. The mechanics:'),
+      ul([
+        'The 2024 total 401(k) contribution limit is $69,000 (including employee contributions and employer match)',
+        'If your plan allows after-tax contributions beyond the $23,000 employee limit, you can contribute up to the full $69,000 total',
+        'If your plan also allows in-service withdrawals or in-plan Roth conversions, you can convert these after-tax contributions to Roth',
+        'The result: up to ~$46,000 of additional after-tax savings converted to Roth per year (beyond the standard $23,000 pre-tax)',
+      ]),
+      p('Not all 401(k) plans allow this — check with your plan documents or HR. Companies with excellent plan design (Alphabet, Microsoft, Amazon, Salesforce) often support the mega backdoor.'),
+      h2('Annual execution and record keeping'),
+      p('The backdoor Roth is an annual task, not a one-time event. Execute it each year:'),
+      ul([
+        'Contribute early in the year to maximize growth time in the Roth',
+        'File Form 8606 every year you make a non-deductible contribution — failure to file means the IRS will tax you again at withdrawal',
+        'Keep records of all Form 8606 filings indefinitely — you need these to prove your Roth basis',
+        'If your income ever falls below the direct contribution limit, you can contribute directly that year',
+      ]),
+      h2('Why this matters for FIRE'),
+      p('For high-income FIRE seekers, the backdoor Roth provides access to tax-free retirement income that is otherwise unavailable. Every $7,000 per person ($14,000 for a couple) contributed annually via backdoor Roth grows tax-free and can be withdrawn tax-free in retirement. Over a 15–20 year accumulation period, these contributions compound into a meaningful tax-free income source that reduces taxable withdrawal requirements — directly improving the efficiency of the FIRE plan.'),
+    ],
+  },
+  {
+    slug: 'risk-tolerance-investing-for-fire',
+    title: 'How to Think About Risk Tolerance When Investing for FIRE',
+    description: 'Risk tolerance is not a personality type — it is a financial reality. Here is how to assess your actual risk capacity, why volatility and risk are different, and how to build a portfolio you can hold through crashes.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Risk tolerance vs risk capacity'),
+      p('Financial advisers often conflate two different concepts: risk tolerance (how much volatility you can emotionally handle) and risk capacity (how much risk your financial situation can actually absorb). For FIRE planning, both matter — but risk capacity is the more important constraint.'),
+      p('Risk capacity is determined by: time horizon until you need the money, ability to replace lost funds through income, existing financial buffer, and what happens if the portfolio drops 40% and does not recover for a decade. Risk tolerance is how you feel about that scenario. A person with high risk tolerance but low risk capacity is making a dangerous mismatch.'),
+      h2('Volatility is not the same as risk'),
+      p('In investing, "risk" is commonly defined as volatility — how much the portfolio value fluctuates. But for long-term investors, this definition is misleading. A stock portfolio that drops 30% in year one and recovers over three years is volatile, but not risky for someone with a 30-year investment horizon. The real risk is permanent capital loss: buying overvalued individual stocks, using leverage that gets called, or being forced to sell at the bottom.'),
+      p('For FIRE investors with long time horizons and stable income during accumulation, year-to-year portfolio volatility is not the primary risk. Underperforming a simple index fund over 20 years by chasing lower-volatility assets is a larger risk to the FIRE timeline.'),
+      h2('How time horizon determines appropriate risk'),
+      p('The practical framework most FIRE planners use:'),
+      ul([
+        'Accumulation phase (10+ years to FIRE): maximize equity exposure; short-term volatility is irrelevant',
+        '5–10 years to FIRE: begin gradually reducing equity exposure; start building the bond tent',
+        '0–5 years to FIRE: peak bond/defensive allocation (bond tent peak)',
+        'Early retirement (first 5–10 years): slightly elevated bond allocation to manage sequence risk',
+        'Late retirement (10+ years in): gradually return to higher equity allocation for longevity',
+      ]),
+      p('The appropriate equity allocation is not a fixed number — it changes over your FIRE journey. "100 minus your age" is a crude but useful starting heuristic; many FIRE practitioners use "120 minus age" given longer time horizons.'),
+      h2('The behavioral risk: panic selling'),
+      p('The most destructive form of investment risk for individual investors is not volatility — it is behavioral. Selling equities during a crash and moving to cash locks in permanent losses and causes you to miss the recovery. DALBAR\'s annual study consistently shows that the average equity investor earns 2–3% less than the fund they invest in, entirely due to buying high and selling low in response to emotions.'),
+      p('The implication for FIRE investing: the optimal portfolio is not the one with the best theoretical expected return — it is the one with the best expected return that you will actually hold through a 40% drawdown without selling. A 100% equity portfolio that earns 10% average annual returns but causes you to panic-sell in 2008 or 2020 underperforms an 80/20 portfolio you hold through those same periods.'),
+      h2('Practical risk tolerance testing'),
+      p('Rather than answering abstract questionnaires about hypothetical market drops, test your actual behavior:'),
+      ul([
+        'Think about a specific scenario: your $500,000 portfolio drops to $300,000 in 12 months. What do you actually do? If "sell" is a realistic answer, your allocation is too aggressive.',
+        'Look at your behavior during past market events: 2020 COVID crash (33% in 33 days), 2022 bear market (20%+ decline). Did you stay invested? Did you add more? Did you reduce? Your past behavior predicts future behavior better than questionnaires.',
+        'Identify your recovery threshold: how many years of portfolio underperformance or loss can you sustain without changing strategy? If the answer is less than three years, higher bond allocations are justified.',
+      ]),
+      h2('Three portfolio types for FIRE investors'),
+      h3('Aggressive (90/10 or 100% equity)'),
+      ul([
+        'Appropriate for: accumulation phase, 15+ years to FIRE, high income stability, proven ability to hold through crashes',
+        'Expected return: highest long-run',
+        'Volatility: very high; drawdowns of 40–55% possible',
+        'Example: 90% VTI (total US market) + 10% VXUS (international)',
+      ]),
+      h3('Moderate (70/30 or 80/20)'),
+      ul([
+        'Appropriate for: 5–15 years to FIRE, moderate income stability, or demonstrated lower tolerance for volatility',
+        'Expected return: moderately high',
+        'Volatility: moderate; drawdowns of 25–40% typical in bad years',
+        'Example: 70% VTI + 10% VXUS + 20% BND (bond index)',
+      ]),
+      h3('Conservative (50/50 or 60/40)'),
+      ul([
+        'Appropriate for: near FIRE (bond tent peak), living in FIRE, or demonstrated low tolerance for volatility',
+        'Expected return: lower; may not sustain aggressive early retirement withdrawals',
+        'Volatility: lower; drawdowns of 15–25% typical',
+        'Example: 60% VTI + 40% BND',
+      ]),
+      h2('The FIRE-specific risk asymmetry'),
+      p('During accumulation, being too conservative is the primary risk: a 60/40 portfolio instead of 80/20 during a 20-year accumulation phase can cost $200,000–$400,000 in foregone returns, directly extending the FIRE timeline.'),
+      p('During early retirement, being too aggressive is the primary risk: a 90/10 portfolio in a severe early-retirement bear market can deplete the portfolio before recovery, particularly under a 4%+ withdrawal rate.'),
+      p('The asset allocation decision is not static — it should shift from aggressive to moderate/conservative as you approach and enter FIRE, then gradually return to moderately aggressive as the sequence-risk window passes. Build this glidepath into your plan rather than discovering it reactively during a crash.'),
+    ],
+  },
+  {
+    slug: 'fire-at-50-late-starters-guide',
+    title: 'FIRE at 50: A Realistic Guide for Late Starters',
+    description: 'Starting your FIRE journey at 40 or 50 feels overwhelming — but the math is more forgiving than you think. Here is what changes, what still works, and how to build a realistic plan from where you are.',
+    category: 'FIRE Basics',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The late starter mindset shift'),
+      p('Most FIRE content is written for people who discovered financial independence in their 20s and have 20–30 years to build wealth. If you are 40 or 50 and reading about FIRE for the first time, the timelines and assumptions feel discouraging — "you should have started at 25."'),
+      p('The truth is more nuanced. Starting at 45 with 20 years of work ahead and likely peak earning years still ahead is genuinely different from starting at 25 — but it is not hopeless. Financial independence at 65 on your own terms is meaningfully better than working until 70 without a plan. Semi-FIRE at 55 is achievable. And for many late starters, the combination of higher income, paid-off debt, and children leaving home creates a savings rate spike that makes the last decade of accumulation remarkably powerful.'),
+      h2('What actually changes for late starters'),
+      h3('The time horizon compresses'),
+      p('With 15–20 years instead of 30–35, compound growth has less time to work. A 30-year-old can achieve a 5x multiple on their savings; a 50-year-old with 15 years gets roughly 2.8x at 7% real return. This is significant — it means late starters need either a higher savings rate, a lower FIRE number (smaller spending in retirement), or both.'),
+      h3('Peak income is often now'),
+      p('Many people hit their peak earning years in their 40s and 50s. The mortgage may be paid or nearly paid. Children may be grown. These factors reduce expenses dramatically at exactly the time when income is highest — creating a natural savings rate spike that FIRE math heavily rewards.'),
+      h3('The FIRE number may be smaller'),
+      p('Social Security becomes a more significant factor for a late starter retiring at 60–65. At a 20-year working history, benefits are reduced — but at a 30–35 year career, Social Security may cover $18,000–$30,000 per year in retirement. For someone with $70,000 in annual spending, $24,000 in Social Security reduces the required portfolio from $1,750,000 to $1,150,000. The late starter\'s FIRE number is often much smaller than the headline math suggests.'),
+      h2('Catch-up contribution advantages'),
+      p('The IRS provides larger contribution limits for those 50 and older in key accounts:'),
+      ul([
+        '401(k): $23,000 standard + $7,500 catch-up = $30,500 total (2024)',
+        'IRA: $7,000 standard + $1,000 catch-up = $8,000 total',
+        'HSA: $4,150 individual / $8,300 family + $1,000 catch-up',
+      ]),
+      p('A couple both over 50 can contribute $38,500 to 401(k)s and $16,000 to IRAs — $54,500 in tax-advantaged space. At a $120,000 household income after children leave home, this represents a 45%+ savings rate in just these accounts. At 7% return over 15 years, $54,500/year grows to approximately $1,500,000 — a significant FIRE number.'),
+      h2('Realistic scenarios for late starters'),
+      h3('Scenario A: Starting at 45, target 60'),
+      ul([
+        'Income: $120,000 household, take-home $90,000',
+        'Spending: $55,000 (mortgage paid, kids gone)',
+        'Annual savings: $35,000 (39% savings rate)',
+        'Starting portfolio: $100,000',
+        '15-year projection at 7% return: $1,160,000',
+        'Social Security at 67 (2 years later): ~$24,000/year',
+        'Required portfolio at 4% for $31,000 gap: $775,000 ✓',
+        'Outcome: comfortably FIRE at 60 with a buffer',
+      ]),
+      h3('Scenario B: Starting at 50, target 65'),
+      ul([
+        'Income: $100,000 household, take-home $75,000',
+        'Spending: $45,000 (mortgage paid)',
+        'Annual savings: $30,000 (40% savings rate)',
+        'Starting portfolio: $50,000',
+        '15-year projection at 7% return: $800,000',
+        'Social Security at 67: ~$20,000/year',
+        'Required portfolio at 4% for $25,000 gap: $625,000 ✓',
+        'Outcome: FIRE at 65 with solid margin',
+      ]),
+      h2('Strategies that matter most for late starters'),
+      ul([
+        'Maximize catch-up contributions immediately: the larger contribution limits exist for this reason — use all of them',
+        'Pay off the mortgage: a paid-off home dramatically reduces the minimum FIRE spending, which reduces the FIRE number',
+        'Increase income aggressively: at peak career, negotiating a 20% salary increase or moving roles adds more to FIRE than frugality at the margins',
+        'Consider working past 60 but in reduced capacity: semi-FIRE, consulting, or part-time work in a more enjoyable role covers expenses while the portfolio finishes compounding',
+        'Run the Social Security modeling: late starters with full careers often have significant Social Security benefits that sharply reduce required portfolio size',
+      ]),
+      h2('Reframing "late"'),
+      p('FIRE is not a race to the youngest retirement age. It is about reaching a point where work becomes optional rather than mandatory. Financial independence at 60 — with 25+ years of truly optional life ahead — is a profoundly different situation from reaching 70 with depleted savings and diminished health. The late starter who achieves FI at 62 on their own terms has accomplished something meaningful, regardless of what someone else achieved at 38.'),
+      p('The worst outcome is deciding the math does not work and doing nothing. Even a 20% savings rate at 50 creates meaningful financial optionality by 65. Start now with whatever you can save and let the next decade prove what is possible.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +931,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'backdoor-roth-ira-high-earners': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire'],
+    relatedCalculators: [
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-backdoor-roth', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/savings-rate',
+      label: 'See How Backdoor Roth Helps',
+      source: 'learn-backdoor-roth',
+    },
+  },
+  'risk-tolerance-investing-for-fire': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/?source=learn-risk-tolerance', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-risk-tolerance',
+      label: 'Run Your FIRE Projection',
+      source: 'learn-risk-tolerance',
+    },
+  },
+  'fire-at-50-late-starters-guide': {
+    primaryStage: 'starting-out',
+    secondaryStages: ['building-momentum', 'approaching-fire'],
+    relatedCalculators: [
+      { href: '/?source=learn-fire-at-50', label: 'FIRE Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-fire-at-50',
+      label: 'Calculate Your Late-Start Timeline',
+      source: 'learn-fire-at-50',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -765,6 +985,8 @@ export const learnStages: LearnStage[] = [
       'compound-interest-and-fire',
       'diversification-why-eggs-in-many-baskets',
       'what-is-the-4-percent-rule',
+      'risk-tolerance-investing-for-fire',
+      'fire-at-50-late-starters-guide',
     ],
     calculatorLinks: [
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
@@ -789,6 +1011,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'backdoor-roth-ira-high-earners',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
