@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,129 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'roth-conversion-ladder-early-retirement',
+    title: 'The Roth Conversion Ladder: Accessing Your 401k Before 59½',
+    description: 'How to move money from a traditional 401k or IRA into a Roth IRA over five years to create a penalty-free income stream well before traditional retirement age.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('The early retirement tax problem'),
+      p('Most FIRE savers accumulate the bulk of their wealth inside tax-advantaged accounts: 401(k)s, traditional IRAs, and 403(b)s. The problem is that withdrawals from these accounts before age 59½ normally trigger a 10% early withdrawal penalty on top of ordinary income tax. For someone who retires at 40, that penalty applies for nearly 20 years.'),
+      p('The Roth conversion ladder is the most widely used strategy to sidestep this problem legally. It exploits a quirk in the tax code: Roth IRA contributions (not earnings) can be withdrawn any time, tax-free and penalty-free. If you systematically convert traditional 401k or IRA money into a Roth IRA — and wait five years before touching each converted amount — you can access your retirement savings early without penalty.'),
+      h2('How the Roth conversion ladder works'),
+      p('The mechanics are straightforward. Each year in early retirement, you convert a portion of your traditional IRA or 401k balance into a Roth IRA. You pay ordinary income tax on the converted amount in the year of conversion — but no penalty. Five years later, that converted amount becomes fully accessible as a Roth contribution withdrawal, penalty-free and tax-free.'),
+      h3('The five-year rule'),
+      p('Each conversion starts its own five-year clock. A conversion done in 2026 becomes accessible in 2031. One done in 2027 becomes accessible in 2032. This means the ladder requires a five-year runway: you need five years of living expenses covered by other sources (taxable brokerage, cash, or Roth contributions) before the first conversion rung becomes available.'),
+      h3('A concrete example'),
+      ol([
+        'Retire at 42 with $1.2M in traditional 401k/IRA accounts and $150,000 in a taxable brokerage account.',
+        'Year 1 (age 42): convert $50,000 from traditional IRA to Roth IRA. Pay income tax on $50,000. Live off the taxable brokerage account.',
+        'Year 2 (age 43): convert another $50,000. Live off taxable brokerage.',
+        'Years 3–5: repeat conversions, drawing down taxable account.',
+        'Year 6 (age 47): the Year 1 conversion is now five years old. Withdraw it penalty-free and tax-free from the Roth. Start living off conversion rungs.',
+        'Continue indefinitely — each year, a new rung from five years prior becomes available.',
+      ]),
+      h2('Sizing the annual conversion'),
+      p('The amount you convert each year should be sized carefully. It becomes taxable income, which affects ACA premium subsidies, capital gains tax rates, and other income-tested benefits. The sweet spot is typically filling the 12% or 22% federal tax bracket while staying under the ACA subsidy cliff.'),
+      p('A single person in 2024 reaches the 12% bracket at $11,600 and exits at $47,150 in taxable income. Converting up to the 12% bracket top — roughly $35,000–$40,000 per year depending on deductions — is often efficient while keeping ACA subsidies intact.'),
+      h2('What you need before the ladder'),
+      ul([
+        'Taxable brokerage account or cash covering at least five years of spending — this bridges the gap before conversions become accessible.',
+        'Existing Roth IRA contributions (not earnings) — original contributions can be withdrawn any time without the five-year rule. This can supplement the bridge period.',
+        'A traditional IRA (roll your 401k into one after leaving your employer to enable conversions).',
+        'Income tracking — conversions count as ordinary income and must be managed against other income sources.',
+      ]),
+      h2('Roth conversion ladder vs. 72(t) SEPP distributions'),
+      p('An alternative for accessing pre-59½ retirement funds is the 72(t) Substantially Equal Periodic Payments (SEPP) rule. You take fixed annual distributions from an IRA calculated by IRS formulas for at least five years or until age 59½, whichever is longer. Unlike the conversion ladder, SEPP locks you into the distribution schedule — if you stop early, all the distributions get retroactively penalised.'),
+      p('The Roth conversion ladder is generally more flexible: you control the amounts, can pause conversions in high-income years, and the accessed funds remain tax-free. Most early retirees with sufficient taxable assets prefer the ladder.'),
+      h2('The long game: tax diversification'),
+      p('Beyond the penalty-free access angle, the Roth conversion ladder also builds Roth wealth over time. If you convert $50,000 per year for fifteen years, you shift $750,000 from a tax-deferred account into a tax-free Roth account. All future growth in that Roth is tax-free, and Roth accounts have no required minimum distributions (RMDs) at 73 — giving you more control over income in later retirement years.'),
+      p('The ladder is most powerful for early retirees with large traditional IRA balances and a long runway before traditional retirement age. The earlier you start converting, the more tax-free growth you accumulate in the Roth before you need it.'),
+    ],
+  },
+  {
+    slug: 'geographic-arbitrage-fire',
+    title: 'Geographic Arbitrage and FIRE: Retiring Abroad or to a Lower-Cost Area',
+    description: 'How retiring to a lower cost-of-living location — whether another US city or another country — can dramatically shrink your FIRE number and accelerate your timeline.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '7 min read',
+    body: [
+      h2('What is geographic arbitrage?'),
+      p('Geographic arbitrage means earning income (or drawing from a portfolio) in a high-cost currency while living somewhere with lower costs. For FIRE seekers, it takes two forms: relocating within the same country to a lower cost-of-living area, or retiring abroad where your dollars (or euros, pounds, etc.) stretch much further.'),
+      p('The arithmetic is compelling. If you currently spend $80,000 per year in San Francisco and you move somewhere you can live just as well for $45,000, your FIRE number drops from $2,000,000 to $1,125,000. That is $875,000 less to save — potentially a decade off your timeline at a reasonable savings rate.'),
+      h2('Domestic geographic arbitrage'),
+      p('You do not need to leave the country to benefit from geographic arbitrage. Within the United States, cost-of-living differences between cities are enormous. Housing in particular varies by a factor of 3–5× between the most expensive and most affordable metros.'),
+      ul([
+        'A $500,000 home in Denver is equivalent in size and quality to a $1.5M home in San Francisco.',
+        'State income taxes range from 0% (Texas, Florida, Nevada, Washington, Tennessee) to over 13% (California). For a FIRE retiree drawing $60,000 per year, that is a difference of up to $7,800 per year.',
+        'Property taxes, utility costs, and daily spending on food and services all vary substantially.',
+      ]),
+      p('Popular domestic FIRE relocation targets: Boise, Chattanooga, Raleigh, Knoxville, Tucson, and smaller midwestern cities. The pattern is usually: leave a coastal metro, move to a Sun Belt or Mountain West city, and immediately see housing and tax costs fall 30–60%.'),
+      h2('International geographic arbitrage'),
+      p('Retiring abroad is the extreme version. Countries in Southeast Asia, Latin America, Eastern Europe, and parts of Southern Europe offer first-world quality of life at 20–40% of US urban costs. A retired couple spending $90,000 per year in New York City might live comfortably for $30,000–$40,000 per year in Portugal, Mexico, Thailand, or Colombia — without meaningfully downgrading their lifestyle.'),
+      h3('Popular international FIRE destinations'),
+      ul([
+        'Portugal — low cost relative to Western Europe, good healthcare, temperate climate, English widely spoken, and a Non-Habitual Resident (NHR) tax regime that can be favorable for foreign-source income.',
+        'Mexico (Oaxaca, Mérida, San Miguel de Allende) — very low cost, warm climate, proximity to the US, and a large expat community.',
+        'Thailand (Chiang Mai) — historically the FIRE community\'s favorite: $1,500–$2,000 per month covers comfortable rent, good food, and health insurance.',
+        'Colombia (Medellín) — increasingly popular, mild climate, low cost, and strong infrastructure.',
+        'Georgia (the country) — extremely low cost, flat 20% income tax, and liberal residency rules.',
+      ]),
+      h2('What to model before going'),
+      p('International geographic arbitrage requires careful due diligence on several non-financial factors:'),
+      ul([
+        'Visa and residency: tourist visas in most countries allow 90 days. Long-term residency requires either a financial solvency visa (proof of passive income), a work visa, or investment-based residence programs. Research visa requirements thoroughly — they vary significantly and change frequently.',
+        'Healthcare: the US healthcare system is not portable. If you move abroad, you need local health insurance or international coverage. In many countries, quality private health insurance costs $150–$300 per month and covers excellent care.',
+        'Tax residency: the US taxes citizens on worldwide income regardless of where they live (unlike almost every other country). This means a US citizen retiring to Portugal still owes US taxes on 401k withdrawals and investment income. The Foreign Earned Income Exclusion ($120,000+ in 2024) applies only to earned income — not investment income. Consult a tax advisor with international expertise before relocating.',
+        'Banking and money transfer: keeping US accounts while abroad requires navigating FATCA compliance. Services like Wise, Schwab\'s international checking account, and Charles Schwab\'s debit card (which reimburses ATM fees worldwide) help.',
+        'Ties you are leaving: time zone differences, distance from family, language barriers, and different cultural norms are not trivial. Many expats return after a few years — not because they ran out of money, but because the trade-offs were harder than expected.',
+      ]),
+      h2('The hybrid approach: slow travel and seasonal arbitrage'),
+      p('Between staying put and fully relocating is a middle path: spending part of the year in a lower-cost country and part at home. Three months in Mexico or Portugal every winter can meaningfully reduce annual spending without requiring a permanent relocation. This avoids the tax residency complications (usually), maintains US healthcare access for most of the year, and lets you trial-run a location before committing.'),
+      h2('Modeling geographic arbitrage in your FIRE number'),
+      p('To account for geographic arbitrage in your FIRE plan: estimate your target spending in the new location honestly, include one-time relocation costs, and add a safety margin for unexpected costs in an unfamiliar system. A 10–15% buffer on top of estimated local spending is reasonable for the first few years while you calibrate.'),
+      p('The risk is anchoring your FIRE number to a cost structure that proves unsustainable — either because the location does not work out personally, or because local costs rise, the exchange rate shifts, or your health needs change. Keeping the flexibility to return (by not permanently drawing down your portfolio to the minimum necessary for the foreign lifestyle) is good insurance.'),
+    ],
+  },
+  {
+    slug: 'dividend-investing-vs-total-return-fire',
+    title: 'Dividend Investing vs. Total Return: Which Strategy Works Better for FIRE?',
+    description: 'The enduring debate in the FIRE community — whether dividend-focused income beats total return investing, and what the evidence actually says.',
+    category: 'Investing',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('The debate in the FIRE community'),
+      p('Walk into any FIRE forum and you will find two camps: the dividend investors, who build portfolios of dividend-paying stocks and live off the income stream without ever selling shares, and the total return investors, who hold low-cost index funds, sell shares as needed, and do not care where the return comes from.'),
+      p('Both camps have advocates, both have math, and the debate generates significant heat for a strategy difference that ultimately matters much less than savings rate, expenses, or withdrawal timing. But understanding the distinction helps you build a strategy you will actually stick to.'),
+      h2('What is the total return approach?'),
+      p('Total return investing holds that what matters is not the form of return (income vs. appreciation) but the aggregate growth of the portfolio. A stock that pays no dividend but appreciates 8% per year delivers the same wealth as one that pays a 3% dividend and appreciates 5%. You capture total return by holding low-cost diversified index funds and selling shares in retirement to fund spending.'),
+      p('The 4% safe withdrawal rule is a total return framework. It does not require dividends — it just requires that the portfolio grows at a rate that supports a 4% annual withdrawal adjusted for inflation over a long horizon. Vanguard\'s Target Retirement funds, a simple three-fund portfolio, and most robo-advisor portfolios use this approach.'),
+      h2('What is dividend investing?'),
+      p('Dividend investors build portfolios of companies with consistent, high, or growing dividend payouts. Examples include dividend aristocrats (S&P 500 companies that have raised dividends for 25+ consecutive years), REITs (required by law to distribute 90% of income), high-yield dividend funds, or individual dividend-paying stocks.'),
+      p('The appeal is psychological as much as financial: in retirement, you receive regular income without ever having to sell anything. Watching dividends arrive each quarter feels different from selling shares — especially during a market downturn when selling feels like "depleting" the portfolio. For some investors, this makes the strategy easier to execute consistently.'),
+      h2('The math: do dividends beat total return?'),
+      p('In purely mathematical terms, dividends are not free money. When a company pays a $1 dividend, its share price drops by approximately $1 on the ex-dividend date. The total economic value is unchanged — you simply received $1 in cash and hold a share worth $1 less. Dividend income and share appreciation are fungible forms of the same return.'),
+      p('Index fund data reinforces this. The S&P 500 total return index (which includes reinvested dividends) has outperformed dividend-focused strategies over most long periods. High-dividend stocks tend to be concentrated in certain sectors (utilities, financials, consumer staples) and underperform during periods of growth stock dominance. The extra concentration and reduced diversification are real costs.'),
+      h3('The tax disadvantage of dividends in taxable accounts'),
+      p('For investors holding dividend-paying stocks in taxable brokerage accounts, dividends create a tax event every quarter — whether you want cash or not. A total return investor holding a non-dividend-paying index fund can choose when to realise gains by timing sales strategically (for example, in low-income years). Dividend investors lose that flexibility. Qualified dividends are taxed at favorable capital gains rates, but non-qualified dividends and REIT distributions are taxed as ordinary income.'),
+      h2('When dividend investing makes sense for FIRE'),
+      p('Despite the math, dividend investing has genuine advantages for some FIRE investors:'),
+      ul([
+        'Psychological comfort: never selling feels more sustainable for investors who would panic-sell in downturns. If a dividend strategy prevents market-timing mistakes, the behavioral benefit may outweigh the theoretical cost.',
+        'Simplicity in retirement: receiving dividends into a checking account feels operationally simpler than calculating the right number of shares to sell each quarter.',
+        'Living below dividend income: if your portfolio generates more in dividends than you spend, you never need to touch principal. This provides a large psychological buffer, especially early in retirement.',
+        'Rental income equivalents: REIT dividend income can be modeled similarly to rental property cash flow — a tangible asset producing a monthly check.',
+      ]),
+      h2('The practical recommendation'),
+      p('For most FIRE investors, total return index funds deliver better diversification, lower costs, and superior tax control. The standard recommendation is a three-fund portfolio (total US market, total international, total bond market) with a withdrawal strategy sized to the 4% rule or a conservative variant.'),
+      p('If you find yourself unable to sleep during market downturns and drawn to the income-without-selling feeling, a hybrid approach is reasonable: hold most assets in total return index funds, but include a 10–20% allocation to dividend-focused or REIT funds for supplementary income comfort. The key is not letting the tail wag the dog — do not sacrifice diversification or load up on sector concentration just to chase yield.'),
+      p('The dividend vs. total return debate matters far less than getting invested, staying invested, keeping costs low, and maintaining a savings rate that builds the portfolio. Optimise those first.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +878,46 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'roth-conversion-ladder-early-retirement': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['building-momentum', 'living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/dashboard', label: 'Open Dashboard' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-roth-ladder',
+      label: 'Calculate your FIRE number →',
+      source: 'learn-roth-ladder',
+    },
+  },
+  'geographic-arbitrage-fire': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
+      { href: '/?source=learn-geoarbitrage', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-geoarbitrage',
+      label: 'Model your FIRE number with new spending →',
+      source: 'learn-geoarbitrage',
+    },
+  },
+  'dividend-investing-vs-total-return-fire': {
+    primaryStage: 'building-momentum',
+    secondaryStages: ['approaching-fire', 'living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+      { href: '/?source=learn-dividends', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-dividends',
+      label: 'Run your FIRE projection →',
+      source: 'learn-dividends',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -789,6 +957,7 @@ export const learnStages: LearnStage[] = [
       'coast-fire-vs-full-fire',
       'lean-fire-vs-fat-fire',
       'how-fire-assumptions-change-your-retirement-date',
+      'dividend-investing-vs-total-return-fire',
     ],
     calculatorLinks: [
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
@@ -809,6 +978,8 @@ export const learnStages: LearnStage[] = [
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
       'what-is-the-4-percent-rule',
+      'roth-conversion-ladder-early-retirement',
+      'geographic-arbitrage-fire',
     ],
     calculatorLinks: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
