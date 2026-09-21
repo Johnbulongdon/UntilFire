@@ -185,12 +185,51 @@ export async function querySearchAnalytics(
   });
 
   if (!res.ok) {
-    throw new Error(`Search Console query failed (${res.status}): ${await res.text()}`);
+    const detail = await res.text();
+    // A 403 here is almost never "no access" — it is "no access to that
+    // string". Google treats https://www.untilfire.com/,
+    // https://untilfire.com/ and sc-domain:untilfire.com as three unrelated
+    // sites, so the property the service account was added to and the one
+    // GSC_SITE_URL names can differ while looking identical to a person.
+    // Asking Google what it can see turns that into an answer.
+    if (res.status === 403) {
+      const visible = await listSites(token).catch(() => null);
+      const seen = visible === null
+        ? "could not list them"
+        : visible.length === 0
+          ? "none at all — the service account has not been added to any property"
+          : visible.map((site) => `"${site}"`).join(", ");
+      throw new Error(
+        `Search Console denied "${config.siteUrl}" (403). ` +
+          `Properties this service account can read: ${seen}. ` +
+          `GSC_SITE_URL must match one of those exactly, trailing slash included. ` +
+          `Google response: ${detail}`,
+      );
+    }
+    throw new Error(`Search Console query failed (${res.status}): ${detail}`);
   }
   const body = (await res.json()) as { rows?: GscRow[] };
   // No rows is a real answer, not an error: it is what "nothing ranked in
   // this window" looks like, and for this site that is the likely result.
   return body.rows ?? [];
+}
+
+/**
+ * Every property this token can read, as Google spells them.
+ *
+ * Only used to explain a 403. Permission in Search Console is granted per
+ * exact property string, so the list is the answer to "what should
+ * GSC_SITE_URL be".
+ */
+export async function listSites(token: string): Promise<string[]> {
+  const res = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Site list failed (${res.status})`);
+  const body = (await res.json()) as { siteEntry?: Array<{ siteUrl?: string; permissionLevel?: string }> };
+  return (body.siteEntry ?? []).map(
+    (entry) => `${entry.siteUrl ?? "?"} (${entry.permissionLevel ?? "unknown"})`,
+  );
 }
 
 /** YYYY-MM-DD, n days before today, in UTC. */

@@ -129,6 +129,41 @@ assert(
 assert.deepEqual(q.body.dimensions, ["date", "page"]);
 assert.equal(q.body.rowLimit, 5000);
 
+// ── A 403 must name the properties the account can actually read ───────────
+// Permission is granted per exact property string, so "forbidden" alone
+// leaves someone guessing between four spellings of the same site.
+{
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes("oauth2.googleapis.com/token")) {
+      return new Response(JSON.stringify({ access_token: "stub-token" }), { status: 200 });
+    }
+    if (url.includes("/webmasters/v3/sites") && (init?.method ?? "GET") === "GET") {
+      return new Response(
+        JSON.stringify({ siteEntry: [{ siteUrl: "sc-domain:untilfire.com", permissionLevel: "siteOwner" }] }),
+        { status: 200 },
+      );
+    }
+    return new Response(JSON.stringify({ error: { code: 403, message: "nope" } }), { status: 403 });
+  }) as typeof fetch;
+
+  let thrown = "";
+  try {
+    await querySearchAnalytics(config, {
+      startDate: dayOffset(10),
+      endDate: dayOffset(1),
+      dimensions: ["date"],
+    });
+  } catch (e) {
+    thrown = e instanceof Error ? e.message : String(e);
+  }
+  globalThis.fetch = realFetch;
+
+  assert(thrown.includes("sc-domain:untilfire.com"), `403 message must name the readable property: ${thrown}`);
+  assert(thrown.includes("siteOwner"), "403 message must name the permission level");
+  assert(thrown.includes(config.siteUrl), "403 message must name what was asked for");
+}
+
 // ── Rows and edges ─────────────────────────────────────────────────────────
 assert.equal(rows.length, 1);
 assert.equal(rows[0].keys[1], "/fire-number/austin-tx");
@@ -146,5 +181,6 @@ for (const missing of ["GSC_CLIENT_EMAIL", "GSC_PRIVATE_KEY", "GSC_SITE_URL"]) {
 console.log(
   "Search Console ok: JWT verifies, base64url clean, scope and lifetime valid, " +
     "site url encoded, rows parsed, missing config returns null, " +
-    `${Object.keys(mangled).length} mangled key formats recovered.`,
+    `${Object.keys(mangled).length} mangled key formats recovered, ` +
+    "403 names the readable properties.",
 );
