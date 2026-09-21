@@ -42,6 +42,11 @@ type LearnArticleMeta = {
   primaryStage: LearnStageId
   secondaryStages?: LearnStageId[]
   relatedCalculators: LearnCalculatorLink[]
+  primaryCta?: {
+    href: string
+    label: string
+    source: string
+  }
 }
 
 function p(text: string): BodyNode { return { type: 'p', text } }
@@ -619,6 +624,132 @@ export const learnArticles: LearnArticle[] = [
       p('This portfolio is diversified across thousands of companies, dozens of countries, and two asset classes. You can hold it for decades with confidence. No stock picking, no sector bets, no concentration risk.'),
     ],
   },
+  {
+    slug: 'roth-conversion-ladder-early-retirement',
+    title: 'The Roth Conversion Ladder: How to Access Retirement Funds Before 59½',
+    description: 'Most FIRE retirees have large 401k balances they cannot touch until 59½ without penalty. The Roth conversion ladder is the legal workaround that unlocks that money years early.',
+    category: 'Tax Strategy',
+    publishedAt: '2026-06-17',
+    readTime: '8 min read',
+    body: [
+      h2('The early withdrawal problem'),
+      p('If you retire at 45 with most of your wealth in a 401k, you face a problem: the IRS charges a 10% early withdrawal penalty on 401k distributions before age 59½. Withdraw $50,000 to live on, and you immediately owe $5,000 in penalties plus income tax on the full amount.'),
+      p('The Roth conversion ladder is the strategy that sidesteps this penalty entirely. It is legal, widely used in the FIRE community, and requires only patience and planning.'),
+      h2('How the Roth conversion ladder works'),
+      p('The core mechanic relies on two IRS rules working together:'),
+      ul([
+        'You can convert traditional 401k or IRA money to a Roth IRA at any age, paying income tax on the converted amount in the year of conversion.',
+        'Roth IRA contributions (not earnings) can be withdrawn tax-free and penalty-free at any time, for any reason — but Roth conversions have a 5-year seasoning rule before the converted principal becomes accessible penalty-free.',
+      ]),
+      p('The ladder: you convert a chunk of 401k money to Roth each year, pay income tax at that year\'s rate, and then 5 years later you can withdraw that exact amount from the Roth — tax-free and penalty-free, at any age.'),
+      h2('A concrete example'),
+      p('You retire at 45. You have $800,000 in a 401k and $100,000 in a Roth IRA (contributions only). You need $45,000 per year to live on.'),
+      ol([
+        'Year 1 (age 45): Convert $45,000 from 401k to Roth IRA. Pay income tax on $45,000 (at low early-retirement rates). Live on taxable savings, brokerage accounts, or Roth contributions this year.',
+        'Year 2 (age 46): Convert another $45,000. Pay tax. Continue living on non-Roth sources.',
+        'Year 3 (age 47): Convert $45,000. Same process.',
+        'Year 4 (age 48): Convert $45,000.',
+        'Year 5 (age 49): Convert $45,000.',
+        'Year 6 (age 50): The Year 1 conversion is now 5 years old. Withdraw $45,000 from Roth penalty-free and tax-free. Simultaneously convert another $45,000 to keep the ladder going.',
+      ]),
+      p('From age 50 onward, you withdraw last year\'s conversion and convert for 5 years from now — indefinitely. The ladder sustains itself.'),
+      h2('What you live on during the 5-year bridge'),
+      p('The hardest part is covering years 1–5 before the ladder produces withdrawals. Common bridge strategies:'),
+      ul([
+        'Taxable brokerage accounts — your most accessible money. Long-term capital gains rates are 0–15%, much lower than income tax rates for most FIRE retirees.',
+        'Roth IRA contributions (not earnings) — original contributions can be withdrawn at any time, penalty-free.',
+        'Cash savings — a 1–2 year cash buffer is common among FIRE retirees.',
+        'Part-time or freelance income — even $10,000–$15,000 per year significantly extends how long bridge assets last.',
+      ]),
+      h2('Tax rates during the conversion phase'),
+      p('The Roth conversion ladder is most powerful when your income in early retirement is low. No W-2 wages, no required minimum distributions yet, just conversions. In this environment, a married couple can often convert $40,000–$60,000 per year at the 12% marginal tax rate — far below the rates they paid while working.'),
+      p('Coordinate with ACA marketplace subsidy eligibility: conversions are taxable income, and large conversions can push you above subsidy thresholds. Many FIRE retirees target conversions to stay in the 12% bracket and retain ACA subsidies.'),
+      h2('Roth conversion ladder vs. Rule 72(t)'),
+      p('Rule 72(t) is an alternative early access strategy: it lets you take "substantially equal periodic payments" (SEPPs) from a 401k or IRA before 59½ without penalty. The catch: you must continue payments for 5 years or until age 59½, whichever is longer, and the payment amount is fixed by IRS formula.'),
+      p('The Roth conversion ladder is more flexible — you control the amount each year. Rule 72(t) is simpler to start but less adaptable. Most FIRE planners prefer the ladder.'),
+      h2('When to start planning'),
+      p('The Roth conversion ladder requires 5 years of lead time. If you plan to retire at 45 and need 401k money at 50, you need to start the ladder at 45. If you want access at 47, you should have started converting at 42 — while still employed.'),
+      p('Some FIRE planners begin partial conversions in their final working years, even though marginal rates are higher, to get the clock started. The 5-year rule begins from January 1 of the year of each conversion, so converting in December still counts as a full year.'),
+    ],
+  },
+  {
+    slug: 'social-security-and-fire-early-retirement-strategy',
+    title: 'Social Security and Early Retirement: How to Factor It Into Your FIRE Plan',
+    description: 'If you retire early, Social Security does not disappear — it just gets complicated. How to factor Social Security into your FIRE plan, when to claim, and how early retirement affects your benefits.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Does early retirement affect Social Security?'),
+      p('Yes, but less dramatically than most people fear. Social Security calculates your benefit based on your 35 highest-earning years. If you retire at 40 with 20 working years, your benefit will be lower than if you worked 35 years — because those missing years count as $0 in the calculation.'),
+      p('However, if your 20 working years were high-earning years, those $0 years may have less impact than you expect. The Social Security benefit formula is progressive — it replaces a higher percentage of earnings at the bottom of the scale and a lower percentage at the top.'),
+      h2('When can you claim Social Security?'),
+      ul([
+        'Age 62: Earliest possible claiming age. Benefits are permanently reduced by ~30% from full retirement age (FRA) benefit.',
+        'Full Retirement Age (FRA): 67 for anyone born after 1960. This is your "baseline" benefit.',
+        'Age 70: Maximum benefit. Delaying past FRA increases the benefit by 8% per year, so waiting from 67 to 70 gives 24% higher monthly payments.',
+      ]),
+      h2('The break-even calculation'),
+      p('Claiming at 62 gives you more years of payments but smaller amounts. Claiming at 70 gives fewer years but larger amounts. The break-even point — where the cumulative totals cross — is typically around age 78–80.'),
+      p('If you expect to live past 80 and are in good health, delaying to 70 is almost always the mathematically superior choice. If you have health concerns or need the income, claiming earlier makes sense. For FIRE retirees with large portfolios, health and longevity are usually the determining factors, not immediate need.'),
+      h2('Social Security as the floor, not the plan'),
+      p('Most FIRE retirees plan their finances without counting on Social Security, then treat any benefit as a bonus that further reduces portfolio withdrawal needs. This is conservative and robust — Social Security may be reduced in future decades, and the uncertainty is real.'),
+      p('A useful middle approach: include 75% of your projected Social Security benefit in your late-retirement planning (after age 67–70), and plan your portfolio to cover 100% of spending until then. This acknowledges both the likelihood of receiving some benefit and the political risk of reductions.'),
+      h2('How early retirement affects the benefit calculation'),
+      p('Social Security\'s Average Indexed Monthly Earnings (AIME) calculation uses your highest 35 years. If you have fewer than 35 working years, zeros are averaged in, lowering your benefit.'),
+      p('Practical example: someone who worked from 22 to 42 (20 years) will have 15 zeros in their calculation. If their working years averaged $80,000 in earnings, the 15 zeros pull the average down significantly. Working just a few more years — even part-time — fills in zeros and can meaningfully raise the final benefit.'),
+      h2('Spousal and survivor benefits'),
+      p('If you are married, Social Security strategy affects both spouses. The higher-earning spouse delaying to 70 maximises the survivor benefit — the amount the surviving spouse receives after one partner dies. This makes the delay-to-70 strategy especially valuable for couples.'),
+      p('A non-working spouse may still be eligible for up to 50% of the working spouse\'s benefit. This is another reason early retirees should model Social Security carefully rather than ignoring it.'),
+      h2('Practical steps for FIRE planners'),
+      ol([
+        'Create a My Social Security account at ssa.gov to see your current projected benefit.',
+        'Model two scenarios: claim at 62 and claim at 70. See the difference in lifetime benefits at different life expectancies.',
+        'Factor in 15 zeros if you plan to retire early and have fewer than 35 working years.',
+        'Plan your portfolio to cover 100% of spending without Social Security through at least age 70.',
+        'Treat Social Security as a longevity hedge: it protects against outliving your portfolio past 80.',
+      ]),
+    ],
+  },
+  {
+    slug: 'inflation-and-fire-protecting-purchasing-power',
+    title: 'Inflation and FIRE: How to Protect Your Portfolio\'s Purchasing Power',
+    description: 'Inflation is the silent tax on early retirement. A 3% annual inflation rate doubles your cost of living every 24 years. Here is how FIRE retirees protect against it.',
+    category: 'Planning',
+    publishedAt: '2026-06-17',
+    readTime: '6 min read',
+    body: [
+      h2('Why inflation matters more for early retirees'),
+      p('A traditional retiree who retires at 65 might face 20–25 years of inflation. An early retiree at 40 might face 50+ years. At 3% annual inflation, purchasing power halves every 24 years — meaning $50,000 per year in spending today requires $100,000 per year by 2050 to maintain the same lifestyle.'),
+      p('The 4% safe withdrawal rule was calibrated to account for inflation — withdrawals increase with inflation each year. But the rule was tested on 30-year retirement periods. For 50-year retirements, the math is tighter and the inflation protection needs to be more deliberate.'),
+      h2('The role of equities as an inflation hedge'),
+      p('Stocks are the primary long-run inflation hedge in a FIRE portfolio. Companies can raise prices as input costs rise, which flows through to revenue and earnings. Over long periods, broad stock market returns have consistently outpaced inflation.'),
+      p('From 1926–2023, the S&P 500 returned approximately 10% annually while inflation averaged about 3%. The real return — after inflation — was roughly 7%. This is why FIRE portfolios are heavily weighted toward equities, especially during the accumulation phase and early in retirement.'),
+      h2('The bond problem'),
+      p('Bonds are the traditional ballast in retirement portfolios, but they are the most vulnerable to inflation. Fixed-interest payments lose real value when prices rise. A 2% coupon bond looks increasingly unattractive if inflation runs at 4%.'),
+      p('For early retirees with 40–50 year horizons, a heavy bond allocation is riskier than it appears. Many FIRE retirees maintain only 10–20% in bonds during early retirement, relying on equity growth for inflation protection.'),
+      h2('TIPS: Treasury Inflation-Protected Securities'),
+      p('TIPS are US government bonds whose principal adjusts with the Consumer Price Index (CPI). As inflation rises, the principal grows, and the interest payment (calculated as a fixed percentage of principal) rises with it. At maturity, you receive the inflation-adjusted principal or the original principal, whichever is greater.'),
+      p('TIPS provide guaranteed real returns — your purchasing power is protected regardless of inflation. The trade-off: real yields are lower than nominal bond yields, and TIPS are less liquid than equity index funds. Many FIRE planners hold TIPS in tax-advantaged accounts to defer taxes on the phantom income from principal adjustments.'),
+      h2('I-Bonds: inflation protection with a cap'),
+      p('Series I Savings Bonds (I-Bonds) from the US Treasury are another inflation hedge. The interest rate adjusts with CPI semi-annually. I-Bonds are exempt from state and local taxes, and federal tax is deferred until redemption.'),
+      p('The catch: purchase limits of $10,000 per person per year ($20,000 for a couple). I-Bonds are not accessible for 12 months after purchase and carry a 3-month interest penalty if redeemed within 5 years. They work well as a cash-emergency-fund replacement or short-term inflation buffer, not as a primary portfolio holding.'),
+      h2('Spending flexibility as inflation protection'),
+      p('The most powerful inflation buffer in a FIRE plan is not a financial instrument — it is spending flexibility. FIRE retirees who can cut discretionary spending during high-inflation periods reduce their withdrawal rate temporarily and let the portfolio recover. This flexibility is what makes the 4% rule work over long periods in historical simulations.'),
+      p('Identify your spending tiers: essential (housing, food, healthcare), flexible (travel, dining, entertainment), and discretionary (upgrades, hobbies, luxuries). In a high-inflation or down-market year, cutting the discretionary tier can drop withdrawals by 10–20% without meaningful quality-of-life impact.'),
+      h2('Practical inflation protection checklist'),
+      ul([
+        'Maintain at least 70–80% equities in early FIRE to capture long-run real returns.',
+        'Consider TIPS for 5–10% of your bond allocation — they provide explicit CPI protection.',
+        'Use I-Bonds as a high-yield emergency fund alternative up to the annual limit.',
+        'Build spending flexibility: identify your discretionary tier and be willing to cut it during stress years.',
+        'Recalibrate your withdrawal rate every 3–5 years, not just at retirement — adjust spending if your portfolio is tracking below the safe withdrawal trajectory.',
+        'Consider a small allocation to real assets (REITs, commodities) as an additional inflation hedge.',
+      ]),
+      h2('The withdrawal rate and inflation'),
+      p('The traditional 4% rule adjusts withdrawals upward with inflation each year. In a prolonged high-inflation environment, this creates a ratchet: spending rises while portfolio returns may lag. More conservative FIRE planners use a variable withdrawal strategy — withdrawing a fixed percentage of current portfolio value rather than a fixed inflation-adjusted dollar amount. This reduces income volatility in good years but cuts spending automatically in bad ones, and historically leads to higher lifetime withdrawals with lower depletion risk.'),
+    ],
+  },
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
@@ -750,6 +881,45 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
       { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
     ],
   },
+  'roth-conversion-ladder-early-retirement': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire', 'building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-roth-ladder', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-roth-ladder',
+      label: 'Plan your early retirement timeline',
+      source: 'learn-roth-ladder',
+    },
+  },
+  'social-security-and-fire-early-retirement-strategy': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/?source=learn-social-security', label: 'FIRE Calculator' },
+    ],
+    primaryCta: {
+      href: '/?source=learn-social-security',
+      label: 'Calculate your FIRE number with Social Security factored in',
+      source: 'learn-social-security',
+    },
+  },
+  'inflation-and-fire-protecting-purchasing-power': {
+    primaryStage: 'approaching-fire',
+    secondaryStages: ['living-in-fire', 'building-momentum'],
+    relatedCalculators: [
+      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/compound-interest', label: 'Compound Interest Calculator' },
+    ],
+    primaryCta: {
+      href: '/calculators/4-percent-rule?source=learn-inflation',
+      label: 'Stress-test your withdrawal rate',
+      source: 'learn-inflation',
+    },
+  },
 }
 
 export const learnStages: LearnStage[] = [
@@ -808,6 +978,9 @@ export const learnStages: LearnStage[] = [
       'how-much-money-do-i-need-to-retire',
       'how-fire-assumptions-change-your-retirement-date',
       'sequence-of-returns-risk',
+      'roth-conversion-ladder-early-retirement',
+      'social-security-and-fire-early-retirement-strategy',
+      'inflation-and-fire-protecting-purchasing-power',
       'what-is-the-4-percent-rule',
     ],
     calculatorLinks: [
