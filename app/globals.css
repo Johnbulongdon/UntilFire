@@ -44,6 +44,9 @@
   --uf-teal-soft: #D3F1EA;
   --uf-teal-line: #7FD9C6;
 
+  /* brand — the logo's sun. public/logo/horizon-color.svg, the disc and rays. */
+  --uf-aqua:      #62FAE3;
+
   /* semantic — four distinct hues, no two adjacent */
   --uf-pos:     #12856A;
   --uf-neg:     #C0483C;
@@ -139,6 +142,7 @@
 
   --uf-teal:      #35C9AE;
   --uf-teal-deep: #5FDCC4;
+  --uf-aqua:      #62FAE3;
   --uf-teal-soft: #0F3A33;
   --uf-teal-line: #1E6B5D;
 
