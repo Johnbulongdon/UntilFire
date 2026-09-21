@@ -226,10 +226,10 @@ export default async function LearnArticlePage({ params }: Props) {
 
           <div>
           <p style={{ fontSize: 14, color: '#64748B', marginBottom: 16 }}>
-            Ready to calculate your own FIRE number?
+            {articleMeta.primaryCta ? 'Ready to put this into practice?' : 'Ready to calculate your own FIRE number?'}
           </p>
           <Link
-            href="/?source=learn-article"
+            href={articleMeta.primaryCta?.href || '/?source=learn-article'}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -242,7 +242,7 @@ export default async function LearnArticlePage({ params }: Props) {
               fontSize: 14,
             }}
           >
-            Run the FIRE Calculator →
+            {articleMeta.primaryCta?.label || 'Run the FIRE Calculator'} →
           </Link>
           </div>
         </div>
