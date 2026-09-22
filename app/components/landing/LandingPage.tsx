@@ -1342,10 +1342,21 @@ const CSS7 = `
      everything below the fold read as narrower and smaller than the fold.
      .uf7-block is overflow:hidden, so a 100vw child is clipped to the
      section and can never scroll the page sideways. */
-  .uf7-row, .uf7-city-row { position: relative; border-top: none; }
-  .uf7-row::before, .uf7-city-row::before {
+  .uf7-row { position: relative; border-top: none; }
+  .uf7-row::before {
     content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 100vw; height: 1px; background: var(--uf-border);
+  }
+  /* The city rows share their row with the globe on wide screens, so a
+     full-bleed rule there draws straight across it. They only go full width
+     below 760px, where .uf7-globe-grid collapses to one column and there is
+     nothing beside them. */
+  @media (max-width: 760px) {
+    .uf7-city-row { position: relative; border-top: none; }
+    .uf7-city-row::before {
+      content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100vw; height: 1px; background: var(--uf-border);
+    }
   }
   /* The list's closing rule too — only .uf7-row has one. */
   .uf7-row:last-child { border-bottom: none; }
