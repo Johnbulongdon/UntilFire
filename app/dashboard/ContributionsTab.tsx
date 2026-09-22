@@ -57,7 +57,23 @@ const num = (s: string) => {
 const fmtUsd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
-export default function ContributionsTab() {
+export interface ContributionsTabProps {
+  /** Cash and savings the dashboard already totals — the emergency fund. */
+  cashSavings?: number;
+  /** Monthly needs, measured from spending history where there is any. */
+  monthlyExpenses?: number;
+  /** The user's own real-return assumption, as a fraction. 0.07, not 7. */
+  realReturn?: number;
+}
+
+/* Three of the ladder's inputs are things the app already knows, so they are
+   read from the account rather than asked for again. They stay editable: a
+   measured figure can be zero (nothing connected, no spending history yet)
+   and someone may want to try a different number without changing their real
+   assumptions. An override is remembered until it is cleared. */
+export default function ContributionsTab({
+  cashSavings, monthlyExpenses: accountExpenses, realReturn,
+}: ContributionsTabProps = {}) {
   const [rows, setRows] = useState<Row[]>(EXAMPLE);
   const [budget, setBudget] = useState("500");
   const [frequency, setFrequency] = useState<Frequency>("monthly");
@@ -104,12 +120,19 @@ export default function ContributionsTab() {
   // token asks for, and adding it would only cover newly linked accounts —
   // so these are typed, and Plaid becomes a pre-fill later rather than the
   // source of truth.
-  const [efBalance, setEfBalance] = useState("");
-  const [monthlyExpenses, setMonthlyExpenses] = useState("");
+  const [efOverride, setEfOverride] = useState<string | null>(null);
+  const [expOverride, setExpOverride] = useState<string | null>(null);
+  const [thrOverride, setThrOverride] = useState<string | null>(null);
   const [monthlyMatch, setMonthlyMatch] = useState("");
   const [taxRoom, setTaxRoom] = useState("");
   const [lowInterestExtra, setLowInterestExtra] = useState("");
-  const [threshold, setThreshold] = useState(String(DEFAULT_THRESHOLD_PCT));
+
+  const accountThresholdPct = realReturn != null ? +(realReturn * 100).toFixed(2) : DEFAULT_THRESHOLD_PCT;
+  const efBalance = efOverride ?? (cashSavings != null && cashSavings > 0 ? String(Math.round(cashSavings)) : "");
+  const monthlyExpenses = expOverride ?? (accountExpenses != null && accountExpenses > 0 ? String(Math.round(accountExpenses)) : "");
+  const threshold = thrOverride ?? String(accountThresholdPct);
+  const hasAccountEf = cashSavings != null && cashSavings > 0;
+  const hasAccountExp = accountExpenses != null && accountExpenses > 0;
   const [debtRows, setDebtRows] = useState<DebtRow[]>([]);
   const [disabled, setDisabled] = useState<RungKind[]>([]);
 
@@ -264,12 +287,38 @@ export default function ContributionsTab() {
         </div>
 
         <div className="uf-ladder-inputs">
-          <Field label="Emergency fund now" htmlFor="uf-ef"><Input id="uf-ef" numeric inputMode="decimal" placeholder="0" value={efBalance} onChange={(e) => setEfBalance(e.target.value)} /></Field>
-          <Field label="Monthly expenses" htmlFor="uf-exp" hint={expenses > 0 ? `Floor ${fmtUsd(efFloor)} · target ${fmtUsd(efTarget)}` : undefined}><Input id="uf-exp" numeric inputMode="decimal" placeholder="0" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} /></Field>
+          <Field label="Emergency fund now" htmlFor="uf-ef"
+                 hint={efOverride !== null && hasAccountEf ? "Edited — clear to use your accounts" : hasAccountEf ? "From your cash and savings" : "No connected cash yet"}>
+            <Input id="uf-ef" numeric inputMode="decimal" placeholder="0" value={efBalance}
+                   onChange={(e) => setEfOverride(e.target.value)} />
+            {efOverride !== null && hasAccountEf && (
+              <Button variant="ghost" size="sm" style={{ alignSelf: "flex-start", marginTop: 2 }}
+                      onClick={() => setEfOverride(null)}>Use my accounts</Button>
+            )}
+          </Field>
+          <Field label="Monthly expenses" htmlFor="uf-exp"
+                 hint={expenses > 0
+                   ? `Floor ${fmtUsd(efFloor)} · target ${fmtUsd(efTarget)}`
+                   : hasAccountExp ? "From your spending" : "No spending history yet"}>
+            <Input id="uf-exp" numeric inputMode="decimal" placeholder="0" value={monthlyExpenses}
+                   onChange={(e) => setExpOverride(e.target.value)} />
+            {expOverride !== null && hasAccountExp && (
+              <Button variant="ghost" size="sm" style={{ alignSelf: "flex-start", marginTop: 2 }}
+                      onClick={() => setExpOverride(null)}>Use my spending</Button>
+            )}
+          </Field>
           <Field label="Employer match / mo" htmlFor="uf-match"><Input id="uf-match" numeric inputMode="decimal" placeholder="0" value={monthlyMatch} onChange={(e) => setMonthlyMatch(e.target.value)} /></Field>
           <Field label="Tax-advantaged room" htmlFor="uf-room"><Input id="uf-room" numeric inputMode="decimal" placeholder="0" value={taxRoom} onChange={(e) => setTaxRoom(e.target.value)} /></Field>
           <Field label="Overpay a cheap loan / mo" htmlFor="uf-extra" hint="Above the minimum you already pay. Leave at 0 unless you want it gone early."><Input id="uf-extra" numeric inputMode="decimal" placeholder="0" value={lowInterestExtra} onChange={(e) => setLowInterestExtra(e.target.value)} /></Field>
-          <Field label="Expensive above (%)" htmlFor="uf-thr" hint="Usually your expected real return"><Input id="uf-thr" numeric inputMode="decimal" value={threshold} onChange={(e) => setThreshold(e.target.value)} /></Field>
+          <Field label="Expensive above (%)" htmlFor="uf-thr"
+                 hint={thrOverride !== null ? "Edited — clear to follow your plan" : "Your own growth assumption"}>
+            <Input id="uf-thr" numeric inputMode="decimal" value={threshold}
+                   onChange={(e) => setThrOverride(e.target.value)} />
+            {thrOverride !== null && (
+              <Button variant="ghost" size="sm" style={{ alignSelf: "flex-start", marginTop: 2 }}
+                      onClick={() => setThrOverride(null)}>Use my {accountThresholdPct}%</Button>
+            )}
+          </Field>
         </div>
 
         <div style={{ marginTop: "var(--uf-s5)" }}>
@@ -315,10 +364,12 @@ export default function ContributionsTab() {
                 <span style={{ ...mono, fontWeight: 700, whiteSpace: "nowrap" }}>
                   {off ? "—" : f.amount > 0 ? <Money amount={f.amount} decimals={f.amount < 100 ? 2 : 0} /> : <span style={{ color: "var(--uf-ink-3)" }}>$0</span>}
                 </span>
-                <Button variant="ghost" size="sm" aria-label={`${off ? "Turn on" : "Turn off"} ${f.label}`}
-                        onClick={() => setDisabled((d) => off ? d.filter((k) => k !== f.kind) : [...d, f.kind])}>
-                  {off ? "On" : "Off"}
-                </Button>
+                {(f.capacity > 0 || disabled.includes(f.kind)) ? (
+                  <Button variant="ghost" size="sm" aria-label={`${off ? "Turn on" : "Turn off"} ${f.label}`}
+                          onClick={() => setDisabled((d) => off ? d.filter((k) => k !== f.kind) : [...d, f.kind])}>
+                    {off ? "On" : "Off"}
+                  </Button>
+                ) : <span />}
               </div>
             );
           })}

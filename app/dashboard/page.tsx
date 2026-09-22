@@ -6431,7 +6431,13 @@ export default function Dashboard() {
             {tab === "goals" && (
               <GoalsPageTab userId={userId} monthlyExpenses={monthlyExpenses} />
             )}
-            {tab === "contributions" && <ContributionsTab />}
+            {tab === "contributions" && (
+              <ContributionsTab
+                cashSavings={cashSavings}
+                monthlyExpenses={emergencyFundMonthlyBase}
+                realReturn={growthRate}
+              />
+            )}
             {tab === "citizenship" && <CitizenshipTab />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
