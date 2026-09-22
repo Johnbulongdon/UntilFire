@@ -261,6 +261,137 @@ function AnySize7() {
   );
 }
 
+/* ── The world globe ─────────────────────────────────────────────────────
+   This was a flat image for a while. The reason given was that cobe's
+   world-map texture failed to decode, because the globe rendered as glow
+   and markers with no continents. That symptom has a second, simpler
+   cause, and it is the one that fits: cobe only paints when update() is
+   called, and it loads its map through an async new Image(). The previous
+   version drove update() exclusively from inside `if (!reduceMotion)`,
+   with no else branch — so for anyone with Reduce Motion enabled, cobe
+   painted exactly once, before the texture had arrived. Glow and markers
+   draw without sampling the texture; continents do not. Reproduced both
+   halves locally: no update() loop gives glow and markers only, a running
+   one gives continents.
+
+   So the fix is to repaint for a short while whatever the motion setting
+   is. Reduced motion holds phi still rather than skipping the loop. The
+   texture probe and the still frame stay as the fallback, in case the
+   decode really does fail somewhere. */
+const COBE_TEXTURE_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAACAAQAAAADMzoqnAAAECklEQVR42u3VsW4jRRzH8d94gzfF4Q0VQaC4vBLTRTp0mze4ggfAPAE5XQEFsGNAVIjwBrmW7h7gJE+giKjyABTZE4g06LKJETdRJvtD65kdz6yduKABiW+TVfzRf2bXYxtcE/59YJCz6YdbgQF6ACSRrwYKYImmh5PbwOewlV3wlQNbAN6SEExjUOO+BU0aCSnxReHABUlK4YFQeJeUT3da8IIkZ6NGoSnFY5KsMoVzMKfECUnqxgPYRArarmUCndHwzIEaQEpg5xVdBXROl8mpAQx5dUgPiHoYAAkg5w3JABR06byGAVgcRGAz5bznj6phBQNRFwyqgdxebH6gshJAesWoFhgYpApAFoG8BIZ/fEhSox5jDjQXmV0Ar5XJfAIrALi3URVs09gHIL4XJCkLC5LH9JWiArABFCSrQjdgkBzRJ0WJeUOSNyQAfJJwUSWUBRlJQ8oGHATACGlBynnzy2kEYLNjrxouigD8BZcgOeVPqh12RtufaCN5wCPVDpvQ9lsIrqndsJtDcWqBCpf4hWN7OdWHBw58FwIaNOU/n1TpMW2DFaD48cmr4185T8NHkpUFX749pQPVdgRKC/DGoQPVeAEKv+WHvY8OOWNTPRp5kHuwSf8wzXtVBKR7YwEH9H3lQUaypUfSATOALyVNu5vZJW31Bnx98nkLfDUWJaz6ixvm+RIQRdl3kmRxxiaDoGnZW4CpPfkaQadlcPim1xOSvETQo7Lv75enVAXJ3xGUlony4KQBBWUM1NiDc6qhyS8RgQs18OCMMtPDaAUIyg0PZkRWDqs+wnKJBTDI1Js6BolegOsKmUxNDBAAKqQyMQmidhegBlLZ+wwKYdv5M/8x1khkb1cgKqP2H+MKyV5vS+whrE8DQDgAlUAoRBX056EElJCjJVACeJBZgNfVp+iCCm4RBWCgKsRxASSA9KgDhDtCiTuMyfHsKXzhC6wNAIjjWb8LKAOA2ctk3FmCOlgKFy8f1N0JJtgsxinYnVAHt4t3gPzZXSCTyCWCQmBT91QE3B5yarSN40dNHYPka4TlDhTUI8zLvl0JSL3vZn6DsCFZOeB2yROEpR68sECQQA++xIGCR2X7DwlEoLRgUrZrqlUg50S1uy43YqDcN6UFBVkhAjWiCV2Q0jgQPdplMKxvBXodcOfAwJYvgdL+1etA1YJJfBcZlQV7sO1i2gHoNiyxtQ5sBsCgWyoxCHiFFd2L5nUTCqMAqGUgsQ9f5kCcCiZgRYkMgMTd5WsB1rTzj0Em14BE4r+QxN1lCEsVur2PoF5Wbg8RJXR4djgvBgauhLywoEZQrt1KKRdVS4CdlJ8qafyP+9KIj/nE/d7kKwH9jgS72e9DV+kvfTWgct4ZyP8Byb8BPG7MaaIIkAQAAAAASUVORK5CYII=";
+
+const GLOBE_PHI = 2.2;
+const GLOBE_MARKERS: { location: [number, number]; size: number }[] = [
+  { location: [18.79, 98.98],   size: 0.07 },  // Chiang Mai
+  { location: [19.43, -99.13],  size: 0.07 },  // Mexico City
+  { location: [38.72, -9.14],   size: 0.07 },  // Lisbon
+  { location: [35.68, 139.69],  size: 0.05 },  // Tokyo
+  { location: [51.51, -0.13],   size: 0.05 },  // London
+  { location: [37.77, -122.42], size: 0.05 },  // San Francisco
+];
+
+function WorldGlobe() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let raf = 0;
+    let visObserver: IntersectionObserver | null = null;
+    let globe: { update: (s: { phi: number }) => void; destroy: () => void } | null = null;
+    let phi = GLOBE_PHI;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // cobe requests a context with exactly these attributes and swallows a
+    // null result into a no-op {destroy, update} pair rather than throwing,
+    // so probing with the same attributes is the only way to catch it.
+    const glAttrs = { alpha: true, stencil: false, antialias: true, depth: false, preserveDrawingBuffer: false } as const;
+    const probe = canvasRef.current;
+    if (!probe || !(probe.getContext("webgl2", glAttrs) || probe.getContext("webgl", glAttrs))) {
+      console.error("[globe] no WebGL context here — showing the still frame instead");
+      setFailed(true);
+      return;
+    }
+
+    import("cobe").then(({ default: createGlobe }) => {
+      if (cancelled || !canvasRef.current) return;
+      try {
+        globe = createGlobe(canvasRef.current, {
+          devicePixelRatio: 2,
+          width: 880,
+          height: 880,
+          phi,
+          theta: 0.22,
+          dark: 1,
+          diffuse: 1.2,
+          mapSamples: 24000,
+          mapBrightness: 9,
+          baseColor: [0.024, 0.306, 0.231],   // the logo's ground, #064E3B
+          markerColor: [0.384, 0.98, 0.89],   // --uf-aqua
+          glowColor: [0.1, 0.4, 0.34],
+          markers: GLOBE_MARKERS,
+        });
+      } catch (err) {
+        console.error("[globe] createGlobe threw:", err);
+        setFailed(true);
+        return;
+      }
+
+      const textureProbe = new Image();
+      textureProbe.onerror = () => {
+        console.error("[globe] cobe's world-map texture failed to decode — showing the still frame");
+        setFailed(true);
+      };
+      textureProbe.src = COBE_TEXTURE_URI;
+
+      let onscreen = true;
+      visObserver = new IntersectionObserver((entries) => {
+        entries.forEach((e) => { onscreen = e.isIntersecting; });
+      });
+      visObserver.observe(canvasRef.current);
+
+      // Count painted frames rather than elapsed time: a globe scrolled past
+      // before it ever painted would otherwise stop before drawing anything.
+      let painted = 0;
+      const draw = () => {
+        if (onscreen) {
+          if (!reduceMotion) phi += 0.0028;
+          globe?.update({ phi });
+          painted += 1;
+        }
+        if (!reduceMotion || painted < 120) raf = requestAnimationFrame(draw);
+      };
+      raf = requestAnimationFrame(draw);
+    }).catch((err) => {
+      console.error("[globe] failed to load the cobe module:", err);
+      setFailed(true);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      visObserver?.disconnect();
+      globe?.destroy();
+    };
+  }, []);
+
+  return (
+    <>
+      <canvas
+        ref={canvasRef}
+        width={880}
+        height={880}
+        aria-hidden
+        style={{ width: "100%", height: "100%", display: failed ? "none" : "block" }}
+      />
+      {failed && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img src="/landing/globe-static.webp" alt="" aria-hidden width={880} height={880}
+             style={{ width: "100%", height: "100%", borderRadius: "50%" }} />
+      )}
+    </>
+  );
+}
+
 /* ── The world: globe + real city numbers ────────────────────────────── */
 function World7() {
   const rows = useMemo(() => {
@@ -284,15 +415,7 @@ function World7() {
         <h2 className="uf7-statement uf7-rv">Your second life comes with a <em>world</em>.</h2>
         <div className="uf7-globe-grid">
           <div className="uf7-globe-stage uf7-rv">
-            {/* Static image, not the live WebGL globe: cobe renders its glow
-                and markers fine but its internal world-map texture failed
-                to decode on at least one real, ordinary Chrome install with
-                nothing unusual about it, with zero error signal from the
-                library — not something we can chase further from here. A
-                pre-rendered frame is guaranteed to look the same for every
-                visitor, at the cost of the rotation. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/landing/globe-static.webp" alt="" aria-hidden width={880} height={880} style={{ width: "100%", height: "100%", borderRadius: "50%" }} />
+            <WorldGlobe />
           </div>
           <div className="uf7-rv">
             {rows.map((r) => (
