@@ -155,8 +155,8 @@ export function buildLadder(inputs: LadderInputs): Rung[] {
     },
     {
       kind: "low-interest-debt",
-      label: "Extra against cheap debt",
-      why: "Optional, and deliberately near the bottom: clearing cheap debt early trades an expected higher return for a guaranteed lower one.",
+      label: "Overpay a cheap loan",
+      why: "Paying your mortgage or car loan faster than you have to. Optional, and near the bottom on purpose: clearing cheap debt early trades an expected higher return for a guaranteed lower one. Most people leave this at zero.",
       capacity: Math.max(0, inputs.lowInterestExtra),
       enabled: inputs.lowInterestExtra > 0,
     },

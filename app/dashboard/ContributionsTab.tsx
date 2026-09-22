@@ -268,7 +268,7 @@ export default function ContributionsTab() {
           <Field label="Monthly expenses" htmlFor="uf-exp" hint={expenses > 0 ? `Floor ${fmtUsd(efFloor)} · target ${fmtUsd(efTarget)}` : undefined}><Input id="uf-exp" numeric inputMode="decimal" placeholder="0" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} /></Field>
           <Field label="Employer match / mo" htmlFor="uf-match"><Input id="uf-match" numeric inputMode="decimal" placeholder="0" value={monthlyMatch} onChange={(e) => setMonthlyMatch(e.target.value)} /></Field>
           <Field label="Tax-advantaged room" htmlFor="uf-room"><Input id="uf-room" numeric inputMode="decimal" placeholder="0" value={taxRoom} onChange={(e) => setTaxRoom(e.target.value)} /></Field>
-          <Field label="Extra on cheap debt / mo" htmlFor="uf-extra"><Input id="uf-extra" numeric inputMode="decimal" placeholder="0" value={lowInterestExtra} onChange={(e) => setLowInterestExtra(e.target.value)} /></Field>
+          <Field label="Overpay a cheap loan / mo" htmlFor="uf-extra" hint="Above the minimum you already pay. Leave at 0 unless you want it gone early."><Input id="uf-extra" numeric inputMode="decimal" placeholder="0" value={lowInterestExtra} onChange={(e) => setLowInterestExtra(e.target.value)} /></Field>
           <Field label="Expensive above (%)" htmlFor="uf-thr" hint="Usually your expected real return"><Input id="uf-thr" numeric inputMode="decimal" value={threshold} onChange={(e) => setThreshold(e.target.value)} /></Field>
         </div>
 
