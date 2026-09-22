@@ -6,6 +6,10 @@ import {
   loadCloudPlan, planToRows, readLocalPlan, rowsToPlan,
   saveCloudPlan, saveSnapshot, writeLocalPlan, type PlanRow,
 } from "@/lib/contribution-store";
+import {
+  buildLadder, fillWaterfall, DEFAULT_THRESHOLD_PCT,
+  type Debt, type RungKind,
+} from "@/lib/contribution-waterfall";
 import { supabase } from "@/lib/supabase";
 import {
   aggregateHoldingsByTicker, planContribution, planImportMerge, targetsSumTo100,
@@ -31,6 +35,14 @@ const EXAMPLE: Row[] = [
   { id: "b", symbol: "VXUS", targetPct: "30", value: "" },
   { id: "c", symbol: "BND",  targetPct: "10", value: "" },
 ];
+
+/* The same floor and target the Home safety runway uses. Duplicated as
+   constants rather than imported because they live in dashboard/page.tsx;
+   they want extracting to lib/ when the Home card lands. */
+const EMERGENCY_FLOOR_MONTHS = 1.5;
+const EMERGENCY_TARGET_MONTHS = 6;
+
+interface DebtRow { id: string; name: string; balance: string; ratePct: string }
 
 const FREQUENCIES = [
   { value: "monthly" as const, label: "Monthly" },
@@ -86,6 +98,20 @@ export default function ContributionsTab() {
     const t = setTimeout(() => { void saveCloudPlan(plan); }, 900);
     return () => clearTimeout(t);
   }, [rows, budget, frequency, loaded]);
+
+  // The ladder's own inputs. Plaid can supply debt rates through its
+  // Liabilities product, but that is not one of the products this app's link
+  // token asks for, and adding it would only cover newly linked accounts —
+  // so these are typed, and Plaid becomes a pre-fill later rather than the
+  // source of truth.
+  const [efBalance, setEfBalance] = useState("");
+  const [monthlyExpenses, setMonthlyExpenses] = useState("");
+  const [monthlyMatch, setMonthlyMatch] = useState("");
+  const [taxRoom, setTaxRoom] = useState("");
+  const [lowInterestExtra, setLowInterestExtra] = useState("");
+  const [threshold, setThreshold] = useState(String(DEFAULT_THRESHOLD_PCT));
+  const [debtRows, setDebtRows] = useState<DebtRow[]>([]);
+  const [disabled, setDisabled] = useState<RungKind[]>([]);
 
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
@@ -155,12 +181,34 @@ export default function ContributionsTab() {
   const targets: Target[] = named.map((r) => ({ symbol: r.symbol.trim().toUpperCase(), targetPct: num(r.targetPct) / 100 }));
   const holdings: Holding[] = named.map((r) => ({ symbol: r.symbol.trim().toUpperCase(), value: num(r.value) }));
 
+  const expenses = num(monthlyExpenses);
+  const efFloor = expenses * EMERGENCY_FLOOR_MONTHS;
+  const efTarget = expenses * EMERGENCY_TARGET_MONTHS;
+  const debts: Debt[] = debtRows
+    .filter((d) => d.name.trim() || d.balance.trim())
+    .map((d) => ({ name: d.name.trim(), balance: num(d.balance), ratePct: num(d.ratePct) }));
+
+  const ladder = buildLadder({
+    emergencyGapToFloor: Math.max(0, efFloor - num(efBalance)),
+    emergencyGapToTarget: Math.max(0, efTarget - num(efBalance)),
+    monthlyMatch: num(monthlyMatch),
+    debts,
+    highInterestThresholdPct: num(threshold) || DEFAULT_THRESHOLD_PCT,
+    taxAdvantagedRoom: num(taxRoom),
+    lowInterestExtra: num(lowInterestExtra),
+    disabled,
+  });
+  const waterfall = fillWaterfall(ladder, num(budget));
+  // Only what survives the ladder is available to the allocation.
+  const investable = waterfall.toInvest;
+  const ladderTakes = waterfall.fills.filter((f) => f.kind !== "taxable" && f.amount > 0);
+
   const targetSum = targets.reduce((s, t) => s + t.targetPct, 0);
   const balanced = targets.length > 0 && targetsSumTo100(targets);
   const plan = useMemo(
-    () => (balanced ? planContribution(targets, holdings, num(budget), { frequency }) : null),
+    () => (balanced ? planContribution(targets, holdings, investable, { frequency }) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(targets), JSON.stringify(holdings), budget, frequency, balanced],
+    [JSON.stringify(targets), JSON.stringify(holdings), investable, frequency, balanced],
   );
 
   /* One snapshot per visit, per month. This is the only record of what the
@@ -204,6 +252,76 @@ export default function ContributionsTab() {
           <Field label="Portfolio now">
             <div style={{ ...mono, fontSize: 24, paddingTop: 4 }}><Money amount={portfolio} /></div>
           </Field>
+        </div>
+      </Card>
+
+      <Card>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "var(--uf-s4)", flexWrap: "wrap" }}>
+          <h3 className="uf-t-h3" style={{ margin: 0 }}>Before investing</h3>
+          <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+            Each step takes what it needs, in order. What is left is invested.
+          </span>
+        </div>
+
+        <div className="uf-ladder-inputs">
+          <Field label="Emergency fund now" htmlFor="uf-ef"><Input id="uf-ef" numeric inputMode="decimal" placeholder="0" value={efBalance} onChange={(e) => setEfBalance(e.target.value)} /></Field>
+          <Field label="Monthly expenses" htmlFor="uf-exp" hint={expenses > 0 ? `Floor ${fmtUsd(efFloor)} · target ${fmtUsd(efTarget)}` : undefined}><Input id="uf-exp" numeric inputMode="decimal" placeholder="0" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} /></Field>
+          <Field label="Employer match / mo" htmlFor="uf-match"><Input id="uf-match" numeric inputMode="decimal" placeholder="0" value={monthlyMatch} onChange={(e) => setMonthlyMatch(e.target.value)} /></Field>
+          <Field label="Tax-advantaged room" htmlFor="uf-room"><Input id="uf-room" numeric inputMode="decimal" placeholder="0" value={taxRoom} onChange={(e) => setTaxRoom(e.target.value)} /></Field>
+          <Field label="Extra on cheap debt / mo" htmlFor="uf-extra"><Input id="uf-extra" numeric inputMode="decimal" placeholder="0" value={lowInterestExtra} onChange={(e) => setLowInterestExtra(e.target.value)} /></Field>
+          <Field label="Expensive above (%)" htmlFor="uf-thr" hint="Usually your expected real return"><Input id="uf-thr" numeric inputMode="decimal" value={threshold} onChange={(e) => setThreshold(e.target.value)} /></Field>
+        </div>
+
+        <div style={{ marginTop: "var(--uf-s5)" }}>
+          <div className="uf-t-label" style={{ textTransform: "uppercase", letterSpacing: "0.09em", color: "var(--uf-ink-2)", marginBottom: "var(--uf-s2)" }}>
+            What you owe
+          </div>
+          {debtRows.length === 0 && (
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "0 0 var(--uf-s3)" }}>
+              Nothing added. Rates are typed in — your bank connection does not carry them.
+            </p>
+          )}
+          {debtRows.map((d) => (
+            <div key={d.id} className="uf-debt-row">
+              <Input aria-label="Debt name" placeholder="Credit card" value={d.name}
+                     onChange={(e) => setDebtRows((rs) => rs.map((x) => x.id === d.id ? { ...x, name: e.target.value } : x))} />
+              <Input aria-label="Debt balance" numeric inputMode="decimal" placeholder="0" value={d.balance}
+                     onChange={(e) => setDebtRows((rs) => rs.map((x) => x.id === d.id ? { ...x, balance: e.target.value } : x))} />
+              <Input aria-label="Debt rate" numeric inputMode="decimal" placeholder="%" value={d.ratePct}
+                     onChange={(e) => setDebtRows((rs) => rs.map((x) => x.id === d.id ? { ...x, ratePct: e.target.value } : x))} />
+              <span style={{ ...mono, fontSize: 13, color: "var(--uf-ink-2)" }}>
+                {num(d.ratePct) >= (num(threshold) || DEFAULT_THRESHOLD_PCT) ? "expensive" : "cheap"}
+              </span>
+              <Button variant="ghost" size="sm" aria-label={`Remove ${d.name || "debt"}`}
+                      onClick={() => setDebtRows((rs) => rs.filter((x) => x.id !== d.id))}>Remove</Button>
+            </div>
+          ))}
+          <Button variant="secondary" size="sm" style={{ marginTop: "var(--uf-s2)" }}
+                  onClick={() => setDebtRows((rs) => [...rs, { id: crypto.randomUUID(), name: "", balance: "", ratePct: "" }])}>
+            Add a debt
+          </Button>
+        </div>
+
+        <div className="uf-ladder-steps">
+          {waterfall.fills.map((f, i) => {
+            const off = !f.enabled;
+            return (
+              <div key={f.kind} className={`uf-ladder-step${f.amount > 0 ? " is-active" : ""}`}>
+                <span style={{ ...mono, color: "var(--uf-ink-3)", fontSize: 13 }}>{i + 1}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, opacity: off ? 0.45 : 1 }}>{f.label}</div>
+                  <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{f.why}</div>
+                </div>
+                <span style={{ ...mono, fontWeight: 700, whiteSpace: "nowrap" }}>
+                  {off ? "—" : f.amount > 0 ? <Money amount={f.amount} decimals={f.amount < 100 ? 2 : 0} /> : <span style={{ color: "var(--uf-ink-3)" }}>$0</span>}
+                </span>
+                <Button variant="ghost" size="sm" aria-label={`${off ? "Turn on" : "Turn off"} ${f.label}`}
+                        onClick={() => setDisabled((d) => off ? d.filter((k) => k !== f.kind) : [...d, f.kind])}>
+                  {off ? "On" : "Off"}
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </Card>
 
@@ -332,6 +450,26 @@ export default function ContributionsTab() {
         .uf-contrib-head {
           font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
           border-bottom: 1px solid var(--uf-border); padding-bottom: var(--uf-s2);
+        }
+        .uf-ladder-inputs {
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: var(--uf-s4); margin-top: var(--uf-s5);
+        }
+        .uf-debt-row {
+          display: grid; grid-template-columns: 1.4fr 1fr 0.7fr auto auto;
+          gap: var(--uf-s3); align-items: center; padding: var(--uf-s2) 0;
+        }
+        .uf-ladder-steps { margin-top: var(--uf-s5); border-top: 1px solid var(--uf-border); }
+        .uf-ladder-step {
+          display: grid; grid-template-columns: 22px 1fr auto auto;
+          gap: var(--uf-s3); align-items: center;
+          padding: var(--uf-s3) 0; border-bottom: 1px solid var(--uf-border);
+        }
+        .uf-ladder-step.is-active { background: var(--uf-surface); }
+        @media (max-width: 860px) {
+          .uf-debt-row { grid-template-columns: 1fr 1fr; }
+          .uf-ladder-step { grid-template-columns: 22px 1fr auto; }
+          .uf-ladder-step > :last-child { grid-column: 2 / -1; justify-self: start; }
         }
         .uf-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
         .uf-cell-label { display: none; }
