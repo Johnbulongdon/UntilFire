@@ -177,6 +177,20 @@ export interface AggregatedHoldings {
   /** Positions that carried no ticker, so could not be matched to a target. */
   skippedCount: number;
   skippedValue: number;
+  /** Cash held inside the investment accounts. Not an asset with a target. */
+  cashValue: number;
+}
+
+/**
+ * Plaid reports cash inside an investment account as a holding with
+ * `ticker_symbol` set to `CUR:<ISO code>` — "CUR:USD". It looks like a ticker
+ * and passes any is-there-a-symbol check, but it is not a security and cannot
+ * carry a target, so it was landing in plans as an asset called CUR:USD.
+ * `type: "cash"` is the same thing said a second way; both are honoured.
+ */
+export function isCashTicker(symbol: string | null | undefined, type?: string | null): boolean {
+  if (type && type.toLowerCase() === "cash") return true;
+  return /^CUR:/i.test((symbol ?? "").trim());
 }
 
 export function aggregateHoldingsByTicker(
@@ -186,13 +200,19 @@ export function aggregateHoldingsByTicker(
   const byTicker = new Map<string, number>();
   let skippedCount = 0;
   let skippedValue = 0;
+  let cashValue = 0;
 
   for (const row of rows) {
     const value = row.institution_value
       ?? (row.quantity != null && row.institution_price != null ? row.quantity * row.institution_price : null);
     if (value == null || !Number.isFinite(value)) continue;
 
-    const ticker = securities[row.security_id]?.ticker_symbol?.trim().toUpperCase();
+    const security = securities[row.security_id];
+    const ticker = security?.ticker_symbol?.trim().toUpperCase();
+    if (isCashTicker(ticker, security?.type)) {
+      cashValue += value;
+      continue;
+    }
     if (!ticker) {
       skippedCount += 1;
       skippedValue += value;
@@ -207,6 +227,7 @@ export function aggregateHoldingsByTicker(
       .sort((a, b) => b.value - a.value),
     skippedCount,
     skippedValue,
+    cashValue,
   };
 }
 
@@ -234,8 +255,16 @@ export function planImportMerge(
   for (const h of imported) {
     const symbol = h.symbol.trim().toUpperCase();
     if (!symbol) continue;
-    if (known.has(symbol)) fill.set(symbol, h.value);
-    else add.push({ symbol, value: h.value });
+    if (known.has(symbol)) {
+      // Fill even a zero: if you sold out of something in the plan, the plan
+      // needs to know that, and zero is the fact.
+      fill.set(symbol, h.value);
+    } else if (h.value > 0) {
+      add.push({ symbol, value: h.value });
+    }
+    // A holding the plan has never heard of AND that you hold none of is a
+    // closed position the institution still lists. There is nothing to
+    // allocate against it and nothing to say about it.
   }
   return { fill, add };
 }
@@ -278,7 +307,11 @@ export function rowsToPlan(rows: PlanRow[], budget: string, frequency: Frequency
 export function planToRows(plan: StoredPlan): { rows: PlanRow[]; budget: string; frequency: Frequency } {
   const valueOf = new Map(plan.holdings.map((h) => [h.symbol, h.value]));
   return {
-    rows: plan.targets.map((t) => ({
+    // Drop cash pseudo-tickers on the way out, so a plan that already picked
+    // one up before the import learned to skip them repairs itself on load.
+    // Only CUR:* — a real ticker sitting at zero might be something the user
+    // means to keep and give a target to, and deleting it is their call.
+    rows: plan.targets.filter((t) => !isCashTicker(t.symbol)).map((t) => ({
       id: rowId(),
       symbol: t.symbol,
       // A blank target round-trips as blank rather than "0" — the tab uses

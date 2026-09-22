@@ -10,7 +10,7 @@
  *
  * Run: npm run test:contribution-plan
  */
-import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows } from "../lib/contribution.ts";
+import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows, isCashTicker } from "../lib/contribution.ts";
 
 const checks = [];
 const check = (name, ok, detail = "") => checks.push({ name, ok, detail });
@@ -138,12 +138,14 @@ for (const row of SHEET) {
     s2: { ticker_symbol: "vti", type: "etf" },      // same holding, different case
     s3: { ticker_symbol: "VXUS", type: "etf" },
     s4: { ticker_symbol: null, name: "CASH SWEEP", type: "cash" },
+    s5: { ticker_symbol: null, name: "IN-HOUSE BALANCED FUND", type: "mutual fund" },
   };
   const rows = [
     { security_id: "s1", institution_value: 1000 },
     { security_id: "s2", institution_value: 500 },                       // second account
     { security_id: "s3", quantity: 10, institution_price: 60 },          // no value, must multiply
-    { security_id: "s4", institution_value: 250 },                       // untickered
+    { security_id: "s4", institution_value: 250 },                       // cash sweep
+    { security_id: "s5", institution_value: 700 },                       // untickered, not cash
     { security_id: "s3", institution_value: null, quantity: null, institution_price: null }, // unpriceable
   ];
   const agg = aggregateHoldingsByTicker(rows, securities);
@@ -157,9 +159,11 @@ for (const row of SHEET) {
     agg.holdings.length === 2, agg.holdings.map((h) => h.symbol).join(", "));
   check("a position with no institution_value falls back to quantity x price",
     vxus?.value === 600, `VXUS $${vxus?.value}`);
-  check("an untickered position is reported, not silently dropped",
-    agg.skippedCount === 1 && agg.skippedValue === 250,
+  check("an untickered position that is not cash is reported, not silently dropped",
+    agg.skippedCount === 1 && agg.skippedValue === 700,
     `${agg.skippedCount} position worth $${agg.skippedValue}`);
+  check("a cash sweep is counted as cash, not as an untickered mystery",
+    agg.cashValue === 250, `cash $${agg.cashValue}`);
   check("a position with neither a value nor a price is ignored",
     vxus?.value === 600);
   check("holdings come back largest first",
@@ -227,6 +231,66 @@ for (const row of SHEET) {
   const plan = planContribution(stored.targets, stored.holdings, stored.budget);
   check("a stored plan still computes",
     Math.abs(plan.total - 100) < 1e-6 && plan.assets.length === 3, `$${plan.total.toFixed(2)}`);
+}
+
+// ── The two things a real import turned up ──────────────────────────────
+// Reported from a live account: the import added an asset called "CUR:USD"
+// and one called "ETH", both with no value.
+{
+  const securities = {
+    c1: { ticker_symbol: "CUR:USD", type: "cash" },      // Plaid's cash pseudo-ticker
+    c2: { ticker_symbol: "CUR:GBP", type: null },        // same, without the type hint
+    c3: { ticker_symbol: null, type: "cash" },           // cash, no ticker at all
+    e1: { ticker_symbol: "ETH", type: "crypto" },        // real ticker, nothing held
+    v1: { ticker_symbol: "VTI", type: "etf" },
+  };
+  const agg = aggregateHoldingsByTicker([
+    { security_id: "c1", institution_value: 4200 },
+    { security_id: "c2", institution_value: 300 },
+    { security_id: "c3", institution_value: 100 },
+    { security_id: "e1", institution_value: 0 },
+    { security_id: "v1", institution_value: 9000 },
+  ], securities);
+
+  check("cash is recognised by its CUR: pseudo-ticker, not treated as an asset",
+    !agg.holdings.some((h) => h.symbol.startsWith("CUR:")),
+    agg.holdings.map((h) => h.symbol).join(", ") || "(none)");
+  check("cash is recognised in any currency and with or without the type hint",
+    agg.cashValue === 4600, `cash $${agg.cashValue}`);
+  check("cash is not counted as an untickered mystery position",
+    agg.skippedCount === 0 && agg.skippedValue === 0);
+  check("a real ticker is still a real ticker",
+    agg.holdings.some((h) => h.symbol === "VTI"));
+
+  check("isCashTicker catches the forms Plaid actually sends",
+    isCashTicker("CUR:USD") && isCashTicker("cur:eur") && isCashTicker("X", "cash")
+      && !isCashTicker("VTI") && !isCashTicker("CURE"));
+
+  // A zero-value holding must not be added, but must still update a row the
+  // plan already has — selling out of something is information.
+  const merge = planImportMerge(["VTI"], [
+    { symbol: "VTI", value: 0 },
+    { symbol: "ETH", value: 0 },
+    { symbol: "VXUS", value: 500 },
+  ]);
+  check("a position you hold none of is not added to the plan",
+    !merge.add.some((h) => h.symbol === "ETH"), merge.add.map((h) => h.symbol).join(", ") || "(nothing added)");
+  check("but selling out of something already in the plan updates it to zero",
+    merge.fill.get("VTI") === 0);
+  check("a real new holding is still added",
+    merge.add.some((h) => h.symbol === "VXUS"));
+
+  // A plan that already took a CUR:USD row repairs itself on load.
+  const stale = {
+    targets: [{ symbol: "VTI", targetPct: 0.6 }, { symbol: "CUR:USD", targetPct: 0 }, { symbol: "ETH", targetPct: 0 }],
+    holdings: [{ symbol: "VTI", value: 9000 }],
+    budget: 500, frequency: "monthly",
+  };
+  const repaired = planToRows(stale);
+  check("a plan that already picked up CUR:USD drops it on load",
+    !repaired.rows.some((r) => r.symbol === "CUR:USD"), repaired.rows.map((r) => r.symbol).join(", "));
+  check("but a real ticker sitting at zero is left for the user to decide about",
+    repaired.rows.some((r) => r.symbol === "ETH"));
 }
 
 let failed = 0;

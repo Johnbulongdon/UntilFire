@@ -138,6 +138,9 @@ export default function ContributionsTab() {
 
       const parts = [`Updated ${filled} holding${filled === 1 ? "" : "s"}`];
       if (added) parts.push(`added ${added} more — give each a target`);
+      if (agg.cashValue > 0) {
+        parts.push(`${fmtUsd(agg.cashValue)} of cash was left out — it has no target to drift from`);
+      }
       if (agg.skippedCount) {
         parts.push(`${agg.skippedCount} position${agg.skippedCount === 1 ? "" : "s"} worth ${fmtUsd(agg.skippedValue)} had no ticker and was left out, so the total below is short by that much`);
       }
