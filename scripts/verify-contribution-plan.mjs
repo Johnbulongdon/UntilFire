@@ -10,7 +10,7 @@
  *
  * Run: npm run test:contribution-plan
  */
-import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows, isCashTicker } from "../lib/contribution.ts";
+import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows, isCashTicker, cashSymbol } from "../lib/contribution.ts";
 
 const checks = [];
 const check = (name, ok, detail = "") => checks.push({ name, ok, detail });
@@ -155,15 +155,17 @@ for (const row of SHEET) {
   check("one ticker held in two accounts is summed, not duplicated",
     agg.holdings.filter((h) => h.symbol === "VTI").length === 1 && vti?.value === 1500,
     `VTI $${vti?.value}`);
-  check("a lower-case ticker is the same holding",
-    agg.holdings.length === 2, agg.holdings.map((h) => h.symbol).join(", "));
+  check("a lower-case ticker is the same holding, and cash is one too",
+    agg.holdings.length === 3 && agg.holdings.some((h) => h.symbol === "CASH"),
+    agg.holdings.map((h) => h.symbol).join(", "));
   check("a position with no institution_value falls back to quantity x price",
     vxus?.value === 600, `VXUS $${vxus?.value}`);
   check("an untickered position that is not cash is reported, not silently dropped",
     agg.skippedCount === 1 && agg.skippedValue === 700,
     `${agg.skippedCount} position worth $${agg.skippedValue}`);
-  check("a cash sweep is counted as cash, not as an untickered mystery",
-    agg.cashValue === 250, `cash $${agg.cashValue}`);
+  check("a cash sweep is cash, not an untickered mystery",
+    agg.cashValue === 250 && agg.holdings.some((h) => h.symbol === "CASH" || h.symbol === "USD"),
+    `cash $${agg.cashValue}, as ${agg.holdings.filter((h) => ["CASH", "USD"].includes(h.symbol)).map((h) => h.symbol).join(",") || "(missing)"}`);
   check("a position with neither a value nor a price is ignored",
     vxus?.value === 600);
   check("holdings come back largest first",
@@ -240,25 +242,35 @@ for (const row of SHEET) {
   const securities = {
     c1: { ticker_symbol: "CUR:USD", type: "cash" },      // Plaid's cash pseudo-ticker
     c2: { ticker_symbol: "CUR:GBP", type: null },        // same, without the type hint
-    c3: { ticker_symbol: null, type: "cash" },           // cash, no ticker at all
+    c3: { ticker_symbol: null, type: "cash" },           // cash, no ticker — currency comes off the holding
     e1: { ticker_symbol: "ETH", type: "crypto" },        // real ticker, nothing held
     v1: { ticker_symbol: "VTI", type: "etf" },
   };
   const agg = aggregateHoldingsByTicker([
     { security_id: "c1", institution_value: 4200 },
     { security_id: "c2", institution_value: 300 },
-    { security_id: "c3", institution_value: 100 },
+    { security_id: "c3", institution_value: 100, iso_currency_code: "EUR" },
     { security_id: "e1", institution_value: 0 },
     { security_id: "v1", institution_value: 9000 },
   ], securities);
 
-  check("cash is recognised by its CUR: pseudo-ticker, not treated as an asset",
+  check("no holding is ever called CUR:anything",
     !agg.holdings.some((h) => h.symbol.startsWith("CUR:")),
     agg.holdings.map((h) => h.symbol).join(", ") || "(none)");
-  check("cash is recognised in any currency and with or without the type hint",
+  check("cash appears as a holding named by its currency",
+    agg.holdings.find((h) => h.symbol === "USD")?.value === 4200
+      && agg.holdings.find((h) => h.symbol === "GBP")?.value === 300,
+    agg.holdings.filter((h) => ["USD", "GBP"].includes(h.symbol)).map((h) => `${h.symbol} $${h.value}`).join(", "));
+  check("cash flagged only by type falls back to the holding's own currency",
+    agg.holdings.find((h) => h.symbol === "EUR")?.value === 100,
+    `EUR $${agg.holdings.find((h) => h.symbol === "EUR")?.value}`);
+  check("cash counts toward the portfolio, and is reported so the note can say so",
     agg.cashValue === 4600, `cash $${agg.cashValue}`);
   check("cash is not counted as an untickered mystery position",
     agg.skippedCount === 0 && agg.skippedValue === 0);
+  check("cashSymbol maps the forms Plaid sends",
+    cashSymbol("CUR:USD") === "USD" && cashSymbol("cur:gbp") === "GBP"
+      && cashSymbol(null, "eur") === "EUR" && cashSymbol(null, null) === "CASH");
   check("a real ticker is still a real ticker",
     agg.holdings.some((h) => h.symbol === "VTI"));
 
@@ -287,8 +299,15 @@ for (const row of SHEET) {
     budget: 500, frequency: "monthly",
   };
   const repaired = planToRows(stale);
-  check("a plan that already picked up CUR:USD drops it on load",
-    !repaired.rows.some((r) => r.symbol === "CUR:USD"), repaired.rows.map((r) => r.symbol).join(", "));
+  check("a plan that stored CUR:USD shows it as USD instead",
+    !repaired.rows.some((r) => r.symbol === "CUR:USD") && repaired.rows.some((r) => r.symbol === "USD"),
+    repaired.rows.map((r) => r.symbol).join(", "));
+  check("the renamed cash row keeps its value rather than being orphaned",
+    planToRows({
+      targets: [{ symbol: "CUR:USD", targetPct: 0.1 }],
+      holdings: [{ symbol: "CUR:USD", value: 2500 }],
+      budget: 100, frequency: "monthly",
+    }).rows[0].value === "2500");
   check("but a real ticker sitting at zero is left for the user to decide about",
     repaired.rows.some((r) => r.symbol === "ETH"));
 }

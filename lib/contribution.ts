@@ -165,6 +165,7 @@ export interface PlaidHoldingRow {
   quantity?: number | null;
   institution_price?: number | null;
   institution_value?: number | null;
+  iso_currency_code?: string | null;
 }
 export interface PlaidSecurity {
   ticker_symbol?: string | null;
@@ -177,20 +178,36 @@ export interface AggregatedHoldings {
   /** Positions that carried no ticker, so could not be matched to a target. */
   skippedCount: number;
   skippedValue: number;
-  /** Cash held inside the investment accounts. Not an asset with a target. */
+  /** How much of the total is cash. Included in `holdings`, under its
+   *  currency code — reported separately only so the note can say so. */
   cashValue: number;
 }
 
 /**
  * Plaid reports cash inside an investment account as a holding with
- * `ticker_symbol` set to `CUR:<ISO code>` — "CUR:USD". It looks like a ticker
- * and passes any is-there-a-symbol check, but it is not a security and cannot
- * carry a target, so it was landing in plans as an asset called CUR:USD.
- * `type: "cash"` is the same thing said a second way; both are honoured.
+ * `ticker_symbol` set to `CUR:<ISO code>` — "CUR:USD". `type: "cash"` says the
+ * same thing a second way; both are honoured.
+ *
+ * Cash is a real part of a portfolio and plenty of allocations hold a
+ * deliberate slice of it, so it is kept as a holding rather than set aside.
+ * What it is not is an asset called "CUR:USD" — it is renamed to the currency
+ * code it represents.
  */
 export function isCashTicker(symbol: string | null | undefined, type?: string | null): boolean {
   if (type && type.toLowerCase() === "cash") return true;
   return /^CUR:/i.test((symbol ?? "").trim());
+}
+
+/**
+ * What to call a cash position. "CUR:USD" becomes "USD"; cash flagged only by
+ * type falls back to the holding's own currency, and to "CASH" when even that
+ * is missing — a row you can see and name beats a row that silently vanishes.
+ */
+export function cashSymbol(symbol?: string | null, isoCurrencyCode?: string | null): string {
+  const match = /^CUR:([A-Za-z]{3})$/i.exec((symbol ?? "").trim());
+  if (match) return match[1].toUpperCase();
+  if (isoCurrencyCode && isoCurrencyCode.trim()) return isoCurrencyCode.trim().toUpperCase();
+  return "CASH";
 }
 
 export function aggregateHoldingsByTicker(
@@ -208,11 +225,14 @@ export function aggregateHoldingsByTicker(
     if (value == null || !Number.isFinite(value)) continue;
 
     const security = securities[row.security_id];
-    const ticker = security?.ticker_symbol?.trim().toUpperCase();
-    if (isCashTicker(ticker, security?.type)) {
+    const rawTicker = security?.ticker_symbol?.trim().toUpperCase();
+    if (isCashTicker(rawTicker, security?.type)) {
+      const symbol = cashSymbol(rawTicker, row.iso_currency_code);
+      byTicker.set(symbol, (byTicker.get(symbol) ?? 0) + value);
       cashValue += value;
       continue;
     }
+    const ticker = rawTicker;
     if (!ticker) {
       skippedCount += 1;
       skippedValue += value;
@@ -305,19 +325,23 @@ export function rowsToPlan(rows: PlanRow[], budget: string, frequency: Frequency
 /** And back. A holding with no matching target is dropped: it cannot be
  *  rendered as a row without inventing the target half of it. */
 export function planToRows(plan: StoredPlan): { rows: PlanRow[]; budget: string; frequency: Frequency } {
-  const valueOf = new Map(plan.holdings.map((h) => [h.symbol, h.value]));
+  const valueOf = new Map(
+    plan.holdings.map((h) => [isCashTicker(h.symbol) ? cashSymbol(h.symbol) : h.symbol, h.value]),
+  );
   return {
-    // Drop cash pseudo-tickers on the way out, so a plan that already picked
-    // one up before the import learned to skip them repairs itself on load.
-    // Only CUR:* — a real ticker sitting at zero might be something the user
-    // means to keep and give a target to, and deleting it is their call.
-    rows: plan.targets.filter((t) => !isCashTicker(t.symbol)).map((t) => ({
+    // A plan that stored a raw "CUR:USD" repairs itself on load by renaming
+    // it to the currency. Renamed rather than dropped: the row is a real
+    // holding, it just had the wrong name on it.
+    rows: plan.targets.map((t) => ({
       id: rowId(),
-      symbol: t.symbol,
+      symbol: isCashTicker(t.symbol) ? cashSymbol(t.symbol) : t.symbol,
       // A blank target round-trips as blank rather than "0" — the tab uses
       // blank to mean "imported, not yet placed in the plan".
       targetPct: t.targetPct ? String(+(t.targetPct * 100).toFixed(4)) : "",
-      value: valueOf.get(t.symbol) ? String(valueOf.get(t.symbol)) : "",
+      value: (() => {
+        const key = isCashTicker(t.symbol) ? cashSymbol(t.symbol) : t.symbol;
+        return valueOf.get(key) ? String(valueOf.get(key)) : "";
+      })(),
     })),
     budget: String(plan.budget || ""),
     frequency: plan.frequency,
