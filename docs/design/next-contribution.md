@@ -90,14 +90,26 @@ history to draw drift over time from.
 
 ## Data model
 
-- `allocation_targets` — user_id, symbol, target_pct, band overrides, sort.
-  Constraint: target_pct sums to 1.
-- `holdings_manual` — user_id, symbol, quantity or value, updated_at. For what
-  Plaid cannot see.
-- `contribution_snapshots` — user_id, month, per-symbol value, current_pct,
-  deviation, allocated. Written monthly; this is what makes the history table
-  and the drift chart possible.
-- `contribution_settings` — budget, frequency, normalise flag.
+Two stores, not the four tables sketched when this was first planned. 0037 set
+the precedent and the reasoning holds here: a thing that is exactly one per
+user and is a *preference* goes on `profiles`, where the row already exists
+and the RLS is already right. Only the thing that is many-per-user and is a
+*record* earns its own table.
+
+- `profiles.contribution_plan` (JSONB) — targets, holdings, budget, frequency.
+  One per user, overwritten wholesale. NULL means never set up, which is not
+  the same as an empty plan.
+- `contribution_snapshots` — user_id, month, total, budget, per-asset detail.
+  Unique on (user_id, month), upserted, so a second visit in a month updates
+  it rather than adding a row.
+
+Shipped as `0041_contribution_plan.sql`.
+
+Snapshots are written when the tab is opened, not by a cron. There is no
+server-side price source to run a cron against — holdings are priced by Plaid
+at request time — so a month nobody opens the tab in has no row and cannot be
+reconstructed afterwards. That gap is a property of the design, not a bug to
+paper over.
 
 ## Build order
 
@@ -109,7 +121,10 @@ history to draw drift over time from.
    accounts is summed, and positions with no ticker (cash sweeps, some funds)
    are reported rather than dropped — their value would otherwise shift every
    percentage on the screen without appearing anywhere.
-4. **Persist and snapshot monthly.** Unlocks history and drift over time.
+4. **Persist and snapshot monthly.** Done. The account copy wins over the
+   local one; a local plan with nothing in the account is pushed up once.
+   Every call treats a missing column or table as "no cloud plan", so the tab
+   keeps working off localStorage until the migration is applied.
 5. **The return hook.** `app/api/email/retention` exists; a monthly "here is
    where October's money goes" plus a Home card. This is the step that earns
    the retention claim.

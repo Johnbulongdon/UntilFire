@@ -10,7 +10,7 @@
  *
  * Run: npm run test:contribution-plan
  */
-import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge } from "../lib/contribution.ts";
+import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows } from "../lib/contribution.ts";
 
 const checks = [];
 const check = (name, ok, detail = "") => checks.push({ name, ok, detail });
@@ -189,6 +189,44 @@ for (const row of SHEET) {
     !m.fill.has("BND"));
   check("importing nothing changes nothing",
     planImportMerge(existing, []).fill.size === 0 && planImportMerge(existing, []).add.length === 0);
+}
+
+// ── The stored shape, and the round trip through it ─────────────────────
+{
+  const rows = [
+    { id: "1", symbol: "vti",  targetPct: "26",   value: "676" },
+    { id: "2", symbol: " VXUS ", targetPct: "34", value: "1,060" },   // typed with a comma
+    { id: "3", symbol: "AVDV", targetPct: "",     value: "592" },     // imported, no target yet
+    { id: "4", symbol: "",     targetPct: "",     value: "" },        // an empty row
+  ];
+  const stored = rowsToPlan(rows, "$100", "weekly");
+
+  check("percentages are stored as fractions, not display numbers",
+    stored.targets[0].targetPct === 0.26, `VTI stored as ${stored.targets[0].targetPct}`);
+  check("tickers are normalised on the way in",
+    stored.targets.map((t) => t.symbol).join(",") === "VTI,VXUS,AVDV",
+    stored.targets.map((t) => t.symbol).join(","));
+  check("a value typed with separators is read as a number",
+    stored.holdings[1].value === 1060, `${stored.holdings[1].value}`);
+  check("a budget typed with a currency symbol is read as a number",
+    stored.budget === 100, `${stored.budget}`);
+  check("an empty row is not stored as an asset",
+    stored.targets.length === 3);
+
+  const back = planToRows(stored);
+  check("the round trip keeps the target as the user typed it",
+    back.rows[0].targetPct === "26" && back.rows[1].targetPct === "34",
+    back.rows.map((r) => `${r.symbol}:${r.targetPct}`).join(" "));
+  check("a blank target round-trips blank, not as zero",
+    back.rows[2].targetPct === "", `AVDV came back as "${back.rows[2].targetPct}"`);
+  check("values and settings survive the round trip",
+    back.rows[1].value === "1060" && back.budget === "100" && back.frequency === "weekly",
+    `${back.rows[1].value} / ${back.budget} / ${back.frequency}`);
+
+  // The stored plan must still drive the maths after a round trip.
+  const plan = planContribution(stored.targets, stored.holdings, stored.budget);
+  check("a stored plan still computes",
+    Math.abs(plan.total - 100) < 1e-6 && plan.assets.length === 3, `$${plan.total.toFixed(2)}`);
 }
 
 let failed = 0;

@@ -239,3 +239,54 @@ export function planImportMerge(
   }
   return { fill, add };
 }
+
+/* ── The stored shape ───────────────────────────────────────────────────
+   Kept as numbers, not the strings the inputs hold: a server-side monthly
+   email reads this, and asking a cron to parse "1,060" out of a text field
+   works right up until someone types a currency symbol. */
+export interface StoredPlan {
+  /** targetPct is a fraction: 0.26, not 26. */
+  targets: { symbol: string; targetPct: number }[];
+  holdings: { symbol: string; value: number }[];
+  budget: number;
+  frequency: Frequency;
+}
+
+export interface PlanRow { id: string; symbol: string; targetPct: string; value: string }
+
+const rowId = () =>
+  (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()));
+
+const toNumber = (s: string) => {
+  const n = parseFloat(String(s).replace(/[^0-9.\-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** UI rows to the stored shape. Rows with no ticker are not part of a plan. */
+export function rowsToPlan(rows: PlanRow[], budget: string, frequency: Frequency): StoredPlan {
+  const named = rows.filter((r) => r.symbol.trim());
+  return {
+    targets: named.map((r) => ({ symbol: r.symbol.trim().toUpperCase(), targetPct: toNumber(r.targetPct) / 100 })),
+    holdings: named.map((r) => ({ symbol: r.symbol.trim().toUpperCase(), value: toNumber(r.value) })),
+    budget: toNumber(budget),
+    frequency,
+  };
+}
+
+/** And back. A holding with no matching target is dropped: it cannot be
+ *  rendered as a row without inventing the target half of it. */
+export function planToRows(plan: StoredPlan): { rows: PlanRow[]; budget: string; frequency: Frequency } {
+  const valueOf = new Map(plan.holdings.map((h) => [h.symbol, h.value]));
+  return {
+    rows: plan.targets.map((t) => ({
+      id: rowId(),
+      symbol: t.symbol,
+      // A blank target round-trips as blank rather than "0" — the tab uses
+      // blank to mean "imported, not yet placed in the plan".
+      targetPct: t.targetPct ? String(+(t.targetPct * 100).toFixed(4)) : "",
+      value: valueOf.get(t.symbol) ? String(valueOf.get(t.symbol)) : "",
+    })),
+    budget: String(plan.budget || ""),
+    frequency: plan.frequency,
+  };
+}

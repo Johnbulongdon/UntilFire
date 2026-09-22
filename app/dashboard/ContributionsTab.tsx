@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Card, Field, Input, Money, SegmentedControl } from "@/components/ui";
+import {
+  loadCloudPlan, planToRows, readLocalPlan, rowsToPlan,
+  saveCloudPlan, saveSnapshot, writeLocalPlan, type PlanRow,
+} from "@/lib/contribution-store";
 import { supabase } from "@/lib/supabase";
 import {
   aggregateHoldingsByTicker, planContribution, planImportMerge, targetsSumTo100,
@@ -17,9 +21,7 @@ import {
    that makes a history table possible, is a later step — this one has no
    migration behind it. */
 
-const STORAGE_KEY = "uf_contribution_v1";
-
-interface Row { id: string; symbol: string; targetPct: string; value: string }
+type Row = PlanRow;
 
 /* A worked example rather than an empty form, labelled as one. The named
    portfolios the user picks from, with their arguments for and against, are a
@@ -49,22 +51,40 @@ export default function ContributionsTab() {
   const [frequency, setFrequency] = useState<Frequency>("monthly");
   const [loaded, setLoaded] = useState(false);
 
+  /* localStorage first so the tab paints immediately, then the account, which
+     wins when it has something — it is the copy that survives a cleared
+     browser and follows you to another device. A local plan with nothing in
+     the account is pushed up once, so anyone who used the tab before it had
+     persistence is not stranded. */
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw) as { rows?: Row[]; budget?: string; frequency?: Frequency };
-        if (Array.isArray(saved.rows) && saved.rows.length) setRows(saved.rows);
-        if (typeof saved.budget === "string") setBudget(saved.budget);
-        if (saved.frequency) setFrequency(saved.frequency);
+    let cancelled = false;
+    const local = readLocalPlan();
+    if (local && local.targets.length) {
+      const r = planToRows(local);
+      setRows(r.rows); setBudget(r.budget); setFrequency(r.frequency);
+    }
+    (async () => {
+      const cloud = await loadCloudPlan();
+      if (cancelled) return;
+      if (cloud && cloud.targets.length) {
+        const r = planToRows(cloud);
+        setRows(r.rows); setBudget(r.budget); setFrequency(r.frequency);
+      } else if (local && local.targets.length) {
+        await saveCloudPlan(local);
       }
-    } catch { /* a blocked or corrupt store just means the example */ }
-    setLoaded(true);
+      if (!cancelled) setLoaded(true);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
+  /* The local write is immediate; the account write is debounced, because
+     otherwise every keystroke in a target field is a round trip. */
   useEffect(() => {
-    if (!loaded) return;   // don't write the example over a real saved plan
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, budget, frequency })); } catch { /* ignore */ }
+    if (!loaded) return;   // don't write the worked example over a real plan
+    const plan = rowsToPlan(rows, budget, frequency);
+    writeLocalPlan(plan);
+    const t = setTimeout(() => { void saveCloudPlan(plan); }, 900);
+    return () => clearTimeout(t);
   }, [rows, budget, frequency, loaded]);
 
   const [importing, setImporting] = useState(false);
@@ -139,6 +159,19 @@ export default function ContributionsTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(targets), JSON.stringify(holdings), budget, frequency, balanced],
   );
+
+  /* One snapshot per visit, per month. This is the only record of what the
+     portfolio looked like at a point in time — holdings are priced live and
+     stored nowhere else — so a month nobody opens the tab in has no row, and
+     cannot be reconstructed later. Written on open rather than by a cron
+     because there is no server-side price source to run one against. */
+  const snapshotWritten = useRef(false);
+  useEffect(() => {
+    if (!loaded || !plan || snapshotWritten.current) return;
+    if (plan.assets.every((a) => a.value <= 0)) return;   // nothing held yet
+    snapshotWritten.current = true;
+    void saveSnapshot(plan, num(budget), frequency);
+  }, [loaded, plan, budget, frequency]);
 
   const portfolio = holdings.reduce((s, h) => s + h.value, 0);
   const set = (id: string, patch: Partial<Row>) =>
