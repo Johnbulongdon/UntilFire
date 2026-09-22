@@ -30,17 +30,6 @@ function futureDate(monthsFromNow: number): Date {
   return d;
 }
 
-/* Compounding demo: fixed 30-year horizon starting from $0, so the ending
-   balance shows what compounding does with whatever contribution it's fed. */
-const TRYIT_YEARS = 30;
-const TRYIT_MONTHS = TRYIT_YEARS * 12;
-const TRYIT_SLIDER_DEFAULT = 300;
-
-function futureValueOfContributions(monthlyContribution: number, months: number, monthlyRate: number): number {
-  const growthFactor = Math.pow(1 + monthlyRate, months);
-  return monthlyContribution * ((growthFactor - 1) / monthlyRate);
-}
-
 /* World section example: what a $1M portfolio covers today, per real city data. */
 const WORLD_PORTFOLIO = 1000000;
 const WORLD_SAVE_MONTHLY = 2000;
@@ -103,43 +92,6 @@ function How7() {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── Try it: slider changes the monthly contribution, fixed 30-year horizon ── */
-function TryIt7() {
-  const [save, setSave] = useState(TRYIT_SLIDER_DEFAULT);
-  const contributed = save * TRYIT_MONTHS;
-  const ending = useMemo(() => futureValueOfContributions(save, TRYIT_MONTHS, GROWTH_MONTHLY), [save]);
-  const grown = Math.max(0, ending - contributed);
-
-  return (
-    <section className="uf7-block uf7-center" style={{ ["--uf7hue" as string]: "44deg" }}>
-      <div className="uf7-blob uf7-glow-r" />
-      <div className="uf7-wrap">
-        <div className="uf7-sec-eyebrow uf7-rv">Try it</div>
-        <h2 className="uf7-statement uf7-rv">Compounding does the work.<br />Your number decides <em>how much</em>.</h2>
-        <div className="uf7-slider-stage uf7-rv">
-          <div className="uf7-live-amount">${Math.round(ending).toLocaleString()}</div>
-          <div className="uf7-saves">
-            You put in ${Math.round(contributed).toLocaleString()} — compounding added ${Math.round(grown).toLocaleString()}
-          </div>
-          <div className="uf7-slider-row">
-            <div className="uf7-slider-label"><span>Monthly savings</span><strong>${save.toLocaleString()}/mo</strong></div>
-            <input
-              type="range"
-              min={100}
-              max={3000}
-              step={100}
-              value={save}
-              onChange={(e) => setSave(+e.target.value)}
-              aria-label="Monthly savings"
-            />
-            <div className="uf7-slider-foot">Starting from $0, after {TRYIT_YEARS} years at a 7% average annual return — the ~10% long-run market average, less ~3% inflation, so this is in today&apos;s money.</div>
-          </div>
         </div>
       </div>
     </section>
@@ -1302,25 +1254,6 @@ const CSS7 = `
   .uf7-row h3 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.015em; }
   .uf7-row p { margin: 8px 0 0; font-size: 16px; line-height: 1.65; color: var(--uf-ink-2); max-width: 460px; }
 
-  .uf7-slider-stage { margin-top: 64px; }
-  .uf7-live-amount { font-family: ${SERIF}; font-size: clamp(52px, 8vw, 96px); line-height: 1; letter-spacing: -0.02em; text-shadow: 0 4px 60px rgba(34,211,165,0.3); color: var(--uf-teal); }
-  .uf7-saves { margin-top: 14px; font-size: 16px; font-weight: 700; color: var(--uf-teal); min-height: 20px; }
-  .uf7-slider-row { margin: 44px auto 0; max-width: 560px; }
-  .uf7-slider-label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; color: var(--uf-ink-2); margin-bottom: 14px; }
-  .uf7-slider-label strong { color: #fff; font-variant-numeric: tabular-nums; }
-  .uf7-slider-row input[type="range"] { width: 100%; appearance: none; -webkit-appearance: none; height: 3px; border-radius: 99px; background: linear-gradient(90deg, var(--uf-teal), var(--uf-border)); outline: none; }
-  .uf7-slider-row input[type="range"]::-webkit-slider-thumb {
-    appearance: none; -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%;
-    background: var(--uf-teal); border: 3px solid var(--uf-ground);
-    box-shadow: 0 0 0 1px rgba(98,250,227,0.6), 0 0 24px rgba(98,250,227,0.55); cursor: pointer;
-  }
-  .uf7-slider-row input[type="range"]::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--uf-teal); border: 3px solid var(--uf-ground);
-    box-shadow: 0 0 0 1px rgba(98,250,227,0.6), 0 0 24px rgba(98,250,227,0.55); cursor: pointer;
-  }
-  .uf7-slider-foot { margin-top: 14px; font-size: 14px; color: var(--uf-ink-2); }
-
   .uf7-earlier { margin-top: 34px; font-family: ${SERIF}; font-size: clamp(22px, 3vw, 30px); }
   .uf7-earlier em { color: var(--uf-teal); font-style: italic; }
 
@@ -1471,7 +1404,6 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
       <Nav7 onStart={onStart} />
       <AnimatedHero onStart={onStart}><YourDateLine7 /></AnimatedHero>
       <How7 />
-      <TryIt7 />
       <DecadeShape7 />
       <StartEarly7 />
       <AnySize7 />
