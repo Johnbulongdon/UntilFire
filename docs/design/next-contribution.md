@@ -121,10 +121,22 @@ paper over.
    accounts is summed, and positions with no ticker (cash sweeps, some funds)
    are reported rather than dropped — their value would otherwise shift every
    percentage on the screen without appearing anywhere.
-4. **Persist and snapshot monthly.** Done. The account copy wins over the
-   local one; a local plan with nothing in the account is pushed up once.
-   Every call treats a missing column or table as "no cloud plan", so the tab
-   keeps working off localStorage until the migration is applied.
+4. **Persist and snapshot monthly.** Done. Everything typed on the page is
+   saved — the allocation, the budget, and the ladder's own inputs (employer
+   match, tax-advantaged room, the cheap-loan overpayment, the debts, which
+   rungs are switched off, and the three overrides). Whichever copy was
+   written later wins: the account write is debounced, so leaving the tab
+   mid-edit cancels it and the local copy is a keystroke ahead, and handing
+   that user back the older plan is the thing this is here to prevent.
+   Whichever wins is pushed to the account. Every call treats a missing column
+   or table as "no cloud plan", so the tab keeps working off localStorage
+   until the migration is applied.
+
+   Two details that are easy to get wrong. An override is `null` when it is
+   following the account, not the account's current number — storing the
+   number would freeze the emergency fund at last month's balance and quietly
+   stop tracking. And nothing is written until the user changes something, so
+   the worked example is never stored as if it were their plan.
 5. **The return hook.** `app/api/email/retention` exists; a monthly "here is
    where October's money goes" plus a Home card. This is the step that earns
    the retention claim.

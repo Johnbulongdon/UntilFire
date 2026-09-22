@@ -16,6 +16,8 @@
  * than gap-filling and it is what the sheet does, so it is kept.
  */
 
+import type { RungKind } from "./contribution-waterfall";
+
 export interface Target {
   symbol: string;
   /** Share of the portfolio this asset should be, 0–1. */
@@ -299,9 +301,54 @@ export interface StoredPlan {
   holdings: { symbol: string; value: number }[];
   budget: number;
   frequency: Frequency;
+  /** The ladder's inputs. Absent on plans stored before the ladder existed. */
+  ladder?: StoredLadder;
+  /** When this copy was written, ms since epoch. The two stores can disagree
+   *  — the account write is debounced, so leaving the tab quickly cancels it
+   *  and leaves localStorage ahead — and this is how the newer one is known.
+   *  Absent on plans stored before it was recorded, which is read as oldest. */
+  updatedAt?: number;
+}
+
+/**
+ * The ladder's own inputs.
+ *
+ * Three of its fields can either follow the account or be overridden. `null`
+ * is the difference: it means "whatever my accounts say", and it has to
+ * survive a reload, because a stored 7000 would freeze the emergency fund at
+ * last month's balance and quietly stop tracking.
+ */
+export interface StoredLadder {
+  efOverride: number | null;
+  expensesOverride: number | null;
+  thresholdOverride: number | null;
+  monthlyMatch: number;
+  taxRoom: number;
+  lowInterestExtra: number;
+  debts: { name: string; balance: number; ratePct: number }[];
+  disabled: RungKind[];
 }
 
 export interface PlanRow { id: string; symbol: string; targetPct: string; value: string }
+export interface DebtRow { id: string; name: string; balance: string; ratePct: string }
+
+/** The ladder as the inputs hold it: strings, and null where a field is
+ *  following the account rather than carrying a typed-in value. */
+export interface LadderFields {
+  efOverride: string | null;
+  expensesOverride: string | null;
+  thresholdOverride: string | null;
+  monthlyMatch: string;
+  taxRoom: string;
+  lowInterestExtra: string;
+  debts: DebtRow[];
+  disabled: RungKind[];
+}
+
+export const EMPTY_LADDER: LadderFields = {
+  efOverride: null, expensesOverride: null, thresholdOverride: null,
+  monthlyMatch: "", taxRoom: "", lowInterestExtra: "", debts: [], disabled: [],
+};
 
 const rowId = () =>
   (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()));
@@ -346,4 +393,119 @@ export function planToRows(plan: StoredPlan): { rows: PlanRow[]; budget: string;
     budget: String(plan.budget || ""),
     frequency: plan.frequency,
   };
+}
+
+/* ── The ladder, to and from storage ─────────────────────────────────────
+   Same convention as the rows above: stored as numbers, held as strings.
+   A blank field and a typed 0 both compute as 0, so they round-trip to the
+   same blank — with one exception. An override of 0 is a real answer ("I
+   have no emergency fund") and is distinct from null ("ask my accounts"), so
+   0 is kept on the three override fields and only null means follow. */
+
+export function ladderToStored(f: LadderFields): StoredLadder {
+  const over = (s: string | null) => (s === null ? null : toNumber(s));
+  return {
+    efOverride: over(f.efOverride),
+    expensesOverride: over(f.expensesOverride),
+    thresholdOverride: over(f.thresholdOverride),
+    monthlyMatch: toNumber(f.monthlyMatch),
+    taxRoom: toNumber(f.taxRoom),
+    lowInterestExtra: toNumber(f.lowInterestExtra),
+    // A debt with no name and no balance is an empty row the user added and
+    // never filled. It is not part of the plan, so it is not stored.
+    debts: f.debts
+      .filter((d) => d.name.trim() || toNumber(d.balance) > 0)
+      .map((d) => ({ name: d.name.trim(), balance: toNumber(d.balance), ratePct: toNumber(d.ratePct) })),
+    disabled: [...f.disabled],
+  };
+}
+
+export function storedToLadder(s: StoredLadder): LadderFields {
+  const over = (n: number | null) => (n === null ? null : String(n));
+  const blankIfZero = (n: number) => (n ? String(n) : "");
+  return {
+    efOverride: over(s.efOverride),
+    expensesOverride: over(s.expensesOverride),
+    thresholdOverride: over(s.thresholdOverride),
+    monthlyMatch: blankIfZero(s.monthlyMatch),
+    taxRoom: blankIfZero(s.taxRoom),
+    lowInterestExtra: blankIfZero(s.lowInterestExtra),
+    debts: s.debts.map((d) => ({
+      id: rowId(),
+      name: d.name,
+      balance: blankIfZero(d.balance),
+      // A 0% loan is a real thing (an interest-free plan), so the rate keeps
+      // its zero where the balance does not.
+      ratePct: String(d.ratePct),
+    })),
+    disabled: [...s.disabled],
+  };
+}
+
+/* Both stores hand back whatever was last written: localStorage is the
+   user's own machine and the Supabase column is JSONB, neither of which
+   promises a shape. A ladder that comes back malformed is dropped rather
+   than trusted — a NaN in one field would render the whole tab blank. */
+/* Keyed by the union rather than listed as an array, so a new rung kind is a
+   compile error here until it is handled — a second hand-kept copy of the
+   list is how a kind ends up silently unrecognised and a user's switched-off
+   rung comes back on. */
+const RUNG_KINDS: Record<RungKind, true> = {
+  "emergency-floor": true, "employer-match": true, "high-interest-debt": true,
+  "emergency-target": true, "tax-advantaged": true, "low-interest-debt": true,
+  taxable: true,
+};
+
+const finite = (v: unknown, fallback = 0) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
+const nullableFinite = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+export function sanitiseLadder(raw: unknown): StoredLadder | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const l = raw as Partial<StoredLadder>;
+  return {
+    efOverride: nullableFinite(l.efOverride),
+    expensesOverride: nullableFinite(l.expensesOverride),
+    thresholdOverride: nullableFinite(l.thresholdOverride),
+    monthlyMatch: finite(l.monthlyMatch),
+    taxRoom: finite(l.taxRoom),
+    lowInterestExtra: finite(l.lowInterestExtra),
+    debts: Array.isArray(l.debts)
+      ? l.debts
+          .filter((d): d is { name: string; balance: number; ratePct: number } => !!d && typeof d === "object")
+          .map((d) => ({ name: String(d.name ?? ""), balance: finite(d.balance), ratePct: finite(d.ratePct) }))
+      : [],
+    disabled: Array.isArray(l.disabled)
+      ? l.disabled.filter((k): k is RungKind => typeof k === "string" && k in RUNG_KINDS)
+      : [],
+  };
+}
+
+/** A plan worth restoring. An allocation is not the only thing the tab holds:
+ *  someone who only filled in the ladder has a plan too, and losing it on
+ *  reload is the exact complaint this persistence exists to answer. */
+export function planHasContent(plan: StoredPlan | null | undefined): plan is StoredPlan {
+  return !!plan && (plan.targets.length > 0 || plan.ladder != null);
+}
+
+/** Of two copies of a plan, the one written later.
+ *
+ *  They can disagree. The account write is debounced, so leaving the tab
+ *  within the debounce cancels it and localStorage is left a keystroke ahead
+ *  — and letting the account always win would hand the user back an older
+ *  plan, which is the very thing this persistence exists to prevent.
+ *
+ *  A plan with no timestamp predates them being recorded: it loses to one
+ *  that has a timestamp, and ties with one that does not, in which case the
+ *  argument order decides and the caller puts the account second. */
+export function newerPlan(local: StoredPlan | null, cloud: StoredPlan | null): StoredPlan | null {
+  if (!local) return cloud;
+  if (!cloud) return local;
+  return (local.updatedAt ?? 0) > (cloud.updatedAt ?? 0) ? local : cloud;
+}
+
+/** Stamp a plan as written now. Called once per edit and the same object
+ *  goes to both stores, so the two copies carry the same timestamp when the
+ *  account write succeeds and differ only when it did not happen. */
+export function stampPlan(plan: StoredPlan, now = Date.now()): StoredPlan {
+  return { ...plan, updatedAt: now };
 }

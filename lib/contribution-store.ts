@@ -14,12 +14,15 @@
 
 import { supabase } from "@/lib/supabase";
 import {
-  rowsToPlan, type AssetPlan, type ContributionPlan, type Frequency,
-  type PlanRow, type StoredPlan,
+  planHasContent, rowsToPlan, sanitiseLadder, type AssetPlan,
+  type ContributionPlan, type Frequency, type PlanRow, type StoredPlan,
 } from "@/lib/contribution";
 
-export { rowsToPlan, planToRows } from "@/lib/contribution";
-export type { PlanRow, StoredPlan } from "@/lib/contribution";
+export {
+  EMPTY_LADDER, ladderToStored, newerPlan, planHasContent, planToRows,
+  rowsToPlan, sanitiseLadder, stampPlan, storedToLadder,
+} from "@/lib/contribution";
+export type { DebtRow, LadderFields, PlanRow, StoredPlan } from "@/lib/contribution";
 
 export const PLAN_STORAGE_KEY = "uf_contribution_v1";
 
@@ -44,6 +47,9 @@ export function readLocalPlan(): StoredPlan | null {
       holdings: Array.isArray(parsed.holdings) ? parsed.holdings : [],
       budget: typeof parsed.budget === "number" ? parsed.budget : 0,
       frequency: parsed.frequency ?? "monthly",
+      ladder: sanitiseLadder(parsed.ladder),
+      updatedAt: typeof parsed.updatedAt === "number" && Number.isFinite(parsed.updatedAt)
+        ? parsed.updatedAt : undefined,
     };
   } catch {
     return null;   // blocked storage, or a shape from before this version
@@ -82,18 +88,24 @@ export async function loadCloudPlan(): Promise<StoredPlan | null> {
       .from("profiles").select("contribution_plan").eq("user_id", uid).maybeSingle();
     if (error) return tolerate("profiles.contribution_plan", error);
     const plan = data?.contribution_plan as StoredPlan | null | undefined;
-    return plan && Array.isArray(plan.targets) ? plan : null;
+    if (!plan || !Array.isArray(plan.targets)) return null;
+    return { ...plan, ladder: sanitiseLadder(plan.ladder) };
   } catch (err) { return tolerate("profiles.contribution_plan", err); }
 }
 
-export async function saveCloudPlan(plan: StoredPlan): Promise<boolean> {
+/** Why a save did not reach the account, when it did not. "signed-out" and
+ *  "failed" are different things to tell a user: one of them is fixed by
+ *  signing in, and telling the other to sign in is simply wrong. */
+export type SaveResult = "saved" | "signed-out" | "failed";
+
+export async function saveCloudPlan(plan: StoredPlan): Promise<SaveResult> {
   const uid = await userId();
-  if (!uid) return false;
+  if (!uid) return "signed-out";
   try {
     const { error } = await supabase.from("profiles").update({ contribution_plan: plan }).eq("user_id", uid);
-    if (error) { tolerate("profiles.contribution_plan", error); return false; }
-    return true;
-  } catch (err) { tolerate("profiles.contribution_plan", err); return false; }
+    if (error) { tolerate("profiles.contribution_plan", error); return "failed"; }
+    return "saved";
+  } catch (err) { tolerate("profiles.contribution_plan", err); return "failed"; }
 }
 
 /** First of the current month, as the date the snapshot is keyed by. */

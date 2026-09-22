@@ -10,7 +10,7 @@
  *
  * Run: npm run test:contribution-plan
  */
-import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows, isCashTicker, cashSymbol } from "../lib/contribution.ts";
+import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows, isCashTicker, cashSymbol, ladderToStored, storedToLadder, sanitiseLadder, planHasContent, newerPlan, stampPlan, EMPTY_LADDER } from "../lib/contribution.ts";
 
 const checks = [];
 const check = (name, ok, detail = "") => checks.push({ name, ok, detail });
@@ -310,6 +310,121 @@ for (const row of SHEET) {
     }).rows[0].value === "2500");
   check("but a real ticker sitting at zero is left for the user to decide about",
     repaired.rows.some((r) => r.symbol === "ETH"));
+}
+
+// ── The ladder's inputs, which are the ones people were re-typing ───────
+{
+  const typed = {
+    efOverride: "7000",           // edited away from the account figure
+    expensesOverride: null,       // still following the account
+    thresholdOverride: "5.5",
+    monthlyMatch: "250",
+    taxRoom: "6,500",             // typed with a separator
+    lowInterestExtra: "",
+    debts: [
+      { id: "1", name: " Visa ", balance: "4,200", ratePct: "22.9" },
+      { id: "2", name: "Interest-free plan", balance: "600", ratePct: "0" },
+      { id: "3", name: "", balance: "", ratePct: "" },        // an empty row
+    ],
+    disabled: ["low-interest-debt"],
+  };
+  const stored = ladderToStored(typed);
+
+  check("an override that follows the account stores as null, not as a number",
+    stored.expensesOverride === null && stored.efOverride === 7000,
+    `expenses ${stored.expensesOverride} / ef ${stored.efOverride}`);
+  check("ladder figures typed with separators are stored as numbers",
+    stored.taxRoom === 6500 && stored.debts[0].balance === 4200,
+    `${stored.taxRoom} / ${stored.debts[0].balance}`);
+  check("an empty debt row is not stored as a debt",
+    stored.debts.length === 2, `${stored.debts.length} debts`);
+
+  const back = storedToLadder(stored);
+  check("the ladder comes back as it was typed",
+    back.efOverride === "7000" && back.thresholdOverride === "5.5" &&
+    back.monthlyMatch === "250" && back.taxRoom === "6500",
+    `${back.efOverride} / ${back.thresholdOverride} / ${back.monthlyMatch} / ${back.taxRoom}`);
+  check("a field following the account still follows it after a reload",
+    back.expensesOverride === null);
+  check("a debt keeps its name and its rate",
+    back.debts[0].name === "Visa" && back.debts[0].ratePct === "22.9",
+    `${back.debts[0].name} @ ${back.debts[0].ratePct}`);
+  check("a 0% loan keeps its zero rather than coming back blank",
+    back.debts[1].ratePct === "0", `came back as "${back.debts[1].ratePct}"`);
+  check("a switched-off rung stays switched off",
+    back.disabled.length === 1 && back.disabled[0] === "low-interest-debt");
+  check("debt rows get fresh ids, and distinct ones",
+    back.debts[0].id && back.debts[0].id !== back.debts[1].id);
+
+  // An override of 0 is an answer — "I have no emergency fund" — and is not
+  // the same as leaving the field to the account.
+  const zeroed = ladderToStored({ ...EMPTY_LADDER, efOverride: "0" });
+  check("an override of zero survives as zero, not as follow-the-account",
+    zeroed.efOverride === 0 && storedToLadder(zeroed).efOverride === "0",
+    `${zeroed.efOverride}`);
+}
+
+// ── What comes back out of localStorage and a JSONB column ──────────────
+{
+  check("a malformed ladder is dropped rather than trusted",
+    sanitiseLadder(null) === undefined && sanitiseLadder("nonsense") === undefined);
+  const junk = sanitiseLadder({
+    efOverride: "7000",                 // a string where a number belongs
+    monthlyMatch: Number.NaN,
+    taxRoom: 500,
+    debts: [null, { name: 5, balance: "x" }],
+    disabled: ["low-interest-debt", "not-a-rung"],
+  });
+  check("a bad field falls back instead of poisoning the whole ladder",
+    junk.efOverride === null && junk.monthlyMatch === 0 && junk.taxRoom === 500,
+    `${junk.efOverride} / ${junk.monthlyMatch} / ${junk.taxRoom}`);
+  check("a rung kind that no longer exists is not restored as a setting",
+    junk.disabled.length === 1 && junk.disabled[0] === "low-interest-debt",
+    junk.disabled.join(","));
+  check("a debt that is not an object is skipped, one that is gets coerced",
+    junk.debts.length === 1 && junk.debts[0].balance === 0, JSON.stringify(junk.debts));
+
+  // The reason planHasContent exists: someone who has only filled in the
+  // ladder has a plan, and restoring on targets alone would throw it away.
+  const ladderOnly = { targets: [], holdings: [], budget: 500, frequency: "monthly",
+                       ladder: ladderToStored({ ...EMPTY_LADDER, monthlyMatch: "250" }) };
+  check("a ladder with no allocation behind it still counts as a plan",
+    planHasContent(ladderOnly));
+  check("an empty plan does not",
+    !planHasContent({ targets: [], holdings: [], budget: 0, frequency: "monthly" }) &&
+    !planHasContent(null));
+  check("a ladder-only plan keeps its budget through the round trip",
+    planToRows(ladderOnly).budget === "500");
+}
+
+// ── Which copy wins when the two stores disagree ────────────────────────
+{
+  const plan = (budget, at) => ({
+    targets: [{ symbol: "VTI", targetPct: 1 }], holdings: [], budget,
+    frequency: "monthly", updatedAt: at,
+  });
+
+  check("the copy written later wins",
+    newerPlan(plan(100, 2000), plan(200, 1000)).budget === 100 &&
+    newerPlan(plan(100, 1000), plan(200, 2000)).budget === 200);
+  check("a missing copy is not preferred over a real one",
+    newerPlan(null, plan(200, 1000)).budget === 200 &&
+    newerPlan(plan(100, 1000), null).budget === 100 &&
+    newerPlan(null, null) === null);
+  check("an untimestamped plan loses to one that has a timestamp",
+    newerPlan(plan(100, undefined), plan(200, 1)).budget === 200,
+    `${newerPlan(plan(100, undefined), plan(200, 1)).budget}`);
+  check("with neither timestamped, the account copy stands",
+    newerPlan(plan(100, undefined), plan(200, undefined)).budget === 200);
+
+  // The case this exists for: an edit reached localStorage, the debounced
+  // account write was cancelled by leaving the tab, and the tab is reopened.
+  const saved = stampPlan(plan(500), 1_700_000_100_000);
+  const stale = stampPlan(plan(300), 1_700_000_000_000);
+  check("an edit the account never received is not overwritten by the older account copy",
+    newerPlan(saved, stale).budget === 500, `${newerPlan(saved, stale).budget}`);
+  check("stamping records when, and changes nothing else",
+    saved.updatedAt === 1_700_000_100_000 && saved.targets[0].symbol === "VTI");
 }
 
 let failed = 0;

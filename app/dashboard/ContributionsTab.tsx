@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Card, Field, Input, Money, SegmentedControl } from "@/components/ui";
 import {
-  loadCloudPlan, planToRows, readLocalPlan, rowsToPlan,
-  saveCloudPlan, saveSnapshot, writeLocalPlan, type PlanRow,
+  EMPTY_LADDER, ladderToStored, loadCloudPlan, newerPlan, planHasContent,
+  planToRows, readLocalPlan, rowsToPlan, saveCloudPlan, saveSnapshot,
+  stampPlan, storedToLadder, writeLocalPlan,
+  type DebtRow, type LadderFields, type PlanRow, type SaveResult, type StoredPlan,
 } from "@/lib/contribution-store";
 import {
   buildLadder, fillWaterfall, DEFAULT_THRESHOLD_PCT,
@@ -20,10 +22,11 @@ import {
    the spreadsheet it ports are in lib/contribution.ts and
    docs/design/next-contribution.md.
 
-   Targets and holdings are kept in localStorage, the same way CitizenshipTab
-   keeps its answer. Moving them to Supabase, along with the monthly snapshot
-   that makes a history table possible, is a later step — this one has no
-   migration behind it. */
+   Everything typed here is saved: the allocation, the budget, and the
+   ladder's own inputs. localStorage holds it for an instant repaint, the
+   profiles.contribution_plan column holds the copy that survives a cleared
+   browser and follows the user to another device. lib/contribution-store.ts
+   has the two-store rationale. */
 
 type Row = PlanRow;
 
@@ -41,8 +44,6 @@ const EXAMPLE: Row[] = [
    they want extracting to lib/ when the Home card lands. */
 const EMERGENCY_FLOOR_MONTHS = 1.5;
 const EMERGENCY_TARGET_MONTHS = 6;
-
-interface DebtRow { id: string; name: string; balance: string; ratePct: string }
 
 const FREQUENCIES = [
   { value: "monthly" as const, label: "Monthly" },
@@ -79,53 +80,101 @@ export default function ContributionsTab({
   const [frequency, setFrequency] = useState<Frequency>("monthly");
   const [loaded, setLoaded] = useState(false);
 
+  /* The ladder's own inputs, in one object so they save and restore as one
+     thing. Plaid can supply debt rates through its Liabilities product, but
+     that is not one of the products this app's link token asks for, and
+     adding it would only cover newly linked accounts — so these are typed,
+     and Plaid becomes a pre-fill later rather than the source of truth. */
+  const [fields, setFields] = useState<LadderFields>(EMPTY_LADDER);
+
+  /* The account read is asynchronous, so it can land after someone has
+     started typing. Anything typed wins: a plan arriving from the network
+     and wiping the figure you are halfway through entering is the same
+     complaint as not saving at all. */
+  const touched = useRef(false);
+  const patchFields = (p: Partial<LadderFields>) => {
+    touched.current = true;
+    setFields((f) => ({ ...f, ...p }));
+  };
+  const {
+    efOverride, expensesOverride: expOverride, thresholdOverride: thrOverride,
+    monthlyMatch, taxRoom, lowInterestExtra, debts: debtRows, disabled,
+  } = fields;
+  const setEfOverride = (v: string | null) => patchFields({ efOverride: v });
+  const setExpOverride = (v: string | null) => patchFields({ expensesOverride: v });
+  const setThrOverride = (v: string | null) => patchFields({ thresholdOverride: v });
+  const setMonthlyMatch = (v: string) => patchFields({ monthlyMatch: v });
+  const setTaxRoom = (v: string) => patchFields({ taxRoom: v });
+  const setLowInterestExtra = (v: string) => patchFields({ lowInterestExtra: v });
+  const setDebtRows = (fn: (rs: DebtRow[]) => DebtRow[]) => {
+    touched.current = true;
+    setFields((f) => ({ ...f, debts: fn(f.debts) }));
+  };
+  const setDisabled = (fn: (d: RungKind[]) => RungKind[]) => {
+    touched.current = true;
+    setFields((f) => ({ ...f, disabled: fn(f.disabled) }));
+  };
+  const editRows = (fn: (rs: Row[]) => Row[]) => { touched.current = true; setRows(fn); };
+  const editBudget = (v: string) => { touched.current = true; setBudget(v); };
+  const editFrequency = (v: Frequency) => { touched.current = true; setFrequency(v); };
+
   /* localStorage first so the tab paints immediately, then the account, which
-     wins when it has something — it is the copy that survives a cleared
-     browser and follows you to another device. A local plan with nothing in
-     the account is pushed up once, so anyone who used the tab before it had
-     persistence is not stranded. */
+     is the copy that survives a cleared browser and follows you to another
+     device. Whichever was written later wins: the account write is debounced,
+     so switching tabs mid-edit cancels it and leaves the local copy ahead by
+     a keystroke — and handing that user back the older plan is exactly what
+     this is here to prevent. Whichever wins is pushed to the account, so a
+     plan from before there was persistence, or one left behind by a cancelled
+     write, ends up stored rather than stranded. */
+  const apply = (plan: StoredPlan) => {
+    const r = planToRows(plan);
+    // An empty target list leaves the worked example alone rather than
+    // replacing it with nothing. The budget and the ladder still restore:
+    // they are a plan on their own, even with no allocation behind them yet.
+    if (r.rows.length) setRows(r.rows);
+    setBudget(r.budget);
+    setFrequency(r.frequency);
+    if (plan.ladder) setFields(storedToLadder(plan.ladder));
+  };
+
   useEffect(() => {
     let cancelled = false;
     const local = readLocalPlan();
-    if (local && local.targets.length) {
-      const r = planToRows(local);
-      setRows(r.rows); setBudget(r.budget); setFrequency(r.frequency);
-    }
+    if (planHasContent(local)) apply(local);
     (async () => {
       const cloud = await loadCloudPlan();
       if (cancelled) return;
-      if (cloud && cloud.targets.length) {
-        const r = planToRows(cloud);
-        setRows(r.rows); setBudget(r.budget); setFrequency(r.frequency);
-      } else if (local && local.targets.length) {
-        await saveCloudPlan(local);
+      const winner = newerPlan(local, cloud);
+      if (planHasContent(winner)) {
+        // The local copy is already on screen from above. Re-applying it
+        // would rebuild every row with a fresh id under the user's cursor.
+        if (winner !== local && !touched.current) apply(winner);
+        if (winner !== cloud) await saveCloudPlan(winner);
       }
       if (!cancelled) setLoaded(true);
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* The local write is immediate; the account write is debounced, because
      otherwise every keystroke in a target field is a round trip. */
+  const [saveState, setSaveState] = useState<"idle" | "saving" | SaveResult>("idle");
   useEffect(() => {
-    if (!loaded) return;   // don't write the worked example over a real plan
-    const plan = rowsToPlan(rows, budget, frequency);
+    // Nothing is written until the user has actually changed something.
+    // `loaded` alone would store the worked example as if it were their plan
+    // — and flash "Saving…" at someone who has not typed a character.
+    // `touched` is a ref, but every edit also changes a dep below, so the
+    // effect re-runs on the same tick the ref is set.
+    if (!loaded || !touched.current) return;
+    const plan = stampPlan({ ...rowsToPlan(rows, budget, frequency), ladder: ladderToStored(fields) });
     writeLocalPlan(plan);
-    const t = setTimeout(() => { void saveCloudPlan(plan); }, 900);
+    setSaveState("saving");
+    const t = setTimeout(() => {
+      void saveCloudPlan(plan).then(setSaveState);
+    }, 900);
     return () => clearTimeout(t);
-  }, [rows, budget, frequency, loaded]);
-
-  // The ladder's own inputs. Plaid can supply debt rates through its
-  // Liabilities product, but that is not one of the products this app's link
-  // token asks for, and adding it would only cover newly linked accounts —
-  // so these are typed, and Plaid becomes a pre-fill later rather than the
-  // source of truth.
-  const [efOverride, setEfOverride] = useState<string | null>(null);
-  const [expOverride, setExpOverride] = useState<string | null>(null);
-  const [thrOverride, setThrOverride] = useState<string | null>(null);
-  const [monthlyMatch, setMonthlyMatch] = useState("");
-  const [taxRoom, setTaxRoom] = useState("");
-  const [lowInterestExtra, setLowInterestExtra] = useState("");
+  }, [rows, budget, frequency, fields, loaded]);
 
   const accountThresholdPct = realReturn != null ? +(realReturn * 100).toFixed(2) : DEFAULT_THRESHOLD_PCT;
   const efBalance = efOverride ?? (cashSavings != null && cashSavings > 0 ? String(Math.round(cashSavings)) : "");
@@ -133,8 +182,6 @@ export default function ContributionsTab({
   const threshold = thrOverride ?? String(accountThresholdPct);
   const hasAccountEf = cashSavings != null && cashSavings > 0;
   const hasAccountExp = accountExpenses != null && accountExpenses > 0;
-  const [debtRows, setDebtRows] = useState<DebtRow[]>([]);
-  const [disabled, setDisabled] = useState<RungKind[]>([]);
 
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
@@ -175,7 +222,7 @@ export default function ContributionsTab({
       const merge = planImportMerge(rows.map((r) => r.symbol), agg.holdings);
       const filled = merge.fill.size;
       const added = merge.add.length;
-      setRows((current) => [
+      editRows((current) => [
         ...current.map((r) => {
           const v = merge.fill.get(r.symbol.trim().toUpperCase());
           return v === undefined ? r : { ...r, value: String(Math.round(v)) };
@@ -249,7 +296,7 @@ export default function ContributionsTab({
 
   const portfolio = holdings.reduce((s, h) => s + h.value, 0);
   const set = (id: string, patch: Partial<Row>) =>
-    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    editRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
   const periodWord = frequency === "monthly" ? "month" : frequency === "weekly" ? "week" : "day";
 
@@ -259,7 +306,18 @@ export default function ContributionsTab({
         <h2 className="uf-t-h2" style={{ margin: 0 }}>Next contribution</h2>
         <p className="uf-t-body" style={{ color: "var(--uf-ink-2)", margin: "var(--uf-s2) 0 0", maxWidth: 560 }}>
           Set what you want to hold and what you hold now. This works out where
-          the next {periodWord}&apos;s money should go to close the gap.
+          the next {periodWord}&apos;s money should go to close the gap. Everything
+          on this page is saved as you type.
+        </p>
+        {/* Quiet, and only after something has actually been written — a
+            "Saved" that is on screen before the first edit says nothing. */}
+        <p className="uf-t-small" aria-live="polite" data-testid="uf-save-state"
+           style={{ color: "var(--uf-ink-2)", margin: "var(--uf-s2) 0 0", minHeight: "1.2em" }}>
+          {saveState === "saving" ? "Saving…"
+            : saveState === "saved" ? "Saved to your account."
+            : saveState === "signed-out" ? "Saved on this device. Sign in to keep it across devices."
+            : saveState === "failed" ? "Saved on this device. Your account could not be reached — it will sync next time."
+            : ""}
         </p>
       </div>
 
@@ -267,10 +325,10 @@ export default function ContributionsTab({
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--uf-s5)", alignItems: "flex-end" }}>
           <Field label="Contribution per month" htmlFor="uf-budget" style={{ minWidth: 180 }}>
             <Input id="uf-budget" numeric inputMode="decimal" value={budget}
-                   onChange={(e) => setBudget(e.target.value)} />
+                   onChange={(e) => editBudget(e.target.value)} />
           </Field>
           <Field label="Buy in">
-            <SegmentedControl options={FREQUENCIES} value={frequency} onChange={setFrequency} label="Contribution frequency" />
+            <SegmentedControl options={FREQUENCIES} value={frequency} onChange={editFrequency} label="Contribution frequency" />
           </Field>
           <Field label="Portfolio now">
             <div style={{ ...mono, fontSize: 24, paddingTop: 4 }}><Money amount={portfolio} /></div>
@@ -435,7 +493,7 @@ export default function ContributionsTab({
               <div className="uf-cell uf-cell-remove">
                 {rows.length > 1 && (
                   <Button variant="ghost" size="sm" aria-label={`Remove ${r.symbol || "row"}`}
-                          onClick={() => setRows((rs) => rs.filter((x) => x.id !== r.id))}>Remove</Button>
+                          onClick={() => editRows((rs) => rs.filter((x) => x.id !== r.id))}>Remove</Button>
                 )}
               </div>
             </div>
@@ -445,7 +503,7 @@ export default function ContributionsTab({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--uf-s4)", marginTop: "var(--uf-s4)", flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: "var(--uf-s2)", flexWrap: "wrap" }}>
             <Button variant="secondary" size="sm"
-                    onClick={() => setRows((rs) => [...rs, { id: crypto.randomUUID(), symbol: "", targetPct: "", value: "" }])}>
+                    onClick={() => editRows((rs) => [...rs, { id: crypto.randomUUID(), symbol: "", targetPct: "", value: "" }])}>
               Add an asset
             </Button>
             <Button variant="secondary" size="sm" disabled={importing} onClick={importFromAccounts}>
