@@ -146,3 +146,96 @@ export function targetsSumTo100(targets: Target[]): boolean {
   const sum = targets.reduce((s, t) => s + t.targetPct, 0);
   return Math.abs(sum - 1) < 1e-6;
 }
+
+/* ── Plaid holdings ─────────────────────────────────────────────────────
+   /api/plaid/holdings returns one row per position per account, keyed to a
+   securities map. Turning that into contribution Holdings needs three things
+   handled, and all three are real rather than defensive: the same ticker can
+   be held in more than one account and must be summed; institution_value is
+   optional and has to fall back to quantity x price; and a security can have
+   no ticker at all — cash sweeps and some funds — which cannot be matched to
+   a target.
+
+   Untickered value is returned rather than dropped. Every percentage on the
+   screen is a share of the portfolio total, so value silently left out does
+   not just hide a row, it shifts every other row's number. */
+
+export interface PlaidHoldingRow {
+  security_id: string;
+  quantity?: number | null;
+  institution_price?: number | null;
+  institution_value?: number | null;
+}
+export interface PlaidSecurity {
+  ticker_symbol?: string | null;
+  name?: string | null;
+  type?: string | null;
+}
+
+export interface AggregatedHoldings {
+  holdings: Holding[];
+  /** Positions that carried no ticker, so could not be matched to a target. */
+  skippedCount: number;
+  skippedValue: number;
+}
+
+export function aggregateHoldingsByTicker(
+  rows: PlaidHoldingRow[],
+  securities: Record<string, PlaidSecurity>,
+): AggregatedHoldings {
+  const byTicker = new Map<string, number>();
+  let skippedCount = 0;
+  let skippedValue = 0;
+
+  for (const row of rows) {
+    const value = row.institution_value
+      ?? (row.quantity != null && row.institution_price != null ? row.quantity * row.institution_price : null);
+    if (value == null || !Number.isFinite(value)) continue;
+
+    const ticker = securities[row.security_id]?.ticker_symbol?.trim().toUpperCase();
+    if (!ticker) {
+      skippedCount += 1;
+      skippedValue += value;
+      continue;
+    }
+    byTicker.set(ticker, (byTicker.get(ticker) ?? 0) + value);
+  }
+
+  return {
+    holdings: [...byTicker.entries()]
+      .map(([symbol, value]) => ({ symbol, value }))
+      .sort((a, b) => b.value - a.value),
+    skippedCount,
+    skippedValue,
+  };
+}
+
+/**
+ * What an import should do to a plan that already exists.
+ *
+ * Returned as instructions rather than applied, so the merge itself can be
+ * tested without a React tree or a Plaid session. Matching is case-insensitive
+ * because the user types tickers by hand and Plaid does not always send them
+ * upper-case.
+ *
+ * An imported holding the plan has never heard of is added with no target.
+ * Giving it one would be inventing an allocation on the user's behalf; leaving
+ * it blank puts it in front of them and lets the targets-total warning say so.
+ */
+export function planImportMerge(
+  existingSymbols: string[],
+  imported: Holding[],
+): { fill: Map<string, number>; add: Holding[] } {
+  const known = new Set(
+    existingSymbols.map((sym) => sym.trim().toUpperCase()).filter(Boolean),
+  );
+  const fill = new Map<string, number>();
+  const add: Holding[] = [];
+  for (const h of imported) {
+    const symbol = h.symbol.trim().toUpperCase();
+    if (!symbol) continue;
+    if (known.has(symbol)) fill.set(symbol, h.value);
+    else add.push({ symbol, value: h.value });
+  }
+  return { fill, add };
+}

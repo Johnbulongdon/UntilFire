@@ -102,9 +102,13 @@ history to draw drift over time from.
 ## Build order
 
 1. **The maths, no persistence.** `lib/contribution.ts` plus the guard. Done.
-2. **The tab.** Manual targets and holdings, the split, band warnings.
+2. **The tab.** Manual targets and holdings, the split, band warnings. Done —
+   `app/dashboard/ContributionsTab.tsx`, persisting to localStorage.
 3. **Import from Plaid.** One button; reconcile by ticker, manual rows for the
-   rest.
+   rest. Done. Matching is case-insensitive, one ticker held across several
+   accounts is summed, and positions with no ticker (cash sweeps, some funds)
+   are reported rather than dropped — their value would otherwise shift every
+   percentage on the screen without appearing anywhere.
 4. **Persist and snapshot monthly.** Unlocks history and drift over time.
 5. **The return hook.** `app/api/email/retention` exists; a monthly "here is
    where October's money goes" plus a Home card. This is the step that earns

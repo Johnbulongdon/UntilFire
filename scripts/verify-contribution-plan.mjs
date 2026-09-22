@@ -10,7 +10,7 @@
  *
  * Run: npm run test:contribution-plan
  */
-import { planContribution, bandFor, statusFor, targetsSumTo100 } from "../lib/contribution.ts";
+import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge } from "../lib/contribution.ts";
 
 const checks = [];
 const check = (name, ok, detail = "") => checks.push({ name, ok, detail });
@@ -129,6 +129,66 @@ for (const row of SHEET) {
 
   check("targets that do not sum to 100% are rejected",
     !targetsSumTo100(pct({ A: 0.5, B: 0.4 })) && targetsSumTo100(targets));
+}
+
+// ── Plaid holdings aggregation ──────────────────────────────────────────
+{
+  const securities = {
+    s1: { ticker_symbol: "VTI", type: "etf" },
+    s2: { ticker_symbol: "vti", type: "etf" },      // same holding, different case
+    s3: { ticker_symbol: "VXUS", type: "etf" },
+    s4: { ticker_symbol: null, name: "CASH SWEEP", type: "cash" },
+  };
+  const rows = [
+    { security_id: "s1", institution_value: 1000 },
+    { security_id: "s2", institution_value: 500 },                       // second account
+    { security_id: "s3", quantity: 10, institution_price: 60 },          // no value, must multiply
+    { security_id: "s4", institution_value: 250 },                       // untickered
+    { security_id: "s3", institution_value: null, quantity: null, institution_price: null }, // unpriceable
+  ];
+  const agg = aggregateHoldingsByTicker(rows, securities);
+  const vti = agg.holdings.find((h) => h.symbol === "VTI");
+  const vxus = agg.holdings.find((h) => h.symbol === "VXUS");
+
+  check("one ticker held in two accounts is summed, not duplicated",
+    agg.holdings.filter((h) => h.symbol === "VTI").length === 1 && vti?.value === 1500,
+    `VTI $${vti?.value}`);
+  check("a lower-case ticker is the same holding",
+    agg.holdings.length === 2, agg.holdings.map((h) => h.symbol).join(", "));
+  check("a position with no institution_value falls back to quantity x price",
+    vxus?.value === 600, `VXUS $${vxus?.value}`);
+  check("an untickered position is reported, not silently dropped",
+    agg.skippedCount === 1 && agg.skippedValue === 250,
+    `${agg.skippedCount} position worth $${agg.skippedValue}`);
+  check("a position with neither a value nor a price is ignored",
+    vxus?.value === 600);
+  check("holdings come back largest first",
+    agg.holdings[0].symbol === "VTI");
+
+  const empty = aggregateHoldingsByTicker([], {});
+  check("no connected holdings is not an error",
+    empty.holdings.length === 0 && empty.skippedCount === 0);
+}
+
+// ── Merging an import into a plan that already exists ───────────────────
+{
+  const existing = ["VTI", "vxus", "", "  BND  "];
+  const imported = [
+    { symbol: "VTI", value: 1500 },
+    { symbol: "VXUS", value: 900 },     // matches despite the saved row's case
+    { symbol: "AVDV", value: 400 },     // new to the plan
+  ];
+  const m = planImportMerge(existing, imported);
+  check("an imported holding already in the plan updates that row",
+    m.fill.get("VTI") === 1500 && m.fill.get("VXUS") === 900, `filled ${[...m.fill.keys()].join(", ")}`);
+  check("matching ignores case and stray whitespace",
+    m.fill.has("VXUS") && !m.add.some((h) => h.symbol === "VXUS"));
+  check("a holding the plan has never heard of is added, not merged into another row",
+    m.add.length === 1 && m.add[0].symbol === "AVDV");
+  check("an untouched row in the plan is not in the fill set",
+    !m.fill.has("BND"));
+  check("importing nothing changes nothing",
+    planImportMerge(existing, []).fill.size === 0 && planImportMerge(existing, []).add.length === 0);
 }
 
 let failed = 0;

@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, Card, Field, Input, Money, SegmentedControl } from "@/components/ui";
+import { supabase } from "@/lib/supabase";
 import {
-  planContribution, targetsSumTo100,
+  aggregateHoldingsByTicker, planContribution, planImportMerge, targetsSumTo100,
   type Frequency, type Holding, type Target,
 } from "@/lib/contribution";
 
@@ -39,6 +40,7 @@ const num = (s: string) => {
   const n = parseFloat(s.replace(/[^0-9.\-]/g, ""));
   return Number.isFinite(n) ? n : 0;
 };
+const fmtUsd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
 export default function ContributionsTab() {
@@ -64,6 +66,67 @@ export default function ContributionsTab() {
     if (!loaded) return;   // don't write the example over a real saved plan
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, budget, frequency })); } catch { /* ignore */ }
   }, [rows, budget, frequency, loaded]);
+
+  const [importing, setImporting] = useState(false);
+  const [importNote, setImportNote] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
+
+  /* Pull what you actually hold from connected investment accounts. Plaid
+     returns institution_price and institution_value per position, so this
+     needs no market-data feed of its own — the prices arrive with the
+     holdings. Matching is by ticker, which is the only identifier shared
+     between what Plaid knows and what the user typed. */
+  async function importFromAccounts() {
+    setImporting(true);
+    setImportNote(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setImportNote({ tone: "warn", text: "Sign in to import from your connected accounts." });
+        return;
+      }
+      const res = await fetch("/api/plaid/holdings", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }).catch(() => null);
+      if (!res?.ok) {
+        setImportNote({ tone: "warn", text: "Could not reach your accounts just now. Nothing was changed." });
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      const agg = aggregateHoldingsByTicker(data?.holdings ?? [], data?.securities ?? {});
+      const reconnect: string[] = data?.needs_reconnect ?? [];
+
+      if (agg.holdings.length === 0) {
+        const why = reconnect.length
+          ? `No holdings came back. Reconnect ${reconnect.join(", ")} and try again.`
+          : "No investment holdings found in your connected accounts.";
+        setImportNote({ tone: "warn", text: why });
+        return;
+      }
+
+      const merge = planImportMerge(rows.map((r) => r.symbol), agg.holdings);
+      const filled = merge.fill.size;
+      const added = merge.add.length;
+      setRows((current) => [
+        ...current.map((r) => {
+          const v = merge.fill.get(r.symbol.trim().toUpperCase());
+          return v === undefined ? r : { ...r, value: String(Math.round(v)) };
+        }),
+        ...merge.add.map((h) => ({
+          id: crypto.randomUUID(), symbol: h.symbol, targetPct: "", value: String(Math.round(h.value)),
+        })),
+      ].filter((r) => r.symbol.trim() || r.targetPct.trim() || r.value.trim()));
+
+      const parts = [`Updated ${filled} holding${filled === 1 ? "" : "s"}`];
+      if (added) parts.push(`added ${added} more — give each a target`);
+      if (agg.skippedCount) {
+        parts.push(`${agg.skippedCount} position${agg.skippedCount === 1 ? "" : "s"} worth ${fmtUsd(agg.skippedValue)} had no ticker and was left out, so the total below is short by that much`);
+      }
+      if (reconnect.length) parts.push(`${reconnect.join(", ")} needs reconnecting`);
+      setImportNote({ tone: agg.skippedCount || reconnect.length ? "warn" : "ok", text: `${parts.join(". ")}.` });
+    } finally {
+      setImporting(false);
+    }
+  }
 
   const named = rows.filter((r) => r.symbol.trim());
   const targets: Target[] = named.map((r) => ({ symbol: r.symbol.trim().toUpperCase(), targetPct: num(r.targetPct) / 100 }));
@@ -175,14 +238,26 @@ export default function ContributionsTab() {
         })}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--uf-s4)", marginTop: "var(--uf-s4)", flexWrap: "wrap" }}>
-          <Button variant="secondary" size="sm"
-                  onClick={() => setRows((rs) => [...rs, { id: crypto.randomUUID(), symbol: "", targetPct: "", value: "" }])}>
-            Add an asset
-          </Button>
+          <div style={{ display: "flex", gap: "var(--uf-s2)", flexWrap: "wrap" }}>
+            <Button variant="secondary" size="sm"
+                    onClick={() => setRows((rs) => [...rs, { id: crypto.randomUUID(), symbol: "", targetPct: "", value: "" }])}>
+              Add an asset
+            </Button>
+            <Button variant="secondary" size="sm" disabled={importing} onClick={importFromAccounts}>
+              {importing ? "Importing\u2026" : "Import from my accounts"}
+            </Button>
+          </div>
           <span className="uf-t-small" style={{ ...mono, color: balanced ? "var(--uf-ink-2)" : "var(--uf-neg)" }}>
             Targets total {(targetSum * 100).toFixed(1)}%{balanced ? "" : " — must be 100%"}
           </span>
         </div>
+
+        {importNote && (
+          <p className="uf-t-small" aria-live="polite"
+             style={{ margin: "var(--uf-s3) 0 0", color: importNote.tone === "ok" ? "var(--uf-ink-2)" : "var(--uf-neg)" }}>
+            {importNote.text}
+          </p>
+        )}
       </Card>
 
       {plan && (
