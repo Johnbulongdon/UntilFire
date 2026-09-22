@@ -318,10 +318,18 @@ export interface StoredPlan {
  * survive a reload, because a stored 7000 would freeze the emergency fund at
  * last month's balance and quietly stop tracking.
  */
+export type ExpenseSource = "last-month" | "average";
+
 export interface StoredLadder {
   efOverride: number | null;
   expensesOverride: number | null;
   thresholdOverride: number | null;
+  /** Which connected accounts the emergency fund is read from. `null` means
+   *  "my savings accounts", which keeps tracking as accounts are added. */
+  efAccountIds: string[] | null;
+  /** Which measured figure the expenses field follows when it is not
+   *  overridden: the most recent complete month, or the average of them. */
+  expenseSource: ExpenseSource;
   monthlyMatch: number;
   taxRoom: number;
   lowInterestExtra: number;
@@ -338,6 +346,8 @@ export interface LadderFields {
   efOverride: string | null;
   expensesOverride: string | null;
   thresholdOverride: string | null;
+  efAccountIds: string[] | null;
+  expenseSource: ExpenseSource;
   monthlyMatch: string;
   taxRoom: string;
   lowInterestExtra: string;
@@ -347,6 +357,7 @@ export interface LadderFields {
 
 export const EMPTY_LADDER: LadderFields = {
   efOverride: null, expensesOverride: null, thresholdOverride: null,
+  efAccountIds: null, expenseSource: "last-month",
   monthlyMatch: "", taxRoom: "", lowInterestExtra: "", debts: [], disabled: [],
 };
 
@@ -408,6 +419,8 @@ export function ladderToStored(f: LadderFields): StoredLadder {
     efOverride: over(f.efOverride),
     expensesOverride: over(f.expensesOverride),
     thresholdOverride: over(f.thresholdOverride),
+    efAccountIds: f.efAccountIds ? [...f.efAccountIds] : null,
+    expenseSource: f.expenseSource,
     monthlyMatch: toNumber(f.monthlyMatch),
     taxRoom: toNumber(f.taxRoom),
     lowInterestExtra: toNumber(f.lowInterestExtra),
@@ -427,6 +440,8 @@ export function storedToLadder(s: StoredLadder): LadderFields {
     efOverride: over(s.efOverride),
     expensesOverride: over(s.expensesOverride),
     thresholdOverride: over(s.thresholdOverride),
+    efAccountIds: s.efAccountIds ? [...s.efAccountIds] : null,
+    expenseSource: s.expenseSource,
     monthlyMatch: blankIfZero(s.monthlyMatch),
     taxRoom: blankIfZero(s.taxRoom),
     lowInterestExtra: blankIfZero(s.lowInterestExtra),
@@ -466,6 +481,12 @@ export function sanitiseLadder(raw: unknown): StoredLadder | undefined {
     efOverride: nullableFinite(l.efOverride),
     expensesOverride: nullableFinite(l.expensesOverride),
     thresholdOverride: nullableFinite(l.thresholdOverride),
+    // An id list from storage is only ever compared against live account ids,
+    // so a stray entry selects nothing rather than doing anything.
+    efAccountIds: Array.isArray(l.efAccountIds)
+      ? l.efAccountIds.filter((id): id is string => typeof id === "string")
+      : null,
+    expenseSource: l.expenseSource === "average" ? "average" : "last-month",
     monthlyMatch: finite(l.monthlyMatch),
     taxRoom: finite(l.taxRoom),
     lowInterestExtra: finite(l.lowInterestExtra),

@@ -318,6 +318,8 @@ for (const row of SHEET) {
     efOverride: "7000",           // edited away from the account figure
     expensesOverride: null,       // still following the account
     thresholdOverride: "5.5",
+    efAccountIds: ["acct-1", "acct-2"],
+    expenseSource: "average",
     monthlyMatch: "250",
     taxRoom: "6,500",             // typed with a separator
     lowInterestExtra: "",
@@ -351,6 +353,10 @@ for (const row of SHEET) {
     `${back.debts[0].name} @ ${back.debts[0].ratePct}`);
   check("a 0% loan keeps its zero rather than coming back blank",
     back.debts[1].ratePct === "0", `came back as "${back.debts[1].ratePct}"`);
+  check("the chosen emergency-fund accounts survive the round trip",
+    back.efAccountIds.join(",") === "acct-1,acct-2", String(back.efAccountIds));
+  check("which month the expenses follow survives the round trip",
+    back.expenseSource === "average", back.expenseSource);
   check("a switched-off rung stays switched off",
     back.disabled.length === 1 && back.disabled[0] === "low-interest-debt");
   check("debt rows get fresh ids, and distinct ones",
@@ -378,6 +384,16 @@ for (const row of SHEET) {
   check("a bad field falls back instead of poisoning the whole ladder",
     junk.efOverride === null && junk.monthlyMatch === 0 && junk.taxRoom === 500,
     `${junk.efOverride} / ${junk.monthlyMatch} / ${junk.taxRoom}`);
+  check("following-my-savings is stored as null, not as today's account list",
+    ladderToStored({ ...EMPTY_LADDER }).efAccountIds === null &&
+    storedToLadder(ladderToStored({ ...EMPTY_LADDER })).efAccountIds === null);
+  check("an unknown expense source falls back to the last complete month",
+    sanitiseLadder({ expenseSource: "whenever" }).expenseSource === "last-month" &&
+    sanitiseLadder({}).expenseSource === "last-month");
+  check("a junk account id list does not become a live selection",
+    sanitiseLadder({ efAccountIds: "all" }).efAccountIds === null &&
+    sanitiseLadder({ efAccountIds: ["a", 7, null] }).efAccountIds.join(",") === "a",
+    JSON.stringify(sanitiseLadder({ efAccountIds: ["a", 7, null] }).efAccountIds));
   check("a rung kind that no longer exists is not restored as a setting",
     junk.disabled.length === 1 && junk.disabled[0] === "low-interest-debt",
     junk.disabled.join(","));

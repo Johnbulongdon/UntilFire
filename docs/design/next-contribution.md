@@ -132,8 +132,20 @@ paper over.
    or table as "no cloud plan", so the tab keeps working off localStorage
    until the migration is applied.
 
-   Two details that are easy to get wrong. An override is `null` when it is
-   following the account, not the account's current number — storing the
+   The two account-backed figures each carry a choice, because the app
+   knowing a number is not the same as it knowing which number you mean.
+   Cash is not one pot: the emergency fund reads from savings and money
+   market, never a current account (this month's spending) or brokerage cash
+   (waiting to be invested), and the user can tick exactly which accounts
+   count — `lib/emergency-fund-accounts.ts`, guarded by
+   `test:emergency-fund-accounts`. Needs vary month to month, so the expenses
+   field follows the last complete month by default, or the average, or a
+   number the user sets. A stored account list whose ids no longer match
+   anything falls back to savings rather than reporting a buffer of zero:
+   relinking a Plaid item reissues every id.
+
+   Two more details that are easy to get wrong. An override is `null` when it
+   is following the account, not the account's current number — storing the
    number would freeze the emergency fund at last month's balance and quietly
    stop tracking. And nothing is written until the user changes something, so
    the worked example is never stored as if it were their plan.

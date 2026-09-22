@@ -16,6 +16,7 @@ import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import ContributionsTab from "./ContributionsTab";
+import { isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
@@ -3763,10 +3764,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
   // ── Emergency fund logic ─────────────────────────────────────────────────
   const HYSA_THRESHOLD = 3.5;
-  const savingsAccts = bankAssets.filter(a => (
-    a.type === "depository" &&
-    ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "))
-  ));
+  const savingsAccts = bankAssets.filter(isSavingsAccount);
   const hasPlaidSavings = savingsAccts.length > 0;
   const hasHysa = savingsAccts.some(a => (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD);
   const emergencyFundBalance = hasPlaidSavings
@@ -3816,7 +3814,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
             {visibleAssets.map(a => {
               const meta = getTypeMeta(a.subtype, a.type);
-              const isSavingsType = ["savings", "money market", "money_market"].includes((a.subtype ?? "").toLowerCase().replace(/-/g, " "));
+              const isSavingsType = isSavingsAccount(a);
               const isHysaAccount = isSavingsType && (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD;
               return (
                 <div key={a.id} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
@@ -5405,15 +5403,22 @@ export default function Dashboard() {
     const vals = Object.values(byMonth);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
   }, [recentTransactions, rates]);
-  const histNeedsAvg = useMemo(() => {
+  /* Needs per complete month, newest first. The average is what the emergency
+     fund sizes itself against; the most recent month is what someone means
+     when they say "what I spend", so the contribution ladder offers both. */
+  const needsByMonth = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const byMonth: Record<string, number> = {};
     recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth) && (t.tags || []).includes("need"))
       .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
-    const vals = Object.values(byMonth);
-    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+    return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
   }, [recentTransactions, rates]);
+  const histNeedsAvg = useMemo(() => {
+    const vals = needsByMonth.map(([, v]) => v);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+  }, [needsByMonth]);
+  const lastMonthNeeds = needsByMonth.length > 0 ? needsByMonth[0][1] : 0;
   const histWorkAvg = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -5442,6 +5447,11 @@ export default function Dashboard() {
     [effectiveExpenses],
   );
   const emergencyFundMonthlyBase = histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds;
+  /* The contribution ladder reads the emergency fund from real accounts, so
+     it needs the accounts rather than a total: which ones count is the user's
+     to decide, and a savings account and a current account are not the same
+     kind of money. */
+  const contributionCashAccounts = useMemo(() => toCashAccounts(plaidAccounts), [plaidAccounts]);
   // Already-committed outgoings still ahead of us this month, in USD.
   // Overdue rows count too: an unpaid bill is still owed.
   const committedRemainingUSD = useMemo(
@@ -6433,8 +6443,10 @@ export default function Dashboard() {
             )}
             {tab === "contributions" && (
               <ContributionsTab
-                cashSavings={cashSavings}
-                monthlyExpenses={emergencyFundMonthlyBase}
+                cashAccounts={contributionCashAccounts}
+                manualCashSavings={cashSavings}
+                lastMonthNeeds={lastMonthNeeds > 0 ? lastMonthNeeds : manualEmergencyNeeds}
+                averageNeeds={histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds}
                 realReturn={growthRate}
               />
             )}

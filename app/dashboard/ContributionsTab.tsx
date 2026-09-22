@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Button, Card, Field, Input, Money, SegmentedControl } from "@/components/ui";
+import { Badge, Button, Card, Field, Input, Money, SegmentedControl, Select } from "@/components/ui";
 import {
   EMPTY_LADDER, ladderToStored, loadCloudPlan, newerPlan, planHasContent,
   planToRows, readLocalPlan, rowsToPlan, saveCloudPlan, saveSnapshot,
@@ -12,10 +12,13 @@ import {
   buildLadder, fillWaterfall, DEFAULT_THRESHOLD_PCT,
   type Debt, type RungKind,
 } from "@/lib/contribution-waterfall";
+import {
+  describeAccounts, resolveEmergencyAccounts, sumBalances, type CashAccount,
+} from "@/lib/emergency-fund-accounts";
 import { supabase } from "@/lib/supabase";
 import {
   aggregateHoldingsByTicker, planContribution, planImportMerge, targetsSumTo100,
-  type Frequency, type Holding, type Target,
+  type ExpenseSource, type Frequency, type Holding, type Target,
 } from "@/lib/contribution";
 
 /* Where this month's money goes. The maths and the two places it departs from
@@ -59,10 +62,16 @@ const fmtUsd = (n: number) => n.toLocaleString("en-US", { style: "currency", cur
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
 export interface ContributionsTabProps {
-  /** Cash and savings the dashboard already totals — the emergency fund. */
-  cashSavings?: number;
-  /** Monthly needs, measured from spending history where there is any. */
-  monthlyExpenses?: number;
+  /** Every connected account that holds cash, savings first. The emergency
+   *  fund is read from the ones the user has chosen, or from savings. */
+  cashAccounts?: CashAccount[];
+  /** Cash and savings as typed into the profile — the fallback for someone
+   *  with no bank connected. */
+  manualCashSavings?: number;
+  /** Measured monthly needs. The most recent complete month and the average
+   *  of the complete months, whichever the user wants to plan against. */
+  lastMonthNeeds?: number;
+  averageNeeds?: number;
   /** The user's own real-return assumption, as a fraction. 0.07, not 7. */
   realReturn?: number;
 }
@@ -71,9 +80,16 @@ export interface ContributionsTabProps {
    read from the account rather than asked for again. They stay editable: a
    measured figure can be zero (nothing connected, no spending history yet)
    and someone may want to try a different number without changing their real
-   assumptions. An override is remembered until it is cleared. */
+   assumptions. An override is remembered until it is cleared.
+
+   Two of the three have a choice behind them as well, because the app knowing
+   a number is not the same as it knowing which number you mean. Cash is not
+   one pot — a savings account is a buffer, a current account is this month's
+   spending — so the emergency fund reads from savings and the user can say
+   otherwise. And needs vary month to month, so the expenses field follows
+   either the last complete month or the average of them. */
 export default function ContributionsTab({
-  cashSavings, monthlyExpenses: accountExpenses, realReturn,
+  cashAccounts = [], manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
 }: ContributionsTabProps = {}) {
   const [rows, setRows] = useState<Row[]>(EXAMPLE);
   const [budget, setBudget] = useState("500");
@@ -98,6 +114,7 @@ export default function ContributionsTab({
   };
   const {
     efOverride, expensesOverride: expOverride, thresholdOverride: thrOverride,
+    efAccountIds, expenseSource,
     monthlyMatch, taxRoom, lowInterestExtra, debts: debtRows, disabled,
   } = fields;
   const setEfOverride = (v: string | null) => patchFields({ efOverride: v });
@@ -177,11 +194,57 @@ export default function ContributionsTab({
   }, [rows, budget, frequency, fields, loaded]);
 
   const accountThresholdPct = realReturn != null ? +(realReturn * 100).toFixed(2) : DEFAULT_THRESHOLD_PCT;
-  const efBalance = efOverride ?? (cashSavings != null && cashSavings > 0 ? String(Math.round(cashSavings)) : "");
-  const monthlyExpenses = expOverride ?? (accountExpenses != null && accountExpenses > 0 ? String(Math.round(accountExpenses)) : "");
+
+  /* The emergency fund. Read from the accounts the user has chosen, or from
+     their savings accounts if they have not chosen; a profile figure typed in
+     by hand covers anyone with no bank connected at all. */
+  const efAccounts = resolveEmergencyAccounts(cashAccounts, efAccountIds);
+  const efFromAccounts = cashAccounts.length > 0
+    ? sumBalances(efAccounts)
+    : (manualCashSavings ?? 0);
+  const hasAccountEf = efFromAccounts > 0;
+  const efBalance = efOverride ?? (hasAccountEf ? String(Math.round(efFromAccounts)) : "");
+  const efSourceLabel = cashAccounts.length > 0
+    ? (efAccounts.length > 0 ? `From ${describeAccounts(efAccounts)}` : "No accounts chosen")
+    : hasAccountEf ? "From the cash in your profile" : "No connected cash yet";
+
+  /* Needs vary month to month, so which month matters. The last complete one
+     is the default: it is what someone means by "what I spend", and an
+     average over a year of connected history quietly flattens the rent rise
+     they are actually planning around. */
+  const measuredExpenses = expenseSource === "average" ? averageNeeds : lastMonthNeeds;
+  const hasAccountExp = measuredExpenses != null && measuredExpenses > 0;
+  const monthlyExpenses = expOverride ?? (hasAccountExp ? String(Math.round(measuredExpenses)) : "");
+  /* No figures in the labels: the chosen one is already in the input directly
+     above, and "Last month · $1,340" is wider than the grid cell, which
+     clipped it to "Last month · $1,34". */
+  const expenseChoices: { value: ExpenseSource | "custom"; label: string }[] = [
+    { value: "last-month", label: "Last month" },
+    { value: "average", label: "Monthly average" },
+    { value: "custom", label: "A number I set" },
+  ];
+  const expenseChoice: ExpenseSource | "custom" = expOverride !== null ? "custom" : expenseSource;
+  const chooseExpenseSource = (v: string) => {
+    if (v === "custom") {
+      // Seed the custom field with whatever is on screen, so switching to it
+      // does not blank the number the user was just looking at.
+      patchFields({ expensesOverride: monthlyExpenses });
+    } else {
+      patchFields({ expenseSource: v as ExpenseSource, expensesOverride: null });
+    }
+  };
+
   const threshold = thrOverride ?? String(accountThresholdPct);
-  const hasAccountEf = cashSavings != null && cashSavings > 0;
-  const hasAccountExp = accountExpenses != null && accountExpenses > 0;
+
+  const [pickingAccounts, setPickingAccounts] = useState(false);
+  const toggleEfAccount = (id: string) => {
+    // The first tick turns "my savings accounts" into an explicit list, so
+    // that unticking one of them has something to remove it from.
+    const current = efAccountIds ?? efAccounts.map((a) => a.id);
+    patchFields({
+      efAccountIds: current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+    });
+  };
 
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
@@ -346,13 +409,20 @@ export default function ContributionsTab({
 
         <div className="uf-ladder-inputs">
           <Field label="Emergency fund now" htmlFor="uf-ef"
-                 hint={efOverride !== null && hasAccountEf ? "Edited — clear to use your accounts" : hasAccountEf ? "From your cash and savings" : "No connected cash yet"}>
+                 hint={efOverride !== null ? "Edited — clear to read it from your accounts" : efSourceLabel}>
             <Input id="uf-ef" numeric inputMode="decimal" placeholder="0" value={efBalance}
                    onChange={(e) => setEfOverride(e.target.value)} />
-            {efOverride !== null && hasAccountEf && (
-              <Button variant="ghost" size="sm" style={{ alignSelf: "flex-start", marginTop: 2 }}
-                      onClick={() => setEfOverride(null)}>Use my accounts</Button>
-            )}
+            <div style={{ display: "flex", gap: "var(--uf-s2)", flexWrap: "wrap", marginTop: 2 }}>
+              {efOverride !== null && hasAccountEf && (
+                <Button variant="ghost" size="sm" onClick={() => setEfOverride(null)}>Use my accounts</Button>
+              )}
+              {cashAccounts.length > 0 && (
+                <Button variant="ghost" size="sm" aria-expanded={pickingAccounts}
+                        onClick={() => setPickingAccounts((v) => !v)}>
+                  {pickingAccounts ? "Done" : "Choose accounts"}
+                </Button>
+              )}
+            </div>
           </Field>
           <Field label="Monthly expenses" htmlFor="uf-exp"
                  hint={expenses > 0
@@ -360,6 +430,15 @@ export default function ContributionsTab({
                    : hasAccountExp ? "From your spending" : "No spending history yet"}>
             <Input id="uf-exp" numeric inputMode="decimal" placeholder="0" value={monthlyExpenses}
                    onChange={(e) => setExpOverride(e.target.value)} />
+            {/* A Select, not a pill row: three labels this long overflow a
+                150px grid cell, and the neighbouring field then sits on top
+                of them — the options became unclickable. */}
+            <Select aria-label="Which spending to plan against" style={{ marginTop: 2 }}
+                    value={expenseChoice} onChange={(e) => chooseExpenseSource(e.target.value)}>
+              {expenseChoices.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </Select>
             {expOverride !== null && hasAccountExp && (
               <Button variant="ghost" size="sm" style={{ alignSelf: "flex-start", marginTop: 2 }}
                       onClick={() => setExpOverride(null)}>Use my spending</Button>
@@ -378,6 +457,39 @@ export default function ContributionsTab({
             )}
           </Field>
         </div>
+
+        {pickingAccounts && cashAccounts.length > 0 && (
+          <div className="uf-ef-picker">
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "0 0 var(--uf-s2)" }}>
+              Which of these is your emergency fund? Savings and money market
+              are ticked to start with — a current account is this month&apos;s
+              spending, not a buffer.
+            </p>
+            {cashAccounts.map((a) => {
+              const on = efAccounts.some((x) => x.id === a.id);
+              return (
+                <label key={a.id} className="uf-ef-account">
+                  <input type="checkbox" checked={on} onChange={() => toggleEfAccount(a.id)} />
+                  <span className="uf-t-body" style={{ flex: 1, minWidth: 0 }}>
+                    {a.label}
+                    {a.mask && <span style={{ color: "var(--uf-ink-2)" }}> ····{a.mask}</span>}
+                    <span className="uf-t-label" style={{ color: "var(--uf-ink-2)", textTransform: "capitalize", marginLeft: "var(--uf-s2)" }}>
+                      {a.subtype}
+                      {a.apy != null && a.apy > 0 ? ` · ${a.apy}% APY` : ""}
+                    </span>
+                  </span>
+                  <span style={{ ...mono, fontSize: 14 }}>{fmtUsd(a.balance)}</span>
+                </label>
+              );
+            })}
+            {efAccountIds !== null && (
+              <Button variant="ghost" size="sm" style={{ marginTop: "var(--uf-s2)" }}
+                      onClick={() => patchFields({ efAccountIds: null })}>
+                Back to my savings accounts
+              </Button>
+            )}
+          </div>
+        )}
 
         <div style={{ marginTop: "var(--uf-s5)" }}>
           <div className="uf-t-label" style={{ textTransform: "uppercase", letterSpacing: "0.09em", color: "var(--uf-ink-2)", marginBottom: "var(--uf-s2)" }}>
@@ -568,6 +680,16 @@ export default function ContributionsTab({
           display: grid; grid-template-columns: 1.4fr 1fr 0.7fr auto auto;
           gap: var(--uf-s3); align-items: center; padding: var(--uf-s2) 0;
         }
+        .uf-ef-picker {
+          margin-top: var(--uf-s4); padding: var(--uf-s4);
+          background: var(--uf-surface); border-radius: var(--uf-r-card);
+        }
+        .uf-ef-account {
+          display: flex; align-items: center; gap: var(--uf-s3);
+          padding: var(--uf-s2) 0; cursor: pointer;
+        }
+        .uf-ef-account + .uf-ef-account { border-top: 1px solid var(--uf-border); }
+        .uf-ef-account input { width: 18px; height: 18px; accent-color: var(--uf-green); flex: none; }
         .uf-ladder-steps { margin-top: var(--uf-s5); border-top: 1px solid var(--uf-border); }
         .uf-ladder-step {
           display: grid; grid-template-columns: 22px 1fr auto auto;
