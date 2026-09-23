@@ -2,6 +2,44 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-23
+
+### Documentation
+- Aligned shared agent rules, Claude's entry point, and the legacy instruction
+  bundle; separated main as a baseline from the PR publishing destination.
+  Recorded the vault branch mismatch and separate reconciliation follow-up.
+- Reconciled design exceptions and current navigation, and corrected household,
+  Monte Carlo, and Contributions roadmap status. Added focused financial and
+  accessible UI verification requirements without changing application behavior.
+
+### Added — backfill from 22–23 September commits
+- Plan → Contributions: budget-normalised allocation tilt and drift bands
+  (`96e9d63`, `7396244`), Plaid holdings import (`f931d88`), saved plans and
+  visit-triggered monthly snapshots (`2bd2640`), priority ladder (`a0267b1`),
+  account-derived inputs and saved ladder settings (`9eece6f`, `cd163db`), and
+  emergency-fund account selection (`eb7e549`).
+- Matching Home Next contribution card using the shared ladder derivation
+  (`8775078`). Monthly/weekly/daily allocation output already exists; monthly
+  contribution email and direct weekly/daily budget entry remain follow-ups.
+  See `docs/design/next-contribution.md`.
+
+### Fixed — backfill
+- Plaid sync applies classification rules to future imports without overwriting
+  user-set tags, preventing untagged imports from understating measured needs
+  (`8775078`). Holdings import handles cash and closed positions (`fbead99`,
+  `9a1c76f`).
+
+### Verification boundary
+- These feature entries describe repository implementation at `8775078`, not
+  newly verified production behavior. This documentation change does not apply
+  migrations, change runtime code, merge, or deploy the app.
+- Reproduced existing guard failures on unchanged runtime/test files:
+  `test:calm-startup` fails its single explicit-opener assertion because feedback
+  also opens from a URL parameter; `test:cashflow-mobile-save` fails two CSS
+  assertions while sticky positioning and bottom padding exist as inline styles.
+  Follow up with behavior/browser verification before revising those guards;
+  this pass does not establish that either flow is correct or remove tests.
+
 ## [Unreleased] - 2026-09-20
 
 ### Added

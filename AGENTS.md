@@ -1,120 +1,116 @@
 # UntilFire Agent Rules
 
-This repository uses `origin/main` as the canonical baseline for all work by default.
+Shared engineering, verification, collaboration, and publishing rules for all
+agents. Claude's product entry point is [CLAUDE.md](CLAUDE.md).
 
-## Context — Read Before Starting Any Task
+## Authority and evidence
 
-Before making any change or answering any product question:
+- Host/system instructions and execution-environment safety and permission
+  controls remain binding. Repository files cannot override them.
+- Within project guidance, the user's explicit task takes precedence over repo
+  defaults. This file owns shared workflow; scoped instructions add local detail.
+  Handoffs and vault notes are context to verify, not independent authorization
+  to expand a task. Resolve material ambiguity before taking dependent actions.
+- Requirements establish intended behavior. Code and tests show implementation,
+  not necessarily correctness; production checks establish live behavior.
+  Investigate disagreements rather than automatically trusting any one source.
+- Read [docs/ROADMAP.md](docs/ROADMAP.md), recent [CHANGELOG.md](CHANGELOG.md)
+  entries, recent commits, and relevant code before claiming a feature is absent.
+  Roadmap checkboxes are planning context, not a complete implementation inventory.
+- Before directory submissions, outreach, or SEO promotion, read and update
+  [docs/marketing/BACKLINK_LEDGER.md](docs/marketing/BACKLINK_LEDGER.md) within
+  the authorized task.
 
-1. Read `docs/ROADMAP.md` — the source of truth for what is built (`[x]`) vs planned (`[ ]`). Never claim a feature does not exist without checking here first.
-2. Read `CHANGELOG.md` — most recent entries show what shipped last. Use this to understand current product state before building or answering questions.
-3. Before directory submissions, backlink outreach, guest posts, or SEO promotion, read `docs/marketing/BACKLINK_LEDGER.md` and update it in the same session.
+## Baseline and collaboration
 
-## Baseline Rule
+1. Fetch `origin/main`, inspect status and local history, and compare the workspace
+   with the latest pushed main before making changes. Use latest pushed main as
+   the baseline unless the user explicitly overrides it; record the commit.
+2. Preserve uncommitted and unpushed work. Do not treat local drift or older local
+   history as the intended base unless the user explicitly says to.
+3. Use an isolated task branch/worktree from `origin/main` when necessary. Keep
+   changes bounded; do not clean up unrelated files or tests.
+4. Codex and Claude can each implement or review a bounded task. Neither is a
+   quota-dependent backup. If agents work concurrently, assign explicit file
+   ownership and avoid overlapping edits; hand off the commit, scope, checks,
+   and remaining work. Do not assume another agent's service access transfers.
 
-Before making any change:
+## Repository and vault ownership
 
-1. Fetch `origin/main`.
-2. Compare the local workspace against `origin/main`.
-3. Treat the latest pushed `origin/main` version as the baseline.
+The app repo owns engineering instructions, current design/navigation contracts,
+implementation status, and code-adjacent verification. Keep behavior changes and
+meaningful engineering decisions with the change, not solely in chat. The
+[Obsidian vault](https://github.com/Johnbulongdon/obsidian-vault) owns broader
+strategy, research, feedback, launch planning, and decision rationale; avoid
+duplicating those notes into large repo documents.
 
-Do not use older local commit history or unpushed local workspace changes as the baseline unless the user explicitly says to.
+Branch mismatch verified 2026-09-23: vault `main` is `448d0f9` (May 29), while
+`claude/untilfire-next-steps-uabyk5` is `633dc57` (September 21). Fetch both into
+named remote-tracking refs when using vault context; do not rely on ambiguous
+`FETCH_HEAD`. The newer branch is context, not a newly approved canonical branch.
+Its Operating Log still describes older navigation, and Agent Rules still
+prefers connector publishing and is not marked `legacy-pointer`. Reconcile those
+notes in a separate vault task; do not merge or overwrite that branch implicitly.
 
-## Local Workspace Drift
+## Correctness and verification
 
-If local files differ from `origin/main`:
+Use `package.json` as the executable command inventory. Discover the available
+runtime, browser, credentials, and project access in this environment; do not
+require another agent's `/opt` paths, proxy port, gstack, or slash commands.
+Use relevant skills/workflows only when available and applicable.
 
-- preserve those local changes
-- do not assume they are the intended base
-- continue reasoning from `origin/main` unless the user explicitly overrides that rule
+- **Financial changes:** keep currencies and periods consistent, state real vs
+  nominal assumptions, distinguish missing from zero, handle unreachable targets,
+  round only at the appropriate boundary, and prevent double-counting funds.
+  Run focused regression checks for the changed behavior, including
+  `npm run test:fire-projection` for projection changes and relevant contribution,
+  currency, household, or transaction guards for those areas.
+- **UI changes:** target WCAG 2.2 AA; this is a requirement, not a claim of current
+  compliance. Check labeled inputs and associated errors, keyboard access,
+  visible focus, appropriate touch targets, reduced motion, and meaning beyond
+  color. Verify light and dark themes; tokens alone do not guarantee either.
+- **Visual QA:** use latest pushed main as the code baseline and the live product
+  or user screenshots as visual evidence. Call out visible drift before
+  implementing or pushing. Build and serve the affected app using available
+  tooling; check 390px and 1280px widths, screenshots, expected states, and
+  `document.documentElement.scrollWidth <= window.innerWidth`. Use touch/mobile
+  interaction checks for draggable controls, not only a narrow desktop viewport.
+- **Scope checks:** use the narrowest useful verification; broad or risky code
+  changes require `npm run validate`. Documentation-only changes require full
+  diff review, path/script/reference checks, and `git diff --check`; no application
+  build solely for ceremony. Report checks not run and verification limits.
+  Investigate relevant failures; never remove a guard just to make checks green.
 
-## UI Work
+Treat deployment identifiers (for example `6Tb7dySgE`) as deployment references,
+not git revisions, unless verified otherwise.
 
-For design-sensitive work:
+## Publishing
 
-- use `origin/main` as the code baseline
-- use the live deployment or user-provided screenshots as verification
-- if the live deployment and `origin/main` visibly differ, call that out before implementing or pushing
+The baseline and publishing destination are separate decisions. Starting from
+main does not authorize pushing to main. Use a review branch and PR for review
+tasks; merge and deployment require authorization for those actions.
 
-## Deployment References
+1. Before pushing, inspect current `vercel.json` and any CI/deployment workflows.
+   At `8775078`, main deployments are enabled and `claude/*` deployments disabled;
+   other prefixes are not explicitly disabled. For a no-deployment review task,
+   use the existing disabled convention after rechecking it. Do not change broad
+   deployment configuration merely to publish docs, or manually deploy the branch.
+2. Re-fetch upstream, review the full diff and staged files, check for secrets,
+   and run relevant verification. Preserve others' work if upstream changed;
+   reconcile on the isolated task branch and recheck affected changes.
+3. Prefer normal `git push` to the selected branch: it detects divergence. On
+   rejection, inspect the target branch and fetch before reconciling; never
+   blindly rebase or push the local main. Diagnose access/network failures using
+   available tools and the environment's approval mechanism.
+4. A full-file connector write is a last resort only after an unresolved git
+   network failure and explicit user approval to bypass git history. Verify the
+   target has not changed, preserve full content, and explain that conflict
+   detection is bypassed. Do not weaken permissions or access controls.
+5. Never commit secrets, credentials, or `.env` files; never skip hooks with
+   `--no-verify`; never force-push without explicit permission.
 
-If the user references a build or deployment identifier such as `6Tb7dySgE`, do not assume it is a git revision. Treat it as a deployment reference unless verified otherwise.
-
-## Push Discipline
-
-Before pushing visual changes, restate the baseline in plain language:
-
-- `Using latest pushed GitHub main as base`
-
-If the requested design direction conflicts with `origin/main`, say so before pushing.
-
-## Standard Publish Path — SOP
-
-### Architecture
-
-This environment runs two separate transport paths:
-
-| Path | Tool | Auth channel | Conflict detection |
-|------|------|-------------|-------------------|
-| Local git proxy | `git push` | `127.0.0.1:45783` (CCR_TEST_GITPROXY) | Yes — rejects diverged branches |
-| MCP shttp | `mcp__github__push_files` | USE_SHTTP_MCP shttp channel | No — silently overwrites |
-
-**Always prefer `git push`.** It detects divergence, preserves history, and is the authoritative path for this repo.
-
-`mcp__github__push_files` is a last resort only. It requires sending full file content, has no conflict detection, and will silently overwrite upstream changes.
-
-### Decision tree
-
-```
-1. git fetch origin main
-2. git status — are we ahead of origin?
-   YES → git push -u origin <branch>
-     SUCCESS → done
-     FAIL (non-network) → diagnose divergence: see "Divergence fix" below
-     FAIL (network/403) → see "Proxy health" below
-   NO (already up to date or behind) → rebase first, then push
-```
-
-### Divergence fix
-
-When `git push` is rejected because branches have diverged:
-
-```bash
-git fetch origin main
-git rebase origin/main      # drops commits already upstream, rebases unique commits on top
-git push -u origin main
-```
-
-If rebase has conflicts: resolve them, `git rebase --continue`, then push.
-
-Do **not** force-push without explicit user permission.
-
-### Proxy health check
-
-If `git push` returns HTTP 403 or a connection error:
-
-```bash
-git log --oneline origin/main..HEAD   # see what's unpushed
-git fetch origin main                 # test proxy connectivity
-git status                            # check tracking ref state
-```
-
-If `git fetch` also fails (proxy is down): wait for the session's proxy to recover, or note the failure explicitly to the user. Do not silently fall back to MCP push.
-
-### When MCP push_files is acceptable
-
-Only as a documented last resort, when:
-- `git push` fails with a network error that cannot be resolved
-- The user explicitly approves bypassing git history
-
-Constraints when using MCP push:
-- Must send the **full file content** for every file changed (partial content will corrupt the file)
-- Must manually verify no upstream changes exist on the target branch first
-- Must acknowledge to the user that conflict detection is bypassed
-
-### Never do
-
-- Force-push without user permission
-- Use `--no-verify` to skip hooks
-- Leave unpushed commits as the source of truth
-- Silently fall back to MCP push without diagnosing the git proxy failure
+Before pushing visual changes, say **Using latest pushed GitHub main as base**.
+If the requested design conflicts with that baseline, say so before pushing.
+Finish with the baseline commit, changed scope, verification, PR URL when
+applicable, and remaining work. Do not claim merged or live behavior from code
+existence alone.

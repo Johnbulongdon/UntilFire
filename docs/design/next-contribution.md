@@ -73,10 +73,11 @@ ETH at 2–8 on a 5% target) survives as an override rather than the default.
 features.
 
 - **Money → Net Worth** — what you hold. Largely exists.
-- **Plan → Contributions** — targets, drift, the split, the warnings. New.
+- **Plan → Contributions** — targets, drift, the split, the warnings. Implemented
+  in the 22–23 September commits; repository status is not production verification.
 
-Rule 6 applies: add the tab to `PLAN_SECTIONS` *and* the deep-link `valid`
-array, or it ships unreachable.
+Rule 6 applies: keep the tab in `PLAN_SECTIONS`, its sidebar group membership,
+and the deep-link `valid` array, or it becomes unreachable or loses navigation state.
 
 ## Prices
 
@@ -166,7 +167,10 @@ paper over.
    emergency-fund target too small and sends money past a buffer the ladder
    believes is nearly full. The sync now applies the rules
    (`lib/classification-rules.ts`), never overwriting a tag the user set.
-6. **Frequency.** Weekly and daily entry amounts.
+6. **Frequency.** Monthly/weekly/daily allocation output is implemented via the
+   "Buy in" selector and `planContribution`; the budget input remains
+   "Contribution per month". Entering a weekly/daily budget directly is still
+   a follow-up, distinct from the existing per-period output.
 
 ## The open question
 

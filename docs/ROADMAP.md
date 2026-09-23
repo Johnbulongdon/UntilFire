@@ -1,5 +1,20 @@
 # UntilFire — Product Roadmap
-Last updated: August 2026
+Last aligned: 23 September 2026 against app `8775078` (focused documentation pass).
+
+This is planning context, not an exhaustive feature inventory or proof of live
+correctness. Check code, tests, recent commits and `CHANGELOG.md` before treating
+an unchecked item as absent. Existing production-verification checkmarks are
+historical reports and were not revalidated in this documentation pass.
+
+The newer vault `Planning/Launch Runway.md` on
+`claude/untilfire-next-steps-uabyk5` (`633dc57`) prioritises activation and retention
+before a conditional 12 January 2027 Product Hunt relaunch. Its September 20
+snapshot repeats historical funnel data (225 landing views → 24 calculator
+entrants → 16 reveals → 1 signup start); email-save conversion was not fully
+instrumented. These are source notes, not newly queried analytics. Country SEO
+is a bounded experiment, not permission to add pages. Older launch checklists
+below remain historical planning context; reconcile broader strategy in the
+vault follow-up described in `AGENTS.md`.
 
 ---
 
@@ -79,15 +94,15 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 ### Dashboard
 
 - [x] Dashboard shell with sidebar navigation
-- [x] Overview, Cashflow, Assets, Liabilities, FIRE Calculator, Reports, Learning Hub, Profile
+- [x] Home / Money / Plan navigation, with Profile in the user menu; current destinations are documented in `docs/design/app-structure.md`
 - [x] FIRE projection chart and target progress
-- [x] Monte Carlo simulation in dashboard
+- Removed 16 August 2026: Monte Carlo "Confidence Check"; no current simulation feature. Any return requires a separately scoped redesign (see `CHANGELOG.md`).
 - [x] Cashflow transaction tracker
 - [x] Custom categories and sub-categories using localStorage
 - [x] Recurring planner with include/exclude toggles and detection from transaction history
 - [x] Reports: income vs expenses, category breakdown, month-by-month table
 - [x] Multi-currency dashboard display with fallback FX rates
-- [x] Profile settings: name, city, default currency, delete account
+- [x] Profile account settings and FIRE personality/type; planning assumptions (including target city) moved to Plan on 18 September
 
 ### Content / SEO
 
@@ -286,7 +301,30 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [x] "This month: invest $300 more and your freedom date moves 4 months closer" style recommendations — shipped as the "Your month" check-in card on Home (`DashTab`), synthesizing `consistencyMonths` (last month's actual result) and `topTasks[0]` (this month's move) into one verdict; dismissible per calendar month via `uf_checkin_dismissed_YYYY-MM`
 - [ ] Explain tradeoffs clearly: impact, difficulty, confidence, and why it matters — impact exists (`impactYears`); difficulty and confidence do not yet
 - [ ] Keep recommendations grounded in user data and editable assumptions
-- [ ] Monthly progress email or dashboard card
+- [x] Monthly Home check-in card and matching Next contribution card (see below)
+- [ ] Monthly progress/contribution email — existing retention emails do not implement this loop
+
+### Next contribution — implemented 22–23 September 2026
+
+Implementation status below is grounded in commits `96e9d63` through `8775078`;
+it does not certify production deployment, migration state, or browser QA.
+See `docs/design/next-contribution.md` for the model and caveats.
+
+- [x] Plan → Contributions: budget-normalised allocation tilt, 5/25 drift bands
+  and per-asset overrides; manual targets/holdings and Plaid holdings import
+- [x] Saved allocation and ladder inputs, local/account reconciliation, and
+  monthly snapshots on tab visits (not a cron; unvisited months have no snapshot)
+- [x] Priority ladder, account-derived inputs, and explicit emergency-fund account
+  selection; distinguish following an account from a manual override
+- [x] Home Next contribution card shares the ladder derivation with Plan
+- [x] Plaid sync applies need/want classification rules without overwriting user
+  tags, keeping future imports in the measured-needs base
+- [ ] Production verification of this Contributions flow and persistence
+- [ ] Monthly contribution email
+- [x] Monthly/weekly/daily allocation output via "Buy in"; budget input remains monthly
+- [ ] Direct weekly/daily budget entry (distinct from existing per-period output)
+- [ ] Resolve named allocation/asset suggestions with legal input before shipping;
+  do not treat executing user-chosen targets as approval for recommendations
 
 ### Supporting Features
 
@@ -363,7 +401,9 @@ not a fifth top-level destination.
 
 ### Product Depth
 
-- [ ] Partner/spouse mode for two-income households
+- [x] Household mode: partner invitation/disconnect, combined Home view,
+  confirmed shared-account deduplication, and shared Pro entitlement (18 September;
+  `b6a3cd0`, `c1ffdb6`). See changelog for boundaries and verification context.
 - [ ] Advanced assumptions editor: returns, inflation, withdrawal rate, tax assumptions
 - [ ] International expansion improvements for high-demand countries/cities
 - [ ] PWA installable mobile experience

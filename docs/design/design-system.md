@@ -17,7 +17,10 @@ The visual language is **v3 Warm**, chosen from four directions explored on
 
 > **Green acts. Teal means freedom.**
 
-Green (`--uf-green`) is every button, link, and interactive affordance.
+Green (`--uf-green`) identifies primary actions and action links. Neutral
+secondary/ghost controls and red destructive actions (`--uf-neg`) are valid,
+as implemented by `Button`; not every interactive affordance must be green.
+Use labels, icons, or other cues as well as color to communicate meaning.
 
 Teal (`--uf-teal`) is reserved for **progress toward the freedom date** — the
 freedom date itself, progress bars, "2.4 years earlier", time saved. Teal never
@@ -34,7 +37,7 @@ that means something.
 | **Ground** | Warm cream `#FDF8F1`, light default; warm dark `#16120D` via `.dark`, every route |
 | **Display** | Fraunces — freedom date, page titles, h1/h2. Display sizes only |
 | **Body** | Manrope — everything h3 and below |
-| **Data** | DM Mono, tabular numerals — every figure, date, percentage |
+| **Data** | DM Mono, tabular numerals — financial figures, dates, percentages; prominent freedom-date display uses Fraunces |
 | **Marketing serif** | Instrument Serif — landing page and HomeClient hero only |
 
 Money apps are cold; this one deliberately isn't. Neutrals are **warm all the way
@@ -57,14 +60,15 @@ the same Cashflow list.
 
 ### Contrast
 
-Badge text is 11px, which needs 4.5:1. The base brand colours pass at display
-size but not at 11px, so badges use the `--uf-*-ink` variants, solved for AA
-rather than eyeballed. All 14 foreground/background pairs pass in both themes —
-re-check with the solver in the commit if you change a colour.
+Badge text is 11px and needs 4.5:1 contrast. Use the `--uf-*-ink` variants
+instead of assuming base brand colors work at that size. Verify the actual
+foreground/background combinations in both themes when changing colors.
+Target WCAG 2.2 AA; these tokens are not proof of current app-wide compliance.
 
 ## Scales
 
-Use these. Nothing between the steps.
+Use these for new layouts. Existing shared primitives have bounded internal
+exceptions below; those are not extra general-purpose scale steps.
 
 | Scale | Steps | Was |
 | --- | --- | --- |
@@ -77,6 +81,16 @@ Use these. Nothing between the steps.
 Type classes are in `globals.css`: `.uf-t-display`, `.uf-t-h1`, `.uf-t-h2`,
 `.uf-t-h3`, `.uf-t-lead`, `.uf-t-body`, `.uf-t-small`, `.uf-t-label`,
 `.uf-t-data`.
+
+### Bounded primitive exceptions
+
+Keep existing component sizing when reusing primitives: `Button` uses 15px
+large text and padding of 8px/16px (sm), 11px/22px (md), and 14px/28px (lg).
+`Stat` uses a 20px medium value, 12px delta text, and 5px internal spacing.
+These component-specific values are not permission to invent page-level sizes
+or rewrite UI during documentation work. Review and document new exceptions
+at the primitive level. `Button` also owns its existing white primary-label
+literal; reuse it rather than inventing a nonexistent `--uf-on-green` token.
 
 ## The primitives
 
@@ -98,12 +112,27 @@ import { Button, Card, Field, Input, Badge, Stat } from "@/components/ui";
    label-figure-delta block. Use the primitive.
 2. **Never write a hex colour.** Use a token. A colour you can't find a token
    for is a colour that needs a token, not a literal.
-3. **Never invent a size, radius, or gap.** Pick the nearest step on the scale.
-4. **Every figure uses DM Mono** with tabular numerals — currency, dates,
-   percentages, table columns.
+3. **Use the scales** for layout, retaining documented primitive exceptions.
+4. **Financial data uses DM Mono** with tabular numerals — currency, dates,
+   percentages, table columns, and `Stat` values. The prominent freedom-date
+   display is the deliberate Fraunces exception; a date in a table or `Stat`
+   remains data, including when its tone is `freedom`.
 5. **Teal is not a button.** See the one rule.
-6. **Both themes, always.** Style through tokens so `.dark` works for free.
-   A colour defined outside the token system is a colour pinned to light mode.
+6. **Both themes, always.** Use tokens, then verify light and dark rendering;
+   tokens alone do not guarantee contrast, hierarchy, or correct states.
+
+## Interaction and verification
+
+Follow the shared checks in `AGENTS.md`: labeled inputs and associated errors,
+keyboard access, visible focus, appropriate touch targets, reduced motion, and
+meaning beyond color. Browser QA includes 390px and 1280px viewports, overflow
+checks, expected states, and touch interaction where applicable. Use available
+tooling rather than assuming fixed browser installation paths.
+
+Navigation follows `docs/design/app-structure.md`: Money includes operational
+budgets and upcoming payments as well as recorded finances; Plan handles
+long-term projections and scenarios. Home owns no independent financial inputs,
+but its card layout can be customised.
 
 ## Migration
 

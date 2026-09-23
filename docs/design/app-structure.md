@@ -16,47 +16,56 @@ not "view vs edit", which breaks immediately (Money is editing too).
 
 | Group     | Question                | Contains                                    |
 | --------- | ----------------------- | ------------------------------------------- |
-| **Money** | What already happened?  | Facts you record. Real, historical numbers. |
-| **Plan**  | What might happen?      | Hypotheses you test. Levers and targets.    |
-| **Home**  | What does it mean?      | The synthesis of both. Read-only.           |
+| **Money** | What do I have and manage? | Actual finances, operational budgets and upcoming payments. |
+| **Plan**  | How can I reach freedom?   | Long-term projections, scenarios, assumptions and targets. |
+| **Home**  | What does it mean?         | Synthesis and next moves; no independent financial inputs. |
 
-Home is where you view. Plan is where you make the edits. Results of both flow
-back to Home.
+Money owns actual-finance and operational edits; Plan owns projection inputs.
+Both flow back to Home. Home layout customisation (reorder, resize, hide/restore
+cards) is allowed and does not introduce a second set of financial inputs.
 
 ## The map
 
 ```
-Home                          synthesis · read-only
+Home                          synthesis · customisable layout
   └ Freedom date · progress · next moves
 
-Money                         what already happened
+Money                         actual finances and operational planning
   ├ Cashflow
   │   ├ Transactions
-  │   ├ Recurring
-  │   ├ Expected
+  │   ├ Upcoming (expected payments, with recurring detection suggestions)
   │   ├ Categories
   │   └ Budget
   ├ Net Worth
   ├ Debts
   └ Insights
 
-Plan                          what might happen
+Plan                          long-term projections and scenarios
   ├ Freedom Date
   ├ Scenarios
   ├ Goals
+  ├ Contributions
   ├ Expat FIRE
+  ├ Citizenship
   └ Learn
 
-Profile                       account, not money — lives in the user menu
+Profile                       account, household setup, FIRE personality/type
+                              lives in the user menu
 ```
 
 ## The placement rules
 
-1. **Money** — if it records something that already happened, it goes here.
-2. **Plan** — if it models something that hasn't happened yet, it goes here.
+1. **Money** — actual balances, debts and transactions, plus operational budgets
+   and expected payments. It is not limited to the past.
+2. **Plan** — long-term freedom-date assumptions, projections, scenarios and
+   contribution targets. An upcoming bill belongs in Money, not here merely
+   because it has not happened yet.
 3. **Home** — if it interprets the other two, it goes here. Home never gets its
-   own inputs.
+   own independent financial inputs. Layout preferences are allowed.
 4. **Profile** — if it's about the account rather than the money, it goes here.
+5. If a feature seems to fit two groups, it is **two features**. Split it.
+6. Every tab must be reachable from a nav array. **One array per nav — never a
+   hand-kept second copy.**
 
 ### Worked example: the FIRE profile, moved 18 Sep 2026
 
@@ -80,27 +89,24 @@ buttons, move the input rather than keep the link.
 The FIRE *type* stayed in Profile — a personality result is not a projection
 input, and the onboarding rules place it outside the planning flow. That split
 is rule 5 doing its job: one card was two features.
-5. If a feature seems to fit two groups, it is **two features**. Split it.
-6. Every tab must be reachable from a nav array. **One array per nav — never a
-   hand-kept second copy.**
 
 Rule 6 is not housekeeping. Two hand-kept copies of the Cashflow sub-nav are
 exactly how Categories and Recurring became unreachable while still rendering.
 
 ## Where the arrays live
 
-All in `app/dashboard/page.tsx`. Adding a tab means adding it to the relevant
-array and nowhere else:
+All in `app/dashboard/page.tsx`. Update the relevant navigation array and its
+group membership, rendering, and deep-link handling together:
 
 - `SIDEBAR_ITEMS` — the three sidebar groups, and which tabs each one owns
   (`activeTabs`, which drives the active highlight).
 - `MONEY_SECTIONS` — the Money group's tabs. Feeds both the sidebar sub-nav and
   the horizontal section switch.
-- `CASHFLOW_SUB_TABS` — the five Cashflow sub-tabs. Feeds both the sidebar
+- `CASHFLOW_SUB_TABS` — the four Cashflow sub-tabs. Feeds both the sidebar
   sub-sub-nav and the horizontal switcher.
 - `MOBILE_PRIMARY_ITEMS` — the four mobile bottom-nav destinations.
-- The Plan section switch is still inline in the render, since Plan's items map
-  to a mix of tabs and sub-tab states rather than to tabs alone.
+- `PLAN_SECTIONS` — Plan destinations, including tab and sub-tab states. Feeds
+  both the sidebar sub-nav and mobile section switch.
 
 The `valid` array in the URL-parsing effect must also list any new tab, or it
 won't be deep-linkable. `goals` was missing from it for exactly this reason.
@@ -126,5 +132,7 @@ new user four steps and sends them to four different destinations (onboarding
 modal → Cashflow → Net Worth → Profile) before any value appears. The app's own
 setup flow contradicts its own navigation.
 
-The fix for that is a single guided flow that never leaves Home, with the
-sidebar staying quiet until a freedom date exists. Tracked separately.
+This is historical problem context, not a fresh audit or permission to add Home
+financial inputs. A guided setup flow remains a separate proposal: reconcile it
+with current onboarding and input ownership before implementing it. This document
+preserves current navigation; it does not authorize a redesign.
