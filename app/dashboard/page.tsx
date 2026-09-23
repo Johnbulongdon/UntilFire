@@ -5463,13 +5463,24 @@ export default function Dashboard() {
      to decide, and a savings account and a current account are not the same
      kind of money. */
   const contributionCashAccounts = useMemo(() => toCashAccounts(plaidAccounts), [plaidAccounts]);
+  /* Expected outgoings in USD with their due dates. What is due before the
+     next contribution is money already spoken for, so it is not available to
+     invest — the same rule the committed total on Home already applies. */
+  const contributionOutgoings = useMemo(
+    () => committedRows.map((r) => ({
+      amountUSD: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates),
+      dueDate: r.due_date,
+    })),
+    [committedRows, rates],
+  );
   const contributionFacts: AccountFacts = useMemo(() => ({
     cashAccounts: contributionCashAccounts,
     manualCashSavings: cashSavings,
     lastMonthNeeds: lastMonthNeeds > 0 ? lastMonthNeeds : manualEmergencyNeeds,
     averageNeeds: histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds,
     realReturn: growthRate,
-  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate]);
+    expectedOutgoings: contributionOutgoings,
+  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionOutgoings]);
   // Already-committed outgoings still ahead of us this month, in USD.
   // Overdue rows count too: an unpaid bill is still owed.
   const committedRemainingUSD = useMemo(
@@ -5629,7 +5640,10 @@ export default function Dashboard() {
         .eq("user_id", session.user.id)
         .is("completed_at", null)
         .eq("transaction_type", "expense")
-        .lt("due_date", thisEnd)
+        // 70 days rather than end-of-month: a contribution due on the 25th
+        // has bills falling after the 1st ahead of it, and bounding at the
+        // month edge would drop them and overstate what is free to invest.
+        .lt("due_date", new Date(Date.now() + 70 * 86400000).toISOString().slice(0, 10))
         .then(({ data: cmt }) => {
           if (cmt) setCommittedRows(cmt as CommittedRow[]);
         });

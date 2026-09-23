@@ -17,6 +17,7 @@ import {
   planHasContent, rowsToPlan, sanitiseLadder, type AssetPlan,
   type ContributionPlan, type Frequency, type PlanRow, type StoredPlan,
 } from "@/lib/contribution";
+import type { ContributionSchedule } from "@/lib/contribution-schedule";
 
 export {
   EMPTY_LADDER, ladderToStored, newerPlan, planHasContent, planToRows,
@@ -25,6 +26,29 @@ export {
 export type { DebtRow, LadderFields, PlanRow, StoredPlan } from "@/lib/contribution";
 
 export const PLAN_STORAGE_KEY = "uf_contribution_v1";
+
+/* This store rebuilds the plan field by field rather than spreading it, so
+   every new field has to be added here too — forgetting one is silent, and
+   looks exactly like "my setting did not save". */
+export function sanitiseSchedule(raw: unknown): ContributionSchedule | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const c = raw as Partial<ContributionSchedule>;
+  const cadence = c.cadence === "weekly" ? "weekly" : "monthly";
+  const max = cadence === "weekly" ? 6 : 31;
+  const min = cadence === "weekly" ? 0 : 1;
+  const day = typeof c.anchorDay === "number" && Number.isFinite(c.anchorDay)
+    ? Math.min(max, Math.max(min, Math.round(c.anchorDay)))
+    : min;
+  return { cadence, anchorDay: day };
+}
+
+/** `undefined` means the field was never written and the legacy `budget`
+ *  still applies; `null` means the user chose to follow their cash. */
+export function sanitiseOverride(raw: unknown): number | null | undefined {
+  if (raw === null) return null;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  return undefined;
+}
 
 export function readLocalPlan(): StoredPlan | null {
   try {
@@ -48,6 +72,8 @@ export function readLocalPlan(): StoredPlan | null {
       budget: typeof parsed.budget === "number" ? parsed.budget : 0,
       frequency: parsed.frequency ?? "monthly",
       ladder: sanitiseLadder(parsed.ladder),
+      contribution: sanitiseSchedule(parsed.contribution),
+      budgetOverride: sanitiseOverride(parsed.budgetOverride),
       updatedAt: typeof parsed.updatedAt === "number" && Number.isFinite(parsed.updatedAt)
         ? parsed.updatedAt : undefined,
     };
@@ -89,7 +115,12 @@ export async function loadCloudPlan(): Promise<StoredPlan | null> {
     if (error) return tolerate("profiles.contribution_plan", error);
     const plan = data?.contribution_plan as StoredPlan | null | undefined;
     if (!plan || !Array.isArray(plan.targets)) return null;
-    return { ...plan, ladder: sanitiseLadder(plan.ladder) };
+    return {
+      ...plan,
+      ladder: sanitiseLadder(plan.ladder),
+      contribution: sanitiseSchedule(plan.contribution),
+      budgetOverride: sanitiseOverride(plan.budgetOverride),
+    };
   } catch (err) { return tolerate("profiles.contribution_plan", err); }
 }
 

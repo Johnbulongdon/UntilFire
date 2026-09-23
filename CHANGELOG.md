@@ -2,6 +2,21 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-23
+
+### Added
+- **Next contribution.** A tab under Plan that works out where this period's money should go, and a Home card that says it without being gone looking for. The order is a published convention — emergency floor, employer match, expensive debt, emergency target, tax-advantaged, cheap-debt overpayment, then invest the rest — and every rung can be moved or switched off. The allocation maths is ported from the spreadsheet it replaces, guarded against the sheet's own figures.
+- **Two cadences, not one.** *Money arrives* is payday; *Buy in* is how often it is then invested. Paid monthly while dollar-cost-averaging weekly is ordinary, and it is why cash sits in the brokerage between the two. The page carries a countdown to the next contribution date.
+- **The contribution amount follows real cash.** Cash in accounts that are not your emergency fund, less anything due before the next contribution date. The subtraction is shown rather than just its answer, because with no bills recorded nothing is subtracted and the figure reads high — which is the direction that tells someone to invest their rent. A hand-set amount is still available and is marked as one.
+- **The emergency fund reads the right accounts.** Savings and money market only; a current account is this month's spending and brokerage cash is waiting to be invested. Which accounts count is yours to choose, and the field says where its number came from.
+- Monthly expenses follow the last complete month, the average, or a figure you set. Everything on the page saves as you type, to `profiles.contribution_plan`.
+
+### Fixed
+- **Plaid's sync now applies your need/want rules.** It wrote `tags: []` on every import and a rule was only ever applied at the moment it was set, so a rule made in March stopped applying in April. Everything counting needs — the emergency fund target, the ladder's monthly expenses — read low as a result. The sync never overwrites a tag you set yourself.
+
+### Added — guards
+- `npm run test:contribution-plan`, `test:contribution-waterfall`, `test:contribution-ladder`, `test:contribution-schedule`, `test:emergency-fund-accounts`, `test:classification-rules`.
+
 ## [Unreleased] - 2026-09-20
 
 ### Added

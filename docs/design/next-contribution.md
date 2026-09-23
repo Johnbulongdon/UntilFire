@@ -166,7 +166,21 @@ paper over.
    emergency-fund target too small and sends money past a buffer the ladder
    believes is nearly full. The sync now applies the rules
    (`lib/classification-rules.ts`), never overwriting a tag the user set.
-6. **Frequency.** Weekly and daily entry amounts.
+6. **Frequency.** Done, and it turned out to be two things rather than one.
+   *Money arrives* (`lib/contribution-schedule.ts`) is payday; *Buy in*
+   (`Frequency` / `PERIODS_PER_MONTH`) is how often that money is then
+   invested. Paid monthly while buying weekly is ordinary and needs both —
+   and it is why cash sits in the brokerage between the two, which is the
+   `CUR:USD` row the holdings import already shows.
+
+   The amount now follows real cash: balances in accounts that are not the
+   emergency fund, less anything due before the next contribution date, from
+   `expected_payments`. The surfaces show the subtraction rather than its
+   answer alone, because with nothing recorded nothing is subtracted and the
+   figure reads high — the direction that tells someone to invest their rent.
+   A hand-set amount remains, as a marked override; a plan written before any
+   of this migrates its old typed `budget` into that override rather than
+   having it silently replaced.
 
 ## The open question
 

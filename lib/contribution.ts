@@ -17,6 +17,7 @@
  */
 
 import type { RungKind } from "./contribution-waterfall";
+import type { ContributionSchedule } from "./contribution-schedule";
 
 export interface Target {
   symbol: string;
@@ -303,6 +304,18 @@ export interface StoredPlan {
   frequency: Frequency;
   /** The ladder's inputs. Absent on plans stored before the ladder existed. */
   ladder?: StoredLadder;
+  /**
+   * When money arrives to contribute — payday, not strategy. Distinct from
+   * `frequency` above, which is how often that money is then invested.
+   * Absent on plans stored before the two were told apart.
+   */
+  contribution?: ContributionSchedule;
+  /**
+   * A contribution amount the user fixed by hand, or null to use whatever is
+   * actually free by the next contribution date. `budget` above is the legacy
+   * field and migrates into this one on read.
+   */
+  budgetOverride?: number | null;
   /** When this copy was written, ms since epoch. The two stores can disagree
    *  — the account write is debounced, so leaving the tab quickly cancels it
    *  and leaves localStorage ahead — and this is how the newer one is known.

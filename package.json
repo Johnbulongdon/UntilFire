@@ -37,6 +37,7 @@
     "test:fire-projection": "node scripts/verify-fire-projection.mjs",
     "test:email-tagging": "node scripts/verify-email-tagging.mjs",
     "test:search-console": "node --experimental-strip-types --no-warnings scripts/verify-search-console.ts",
+    "test:contribution-schedule": "node --experimental-strip-types --no-warnings scripts/verify-contribution-schedule.mjs",
     "test:contribution-ladder": "node --experimental-strip-types --no-warnings scripts/verify-contribution-ladder.mjs",
     "test:classification-rules": "node --experimental-strip-types --no-warnings scripts/verify-classification-rules.mjs",
     "test:emergency-fund-accounts": "node --experimental-strip-types --no-warnings scripts/verify-emergency-fund-accounts.mjs",

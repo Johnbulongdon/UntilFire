@@ -17,6 +17,7 @@
 import { useEffect, useState } from "react";
 import { Button, Card, Money } from "@/components/ui";
 import { ladderViewFromPlan, type AccountFacts } from "@/lib/contribution-ladder";
+import { countdownLabel } from "@/lib/contribution-schedule";
 import {
   loadCloudPlan, newerPlan, planHasContent, readLocalPlan,
 } from "@/lib/contribution-store";
@@ -31,6 +32,8 @@ export interface NextContributionCardProps {
 const mono: React.CSSProperties = {
   fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
 };
+const fmtUsd = (n: number) =>
+  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 export default function NextContributionCard({ facts, onOpenPlan }: NextContributionCardProps) {
   const [plan, setPlan] = useState<StoredPlan | null>(null);
@@ -52,16 +55,12 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
     return () => { cancelled = true; };
   }, []);
 
-  /* No plan, or a plan with nothing to place, means there is nothing to
-     report. Home stays quiet rather than turning into a prompt: an empty
-     card telling someone to go and set something up is an input by another
-     name, and Home does not take inputs. */
-  if (!plan || !plan.budget || plan.budget <= 0) return null;
-
+  /* No plan, or nothing to place, means there is nothing to report. Home
+     stays quiet rather than turning into a prompt: an empty card telling
+     someone to go and set something up is an input by another name, and
+     Home does not take inputs. */
   const view = ladderViewFromPlan(plan, facts);
-  if (!view?.next) return null;
-
-  const periodWord = plan.frequency === "weekly" ? "week" : plan.frequency === "daily" ? "day" : "month";
+  if (!view?.next || view.budget <= 0) return null;
   /* Every step that takes money, including the headline one.
    *
    * Listing only the steps *below* the headline made the card misread at a
@@ -75,9 +74,14 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
   return (
     <Card>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--uf-s3)" }}>
-        <span className="uf-t-label" style={{ color: "var(--uf-ink-2)" }}>
-          This {periodWord}&apos;s contribution
-        </span>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--uf-s3)", flexWrap: "wrap" }}>
+          <span className="uf-t-label" style={{ color: "var(--uf-ink-2)" }}>
+            Next contribution {countdownLabel(view.available.daysUntil)}
+          </span>
+          <span className="uf-t-small" style={{ color: "var(--uf-ink-2)", ...mono }}>
+            {view.available.nextDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+          </span>
+        </div>
 
         <div style={{ display: "flex", alignItems: "baseline", gap: "var(--uf-s3)", flexWrap: "wrap" }}>
           <span className="uf-t-h2" style={{ margin: 0 }}>{view.next.label}</span>
@@ -88,6 +92,9 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
           {view.next.why}
         </p>
 
+        {/* One step means the headline already said everything; a list and a
+            total under it would state the same figure three times. */}
+        {steps.length > 1 && (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, borderTop: "1px solid var(--uf-border)" }}>
           {steps.map((f, i) => (
             <li key={f.kind}
@@ -106,6 +113,17 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
             <span className="uf-t-small" style={{ ...mono }}><Money amount={total} /></span>
           </li>
         </ul>
+        )}
+
+        {/* Where the total came from. A figure that is only as good as the
+            bills on record should say so rather than look certain. */}
+        <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: 0 }}>
+          {view.budgetIsCustom
+            ? "An amount you set."
+            : view.available.hasExpectedData
+              ? `${fmtUsd(view.available.cash)} in cash outside your emergency fund, less ${fmtUsd(view.available.committed)} already due.`
+              : `${fmtUsd(view.available.cash)} in cash outside your emergency fund. No bills recorded as due, so none is subtracted.`}
+        </p>
 
         <div>
           <Button variant="secondary" size="sm" onClick={onOpenPlan}>Open your plan</Button>

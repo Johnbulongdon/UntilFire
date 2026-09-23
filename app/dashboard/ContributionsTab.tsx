@@ -10,7 +10,11 @@ import {
 } from "@/lib/contribution-store";
 import { DEFAULT_THRESHOLD_PCT, type RungKind } from "@/lib/contribution-waterfall";
 import {
-  buildLadderView, measuredEmergencyFund, measuredExpenses, type AccountFacts,
+  countdownLabel, DEFAULT_SCHEDULE, type ContributionCadence, type ContributionSchedule,
+} from "@/lib/contribution-schedule";
+import {
+  buildLadderView, measuredEmergencyFund, measuredExpenses, planBudgetOverride,
+  type AccountFacts,
 } from "@/lib/contribution-ladder";
 import { describeAccounts } from "@/lib/emergency-fund-accounts";
 import { supabase } from "@/lib/supabase";
@@ -39,6 +43,8 @@ const EXAMPLE: Row[] = [
   { id: "b", symbol: "VXUS", targetPct: "30", value: "" },
   { id: "c", symbol: "BND",  targetPct: "10", value: "" },
 ];
+
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const FREQUENCIES = [
   { value: "monthly" as const, label: "Monthly" },
@@ -73,10 +79,18 @@ export type ContributionsTabProps = Partial<AccountFacts>;
    either the last complete month or the average of them. */
 export default function ContributionsTab({
   cashAccounts = [], manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
+  expectedOutgoings, today,
 }: ContributionsTabProps = {}) {
   const [rows, setRows] = useState<Row[]>(EXAMPLE);
-  const [budget, setBudget] = useState("500");
+  /* Null means "whatever is actually free by the next contribution date".
+     A string is an amount the user fixed by hand — the same override shape
+     the other measured fields on this page use. */
+  const [budgetOverride, setBudgetOverride] = useState<string | null>(null);
   const [frequency, setFrequency] = useState<Frequency>("monthly");
+  /* When money arrives, which is payday. `frequency` above is when it is then
+     invested, which is strategy. Paid monthly while buying weekly is ordinary
+     and needs both. */
+  const [schedule, setSchedule] = useState<ContributionSchedule>(DEFAULT_SCHEDULE);
   const [loaded, setLoaded] = useState(false);
 
   /* The ladder's own inputs, in one object so they save and restore as one
@@ -115,8 +129,12 @@ export default function ContributionsTab({
     setFields((f) => ({ ...f, disabled: fn(f.disabled) }));
   };
   const editRows = (fn: (rs: Row[]) => Row[]) => { touched.current = true; setRows(fn); };
-  const editBudget = (v: string) => { touched.current = true; setBudget(v); };
+  const editBudget = (v: string | null) => { touched.current = true; setBudgetOverride(v); };
   const editFrequency = (v: Frequency) => { touched.current = true; setFrequency(v); };
+  const editSchedule = (p: Partial<ContributionSchedule>) => {
+    touched.current = true;
+    setSchedule((sc) => ({ ...sc, ...p }));
+  };
 
   /* localStorage first so the tab paints immediately, then the account, which
      is the copy that survives a cleared browser and follows you to another
@@ -132,8 +150,10 @@ export default function ContributionsTab({
     // replacing it with nothing. The budget and the ladder still restore:
     // they are a plan on their own, even with no allocation behind them yet.
     if (r.rows.length) setRows(r.rows);
-    setBudget(r.budget);
+    const fixed = planBudgetOverride(plan);
+    setBudgetOverride(fixed === null ? null : String(fixed));
     setFrequency(r.frequency);
+    setSchedule(plan.contribution ?? DEFAULT_SCHEDULE);
     if (plan.ladder) setFields(storedToLadder(plan.ladder));
   };
 
@@ -156,25 +176,6 @@ export default function ContributionsTab({
     return () => { cancelled = true; };
   }, []);
 
-  /* The local write is immediate; the account write is debounced, because
-     otherwise every keystroke in a target field is a round trip. */
-  const [saveState, setSaveState] = useState<"idle" | "saving" | SaveResult>("idle");
-  useEffect(() => {
-    // Nothing is written until the user has actually changed something.
-    // `loaded` alone would store the worked example as if it were their plan
-    // — and flash "Saving…" at someone who has not typed a character.
-    // `touched` is a ref, but every edit also changes a dep below, so the
-    // effect re-runs on the same tick the ref is set.
-    if (!loaded || !touched.current) return;
-    const plan = stampPlan({ ...rowsToPlan(rows, budget, frequency), ladder: ladderToStored(fields) });
-    writeLocalPlan(plan);
-    setSaveState("saving");
-    const t = setTimeout(() => {
-      void saveCloudPlan(plan).then(setSaveState);
-    }, 900);
-    return () => clearTimeout(t);
-  }, [rows, budget, frequency, fields, loaded]);
-
   const accountThresholdPct = realReturn != null ? +(realReturn * 100).toFixed(2) : DEFAULT_THRESHOLD_PCT;
 
   /* The emergency fund. Read from the accounts the user has chosen, or from
@@ -182,7 +183,10 @@ export default function ContributionsTab({
      by hand covers anyone with no bank connected at all. The derivation lives
      in lib/contribution-ladder.ts because the Home card reports the same
      answer, and two copies of it would drift. */
-  const facts: AccountFacts = { cashAccounts, manualCashSavings, lastMonthNeeds, averageNeeds, realReturn };
+  const facts: AccountFacts = {
+    cashAccounts, manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
+    expectedOutgoings, today,
+  };
   const measuredEf = measuredEmergencyFund(efAccountIds, facts);
   const efAccounts = measuredEf.accounts;
   const efFromAccounts = measuredEf.balance;
@@ -301,7 +305,40 @@ export default function ContributionsTab({
   /* The ladder, from the same builder the Home card reads. What is on screen
      wins over what was measured — the fields carry the overrides already —
      so the view is built from the fields as they stand. */
-  const view = buildLadderView(ladderToStored(fields), num(budget), facts);
+  const view = buildLadderView(
+    ladderToStored(fields),
+    budgetOverride === null ? null : num(budgetOverride),
+    facts,
+    schedule,
+  );
+  /* What the amount field shows: the fixed figure when there is one, and
+     otherwise what is actually free by the next contribution date. */
+  const budget = budgetOverride ?? String(Math.round(view.available.free));
+
+  /* The local write is immediate; the account write is debounced, because
+     otherwise every keystroke in a target field is a round trip. */
+  const [saveState, setSaveState] = useState<"idle" | "saving" | SaveResult>("idle");
+  useEffect(() => {
+    // Nothing is written until the user has actually changed something.
+    // `loaded` alone would store the worked example as if it were their plan
+    // — and flash "Saving…" at someone who has not typed a character.
+    // `touched` is a ref, but every edit also changes a dep below, so the
+    // effect re-runs on the same tick the ref is set.
+    if (!loaded || !touched.current) return;
+    const plan = stampPlan({
+      ...rowsToPlan(rows, budget, frequency),
+      ladder: ladderToStored(fields),
+      contribution: schedule,
+      budgetOverride: budgetOverride === null ? null : num(budgetOverride),
+    });
+    writeLocalPlan(plan);
+    setSaveState("saving");
+    const t = setTimeout(() => {
+      void saveCloudPlan(plan).then(setSaveState);
+    }, 900);
+    return () => clearTimeout(t);
+  }, [rows, budget, frequency, fields, schedule, budgetOverride, loaded]);
+
   const expenses = view.expenses;
   const efFloor = view.efFloor;
   const efTarget = view.efTarget;
@@ -358,18 +395,68 @@ export default function ContributionsTab({
       </div>
 
       <Card>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--uf-s5)", alignItems: "flex-end" }}>
-          <Field label="Contribution per month" htmlFor="uf-budget" style={{ minWidth: 180 }}>
+        {/* flex-start, not flex-end: these fields have hints of differing
+            heights, and aligning their bottoms pushed the hint-less ones
+            down so the row of inputs no longer lined up. */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--uf-s5)", alignItems: "flex-start" }}>
+          <Field label="Contribution" htmlFor="uf-budget" style={{ minWidth: 170 }}
+                 hint={budgetOverride !== null ? "A figure you set — clear it to follow your cash" : "What is free by then"}>
             <Input id="uf-budget" numeric inputMode="decimal" value={budget}
                    onChange={(e) => editBudget(e.target.value)} />
+            {budgetOverride !== null && (
+              <Button variant="ghost" size="sm" style={{ alignSelf: "flex-start", marginTop: 2 }}
+                      onClick={() => editBudget(null)}>Use what I have</Button>
+            )}
           </Field>
-          <Field label="Buy in">
-            <SegmentedControl options={FREQUENCIES} value={frequency} onChange={editFrequency} label="Contribution frequency" />
+          <Field label="Money arrives" htmlFor="uf-cadence" style={{ minWidth: 150 }}
+                 hint={`Next ${countdownLabel(view.available.daysUntil)}`}>
+            <Select id="uf-cadence" value={schedule.cadence}
+                    onChange={(e) => editSchedule({
+                      cadence: e.target.value as ContributionCadence,
+                      // A day-of-month anchor is meaningless as a weekday and
+                      // vice versa, so switching resets it to a sane default.
+                      anchorDay: e.target.value === "weekly" ? 5 : 1,
+                    })}>
+              <option value="monthly">Monthly</option>
+              <option value="weekly">Weekly</option>
+            </Select>
+          </Field>
+          <Field label={schedule.cadence === "weekly" ? "On" : "Day of month"} htmlFor="uf-anchor" style={{ minWidth: 130 }}>
+            {schedule.cadence === "weekly" ? (
+              <Select id="uf-anchor" value={String(schedule.anchorDay)}
+                      onChange={(e) => editSchedule({ anchorDay: Number(e.target.value) })}>
+                {WEEKDAYS.map((label, i) => <option key={label} value={i}>{label}</option>)}
+              </Select>
+            ) : (
+              <Input id="uf-anchor" numeric inputMode="numeric" value={String(schedule.anchorDay)}
+                     onChange={(e) => editSchedule({ anchorDay: Math.min(31, Math.max(1, Math.round(num(e.target.value)) || 1)) })} />
+            )}
+          </Field>
+          <Field label="Buy in" hint="How often it is invested">
+            <SegmentedControl options={FREQUENCIES} value={frequency} onChange={editFrequency} label="How often it is invested" />
           </Field>
           <Field label="Portfolio now">
             <div style={{ ...mono, fontSize: 24, paddingTop: 4 }}><Money amount={portfolio} /></div>
           </Field>
         </div>
+
+        {/* The subtraction, not just its answer. With no expected payments
+            recorded nothing is subtracted, so the figure reads high — and
+            high is the direction that tells someone to invest their rent.
+            Showing the working is what makes that visible. */}
+        {budgetOverride === null && (
+          <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "var(--uf-s3) 0 0" }}>
+            <span style={mono}>{fmtUsd(view.available.cash)}</span> in cash outside your emergency fund
+            {view.available.hasExpectedData ? (
+              <> · less <span style={mono}>{fmtUsd(view.available.committed)}</span> due before{" "}
+                {view.available.nextDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                {" "}· <span style={mono}>{fmtUsd(view.available.free)}</span> free</>
+            ) : (
+              <> · nothing recorded as due, so this assumes none of it is spoken for.{" "}
+                <strong>Add your bills in Money → Expected</strong> to make this figure real.</>
+            )}
+          </p>
+        )}
       </Card>
 
       <Card>

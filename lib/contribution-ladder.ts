@@ -19,6 +19,10 @@ import {
 import {
   resolveEmergencyAccounts, sumBalances, type CashAccount,
 } from "./emergency-fund-accounts.ts";
+import {
+  availableToContribute, DEFAULT_SCHEDULE,
+  type AvailableToContribute, type ContributionSchedule, type ExpectedOutgoing,
+} from "./contribution-schedule.ts";
 
 /** The same floor and target the Home safety runway uses. */
 export const EMERGENCY_FLOOR_MONTHS = 1.5;
@@ -33,6 +37,11 @@ export interface AccountFacts {
   averageNeeds?: number;
   /** Real return as a fraction: 0.055, not 5.5. */
   realReturn?: number;
+  /** Bills already committed, in USD, with their due dates. What is due
+   *  before the next contribution is not money available to invest. */
+  expectedOutgoings?: ExpectedOutgoing[];
+  /** Injectable for tests; the surfaces leave it out and get the real clock. */
+  today?: Date;
 }
 
 export interface LadderView {
@@ -53,6 +62,12 @@ export interface LadderView {
   next: RungFill | null;
   /** What reaches the allocation. */
   investable: number;
+  /** When the next contribution lands, and what is free by then. */
+  available: AvailableToContribute;
+  /** The amount the ladder allocated, and whether the user fixed it by hand
+   *  rather than letting it follow what is actually free. */
+  budget: number;
+  budgetIsCustom: boolean;
 }
 
 /** What the emergency fund field shows, before any override. */
@@ -78,11 +93,26 @@ export function measuredExpenses(source: ExpenseSource, facts: AccountFacts): nu
  */
 export function buildLadderView(
   ladder: StoredLadder,
-  budget: number,
+  budgetOverride: number | null,
   facts: AccountFacts,
+  schedule: ContributionSchedule = DEFAULT_SCHEDULE,
 ): LadderView {
   const measuredEf = measuredEmergencyFund(ladder.efAccountIds, facts);
   const efBalance = ladder.efOverride ?? measuredEf.balance;
+
+  /* What is free to contribute: cash in the accounts that are NOT the
+     emergency fund, less anything due before the next contribution date.
+     Excluding the buffer is what stops this proposing that someone invest
+     the money they are keeping precisely so they do not have to. */
+  const efIds = new Set(measuredEf.accounts.map((a) => a.id));
+  const contributable = facts.cashAccounts.filter((a) => !efIds.has(a.id));
+  const available = availableToContribute(
+    sumBalances(contributable),
+    facts.expectedOutgoings ?? [],
+    schedule,
+    facts.today ?? new Date(),
+  );
+  const budget = budgetOverride ?? available.free;
 
   const expenses = ladder.expensesOverride ?? measuredExpenses(ladder.expenseSource, facts);
   const efFloor = expenses * EMERGENCY_FLOOR_MONTHS;
@@ -126,6 +156,9 @@ export function buildLadderView(
     takes,
     next,
     investable: waterfall.toInvest,
+    available,
+    budget,
+    budgetIsCustom: budgetOverride !== null,
   };
 }
 
@@ -134,7 +167,25 @@ export function buildLadderView(
  *  rather than the whole thing refused. */
 export function ladderViewFromPlan(plan: StoredPlan | null, facts: AccountFacts): LadderView | null {
   if (!plan) return null;
-  return buildLadderView(plan.ladder ?? EMPTY_STORED_LADDER, plan.budget, facts);
+  return buildLadderView(
+    plan.ladder ?? EMPTY_STORED_LADDER,
+    planBudgetOverride(plan),
+    facts,
+    plan.contribution ?? DEFAULT_SCHEDULE,
+  );
+}
+
+/**
+ * The fixed amount, if there is one.
+ *
+ * Plans written before the amount could follow real cash carry it in
+ * `budget`, which was always hand-typed. Reading that as an override rather
+ * than discarding it keeps a number someone chose on screen, as something
+ * they can see and clear, instead of silently replacing it.
+ */
+export function planBudgetOverride(plan: StoredPlan): number | null {
+  if (plan.budgetOverride !== undefined) return plan.budgetOverride;
+  return plan.budget > 0 ? plan.budget : null;
 }
 
 const EMPTY_STORED_LADDER: StoredLadder = {

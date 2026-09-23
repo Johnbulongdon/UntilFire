@@ -10,7 +10,7 @@
  */
 import {
   buildLadderView, ladderViewFromPlan, measuredEmergencyFund, measuredExpenses,
-  EMERGENCY_FLOOR_MONTHS, EMERGENCY_TARGET_MONTHS,
+  planBudgetOverride, EMERGENCY_FLOOR_MONTHS, EMERGENCY_TARGET_MONTHS,
 } from "../lib/contribution-ladder.ts";
 import { toCashAccounts } from "../lib/emergency-fund-accounts.ts";
 import { ladderToStored, EMPTY_LADDER } from "../lib/contribution.ts";
@@ -110,8 +110,75 @@ check("expenses follow the month the user picked",
   check("a plan and the page agree, given the same inputs",
     ladderViewFromPlan({ ...bare, ladder: stored({ monthlyMatch: "250" }) }, FACTS).next.kind ===
     buildLadderView(stored({ monthlyMatch: "250" }), 1800, FACTS).next.kind);
-  check("a zero budget places nothing",
-    ladderViewFromPlan({ ...bare, budget: 0 }, FACTS).next === null);
+  // A plan that never had an amount set now follows real cash rather than
+  // placing nothing — that is the point of the change. Nothing is placed only
+  // when there is genuinely no money.
+  check("a plan with no amount set follows the cash instead of placing nothing",
+    ladderViewFromPlan({ ...bare, budget: 0 }, FACTS)?.budget === 3100,
+    `${ladderViewFromPlan({ ...bare, budget: 0 }, FACTS)?.budget}`);
+  check("with no cash and no amount set, nothing is placed",
+    ladderViewFromPlan({ ...bare, budget: 0 },
+      { ...FACTS, cashAccounts: [], manualCashSavings: 0 })?.next === null);
+}
+
+// ── The amount now follows real cash unless the user fixed it ───────────
+{
+  const today = new Date(2026, 2, 20);           // 20 March
+  const facts = {
+    ...FACTS,
+    today,
+    // Capital One savings is the emergency fund; Chase checking is not, so
+    // only the checking balance is contributable.
+    expectedOutgoings: [{ amountUSD: 2482, dueDate: "2026-03-22" }],
+  };
+  const sched = { cadence: "monthly", anchorDay: 25 };
+
+  const live = buildLadderView(stored(), null, facts, sched);
+  check("the contribution is cash outside the emergency fund, less what is due",
+    live.available.cash === 3100 && live.available.committed === 2482 && live.budget === 618,
+    `${live.available.cash} - ${live.available.committed} = ${live.budget}`);
+  check("the emergency fund is not offered up for investing",
+    !live.available.cash || live.available.cash === 3100,
+    "12,400 of savings must not appear in the contributable figure");
+  check("the countdown comes with it", live.available.daysUntil === 5, `${live.available.daysUntil}`);
+  check("and the ladder allocates that amount, not a typed one",
+    Math.round(live.waterfall.fills.reduce((s, f) => s + f.amount, 0)) === 618);
+
+  // A bill due after the contribution date belongs to the next cycle.
+  const later = buildLadderView(stored(), null,
+    { ...facts, expectedOutgoings: [{ amountUSD: 2482, dueDate: "2026-03-28" }] }, sched);
+  check("a bill falling after the date does not reduce this contribution",
+    later.budget === 3100, `${later.budget}`);
+
+  // The dangerous case, restated at this level.
+  const blind = buildLadderView(stored(), null, { ...facts, expectedOutgoings: [] }, sched);
+  check("with no bills on record the whole balance looks free, and is flagged",
+    blind.budget === 3100 && blind.available.hasExpectedData === false);
+
+  const fixed = buildLadderView(stored(), 500, facts, sched);
+  check("a fixed amount wins over what is free",
+    fixed.budget === 500 && fixed.budgetIsCustom === true);
+  check("and a live amount is not marked as custom", live.budgetIsCustom === false);
+
+  check("owing more than you hold contributes nothing rather than a negative",
+    buildLadderView(stored(), null,
+      { ...facts, expectedOutgoings: [{ amountUSD: 9000, dueDate: "2026-03-22" }] }, sched).budget === 0);
+}
+
+// ── Plans written before any of this still open ─────────────────────────
+{
+  const legacy = { targets: [], holdings: [], budget: 1500, frequency: "monthly" };
+  check("a legacy hand-typed budget is kept as an override, not discarded",
+    planBudgetOverride(legacy) === 1500,
+    "a number someone chose should stay on screen where they can clear it");
+  check("an explicit null override means follow the cash",
+    planBudgetOverride({ ...legacy, budgetOverride: null }) === null);
+  check("an explicit override wins over the legacy field",
+    planBudgetOverride({ ...legacy, budgetOverride: 700 }) === 700);
+  check("a legacy plan with no budget at all follows the cash",
+    planBudgetOverride({ ...legacy, budget: 0 }) === null);
+  check("a plan with no schedule gets the default rather than crashing",
+    ladderViewFromPlan(legacy, { ...FACTS, today: new Date(2026, 2, 20) })?.available.nextDate != null);
 }
 
 let failed = 0;
