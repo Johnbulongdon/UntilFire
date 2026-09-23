@@ -10,6 +10,11 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    /* Lets a lib module import a sibling as "./x.ts". The guard scripts run
+       under node --experimental-strip-types, which does no extension
+       resolution, so a lib with value imports is otherwise untestable.
+       Type-only with noEmit; the bundler resolves an explicit extension. */
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

@@ -8,13 +8,11 @@ import {
   stampPlan, storedToLadder, writeLocalPlan,
   type DebtRow, type LadderFields, type PlanRow, type SaveResult, type StoredPlan,
 } from "@/lib/contribution-store";
+import { DEFAULT_THRESHOLD_PCT, type RungKind } from "@/lib/contribution-waterfall";
 import {
-  buildLadder, fillWaterfall, DEFAULT_THRESHOLD_PCT,
-  type Debt, type RungKind,
-} from "@/lib/contribution-waterfall";
-import {
-  describeAccounts, resolveEmergencyAccounts, sumBalances, type CashAccount,
-} from "@/lib/emergency-fund-accounts";
+  buildLadderView, measuredEmergencyFund, measuredExpenses, type AccountFacts,
+} from "@/lib/contribution-ladder";
+import { describeAccounts } from "@/lib/emergency-fund-accounts";
 import { supabase } from "@/lib/supabase";
 import {
   aggregateHoldingsByTicker, planContribution, planImportMerge, targetsSumTo100,
@@ -42,12 +40,6 @@ const EXAMPLE: Row[] = [
   { id: "c", symbol: "BND",  targetPct: "10", value: "" },
 ];
 
-/* The same floor and target the Home safety runway uses. Duplicated as
-   constants rather than imported because they live in dashboard/page.tsx;
-   they want extracting to lib/ when the Home card lands. */
-const EMERGENCY_FLOOR_MONTHS = 1.5;
-const EMERGENCY_TARGET_MONTHS = 6;
-
 const FREQUENCIES = [
   { value: "monthly" as const, label: "Monthly" },
   { value: "weekly" as const, label: "Weekly" },
@@ -61,20 +53,11 @@ const num = (s: string) => {
 const fmtUsd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
-export interface ContributionsTabProps {
-  /** Every connected account that holds cash, savings first. The emergency
-   *  fund is read from the ones the user has chosen, or from savings. */
-  cashAccounts?: CashAccount[];
-  /** Cash and savings as typed into the profile — the fallback for someone
-   *  with no bank connected. */
-  manualCashSavings?: number;
-  /** Measured monthly needs. The most recent complete month and the average
-   *  of the complete months, whichever the user wants to plan against. */
-  lastMonthNeeds?: number;
-  averageNeeds?: number;
-  /** The user's own real-return assumption, as a fraction. 0.07, not 7. */
-  realReturn?: number;
-}
+/* The same facts the Home card reads, by the same names — the dashboard
+   builds them once and hands the object to both, so the two surfaces cannot
+   end up looking at different inputs. cashAccounts is optional here because
+   the page renders perfectly well with none. */
+export type ContributionsTabProps = Partial<AccountFacts>;
 
 /* Three of the ladder's inputs are things the app already knows, so they are
    read from the account rather than asked for again. They stay editable: a
@@ -171,7 +154,6 @@ export default function ContributionsTab({
       if (!cancelled) setLoaded(true);
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* The local write is immediate; the account write is debounced, because
@@ -197,11 +179,13 @@ export default function ContributionsTab({
 
   /* The emergency fund. Read from the accounts the user has chosen, or from
      their savings accounts if they have not chosen; a profile figure typed in
-     by hand covers anyone with no bank connected at all. */
-  const efAccounts = resolveEmergencyAccounts(cashAccounts, efAccountIds);
-  const efFromAccounts = cashAccounts.length > 0
-    ? sumBalances(efAccounts)
-    : (manualCashSavings ?? 0);
+     by hand covers anyone with no bank connected at all. The derivation lives
+     in lib/contribution-ladder.ts because the Home card reports the same
+     answer, and two copies of it would drift. */
+  const facts: AccountFacts = { cashAccounts, manualCashSavings, lastMonthNeeds, averageNeeds, realReturn };
+  const measuredEf = measuredEmergencyFund(efAccountIds, facts);
+  const efAccounts = measuredEf.accounts;
+  const efFromAccounts = measuredEf.balance;
   const hasAccountEf = efFromAccounts > 0;
   const efBalance = efOverride ?? (hasAccountEf ? String(Math.round(efFromAccounts)) : "");
   const efSourceLabel = cashAccounts.length > 0
@@ -212,9 +196,9 @@ export default function ContributionsTab({
      is the default: it is what someone means by "what I spend", and an
      average over a year of connected history quietly flattens the rent rise
      they are actually planning around. */
-  const measuredExpenses = expenseSource === "average" ? averageNeeds : lastMonthNeeds;
-  const hasAccountExp = measuredExpenses != null && measuredExpenses > 0;
-  const monthlyExpenses = expOverride ?? (hasAccountExp ? String(Math.round(measuredExpenses)) : "");
+  const measured = measuredExpenses(expenseSource, facts);
+  const hasAccountExp = measured > 0;
+  const monthlyExpenses = expOverride ?? (hasAccountExp ? String(Math.round(measured)) : "");
   /* No figures in the labels: the chosen one is already in the input directly
      above, and "Last month · $1,340" is wider than the grid cell, which
      clipped it to "Last month · $1,34". */
@@ -314,27 +298,16 @@ export default function ContributionsTab({
   const targets: Target[] = named.map((r) => ({ symbol: r.symbol.trim().toUpperCase(), targetPct: num(r.targetPct) / 100 }));
   const holdings: Holding[] = named.map((r) => ({ symbol: r.symbol.trim().toUpperCase(), value: num(r.value) }));
 
-  const expenses = num(monthlyExpenses);
-  const efFloor = expenses * EMERGENCY_FLOOR_MONTHS;
-  const efTarget = expenses * EMERGENCY_TARGET_MONTHS;
-  const debts: Debt[] = debtRows
-    .filter((d) => d.name.trim() || d.balance.trim())
-    .map((d) => ({ name: d.name.trim(), balance: num(d.balance), ratePct: num(d.ratePct) }));
-
-  const ladder = buildLadder({
-    emergencyGapToFloor: Math.max(0, efFloor - num(efBalance)),
-    emergencyGapToTarget: Math.max(0, efTarget - num(efBalance)),
-    monthlyMatch: num(monthlyMatch),
-    debts,
-    highInterestThresholdPct: num(threshold) || DEFAULT_THRESHOLD_PCT,
-    taxAdvantagedRoom: num(taxRoom),
-    lowInterestExtra: num(lowInterestExtra),
-    disabled,
-  });
-  const waterfall = fillWaterfall(ladder, num(budget));
+  /* The ladder, from the same builder the Home card reads. What is on screen
+     wins over what was measured — the fields carry the overrides already —
+     so the view is built from the fields as they stand. */
+  const view = buildLadderView(ladderToStored(fields), num(budget), facts);
+  const expenses = view.expenses;
+  const efFloor = view.efFloor;
+  const efTarget = view.efTarget;
+  const waterfall = view.waterfall;
   // Only what survives the ladder is available to the allocation.
-  const investable = waterfall.toInvest;
-  const ladderTakes = waterfall.fills.filter((f) => f.kind !== "taxable" && f.amount > 0);
+  const investable = view.investable;
 
   const targetSum = targets.reduce((s, t) => s + t.targetPct, 0);
   const balanced = targets.length > 0 && targetsSumTo100(targets);

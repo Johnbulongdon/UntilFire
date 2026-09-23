@@ -16,6 +16,8 @@ import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import ContributionsTab from "./ContributionsTab";
+import NextContributionCard from "./NextContributionCard";
+import type { AccountFacts } from "@/lib/contribution-ladder";
 import { isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
@@ -465,7 +467,7 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -478,6 +480,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[] }[];
+  /** What the contribution ladder reads: balances, measured needs, the
+   *  growth assumption. Home reports the ladder; it never edits it. */
+  contributionFacts?: AccountFacts;
   plaidHoldings?: PlaidHolding[];
   budgetMode?: "manual" | "history";
   histMonthsCount?: number;
@@ -1630,6 +1635,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       </DashSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
+      <DashSlot id="contribution" layout={layout} editing={editing} dragging={draggingId === "contribution"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      {contributionFacts && (
+        <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
+      )}
+
+      </DashSlot>
       <DashSlot id="freedom" layout={layout} editing={editing} dragging={draggingId === "freedom"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       {efMonthlyBase > 0 && (
         <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
@@ -5452,6 +5463,13 @@ export default function Dashboard() {
      to decide, and a savings account and a current account are not the same
      kind of money. */
   const contributionCashAccounts = useMemo(() => toCashAccounts(plaidAccounts), [plaidAccounts]);
+  const contributionFacts: AccountFacts = useMemo(() => ({
+    cashAccounts: contributionCashAccounts,
+    manualCashSavings: cashSavings,
+    lastMonthNeeds: lastMonthNeeds > 0 ? lastMonthNeeds : manualEmergencyNeeds,
+    averageNeeds: histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds,
+    realReturn: growthRate,
+  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate]);
   // Already-committed outgoings still ahead of us this month, in USD.
   // Overdue rows count too: an unpaid bill is still owed.
   const committedRemainingUSD = useMemo(
@@ -6262,6 +6280,7 @@ export default function Dashboard() {
             )}
             {tab === "overview" && (
               <DashTab
+                contributionFacts={contributionFacts}
                 userId={userId}
                 income={effectiveIncome} expenses={effectiveExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
@@ -6442,13 +6461,7 @@ export default function Dashboard() {
               <GoalsPageTab userId={userId} monthlyExpenses={monthlyExpenses} />
             )}
             {tab === "contributions" && (
-              <ContributionsTab
-                cashAccounts={contributionCashAccounts}
-                manualCashSavings={cashSavings}
-                lastMonthNeeds={lastMonthNeeds > 0 ? lastMonthNeeds : manualEmergencyNeeds}
-                averageNeeds={histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds}
-                realReturn={growthRate}
-              />
+              <ContributionsTab {...contributionFacts} />
             )}
             {tab === "citizenship" && <CitizenshipTab />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}

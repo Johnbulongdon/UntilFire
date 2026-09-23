@@ -1,0 +1,144 @@
+/**
+ * The ladder, worked out from a saved plan and what the accounts say.
+ *
+ * Two surfaces need this answer: the Contributions page, where it is edited,
+ * and the Home card, which only reports it. They must agree — a Home card
+ * naming a different step from the page it links to is worse than no card —
+ * so the derivation lives here once rather than being written out twice.
+ *
+ * Everything this needs arrives as arguments. It reads no storage and holds
+ * no state, which is what lets the same call run inside a component and
+ * inside a test.
+ */
+
+import type { ExpenseSource, StoredLadder, StoredPlan } from "./contribution.ts";
+import {
+  buildLadder, fillWaterfall, DEFAULT_THRESHOLD_PCT,
+  type Debt, type RungFill, type WaterfallResult,
+} from "./contribution-waterfall.ts";
+import {
+  resolveEmergencyAccounts, sumBalances, type CashAccount,
+} from "./emergency-fund-accounts.ts";
+
+/** The same floor and target the Home safety runway uses. */
+export const EMERGENCY_FLOOR_MONTHS = 1.5;
+export const EMERGENCY_TARGET_MONTHS = 6;
+
+/** What the app knows without being told: balances, spending, assumptions. */
+export interface AccountFacts {
+  cashAccounts: CashAccount[];
+  /** Cash typed into the profile, for someone with nothing connected. */
+  manualCashSavings?: number;
+  lastMonthNeeds?: number;
+  averageNeeds?: number;
+  /** Real return as a fraction: 0.055, not 5.5. */
+  realReturn?: number;
+}
+
+export interface LadderView {
+  /** What the emergency fund is, and where it was read from. */
+  efBalance: number;
+  efAccounts: CashAccount[];
+  efFloor: number;
+  efTarget: number;
+  /** Monthly needs in force, and whether the user set it by hand. */
+  expenses: number;
+  expensesAreCustom: boolean;
+  /** The rate above which debt beats investing. */
+  thresholdPct: number;
+  waterfall: WaterfallResult;
+  /** Every rung before the investment one that is taking money this month. */
+  takes: RungFill[];
+  /** The one to act on: the first rung taking money. Null when nothing is. */
+  next: RungFill | null;
+  /** What reaches the allocation. */
+  investable: number;
+}
+
+/** What the emergency fund field shows, before any override. */
+export function measuredEmergencyFund(
+  efAccountIds: string[] | null, facts: AccountFacts,
+): { balance: number; accounts: CashAccount[] } {
+  const accounts = resolveEmergencyAccounts(facts.cashAccounts, efAccountIds);
+  return {
+    balance: facts.cashAccounts.length > 0 ? sumBalances(accounts) : (facts.manualCashSavings ?? 0),
+    accounts,
+  };
+}
+
+/** What the expenses field shows, before any override. */
+export function measuredExpenses(source: ExpenseSource, facts: AccountFacts): number {
+  return (source === "average" ? facts.averageNeeds : facts.lastMonthNeeds) ?? 0;
+}
+
+/**
+ * The ladder as numbers. Takes the stored shape rather than the typed one so
+ * there is one input format: the page converts its fields with
+ * `ladderToStored`, and the Home card reads the stored plan directly.
+ */
+export function buildLadderView(
+  ladder: StoredLadder,
+  budget: number,
+  facts: AccountFacts,
+): LadderView {
+  const measuredEf = measuredEmergencyFund(ladder.efAccountIds, facts);
+  const efBalance = ladder.efOverride ?? measuredEf.balance;
+
+  const expenses = ladder.expensesOverride ?? measuredExpenses(ladder.expenseSource, facts);
+  const efFloor = expenses * EMERGENCY_FLOOR_MONTHS;
+  const efTarget = expenses * EMERGENCY_TARGET_MONTHS;
+
+  const accountThresholdPct = facts.realReturn != null
+    ? +(facts.realReturn * 100).toFixed(2)
+    : DEFAULT_THRESHOLD_PCT;
+  const thresholdPct = ladder.thresholdOverride ?? accountThresholdPct;
+
+  const debts: Debt[] = ladder.debts.map((d) => ({
+    name: d.name, balance: d.balance, ratePct: d.ratePct,
+  }));
+
+  const waterfall = fillWaterfall(buildLadder({
+    emergencyGapToFloor: Math.max(0, efFloor - efBalance),
+    emergencyGapToTarget: Math.max(0, efTarget - efBalance),
+    monthlyMatch: ladder.monthlyMatch,
+    debts,
+    highInterestThresholdPct: thresholdPct || DEFAULT_THRESHOLD_PCT,
+    taxAdvantagedRoom: ladder.taxRoom,
+    lowInterestExtra: ladder.lowInterestExtra,
+    disabled: ladder.disabled,
+  }), budget);
+
+  const takes = waterfall.fills.filter((f) => f.kind !== "taxable" && f.amount > 0);
+  // Investing is a real answer: with no buffer to fill and nothing owed, the
+  // next step IS the allocation, and a card that said "nothing to do" would
+  // be wrong. Null is reserved for having no money to place at all.
+  const next = takes[0] ?? waterfall.fills.find((f) => f.kind === "taxable" && f.amount > 0) ?? null;
+
+  return {
+    efBalance,
+    efAccounts: measuredEf.accounts,
+    efFloor,
+    efTarget,
+    expenses,
+    expensesAreCustom: ladder.expensesOverride !== null,
+    thresholdPct,
+    waterfall,
+    takes,
+    next,
+    investable: waterfall.toInvest,
+  };
+}
+
+/** The same view, from a plan as it comes out of storage. A plan with a
+ *  budget but no ladder yet still has an answer, so the ladder is defaulted
+ *  rather than the whole thing refused. */
+export function ladderViewFromPlan(plan: StoredPlan | null, facts: AccountFacts): LadderView | null {
+  if (!plan) return null;
+  return buildLadderView(plan.ladder ?? EMPTY_STORED_LADDER, plan.budget, facts);
+}
+
+const EMPTY_STORED_LADDER: StoredLadder = {
+  efOverride: null, expensesOverride: null, thresholdOverride: null,
+  efAccountIds: null, expenseSource: "last-month",
+  monthlyMatch: 0, taxRoom: 0, lowInterestExtra: 0, debts: [], disabled: [],
+};

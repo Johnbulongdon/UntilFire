@@ -149,9 +149,23 @@ paper over.
    number would freeze the emergency fund at last month's balance and quietly
    stop tracking. And nothing is written until the user changes something, so
    the worked example is never stored as if it were their plan.
-5. **The return hook.** `app/api/email/retention` exists; a monthly "here is
-   where October's money goes" plus a Home card. This is the step that earns
-   the retention claim.
+5. **The return hook.** Half done. The Home card ships —
+   `app/dashboard/NextContributionCard.tsx`, registered in
+   `lib/dashboard-layout.ts` — so opening the app shows this month's step
+   without going looking for it. It is read-only per the Home rule and shares
+   its derivation with the Contributions page
+   (`lib/contribution-ladder.ts`), because a card naming a different step
+   from the page it links to is worse than no card. Still missing: the
+   monthly email. `app/api/email/retention` only sends day-1/3/7 onboarding
+   nudges, so nothing yet reaches someone who has not opened the app.
+
+   The loop also depended on a fix nowhere near either screen. Plaid's sync
+   wrote `tags: []` on every import and the user's need/want rules were only
+   applied at the moment they were set, so next month's groceries arrived
+   untagged and the measured needs figure read low — which makes the
+   emergency-fund target too small and sends money past a buffer the ladder
+   believes is nearly full. The sync now applies the rules
+   (`lib/classification-rules.ts`), never overwriting a tag the user set.
 6. **Frequency.** Weekly and daily entry amounts.
 
 ## The open question

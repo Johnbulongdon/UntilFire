@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { Transaction as PlaidTransaction } from "plaid";
 import { getPlaidClient, mapPlaidTx } from "@/lib/plaid";
+import { planTagging, type ClassificationRule } from "@/lib/classification-rules";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const modified: PlaidTransaction[] = [];
     const removedIds: string[] = [];
     let hasMore = true;
+    let tagged = 0;
 
     while (hasMore) {
       const syncResp = await plaid.transactionsSync({
@@ -113,6 +115,51 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       console.error("[plaid/sync] accountsGet:", accErr);
     }
 
+    /* Apply the user's need/want rules to anything still untagged.
+     *
+     * Plaid writes `tags: []`, so without this a rule set in March stops
+     * applying in April and everything that counts needs — the emergency
+     * fund target, the contribution ladder's monthly expenses — reads low.
+     *
+     * Run over everything untagged rather than only what just arrived: that
+     * also catches a pending transaction whose category only settled on this
+     * sync, anything typed in by hand, and the backlog from before this
+     * existed. It never overwrites a tag, so it converges to no work and a
+     * transaction the user tagged themselves is left alone.
+     */
+    try {
+      const { data: rules } = await admin
+        .from("classification_rules")
+        .select("category, sub_category, classification")
+        .eq("user_id", user.id);
+      if (rules && rules.length > 0) {
+        /* Filtering "untagged" in SQL is where this goes wrong: `tags = {}`
+         * misses a transaction tagged `work` but neither need nor want, and
+         * a NOT-contains test drops rows whose tags are NULL. So the filter
+         * is the date window the dashboard itself reads — 36 months, beyond
+         * which nothing feeds a figure — and planTagging decides the rest. */
+        const since = new Date();
+        since.setMonth(since.getMonth() - 36);
+        const { data: candidates } = await admin
+          .from("expenses")
+          .select("id, category, sub_category, tags, transaction_type")
+          .eq("user_id", user.id)
+          .eq("transaction_type", "expense")
+          .gte("date", since.toISOString().slice(0, 10));
+        const updates = planTagging(candidates ?? [], rules as ClassificationRule[]);
+        for (let i = 0; i < updates.length; i += 50) {
+          await Promise.all(updates.slice(i, i + 50).map((u) =>
+            admin.from("expenses").update({ tags: u.tags }).eq("id", u.id).eq("user_id", user.id),
+          ));
+        }
+        tagged = updates.length;
+      }
+    } catch (tagErr) {
+      // A sync that imported transactions but could not tag them is still a
+      // useful sync; the next one tries again.
+      console.error("[plaid/sync] classification rules:", tagErr);
+    }
+
     // Advance cursor
     await admin
       .from("plaid_items")
@@ -123,6 +170,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       added: addedRows.length,
       modified: modified.length,
       removed: removedIds.length,
+      tagged,
     });
   } catch (err) {
     console.error("[plaid/sync]", err);
