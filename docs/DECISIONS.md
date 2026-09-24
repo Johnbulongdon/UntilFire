@@ -1,4 +1,177 @@
-# UntilFire 鈥?Architecture & Product Decision Log
+# UntilFire — decision log
+
+Reconciled 23 September 2026. This records why a choice exists, not just what
+shipped. [Project memory](KNOWLEDGE.md) defines maintenance and document ownership.
+Sources and both vault branch snapshots are recorded in
+[the reconciliation record](history/vault-reconciliation.md).
+
+## Active decisions
+
+### D-01 — 2026-09-23: one maintained home in the app repository
+
+**Status:** Active project direction; user authorized direct publication to main on September 24.
+**Decision:** Keep public-safe agent rules, product direction, decision history,
+feature/design contracts, roadmap and changelog together in this repo.
+**Why:** Separate vault updates and branches were missed by agents. The user
+wants the path to a conclusion retained so future sessions do not reverse it
+without understanding why.
+**Supersedes:** The May 20 repo/vault split and cleanup plan, which proposed
+moving most documentation out of the repo. Do not execute that old deletion plan.
+**Trade-off:** A public repo cannot store all raw research or personal notes.
+Keep sensitive originals private and retain safe conclusions and provenance here.
+**Revisit only if:** a replacement has a reliable mandatory read/update workflow
+and explicit user approval; convenience alone is not a reason to split again.
+**Source:** User's September 23 reconciliation request; vault Operating Log,
+Repo and Vault Boundary, and May 28 structure audit.
+
+### D-02 — May 2026, clarified July 16: freedom and guidance after free value
+
+**Status:** Active.
+**Decision:** Lead with freedom date, useful next move and work optionality.
+City/tax precision supports trust; no login, bank or payment barrier before value.
+**Why:** Early qualitative feedback asked for clarity and practical guidance,
+not another tracking surface. Treat that small sample as directional evidence.
+**Rejected:** Calculator-only positioning, early commitment asks, and the older
+Duolingo/streak analogy. The July update explicitly chooses monthly continuity
+without daily gamification.
+**Trade-off / revisit:** Fewer early lead captures; evaluate post-result
+continuation with current evidence instead of hiding first value.
+**Source:** Vault Decision Log (May), Product Positioning (July 16),
+Gentle Onboarding Principles; current [requirements](PRD.md).
+
+### D-03 — July 16: deterministic guidance before an AI adviser
+
+**Status:** Active sequencing; named allocation recommendations unresolved.
+**Decision:** Build useful guidance from real inputs and transparent calculations
+before adding AI advice. User-chosen allocation execution is distinct from
+recommending what assets someone should own.
+**Why:** Earlier AI recommendations were reported as generic. More automation
+does not fix a weak underlying model.
+**Rejected:** Treating the old AI-chat sprint or an acceptance disclosure as
+approval to ship personalised asset recommendations.
+**Revisit only if:** real guidance quality and a separately approved product scope
+justify it; resolve the recorded legal-input question before named suggestions.
+**Source:** Vault Product Positioning; [Next contribution](design/next-contribution.md).
+No legal determination is made by this log.
+
+### D-04 — August 27: v3 Warm with a stable visual vocabulary
+
+**Status:** Active; supersedes the April white/green and older dark/orange defaults.
+**Decision:** Follow [design-system.md](design/design-system.md): warm light/dark,
+green primary actions, neutral secondary controls, red destructive actions,
+teal freedom/progress. Financial data uses DM Mono; a prominent freedom-date
+display may use Fraunces. Reuse primitives and their bounded sizing exceptions.
+**Why:** Approximating the last screen produced inconsistent sizes, colors and
+controls. Shared primitives reduce drift; teal preserves a specific meaning.
+**Trade-off:** Adopt on touch instead of a broad reskin. Tokens still require
+visual/accessibility verification. Marketing exceptions are explicit.
+**Source:** App `c941388` and design contract. Revisit with an explicit design
+decision and visual evidence, not an older branch screenshot.
+
+### D-05 — August–September: input ownership and navigation
+
+**Status:** Active.
+**Decision:** Money owns actual finances and operational budgeting/upcoming
+payments; Plan owns projections and assumptions; Home synthesises both with
+customisable layout but no independent financial inputs. Profile keeps account,
+household setup and FIRE personality/type.
+**Why:** Mixed placement created links out to Profile just to edit planning
+inputs, and duplicate navigation lists made existing tabs unreachable.
+**Supersedes:** Older Home/Money/Freedom maps and Profile-as-planning-input-owner.
+**Trade-off / revisit:** Split cross-cutting features by responsibility; change
+placement only with an explicit need and updates to arrays and deep links.
+**Source:** [App structure](design/app-structure.md), September 18 changelog.
+
+### D-06 — April baseline rule; July deployment lesson; September review workflow
+
+**Status:** Active.
+**Decision:** Latest pushed `origin/main` is the default baseline; preserve local
+drift. Baseline does not mean direct-to-main publishing. Use a review branch/PR
+when requested; inspect deployment configuration before any push.
+**Why:** Vault Development Log records a July 7 incident where promoting an
+unrelated preview restored an older design. App merge `1eff2d8` records the
+subsequent integration; the incident itself is a source report, not newly audited
+deployment evidence.
+**Rejected:** Arbitrary preview promotion, silently overwriting history through
+full-file connectors, and a standing instruction to impersonate an owner.
+**Trade-off / revisit:** Use environment-authorized access and diagnose failures;
+do not bypass permissions, hooks, or divergence protection.
+**Source:** [AGENTS.md](../AGENTS.md), historical vault development log.
+This supersedes the old universal-preview and forced-author-identity guidance below.
+
+### D-07 — August 16 / September 2: honest projection assumptions
+
+**Status:** Active.
+**Decision:** Monte Carlo Confidence Check was removed; do not recreate it from
+the April probability-score proposal. Keep projection periods, currencies,
+real/nominal assumptions and boundaries explicit and consistent.
+**Why:** The removed feature overstated its simulation count and used a horizon
+disconnected from the user's target age. Later code unified mixed 10%/7% return
+assumptions to one 7% real assumption.
+**Trade-off / revisit:** Any confidence model needs an approved redesign and
+focused regression checks, not a resurrected historical plan.
+**Source:** App `15acd8d` (August 17 commit; changelog records August 16),
+`f79d688`; [changelog](../CHANGELOG.md).
+The March fixed-starting-balance and mixed-default details below are superseded.
+
+### D-08 — September 22–24: a contribution plan that fits real money
+
+**Status:** Active implementation contract; live verification remains separate.
+**Decision:** Normalise tilted allocations to the available budget, use 5/25
+bands with overrides, share Home/Plan derivation, select emergency-fund accounts
+explicitly, and snapshot on visits. Separate payday from buy-in frequency.
+Derive the safe contribution from the cycle's lowest projected balance, with a
+traceable dated ledger; count overdue bills but exclude overdue income. Compare
+budget spending against expected payments without inventing dated transactions.
+**Why:** The source spreadsheet could allocate more than the available budget;
+a flat band distorted small targets; cash reserved for spending/investing is
+not automatically emergency savings. Duplicate derivations can disagree.
+A balance only on contribution day missed bills immediately afterward; ignoring
+income and counting recurring bills once also misrepresented available cash.
+**Trade-off:** Unvisited months have no snapshot; user overrides must stay distinct
+from following account values. Email is a separate unfinished return channel.
+**Source:** [Next contribution](design/next-contribution.md), app
+`96e9d63` through `2af3cb8`. Preserve its rationale before changing the algorithm.
+
+### D-09 — September launch planning: prove retention before expanding
+
+**Status:** Conditional plan, not approval to launch or send outreach.
+**Decision:** Prioritise activation and useful monthly continuity; retain a
+readiness gate for the proposed January relaunch and bound country SEO as an
+experiment rather than endlessly adding pages.
+**Why:** The source reports traffic without reliable ongoing use; launch traffic
+alone does not establish a product that retains.
+**Trade-off / revisit:** Refresh dated analytics and eligibility before action.
+The older sprint sequence and first-launch checklist are historical.
+**Source:** [Launch context](planning/launch-context.md), vault Launch Runway.
+
+## How to add or supersede a decision
+
+Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,
+evidence, and revisit conditions. Update both the old status and replacement
+link when superseding. Update the relevant contract in the same PR. Do not invent
+historical approval or infer correctness from tests alone.
+
+## Original March–April record — retained history
+
+The original record follows unchanged so the reasoning is not lost. Its
+implementation descriptions, numerical claims, providers, and operational
+instructions are historical, not current requirements or verified advice.
+
+| Original choice | Current interpretation |
+| --- | --- |
+| No login wall; searchable city input | Core intent retained in D-02 and PRD; old screen counts are historical |
+| USD custom-city fallback; fixed starting balance / 7% assumptions | Implementation details superseded; inspect current calculator and D-07 |
+| All wizard state in app/page.tsx with no persistence | Historical architecture; now consult HomeClient and journey helpers |
+| DM Mono versus Syne; white/green palette; inline styling | D-04 and the current design system supersede old styling defaults |
+| All city data static, no admin/database path | Historical; current source rationale is in cost-of-living.md |
+| Auth/database platform selection | Rationale retained; use current code/setup docs for implementation |
+| Vercel previews for every PR; prescribed commit identity | Superseded by D-06 and AGENTS.md; deployment exclusions/access controls apply |
+| Latest pushed main as baseline | Retained and clarified by D-06 |
+
+---
+
+### Original decision log
 Last updated: April 2026
 
 > This file records **why** we chose X over Y. Critical context for any AI or new team member.

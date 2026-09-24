@@ -6,16 +6,14 @@ Live site: [untilfire.com](https://untilfire.com)
 
 ## Knowledge base
 
-This repository is intended to stay code-focused.
+Start with [project memory](docs/KNOWLEDGE.md), [current direction](docs/CONTEXT.md),
+and [the decision log](docs/DECISIONS.md). This repo is the single maintained home
+for public-safe project knowledge as well as code. Read why a choice was made
+before changing it; update the relevant docs in the same PR.
 
-Product strategy, roadmap, user research, decision logs, launch notes, and long-form agent context live in the Obsidian vault instead:
-
-- Vault repo: [Johnbulongdon/obsidian-vault](https://github.com/Johnbulongdon/obsidian-vault)
-- UntilFire knowledge base: [obsidian-vault/UntilFire](https://github.com/Johnbulongdon/obsidian-vault/tree/main/UntilFire)
-- Start here: [UntilFire Knowledge Base.md](https://github.com/Johnbulongdon/obsidian-vault/blob/main/UntilFire/UntilFire%20Knowledge%20Base.md)
-- Agent operating trail: [Operating Log.md](https://github.com/Johnbulongdon/obsidian-vault/blob/main/UntilFire/Agent%20Context/Operating%20Log.md)
-
-For AI agents: before changing product direction, UX IA, copy strategy, roadmap, or documentation, read the Obsidian knowledge base first. Use this repo for source code, tests, config, and minimal setup instructions.
+The old Obsidian vault is retained as historical source material. Both branches
+were reconciled in [the migration record](docs/history/vault-reconciliation.md);
+normal work no longer requires a separate vault read or update.
 
 ## Tech stack
 
@@ -27,8 +25,8 @@ For AI agents: before changing product direction, UX IA, copy strategy, roadmap,
 - Bank sync: Plaid
 - Charts: Recharts
 - Animation: GSAP
-- AI integration: Anthropic SDK
-- Email/marketing: Loops/Resend integration points
+- AI integration: server-side categorisation route; inspect `app/api/categorise/route.ts` for the current provider
+- Email: Resend; lifecycle sending lives in `app/api/email/` and `lib/email-send.ts`
 - Analytics: Vercel Analytics and PostHog
 - Hosting: Vercel
 
@@ -116,24 +114,17 @@ Before pushing code changes:
 
 1. Fetch latest `origin/main`.
 2. Confirm the working tree is clean except intended changes.
-3. Run the relevant validation command, usually `npm run lint` for docs/light code and `npm run validate` for broader changes.
-4. Keep product decisions and long-form context in the Obsidian vault, not in this README.
+3. Follow `AGENTS.md` for relevant verification; docs-only changes need reference
+   checks and `git diff --check`, while broad/risky code changes need `npm run validate`.
+4. Update the relevant repo documents with the change. A main baseline does not
+   authorize a main push, merge, or deployment; use the requested review workflow.
 
 ## Repo boundary
 
-Keep in this repo:
+Keep code, setup, agent instructions, current design/feature contracts, roadmap,
+changelog, and public-safe product direction and decision rationale here. Link
+historical material instead of maintaining competing current summaries.
 
-- Source code
-- Tests and validation scripts
-- Package/config files
-- Minimal setup and deployment instructions
-- Minimal agent rules needed before touching code
-
-Keep in Obsidian:
-
-- Product strategy and positioning
-- Roadmaps and sprint plans
-- Personas and user journey notes
-- Market research and launch/content calendars
-- Decision logs and audit notes
-- Agent operating context that is not required for code execution
+Keep credentials, raw personal feedback, respondent portfolios, private contact
+lists and sensitive business data out of the public repo. The old vault has not
+been deleted, merged, or configured as read-only by this documentation change.

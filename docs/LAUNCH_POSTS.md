@@ -1,4 +1,9 @@
 # UntilFire - Launch Posts
+
+> Historical snapshot retained for context. Prices, feature status, research
+> claims, dates and proposed actions below are not current requirements or
+> authorization. Start with [project memory](KNOWLEDGE.md),
+> [decisions](DECISIONS.md) and [current feature contracts](features.md).
 Last updated: May 2026
 
 > Ready-to-post copy for Reddit, Hacker News, and Product Hunt.

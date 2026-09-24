@@ -1,5 +1,10 @@
 # Module: AI Adviser
 
+> Historical snapshot retained for context. Prices, feature status, research
+> claims, dates and proposed actions below are not current requirements or
+> authorization. Start with [project memory](../KNOWLEDGE.md),
+> [decisions](../DECISIONS.md) and [current feature contracts](../features.md).
+
 **Current version:** v0.0  
 **Status:** Planned (Sprint 12–13)  
 **Primary routes:** `/dashboard` (Adviser tab), `/api/adviser`  

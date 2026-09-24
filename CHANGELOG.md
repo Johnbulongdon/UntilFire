@@ -4,6 +4,61 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-24
 
+### Documentation
+- Aligned shared agent rules, Claude's entry point, and the legacy instruction
+  bundle; separated main as a baseline from the PR publishing destination.
+  Reconciled both vault branch snapshots into one maintained repo knowledge base,
+  with source inventory, active/superseded decisions and privacy exclusions.
+- Added the project-memory index, current requirements and feature map, and dated
+  launch context. Agent startup now includes relevant decision history; meaningful
+  changes update their rationale and contracts in the same PR. Older plans remain
+  historical evidence rather than competing instructions.
+- Reconciled design exceptions and current navigation, and corrected household,
+  Monte Carlo, and Contributions roadmap status. Added focused financial and
+  accessible UI verification requirements without changing application behavior.
+
+### Added — backfill from 22–23 September commits
+- Plan → Contributions: budget-normalised allocation tilt and drift bands
+  (`96e9d63`, `7396244`), Plaid holdings import (`f931d88`), saved plans and
+  visit-triggered monthly snapshots (`2bd2640`), priority ladder (`a0267b1`),
+  account-derived inputs and saved ladder settings (`9eece6f`, `cd163db`), and
+  emergency-fund account selection (`eb7e549`).
+- Matching Home Next contribution card using the shared ladder derivation
+  (`8775078`). Monthly/weekly/daily allocation output already exists; monthly
+  contribution email remains a follow-up. The September 24 entries supersede
+  the earlier amount/cadence model.
+  See `docs/design/next-contribution.md`.
+
+### Fixed — backfill
+- Plaid sync applies classification rules to future imports without overwriting
+  user-set tags, preventing untagged imports from understating measured needs
+  (`8775078`). Holdings import handles cash and closed positions (`fbead99`,
+  `9a1c76f`).
+
+### Historical implementation reconciled from vault notes
+- PWA and Android TWA foundations exist (`9fe27fc`, `dcc3395`, June 29);
+  this does not establish store publication or current device QA.
+- Portfolio performance comparison and scenario comparison were added
+  (`8299a8a`, June 18; `2524c64`, June 19). Old missing-feature lists are historical.
+- Email-capture instrumentation was added in `7d3c88c` (July 16); verify actual
+  coverage instead of reusing the later vault note's missing-instrumentation claim.
+- Projection assumptions were unified in `f79d688` (September 2); display pricing
+  was centralised in `lib/pricing.ts` by `dbec537` (September 15). Older mixed
+  returns and $4.99 notes are historical. Live behavior/billing was not rechecked.
+
+### Verification boundary
+- These feature entries describe repository implementation at `8775078`, not
+  newly verified production behavior. Publication was reconciled with main
+  `2af3cb8` on September 24, preserving its two newer Contributions commits.
+  This documentation change does not alter runtime code or apply migrations;
+  a main update can trigger the repository's existing automatic deployment.
+- Reproduced existing guard failures on unchanged runtime/test files:
+  `test:calm-startup` fails its single explicit-opener assertion because feedback
+  also opens from a URL parameter; `test:cashflow-mobile-save` fails two CSS
+  assertions while sticky positioning and bottom padding exist as inline styles.
+  Follow up with behavior/browser verification before revising those guards;
+  this pass does not establish that either flow is correct or remove tests.
+
 ### Added
 - **Every line behind the contribution figure.** The Contributions page shows a day-by-day ledger under the amount: the opening balance and the accounts it comes from, each expected payment in and out on its date, the running balance, contribution day, and the low point the figure is taken from. A bare total nobody can trace is a total nobody should move money on.
 - It says out loud what it leaves out. Income that was due and never marked received is listed as **not counted**, with the reason. Spending the budget knows about but the Expected list doesn't is compared, because anything missing from that list is missing from the forecast.

@@ -1,321 +1,88 @@
-# UntilFire Agent Context
-
-This is the always-loaded project context for Claude Code and other AI agents working in UntilFire. Keep it short, current, and actionable.
-
-## Start Here: Agent Startup Checklist
-
-Before acting on any task:
-
-1. Read the user's latest request first.
-2. Read `docs/ROADMAP.md` — source of truth for what is built vs planned. Never claim a feature is missing without checking here first.
-3. Read `CHANGELOG.md` — most recent entries show what shipped last. Use this to understand current product state before answering questions or building.
-4. Fetch and compare against latest pushed `origin/main`.
-5. Inspect the relevant existing files and patterns before editing.
-6. Load or follow the relevant workflow/skill guidance below.
-7. Make the smallest safe change that satisfies the request.
-8. Run the narrowest useful verification before claiming completion.
-9. If the user asks to push, commit only after verification and push to `main`.
-
-If any instruction conflicts, stop and call out the conflict instead of guessing.
-
-## Instruction Priority
-
-1. User's latest request in chat.
-2. Repository rules in `AGENTS.md` and this `CLAUDE.md`.
-3. Task-specific docs the user points to.
-4. Existing code patterns in the repo.
-5. General framework knowledge.
-
-## Active Goal
-
-UntilFire's current active goal is to reach **$3k MRR**.
-
-Prioritize work that directly improves one of these revenue levers:
-
-- activation: visitors reach a useful freedom-date result
-- conversion: activated users understand why Pro is worth paying for
-- retention: users have a clear reason to return
-- trust: the product feels safe, clear, and credible with financial data
-- acquisition: founder-led beta, build-in-public, SEO, Product Hunt, and share loops
-
-Avoid work that is not clearly connected to reaching $3k MRR unless the user explicitly asks for it.
-
-## Product Context
-
-UntilFire is a personal FIRE adviser web app. It turns personal finance into a guided plan toward work optionality, then shows how to bring that freedom date closer.
-
-- Live site: https://untilfire.com
-- GitHub: `github.com/Johnbulongdon/UntilFire` private repo
-- Primary positioning: **Personal finance that sets you free.**
-- Core differentiator: **UntilFire does it with you** — not just a FIRE number, but a path, next move, and continuity toward work optionality.
-- North star: turn financial independence from an abstract calculator result into a clear, emotional, actionable path.
-- Free first value moment: full no-login calculator.
-- Pro direction: personal FIRE adviser, plan, budget tracking, and continuity after the aha moment. The "adviser" part is intentionally infra-first for now — deterministic tools (scenario modeling, real tracked data) before an AI-driven recommendation layer, since early AI output read as too generic to lead with.
-
-Important framing:
-
-- Lead with freedom, work optionality, freedom date, and the guided plan — not generic “calculator” language.
-- Do not lead with city-specific cost of living or city taxes. Treat those as supporting trust details, not the main differentiator.
-- Keep the first session calm and trustworthy.
-- Do not hide the aha moment behind login, payment, surveys, feedback prompts, bank prompts, or heavy setup.
-- Treat dashboard/Pro as continuation after value, not the first thing users must do.
-
-## Andrej Karpathy-Style Agent Discipline
-
-Use this as the default operating style for all coding, product, and documentation tasks.
-
-### Be explicit before coding
-
-- State assumptions when they materially affect implementation.
-- If multiple interpretations exist, present the options instead of silently choosing.
-- If the request is unclear enough to change what files or behavior you would touch, ask before editing.
-- Prefer a simple approach and explain when it is enough.
-
-### Keep changes small
-
-- Build the minimum code or doc change that solves the requested problem.
-- Do not add speculative features, abstractions, configurability, or broad refactors.
-- Do not reformat, rename, or clean up adjacent code unless asked.
-- If the solution is getting large, pause and simplify before continuing.
-
-### Work in a tight loop
-
-For non-trivial tasks:
-
-1. Define success criteria.
-2. Inspect relevant files and one existing pattern.
-3. Make the smallest safe change.
-4. Verify with the narrowest useful command.
-5. Inspect the diff.
-6. Report what changed, verification, and remaining risk.
-
-For bug fixes, prefer a repro or regression check first when practical. For refactors, verify before and after.
-
-## Skill / Workflow Loading Guide
-
-If the agent environment supports skills, slash commands, or reusable workflows, load the relevant workflow before acting. Use the most specific available skill; do not rely only on general knowledge.
-
-Common mappings:
-
-- Product, strategy, beta, launch, revenue, or MRR work: `untilfire-mrr-operator` if available.
-- UI or frontend changes: frontend/UI skill, then browser or screenshot QA when practical.
-- Bugs, failing tests, or unexpected behavior: systematic debugging skill.
-- New features or behavior changes: planning/TDD skill when practical.
-- Code review or pre-merge checks: code review / requesting-review skill.
-- Git, commits, PRs, or pushes: git workflow skill.
-- Docs or agent-context changes: context-engineering / documentation skill.
-- Browser QA: browser-testing or QA skill if Playwright/browser tooling is available.
-
-Use gstack slash commands when they fit the task:
-
-- `/office-hours` — product interrogation before building.
-- `/plan-eng-review` — engineering review of a plan.
-- `/review` — staff engineer code review.
-- `/investigate` — deep codebase investigation.
-- `/ship` — PR creation workflow.
-- `/qa` — browser-based QA, if Playwright/browser tooling is available.
-
-After any `/office-hours`, `/plan-ceo-review`, or `/design-shotgun` session that creates a design doc, copy it into `docs/design/` and commit it on the current branch.
-
-gstack project source: `~/.gstack/projects/Johnbulongdon-UntilFire/`.
-
-## $3k MRR CEO Agent Loop
-
-When asked to act as CEO, operator, or chief-of-staff for UntilFire:
-
-1. Check the latest repo state, roadmap, and relevant Obsidian product/marketing notes.
-2. Identify the single smallest action most likely to move activation, conversion, retention, trust, or acquisition.
-3. Prefer actions that help a new user reach the freedom-date result, understand one monthly move, trust the product, save/share the result, or see why Pro is worth it.
-4. Report only: found, why it matters for $3k MRR, and the next useful action.
-5. Do not start broad strategy rewrites, speculative features, or open-ended research unless the user asks.
-
-## Repository Working Rules
-
-- Use latest pushed `origin/main` as the baseline unless the user explicitly says otherwise.
-- Before changing files: fetch `origin/main`, compare local state, and preserve any local unpushed work.
-- Make surgical changes only. Every changed line should trace back to the user's request.
-- Match existing style and patterns, even if you would design it differently.
-- Never commit secrets, `.env` files, API keys, tokens, or credentials.
-- For visual/UI work, verify against the live product or screenshots when possible and call out any drift from `origin/main`.
-- Do not rebuild completed features just because old docs say they are pending. Check code and `docs/ROADMAP.md` first.
-
-## Tech Stack
-
-- Framework: Next.js 15 App Router
-- React: 19
-- Language: TypeScript
-- Auth/database: Supabase
-- Styling: Tailwind CSS v4
-- Charts: Recharts
-- Payments: Stripe
-- Bank connection: Plaid
-- Email: Resend
-- Analytics: Vercel Analytics, PostHog
-- Hosting: Vercel
-
-## Common Commands
-
-```bash
-npm run dev                         # start local dev server
-npm run build                       # production build
-npm run lint                        # ESLint
-npm run typecheck                   # next build + tsc --noEmit
-npm run validate                    # typecheck + lint + build
-npm run test:calm-startup
-npm run test:currency-selection
-npm run test:cashflow-mobile-save
-npm run test:expense-guidance
-npm run test:city-coverage
-npm run test:income-default
-npm run test:savings-period-input
-npm run test:achieved-fire-reveal
-npm run test:fire-type-cta
-npm run test:revenue-funnel
-npm run test:holdings-mobile-layout
-npm run test:single-location
-npm run test:dashboard-layout
-npm run test:plaid-pfc
-npm run test:transaction-time
-npm run test:search-console
-```
-
-Use the narrowest verification that matches the change. For broad or risky changes, run `npm run validate`.
-
-## Key Files and Directories
-
-- `app/page.tsx` — main landing page and no-login calculator flow.
-- `app/dashboard/page.tsx` — logged-in dashboard shell and FIRE overview.
-- `app/dashboard/ProfileTab.tsx` — logged-in profile, FIRE profile, billing/account controls.
-- `app/dashboard/UpgradeModal.tsx` — Pro upgrade modal and checkout start.
-- `app/api/*` — server routes for waitlist, Stripe, Plaid, AI categorisation, etc.
-- `lib/fire-data.ts` — city data, tax assumptions, FIRE calculation helpers.
-- `docs/cost-of-living.md` — how a city is priced, and why the BEA and HUD
-  importers are in the tree but not in the product. Read before touching
-  `lib/census.ts`, `lib/bea.ts` or `lib/housing.ts`.
-- `lib/analytics*.ts` and `docs/analytics/EVENTS.md` — analytics event names and payload contracts.
-- `docs/search-console.md` — how Search Console data reaches `seo_search_console`,
-  what to set up once, and the caveats before drawing conclusions from it.
-- `components/` — reusable UI and product components.
-- `docs/CONTEXT.md` — broader product and strategy context.
-- `docs/ROADMAP.md` — current product phase and task list.
-- `docs/design/` — design docs synced from gstack sessions.
-- `AGENTS.md` — repository-wide agent workflow and publishing rules.
-
-## App Structure Rules
-
-The logged-in app has one grouping axis. Full detail in `docs/design/app-structure.md`.
-
-- **Money** — records what already happened. Cashflow (Transactions, Recurring, Expected, Categories, Budget), Net Worth, Debts, Insights.
-- **Plan** — models what might happen. Freedom Date, Scenarios, Goals, Expat FIRE, Learn.
-- **Home** — synthesises both. Read-only; Home never gets its own inputs.
-- **Profile** — account, not money. Lives in the user menu, not the sidebar.
-
-When placing a new feature:
-
-1. If it records something that already happened → Money.
-2. If it models something that hasn't happened yet → Plan.
-3. If it interprets the other two → Home.
-4. If it's about the account rather than the money → Profile.
-5. If it seems to fit two groups, it is two features. Split it.
-6. Every tab must be reachable from a nav array. One array per nav — never a hand-kept second copy, and add new tabs to the `valid` deep-link array too.
-
-Rule 6 is load-bearing: two hand-kept copies of the Cashflow sub-nav are how Categories and Recurring shipped unreachable.
-
-## Onboarding and First-Session UX Rules
-
-- No surprise surveys, ratings, feedback boxes, paywalls, or bank prompts before value.
-- Required calculator inputs should be limited to income, expenses or savings, and current savings/net worth.
-- Retirement location must be skippable; if skipped, infer target from spending/expenses rather than blocking progress.
-- Income entry must support gross annual income and monthly take-home alternatives.
-- Savings entry must support either monthly savings or monthly spending.
-- Age may be encouraged for a better freedom date, but must not be required.
-- Feedback should be user-initiated after value, not pushed early.
-- FIRE/personality test belongs in Profile or as a secondary flow, not as first-run friction.
-
-## Design System — the default for all design and all code
-
-Full detail in `docs/design/design-system.md`. Tokens: `app/globals.css`.
-Primitives: `components/ui/`. This is not optional styling guidance — it is the
-default for every new surface.
-
-**The one rule: green acts, teal means freedom.** Green (`--uf-green`) is every
-button, link and interactive affordance. Teal (`--uf-teal`) is reserved for
-progress toward the freedom date — the date itself, progress bars, "2.4 years
-earlier". Teal is never a button and never means generic success (`--uf-pos`).
-
-- Ground: warm cream (`--uf-ground` `#FDF8F1`) light default, warm dark (`#16120D`) via `.dark`, every route.
-- Display font: Fraunces (freedom date, page titles, h1/h2) — display sizes only.
-- Body font: Manrope. Data font: DM Mono with tabular numerals.
-- Instrument Serif is the marketing-only serif (landing page + HomeClient hero).
-- Neutrals and shadows are warm, never grey or black. Money apps are cold; this one isn't.
-- Badge text (11px) uses the `--uf-*-ink` variants — the base colours fail AA at that size.
-- Default tone: calm, confident, trustworthy, emotionally outcome-led.
-- Mobile-first matters for beta and launch traffic.
-
-Scales — use these steps, nothing between them:
-
-- Type: 56 · 34 · 24 · 18 · 16 · 14 · 13 · 11 — the classes are **named, not numeric**:
-  `.uf-t-display` `.uf-t-h1` `.uf-t-h2` `.uf-t-h3` `.uf-t-lead` `.uf-t-body`
-  `.uf-t-small` `.uf-t-label` `.uf-t-data`. There is no `.uf-t-34`; a class that
-  does not exist matches no rule and renders at the browser default, silently.
-  `uf-t-display/h1/h2` already carry Fraunces — do not add `fontFamily` as well.
-- Space: 4 · 8 · 12 · 16 · 24 · 32 · 48 — tokens `--uf-s1` … `--uf-s7`. **There
-  is no `--uf-s8`.** Text on a green fill is `#fff` (as `Button` does); there is
-  no `--uf-on-green` token.
-- Radius: 12 control · 20 card · 28 modal · 999 pill (buttons are full pills)
-- Elevation: `--uf-e1` · `--uf-e2` · `--uf-e3`
-
-Rules for new code:
-
-1. Never hand-roll a button, card, labelled input, status pill, range control, or label-figure-delta block — import `Button`, `Card`, `Field`, `Badge`, `Slider`, `Stat`, `Money`, `Progress` from `@/components/ui`.
-2. Never write a hex colour. Use a token. A colour with no token needs a token, not a literal.
-3. Never invent a size, radius, or gap. Pick the nearest step on the scale.
-4. Every figure uses DM Mono with tabular numerals.
-5. Teal is not a button.
-6. Style through tokens so both themes work for free. A colour defined outside the token system is pinned to light mode.
-
-Migration is **adopt on touch** — existing screens keep working via legacy token
-aliases; migrate what you touch, and build new surfaces on the system from the start.
-
-## Documentation Rules
-
-- Keep repo docs code-adjacent and current.
-- Keep broader strategy/knowledge in the Obsidian vault, not duplicated in the repo.
-- If code behavior and docs disagree, inspect the code and update stale docs as part of the task only when in scope.
-- Design docs from gstack sessions go in `docs/design/` with short kebab-case filenames.
-
-## Verifying UI: look at it
-
-Typecheck and lint do not see design. Every real defect in the last round of
-calculator work passed both and was found only by rendering the page:
-
-- `uf-t-34` and `--uf-s8` matched no rule, so text and spacing fell back silently
-- a chart's target line was drawn off the top of the plot, so the curve appeared
-  to stop for no reason
-- a grid item's default `min-width: auto` let a measured-width SVG ratchet itself
-  wider every frame, overflowing a 390px viewport
-- a breakdown whose two halves were rounded separately did not sum to its own total
-- a derived marker computed itself into `null` and vanished under the user's thumb
-
-So for any visual change: `npm run build`, `npx next start -p <port>`, and drive
-it with Playwright (`/opt/node22/lib/node_modules/playwright/index.mjs`, Chromium
-at `/opt/pw-browsers/chromium`). Screenshot **390px and 1280px**, and assert the
-things eyes miss — `document.documentElement.scrollWidth <= window.innerWidth`,
-element heights, that the state you expect is actually on screen. Use a real
-touch context (`hasTouch`, `isMobile`) for anything draggable; a narrow desktop
-window is not a phone.
-
-## Before Finishing Any Task
-
-Before saying work is done:
-
-1. Inspect the diff.
-2. Run relevant verification.
-3. Check for secrets in the staged diff before committing.
-4. If pushing, confirm the branch is `main` and push only after verification passes.
-
-Report concisely:
-
-- What changed.
-- What verification ran.
-- Any issues, risks, or follow-up needed.
+# UntilFire — Claude entry point
+
+Read the user's request and [AGENTS.md](AGENTS.md) first. It owns shared authority,
+baseline, engineering, verification, collaboration, and publishing rules for
+both Claude and Codex. Read [project memory](docs/KNOWLEDGE.md), relevant entries
+in [the decision log](docs/DECISIONS.md), the roadmap, recent changelog and commits,
+then inspect relevant code before editing. Use available skills and slash commands
+when useful; gstack and another agent's local tool paths are not prerequisites.
+
+## Product constraints
+
+UntilFire is a financial freedom app: **Personal finance that sets you free.**
+Show a freedom date, one useful next move, and ongoing progress toward work
+optionality. The business goal is **$3k MRR**, through activation, conversion,
+retention, trust, and acquisition. Keep work bounded to the user's request.
+
+- Keep the full initial calculator useful, free, and available without login.
+- No surprise surveys, feedback, signup, payment, or bank prompts before value.
+  Dashboard and Pro continue the journey after the first result.
+- Required inputs stay limited to income, expenses or savings, and current
+  savings/net worth. Support gross annual or monthly take-home income and monthly
+  savings or spending. Age is optional. Retirement location is skippable; use
+  spending-based targets when skipped.
+- Feedback is user-initiated after value. FIRE personality/type is a secondary
+  flow in Profile, not required onboarding or a projection input.
+- Lead with freedom and the guided path; city/tax detail supports trust.
+  Prefer deterministic calculations and actual user data before AI recommendations.
+  No streaks or daily-engagement mechanics.
+
+## Current navigation and design
+
+[App structure](docs/design/app-structure.md) owns placement and navigation;
+[design system](docs/design/design-system.md) owns visual contracts.
+
+- **Money:** actual finances plus operational budgets and upcoming/expected
+  payments. Cashflow (Transactions, Upcoming, Categories, Budget), Net Worth,
+  Debts, Insights.
+- **Plan:** long-term projections, assumptions, scenarios, and targets. Freedom
+  Date, Scenarios, Goals, Contributions, Expat FIRE, Citizenship, Learn.
+- **Home:** synthesis and next moves, with no independent financial inputs.
+  Layout customisation is allowed.
+- **Profile:** account settings, billing, household setup, and FIRE personality/type.
+  Planning assumptions live in Plan (`FireAssumptionsCard`), not ProfileTab.
+
+The current shared system is v3 Warm: cream/light and warm dark via `.dark`,
+Fraunces display headings, Manrope body, DM Mono financial data with tabular
+numerals. A prominent freedom-date display is the explicit Fraunces exception;
+dates in data tables and `Stat` remain DM Mono. Instrument Serif is reserved for
+landing/HomeClient marketing heroes.
+
+**Green acts; teal means freedom/progress.** Primary actions use green; neutral
+secondary/ghost controls and red destructive actions are valid. Teal is not a
+button or generic success color. Meaning must not depend on color alone.
+
+Reuse `components/ui/` and tokens in `app/globals.css`. Use the named type classes
+and documented scales, with bounded primitive-specific exceptions in the design
+system (including Button and Stat). Do not invent tokens or classes. Adopt the
+system in touched UI, without unrelated reskins. Check both themes and browser
+behavior using the shared QA requirements; tokens do not provide correctness for
+free. Documentation edits alone do not authorize a redesign.
+
+## Working map
+
+- `app/page.tsx`, `app/HomeClient.tsx` — public landing and no-login flow.
+- `app/dashboard/page.tsx` — dashboard shell, navigation, Home and planning views.
+- `app/dashboard/ProfileTab.tsx` — account/settings and FIRE personality/type.
+- `app/dashboard/FireAssumptionsCard.tsx` — planning assumptions used in Plan.
+- `app/dashboard/ContributionsTab.tsx`, `app/dashboard/NextContributionCard.tsx`
+  — contribution plan and matching Home step. Read
+  [Next contribution](docs/design/next-contribution.md) for persistence, snapshots,
+  account selection, and remaining monthly-email work. Named allocation
+  suggestions remain an unresolved direction requiring legal input before shipping.
+- `lib/fire-data.ts` — city, tax, and calculation helpers; `lib/fire/` — FIRE logic.
+- [Cost of living](docs/cost-of-living.md) — read before changing city pricing or
+  Census/BEA/housing imports.
+- [Analytics contract](docs/analytics/EVENTS.md), `lib/analytics-events.ts` — events.
+- [Search Console](docs/search-console.md) — source setup and analysis caveats.
+- [Roadmap](docs/ROADMAP.md) — planning and implementation notes, not proof of
+  missing features or live correctness; [changelog](CHANGELOG.md) and code provide
+  additional evidence.
+- `package.json` — executable command inventory; shared rules explain which
+  checks to select, including financial regression guards.
+
+The app repo is the single maintained home for public-safe project knowledge,
+including direction and rationale. The vault is historical source material;
+see [the reconciliation record](docs/history/vault-reconciliation.md). Preserve
+decision history and update the relevant documents in the same PR as a change.
+Do not reverse a choice without reading why it was made.

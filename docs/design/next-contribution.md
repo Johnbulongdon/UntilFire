@@ -73,10 +73,11 @@ ETH at 2–8 on a 5% target) survives as an override rather than the default.
 features.
 
 - **Money → Net Worth** — what you hold. Largely exists.
-- **Plan → Contributions** — targets, drift, the split, the warnings. New.
+- **Plan → Contributions** — targets, drift, the split, the warnings. Implemented
+  in the 22–24 September commits; repository status is not production verification.
 
-Rule 6 applies: add the tab to `PLAN_SECTIONS` *and* the deep-link `valid`
-array, or it ships unreachable.
+Rule 6 applies: keep the tab in `PLAN_SECTIONS`, its sidebar group membership,
+and the deep-link `valid` array, or it becomes unreachable or loses navigation state.
 
 ## Prices
 
@@ -96,7 +97,7 @@ user and is a *preference* goes on `profiles`, where the row already exists
 and the RLS is already right. Only the thing that is many-per-user and is a
 *record* earns its own table.
 
-- `profiles.contribution_plan` (JSONB) — targets, holdings, budget, frequency.
+- `profiles.contribution_plan` (JSONB) — targets, holdings, budget override, contribution schedule, buy-in frequency.
   One per user, overwritten wholesale. NULL means never set up, which is not
   the same as an empty plan.
 - `contribution_snapshots` — user_id, month, total, budget, per-asset detail.
