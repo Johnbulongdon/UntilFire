@@ -191,7 +191,8 @@ ask to set the allowance directly rather than derive it from the Budget.
 ### D-11 — September 24: day-to-day spending from last month's needs
 
 **Status:** Active. Authorised by the founder on 2026-09-24. Supersedes D-10's
-allowance source.
+allowance source. *One-off months are handled by per-category exclusions
+(D-14) rather than the multi-month median listed under "Revisit when".*
 **Decision:** The day-to-day line in the contribution forecast and in the Expected
 month view is last complete month's **need-tagged** spending divided by that
 month's days, less any need already on the Expected list. A need is left out when
@@ -298,6 +299,43 @@ focus ring, has at least 14.9:1 text contrast, and opens the quiz with its sourc
 personalised guidance or defaults). Integrate it after the first result then,
 not before it.
 **Source:** `app/components/landing/AnimatedHero.tsx`, `app/fire-type/quiz-data.ts`.
+
+### D-14 — September 24: let people leave a one-off out of the day-to-day estimate
+
+**Status:** Active. Authorised by the founder on 2026-09-24. Refines D-11.
+**Decision:** The per-day figure opens a breakdown of last month's counted needs
+by category, with amount and share. Each category has a **Leave out** tick.
+Ticking asks: **just this month** or **always**. "Just this month" is stored
+with the basis month it was made for (`2026-08`) and stops applying once
+another month becomes the basis. It lapses by itself, and stale entries are
+dropped on the next change. "Always" stays until the category is ticked back
+in. Exclusions live in the saved ladder (`allowanceExclusions`), so
+Contributions, the Home card and the Expected month view take the same figure.
+They apply only to categories that would otherwise be counted; needs already
+dated on the Expected list stay attributed to their bill.
+**Why:** One month is the basis (D-11), so one unusual month moves the whole
+figure. The founder's example was travel booked as a need that won't recur.
+The person knows which spending was a one-off; the app can't tell.
+**Rejected:** (a) A three-month median per category: automatic, but slower to
+reflect a real change, and it hides why the figure moved. (b) "Always" only:
+simpler, but a real recurring cost could stay hidden long after the one-off.
+(c) "This month" only: a category someone never counts, such as a quarterly
+bill already budgeted elsewhere, would need ticking every month.
+**Trade-off:** The estimate depends on the person's judgement. The breakdown
+shows every exclusion with its scope and a way to undo it, and the explanation
+note under the ledger repeats them, so nothing is left out silently.
+**Evidence:** `test:cashflow-forecast` covers month scope, lapse the next month,
+always, always winning over month, bill attribution and leaving everything out.
+`test:contribution-plan` covers save/reload and malformed entries.
+`test:contribution-ladder` covers the forecast and the Home card using the
+stored choice. Browser check (light/dark, 390/1280, keyboard): hover, click and
+tap open the breakdown; the dialog offers both scopes; the choice saves, and
+the Expected month view agrees after a reload.
+**Revisit when:** people exclude the same category month after month (offer
+"always" first), or exclusions become common enough that a median would serve
+most people without ticking.
+**Source:** `app/dashboard/AllowanceBreakdown.tsx`, `lib/cashflow-forecast.ts`
+(`needsAllowance`), `lib/contribution.ts` (`allowanceExclusions`).
 
 ## How to add or supersede a decision
 

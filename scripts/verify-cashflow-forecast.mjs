@@ -297,6 +297,38 @@ check("accents no longer stop a match", sameMerchant("Café Nero", "CAFE NERO LO
     needsAllowance([], expected, 2026, 7) === null);
 }
 
+// ── Leaving a category out of the estimate (D-14)
+{
+  const t = (description, category, usd) => ({ description, category, amountUSD: usd });
+  const aug = [t("Vet", "pets", 200), t("Market", "food", 100), t("Flight", "travel", 400)];
+  const base = needsAllowance(aug, [], 2026, 7);
+  check("with nothing left out, travel counts like any need", base.counted.some((c) => c.category === "travel") && base.monthly === 700);
+  const month = needsAllowance(aug, [], 2026, 7, [{ category: "travel", scope: "month", month: "2026-08" }]);
+  check("left out just this month: gone from the count, and marked as your choice",
+    !month.counted.some((c) => c.category === "travel") && month.monthly === 300 &&
+    month.excluded.some((e) => e.category === "travel" && e.byYou === "month"),
+    `${month.monthly} — ${month.excluded.map((e) => e.because).join("; ")}`);
+  check("the per-day rate follows", Math.abs(month.perDay - 300 / 31) < 1e-9);
+  check("the estimate knows its month, for matching choices made for it", month.monthKey === "2026-08");
+  const nextMonth = needsAllowance(aug, [], 2026, 8, [{ category: "travel", scope: "month", month: "2026-08" }]);
+  check("a month-only choice lapses once another month is the basis",
+    nextMonth.counted.some((c) => c.category === "travel") && !nextMonth.excluded.some((e) => e.byYou));
+  const always = needsAllowance(aug, [], 2026, 9, [{ category: "travel", scope: "always" }]);
+  check("always leaves it out in any month", !always.counted.some((c) => c.category === "travel") && always.excluded[0].byYou === "always");
+  const both = needsAllowance(aug, [], 2026, 7, [
+    { category: "travel", scope: "month", month: "2026-08" }, { category: "travel", scope: "always" }]);
+  check("always wins over a month-only choice for the same category",
+    both.excluded.filter((e) => e.category === "travel").length === 1 && both.excluded.find((e) => e.category === "travel").byYou === "always");
+  const billed = needsAllowance([t("Rent transfer", "housing", 1000), t("Market", "food", 100)],
+    [{ description: "Rent", amountUSD: 1000, type: "expense", dueDate: "2026-10-01", recurrence: "monthly", category: "housing" }],
+    2026, 7, [{ category: "housing", scope: "always" }]);
+  check("a need already dated on the Expected list stays attributed to the bill, not to your choice",
+    billed.excluded.find((e) => e.category === "housing").byYou === undefined);
+  const everything = needsAllowance(aug, [], 2026, 7, ["pets", "food", "travel"].map((category) => ({ category, scope: "always" })));
+  check("leaving everything out is an estimate of zero, not a fall back to the budget",
+    everything !== null && everything.monthly === 0 && everything.perDay === 0);
+}
+
 let failed = 0;
 for (const c of checks) {
   console.log(`${c.ok ? "✓" : "✗"} ${c.name}${c.detail ? `  — ${c.detail}` : ""}`);

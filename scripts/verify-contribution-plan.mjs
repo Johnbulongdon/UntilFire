@@ -467,6 +467,30 @@ for (const row of SHEET) {
   check("the stored list is a copy, not the caller's array", copy.ladder.efAccountIds.join() === "a");
 }
 
+// ── Estimate exclusions survive storage (D-14)
+{
+  const withEx = { ...EMPTY_LADDER, allowanceExclusions: [
+    { category: "travel", scope: "month", month: "2026-08" }, { category: "pets", scope: "always" }] };
+  const stored = ladderToStored(withEx);
+  const back = storedToLadder(sanitiseLadder(JSON.parse(JSON.stringify(stored))));
+  check("left-out categories survive a save and reload",
+    JSON.stringify(back.allowanceExclusions) === JSON.stringify(withEx.allowanceExclusions),
+    JSON.stringify(back.allowanceExclusions));
+  const junk = sanitiseLadder({ ...stored, allowanceExclusions: [
+    { category: "travel", scope: "month" },                 // no month
+    { category: "", scope: "always" },                     // no category
+    { category: "food", scope: "sometimes" },              // unknown scope
+    { category: "gifts", scope: "month", month: "Aug" },   // bad month
+    null, "travel",
+    { category: "pets", scope: "always", month: "2026-08" }, // stray month on always
+  ] });
+  check("a malformed exclusion is dropped rather than guessed at",
+    JSON.stringify(junk.allowanceExclusions) === JSON.stringify([{ category: "pets", scope: "always" }]),
+    JSON.stringify(junk.allowanceExclusions));
+  check("a ladder saved before exclusions existed reads as none",
+    storedToLadder(sanitiseLadder({ ...stored, allowanceExclusions: undefined })).allowanceExclusions.length === 0);
+}
+
 let failed = 0;
 for (const c of checks) {
   console.log(`${c.ok ? "✓" : "✗"} ${c.name}${c.detail ? `  — ${c.detail}` : ""}`);

@@ -19,6 +19,7 @@ import {
 import { describeAccounts } from "@/lib/emergency-fund-accounts";
 import { daysSinceSync, STALE_AFTER_DAYS } from "@/lib/account-currency";
 import { recurrenceToMonthly } from "@/lib/recurring-detect";
+import type { AllowanceExclusion } from "@/lib/cashflow-forecast";
 import ContributionLedger from "./ContributionLedger";
 import { supabase } from "@/lib/supabase";
 import {
@@ -135,6 +136,20 @@ export default function ContributionsTab({
     setFields((f) => ({ ...f, disabled: fn(f.disabled) }));
   };
   const editRows = (fn: (rs: Row[]) => Row[]) => { touched.current = true; setRows(fn); };
+  /* Leave a category out of the day-to-day estimate, or put it back (D-14).
+     A month-only choice names the month it was made for, so it lapses by
+     itself; entries for months that are no longer the basis are dropped
+     here rather than kept forever. */
+  const setExclusion = (category: string, scope: AllowanceExclusion["scope"] | null, monthKey: string) => {
+    touched.current = true;
+    setFields((f) => ({
+      ...f,
+      allowanceExclusions: [
+        ...(f.allowanceExclusions ?? []).filter((e) => e.category !== category && (e.scope === "always" || e.month === monthKey)),
+        ...(scope === "always" ? [{ category, scope }] : scope === "month" ? [{ category, scope, month: monthKey }] : []),
+      ],
+    }));
+  };
   const editBudget = (v: string | null) => { touched.current = true; setBudgetOverride(v); };
   const editFrequency = (v: Frequency) => { touched.current = true; setFrequency(v); };
   const editSchedule = (p: Partial<ContributionSchedule>) => {
@@ -456,6 +471,7 @@ export default function ContributionsTab({
         {budgetOverride === null && (
           <ContributionLedger
             available={view.available}
+            onSetExclusion={setExclusion}
             budgetMonthlySpending={budgetMonthlySpending}
             expectedMonthlyBills={(expectedItems ?? [])
               .filter((i) => i.type === "expense")

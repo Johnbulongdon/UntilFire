@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchAllPages } from "@/lib/supabase-pages";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer,
@@ -104,11 +105,13 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { setLoading(false); return; }
-      supabase
+      fetchAllPages((from, to) => supabase
         .from("expenses")
         .select("id, date, amount, refund_amount, currency, category, transaction_type")
         .eq("user_id", session.user.id)
         .order("date", { ascending: false })
+        .order("id")
+        .range(from, to))
         .then(({ data }) => {
           if (data) setTransactions(data as RawTx[]);
           setLoading(false);

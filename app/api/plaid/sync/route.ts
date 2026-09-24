@@ -3,6 +3,7 @@ import { adminClient } from "@/lib/supabase-admin";
 import { Transaction as PlaidTransaction } from "plaid";
 import { getPlaidClient, mapPlaidTx } from "@/lib/plaid";
 import { planTagging, type ClassificationRule } from "@/lib/classification-rules";
+import { fetchAllPages } from "@/lib/supabase-pages";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -140,12 +141,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
          * which nothing feeds a figure — and planTagging decides the rest. */
         const since = new Date();
         since.setMonth(since.getMonth() - 36);
-        const { data: candidates } = await admin
+        const { data: candidates } = await fetchAllPages((from, to) => admin
           .from("expenses")
           .select("id, category, sub_category, tags, transaction_type")
           .eq("user_id", user.id)
           .eq("transaction_type", "expense")
-          .gte("date", since.toISOString().slice(0, 10));
+          .gte("date", since.toISOString().slice(0, 10))
+          .order("id")
+          .range(from, to));
         const updates = planTagging(candidates ?? [], rules as ClassificationRule[]);
         for (let i = 0; i < updates.length; i += 50) {
           await Promise.all(updates.slice(i, i + 50).map((u) =>

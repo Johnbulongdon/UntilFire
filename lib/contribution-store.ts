@@ -19,6 +19,7 @@ import {
   type AssetPlan, type ContributionPlan, type Frequency, type PlanRow, type StoredPlan,
 } from "@/lib/contribution";
 import type { ContributionSchedule } from "@/lib/contribution-schedule";
+import type { AllowanceExclusion } from "@/lib/cashflow-forecast";
 
 export {
   EMPTY_LADDER, ladderToStored, newerPlan, planHasContent, planToRows,
@@ -244,4 +245,25 @@ export function useSavedEmergencyAccountIds(): {
     void saveEmergencyAccountIds(next).then(setSaveState);
   };
   return { ids, choose, saveState };
+}
+
+/**
+ * The categories left out of the day-to-day estimate, from the saved plan,
+ * for the Expected month view — so it takes the same figure as
+ * Plan → Contributions, where they are chosen. Read-only here.
+ */
+export function useSavedAllowanceExclusions(): AllowanceExclusion[] {
+  const [exclusions, setExclusions] = useState<AllowanceExclusion[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const local = readLocalPlan();
+    if (local?.ladder) setExclusions(local.ladder.allowanceExclusions ?? []);
+    void loadCloudPlan().then((cloud) => {
+      if (cancelled) return;
+      const winner = newerPlan(local, cloud);
+      if (winner?.ladder) setExclusions(winner.ladder.allowanceExclusions ?? []);
+    });
+    return () => { cancelled = true; };
+  }, []);
+  return exclusions;
 }

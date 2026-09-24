@@ -18,6 +18,7 @@
 
 import type { RungKind } from "./contribution-waterfall";
 import type { ContributionSchedule } from "./contribution-schedule";
+import type { AllowanceExclusion } from "./cashflow-forecast";
 
 export interface Target {
   symbol: string;
@@ -348,6 +349,9 @@ export interface StoredLadder {
   lowInterestExtra: number;
   debts: { name: string; balance: number; ratePct: number }[];
   disabled: RungKind[];
+  /** Categories left out of the day-to-day estimate (D-14). Absent on
+   *  ladders stored before it existed, which read as none. */
+  allowanceExclusions?: AllowanceExclusion[];
 }
 
 export interface PlanRow { id: string; symbol: string; targetPct: string; value: string }
@@ -366,12 +370,14 @@ export interface LadderFields {
   lowInterestExtra: string;
   debts: DebtRow[];
   disabled: RungKind[];
+  allowanceExclusions: AllowanceExclusion[];
 }
 
 export const EMPTY_LADDER: LadderFields = {
   efOverride: null, expensesOverride: null, thresholdOverride: null,
   efAccountIds: null, expenseSource: "last-month",
   monthlyMatch: "", taxRoom: "", lowInterestExtra: "", debts: [], disabled: [],
+  allowanceExclusions: [],
 };
 
 const rowId = () =>
@@ -443,6 +449,7 @@ export function ladderToStored(f: LadderFields): StoredLadder {
       .filter((d) => d.name.trim() || toNumber(d.balance) > 0)
       .map((d) => ({ name: d.name.trim(), balance: toNumber(d.balance), ratePct: toNumber(d.ratePct) })),
     disabled: [...f.disabled],
+    allowanceExclusions: (f.allowanceExclusions ?? []).map((e) => ({ ...e })),
   };
 }
 
@@ -467,6 +474,7 @@ export function storedToLadder(s: StoredLadder): LadderFields {
       ratePct: String(d.ratePct),
     })),
     disabled: [...s.disabled],
+    allowanceExclusions: (s.allowanceExclusions ?? []).map((e) => ({ ...e })),
   };
 }
 
@@ -510,6 +518,15 @@ export function sanitiseLadder(raw: unknown): StoredLadder | undefined {
       : [],
     disabled: Array.isArray(l.disabled)
       ? l.disabled.filter((k): k is RungKind => typeof k === "string" && k in RUNG_KINDS)
+      : [],
+    // A malformed entry is dropped, not guessed at: an exclusion that reads
+    // wrongly would hide real spending from the estimate.
+    allowanceExclusions: Array.isArray(l.allowanceExclusions)
+      ? l.allowanceExclusions
+          .filter((e): e is AllowanceExclusion => !!e && typeof e === "object"
+            && typeof e.category === "string" && e.category.length > 0
+            && (e.scope === "always" || (e.scope === "month" && typeof e.month === "string" && /^\d{4}-\d{2}$/.test(e.month))))
+          .map((e) => (e.scope === "always" ? { category: e.category, scope: "always" as const } : { category: e.category, scope: "month" as const, month: e.month }))
       : [],
   };
 }

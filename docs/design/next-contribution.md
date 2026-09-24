@@ -232,6 +232,21 @@ paper over.
    unpaid rows, so the two pages agree. Name matching is Unicode-aware; the
    old a–z tokenizer reduced Chinese merchant names to nothing.
 
+   One month is the basis, so one unusual month moves the whole figure: a
+   trip booked as a need, say. The per-day figure opens a breakdown
+   (`AllowanceBreakdown.tsx`) of the counted categories with amounts and
+   shares, and a **Leave out** tick on each asks "just this month" or
+   "always" (D-14). A month-only choice records the basis month it was made
+   for and stops applying when another month takes over. Choices live in the
+   saved ladder (`allowanceExclusions`), so every surface takes the same figure.
+
+   None of this works if last month never loads. The database returns at
+   most 1,000 rows per request, and the dashboard's 36-month history read
+   oldest-first in one request, so a busy account never saw its recent
+   months and the estimate silently fell back to the budget. Every read of
+   `expenses` now pages (`lib/supabase-pages.ts`), guarded by
+   `test:expense-reads-paged`.
+
    Every figure here is only as good as the balances under it, and two things
    were wrong with those. Balances were added in their own currencies as if
    they were dollars; they are now converted once where the dashboard loads

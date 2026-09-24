@@ -22,6 +22,7 @@ import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
+import { fetchAllPages } from "@/lib/supabase-pages";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
@@ -5768,10 +5769,12 @@ export default function Dashboard() {
       const prevD = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1);
       const prevStart = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}-01`;
 
-      supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
+      fetchAllPages((from, to) => supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
         .eq("user_id", session.user.id)
         .gte("date", thisStart)
         .lt("date", thisEnd)
+        .order("id")
+        .range(from, to))
         .then(({ data: expData }) => {
           if (expData) {
             setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
@@ -5796,10 +5799,12 @@ export default function Dashboard() {
           if (cmt) setCommittedRows(cmt as CommittedRow[]);
         });
 
-      supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
+      fetchAllPages((from, to) => supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
         .eq("user_id", session.user.id)
         .gte("date", prevStart)
         .lt("date", thisStart)
+        .order("id")
+        .range(from, to))
         .then(({ data: prevData }) => {
           if (prevData) {
             setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
@@ -5808,10 +5813,14 @@ export default function Dashboard() {
 
       const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
-      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, description")
+      // Every page: this read used to stop at the first 1,000 rows, oldest
+      // first, so a busy account never loaded its recent months at all.
+      fetchAllPages((from, to) => supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, description")
         .eq("user_id", session.user.id)
         .gte("date", historyStart)
         .order("date", { ascending: true })
+        .order("id")
+        .range(from, to))
         .then(({ data: txData }) => {
           if (txData) {
             setRecentTransactions(txData.map(tx => ({

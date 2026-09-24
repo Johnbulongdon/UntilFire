@@ -18,6 +18,7 @@
  */
 
 import type { AvailableToContribute } from "@/lib/contribution-ladder";
+import AllowanceBreakdown, { type AllowanceBreakdownProps } from "./AllowanceBreakdown";
 import { daysSinceSync, STALE_AFTER_DAYS } from "@/lib/account-currency";
 
 export interface ContributionLedgerProps {
@@ -26,6 +27,8 @@ export interface ContributionLedgerProps {
   budgetMonthlySpending?: number;
   /** The same, from the Expected list: repeating bills as a monthly figure. */
   expectedMonthlyBills: number;
+  /** Leave a category out of the day-to-day estimate, or put it back (D-14). */
+  onSetExclusion?: AllowanceBreakdownProps["onSetExclusion"];
 }
 
 // A true minus sign, not a hyphen, so a negative balance and a negative
@@ -53,7 +56,7 @@ const day = (iso: string) => {
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
 export default function ContributionLedger({
-  available, budgetMonthlySpending = 0, expectedMonthlyBills,
+  available, budgetMonthlySpending = 0, expectedMonthlyBills, onSetExclusion,
 }: ContributionLedgerProps) {
   const f = available.forecast;
   const basis = available.allowanceBasis;
@@ -121,7 +124,10 @@ export default function ContributionLedger({
                   {e.estimate && basis?.kind === "needs" ? "Day-to-day needs" : e.description}
                   {e.estimate ? (
                     <span className="uf-ledger-tag">
-                      estimate · {e.estimate.days} {e.estimate.days === 1 ? "day" : "days"} × {fmt(e.estimate.perDay)}
+                      estimate · {e.estimate.days} {e.estimate.days === 1 ? "day" : "days"} ×{" "}
+                      {basis?.kind === "needs" ? (
+                        <AllowanceBreakdown basis={basis} onSetExclusion={onSetExclusion}>{fmt(e.estimate.perDay)}</AllowanceBreakdown>
+                      ) : fmt(e.estimate.perDay)}
                     </span>
                   ) : (e.recurring || e.overdue) && (
                     <span className="uf-ledger-tag">
@@ -213,12 +219,25 @@ export default function ContributionLedger({
             about <span style={mono}>{fmt(basis.perDay)}</span> a day
             {basis.counted.length > 0 && <> — {basis.counted.map((c) => `${label(c.category)} ${fmt(c.amount)}`).join(", ")}</>}.
           </p>
-          {basis.excluded.length > 0 && (
+          {basis.excluded.some((e) => !e.byYou) && (
             <p style={{ margin: "var(--uf-s1) 0 0" }}>
               Left out because they&apos;re already dated lines above:{" "}
-              {basis.excluded.map((e) => `${label(e.category)} ${fmt(e.amount)} (${e.because})`).join("; ")}.
+              {basis.excluded.filter((e) => !e.byYou).map((e) => `${label(e.category)} ${fmt(e.amount)} (${e.because})`).join("; ")}.
             </p>
           )}
+          {basis.excluded.some((e) => e.byYou) && (
+            <p style={{ margin: "var(--uf-s1) 0 0" }}>
+              Left out by you:{" "}
+              {basis.excluded.filter((e) => e.byYou).map((e) =>
+                `${label(e.category)} ${fmt(e.amount)} (${e.byYou === "always" ? "always" : `just ${basis.monthLabel.split(" ")[0]}`})`).join("; ")}.
+            </p>
+          )}
+          {/* A div, not a p: the breakdown's panel holds a list and a dialog. */}
+          <div style={{ margin: "var(--uf-s2) 0 0" }}>
+            <AllowanceBreakdown basis={basis} onSetExclusion={onSetExclusion} variant="button">
+              See the breakdown{onSetExclusion ? " · leave a one-off out" : ""}
+            </AllowanceBreakdown>
+          </div>
           {(basis.wants > 0 || basis.untagged > 0) && (
             <p style={{ margin: "var(--uf-s1) 0 0" }}>
               Not counted: {[

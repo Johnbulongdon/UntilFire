@@ -229,6 +229,30 @@ check("expenses follow the month the user picked",
     dayToDayAllowance({ ...FACTS, today }, bills) === null);
 }
 
+// ── The stored exclusions reach the forecast (D-14)
+{
+  const today = new Date(2026, 8, 24);
+  const facts = {
+    ...FACTS, today, expectedItems: [], budgetMonthlySpending: 3000,
+    lastMonthSpending: { year: 2026, monthIndex: 7, wants: 0, untagged: 0, needs: [
+      { description: "Market", category: "food", amountUSD: 310 },
+      { description: "Flight", category: "travel", amountUSD: 620 },
+    ] },
+  };
+  const sched = { cadence: "monthly", anchorDay: 15 };
+  const plain = buildLadderView(stored(), null, facts, sched);
+  const left = buildLadderView(stored({ allowanceExclusions: [{ category: "travel", scope: "month", month: "2026-08" }] }), null, facts, sched);
+  check("leaving travel out lowers the daily rate the forecast subtracts",
+    Math.abs(plain.available.forecast.dailyAllowance - 930 / 31) < 1e-9 &&
+    Math.abs(left.available.forecast.dailyAllowance - 310 / 31) < 1e-9,
+    `${plain.available.forecast.dailyAllowance.toFixed(2)} → ${left.available.forecast.dailyAllowance.toFixed(2)} a day`);
+  check("and so more is safe to contribute", left.available.free >= plain.available.free);
+  const home = ladderViewFromPlan({ targets: [], holdings: [], budget: 0, frequency: "monthly",
+    ladder: stored({ allowanceExclusions: [{ category: "travel", scope: "always" }] }), contribution: sched }, facts);
+  check("the Home card reads the same choice from the saved plan",
+    Math.abs(home.available.forecast.dailyAllowance - 310 / 31) < 1e-9);
+}
+
 let failed = 0;
 for (const c of checks) {
   console.log(`${c.ok ? "✓" : "✗"} ${c.name}${c.detail ? `  — ${c.detail}` : ""}`);

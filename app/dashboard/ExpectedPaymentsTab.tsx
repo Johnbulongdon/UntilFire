@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchAllPages } from "@/lib/supabase-pages";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
@@ -266,11 +267,13 @@ export default function ExpectedPaymentsTab({
       setLoading(false);
 
       // Detection is a suggestion feed, never a list in its own right.
-      const { data: txns } = await supabase
+      const { data: txns } = await fetchAllPages((from, to) => supabase
         .from("expenses")
         .select("id, date, amount, currency, description, category, transaction_type")
         .eq("user_id", userId)
-        .order("date", { ascending: false });
+        .order("date", { ascending: false })
+        .order("id")
+        .range(from, to));
       if (cancelled || !txns) return;
       const found = detectRecurring(txns as RawTx[], displayRates);
       setSuggestions([...found.expenses, ...found.income].slice(0, 8));

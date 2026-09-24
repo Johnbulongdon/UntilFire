@@ -24,7 +24,7 @@ import {
 } from "./contribution-schedule.ts";
 import {
   buildForecast, monthlyAllowance, needsAllowance, perDay,
-  type CashflowForecast, type ExpectedItem, type NeedTransaction, type NeedsAllowance,
+  type AllowanceExclusion, type CashflowForecast, type ExpectedItem, type NeedTransaction, type NeedsAllowance,
 } from "./cashflow-forecast.ts";
 
 /** The same floor and target the Home safety runway uses. */
@@ -120,9 +120,11 @@ export type AllowanceBasis =
  * no tagged history to go on, the budget-based estimate stands in, labelled
  * as such.
  */
-export function dayToDayAllowance(facts: AccountFacts, items: ExpectedItem[]): AllowanceBasis | null {
+export function dayToDayAllowance(
+  facts: AccountFacts, items: ExpectedItem[], exclusions: AllowanceExclusion[] = [],
+): AllowanceBasis | null {
   const last = facts.lastMonthSpending;
-  const fromNeeds = last ? needsAllowance(last.needs, items, last.year, last.monthIndex) : null;
+  const fromNeeds = last ? needsAllowance(last.needs, items, last.year, last.monthIndex, exclusions) : null;
   if (fromNeeds && last) return { kind: "needs", wants: last.wants, untagged: last.untagged, ...fromNeeds };
   const monthly = monthlyAllowance(facts.budgetMonthlySpending ?? 0, items);
   return monthly > 0 ? { kind: "budget", monthly, perDay: perDay(monthly) } : null;
@@ -166,7 +168,7 @@ export function buildLadderView(
   const contributable = facts.cashAccounts.filter((a) => !efIds.has(a.id));
   const today = facts.today ?? new Date();
   const items = facts.expectedItems ?? [];
-  const allowanceBasis = dayToDayAllowance(facts, items);
+  const allowanceBasis = dayToDayAllowance(facts, items, ladder.allowanceExclusions ?? []);
   const forecast = buildForecast(sumBalances(contributable), items, schedule, today, allowanceBasis?.perDay ?? 0);
   const nextDate = nextContributionDate(schedule, today);
   const available: AvailableToContribute = {

@@ -24,6 +24,7 @@ import { Button } from "@/components/ui";
 import { expandForMonth, type ExpectedItem } from "@/lib/cashflow-forecast";
 import { daysInMonth } from "@/lib/contribution-schedule";
 import { dayToDayAllowance, type AccountFacts } from "@/lib/contribution-ladder";
+import { useSavedAllowanceExclusions } from "@/lib/contribution-store";
 
 export interface ExpectedMonthProps {
   items: (ExpectedItem & { completed?: boolean })[];
@@ -53,10 +54,13 @@ export default function ExpectedMonth({
      the unpaid ones — so the two pages agree. Measured needs are a daily
      rate, so they scale to the month on view; a budget figure is already
      monthly and is used as it stands. */
+  const exclusions = useSavedAllowanceExclusions();
   const basis = dayToDayAllowance(
     { cashAccounts: [], budgetMonthlySpending, lastMonthSpending },
     items.filter((i) => !i.completed),
+    exclusions,
   );
+  const leftOutByYou = basis?.kind === "needs" ? basis.excluded.filter((e) => e.byYou).length : 0;
   const allowance = !basis ? 0
     : basis.kind === "needs" ? basis.perDay * daysInMonth(view.getFullYear(), view.getMonth())
     : basis.monthly;
@@ -112,7 +116,7 @@ export default function ExpectedMonth({
                   {basis?.kind === "needs" ? "Day-to-day needs" : "Day-to-day spending"}
                   <span className="uf-month-tag">
                     {basis?.kind === "needs"
-                      ? `estimate · your needs in ${basis.monthLabel}, less those listed above`
+                      ? `estimate · your needs in ${basis.monthLabel}, less those listed above${leftOutByYou ? ` and ${leftOutByYou} you left out` : ""}`
                       : "estimate · your budget less the repeating bills above"}
                   </span>
                 </span>

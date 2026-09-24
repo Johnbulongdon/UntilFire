@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchAllPages } from "@/lib/supabase-pages";
 import { FALLBACK_RATES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import {
@@ -518,13 +519,15 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
         });
         // Query fresh from DB so we catch transactions added since this tab mounted
         const opposite = classification === "need" ? "want" : "need";
-        const { data: freshData } = await supabase
+        const { data: freshData } = await fetchAllPages((from, to) => supabase
           .from("expenses")
           .select("id, tags, category, sub_category, transaction_type, date, amount, refund_amount, currency")
           .eq("user_id", session.user.id)
           .eq("transaction_type", "expense")
           .ilike("category", category)
-          .ilike("sub_category", sub_category);
+          .ilike("sub_category", sub_category)
+          .order("id")
+          .range(from, to));
         const mismatched = (freshData || []).filter((t) =>
           !t.tags?.includes(classification) || t.tags?.includes(opposite)
         ) as Transaction[];
@@ -601,11 +604,13 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
-      supabase
+      fetchAllPages((from, to) => supabase
         .from("expenses")
         .select("id, date, amount, refund_amount, currency, category, sub_category, tags, transaction_type")
         .eq("user_id", session.user.id)
         .order("date", { ascending: false })
+        .order("id")
+        .range(from, to))
         .then(({ data }) => {
           if (data) setTransactions(data as Transaction[]);
           setLoading(false);

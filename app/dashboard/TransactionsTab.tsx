@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchAllPages } from "@/lib/supabase-pages";
 import CsvImportModal from "./CsvImportModal";
 import PlaidConnect from "./PlaidConnect";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, Line } from "recharts";
@@ -1795,11 +1796,13 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
-      supabase
+      fetchAllPages<Transaction>((from, to) => supabase
         .from("expenses")
         .select("*")
         .eq("user_id", session.user.id)
         .order("date", { ascending: false })
+        .order("id")
+        .range(from, to))
         .then(({ data }) => {
           if (data) setTransactions(data);
           setLoading(false);

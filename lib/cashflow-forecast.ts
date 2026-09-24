@@ -150,15 +150,40 @@ export interface NeedTransaction {
   amountUSD: number;
 }
 
+/**
+ * A category someone has taken out of the day-to-day estimate (D-14): a trip
+ * booked as a need, say, that they don't expect again.
+ */
+export interface AllowanceExclusion {
+  category: string;
+  /** "month": only while that month's spending is the basis, so it lapses on
+   *  its own when the next month takes over. "always": until put back. */
+  scope: "month" | "always";
+  /** The basis month it was made for, "2026-08". Set when scope is "month". */
+  month?: string;
+}
+
+/** "2026-08" for August 2026 (monthIndex 7). */
+export const monthKeyOf = (year: number, monthIndex: number) =>
+  `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+
+/** Whether an exclusion applies to the estimate built from this month. */
+export const exclusionApplies = (e: AllowanceExclusion, monthKey: string) =>
+  e.scope === "always" || e.month === monthKey;
+
 export interface NeedsAllowance {
   /** "August 2026" — the month the estimate is taken from. */
   monthLabel: string;
+  /** "2026-08", for matching exclusions made for this month. */
+  monthKey: string;
   days: number;
   /** Counted needs for that month, and as a daily rate. */
   monthly: number;
   perDay: number;
   counted: { category: string; amount: number }[];
-  excluded: { category: string; amount: number; because: string }[];
+  /** `byYou` marks the ones the person left out, which they can put back;
+   *  the rest are already dated on the Expected list. */
+  excluded: { category: string; amount: number; because: string; byYou?: AllowanceExclusion["scope"] }[];
 }
 
 const AMOUNT_MATCH = 0.05;
@@ -168,6 +193,7 @@ export function needsAllowance(
   items: ExpectedItem[],
   year: number,
   monthIndex: number,
+  exclusions: AllowanceExclusion[] = [],
 ): NeedsAllowance | null {
   const usable = needs.filter((n) => Number.isFinite(n.amountUSD) && n.amountUSD > 0);
   if (usable.length === 0) return null;
@@ -216,12 +242,29 @@ export function needsAllowance(
     }
   }
 
+  // 4. Left out by the person: a one-off they don't expect again (D-14).
+  // After the bill matching, so only what would otherwise be counted is
+  // offered, and "always" wins over a month-only choice for the same thing.
+  const monthKey = monthKeyOf(year, monthIndex);
+  const monthLabel = new Date(year, monthIndex, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  for (const [category, total] of [...byCategory]) {
+    const applying = exclusions.filter((e) => e.category === category && exclusionApplies(e, monthKey));
+    if (applying.length === 0) continue;
+    const scope = applying.some((e) => e.scope === "always") ? "always" : "month";
+    excluded.push({
+      category, amount: total, byYou: scope,
+      because: scope === "always" ? "you always leave it out" : `you left it out for ${monthLabel}`,
+    });
+    byCategory.delete(category);
+  }
+
   const counted = [...byCategory].map(([category, amount]) => ({ category, amount }))
     .sort((a, b) => b.amount - a.amount);
   const monthly = counted.reduce((sum, c) => sum + c.amount, 0);
   const days = daysInMonth(year, monthIndex);
   return {
-    monthLabel: new Date(year, monthIndex, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    monthLabel,
+    monthKey,
     days,
     monthly,
     perDay: monthly / days,

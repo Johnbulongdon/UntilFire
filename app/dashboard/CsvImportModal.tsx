@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchAllPages } from "@/lib/supabase-pages";
 import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import type { CellValue } from "read-excel-file/browser";
 import { formatMoney } from "@/lib/money";
@@ -790,12 +791,14 @@ export default function CsvImportModal({
     const queryMinDate = shiftDate(minDate, -DUPLICATE_DATE_TOLERANCE_DAYS);
     const queryMaxDate = shiftDate(maxDate, DUPLICATE_DATE_TOLERANCE_DAYS);
 
-    const { data: existing } = await supabase
+    const { data: existing } = await fetchAllPages((from, to) => supabase
       .from("expenses")
       .select("id, date, amount, category, currency, description")
       .eq("user_id", session.user.id)
       .gte("date", queryMinDate)
-      .lte("date", queryMaxDate);
+      .lte("date", queryMaxDate)
+      .order("id")
+      .range(from, to));
 
     const flags: DuplicateFlag[] = [];
     for (let i = 0; i < parsed.length; i++) {
