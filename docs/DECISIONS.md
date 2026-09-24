@@ -397,9 +397,11 @@ founder chose to wait. The household functions (`household_has_pro`,
 `is_household_peer`, `my_household_id`) stay SECURITY DEFINER for signed-in
 users on purpose: row level security calls them, and anon was already revoked
 in `0035`.
-**Trade-off:** One run a day means a balance can be up to a day old, and every
-connection costs a sync a day whether or not anyone looks. The stale-balance
-warning in the ledger now means a refresh failed rather than that nobody pressed Sync.
+**Trade-off:** One run a day means a balance can be up to a day old. It adds
+no Plaid cost: Transactions is billed per connection per month however often
+it syncs, and `accountsGet` is free (checked against the team's Pay as you go
+rates, D-17). The stale-balance warning in the ledger now means a refresh
+failed rather than that nobody pressed Sync.
 **Evidence:** `test:plaid-refresh` (18 checks: which connections are asked for
 holdings, what each error means, how a run is summarised, the schedule, the
 cron secret, `job_runs` logging and the shared sync code). End to end against a
@@ -415,6 +417,55 @@ project moves to Supabase Pro (turn on leaked-password protection).
 **Source:** `app/api/cron/plaid-sync/route.ts`, `lib/plaid-sync.ts`,
 `lib/plaid-errors.ts`, `lib/plaid-holdings.ts`, `app/api/plaid/holdings/route.ts`,
 `supabase/migrations/0042_function_security.sql`.
+
+### D-17 — September 24: stop paying Plaid for connections nobody uses; keep Pro at $3 for now
+
+**Status:** Active. Authorised by the founder on 2026-09-24, after reviewing
+the team's Plaid rates.
+**Decision:** (1) A bank connection's row is deleted only once Plaid confirms
+the connection is gone (`lib/plaid-remove.ts`). Deleting an account, whether
+by the person or from admin, disconnects every bank first. If Plaid refuses,
+the account is not deleted and the person is told which bank to retry.
+Disconnect keeps the connection listed with an error instead of dropping the
+row. (2) New connections require Transactions only, and ask for Investments
+through `required_if_supported_products`. Investments is then added, and
+billed, only when the person picks an investment account. (3) Pro stays at
+$3 a month or $30 a year.
+**Why:** Plaid bills Transactions and Investments monthly for each connection
+it still has, used or not, and only `/item/remove` ends that. It needs the
+access token, which only our row holds. Account deletion cascaded the rows
+away without calling it, so each deleted account would have kept billing
+with nothing left to stop it. The person would also have believed their bank
+was disconnected. Disconnect dropped the row even when Plaid refused.
+Listing Investments in `products` billed it on every connection. It also
+limited Link to banks that offer both products, with an account for each.
+**Pricing:** Each connection's monthly fees are small next to $3, but Pro
+allows unlimited connections, the 90-day trial pays Plaid before Stripe pays
+anything, and a free user's one bank earns nothing. With no paying users,
+price is not the constraint. Fix the leaks first.
+**Rejected:** (a) Raise the price now: no conversion data to price against,
+and the leaks cost money at any price. (b) Delete the account anyway when
+Plaid refuses: it leaves a connection billing with no token to remove it.
+(c) `additional_consented_products` for Investments: it also avoids the fee
+until first use, but `required_if_supported_products` is Plaid's documented
+choice for keeping every bank listed while still loading investments where
+they exist.
+**Trade-off:** A Plaid outage can hold up an account deletion until a retry.
+Investment connections still pay the Investments fee, as they should.
+**Evidence:** `test:plaid-billing`: removal outcomes, both deletion routes
+disconnecting before deleting the user, disconnect keeping a refused
+connection, and the Link products. On the code before this fix, six of its
+checks fail. End to end against a stubbed database with Plaid unreachable:
+deletion returns 502 naming both banks and deletes nothing. A user with no
+banks is deleted without calling Plaid. Plaid's usage records for the team
+showed no billable connections through 2026-09-24, and its Link analytics
+were too few to show whether anyone was turned away.
+**Revisit when:** 20–50 people pay, Plaid costs pass about 40% of what a Pro
+subscriber nets, or a Pro user regularly holds more than about five connections.
+Price is then a positioning question for the $3k MRR goal as much as a margin one.
+**Source:** `lib/plaid-remove.ts`, `app/api/user/delete/route.ts`,
+`app/api/admin/users/[id]/route.ts`, `app/api/plaid/disconnect/route.ts`,
+`app/api/plaid/create-link-token/route.ts`, `lib/pricing.ts`.
 
 ## How to add or supersede a decision
 

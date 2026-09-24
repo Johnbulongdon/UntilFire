@@ -207,7 +207,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
       setDisconnectingId(null);
       return;
     }
-    await fetch("/api/plaid/disconnect", {
+    setError(null);
+    const res = await fetch("/api/plaid/disconnect", {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -216,6 +217,12 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
       body: JSON.stringify({ item_id: itemId }),
     });
     setDisconnectingId(null);
+    // A refused disconnect leaves the connection in place; keep it listed.
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? `Couldn't disconnect ${name}. Please try again.`);
+      return;
+    }
     setItems((prev) => prev.filter((it) => it.id !== itemId));
     setSelectedItemId((cur) => (cur === itemId ? null : cur));
     setSyncResults((prev) => {

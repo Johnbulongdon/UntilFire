@@ -42,8 +42,14 @@ export default function UsersTab({ token }: { token: string }) {
   async function confirmDelete(u: AdminUser) {
     if (confirmText !== u.email) return;
     setBusyId(u.id);
-    await fetch(`/api/admin/users/${u.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`/api/admin/users/${u.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
     setBusyId(null);
+    // Refused when a bank couldn't be disconnected at Plaid; say so rather
+    // than leave the user in the list with no explanation.
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      window.alert(body.error ?? "Couldn't delete this user.");
+    }
     setConfirmDeleteId(null);
     setConfirmText("");
     load();
