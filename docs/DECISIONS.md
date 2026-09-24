@@ -528,6 +528,57 @@ and signup, or email sign-ins outnumber Google.
 **Source:** `app/login/page.tsx`, `lib/auth-finish.ts`, `lib/auth-user.ts`,
 `app/auth/callback/page.tsx`.
 
+### D-19 — September 24: net worth against US households of the same age
+
+**Status:** Built in PR #136 with the real table; publishing to main waits on
+the founder.
+**Decision:** The free result's "How you stack up" screen, and a Home card
+"How you compare" after Freedom date, say what share of US households in the
+person's age group have less net worth: "Your net worth is ahead of 52% of US
+households aged 35–44", with a line marking their position and the median.
+Without an age it compares with all households and offers to add one. Home
+uses the net worth it already shows and the age from Plan → Freedom Date.
+**Why:** A comparison against a published standard means something to the
+first visitor, with no other users to compare with, the way a strength app
+scores a lift against bodyweight. It adds a second reason to care about the
+result besides the date.
+**The standard:** the Federal Reserve's 2022 Survey of Consumer Finances
+summary extract (`SCFP2022.csv`), all five implicates pooled and weighted by
+`WGT`, grouped by age of the reference person in the Fed's bands. The table
+(`lib/net-worth-benchmarks.ts`) holds cutpoints at 1% … 99% and is generated
+by `scripts/build-net-worth-benchmarks.mjs`. That script refuses to write
+unless every median is within 2% of the Fed's published Table 2
+("Changes in U.S. Family Finances from 2019 to 2022", October 2023), copied
+into `scripts/scf-published-medians.json`. The extract itself is not
+committed.
+**Rules:** US dollars only: a US distribution says nothing true about money
+in another currency, so other currencies see no comparison. Always phrased as
+how many have less, never as "behind". Shares round down; ties do not count
+as ahead, so a zero net worth isn't said to beat the others at zero. Below
+1% it reads "at the start line"; past the 99th cutpoint, "more than 99%".
+**Trade-offs:** (a) The survey is in 2022 dollars and is compared with
+today's figure unadjusted, which flatters the person somewhat until the
+Fed's 2025 survey replaces it. (b) The survey measures a
+family's whole net worth; the calculator's figure is whatever the person
+entered as savings or net worth, which may leave out a home. (c) Visitors
+outside the US get nothing here yet.
+**Evidence:** Generated medians against the Fed's (all, under 35, 35–44,
+45–54, 55–64, 65–74, 75+): 192,700 / 192,900; 39,040 / 39,000; 135,300 /
+135,600; 246,700 / 247,200; 364,270 / 364,500; 410,000 / 409,900; 334,700 /
+335,600, all within 0.3%. `test:net-worth-compare` (21 checks: maths,
+wording, wiring, and the table against the Fed's medians). In a browser
+(production build) through the real no-login calculator, at 390 and 1280 px
+in both themes, with an age, without one, at zero and at $25M: the expected
+shares (52%, 45%, 17%, more than 99%), no sideways scrolling and no page
+errors. The Home card was checked in isolation (the sandbox has no sign-in)
+with the dashboard's card styles, including a negative net worth ("at the
+start line") and a non-US currency.
+**Revisit when:** the Fed publishes the 2025 survey; or a comparable
+standard exists for another large visitor country.
+**Source:** `lib/net-worth-compare.ts`, `lib/weighted-percentiles.ts`,
+`lib/net-worth-benchmarks.ts` (generated), `app/components/PercentileTrack.tsx`,
+`app/components/RevealFlow.tsx`, `app/dashboard/CompareCard.tsx`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,
