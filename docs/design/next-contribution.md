@@ -198,10 +198,19 @@ paper over.
    Two judgment calls are written into it. Overdue bills count (a bill not
    marked paid is assumed owed); overdue income does not (it either arrived
    and is already in the balance, or cannot be relied on) — shown, with the
-   reason, rather than silently dropped. And budget figures are never spread
-   into the ledger as invented dated lines; the budget is compared against
-   the Expected list instead, so missing spending is named rather than
-   guessed at.
+   reason, rather than silently dropped.
+
+   Day-to-day spending (D-10). Budget totals have no dates; groceries and
+   eating out never appear in Expected. Leaving them out meant the balance
+   only fell on bill days, so the safe figure overstated what was spare. The
+   forecast now includes the Budget's monthly spending less the repeating
+   bills already listed, spread evenly per day, as labelled estimate lines
+   between dated payments — never as invented transactions, and each line
+   shows its days × rate so every row still adds up. Money → Expected opens
+   on the same data as a month in date order (`ExpectedMonth.tsx`): every
+   payment in and out, one day-to-day line, then In / Out / Left for the
+   month. For a budget whose repeating bills are all listed, Left for the
+   month equals the Budget's own surplus.
 
 ## The open question
 

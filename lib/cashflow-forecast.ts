@@ -14,11 +14,14 @@
  * bills lower it, in date order, so rent before payday is covered and rent
  * after payday is not double-counted.
  *
- * Only dated, declared items go in: the user's expected payments, with their
- * repeats expanded. Budget figures are monthly and undated, and spreading
- * them across days would put invented numbers in a ledger whose whole purpose
- * is that every line is real. The surfaces compare against the budget
- * separately instead.
+ * Dated payments come from the user's Expected list, repeats expanded. The
+ * budget's day-to-day spending — groceries, eating out, anything without a
+ * date — goes in as one labelled estimate per gap between dated lines,
+ * never as invented dated transactions. Without it the balance only ever
+ * fell on bill days, so the safe figure overstated what was spare by
+ * however much gets spent in between. The estimate is the budget's monthly
+ * spending less the repeating bills already listed, so nothing is counted
+ * twice. (D-10 in docs/DECISIONS.md.)
  */
 
 import {
@@ -28,7 +31,7 @@ import {
 
 // One definition of what a repeat can be — the Expected tab's. Type-only, so
 // the guard scripts' type stripping erases it and needs no extension.
-import type { Recurrence } from "./recurring-detect";
+import { recurrenceToMonthly, type Recurrence } from "./recurring-detect.ts";
 export type { Recurrence };
 
 export interface ExpectedItem {
@@ -93,6 +96,85 @@ export interface ForecastEvent {
    * it. Overdue bills ARE counted: a bill not marked paid is assumed owed.
    */
   counted: boolean;
+  /**
+   * Day-to-day spending from the budget, not a dated payment. Shown as its
+   * own line — covering the days since the previous line — so each row's
+   * amount still accounts exactly for the change in the running balance.
+   */
+  estimate?: { days: number; perDay: number };
+}
+
+/**
+ * The budget's spending that the Expected list does not account for, per
+ * month: groceries, eating out, anything without a date.
+ *
+ * Only repeating bills count against the budget here. A one-off is an
+ * exception to a month, not part of what the monthly budget describes, so
+ * subtracting it would shrink the allowance for one surprise and leave it
+ * shrunk.
+ */
+export function monthlyAllowance(budgetMonthlySpending: number, items: ExpectedItem[]): number {
+  const listed = items
+    .filter((i) => i.type === "expense" && i.recurrence !== "none")
+    .reduce((sum, i) => sum + recurrenceToMonthly(i.amountUSD, i.recurrence), 0);
+  return Math.max(0, (budgetMonthlySpending || 0) - listed);
+}
+
+/** A monthly allowance as a daily rate, over an average month. */
+export const perDay = (monthly: number) => (monthly * 12) / 365.25;
+
+/**
+ * Every line of one calendar month, for the month view in Expected.
+ *
+ * This is a budget view, not a forecast, so a repeating item appears on
+ * every occurrence in the month — including ones already paid and rolled
+ * forward, found by stepping back from the row's current due date. Rent on
+ * the 1st is part of September whether or not it has been ticked off.
+ */
+export interface MonthLine {
+  iso: string;
+  description: string;
+  amount: number;
+  type: "income" | "expense";
+  recurring: boolean;
+  /** Paid already: a ticked one-off, or a repeat's occurrence before its current due date. */
+  paid: boolean;
+}
+
+export function expandForMonth(
+  items: (ExpectedItem & { completed?: boolean })[],
+  year: number,
+  monthIndex: number,
+): MonthLine[] {
+  const first = new Date(year, monthIndex, 1).getTime();
+  const last = new Date(year, monthIndex, daysInMonth(year, monthIndex)).getTime();
+  const lines: MonthLine[] = [];
+  for (const item of items) {
+    const due = parseIsoDate(item.dueDate);
+    if (!due || !Number.isFinite(item.amountUSD) || item.amountUSD <= 0) continue;
+    const sign = item.type === "income" ? 1 : -1;
+    if (item.recurrence === "none") {
+      const t = due.getTime();
+      if (t >= first && t <= last) {
+        lines.push({ iso: isoDay(due), description: item.description, amount: sign * item.amountUSD,
+          type: item.type, recurring: false, paid: !!item.completed });
+      }
+      continue;
+    }
+    // Walk back until before the month, then forward through it. Bounded: a
+    // weekly item spans at most a few hundred steps even years away.
+    let n = 0;
+    while (addRecurrence(due, item.recurrence, n).getTime() > first && n > -800) n--;
+    for (; n < 800; n++) {
+      const occ = addRecurrence(due, item.recurrence, n);
+      const t = occ.getTime();
+      if (t > last) break;
+      if (t < first) continue;
+      lines.push({ iso: isoDay(occ), description: item.description, amount: sign * item.amountUSD,
+        type: item.type, recurring: true, paid: t < due.getTime() });
+    }
+  }
+  return lines.sort((a, b) => a.iso.localeCompare(b.iso) || (b.amount - a.amount));
 }
 
 /**
@@ -157,6 +239,8 @@ export interface ForecastDay {
 
 export interface CashflowForecast {
   opening: number;
+  /** The per-day estimate included, or 0 when none was. */
+  dailyAllowance: number;
   /** Days that have at least one event, plus today, in order. */
   days: ForecastDay[];
   contributionIso: string;
@@ -178,6 +262,8 @@ export function buildForecast(
   items: ExpectedItem[],
   schedule: ContributionSchedule,
   today: Date = new Date(),
+  /** Day-to-day spending per day, from the budget. Zero leaves it out. */
+  dailyAllowance = 0,
 ): CashflowForecast {
   const from = startOfDay(today);
   const contribution = nextContributionDate(schedule, from);
@@ -200,8 +286,16 @@ export function buildForecast(
 
   const contributionIso = isoDay(contribution);
   const todayIso = isoDay(from);
+  const windowEndIso = isoDay(windowEnd);
+  // With an allowance the balance falls every day, so the low point is
+  // usually the window's last day; it needs a line of its own to land on.
   const isos = new Set<string>([todayIso, contributionIso, ...byDay.keys()]);
+  if (dailyAllowance > 0) isos.add(windowEndIso);
   const ordered = [...isos].sort();
+  const dayNumber = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return Math.round(new Date(y, m - 1, d).getTime() / 86400000);
+  };
 
   let balance = opening;
   let income = 0;
@@ -210,8 +304,20 @@ export function buildForecast(
   let lowest = { iso: contributionIso, balance: Number.POSITIVE_INFINITY };
   let shortBefore: { iso: string; balance: number } | null = null;
 
+  let prevIso = todayIso;
   for (const iso of ordered) {
-    const dayEvents = byDay.get(iso) ?? [];
+    const dayEvents = [...(byDay.get(iso) ?? [])];
+    // Spending since the previous line lands first: it happened over the
+    // days before this one, ahead of this day's own payments.
+    const gap = dailyAllowance > 0 ? dayNumber(iso) - dayNumber(prevIso) : 0;
+    if (gap > 0) {
+      dayEvents.unshift({
+        iso, description: "Day-to-day spending", amount: -dailyAllowance * gap,
+        type: "expense", recurring: false, overdue: false, counted: true,
+        estimate: { days: gap, perDay: dailyAllowance },
+      });
+    }
+    prevIso = iso;
     for (const e of dayEvents) {
       if (!e.counted) continue;
       balance += e.amount;
@@ -229,6 +335,7 @@ export function buildForecast(
   return {
     opening,
     days,
+    dailyAllowance,
     contributionIso,
     nextCycleIso: isoDay(nextCycle),
     lowest,

@@ -23,7 +23,7 @@ import {
   daysUntil, DEFAULT_SCHEDULE, nextContributionDate, type ContributionSchedule,
 } from "./contribution-schedule.ts";
 import {
-  buildForecast, type CashflowForecast, type ExpectedItem,
+  buildForecast, monthlyAllowance, perDay, type CashflowForecast, type ExpectedItem,
 } from "./cashflow-forecast.ts";
 
 /** The same floor and target the Home safety runway uses. */
@@ -132,7 +132,8 @@ export function buildLadderView(
   const contributable = facts.cashAccounts.filter((a) => !efIds.has(a.id));
   const today = facts.today ?? new Date();
   const items = facts.expectedItems ?? [];
-  const forecast = buildForecast(sumBalances(contributable), items, schedule, today);
+  const allowance = monthlyAllowance(facts.budgetMonthlySpending ?? 0, items);
+  const forecast = buildForecast(sumBalances(contributable), items, schedule, today, perDay(allowance));
   const nextDate = nextContributionDate(schedule, today);
   const available: AvailableToContribute = {
     nextDate,

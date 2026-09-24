@@ -123,6 +123,8 @@ explicitly, and snapshot on visits. Separate payday from buy-in frequency.
 Derive the safe contribution from the cycle's lowest projected balance, with a
 traceable dated ledger; count overdue bills but exclude overdue income. Compare
 budget spending against expected payments without inventing dated transactions.
+*(The last sentence is refined by D-10: budget spending is now included, as a
+labelled estimate rather than as invented dated transactions.)*
 **Why:** The source spreadsheet could allocate more than the available budget;
 a flat band distorted small targets; cash reserved for spending/investing is
 not automatically emergency savings. Duplicate derivations can disagree.
@@ -144,6 +146,42 @@ alone does not establish a product that retains.
 **Trade-off / revisit:** Refresh dated analytics and eligibility before action.
 The older sprint sequence and first-launch checklist are historical.
 **Source:** [Launch context](planning/launch-context.md), vault Launch Runway.
+
+### D-10 — September 24: plan the month from dated payments, estimate the rest
+
+**Status:** Active. Authorised by the founder on 2026-09-24.
+**Decision:** Expected payments are the dated half of a month's budget. Money →
+Expected opens on a month view in date order: every expected payment in and out,
+repeats included, then one **day-to-day spending** line for the budget's spending
+that has no date, then In / Out / Left for the month. The contribution forecast
+includes the same allowance, spread evenly per day, as its own labelled estimate
+lines between dated payments. The allowance is the Budget's monthly spending less
+the repeating bills already on the Expected list, so no bill is counted twice.
+The category Budget remains the source of the monthly total.
+**Why:** Budget totals have no dates; expected payments do. Without the
+allowance, the forecast's balance only fell on bill days, so the safe figure
+overstated what was spare by everything spent in between — the same
+overstatement D-08 exists to prevent, one step removed.
+**Rejected:** (a) Dated items only — honest but kept overstating for anyone who
+spends from the connected accounts. (b) Replacing the Budget with Expected, entering
+groceries as a weekly item — one source, but it retires the monthly category
+Budget users already maintain and asks every user to date their groceries. (The
+category Budget has no decision entry of its own; the log's only recorded reasoning
+on the unit is "[2026-03] Custom city fallback": monthly is the unit people think in.)
+**Trade-off:** An even daily spread is an estimate; real spending is lumpy, and
+card spending leaves the connected account on the statement date, not the day of
+purchase. Every estimate line is labelled, shows its days × rate, and moves onto a
+real date as soon as the payment is added to Expected.
+**Evidence:** `npm run test:cashflow-forecast` (UTC+8 and UTC−7): every ledger line
+still accounts exactly for its change in balance with the allowance included;
+dated bills plus the allowance equal the Budget's spending, so the month's surplus
+matches the Budget's. Browser checks of both surfaces. Live behaviour not yet
+observed with a real account.
+**Revisit when:** users routinely pay day-to-day spending by card (the even
+spread then lands on the wrong days — model the card statement instead); or
+Expected lists most spending, making the allowance small enough to drop; or users
+ask to set the allowance directly rather than derive it from the Budget.
+**Source:** [Next contribution](design/next-contribution.md) · `lib/cashflow-forecast.ts`.
 
 ## How to add or supersede a decision
 

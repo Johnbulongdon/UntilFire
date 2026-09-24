@@ -14,6 +14,7 @@
  */
 import {
   addRecurrence, isoDay, expandExpected, buildForecast,
+  monthlyAllowance, perDay, expandForMonth,
 } from "../lib/cashflow-forecast.ts";
 
 const checks = [];
@@ -120,17 +121,17 @@ check("quarterly is three calendar months; yearly keeps a leap day sensible",
     !buildForecast(0, [salary], sched, today).days.some((x) => x.iso === "2026-11-15"));
 }
 
-// ── A real account, as it stood when the $34 appeared
+// ── A nearly empty checking account and a stale salary row
 {
-  // $40.91 across three checking accounts; China Mobile monthly on the 28th;
-  // a one-off Salary dated the 15th, never marked received.
+  // The shape that produced an unexplained "$34": little cash, one small
+  // monthly bill, and a one-off salary that was due and never marked received.
   const today = d(2026, 9, 24);
   const items = [
     { description: "China Mobile", amountUSD: 6.88, type: "expense", dueDate: "2026-09-28", recurrence: "monthly" },
     { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-09-15", recurrence: "none" },
   ];
   const f = buildForecast(40.91, items, { cadence: "monthly", anchorDay: 1 }, today);
-  check("the ledger explains the figure line by line",
+  check("the ledger reproduces the figure line by line",
     f.days.map((x) => `${x.iso}:${x.balance.toFixed(2)}`).join(" ") ===
     "2026-09-24:40.91 2026-09-28:34.03 2026-10-01:34.03 2026-10-28:27.15",
     f.days.map((x) => `${x.iso}:${x.balance.toFixed(2)}`).join(" "));
@@ -145,6 +146,97 @@ check("quarterly is three calendar months; yearly keeps a leap day sensible",
   check("recording the salary as monthly and contributing on payday changes the answer",
     Math.abs(fixed.safeToContribute - 3027.15) < 0.005 && fixed.income === 3000,
     `${fixed.safeToContribute.toFixed(2)} — and every dollar of it is on a line of the ledger`);
+}
+
+// ── Day-to-day spending from the budget
+{
+  const bills = [
+    { description: "Rent", amountUSD: 1500, type: "expense", dueDate: "2026-10-01", recurrence: "monthly" },
+    { description: "Gym", amountUSD: 30, type: "expense", dueDate: "2026-10-03", recurrence: "weekly" },
+    { description: "Laptop", amountUSD: 900, type: "expense", dueDate: "2026-10-10", recurrence: "none" },
+  ];
+  const weeklyAsMonthly = 30 * 4.33;
+  check("the allowance is the budget less the repeating bills already listed",
+    Math.abs(monthlyAllowance(2500, bills) - (2500 - 1500 - weeklyAsMonthly)) < 0.01,
+    monthlyAllowance(2500, bills).toFixed(2));
+  check("a one-off does not shrink every month's allowance",
+    monthlyAllowance(2500, bills) === monthlyAllowance(2500, bills.slice(0, 2)));
+  check("listed bills above the budget leave no allowance, never a negative",
+    monthlyAllowance(1000, bills) === 0 && monthlyAllowance(undefined, []) === 0);
+  check("a monthly allowance becomes an average-month daily rate",
+    Math.abs(perDay(365.25) - 12) < 1e-9);
+
+  const today = d(2026, 9, 24);
+  const sched = { cadence: "monthly", anchorDay: 15 };
+  const items = [
+    { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-10-15", recurrence: "monthly" },
+    { description: "Rent", amountUSD: 1500, type: "expense", dueDate: "2026-11-01", recurrence: "monthly" },
+  ];
+  const plain = buildForecast(2000, items, sched, today);
+  const withSpend = buildForecast(2000, items, sched, today, 20);
+
+  let adds = true;
+  let prev = withSpend.opening;
+  for (const day of withSpend.days) {
+    const moved = day.events.filter((e) => e.counted).reduce((s, e) => s + e.amount, 0);
+    if (Math.abs(prev + moved - day.balance) > 1e-6) adds = false;
+    prev = day.balance;
+  }
+  check("every line still accounts exactly for the change in balance", adds,
+    "an allowance folded silently into balances would make rows not add up");
+  check("the allowance appears as its own labelled lines, with the days they cover",
+    withSpend.days.some((x) => x.events.some((e) => e.estimate?.days > 1 && e.description === "Day-to-day spending")));
+  check("the low point moves to the end of the cycle, where spending has run longest",
+    withSpend.lowest.iso === "2026-11-14", withSpend.lowest.iso);
+  check("and the safe figure drops by exactly the spending up to that point",
+    Math.abs((plain.safeToContribute - withSpend.safeToContribute) - 20 * 51) < 1e-6,
+    `${plain.safeToContribute} → ${withSpend.safeToContribute.toFixed(2)} over 51 days`);
+  check("with no allowance the forecast is unchanged", plain.dailyAllowance === 0 &&
+    !plain.days.some((x) => x.events.some((e) => e.estimate)));
+}
+
+// ── One calendar month, for the month view in Expected
+{
+  const items = [
+    // Rent's row has rolled to November after October was ticked paid.
+    { description: "Rent", amountUSD: 1500, type: "expense", dueDate: "2026-11-01", recurrence: "monthly" },
+    { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-10-15", recurrence: "monthly" },
+    { description: "Phone", amountUSD: 6.88, type: "expense", dueDate: "2026-10-28", recurrence: "monthly" },
+    { description: "Weekly shop", amountUSD: 80, type: "expense", dueDate: "2026-10-03", recurrence: "weekly" },
+    { description: "Flight", amountUSD: 400, type: "expense", dueDate: "2026-10-20", recurrence: "none", completed: true },
+    { description: "Last month's bonus", amountUSD: 500, type: "income", dueDate: "2026-09-30", recurrence: "none" },
+  ];
+  const oct = expandForMonth(items, 2026, 9);
+  check("a repeat already paid and rolled forward still appears in its month",
+    oct.some((l) => l.description === "Rent" && l.iso === "2026-10-01" && l.paid),
+    "rent on the 1st is part of October whether or not it has been ticked");
+  check("the occurrence at the row's current due date is not marked paid",
+    oct.find((l) => l.description === "Salary").paid === false);
+  check("a weekly item appears every week of the month",
+    oct.filter((l) => l.description === "Weekly shop").map((l) => l.iso).join(",") ===
+    "2026-10-03,2026-10-10,2026-10-17,2026-10-24,2026-10-31");
+  check("a ticked one-off in the month is shown as paid",
+    oct.find((l) => l.description === "Flight")?.paid === true);
+  check("items from other months stay out", !oct.some((l) => l.description === "Last month's bonus"));
+  check("the month is in date order", oct.map((l) => l.iso).join() === [...oct.map((l) => l.iso)].sort().join());
+  check("a month-end anchor holds in a short month",
+    expandForMonth([{ description: "x", amountUSD: 1, type: "expense", dueDate: "2026-01-31", recurrence: "monthly" }], 2026, 1)[0].iso === "2026-02-28");
+
+  // The month as a budget: dated lines plus the allowance give the same
+  // monthly surplus the category budget does, now with dates on it.
+  const budgetSpending = 2482;
+  const dated = [
+    { description: "Rent A", amountUSD: 1500, type: "expense", dueDate: "2026-10-01", recurrence: "monthly" },
+    { description: "Rent B", amountUSD: 435, type: "expense", dueDate: "2026-10-07", recurrence: "monthly" },
+    { description: "Phone", amountUSD: 6.88, type: "expense", dueDate: "2026-10-28", recurrence: "monthly" },
+    { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-10-15", recurrence: "monthly" },
+  ];
+  const lines = expandForMonth(dated, 2026, 9);
+  const out = -lines.filter((l) => l.amount < 0).reduce((s, l) => s + l.amount, 0) + monthlyAllowance(budgetSpending, dated);
+  const inc = lines.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
+  check("dated bills plus the allowance equal the budget's spending — nothing counted twice",
+    Math.abs(out - budgetSpending) < 1e-6, out.toFixed(2));
+  check("so the month's surplus matches the budget's", Math.abs(inc - out - 518) < 1e-6, (inc - out).toFixed(2));
 }
 
 let failed = 0;

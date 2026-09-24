@@ -83,7 +83,11 @@ export default function ContributionLedger({
                 <span className="uf-ledger-date">{i === 0 ? (d.iso === todayIso ? "Today" : day(d.iso)) : ""}</span>
                 <span className="uf-ledger-what">
                   {e.description}
-                  {(e.recurring || e.overdue) && (
+                  {e.estimate ? (
+                    <span className="uf-ledger-tag">
+                      estimate · {e.estimate.days} {e.estimate.days === 1 ? "day" : "days"} × {fmt(e.estimate.perDay)}
+                    </span>
+                  ) : (e.recurring || e.overdue) && (
                     <span className="uf-ledger-tag">
                       {e.overdue ? "overdue — not marked paid" : "repeats"}
                     </span>
@@ -146,11 +150,18 @@ export default function ContributionLedger({
           No expected payments are recorded, so nothing is subtracted and this is only today&apos;s balance.
           Add your bills and income in <strong>Money → Expected</strong> to make it real.
         </p>
-      ) : unlisted > 1 ? (
+      ) : f.dailyAllowance > 0 ? (
         <p className="uf-t-small uf-ledger-note">
-          Your budget has <span style={mono}>{fmt(budgetMonthlySpending)}</span> a month of spending; the Expected list
-          covers <span style={mono}>{fmt(expectedMonthlyBills)}</span> of it. The other <span style={mono}>{fmt(unlisted)}</span> —
-          day-to-day spending — isn&apos;t in this forecast. If it comes out of these accounts, you&apos;ll have less than shown.
+          <strong>Day-to-day spending</strong> is an estimate, not a dated payment: your budget&apos;s{" "}
+          <span style={mono}>{fmt(budgetMonthlySpending)}</span> a month less the{" "}
+          <span style={mono}>{fmt(expectedMonthlyBills)}</span> of repeating bills already listed leaves{" "}
+          <span style={mono}>{fmt(unlisted)}</span>, about <span style={mono}>{fmt(f.dailyAllowance)}</span> a day.
+          Add a regular payment to Money → Expected and it moves out of the estimate and onto its date.
+        </p>
+      ) : budgetMonthlySpending === 0 ? (
+        <p className="uf-t-small uf-ledger-note">
+          No budget is set, so day-to-day spending isn&apos;t estimated here. Groceries and the like come out of
+          this balance too — set a budget and the forecast will allow for them.
         </p>
       ) : null}
 

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
+import ExpectedMonth from "./ExpectedMonth";
 import { parseIsoDate } from "@/lib/contribution-schedule";
 import {
   detectRecurring, toRecurrence, sameMerchant,
@@ -215,12 +216,15 @@ function PaymentCard({
 
 export default function ExpectedPaymentsTab({
   userId, defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [],
+  budgetMonthlySpending = 0,
 }: {
   userId: string;
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
   preferredCurrencies?: string[];
+  /** The Budget tab's monthly spending, for the month view's day-to-day line. */
+  budgetMonthlySpending?: number;
 }) {
   const [payments, setPayments] = useState<ExpectedPayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -444,6 +448,21 @@ export default function ExpectedPaymentsTab({
           {showForm ? "✕ Cancel" : "+ Add expected payment"}
         </button>
       </div>
+
+      {/* The month first, in date order: the dated half of the budget, which
+          is what the contribution forecast is built from. */}
+      <ExpectedMonth
+        items={payments.map((p) => ({
+          description: p.description,
+          amountUSD: toUSD(p.amount, p.currency, displayRates),
+          type: p.transaction_type,
+          dueDate: p.due_date,
+          recurrence: p.recurrence,
+          completed: !!p.completed_at,
+        }))}
+        budgetMonthlySpending={budgetMonthlySpending}
+        formatAmount={formatAmount}
+      />
 
       {/* Spotted in transaction history. A guess until accepted — it never
           joins the list on its own, which is the whole reason the list can be
