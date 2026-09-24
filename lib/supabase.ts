@@ -37,6 +37,8 @@ function createMissingEnvClient() {
         },
       }),
       signInWithOAuth: fail,
+      signInWithOtp: fail,
+      verifyOtp: fail,
       signOut: async () => ({ error: null }),
       exchangeCodeForSession: fail,
     },

@@ -177,20 +177,32 @@ querying history.
 
 ### `funnel_signup_started`
 
-- **Where**: `app/login/page.tsx`, click handler on the Google sign-in
-  button.
+- **Where**: `app/login/page.tsx`: the Google button's click handler, or the
+  first "Email me a sign-in code" send for an address (a resend is not a new
+  start; a send refused by the rate limit still counts, as a click does).
 - **Properties**:
   - `from_calculator` - boolean. `true` when a calculator prefill is present
     (i.e. the user came from the reveal CTA).
+  - `auth_provider` - `google` | `email`. Sent from 2026-09-24; absent
+    before, when Google was the only way in.
   - `state_key` - optional. Mirrors the prefill's tax jurisdiction.
   - `landing_source` - optional route/source label carried from the page
     that introduced the visitor to the calculator.
 
 ### `funnel_signup_completed`
 
-- **Where**: `app/auth/callback/page.tsx`, fired after Supabase finishes the
-  OAuth callback and a session is available.
-- **Properties**: none beyond defaults.
+- **Where**: `lib/auth-finish.ts` (`finishSignIn`), called by
+  `app/auth/callback/page.tsx` once Supabase has a session from Google or from
+  a link in a sign-in email, and by `app/login/page.tsx` once an emailed code
+  is accepted.
+- **Properties**:
+  - `is_new_user` - boolean. The account's first sign-in: its email was
+    confirmed in the last minute (`isFirstSignIn`). Until 2026-09-24 this
+    compared the account's creation time instead, which an emailed code sets
+    when the code is sent, not when it is used.
+  - `auth_provider` - `google` | `email`: how they signed in this time. Not
+    Supabase's `app_metadata.provider`, which is the account's first
+    provider. Email links carry `via=email` back to the callback.
 - **Side effect**: `posthog.identify(userId)` runs alongside the event.
 
 ### `funnel_dashboard_first_view`

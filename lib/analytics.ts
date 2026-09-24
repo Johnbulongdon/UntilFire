@@ -192,11 +192,13 @@ export function trackCalculatorRevealed(input: {
 
 export function trackSignupStarted(input: {
   fromCalculator: boolean;
+  authProvider: 'google' | 'email';
   stateKey?: string;
   landingSource?: string;
 }) {
   const props: SignupStartedProperties = withVersion({
     from_calculator: input.fromCalculator,
+    auth_provider: input.authProvider,
     ...(input.stateKey ? { state_key: input.stateKey } : {}),
     ...(input.landingSource ? { landing_source: input.landingSource } : {}),
   });

@@ -56,7 +56,8 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
   few devices, most likely testing, inflate landing and mobile counts; open
   the site once per test browser with `?uf_internal=1` to flag them. Each result step is now
   measured (`funnel_reveal_step_viewed`), so drop-off inside the six result
-  screens is visible from this date.
+  screens is visible from this date. Email-code sign-in is built and waits on
+  Supabase SMTP and template setup before it is switched on (D-18).
 - Verify Stripe checkout, return, subscription sync, and billing portal before depending on paid conversion.
 - Finalize free vs Pro packaging around "personal FIRE adviser" and the plan.
 - Add post-result save/email/share loops that do not expose sensitive finances.

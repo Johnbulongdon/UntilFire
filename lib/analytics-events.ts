@@ -134,6 +134,9 @@ export interface RevealCtaClickedProperties extends BaseFunnelProperties {
 
 export interface SignupStartedProperties extends BaseFunnelProperties {
   from_calculator: boolean;
+  /** Which way in was chosen. Sent from 2026-09-24; absent before, when
+   *  Google was the only option. For email, this fires when a code is sent. */
+  auth_provider: 'google' | 'email';
   state_key?: string;
   landing_source?: string;
 }

@@ -90,6 +90,7 @@ LOOPS_API_KEY
 PLAID_CLIENT_ID
 PLAID_SECRET
 PLAID_ENV
+NEXT_PUBLIC_EMAIL_SIGNIN   # "on" adds email-code sign-in; needs Supabase SMTP + code template first (D-18)
 ```
 
 Do not commit real secrets, tokens, passwords, API keys, webhook secrets, or connection strings.

@@ -2,17 +2,45 @@
 import Logo from '@/app/components/Logo'
 import { supabase } from '@/lib/supabase'
 import { siteUrl } from '@/lib/site'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getAcquisitionSource } from '@/lib/acquisition'
 import { trackSignupStarted } from '@/lib/analytics'
 import { peekCalculatorPrefill } from '@/lib/journey'
+import { finishSignIn } from '@/lib/auth-finish'
+import { isPlausibleEmail, normaliseCode } from '@/lib/auth-user'
+import { Button, Field, Input } from '@/components/ui'
+
+// Email sign-in stays off until Supabase can send the code: custom SMTP
+// (its built-in sender is for testing only) and a template that includes
+// {{ .Token }}. See docs/DECISIONS.md D-18.
+const EMAIL_SIGNIN = process.env.NEXT_PUBLIC_EMAIL_SIGNIN === 'on'
+const RESEND_AFTER_S = 60
+
+const errorText: React.CSSProperties = { fontSize: 12, color: 'var(--uf-neg)' }
+
+function sendErrorMessage(error: { status?: number; message?: string }): string {
+  if (error.status === 429 || /rate|security purposes|too many/i.test(error.message ?? '')) {
+    return 'Too many codes asked for. Wait a minute, then try again.'
+  }
+  return "We couldn't send a code just now. Try again, or continue with Google."
+}
 
 export default function LoginPage() {
   const router = useRouter()
   const [hasPrefill, setHasPrefill] = useState(false)
   const [prefillYear, setPrefillYear] = useState<number | null>(null)
+  const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [stage, setStage] = useState<'email' | 'code'>('email')
+  const [busy, setBusy] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [codeError, setCodeError] = useState('')
+  const [resendIn, setResendIn] = useState(0)
+  // Set while a code is being checked, so the sign-in listener below leaves
+  // the redirect to finishSignIn, which records the signup first.
+  const finishingWithCode = useRef(false)
 
   useEffect(() => {
     const prefill = peekCalculatorPrefill()
@@ -36,7 +64,7 @@ export default function LoginPage() {
       if (session) router.push('/dashboard')
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) router.push('/dashboard')
+      if (event === 'SIGNED_IN' && session && !finishingWithCode.current) router.push('/dashboard')
     })
     return () => subscription.unsubscribe()
   }, [router])
@@ -45,6 +73,7 @@ export default function LoginPage() {
     const prefill = peekCalculatorPrefill()
     trackSignupStarted({
       fromCalculator: Boolean(prefill),
+      authProvider: 'google',
       stateKey: prefill?.stateKey,
       landingSource: prefill?.landingSource ?? getAcquisitionSource(),
     })
@@ -59,6 +88,71 @@ export default function LoginPage() {
 
     if (error) throw error
     if (data?.url) window.location.assign(data.url)
+  }
+
+  useEffect(() => {
+    if (resendIn <= 0) return
+    const timer = setTimeout(() => setResendIn((s) => s - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [resendIn])
+
+  async function sendCode(isResend = false) {
+    const address = email.trim()
+    if (!isPlausibleEmail(address)) {
+      setEmailError('Check the email address.')
+      return
+    }
+    setBusy(true)
+    setEmailError('')
+    setCodeError('')
+    if (!isResend) {
+      const prefill = peekCalculatorPrefill()
+      trackSignupStarted({
+        fromCalculator: Boolean(prefill),
+        authProvider: 'email',
+        stateKey: prefill?.stateKey,
+        landingSource: prefill?.landingSource ?? getAcquisitionSource(),
+      })
+    }
+    const { error } = await supabase.auth.signInWithOtp({
+      email: address,
+      options: {
+        shouldCreateUser: true,
+        // If the email also carries a link, it signs in through the callback.
+        emailRedirectTo: `${getOAuthRedirectTo()}?via=email`,
+      },
+    })
+    setBusy(false)
+    if (error) {
+      const message = sendErrorMessage(error)
+      if (isResend) setCodeError(message)
+      else setEmailError(message)
+      return
+    }
+    setStage('code')
+    setCode('')
+    setResendIn(RESEND_AFTER_S)
+  }
+
+  async function verifyCode() {
+    const token = normaliseCode(code)
+    if (token.length < 6) {
+      setCodeError('Enter the code from the email.')
+      return
+    }
+    setBusy(true)
+    setCodeError('')
+    finishingWithCode.current = true
+    const { data, error } = await supabase.auth.verifyOtp({ email: email.trim(), token, type: 'email' })
+    if (error || !data?.session) {
+      finishingWithCode.current = false
+      setBusy(false)
+      setCodeError("That code didn't work. Check it, or send a new one.")
+      return
+    }
+    // The calculator result is still in this browser, so the dashboard picks
+    // it up exactly as it does after Google.
+    finishSignIn(data.session, 'email')
   }
 
   return (
@@ -132,6 +226,77 @@ export default function LoginPage() {
             </svg>
             Continue with Google
           </button>
+
+          {EMAIL_SIGNIN && (
+            <>
+              <div role="separator" aria-label="or" style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0', color: 'var(--uf-ink-3)', fontSize: 12 }}>
+                <span aria-hidden style={{ flex: 1, height: 1, background: 'var(--uf-border)' }} />
+                or
+                <span aria-hidden style={{ flex: 1, height: 1, background: 'var(--uf-border)' }} />
+              </div>
+
+              {stage === 'email' ? (
+                <form noValidate onSubmit={(e) => { e.preventDefault(); void sendCode() }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <Field label="Email" htmlFor="login-email">
+                    <Input
+                      id="login-email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setEmailError('') }}
+                      aria-invalid={Boolean(emailError)}
+                      aria-describedby={emailError ? 'login-email-error' : undefined}
+                    />
+                    {emailError && <span id="login-email-error" role="alert" style={errorText}>{emailError}</span>}
+                  </Field>
+                  <Button type="submit" variant="secondary" size="lg" fullWidth disabled={busy}>
+                    {busy ? 'Sending…' : 'Email me a sign-in code'}
+                  </Button>
+                </form>
+              ) : (
+                <form noValidate onSubmit={(e) => { e.preventDefault(); void verifyCode() }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p role="status" style={{ margin: 0, fontSize: 13, color: 'var(--uf-ink-2)', lineHeight: 1.5, overflowWrap: 'anywhere' }}>
+                    We sent a code to <strong style={{ color: 'var(--uf-ink)' }}>{email.trim()}</strong>. It can take a minute to arrive.
+                  </p>
+                  <Field label="Code" htmlFor="login-code">
+                    <Input
+                      id="login-code"
+                      numeric
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      placeholder="123456"
+                      autoFocus
+                      value={code}
+                      onChange={(e) => { setCode(normaliseCode(e.target.value)); setCodeError('') }}
+                      aria-invalid={Boolean(codeError)}
+                      aria-describedby={codeError ? 'login-code-error' : undefined}
+                      style={{ fontSize: 18, letterSpacing: '0.2em' }}
+                    />
+                    {codeError && <span id="login-code-error" role="alert" style={errorText}>{codeError}</span>}
+                  </Field>
+                  <Button type="submit" variant="primary" size="lg" fullWidth disabled={busy}>
+                    {busy ? 'Signing in…' : 'Sign in'}
+                  </Button>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    {resendIn > 0 ? (
+                      <span style={{ fontSize: 13, color: 'var(--uf-ink-2)', padding: '8px 0' }}>
+                        You can ask for a new code in {resendIn}s
+                      </span>
+                    ) : (
+                      <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => void sendCode(true)}>
+                        Send a new code
+                      </Button>
+                    )}
+                    <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => { setStage('email'); setCode(''); setCodeError('') }}>
+                      Use a different email
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </>
+          )}
 
           <div style={{
             marginTop: 24,

@@ -467,6 +467,62 @@ Price is then a positioning question for the $3k MRR goal as much as a margin on
 `app/api/admin/users/[id]/route.ts`, `app/api/plaid/disconnect/route.ts`,
 `app/api/plaid/create-link-token/route.ts`, `lib/pricing.ts`.
 
+### D-18 — September 24: email sign-in with a code, alongside Google
+
+**Status:** Active in code, switched off until Supabase can send the code.
+Authorised by the founder on 2026-09-24 as step 2 of the activation work.
+**Decision:** The sign-in page offers "Email me a sign-in code" under
+"Continue with Google". The person types a 6-digit code from the email on
+the same page (`signInWithOtp`, then `verifyOtp` with `type: 'email'`), and
+both ways in finish through one function (`lib/auth-finish.ts`). It shows
+only when `NEXT_PUBLIC_EMAIL_SIGNIN=on`.
+**Why:** In the September 24 funnel review, most people who went from their
+result to sign-in left the Google-only page within seconds without clicking
+anything. Some people will not attach a Google account to their finances,
+or don't use one on that device.
+**Why a code, not a link:** the calculator result waiting to be saved lives
+in the browser tab that produced it, and Supabase's PKCE sign-in link only
+works in the browser that asked for it. A link opened from a phone's mail app,
+or on another device, would fail or lose the result. If the email also
+carries the link, it still works in the same browser and returns through
+`/auth/callback?via=email`.
+**Also changed:** `funnel_signup_completed.is_new_user` now uses when the
+email was first confirmed, because an emailed code creates the account when
+the code is sent. `auth_provider` is recorded on both signup events.
+**Rejected:** (a) Magic link only, for the reason above. (b) Passwords: more
+to build, reset and secure, for a free calculator's save step. (c) More OAuth
+providers first: Apple needs a paid developer account, and it doesn't help
+people who want no third party at all.
+**Switching it on (founder, in the Supabase dashboard, then Vercel):**
+1. Authentication → Emails → SMTP settings: turn on custom SMTP with Resend
+   (host `smtp.resend.com`, port 465, username `resend`, password a Resend
+   API key with sending access) and a sender on the domain already verified
+   in Resend. Supabase's built-in sender is for testing only and is heavily
+   rate-limited.
+2. Authentication → Emails → Templates: put the code, `{{ .Token }}`, in the
+   "Magic Link" template, and in "Confirm signup" too, because a first-time
+   address can be sent that one instead.
+3. Authentication → Rate limits: raise emails per hour from the default.
+4. Vercel: set `NEXT_PUBLIC_EMAIL_SIGNIN=on` for Production and redeploy.
+5. Sign in once with a fresh address to confirm the email arrives with a code.
+**Trade-off:** One more sign-in path to support, and deliverability becomes
+ours. A code costs a switch to the mail app and back, which Google doesn't.
+**Evidence:** `test:email-signin` (16 checks: new-user timing, method, email
+and code handling, and the wiring). In a browser against stand-in Supabase
+and PostHog servers:
+- A typo is caught before sending, and a rate limit and a wrong code each
+  show a plain message.
+- The right code, pasted with a space, signs in. The signup is recorded as
+  `email` and new even though the account was made two minutes before the
+  code was used, and the calculator result is still in the browser when the
+  dashboard opens.
+- Phone and desktop in both themes, with a long address: no sideways
+  scrolling, and the text measures at least 4.8:1.
+**Revisit when:** the new step events show where people stop between result
+and signup, or email sign-ins outnumber Google.
+**Source:** `app/login/page.tsx`, `lib/auth-finish.ts`, `lib/auth-user.ts`,
+`app/auth/callback/page.tsx`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,
