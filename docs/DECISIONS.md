@@ -360,6 +360,169 @@ most people without ticking.
 **Source:** `app/dashboard/AllowanceBreakdown.tsx`, `lib/cashflow-forecast.ts`
 (`needsAllowance`), `lib/contribution.ts` (`allowanceExclusions`).
 
+### D-16 — September 24: refresh connected banks daily; ask only investment connections for holdings
+
+**Status:** Active. Authorised by the founder on 2026-09-24, from the audit of
+the same day.
+**Decision:** (1) A Vercel cron (`/api/cron/plaid-sync`, 09:00 UTC, an hour
+before the retention email) syncs every Plaid connection once a day. It
+runs the same code as the Sync button (`lib/plaid-sync.ts`): transactions,
+cached balances from `accountsGet`, and the person's need/want rules. It
+takes the longest-unsynced connection first, and stops starting new ones
+near the time limit, so leftovers go first the next day. Each run is
+logged in `job_runs` as `plaid_sync` and expected daily. A connection
+waiting for its owner to log in again is listed there without failing the
+run. Any other failure fails it.
+(2) Holdings are requested only from connections that hold an investment
+account. "Reconnect" is shown only for errors that reconnecting fixes. Data
+that is not ready, or not offered, is quiet.
+(3) Migration `0042_function_security`: `rls_auto_enable()` is no longer
+callable through the API, and `update_updated_at_column()` has a fixed empty
+`search_path`.
+**Why:** Balances only moved when someone pressed Sync, so the safe-to-contribute
+figure, the emergency fund and last month's needs were as old as the last press,
+which was months for some connections. The holdings request went to every bank, and a bank with only
+current and savings accounts was refused for lack of investments consent,
+so Net Worth told people to reconnect a working bank on every visit. The
+advisor showed a SECURITY DEFINER function callable by signed-out visitors.
+**Rejected:** (a) Plaid webhooks (`SYNC_UPDATES_AVAILABLE`): fresher, but they
+need a verified public endpoint and the webhook URL set on every existing
+connection, and daily is enough for a monthly plan. (b) Syncing on dashboard
+load: it only helps people who open the app, and the email and Home card
+would still read stale balances for everyone else. (c) Real-time
+`/accounts/balance/get` or `/transactions/refresh`: both are billed per call.
+Plaid's cached balances are refreshed on its own schedule.
+**Deferred:** Supabase leaked-password protection needs the Pro plan; the
+founder chose to wait. The household functions (`household_has_pro`,
+`is_household_peer`, `my_household_id`) stay SECURITY DEFINER for signed-in
+users on purpose: row level security calls them, and anon was already revoked
+in `0035`.
+**Trade-off:** One run a day means a balance can be up to a day old. It adds
+no Plaid cost: Transactions is billed per connection per month however often
+it syncs, and `accountsGet` is free (checked against the team's Pay as you go
+rates, D-17). The stale-balance warning in the ledger now means a refresh
+failed rather than that nobody pressed Sync.
+**Evidence:** `test:plaid-refresh` (18 checks: which connections are asked for
+holdings, what each error means, how a run is summarised, the schedule, the
+cron secret, `job_runs` logging and the shared sync code). End to end against a
+stubbed database: a missing or wrong secret gets 401, and the right one opens a
+`plaid_sync` run, pages through connections oldest first and records each
+failure by name. On production, after `0042`: `anon` and `authenticated` can no
+longer execute `rls_auto_enable()` while `service_role` can; a new table still
+gets row level security; `updated_at` still moves on update (both checked
+inside rolled-back transactions); the advisor lists only the deferred items above.
+**Revisit when:** a day is too slow (move to webhooks), connections grow past
+what one run finishes (the deferred count in `job_runs` shows it), or the
+project moves to Supabase Pro (turn on leaked-password protection).
+**Source:** `app/api/cron/plaid-sync/route.ts`, `lib/plaid-sync.ts`,
+`lib/plaid-errors.ts`, `lib/plaid-holdings.ts`, `app/api/plaid/holdings/route.ts`,
+`supabase/migrations/0042_function_security.sql`.
+
+### D-17 — September 24: stop paying Plaid for connections nobody uses; keep Pro at $3 for now
+
+**Status:** Active. Authorised by the founder on 2026-09-24, after reviewing
+the team's Plaid rates.
+**Decision:** (1) A bank connection's row is deleted only once Plaid confirms
+the connection is gone (`lib/plaid-remove.ts`). Deleting an account, whether
+by the person or from admin, disconnects every bank first. If Plaid refuses,
+the account is not deleted and the person is told which bank to retry.
+Disconnect keeps the connection listed with an error instead of dropping the
+row. (2) New connections require Transactions only, and ask for Investments
+through `required_if_supported_products`. Investments is then added, and
+billed, only when the person picks an investment account. (3) Pro stays at
+$3 a month or $30 a year.
+**Why:** Plaid bills Transactions and Investments monthly for each connection
+it still has, used or not, and only `/item/remove` ends that. It needs the
+access token, which only our row holds. Account deletion cascaded the rows
+away without calling it, so each deleted account would have kept billing
+with nothing left to stop it. The person would also have believed their bank
+was disconnected. Disconnect dropped the row even when Plaid refused.
+Listing Investments in `products` billed it on every connection. It also
+limited Link to banks that offer both products, with an account for each.
+**Pricing:** Each connection's monthly fees are small next to $3, but Pro
+allows unlimited connections, the 90-day trial pays Plaid before Stripe pays
+anything, and a free user's one bank earns nothing. With no paying users,
+price is not the constraint. Fix the leaks first.
+**Rejected:** (a) Raise the price now: no conversion data to price against,
+and the leaks cost money at any price. (b) Delete the account anyway when
+Plaid refuses: it leaves a connection billing with no token to remove it.
+(c) `additional_consented_products` for Investments: it also avoids the fee
+until first use, but `required_if_supported_products` is Plaid's documented
+choice for keeping every bank listed while still loading investments where
+they exist.
+**Trade-off:** A Plaid outage can hold up an account deletion until a retry.
+Investment connections still pay the Investments fee, as they should.
+**Evidence:** `test:plaid-billing`: removal outcomes, both deletion routes
+disconnecting before deleting the user, disconnect keeping a refused
+connection, and the Link products. On the code before this fix, six of its
+checks fail. End to end against a stubbed database with Plaid unreachable:
+deletion returns 502 naming both banks and deletes nothing. A user with no
+banks is deleted without calling Plaid. Plaid's usage records for the team
+showed no billable connections through 2026-09-24, and its Link analytics
+were too few to show whether anyone was turned away.
+**Revisit when:** 20–50 people pay, Plaid costs pass about 40% of what a Pro
+subscriber nets, or a Pro user regularly holds more than about five connections.
+Price is then a positioning question for the $3k MRR goal as much as a margin one.
+**Source:** `lib/plaid-remove.ts`, `app/api/user/delete/route.ts`,
+`app/api/admin/users/[id]/route.ts`, `app/api/plaid/disconnect/route.ts`,
+`app/api/plaid/create-link-token/route.ts`, `lib/pricing.ts`.
+
+### D-18 — September 24: email sign-in with a code, alongside Google
+
+**Status:** Active in code, switched off until Supabase can send the code.
+Authorised by the founder on 2026-09-24 as step 2 of the activation work.
+**Decision:** The sign-in page offers "Email me a sign-in code" under
+"Continue with Google". The person types a 6-digit code from the email on
+the same page (`signInWithOtp`, then `verifyOtp` with `type: 'email'`), and
+both ways in finish through one function (`lib/auth-finish.ts`). It shows
+only when `NEXT_PUBLIC_EMAIL_SIGNIN=on`.
+**Why:** In the September 24 funnel review, most people who went from their
+result to sign-in left the Google-only page within seconds without clicking
+anything. Some people will not attach a Google account to their finances,
+or don't use one on that device.
+**Why a code, not a link:** the calculator result waiting to be saved lives
+in the browser tab that produced it, and Supabase's PKCE sign-in link only
+works in the browser that asked for it. A link opened from a phone's mail app,
+or on another device, would fail or lose the result. If the email also
+carries the link, it still works in the same browser and returns through
+`/auth/callback?via=email`.
+**Also changed:** `funnel_signup_completed.is_new_user` now uses when the
+email was first confirmed, because an emailed code creates the account when
+the code is sent. `auth_provider` is recorded on both signup events.
+**Rejected:** (a) Magic link only, for the reason above. (b) Passwords: more
+to build, reset and secure, for a free calculator's save step. (c) More OAuth
+providers first: Apple needs a paid developer account, and it doesn't help
+people who want no third party at all.
+**Switching it on (founder, in the Supabase dashboard, then Vercel):**
+1. Authentication → Emails → SMTP settings: turn on custom SMTP with Resend
+   (host `smtp.resend.com`, port 465, username `resend`, password a Resend
+   API key with sending access) and a sender on the domain already verified
+   in Resend. Supabase's built-in sender is for testing only and is heavily
+   rate-limited.
+2. Authentication → Emails → Templates: put the code, `{{ .Token }}`, in the
+   "Magic Link" template, and in "Confirm signup" too, because a first-time
+   address can be sent that one instead.
+3. Authentication → Rate limits: raise emails per hour from the default.
+4. Vercel: set `NEXT_PUBLIC_EMAIL_SIGNIN=on` for Production and redeploy.
+5. Sign in once with a fresh address to confirm the email arrives with a code.
+**Trade-off:** One more sign-in path to support, and deliverability becomes
+ours. A code costs a switch to the mail app and back, which Google doesn't.
+**Evidence:** `test:email-signin` (16 checks: new-user timing, method, email
+and code handling, and the wiring). In a browser against stand-in Supabase
+and PostHog servers:
+- A typo is caught before sending, and a rate limit and a wrong code each
+  show a plain message.
+- The right code, pasted with a space, signs in. The signup is recorded as
+  `email` and new even though the account was made two minutes before the
+  code was used, and the calculator result is still in the browser when the
+  dashboard opens.
+- Phone and desktop in both themes, with a long address: no sideways
+  scrolling, and the text measures at least 4.8:1.
+**Revisit when:** the new step events show where people stop between result
+and signup, or email sign-ins outnumber Google.
+**Source:** `app/login/page.tsx`, `lib/auth-finish.ts`, `lib/auth-user.ts`,
+`app/auth/callback/page.tsx`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,

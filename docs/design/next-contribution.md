@@ -252,15 +252,20 @@ paper over.
    they were dollars; they are now converted once where the dashboard loads
    accounts (`lib/account-currency.ts`), and a currency with no rate is
    excluded and flagged rather than counted at face value. And balances only
-   refresh when a connection is synced by hand, so one connection had sat at
-   its June figures unnoticed; the ledger now names any account more than
+   refreshed when a connection was synced by hand, so one connection had sat
+   at its June figures unnoticed; the ledger now names any account more than
    three days stale, zero balances included. Net Worth, where the accounts
    are chosen, and this page read the same saved choice
    (`useSavedEmergencyAccountIds`).
 
-   Still open: syncing on its own rather than by hand, and the household
-   summary (`lib/household.ts`), which sums partner balances server-side
-   without conversion.
+   Every connection now also refreshes on its own once a day
+   (`/api/cron/plaid-sync`, D-16), running the same code as the Sync button
+   (`lib/plaid-sync.ts`). The stale-balance warning stays: after this, it
+   means a refresh failed, usually because the bank wants the person to log
+   in again, and the day's run in `job_runs` names the connection.
+
+   Still open: the household summary (`lib/household.ts`), which sums partner
+   balances server-side without conversion.
 
 ## The open question
 

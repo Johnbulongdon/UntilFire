@@ -15,10 +15,11 @@ import {
   trackCalculatorStepViewed,
   trackCalculatorRevealed,
   trackRevealCtaClicked,
+  trackRevealStepViewed,
   isInternalTestSession,
   isInternalUser,
 } from "@/lib/analytics";
-import type { RevealCtaPlacement } from "@/lib/analytics-events";
+import { REVEAL_STEP_IDS, type RevealCtaPlacement } from "@/lib/analytics-events";
 import type { CalculatorStepId } from "@/lib/analytics-events";
 import {
   getAcquisitionSource,
@@ -1072,6 +1073,10 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         expatCities={expatCities}
         formatCompact={formatCompact}
         onSave={onSave}
+        onStepViewed={(step, unreachable) => trackRevealStepViewed({
+          stepId: unreachable ? "unreachable" : REVEAL_STEP_IDS[step],
+          stepIndex: step,
+        })}
         onAdjust={onAdjust}
         onShare={() => setShowShare(true)}
       />

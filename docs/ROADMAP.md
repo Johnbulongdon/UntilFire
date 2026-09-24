@@ -48,6 +48,16 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 **Priority order while pursuing $3k MRR:**
 - Fix blockers in mobile and end-to-end no-login activation.
+  *2026-09-24 funnel review (counts kept out of this public repo):* most
+  people who finish the calculator also reach its result; the losses are
+  before starting and after the result. After the result, most of those who
+  go on to sign in leave the Google-only sign-in page within seconds, which
+  makes a non-Google option the first fix. Repeated short sessions from a
+  few devices, most likely testing, inflate landing and mobile counts; open
+  the site once per test browser with `?uf_internal=1` to flag them. Each result step is now
+  measured (`funnel_reveal_step_viewed`), so drop-off inside the six result
+  screens is visible from this date. Email-code sign-in is built and waits on
+  Supabase SMTP and template setup before it is switched on (D-18).
 - Verify Stripe checkout, return, subscription sync, and billing portal before depending on paid conversion.
 - Finalize free vs Pro packaging around "personal FIRE adviser" and the plan.
 - Add post-result save/email/share loops that do not expose sensitive finances.
@@ -138,6 +148,10 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [x] Verify production Plaid credentials and environment mode — **Plaid works 100%**
 - [x] QA bank connection, sync, duplicate handling, disconnect, and account refresh
 - [x] **Plaid is a Product Hunt launch feature** — bank connection is live and promoted in the dashboard
+- [x] Daily automatic refresh of every connection (`/api/cron/plaid-sync`, 09:00 UTC), logged in `job_runs`; holdings requested only from connections with an investment account (D-16)
+- [ ] Plaid webhooks (`SYNC_UPDATES_AVAILABLE`) if once a day proves too slow — see D-16
+- [x] Plaid billing leaks closed: account deletion and disconnect remove the connection at Plaid before our row; Investments only where an investment account is picked (D-17)
+- [ ] Revisit Pro price at 20–50 paying users or if Plaid costs pass ~40% of net Pro revenue (D-17)
 
 ### AI Categorisation
 

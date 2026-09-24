@@ -105,9 +105,9 @@ export default function SavingsRateCalculator() {
             Savings Rate Calculator
           </h1>
           <p style={{ fontSize: 16, color: C.muted, margin: 0, lineHeight: 1.7 }}>
-            Your savings rate — the percentage of take-home pay you save — is the single
-            most powerful variable in FIRE planning. More than your salary, your investment
-            choices, or your city. See yours and how it maps to a retirement timeline.
+            Enter your annual take-home income, expenses and current investments to find
+            your savings percentage. Compare how saving more could change your estimated
+            years to financial independence — free, with no signup.
           </p>
         </div>
 
@@ -183,21 +183,22 @@ export default function SavingsRateCalculator() {
         {/* SEO content */}
         <div style={{ color: C.muted, lineHeight: 1.8, fontSize: 15 }}>
           <h2 style={{ color: C.text, fontSize: 20, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.02em' }}>
-            Why savings rate matters more than income
+            How to read your estimated years to FIRE
           </h2>
           <p style={{ marginBottom: 16 }}>
-            At a 10% savings rate, you need to work 43 years to retire. At 50%, you need just 17 years.
-            At 75%, just 7 years. The relationship is non-linear — small increases in savings rate compress your
-            timeline dramatically, especially as you approach 50%.
+            The comparison above uses your income and current investments for every savings rate.
+            A higher rate means more money invested and less spending for your future portfolio
+            to cover. Changing your starting investments also changes the timeline.
           </p>
           <p style={{ marginBottom: 16 }}>
-            This is based on the &quot;shockingly simple math&quot; behind FIRE from Mr. Money Mustache:
-            your years to retirement is determined entirely by your savings rate and expected investment returns.
-            Your income level cancels out — a doctor saving 10% has the same FIRE timeline as a teacher saving 10%.
+            The model adds savings each month and applies one twelfth of an assumed 7% annual
+            real return. Your FIRE target is 25 times annual expenses, using a 4% withdrawal
+            assumption. Amounts are in today&apos;s purchasing power; returns and spending are held constant.
           </p>
           <p>
-            The 4% rule (safe withdrawal rate) is used here to calculate your FIRE target: 25× your annual expenses.
-            Investment returns are modeled at 7% annually (inflation-adjusted S&P 500 historical average).
+            These are planning estimates, not a promise that investments will earn 7% or that
+            a 4% withdrawal will last. Taxes, fees, changing expenses and uneven market returns
+            are not modeled separately. Use the FIRE calculator below to explore your wider plan.
           </p>
         </div>
       </div>

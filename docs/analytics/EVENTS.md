@@ -19,6 +19,7 @@ funnel_landing_viewed
            → funnel_calculator_step_viewed (step_id=savings)
            → funnel_calculator_step_viewed (step_id=portfolio)
            → funnel_calculator_revealed
+           → funnel_reveal_step_viewed (step_id=freedom_age … save, or unreachable)
            → funnel_reveal_cta_clicked
            → funnel_signup_started
            → funnel_signup_completed
@@ -138,6 +139,24 @@ querying history.
   - `years_to_fire_bucket` - `lt_5` | `5_10` | `10_20` | `20_30` | `gte_30`.
   - `landing_source` - optional route/source label.
 
+### `funnel_reveal_step_viewed`
+
+- **Where**: `app/components/RevealFlow.tsx` reports each step through its
+  `onStepViewed` prop (an effect on the current step), and `app/HomeClient.tsx`
+  sends the event, as it does for `funnel_reveal_cta_clicked`; RevealFlow
+  itself stays free of analytics imports. Fires once per step per reveal:
+  going back to a step already seen does not send it again.
+- **Why it exists**: `funnel_reveal_cta_clicked` only counts the people who
+  clicked save. Everyone else stopped somewhere in six screens, and without
+  this the three answers (left on the freedom date, left partway, reached the
+  save step and did not click) look the same.
+- **Properties**:
+  - `step_id` — `freedom_age` (2), `life_years` (3), `freedom_number` (4),
+    `stack_up` (5), `expat` (6), `save` (7); or `unreachable`, the single
+    screen shown instead when the inputs never reach the freedom number.
+  - `step_index` — RevealFlow's step number, 2–7. Step 1 is the loading
+    screen and is not sent.
+
 ### `funnel_reveal_cta_clicked`
 
 - **Where**: `app/HomeClient.tsx`, `onSave`, before the push to `/login`.
@@ -158,20 +177,32 @@ querying history.
 
 ### `funnel_signup_started`
 
-- **Where**: `app/login/page.tsx`, click handler on the Google sign-in
-  button.
+- **Where**: `app/login/page.tsx`: the Google button's click handler, or the
+  first "Email me a sign-in code" send for an address (a resend is not a new
+  start; a send refused by the rate limit still counts, as a click does).
 - **Properties**:
   - `from_calculator` - boolean. `true` when a calculator prefill is present
     (i.e. the user came from the reveal CTA).
+  - `auth_provider` - `google` | `email`. Sent from 2026-09-24; absent
+    before, when Google was the only way in.
   - `state_key` - optional. Mirrors the prefill's tax jurisdiction.
   - `landing_source` - optional route/source label carried from the page
     that introduced the visitor to the calculator.
 
 ### `funnel_signup_completed`
 
-- **Where**: `app/auth/callback/page.tsx`, fired after Supabase finishes the
-  OAuth callback and a session is available.
-- **Properties**: none beyond defaults.
+- **Where**: `lib/auth-finish.ts` (`finishSignIn`), called by
+  `app/auth/callback/page.tsx` once Supabase has a session from Google or from
+  a link in a sign-in email, and by `app/login/page.tsx` once an emailed code
+  is accepted.
+- **Properties**:
+  - `is_new_user` - boolean. The account's first sign-in: its email was
+    confirmed in the last minute (`isFirstSignIn`). Until 2026-09-24 this
+    compared the account's creation time instead, which an emailed code sets
+    when the code is sent, not when it is used.
+  - `auth_provider` - `google` | `email`: how they signed in this time. Not
+    Supabase's `app_metadata.provider`, which is the account's first
+    provider. Email links carry `via=email` back to the callback.
 - **Side effect**: `posthog.identify(userId)` runs alongside the event.
 
 ### `funnel_dashboard_first_view`

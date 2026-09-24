@@ -42,6 +42,9 @@ export interface RevealFlowProps {
   onSave: (placement: RevealCtaPlacement) => void;
   onAdjust: () => void;
   onShare: () => void;
+  /** Called once per result step per reveal: step 2–7, or `unreachable` when
+   *  the single not-reached screen is shown instead. */
+  onStepViewed?: (step: number, unreachable: boolean) => void;
 }
 
 // Reveal motion uses the same theme as the rest of the journey.
@@ -115,7 +118,7 @@ export default function RevealFlow(props: RevealFlowProps) {
     freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate,
     expatHome, expatBaseAge, expatCities, formatCompact,
-    onSave, onAdjust, onShare,
+    onSave, onAdjust, onShare, onStepViewed,
   } = props;
 
   const prefersReducedMotion = useReducedMotion();
@@ -144,6 +147,20 @@ export default function RevealFlow(props: RevealFlowProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [step]);
+
+  // Report each result step once per reveal, so a result that never became
+  // a signup says where it stopped. Step 1 is the loader; the unreachable
+  // screen replaces steps 2–7 and counts as one.
+  const seenSteps = useRef(new Set<string>());
+  const unreachable = yearsToFire === null;
+  const seenKey = step < 2 ? null : unreachable ? "unreachable" : String(step);
+  const onStepViewedRef = useRef(onStepViewed);
+  onStepViewedRef.current = onStepViewed;
+  useEffect(() => {
+    if (!seenKey || seenSteps.current.has(seenKey)) return;
+    seenSteps.current.add(seenKey);
+    onStepViewedRef.current?.(step, unreachable);
+  }, [seenKey, step, unreachable]);
 
   // Life-in-years dots.
   const lived = Math.max(0, Math.min(100, planningAge));

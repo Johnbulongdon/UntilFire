@@ -18,6 +18,8 @@ import {
   type CalculatorRevealedProperties,
   type RevealCtaClickedProperties,
   type RevealCtaPlacement,
+  type RevealStepId,
+  type RevealStepViewedProperties,
   type SignupStartedProperties,
   type SignupCompletedProperties,
   type DashboardFirstViewProperties,
@@ -190,11 +192,13 @@ export function trackCalculatorRevealed(input: {
 
 export function trackSignupStarted(input: {
   fromCalculator: boolean;
+  authProvider: 'google' | 'email';
   stateKey?: string;
   landingSource?: string;
 }) {
   const props: SignupStartedProperties = withVersion({
     from_calculator: input.fromCalculator,
+    auth_provider: input.authProvider,
     ...(input.stateKey ? { state_key: input.stateKey } : {}),
     ...(input.landingSource ? { landing_source: input.landingSource } : {}),
   });
@@ -289,6 +293,15 @@ export function trackHysaEmptyStateCtaClicked(input: {
     placement: input.placement ?? 'assets_empty_state',
   });
   capture(FunnelEvents.HYSA_EMPTY_STATE_CTA_CLICKED, props);
+}
+
+/** Once per step per reveal; RevealFlow keeps the seen set. */
+export function trackRevealStepViewed(input: { stepId: RevealStepId; stepIndex: number }) {
+  const props: RevealStepViewedProperties = withVersion({
+    step_id: input.stepId,
+    step_index: input.stepIndex,
+  });
+  capture(FunnelEvents.REVEAL_STEP_VIEWED, props);
 }
 
 export function trackRevealCtaClicked(input: {

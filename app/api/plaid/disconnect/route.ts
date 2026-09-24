@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { getPlaidClient } from "@/lib/plaid";
+import { removePlaidItems } from "@/lib/plaid-remove";
 
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
@@ -26,12 +27,17 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Revoke Plaid access token (best-effort — proceed even if this fails)
-  try {
-    const plaid = getPlaidClient();
-    await plaid.itemRemove({ access_token: item.plaid_access_token });
-  } catch (err) {
-    console.warn("[plaid/disconnect] itemRemove failed (proceeding anyway):", err);
+  // Remove the connection at Plaid before deleting our row. The row holds
+  // the only copy of the access token, and Plaid keeps billing a connection
+  // it still has, so the row goes only once Plaid confirms it is gone.
+  const { removed, failed } = await removePlaidItems(getPlaidClient(), [{
+    id: body.item_id, plaid_access_token: item.plaid_access_token, institution_name: item.institution_name,
+  }]);
+  if (failed.length > 0 || removed.length === 0) {
+    console.error("[plaid/disconnect] itemRemove failed:", item.institution_name, failed[0]?.errorCode ?? "no code");
+    return NextResponse.json({
+      error: `Couldn't disconnect ${item.institution_name ?? "this bank"} right now. Please try again in a few minutes.`,
+    }, { status: 502 });
   }
 
   // Delete plaid_items row. Transactions are kept (source='plaid' identifies them).
