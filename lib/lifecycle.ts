@@ -60,6 +60,7 @@ export const JOBS = {
   HOUSING_SYNC: "housing_sync",
   CENSUS_SYNC: "census_sync",
   GSC_SYNC: "gsc_sync",
+  PLAID_SYNC: "plaid_sync",
 } as const;
 
 /** How stale a job's last successful run can get before it is a problem. */
@@ -72,6 +73,8 @@ export const JOB_EXPECTED_INTERVAL_HOURS: Record<string, number> = {
   [JOBS.HOUSING_SYNC]: 24 * 365,
   // ACS 5-year estimates are annual too.
   [JOBS.CENSUS_SYNC]: 24 * 365,
+  // Connected banks refresh daily, so a day missed is worth noticing.
+  [JOBS.PLAID_SYNC]: 24,
 };
 
 /**

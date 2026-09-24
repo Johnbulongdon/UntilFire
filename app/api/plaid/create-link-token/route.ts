@@ -27,7 +27,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const response = await plaid.linkTokenCreate({
       user: { client_user_id: user.id },
       client_name: "UntilFire",
-      products: [Products.Transactions, Products.Investments],
+      // Every product in `products` is billed on every connection, and Link
+      // only lists banks that support all of them — with an account for
+      // each — so asking for Investments here hid banks without investments
+      // and charged the Investments fee on bank-only connections. Investments
+      // is used only where the person picks an investment account.
+      products: [Products.Transactions],
+      required_if_supported_products: [Products.Investments],
       country_codes: plaidCountries(),
       language: "en",
     });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { getPlaidClient } from "@/lib/plaid";
+import { holdingsOutcome, itemsWithInvestments } from "@/lib/plaid-holdings";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -10,12 +11,23 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const { data: { user }, error: authError } = await admin.auth.getUser(token);
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: items } = await admin
+  const { data: allItems } = await admin
     .from("plaid_items")
-    .select("plaid_access_token, institution_name")
+    .select("id, plaid_access_token, institution_name")
     .eq("user_id", user.id);
 
-  if (!items || items.length === 0) {
+  // Only connections that hold an investment account have holdings to ask
+  // for. Asking a bank with only current and savings accounts is refused for
+  // lack of investments consent, which used to put a false "Reconnect" warning
+  // on Net Worth for every bank.
+  const { data: accounts } = await admin
+    .from("plaid_accounts")
+    .select("plaid_item_id, type")
+    .eq("user_id", user.id);
+  const investing = itemsWithInvestments(accounts ?? []);
+  const items = (allItems ?? []).filter((i) => investing.has(i.id));
+
+  if (items.length === 0) {
     return NextResponse.json({ holdings: [], securities: {}, needs_reconnect: [] });
   }
 
@@ -49,13 +61,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         }
       } catch (err: unknown) {
         const plaidErr = err as { response?: { data?: { error_code?: string } } };
-        const code = plaidErr.response?.data?.error_code;
-        if (code === "PRODUCT_NOT_READY" || code === "PRODUCTS_NOT_SUPPORTED" || code === "ITEM_NOT_SUPPORTED") {
-          needsReconnect.push(item.institution_name);
-        } else {
-          console.error("[plaid/holdings]", item.institution_name, plaidErr.response?.data ?? err);
-          needsReconnect.push(item.institution_name);
-        }
+        const outcome = holdingsOutcome(plaidErr.response?.data?.error_code);
+        // Only tell someone to reconnect when reconnecting is what fixes it.
+        if (outcome === "reconnect") needsReconnect.push(item.institution_name);
+        else if (outcome === "unexpected") console.error("[plaid/holdings]", item.institution_name, plaidErr.response?.data ?? err);
       }
     })
   );

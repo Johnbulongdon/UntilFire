@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin-auth";
+import { getPlaidClient } from "@/lib/plaid";
+import { disconnectAllForUser, listInstitutions } from "@/lib/plaid-remove";
 
 // Manual Pro grant/revoke — a support override, not a billing action. It
 // does not touch Stripe; it only flips the local subscriptions row that
@@ -30,7 +32,9 @@ export async function PATCH(
 // Deletes the auth user; ON DELETE CASCADE on every user_id foreign key
 // (profiles, expenses, plaid_items, subscriptions, goals, ...) removes the
 // rest of their data. Irreversible — the UI requires typing the email to
-// confirm before calling this.
+// confirm before calling this. Their banks are disconnected at Plaid first:
+// the cascade takes the access tokens, and a connection Plaid still has
+// keeps being billed with nothing left to remove it.
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -42,6 +46,15 @@ export async function DELETE(
 
   if (id === adminUser.id) {
     return NextResponse.json({ error: "Cannot delete your own admin account from here." }, { status: 400 });
+  }
+
+  const { failed, readError } = await disconnectAllForUser(admin, id, getPlaidClient);
+  if (readError) return NextResponse.json({ error: `Couldn't read their bank connections: ${readError}` }, { status: 500 });
+  if (failed.length > 0) {
+    const detail = failed.map((f) => `${f.institution} (${f.errorCode ?? "no code"})`);
+    return NextResponse.json({
+      error: `Not deleted: couldn't disconnect ${listInstitutions(detail)} at Plaid. Try again; the rest are already disconnected.`,
+    }, { status: 502 });
   }
 
   const { error } = await admin.auth.admin.deleteUser(id);
