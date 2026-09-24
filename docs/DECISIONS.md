@@ -7,6 +7,29 @@ Sources and both vault branch snapshots are recorded in
 
 ## Active decisions
 
+### D-15 — September 24: flexible tasks, Claude integrates ready handoffs
+
+**Status:** Active workflow direction, as authorized by the user; publication of
+this instruction change is itself a PR handoff.
+**Decision:** Either agent can work on any task, using separate worktrees and
+branches during concurrent work. Codex prepares explicit ready PR handoffs;
+Claude is the default integration owner and checks them during publishing tasks.
+Claude can ship independent verified work first, then refresh, verify and
+integrate eligible PRs one at a time. The user may reassign the role per task.
+**Why:** Preserve the user's Claude-to-live-site testing workflow while allowing
+parallel work, without requiring the user to resolve Git conflicts.
+**Supersedes:** Mandatory permanent file ownership in the former collaboration
+rule. D-06's latest-main baseline, history preservation and publication
+authorization requirements remain in force.
+**Trade-off:** PRs are durable handoffs, not a live inter-app channel or an idle
+session wake-up mechanism. A ready marker is not blanket publication permission;
+blocked PRs wait while independent work can ship. Automatic Git merges still
+need checks for incompatible behavior.
+**Source:** User's September 24 collaboration discussion and request to record
+the agreed workflow; [AGENTS.md](../AGENTS.md#codex-and-claude-handoff-sop) owns the SOP.
+**Revisit:** Explicit user reassignment or a separately configured and authorized
+automation mechanism; do not silently introduce a second publisher.
+
 ### D-01 — 2026-09-23: one maintained home in the app repository
 
 **Status:** Active project direction; user authorized direct publication to main on September 24.

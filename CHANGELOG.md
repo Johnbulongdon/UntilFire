@@ -5,6 +5,10 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-24
 
 ### Documentation
+- Recorded the concurrent-agent handoff SOP: flexible task scope, isolated workspaces,
+  explicit ready PRs, Claude-owned sequential integration, combined verification,
+  and deployment confirmation. This establishes an active-session routine, not a
+  background automation or blanket merge authorization.
 - Aligned shared agent rules, Claude's entry point, and the legacy instruction
   bundle; separated main as a baseline from the PR publishing destination.
   Reconciled both vault branch snapshots into one maintained repo knowledge base,
