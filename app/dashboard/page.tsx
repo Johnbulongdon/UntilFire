@@ -188,8 +188,11 @@ function getEmergencyFundPlan(balance: number, monthlyExpenses: number, hasEverH
   };
 }
 
+// Theme tokens, so the bar holds its contrast in dark mode. The -ink shades
+// rather than the plain status colours: amber on the track was under 3:1.
+// Rebuilding is neutral, matching the state pill beside the bar.
 function getEmergencyFundStateColor(state: EmergencyFundState) {
-  return state === "healthy" ? "#059669" : state === "fragile" ? "#F59E0B" : state === "rebuilding" ? "#0EA5E9" : "#DC2626";
+  return state === "healthy" ? "var(--uf-pos-ink)" : state === "fragile" ? "var(--uf-warn-ink)" : state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-neg-ink)";
 }
 
 function EmergencyFundProgressBar({ progressPct, state, height = 8 }: { progressPct: number; state: EmergencyFundState; height?: number }) {
@@ -197,7 +200,7 @@ function EmergencyFundProgressBar({ progressPct, state, height = 8 }: { progress
 
   return (
     <div style={{ position: "relative", paddingBottom: 20 }}>
-      <div style={{ position: "relative", height, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+      <div style={{ position: "relative", height, background: "var(--uf-surface-2)", borderRadius: 99, overflow: "hidden" }}>
         <div style={{
           height: "100%",
           borderRadius: 99,
@@ -215,7 +218,7 @@ function EmergencyFundProgressBar({ progressPct, state, height = 8 }: { progress
               top: 0,
               bottom: 0,
               width: 1,
-              background: "rgba(15,23,42,0.22)",
+              background: "var(--uf-border-2)",
               transform: "translateX(-50%)",
             }}
           />
@@ -232,7 +235,7 @@ function EmergencyFundProgressBar({ progressPct, state, height = 8 }: { progress
             transform: month === EMERGENCY_FUND_TARGET_MONTHS ? "translateX(-100%)" : "translateX(-50%)",
             fontSize: 10,
             lineHeight: 1,
-            color: "#64748B",
+            color: "var(--uf-ink-2)",
             fontWeight: 700,
             fontFamily: "Manrope, sans-serif",
             whiteSpace: "nowrap",
@@ -3814,6 +3817,10 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const efFloor = emergencyFundPlan.floorAmount;
   const efTarget = emergencyFundPlan.targetAmount;
   const efPct = emergencyFundPlan.progressToTargetPct;
+  const efTone = emergencyFundPlan.state === "healthy" ? "var(--uf-pos)"
+    : emergencyFundPlan.state === "fragile" ? "var(--uf-warn)"
+    : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-3)"
+    : "var(--uf-neg)";
   const monthsCovered = emergencyFundPlan.coverageMonths;
   const avgApy = savingsAccts.length > 0
     ? savingsAccts.filter(a => effectiveApy(a) != null).reduce((s, a) => s + (effectiveApy(a) ?? 0), 0) /
@@ -3938,19 +3945,21 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
       {/* ── Emergency Fund card ──────────────────────────────────────────── */}
       {emergencyFundMonthlyBase > 0 && (
+        /* The state's colour, faintly, mixed from theme tokens so the card
+           follows light and dark. Rebuilding is neutral, as its pill is. */
         <div className="uf-card" style={{
-          background: emergencyFundPlan.state === "healthy" ? "rgba(5,150,105,0.04)" : emergencyFundPlan.state === "fragile" ? "rgba(245,158,11,0.04)" : emergencyFundPlan.state === "rebuilding" ? "rgba(14,165,233,0.05)" : "rgba(220,38,38,0.04)",
-          border: `1px solid ${emergencyFundPlan.state === "healthy" ? "rgba(5,150,105,0.2)" : emergencyFundPlan.state === "fragile" ? "rgba(245,158,11,0.25)" : emergencyFundPlan.state === "rebuilding" ? "rgba(14,165,233,0.22)" : "rgba(220,38,38,0.2)"}`,
+          background: `color-mix(in srgb, ${efTone} 4%, var(--uf-card))`,
+          border: `1px solid color-mix(in srgb, ${efTone} 24%, var(--uf-border))`,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <span style={{ fontSize: 16 }}>🛡️</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Fund</span>
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748B", fontWeight: 500 }}>{EMERGENCY_FUND_FLOOR_MONTHS} month floor · {EMERGENCY_FUND_TARGET_MONTHS} month needs target</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Fund</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--uf-ink-2)", fontWeight: 500 }}>{EMERGENCY_FUND_FLOOR_MONTHS} month floor · {EMERGENCY_FUND_TARGET_MONTHS} month needs target</span>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-ink)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
                 {emergencyFundPlan.headline}
               </div>
               <span style={{
@@ -3965,7 +3974,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 {emergencyFundPlan.stateLabel}
               </span>
             </div>
-            <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6, fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.6, fontFamily: "Manrope, sans-serif" }}>
               {emergencyFundPlan.guidance}
             </div>
           </div>
@@ -3973,18 +3982,18 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           {/* Three-stat row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 8 }}>
             {[
-              { label: "Current Reserve", value: fmtMoney(emergencyFundBalance), color: emergencyFundPlan.state === "healthy" ? "#059669" : emergencyFundPlan.state === "rebuilding" ? "#0369A1" : "#19181E" },
+              { label: "Current Reserve", value: fmtMoney(emergencyFundBalance), color: emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : "var(--uf-ink)" },
               { label: "Essential monthly needs", value: fmtMoney(emergencyFundMonthlyBase) },
               { label: `Floor · ${EMERGENCY_FUND_FLOOR_MONTHS} months`, value: fmtMoney(efFloor) },
               { label: `Target · ${EMERGENCY_FUND_TARGET_MONTHS} months`, value: fmtMoney(efTarget) },
             ].map(s => (
               <div key={s.label}>
-                <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 3 }}>{s.label}</div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: s.color ?? "#19181E", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: "var(--uf-ink-2)", fontWeight: 600, marginBottom: 3 }}>{s.label}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: s.color ?? "var(--uf-ink)", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.45, marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: "var(--uf-ink-2)", lineHeight: 1.45, marginBottom: 14 }}>
             Need-tagged transactions if available; otherwise core budget needs. Wants and work costs are excluded.
           </div>
 
@@ -3992,27 +4001,27 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
           {/* Status badge */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: hasHysa ? 0 : 12 }}>
-            {emergencyFundPlan.state === "healthy" && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✅ Healthy ({monthsCovered.toFixed(1)} months covered)</span>}
-            {emergencyFundPlan.state === "fragile" && <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Fragile ({monthsCovered.toFixed(1)} months covered)</span>}
-            {emergencyFundPlan.state === "rebuilding" && <span style={{ background: "#E0F2FE", color: "#075985", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>↺ Rebuilding ({monthsCovered.toFixed(1)} months covered)</span>}
-            {emergencyFundPlan.state === "missing" && <span style={{ background: "#FEE2E2", color: "#991B1B", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Missing ({monthsCovered.toFixed(1)} months covered)</span>}
+            {emergencyFundPlan.state === "healthy" && <span style={{ background: "var(--uf-green-50)", color: "var(--uf-pos-ink)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✅ Healthy ({monthsCovered.toFixed(1)} months covered)</span>}
+            {emergencyFundPlan.state === "fragile" && <span style={{ background: "var(--uf-warn-bg)", color: "var(--uf-warn-ink)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Fragile ({monthsCovered.toFixed(1)} months covered)</span>}
+            {emergencyFundPlan.state === "rebuilding" && <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-ink-2)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>↺ Rebuilding ({monthsCovered.toFixed(1)} months covered)</span>}
+            {emergencyFundPlan.state === "missing" && <span style={{ background: "var(--uf-neg-bg)", color: "var(--uf-neg-ink)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Missing ({monthsCovered.toFixed(1)} months covered)</span>}
             {hasHysa && avgApy > 0 && (
-              <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(emergencyFundBalance * avgApy / 100 / 12))}/mo interest</span>
+              <span style={{ fontSize: 12, color: "var(--uf-pos-ink)", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(emergencyFundBalance * avgApy / 100 / 12))}/mo interest</span>
             )}
             {brokerageCashExcluded && (
-              <span style={{ fontSize: 12, color: "#64748B", fontWeight: 500 }}>
+              <span style={{ fontSize: 12, color: "var(--uf-ink-2)", fontWeight: 500 }}>
                 · excludes {fmtMoney(connectedBreakdown.brokerageCash)} in connected brokerage / investment accounts
               </span>
             )}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: hasHysa ? 0 : 12 }}>
-            <div style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 10, padding: "10px 12px" }}>
-              <div style={{ fontSize: 11, color: "#64748B", fontWeight: 700, marginBottom: 4 }}>Next threshold</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 11, color: "var(--uf-ink-2)", fontWeight: 700, marginBottom: 4 }}>Next threshold</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-ink)", fontFamily: "Manrope, sans-serif" }}>
                 {emergencyFundPlan.priorityMode === "protect" ? fmtMoney(emergencyFundPlan.gapToFloor) : emergencyFundPlan.priorityMode === "balance" ? fmtMoney(emergencyFundPlan.gapToTarget) : fmtMoney(0)}
               </div>
-              <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5, marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "var(--uf-ink-2)", lineHeight: 1.5, marginTop: 4 }}>
                 {emergencyFundPlan.priorityMode === "protect"
                   ? `Needed to get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor.`
                   : emergencyFundPlan.priorityMode === "balance"
@@ -4020,12 +4029,12 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                     : "Your safety target is covered right now."}
               </div>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 10, padding: "10px 12px" }}>
-              <div style={{ fontSize: 11, color: "#64748B", fontWeight: 700, marginBottom: 4 }}>App posture now</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", textTransform: "capitalize" }}>
+            <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 11, color: "var(--uf-ink-2)", fontWeight: 700, marginBottom: 4 }}>App posture now</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-ink)", fontFamily: "Manrope, sans-serif", textTransform: "capitalize" }}>
                 {emergencyFundPlan.priorityMode === "protect" ? "Protect" : emergencyFundPlan.priorityMode === "balance" ? "Balance" : "Grow"}
               </div>
-              <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5, marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "var(--uf-ink-2)", lineHeight: 1.5, marginTop: 4 }}>
                 {emergencyFundPlan.priorityMode === "protect"
                   ? "Emergency fund refill should outrank extra investing for now."
                   : emergencyFundPlan.priorityMode === "balance"
@@ -4037,9 +4046,9 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
           {/* HYSA recommendation banner */}
           {!hasHysa && (
-            <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "10px 14px", marginTop: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#92400E", marginBottom: 4 }}>💡 Consider a High-Yield Savings Account (HYSA)</div>
-              <div style={{ fontSize: 12, color: "#78350F", lineHeight: 1.5 }}>
+            <div style={{ background: "var(--uf-warn-bg)", border: "1px solid color-mix(in srgb, var(--uf-warn) 35%, transparent)", borderRadius: 8, padding: "10px 14px", marginTop: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-warn-ink)", marginBottom: 4 }}>💡 Consider a High-Yield Savings Account (HYSA)</div>
+              <div style={{ fontSize: 12, color: "var(--uf-ink)", lineHeight: 1.5 }}>
                 {plaidAccounts.length === 0
                   ? "Connect a bank to track your emergency fund automatically. Using your manual Cash & Savings entry above."
                   : !hasPlaidSavings
