@@ -20,6 +20,8 @@ import {
   isInternalUser,
 } from "@/lib/analytics";
 import { REVEAL_STEP_IDS, type RevealCtaPlacement } from "@/lib/analytics-events";
+import { compareNetWorth } from "@/lib/net-worth-compare";
+import { NET_WORTH_BENCHMARKS } from "@/lib/net-worth-benchmarks";
 import type { CalculatorStepId } from "@/lib/analytics-events";
 import {
   getAcquisitionSource,
@@ -1068,6 +1070,10 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         savingsRatePct={savingsRatePct}
         usBaselineRate={PUBLIC_SAVINGS_RATE_BASELINE}
         fireBenchmarkRate={25}
+        netWorthComparison={compareNetWorth(
+          { netWorthUsd: portfolioBalance, age: currentAge, ageAssumed: ageWasAssumed, currency },
+          NET_WORTH_BENCHMARKS,
+        )}
         expatHome={expatHome}
         expatBaseAge={freedomAge}
         expatCities={expatCities}
