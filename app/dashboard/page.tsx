@@ -5731,7 +5731,10 @@ export default function Dashboard() {
                 if (prefill.defaultCurrency) {
                   setDefaultCurrency(prefill.defaultCurrency);
                   setPreferredCurrencies([prefill.defaultCurrency]);
-                  void supabase.from("profiles").upsert(
+                  // .then(), not void: a query builder sends nothing until it
+                  // is awaited or .then()'d, so this save never happened and
+                  // the choice was lost on any other device.
+                  supabase.from("profiles").upsert(
                     {
                       user_id: session.user.id,
                       default_currency: prefill.defaultCurrency,
@@ -5739,7 +5742,9 @@ export default function Dashboard() {
                       updated_at: new Date().toISOString(),
                     },
                     { onConflict: "user_id" },
-                  );
+                  ).then(({ error }) => {
+                    if (error) console.warn("[profile] saving the onboarding currency failed:", error.message);
+                  });
                 }
               }
             } catch {}

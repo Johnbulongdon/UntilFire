@@ -2093,12 +2093,21 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           }
         });
     } else if (toast.undoId && !toast.undoId.startsWith("undo:")) {
-      // Undo add: delete the just-added transaction
-      supabase.from("expenses").delete().eq("id", toast.undoId);
-      setTransactions((prev) => prev.filter((t) => t.id !== toast.undoId));
+      // Undo add: delete the just-added transaction. It leaves the list at
+      // once and goes back if the delete fails. The delete has to be .then()'d:
+      // a query builder sends nothing until it is, and this one never ran, so
+      // an undone transaction came back on the next reload.
+      const id = toast.undoId;
+      const row = transactions.find((t) => t.id === id);
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      supabase.from("expenses").delete().eq("id", id).then(({ error }) => {
+        if (!error) return;
+        if (row) setTransactions((prev) => (prev.some((t) => t.id === id) ? prev : [row, ...prev]));
+        showToast("Couldn't undo — the transaction is still saved", undefined, undefined, true);
+      });
     }
     setToast(null);
-  }, [showToast, toast]);
+  }, [showToast, toast, transactions]);
 
   const handlePrevMonth = () => {
     const [py, pm] = viewMonth.split("-").map(Number);

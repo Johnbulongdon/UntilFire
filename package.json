@@ -31,6 +31,7 @@
     "test:profile-mobile-cta-layout": "node scripts/verify-profile-mobile-cta-layout.mjs",
     "test:reveal-save-plan-cta": "node scripts/verify-reveal-save-plan-cta.mjs",
     "test:categories-management": "node scripts/verify-categories-management.mjs",
+    "test:supabase-writes-execute": "node scripts/verify-supabase-writes-execute.mjs",
     "test:manual-category-icons": "node scripts/verify-manual-category-icons.mjs",
     "test:monthly-checkin": "node scripts/verify-monthly-checkin-card.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build",
