@@ -421,7 +421,7 @@ export default function CoastFireCalculator() {
                   min={10_000} max={250_000} step={1_000} format={money} />
                 <Slider label="Expected annual return" value={returnRate} onChange={setReturnRate}
                   min={1} max={12} step={0.1} format={pct}
-                  hint="After inflation. Long-run real return is around 7%." />
+                  hint="After inflation. 7% is an assumption, not a forecast; compare lower returns too." />
                 <Slider label="Withdrawal rate" value={withdrawalRate} onChange={setWithdrawalRate}
                   min={2} max={6} step={0.1} format={pct}
                   hint="4% is the common starting point." />
@@ -462,9 +462,9 @@ export default function CoastFireCalculator() {
           </p>
           <p className="uf-t-lead" style={{ color: 'var(--uf-ink-2)', margin: 0, lineHeight: 1.8 }}>
             Everything here is in today&apos;s money — the return is after inflation, so the spending
-            figure does not need inflating either. And the pot usually keeps rising after you retire:
-            it only turns down when you draw more than it earns, so at a 4% withdrawal against a 7%
-            return it climbs. Push the withdrawal rate past the return and you will see it fall.
+            figure does not need inflating either. The chart applies the same return every year,
+            so the pot rises whenever that year&apos;s growth exceeds spending. Real markets vary;
+            this smooth line does not measure the chance of running out of money.
             Your freedom date is the other half of the picture:{' '}
             <Link href="/?source=calculator-coast-fire" style={{ color: 'var(--uf-green)', fontWeight: 700 }}>
               work out when you could stop
