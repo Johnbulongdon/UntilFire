@@ -63,6 +63,8 @@ All notable changes to UntilFire are documented here.
 - **Every line behind the contribution figure.** The Contributions page shows a day-by-day ledger under the amount: the opening balance and the accounts it comes from, each expected payment in and out on its date, the running balance, contribution day, and the low point the figure is taken from. A bare total nobody can trace is a total nobody should move money on.
 - It says out loud what it leaves out. Income that was due and never marked received is listed as **not counted**, with the reason. Spending the budget knows about but the Expected list doesn't is compared, because anything missing from that list is missing from the forecast.
 - When nothing is safe to contribute, the Home card now says so and shows the day the balance runs short, instead of hiding itself at the moment it has a warning to give.
+- **Out-of-date balances are shown, not hidden.** The contribution ledger lists every account whose balance is more than three days old, grouped by the day it was last refreshed — including accounts at zero, since a zero from four months ago may not be zero now — and says to sync in Money → Net Worth. The emergency-fund field says "as of" when its balance is old. Accounts only refresh when their connection is synced by hand, which is easy to forget for months.
+- Foreign-currency accounts show their own balance beside the dollar figure, on the ledger and in the account picker.
 - **Your month, in date order.** Money → Expected opens on a month view: every expected payment in and out on its day, repeats included (paid ones marked), then one **day-to-day spending** line for the budget spending that has no date, then In / Out / Left for the month. Step between months with ‹ ›. It is the dated half of the budget, and Plan → Contributions works from the same dates.
 
 ### Changed
@@ -71,10 +73,13 @@ All notable changes to UntilFire are documented here.
 - **The contribution forecast allows for day-to-day spending.** The budget's monthly spending, less the repeating bills already on the Expected list, is spread evenly per day as labelled estimate lines between dated payments — each showing its days × rate, so every row still adds up. Without it the balance only fell on bill days and the safe figure overstated what was spare. Recorded as D-10.
 
 ### Fixed
+- **Connected balances were added up as if every currency were dollars.** HK$20,000 counted as $20,000 in net worth, cash, the emergency fund, the contribution forecast and the freedom-date projection. Balances are now converted to dollars once, where accounts are loaded, so every total uses one currency. A currency with no exchange rate is shown but left out of totals rather than counted at face value — the shared conversion helper returns an unknown currency unchanged, which would have counted one won as one dollar.
+- **Net Worth's emergency fund now follows the accounts chosen in Plan → Contributions.** It counted savings accounts only, so ticking a checking account there changed one page and not the other. *Behaviour change:* someone with only checking accounts connected who has not chosen any now sees an emergency fund of $0 on Net Worth, where it previously fell back to the cash figure typed into their profile — the same rule Contributions already used.
 - **Repeating payments drifted through the calendar.** Marking one paid added a fixed 30 days and wrote the date back through UTC, so in UTC+8 a bill due on the 28th rolled to the 27th, and a bill due on the 1st walked to the 31st, then the 30th. Months are now calendar months in local time, using the same helper the forecast uses.
 - The Budget tab's "committed this month" had been counting bills up to 70 days out since the previous release, when the query behind it was widened for the contribution window. It counts this month's bills again.
 
 ### Added — guards
+- `npm run test:account-currency` — conversion, the refusal to count an unconvertible balance, and how old a balance is.
 - `npm run test:cashflow-forecast` — runs in UTC+8 and UTC−7, since the date bugs it guards against only exist away from Greenwich.
 
 ## [Unreleased] - 2026-09-23

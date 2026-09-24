@@ -22,6 +22,12 @@ export interface PlaidAccountLike {
   subtype?: string | null;
   balance_current?: number | null;
   apy?: number | null;
+  /** When the balance was last refreshed from the bank. */
+  updated_at?: string | null;
+  /** Set when the dashboard has converted the balance to dollars. */
+  native_balance_current?: number | null;
+  native_currency?: string;
+  converted?: boolean;
 }
 
 export interface CashAccount {
@@ -34,6 +40,12 @@ export interface CashAccount {
   apy: number | null;
   /** In the default set — savings or money market. */
   isSavings: boolean;
+  /** The balance as the bank reports it, for showing beside the dollar figure. */
+  nativeBalance: number;
+  currency: string;
+  /** False when the currency had no rate: `balance` is then 0, not a guess. */
+  converted: boolean;
+  syncedAt: string | null;
 }
 
 /** Plaid spells subtypes inconsistently across institutions: money market
@@ -61,6 +73,10 @@ export function toCashAccounts(accounts: PlaidAccountLike[]): CashAccount[] {
       balance: a.balance_current ?? 0,
       apy: a.apy ?? null,
       isSavings: isSavingsAccount(a),
+      nativeBalance: a.native_balance_current ?? a.balance_current ?? 0,
+      currency: a.native_currency ?? "USD",
+      converted: a.converted ?? true,
+      syncedAt: a.updated_at ?? null,
     }))
     .sort((a, b) => (Number(b.isSavings) - Number(a.isSavings)) || (b.balance - a.balance));
 }

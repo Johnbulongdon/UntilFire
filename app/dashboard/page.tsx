@@ -17,9 +17,11 @@ import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import ContributionsTab from "./ContributionsTab";
 import NextContributionCard from "./NextContributionCard";
-import type { AccountFacts } from "@/lib/contribution-ladder";
+import { measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
+import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
+import { accountInUSD } from "@/lib/account-currency";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
@@ -3779,9 +3781,15 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const savingsAccts = bankAssets.filter(isSavingsAccount);
   const hasPlaidSavings = savingsAccts.length > 0;
   const hasHysa = savingsAccts.some(a => (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD);
-  const emergencyFundBalance = hasPlaidSavings
-    ? savingsAccts.reduce((s, a) => s + (a.balance_current ?? 0), 0)
-    : cashSavings;
+  // The same accounts, and the same rule, as Plan → Contributions: whatever
+  // the user ticked there, or savings accounts if they haven't chosen. It
+  // used to count savings only, so ticking a checking account there changed
+  // that page's emergency fund and not this one.
+  const savedEfIds = useSavedEmergencyAccountIds();
+  const emergencyFundBalance = measuredEmergencyFund(savedEfIds, {
+    cashAccounts: toCashAccounts(bankAssets),
+    manualCashSavings: cashSavings,
+  }).balance;
   const connectedBreakdown = {
     brokerageCash: bankAssets
       .filter(a => a.type === "investment")
@@ -5178,7 +5186,9 @@ export default function Dashboard() {
   // cannot have another trial, and the upgrade modal has to know that before it
   // offers one. Same source of truth the checkout route uses.
   const [subscription, setSubscription] = useState<{ plan: "free" | "pro"; hadSubscription: boolean } | null>(null);
-  const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
+  // As stored: each balance in its account's own currency. Everything below
+  // reads `plaidAccounts`, the converted list defined after `rates`.
+  const [rawPlaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [plaidHoldings, setPlaidHoldings] = useState<PlaidHolding[]>([]);
   const [plaidSecurities, setPlaidSecurities] = useState<Record<string, PlaidSecurity>>({});
   const [holdingsNeedsReconnect, setHoldingsNeedsReconnect] = useState<string[]>([]);
@@ -5384,6 +5394,14 @@ export default function Dashboard() {
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
+  /* Every balance in dollars, converted once here so that every total built
+     from them — net worth, cash, the emergency fund, the contribution
+     forecast, the freedom-date projection — is in one currency. Adding them
+     raw counted HK$20,000 as $20,000. Recomputed when rates arrive. */
+  const plaidAccounts = useMemo(
+    () => rawPlaidAccounts.map((a) => accountInUSD(a, rates)),
+    [rawPlaidAccounts, rates],
+  );
   const [freedomDate, setFreedomDate] = useState<Date | null>(null);
   const freedomDateLabel = freedomDate
     ? freedomDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })

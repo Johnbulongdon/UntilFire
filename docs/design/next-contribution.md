@@ -212,6 +212,20 @@ paper over.
    month. For a budget whose repeating bills are all listed, Left for the
    month equals the Budget's own surplus.
 
+   Every figure here is only as good as the balances under it, and two things
+   were wrong with those. Balances were added in their own currencies as if
+   they were dollars; they are now converted once where the dashboard loads
+   accounts (`lib/account-currency.ts`), and a currency with no rate is
+   excluded and flagged rather than counted at face value. And balances only
+   refresh when a connection is synced by hand, so one connection had sat at
+   its June figures unnoticed; the ledger now names any account more than
+   three days stale, zero balances included. Net Worth's emergency fund reads
+   the same chosen accounts as this page (`useSavedEmergencyAccountIds`).
+
+   Still open: syncing on its own rather than by hand, and the household
+   summary (`lib/household.ts`), which sums partner balances server-side
+   without conversion.
+
 ## The open question
 
 Steps 1–4 only execute an allocation the user chose: they answer "how do I hit

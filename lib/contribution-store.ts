@@ -12,9 +12,10 @@
  * currency symbol.
  */
 
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  planHasContent, rowsToPlan, sanitiseLadder, type AssetPlan,
+  newerPlan, planHasContent, rowsToPlan, sanitiseLadder, type AssetPlan,
   type ContributionPlan, type Frequency, type PlanRow, type StoredPlan,
 } from "@/lib/contribution";
 import type { ContributionSchedule } from "@/lib/contribution-schedule";
@@ -180,4 +181,30 @@ export async function saveSnapshot(
     if (error) { tolerate("contribution_snapshots", error); return false; }
     return true;
   } catch (err) { tolerate("contribution_snapshots", err); return false; }
+}
+
+/**
+ * Which accounts the user has chosen as their emergency fund, from the saved
+ * plan, for surfaces other than the Contributions page.
+ *
+ * The emergency fund used to have two definitions: Contributions followed the
+ * accounts ticked there, while Net Worth counted savings accounts only — so
+ * ticking a checking account changed one page and not the other. Reading the
+ * same saved choice keeps them one answer. `null` means no choice has been
+ * made, which resolves to savings accounts, exactly as on Contributions.
+ */
+export function useSavedEmergencyAccountIds(): string[] | null {
+  const [ids, setIds] = useState<string[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const local = readLocalPlan();
+    if (local?.ladder) setIds(local.ladder.efAccountIds);
+    void loadCloudPlan().then((cloud) => {
+      if (cancelled) return;
+      const winner = newerPlan(local, cloud);
+      if (winner?.ladder) setIds(winner.ladder.efAccountIds);
+    });
+    return () => { cancelled = true; };
+  }, []);
+  return ids;
 }

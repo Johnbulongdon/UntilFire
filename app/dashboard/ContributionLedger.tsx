@@ -18,6 +18,7 @@
  */
 
 import type { AvailableToContribute } from "@/lib/contribution-ladder";
+import { daysSinceSync, STALE_AFTER_DAYS } from "@/lib/account-currency";
 
 export interface ContributionLedgerProps {
   available: AvailableToContribute;
@@ -31,6 +32,14 @@ export interface ContributionLedgerProps {
 // payment read the same way on one ledger.
 const fmt = (n: number) =>
   `${n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// A balance in its own currency, for beside the dollar figure.
+const native = (n: number, currency: string) => {
+  try {
+    return n.toLocaleString("en-US", { style: "currency", currency, maximumFractionDigits: 2 });
+  } catch {
+    return `${n.toLocaleString("en-US")} ${currency}`;
+  }
+};
 const signed = (n: number) => `${n >= 0 ? "+" : "−"}${fmt(Math.abs(n))}`;
 const day = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
@@ -43,6 +52,23 @@ export default function ContributionLedger({
 }: ContributionLedgerProps) {
   const f = available.forecast;
   const todayIso = f.days[0]?.iso;
+  // The forecast's own "today", so staleness is judged against the same day
+  // the ledger starts from.
+  const now = todayIso ? (() => { const [y, m, d] = todayIso.split("-").map(Number); return new Date(y, m - 1, d, 12); })() : new Date();
+  /* Out-of-date balances, grouped by the day they were last refreshed.
+     Every contributable account counts here, including ones at zero: a
+     balance of $0 from four months ago is exactly the one that may not be
+     zero any more. */
+  const stale = Object.values(
+    available.cashAccounts.reduce<Record<string, { iso: string; names: string[] }>>((groups, a) => {
+      const age = daysSinceSync(a.syncedAt, now);
+      if (age === null || age <= STALE_AFTER_DAYS || !a.syncedAt) return groups;
+      const iso = a.syncedAt.slice(0, 10);
+      (groups[iso] ??= { iso, names: [] }).names.push(a.label);
+      return groups;
+    }, {}),
+  ).sort((a, b) => a.iso.localeCompare(b.iso));
+  const unconverted = available.cashAccounts.filter((a) => !a.converted);
   const unlisted = Math.max(0, budgetMonthlySpending - expectedMonthlyBills);
 
   return (
@@ -61,8 +87,12 @@ export default function ContributionLedger({
           {available.cashAccounts.length > 0 && (
             <span className="uf-ledger-sub">
               {available.cashAccounts
-                .filter((a) => a.balance !== 0)
-                .map((a) => `${a.label} ${fmt(a.balance)}`)
+                .filter((a) => a.nativeBalance !== 0)
+                .map((a) => a.currency === "USD"
+                  ? `${a.label} ${fmt(a.balance)}`
+                  : a.converted
+                    ? `${a.label} ${native(a.nativeBalance, a.currency)} (${fmt(a.balance)})`
+                    : `${a.label} ${native(a.nativeBalance, a.currency)} (not counted)`)
                 .join(" · ") || "Every account is at zero"}
             </span>
           )}
@@ -125,6 +155,25 @@ export default function ContributionLedger({
             the lowest your balance gets before {day(f.nextCycleIso)}, so nothing later in the month bounces.</>
         )}
       </p>
+
+      {stale.length > 0 && (
+        <p className="uf-t-small uf-ledger-warn" data-testid="uf-ledger-stale">
+          <strong>Some balances may be out of date.</strong> Last updated{" "}
+          {stale.map((g, i) => (
+            <span key={g.iso}>
+              {i > 0 ? "; " : ""}{day(g.iso)}: {g.names.length > 2 ? `${g.names[0]} and ${g.names.length - 1} more` : g.names.join(" and ")}
+            </span>
+          ))}. This figure uses those balances until you sync them in <strong>Money → Net Worth</strong>.
+        </p>
+      )}
+
+      {unconverted.length > 0 && (
+        <p className="uf-t-small uf-ledger-warn">
+          {unconverted.map((a) => `${a.label} (${a.currency})`).join(", ")} couldn&apos;t be converted to dollars, so{" "}
+          {unconverted.length === 1 ? "it isn't" : "they aren't"} counted — adding a foreign balance as if it were dollars
+          would overstate what you have.
+        </p>
+      )}
 
       {f.shortBefore && (
         <p className="uf-t-small uf-ledger-warn">

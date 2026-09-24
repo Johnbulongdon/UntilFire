@@ -17,6 +17,7 @@ import {
   type AccountFacts,
 } from "@/lib/contribution-ladder";
 import { describeAccounts } from "@/lib/emergency-fund-accounts";
+import { daysSinceSync, STALE_AFTER_DAYS } from "@/lib/account-currency";
 import { recurrenceToMonthly } from "@/lib/recurring-detect";
 import ContributionLedger from "./ContributionLedger";
 import { supabase } from "@/lib/supabase";
@@ -194,8 +195,16 @@ export default function ContributionsTab({
   const efFromAccounts = measuredEf.balance;
   const hasAccountEf = efFromAccounts > 0;
   const efBalance = efOverride ?? (hasAccountEf ? String(Math.round(efFromAccounts)) : "");
+  // The oldest refresh among the fund's accounts, when it is old enough to
+  // matter: a buffer read from a balance weeks out of date should say so.
+  const efOldestSync = efAccounts
+    .map((a) => a.syncedAt)
+    .filter((d): d is string => !!d && (daysSinceSync(d, today ?? new Date()) ?? 0) > STALE_AFTER_DAYS)
+    .sort()[0];
   const efSourceLabel = cashAccounts.length > 0
-    ? (efAccounts.length > 0 ? `From ${describeAccounts(efAccounts)}` : "No accounts chosen")
+    ? (efAccounts.length > 0
+        ? `From ${describeAccounts(efAccounts)}${efOldestSync ? ` · as of ${new Date(efOldestSync).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}`
+        : "No accounts chosen")
     : hasAccountEf ? "From the cash in your profile" : "No connected cash yet";
 
   /* Needs vary month to month, so which month matters. The last complete one
@@ -541,7 +550,14 @@ export default function ContributionsTab({
                       {a.apy != null && a.apy > 0 ? ` · ${a.apy}% APY` : ""}
                     </span>
                   </span>
-                  <span style={{ ...mono, fontSize: 14 }}>{fmtUsd(a.balance)}</span>
+                  <span style={{ ...mono, fontSize: 14, textAlign: "right" }}>
+                    {a.currency !== "USD" && (
+                      <span style={{ color: "var(--uf-ink-2)", marginRight: "var(--uf-s2)" }}>
+                        {a.nativeBalance.toLocaleString("en-US", { style: "currency", currency: a.currency, maximumFractionDigits: 0 })}
+                      </span>
+                    )}
+                    {a.converted ? fmtUsd(a.balance) : "not counted"}
+                  </span>
                 </label>
               );
             })}
