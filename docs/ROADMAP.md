@@ -138,6 +138,8 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 - [x] Verify production Plaid credentials and environment mode — **Plaid works 100%**
 - [x] QA bank connection, sync, duplicate handling, disconnect, and account refresh
 - [x] **Plaid is a Product Hunt launch feature** — bank connection is live and promoted in the dashboard
+- [x] Daily automatic refresh of every connection (`/api/cron/plaid-sync`, 09:00 UTC), logged in `job_runs`; holdings requested only from connections with an investment account (D-16)
+- [ ] Plaid webhooks (`SYNC_UPDATES_AVAILABLE`) if once a day proves too slow — see D-16
 
 ### AI Categorisation
 

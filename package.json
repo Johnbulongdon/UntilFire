@@ -33,6 +33,7 @@
     "test:categories-management": "node scripts/verify-categories-management.mjs",
     "test:supabase-writes-execute": "node scripts/verify-supabase-writes-execute.mjs",
     "test:expense-reads-paged": "node --experimental-strip-types --no-warnings scripts/verify-expense-reads-paged.mjs",
+    "test:plaid-refresh": "node --experimental-strip-types --no-warnings scripts/verify-plaid-refresh.mjs",
     "test:manual-category-icons": "node scripts/verify-manual-category-icons.mjs",
     "test:monthly-checkin": "node scripts/verify-monthly-checkin-card.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build",
