@@ -4,6 +4,13 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-24
 
+### SEO content
+- Clarified the savings-rate calculator's search description, formula and annual
+  inputs. Replaced conflicting fixed retirement timelines with the actual model
+  assumptions, clarified payroll contributions, and kept one main heading.
+  Calculations and defaults are unchanged. See `docs/seo-audit-2026-09-24.md`
+  for evidence boundaries, prior SEO decisions and the measurement plan.
+
 ### Documentation
 - Recorded the concurrent-agent handoff SOP: flexible task scope, isolated workspaces,
   explicit ready PRs, Claude-owned sequential integration, combined verification,

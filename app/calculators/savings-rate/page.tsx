@@ -3,15 +3,15 @@ import Link from 'next/link'
 import SavingsRateCalculator from './SavingsRateCalculator'
 
 export const metadata: Metadata = {
-  title: 'Savings Rate Calculator — How Savings Rate Affects Your FIRE Date | UntilFire',
+  title: 'Savings Rate Calculator: Savings % & Years to FIRE | UntilFire',
   description:
-    'Calculate your savings rate and see exactly how it shifts your FIRE retirement date. The savings rate is the single most powerful lever in FIRE planning -find yours in seconds.',
+    'Calculate your savings percentage from take-home income and expenses. Compare estimated years to FIRE using your current investments. Free, no signup required.',
   keywords:
     'savings rate calculator, FIRE savings rate, how long to retire calculator, financial independence calculator, savings percentage calculator, how much to save to retire',
   alternates: { canonical: 'https://www.untilfire.com/calculators/savings-rate' },
   openGraph: {
     title: 'Savings Rate Calculator | UntilFire',
-    description: 'Your savings rate is the #1 lever in FIRE. Find yours and see how it changes your retirement date.',
+    description: 'Find your savings percentage and compare estimated years to financial independence. Free, no signup required.',
     url: 'https://www.untilfire.com/calculators/savings-rate',
     siteName: 'UntilFire',
     type: 'website',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Savings Rate Calculator | UntilFire',
-    description: 'Your savings rate is the #1 lever in FIRE. Find yours and see how it changes your retirement date.',
+    description: 'Find your savings percentage and compare estimated years to financial independence. Free, no signup required.',
   },
 }
 
@@ -30,15 +30,23 @@ const faqs = [
   },
   {
     q: 'What savings rate do I need to retire early?',
-    a: 'The higher your savings rate, the faster you reach financial independence. Saving 10% takes roughly 40 years. Saving 25% takes about 32 years. Saving 50% takes around 17 years. Saving 65%+ can get you to FIRE in under 10 years. The exact timeline also depends on your starting portfolio and investment returns.',
+    a: 'There is no single required savings rate. Compare the rates in the calculator using your current investments and income. Its estimates assume a constant 7% annual real return, applied monthly, and a target of 25 times annual expenses (a 4% withdrawal assumption). Different starting balances, returns, spending or withdrawal rates change the timeline; the results are estimates, not guaranteed retirement dates.',
   },
   {
     q: 'Does savings rate or income matter more for FIRE?',
-    a: 'Savings rate matters more than income for FIRE timelines. Someone earning $60,000 and saving 50% will reach financial independence far sooner than someone earning $150,000 and saving 10%. Income helps, but the percentage you keep — not the dollar amount you earn — is the primary driver of your FIRE date.',
+    a: 'Both matter. Saving a larger share of income increases contributions and reduces the spending your portfolio must support. With no starting investments and the same return and withdrawal assumptions, equal savings rates produce the same modeled timeline regardless of salary. Once you include an existing portfolio, its size relative to your spending also matters.',
   },
   {
     q: 'How do I calculate my savings rate?',
-    a: 'Savings rate = (monthly savings ÷ monthly take-home income) × 100. Monthly savings includes retirement contributions (401k, IRA), taxable investing, and any other money you put aside. Take-home income is after tax. If you save $1,500 per month and take home $5,000, your savings rate is 30%.',
+    a: 'Savings rate = ((take-home income − expenses) ÷ take-home income) × 100. Use the same period for both figures. For example, $5,000 of monthly take-home income minus $3,500 of monthly expenses leaves $1,500, a 30% savings rate. This calculator takes annual figures, so enter $60,000 of income and $42,000 of expenses for that example.',
+  },
+  {
+    q: 'Should I use monthly or annual income?',
+    a: 'The inputs on this page are annual. Multiply regular monthly take-home income and expenses by 12, or total the last 12 months if they vary. Keep income and expenses on the same basis; do not compare annual income with monthly expenses.',
+  },
+  {
+    q: 'How should I treat payroll retirement contributions?',
+    a: 'This tool measures the surplus left from take-home pay after expenses. Retirement contributions already deducted from your paycheck are not included in that surplus. Do not add them only to savings while leaving the income denominator unchanged. An existing retirement account balance can be included in current savings and investments; modeling future payroll contributions separately needs a more detailed plan.',
   },
 ]
 
@@ -50,13 +58,14 @@ export default function SavingsRatePage() {
       <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18 }}>
           <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
-            <h1 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 28, letterSpacing: '-0.03em' }}>
-              Savings Rate Calculator: The #1 Lever in FIRE
-            </h1>
+            <h2 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 28, letterSpacing: '-0.03em' }}>
+              How to calculate your savings rate
+            </h2>
             <p style={{ margin: '0 0 12px', color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
-              Your savings rate — the share of take-home pay you invest each month — does more to set your retirement
-              date than your income. Save 10% and financial independence is decades away; save 50% and it can arrive in
-              under 20 years. Use the calculator above to find your rate, then see how raising it pulls your freedom date closer.
+              Subtract expenses from take-home income, divide the difference by take-home income,
+              then multiply by 100. For example, $60,000 of annual take-home income and $42,000 of
+              expenses leave $18,000 to save: a 30% savings rate, or $1,500 per month.
+              Enter your own annual figures above, then compare the estimated timelines at different savings rates.
             </p>
             <p style={{ margin: 0, color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.75 }}>
               Turn your savings rate into a full timeline with the <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 800, textDecoration: 'none' }}>FIRE calculator</Link>, or
