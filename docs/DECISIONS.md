@@ -469,8 +469,13 @@ Price is then a positioning question for the $3k MRR goal as much as a margin on
 
 ### D-18 — September 24: email sign-in with a code, alongside Google
 
-**Status:** Active in code, switched off until Supabase can send the code.
-Authorised by the founder on 2026-09-24 as step 2 of the activation work.
+**Status:** Active and switched on in production on 2026-09-24, after the
+founder set up Resend SMTP and the templates. Authorised by the founder on
+2026-09-24 as step 2 of the activation work. First live check the same day:
+a new address received the code and signed in, and PostHog recorded
+`signup_started` and `signup_completed` as `email`, with `is_new_user: true`.
+The code length is Supabase's "Email OTP Length" setting; the founder chose 6
+digits. The form accepts 6 to 10.
 **Decision:** The sign-in page offers "Email me a sign-in code" under
 "Continue with Google". The person types a 6-digit code from the email on
 the same page (`signInWithOtp`, then `verifyOtp` with `type: 'email'`), and
