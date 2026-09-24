@@ -272,6 +272,33 @@ the account row), or households need per-person emergency funds.
 `lib/contribution-store.ts` (`saveEmergencyAccountIds`) · `app/dashboard/page.tsx`
 (Net Worth).
 
+### D-13 — September 24: the FIRE Type quiz stays off onboarding; the homepage links to it
+
+**Status:** Active. Authorised by the founder on 2026-09-24.
+**Decision:** The homepage hero offers "Take the FIRE Type quiz" as a secondary
+link beside "Find my freedom date" (`/fire-type?source=homepage-secondary`). The
+quiz is not added to the calculator's onboarding, in full or in part.
+**Why:** The quiz result does not feed the product yet. It changes no projection
+and no guidance, so questions before the result would only add steps before
+first value, against D-02 and CLAUDE.md's required-inputs rule. On the homepage
+it is an optional, shareable way in for visitors who are curious but not ready
+to enter numbers. The link had been in the hero (`c81693d`) and was lost without
+a recorded reason when the landing page was redesigned (`274a215`).
+**Rejected:** Three quiz questions in onboarding. The type is four letters from
+eight questions, two per trait, so three questions leave at least one letter a
+guess and the rest resting on a single answer. That is less accurate than the
+quiz people share, and it costs activation.
+**Trade-off:** A second button in the hero competes a little with the primary
+one. It is styled as the secondary variant and placed after the start button.
+**Evidence:** `test:seo` checks that the rendered hero carries the link, after
+the start button. Browser check at 390 and 1280 px in both themes: the link
+stacks under the start button on phones, is keyboard-reachable with a visible
+focus ring, has at least 14.9:1 text contrast, and opens the quiz with its source.
+**Revisit when:** the quiz result starts to shape the product (for example
+personalised guidance or defaults). Integrate it after the first result then,
+not before it.
+**Source:** `app/components/landing/AnimatedHero.tsx`, `app/fire-type/quiz-data.ts`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,

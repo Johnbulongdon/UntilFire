@@ -115,10 +115,9 @@ for (const source of requiredRedirectSources) {
   assert.match(nextConfig, new RegExp(`source:\\s*['"]${source}['"]`), `Missing redirect for stale indexed URL ${source}`);
 }
 
-// Last, so every check above still runs: the FIRE Type quiz link was in the
-// hero CTA row (c81693d) and did not survive the landing redesign (274a215),
-// which recorded no reason. Whether it comes back is a product decision; until
-// it is made, this fails on purpose rather than passing on a dead component.
-assert.match(heroCtaRow, /fire-type\?source=homepage-secondary/i, 'Homepage hero should offer the FIRE Type personality test next to the primary CTA (dropped in 274a215; awaiting a product decision)');
+// The FIRE Type quiz link sits in the hero CTA row, secondary to the start
+// button (D-13). It was lost in the landing redesign (274a215) and restored.
+assert.match(heroCtaRow, /fire-type\?source=homepage-secondary/i, 'Homepage hero should offer the FIRE Type personality test next to the primary CTA');
+assert.ok(heroCtaRow.indexOf('onClick={onStart}') < heroCtaRow.indexOf('fire-type?source=homepage-secondary'), 'The freedom-date start button comes first; the quiz is the secondary action');
 
 console.log('SEO config checks passed');
