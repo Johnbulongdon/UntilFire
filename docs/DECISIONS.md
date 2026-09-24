@@ -557,8 +557,10 @@ how many have less, never as "behind". Shares round down; ties do not count
 as ahead, so a zero net worth isn't said to beat the others at zero. Below
 1% it reads "at the start line"; past the 99th cutpoint, "more than 99%".
 **Trade-offs:** (a) The survey is in 2022 dollars and is compared with
-today's figure unadjusted, which flatters the person somewhat until the
-Fed's 2025 survey replaces it. (b) The survey measures a
+today's figure unadjusted, which flatters the person somewhat. On
+2026-09-24 the founder chose to adjust it with the BLS consumer price index,
+consistent with D-07's real-terms rule; that waits on network access to a
+CPI source (`api.bls.gov` was blocked in the session that built this). (b) The survey measures a
 family's whole net worth; the calculator's figure is whatever the person
 entered as savings or net worth, which may leave out a home. (c) Visitors
 outside the US get nothing here yet.
@@ -572,7 +574,14 @@ in both themes, with an age, without one, at zero and at $25M: the expected
 shares (52%, 45%, 17%, more than 99%), no sideways scrolling and no page
 errors. The Home card was checked in isolation (the sandbox has no sign-in)
 with the dashboard's card styles, including a negative net worth ("at the
-start line") and a non-US currency.
+start line") and a non-US currency. The comparison made step 5 taller
+than the screen on short viewports (Continue 124–173 px below the fold at
+375 × 667, 52–81 px at 1280 × 720; main fits at both). On viewports up to
+820 px tall that one screen now tightens its spacing and scales all three
+savings bars by the same factor (never clamping one, which would misstate
+the comparison); at 700 px or less it also drops the sentence restating the
+bars. Continue then fits without scrolling at 1280 × 800, 1366 × 768,
+1280 × 720, 1440 × 900, 390 × 844 and 375 × 667, in both themes.
 **Revisit when:** the Fed publishes the 2025 survey; or a comparable
 standard exists for another large visitor country.
 **Source:** `lib/net-worth-compare.ts`, `lib/weighted-percentiles.ts`,

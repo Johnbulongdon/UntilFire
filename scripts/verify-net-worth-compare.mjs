@@ -56,6 +56,8 @@ const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
 const flow = readFileSync('app/components/RevealFlow.tsx', 'utf8');
 check('the result only shows the comparison when there is one', /\{netWorthComparison && \(/.test(flow) && /<NetWorthStanding comparison=\{netWorthComparison\}/.test(flow));
 check('it is phrased as how many have less, never as behind', /ahead of/.test(flow) && !/\bbehind\b/i.test(flow.slice(flow.indexOf('function NetWorthStanding'), flow.indexOf('function Bar('))));
+check('on short screens the comparison screen tightens, scaling bars together rather than clamping them',
+  /@media \(max-height: 820px\)/.test(flow) && /data-dense=\{step === 5 && netWorthComparison/.test(flow) && /--rf-bar-scale/.test(flow) && !/\.rf-bar\{max-height/.test(flow));
 check('the result names its source', /Federal Reserve Survey of Consumer Finances, \{netWorthComparison\.surveyYear\}/.test(flow));
 const home = readFileSync('app/HomeClient.tsx', 'utf8');
 check('the result compares the calculator net worth, age and currency', /compareNetWorth\(\s*\{ netWorthUsd: portfolioBalance, age: currentAge, ageAssumed: ageWasAssumed, currency \}/.test(home));

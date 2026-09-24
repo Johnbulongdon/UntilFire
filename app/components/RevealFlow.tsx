@@ -76,6 +76,19 @@ const KEYFRAMES = `
 @media (prefers-reduced-motion: reduce){
   .rf-root:not([data-motion="play"]) *{animation:none!important;transition:none!important}
 }
+/* Step 5 with the net-worth comparison is the tallest screen: on short
+   viewports tighten it so Continue stays on screen without scrolling. */
+@media (max-height: 820px){
+  .rf-root[data-dense] .rf-stage{padding:8px 0!important}
+  .rf-root[data-dense] .rf-s5{gap:8px!important}
+  .rf-root[data-dense] .rf-s5-rule{margin:0!important}
+  .rf-root[data-dense] .rf-bar{--rf-bar-scale:.6}
+  .rf-root[data-dense] .rf-bar-col{gap:6px!important}
+  .rf-root[data-dense] .rf-bar-val{font-size:20px!important}
+}
+@media (max-height: 700px){
+  .rf-root[data-dense] .rf-s5-extra{display:none}
+}
 `;
 
 function useReducedMotion() {
@@ -224,7 +237,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   );
 
   return (
-    <div className="rf-root" data-motion={playMotion ? "play" : "system"} style={shell}>
+    <div className="rf-root" data-motion={playMotion ? "play" : "system"} data-dense={step === 5 && netWorthComparison ? "" : undefined} style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
       <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 42%, transparent 36%, var(--uf-surface))", pointerEvents: "none", zIndex: 1 }} />
 
@@ -253,7 +266,7 @@ export default function RevealFlow(props: RevealFlowProps) {
       </div>
 
       {/* stage — the keyed wrapper re-mounts per step, so rf-page animates every page-to-page transition */}
-      <div style={stage}>
+      <div className="rf-stage" style={stage}>
         <div key={step} style={{ width: "100%", display: "flex", justifyContent: "center", ...anim("rf-page .45s cubic-bezier(.2,.8,.2,1) both") }}>
 
           {/* 2 — freedom age */}
@@ -334,12 +347,12 @@ export default function RevealFlow(props: RevealFlowProps) {
 
           {/* 5 — how you stack up (honest benchmarks) */}
           {step === 5 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: netWorthComparison ? 14 : 20, textAlign: "center", ...anim("rf-up .55s ease both") }}>
+            <div className="rf-s5" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: netWorthComparison ? 14 : 20, textAlign: "center", ...anim("rf-up .55s ease both") }}>
               <div style={eyebrow}>HOW YOU STACK UP</div>
               {netWorthComparison && (
                 <>
                   <NetWorthStanding comparison={netWorthComparison} reduce={reduce} />
-                  <div aria-hidden style={{ width: "min(420px, 80vw)", height: 1, background: "var(--uf-border)", margin: "6px 0" }} />
+                  <div aria-hidden className="rf-s5-rule" style={{ width: "min(420px, 80vw)", height: 1, background: "var(--uf-border)", margin: "6px 0" }} />
                 </>
               )}
               <div style={{ fontFamily: "var(--uf-font-display)", fontSize: netWorthComparison ? "clamp(18px, 3.4vw, 22px)" : "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
@@ -352,7 +365,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                 <Bar heightPct={fireBenchmarkRate / maxRate} value={`${fireBenchmarkRate}%`} label="Typical FIRE saver" tone="mid" delay=".3s" reduce={reduce} compact={Boolean(netWorthComparison)} />
                 <Bar heightPct={savingsRatePct / maxRate} value={`${savingsRatePct}%`} label="You" tone="you" delay=".45s" reduce={reduce} youBadge compact={Boolean(netWorthComparison)} />
               </div>
-              <div style={subtle}>
+              <div className="rf-s5-extra" style={subtle}>
                 {beatsUs
                   ? <>That&apos;s about <b style={{ color: TEAL }}>{savingsMultiple.toFixed(1)}×</b> the ~{usBaselineRate}% average U.S. saver{savingsRatePct >= fireBenchmarkRate ? ", already past the 25% FIRE pace." : ", closing on the 25% FIRE pace."}</>
                   : <>Your savings rate is a starting point. A useful goal should fit your income, essential costs, and priorities.</>}
@@ -500,12 +513,12 @@ function Bar({ heightPct, value, label, tone, delay, reduce, youBadge, compact }
   const bg = tone === "you" ? TEAL : tone === "mid" ? "var(--uf-ink-3)" : "var(--uf-border-2)";
   const valueColor = tone === "you" ? TEAL : tone === "mid" ? "var(--uf-ink-2)" : "var(--uf-ink-2)";
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
+    <div className="rf-bar-col" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
       {youBadge && (
         <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", color: BG, background: TEAL, borderRadius: 6, padding: "3px 9px" }}>YOU</span>
       )}
-      <div style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: tone === "you" ? 30 : 22, fontWeight: 800, color: valueColor }}>{value}</div>
-      <div style={{ width: tone === "you" ? 90 : 78, height: h, borderRadius: "8px 8px 0 0", background: bg, transformOrigin: "bottom", boxShadow: tone === "you" ? `0 0 42px rgba(${TEAL_RGB},0.42)` : undefined, animation: reduce ? "none" : `rf-bar .65s ${delay} cubic-bezier(.2,.8,.2,1) both` }} />
+      <div className="rf-bar-val" style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: tone === "you" ? 30 : 22, fontWeight: 800, color: valueColor }}>{value}</div>
+      <div className="rf-bar" style={{ width: tone === "you" ? 90 : 78, height: `calc(${h}px * var(--rf-bar-scale, 1))`, borderRadius: "8px 8px 0 0", background: bg, transformOrigin: "bottom", boxShadow: tone === "you" ? `0 0 42px rgba(${TEAL_RGB},0.42)` : undefined, animation: reduce ? "none" : `rf-bar .65s ${delay} cubic-bezier(.2,.8,.2,1) both` }} />
       <div style={{ fontSize: 13, color: tone === "you" ? TEAL : "var(--uf-ink-2)", fontWeight: tone === "you" ? 600 : 400 }}>{label}</div>
     </div>
   );
