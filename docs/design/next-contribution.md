@@ -182,6 +182,26 @@ paper over.
    of this migrates its old typed `budget` into that override rather than
    having it silently replaced.
 
+   The first version of the live amount was wrong, and a user caught it by
+   not trusting a bare "$34". It subtracted bills due before the
+   contribution date from today's balance: income never counted, repeating
+   payments counted once, and a bill due the day *after* contributing was
+   ignored — the exact bill that bounces if everything was just invested.
+   `lib/cashflow-forecast.ts` replaces it. It projects every expected payment
+   in and out, repeats expanded, from today to the next contribution after
+   this one, and the safe amount is the lowest the balance falls from
+   contribution day onward. The page renders the whole ledger
+   (`ContributionLedger.tsx`), because a figure the user cannot trace line
+   by line is not one they should move money on.
+
+   Two judgment calls are written into it. Overdue bills count (a bill not
+   marked paid is assumed owed); overdue income does not (it either arrived
+   and is already in the balance, or cannot be relied on) — shown, with the
+   reason, rather than silently dropped. And budget figures are never spread
+   into the ledger as invented dated lines; the budget is compared against
+   the Expected list instead, so missing spending is named rather than
+   guessed at.
+
 ## The open question
 
 Steps 1–4 only execute an allocation the user chose: they answer "how do I hit

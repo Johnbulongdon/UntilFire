@@ -18,6 +18,7 @@ import CitizenshipTab from "./CitizenshipTab";
 import ContributionsTab from "./ContributionsTab";
 import NextContributionCard from "./NextContributionCard";
 import type { AccountFacts } from "@/lib/contribution-ladder";
+import type { Recurrence } from "@/lib/cashflow-forecast";
 import { isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
@@ -5378,7 +5379,7 @@ export default function Dashboard() {
   }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
-  type CommittedRow = { amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null };
+  type CommittedRow = { amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
   const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string }[]>([]);
@@ -5466,10 +5467,14 @@ export default function Dashboard() {
   /* Expected outgoings in USD with their due dates. What is due before the
      next contribution is money already spoken for, so it is not available to
      invest — the same rule the committed total on Home already applies. */
-  const contributionOutgoings = useMemo(
+  const contributionItems = useMemo(
     () => committedRows.map((r) => ({
+      description: r.description || (r.transaction_type === "income" ? "Income" : "Payment"),
       amountUSD: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates),
+      type: r.transaction_type === "income" ? "income" as const : "expense" as const,
       dueDate: r.due_date,
+      recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "")
+        ? r.recurrence : "none") as Recurrence,
     })),
     [committedRows, rates],
   );
@@ -5479,23 +5484,36 @@ export default function Dashboard() {
     lastMonthNeeds: lastMonthNeeds > 0 ? lastMonthNeeds : manualEmergencyNeeds,
     averageNeeds: histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds,
     realReturn: growthRate,
-    expectedOutgoings: contributionOutgoings,
-  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionOutgoings]);
+    expectedItems: contributionItems,
+    budgetMonthlySpending: Object.entries(effectiveExpenses)
+      .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
+      .reduce((sum, [, v]) => sum + (v as number), 0),
+  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses]);
   // Already-committed outgoings still ahead of us this month, in USD.
   // Overdue rows count too: an unpaid bill is still owed.
+  //
+  // The query behind committedRows reaches 70 days out and includes income,
+  // because the contribution forecast needs both. These totals are the Budget
+  // tab's "committed this month", so they filter back to this month's bills —
+  // without that, widening the query quietly widened them too.
+  const thisMonthBills = useMemo(() => {
+    const now = new Date();
+    const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
+    return committedRows.filter((r) => r.transaction_type === "expense" && r.due_date <= end);
+  }, [committedRows]);
   const committedRemainingUSD = useMemo(
-    () => committedRows.reduce((sum, r) => sum + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), 0),
-    [committedRows, rates],
+    () => thisMonthBills.reduce((sum, r) => sum + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), 0),
+    [thisMonthBills, rates],
   );
 
   const committedByCat = useMemo(() => {
     const m: Record<string, number> = {};
-    for (const r of committedRows) {
+    for (const r of thisMonthBills) {
       const k = r.category || "other";
       m[k] = (m[k] || 0) + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates);
     }
     return m;
-  }, [committedRows, rates]);
+  }, [thisMonthBills, rates]);
 
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
@@ -5636,10 +5654,12 @@ export default function Dashboard() {
       // is misleading without them: money earmarked for rent is not money you
       // can spend, and until now the two tabs never spoke to each other.
       supabase.from("expected_payments")
-        .select("amount, currency, transaction_type, due_date, completed_at, category")
+        .select("amount, currency, transaction_type, due_date, completed_at, category, description, recurrence")
         .eq("user_id", session.user.id)
         .is("completed_at", null)
-        .eq("transaction_type", "expense")
+        // Both directions. The contribution forecast needs income — payday
+        // is when there is money to contribute — and the Budget tab's
+        // committed totals below filter back down to expenses themselves.
         // 70 days rather than end-of-month: a contribution due on the 25th
         // has bills falling after the 1st ahead of it, and bounding at the
         // month edge would drop them and overstate what is free to invest.

@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
+import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
+import { parseIsoDate } from "@/lib/contribution-schedule";
 import {
   detectRecurring, toRecurrence, sameMerchant,
-  recurrenceDays, recurrenceToMonthly, RECURRENCE_LABEL,
+  recurrenceToMonthly, RECURRENCE_LABEL,
   type DetectedItem, type RawTx, type Recurrence,
 } from "@/lib/recurring-detect";
 
@@ -323,9 +325,17 @@ export default function ExpectedPaymentsTab({
     // due again next period, and burying it in a completed pile is how rent
     // disappears from a list whose whole job is telling you rent is coming.
     if (item.recurrence !== "none" && !item.completed_at) {
-      const next = new Date(item.due_date + "T00:00:00");
-      next.setDate(next.getDate() + recurrenceDays(item.recurrence));
-      const due_date = next.toISOString().split("T")[0];
+      // Calendar months in local time, via the same helper the contribution
+      // forecast uses. The previous version added a fixed 30 days and wrote
+      // the result with toISOString(), which converts to UTC: in UTC+8 a bill
+      // due on the 28th rolled to the 27th, and a bill due on the 1st walked
+      // to the 31st, then the 30th. Only the current due date is stored, so an
+      // anchor on the 29th–31st still settles after meeting a short month;
+      // every other day of the month now holds for good.
+      const current = parseIsoDate(item.due_date);
+      const due_date = current
+        ? isoDay(addRecurrence(current, item.recurrence as Recurrence))
+        : item.due_date;
       const { data } = await supabase
         .from("expected_payments").update({ due_date }).eq("id", item.id).select().single();
       if (data) {

@@ -2,6 +2,24 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-24
+
+### Added
+- **Every line behind the contribution figure.** The Contributions page shows a day-by-day ledger under the amount: the opening balance and the accounts it comes from, each expected payment in and out on its date, the running balance, contribution day, and the low point the figure is taken from. A bare total nobody can trace is a total nobody should move money on.
+- It says out loud what it leaves out. Income that was due and never marked received is listed as **not counted**, with the reason. Spending the budget knows about but the Expected list doesn't is compared, because anything missing from that list is missing from the forecast.
+- When nothing is safe to contribute, the Home card now says so and shows the day the balance runs short, instead of hiding itself at the moment it has a warning to give.
+
+### Changed
+- **What "safe to contribute" means.** It is now the lowest the balance falls between contribution day and the next one — not the balance on the day. A bill due the day after contributing used to be ignored, which is exactly the one that bounces if everything was just invested.
+- Expected **income** now counts (payday is when there is money to contribute), and repeating payments are expanded across the cycle rather than counted once.
+
+### Fixed
+- **Repeating payments drifted through the calendar.** Marking one paid added a fixed 30 days and wrote the date back through UTC, so in UTC+8 a bill due on the 28th rolled to the 27th, and a bill due on the 1st walked to the 31st, then the 30th. Months are now calendar months in local time, using the same helper the forecast uses.
+- The Budget tab's "committed this month" had been counting bills up to 70 days out since the previous release, when the query behind it was widened for the contribution window. It counts this month's bills again.
+
+### Added — guards
+- `npm run test:cashflow-forecast` — runs in UTC+8 and UTC−7, since the date bugs it guards against only exist away from Greenwich.
+
 ## [Unreleased] - 2026-09-23
 
 ### Added

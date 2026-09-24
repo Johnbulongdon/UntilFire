@@ -10,8 +10,8 @@
  * Run: npm run test:contribution-schedule
  */
 import {
-  nextContributionDate, daysUntil, expectedBefore, parseIsoDate,
-  availableToContribute, countdownLabel, daysInMonth, startOfDay,
+  nextContributionDate, daysUntil, parseIsoDate,
+  countdownLabel, daysInMonth, startOfDay,
 } from "../lib/contribution-schedule.ts";
 
 const checks = [];
@@ -80,42 +80,8 @@ check("a timestamp is accepted, a junk string is not",
   iso(parseIsoDate("2026-03-10T14:30:00Z")) === "2026-03-10" &&
   parseIsoDate("soon") === null && parseIsoDate("") === null && parseIsoDate(null) === null);
 
-// ── What is already spoken for
-{
-  const next = d(2026, 3, 25);
-  const rows = [
-    { amountUSD: 1800, dueDate: "2026-03-01" },   // overdue — still owed
-    { amountUSD: 400, dueDate: "2026-03-20" },    // before
-    { amountUSD: 120, dueDate: "2026-03-25" },    // same day — not available that morning
-    { amountUSD: 900, dueDate: "2026-03-26" },    // after — not this cycle's problem
-    { amountUSD: 50, dueDate: "nonsense" },       // unparseable — skipped, not NaN
-  ];
-  check("bills before the date count, later ones do not",
-    expectedBefore(rows, next, d(2026, 3, 10)) === 2320,
-    `${expectedBefore(rows, next, d(2026, 3, 10))}`);
-  check("an unparseable due date is skipped rather than poisoning the total",
-    Number.isFinite(expectedBefore(rows, next, d(2026, 3, 10))));
-}
-
-// ── The figure the card shows
-{
-  const rows = [{ amountUSD: 2482, dueDate: "2026-03-20" }];
-  const a = availableToContribute(3000, rows, { cadence: "monthly", anchorDay: 25 }, d(2026, 3, 20));
-  check("free is what you have minus what is owed",
-    a.free === 518 && a.cash === 3000 && a.committed === 2482, `${a.free}`);
-  check("the countdown comes with it", a.daysUntil === 5, `${a.daysUntil}`);
-  check("more owed than held is zero, never negative",
-    availableToContribute(500, [{ amountUSD: 900, dueDate: "2026-03-20" }],
-      { cadence: "monthly", anchorDay: 25 }, d(2026, 3, 20)).free === 0);
-
-  // The dangerous case: nothing recorded, so nothing is subtracted and the
-  // whole balance looks free. The flag is what lets a surface say so.
-  const blind = availableToContribute(3000, [], { cadence: "monthly", anchorDay: 25 }, d(2026, 3, 20));
-  check("with no expected payments recorded, the figure is flagged as unverified",
-    blind.free === 3000 && blind.hasExpectedData === false,
-    "reading high is the direction that tells someone to invest their rent");
-  check("with any recorded, it is not flagged", a.hasExpectedData === true);
-}
+// What is free to contribute is tested in verify-cashflow-forecast.mjs, which
+// covers income, repeats and the bill that falls the day after contributing.
 
 check("startOfDay drops the time so two instants on one day compare equal",
   startOfDay(new Date(2026, 2, 10, 23, 59)).getTime() === startOfDay(new Date(2026, 2, 10, 0, 1)).getTime());

@@ -81,34 +81,6 @@ export function daysUntil(date: Date, from: Date = new Date()): number {
   return Math.round((startOfDay(date).getTime() - startOfDay(from).getTime()) / DAY_MS);
 }
 
-export interface ExpectedOutgoing {
-  /** Already converted to USD by the caller — this module does no FX. */
-  amountUSD: number;
-  /** ISO date, `YYYY-MM-DD`. */
-  dueDate: string;
-}
-
-/**
- * What is already spoken for between now and the next contribution.
- *
- * Inclusive of the contribution date itself: a bill due the same day is money
- * that is not available to invest that morning. Overdue rows count too — an
- * unpaid bill is still owed, which is the rule the dashboard's committed
- * total already follows.
- */
-export function expectedBefore(
-  outgoings: ExpectedOutgoing[],
-  nextDate: Date,
-  from: Date = new Date(),
-): number {
-  const end = startOfDay(nextDate).getTime();
-  return outgoings.reduce((sum, o) => {
-    const due = parseIsoDate(o.dueDate);
-    if (!due) return sum;
-    return due.getTime() <= end ? sum + (Number.isFinite(o.amountUSD) ? o.amountUSD : 0) : sum;
-  }, 0);
-}
-
 /** `YYYY-MM-DD` as a local calendar day. `new Date(iso)` would read it as UTC
  *  midnight, which is the previous day for anyone west of Greenwich. */
 export function parseIsoDate(iso: string): Date | null {
@@ -118,44 +90,11 @@ export function parseIsoDate(iso: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-export interface AvailableToContribute {
-  nextDate: Date;
-  daysUntil: number;
-  /** Cash in accounts that are not the emergency fund. */
-  cash: number;
-  /** Already committed before the next contribution date. */
-  committed: number;
-  /** What is genuinely free to contribute. Never negative. */
-  free: number;
-  /**
-   * False when there are no expected payments recorded at all.
-   *
-   * This matters more than it looks. With nothing recorded, `committed` is
-   * zero and `free` equals the whole balance — so the figure reads high, and
-   * high is the dangerous direction: it is the difference between "invest
-   * your surplus" and "invest your rent". The surfaces show the subtraction
-   * rather than the answer alone, and say when there was nothing to subtract.
-   */
-  hasExpectedData: boolean;
-}
-
-export function availableToContribute(
-  cash: number,
-  outgoings: ExpectedOutgoing[],
-  schedule: ContributionSchedule,
-  from: Date = new Date(),
-): AvailableToContribute {
-  const nextDate = nextContributionDate(schedule, from);
-  const committed = expectedBefore(outgoings, nextDate, from);
-  return {
-    nextDate,
-    daysUntil: daysUntil(nextDate, from),
-    cash,
-    committed,
-    free: Math.max(0, cash - committed),
-    hasExpectedData: outgoings.length > 0,
-  };
-}
+/* What is free to contribute, and the day-by-day ledger behind it, live in
+   lib/cashflow-forecast.ts. An earlier version here subtracted the bills due
+   before the contribution date from today's balance; it ignored income and
+   repeats, and ignored a bill due the day after the contribution, which is
+   the one that bounces if everything was just invested. */
 
 /** "in 5 days", "today", "tomorrow" — the countdown, in words. */
 export function countdownLabel(days: number): string {

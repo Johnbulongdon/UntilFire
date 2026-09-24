@@ -33,7 +33,7 @@ const mono: React.CSSProperties = {
   fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
 };
 const fmtUsd = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  `${n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`;
 
 export default function NextContributionCard({ facts, onOpenPlan }: NextContributionCardProps) {
   const [plan, setPlan] = useState<StoredPlan | null>(null);
@@ -55,12 +55,17 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
     return () => { cancelled = true; };
   }, []);
 
-  /* No plan, or nothing to place, means there is nothing to report. Home
-     stays quiet rather than turning into a prompt: an empty card telling
-     someone to go and set something up is an input by another name, and
-     Home does not take inputs. */
+  /* No plan means nothing to report, and Home stays quiet rather than
+     becoming a set-up prompt. But nothing safe to contribute is not the same
+     as nothing to say: when the forecast shows the balance running short, a
+     card that hid itself would go silent at exactly the moment it has a
+     warning worth giving. */
   const view = ladderViewFromPlan(plan, facts);
-  if (!view?.next || view.budget <= 0) return null;
+  if (!view) return null;
+  const f = view.available.forecast;
+  const nothingSafe = !view.budgetIsCustom && view.budget <= 0;
+  if (nothingSafe && !view.available.hasExpectedData) return null;
+  if (!nothingSafe && !view.next) return null;
   /* Every step that takes money, including the headline one.
    *
    * Listing only the steps *below* the headline made the card misread at a
@@ -69,7 +74,39 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
    * underneath. The full list, with the amounts in one column and a total,
    * makes the month's shape readable without arithmetic. */
   const steps = view.waterfall.fills.filter((f) => f.amount > 0);
+  const nextCycleLabel = (() => {
+    const [y, m, d] = view.available.forecast.nextCycleIso.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  })();
   const total = steps.reduce((sum, f) => sum + f.amount, 0);
+
+  const dayLabel = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  if (nothingSafe) {
+    const low = f.shortBefore && f.shortBefore.balance < f.lowest.balance ? f.shortBefore : f.lowest;
+    return (
+      <Card>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--uf-s3)" }}>
+          <span className="uf-t-label" style={{ color: "var(--uf-ink-2)" }}>
+            Next contribution {countdownLabel(view.available.daysUntil)}
+          </span>
+          <span className="uf-t-h2" style={{ margin: 0 }}>Nothing safe to contribute this cycle</span>
+          <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: 0, maxWidth: 560 }}>
+            Your expected payments take your balance to{" "}
+            <span style={{ ...mono, color: "var(--uf-neg-ink)" }}>{fmtUsd(low.balance)}</span> on {dayLabel(low.iso)}.
+            Your plan shows every line — if a payment is wrong or already paid, fixing it there changes this.
+          </p>
+          <div>
+            <Button variant="secondary" size="sm" onClick={onOpenPlan}>See how it&apos;s worked out</Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+  if (!view.next) return null;
 
   return (
     <Card>
@@ -121,8 +158,8 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
           {view.budgetIsCustom
             ? "An amount you set."
             : view.available.hasExpectedData
-              ? `${fmtUsd(view.available.cash)} in cash outside your emergency fund, less ${fmtUsd(view.available.committed)} already due.`
-              : `${fmtUsd(view.available.cash)} in cash outside your emergency fund. No bills recorded as due, so none is subtracted.`}
+              ? `The lowest your balance gets before ${nextCycleLabel}, after your expected payments in and out. Every line is in your plan.`
+              : `${fmtUsd(view.available.cash)} in cash outside your emergency fund. No expected payments are recorded, so nothing is subtracted.`}
         </p>
 
         <div>

@@ -129,7 +129,7 @@ check("expenses follow the month the user picked",
     today,
     // Capital One savings is the emergency fund; Chase checking is not, so
     // only the checking balance is contributable.
-    expectedOutgoings: [{ amountUSD: 2482, dueDate: "2026-03-22" }],
+    expectedItems: [{ description: "Bills", amountUSD: 2482, type: "expense", dueDate: "2026-03-22", recurrence: "none" }],
   };
   const sched = { cadence: "monthly", anchorDay: 25 };
 
@@ -144,14 +144,27 @@ check("expenses follow the month the user picked",
   check("and the ladder allocates that amount, not a typed one",
     Math.round(live.waterfall.fills.reduce((s, f) => s + f.amount, 0)) === 618);
 
-  // A bill due after the contribution date belongs to the next cycle.
+  // A bill due three days AFTER the contribution still has to be paid from
+  // this cycle's money. An earlier version ignored it — which is precisely
+  // the case where investing everything on the day bounces the bill.
   const later = buildLadderView(stored(), null,
-    { ...facts, expectedOutgoings: [{ amountUSD: 2482, dueDate: "2026-03-28" }] }, sched);
-  check("a bill falling after the date does not reduce this contribution",
-    later.budget === 3100, `${later.budget}`);
+    { ...facts, expectedItems: [{ description: "Bills", amountUSD: 2482, type: "expense", dueDate: "2026-03-28", recurrence: "none" }] }, sched);
+  check("a bill falling just after the contribution date is still held back",
+    later.budget === 618, `${later.budget} — was 3100 before the forecast`);
+  const nextCycle = buildLadderView(stored(), null,
+    { ...facts, expectedItems: [{ description: "Bills", amountUSD: 2482, type: "expense", dueDate: "2026-04-26", recurrence: "none" }] }, sched);
+  check("a bill in the NEXT cycle does not reduce this one",
+    nextCycle.budget === 3100, `${nextCycle.budget}`);
+  const withPay = buildLadderView(stored(), null,
+    { ...facts, expectedItems: [
+      { description: "Bills", amountUSD: 2482, type: "expense", dueDate: "2026-03-22", recurrence: "none" },
+      { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-03-25", recurrence: "none" },
+    ] }, sched);
+  check("income on contribution day adds to what can go in",
+    withPay.budget === 3618 && withPay.available.income === 3000, `${withPay.budget}`);
 
   // The dangerous case, restated at this level.
-  const blind = buildLadderView(stored(), null, { ...facts, expectedOutgoings: [] }, sched);
+  const blind = buildLadderView(stored(), null, { ...facts, expectedItems: [] }, sched);
   check("with no bills on record the whole balance looks free, and is flagged",
     blind.budget === 3100 && blind.available.hasExpectedData === false);
 
@@ -162,7 +175,7 @@ check("expenses follow the month the user picked",
 
   check("owing more than you hold contributes nothing rather than a negative",
     buildLadderView(stored(), null,
-      { ...facts, expectedOutgoings: [{ amountUSD: 9000, dueDate: "2026-03-22" }] }, sched).budget === 0);
+      { ...facts, expectedItems: [{ description: "Bills", amountUSD: 9000, type: "expense", dueDate: "2026-03-22", recurrence: "none" }] }, sched).budget === 0);
 }
 
 // ── Plans written before any of this still open ─────────────────────────

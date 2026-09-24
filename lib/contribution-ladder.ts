@@ -20,9 +20,11 @@ import {
   resolveEmergencyAccounts, sumBalances, type CashAccount,
 } from "./emergency-fund-accounts.ts";
 import {
-  availableToContribute, DEFAULT_SCHEDULE,
-  type AvailableToContribute, type ContributionSchedule, type ExpectedOutgoing,
+  daysUntil, DEFAULT_SCHEDULE, nextContributionDate, type ContributionSchedule,
 } from "./contribution-schedule.ts";
+import {
+  buildForecast, type CashflowForecast, type ExpectedItem,
+} from "./cashflow-forecast.ts";
 
 /** The same floor and target the Home safety runway uses. */
 export const EMERGENCY_FLOOR_MONTHS = 1.5;
@@ -37,9 +39,12 @@ export interface AccountFacts {
   averageNeeds?: number;
   /** Real return as a fraction: 0.055, not 5.5. */
   realReturn?: number;
-  /** Bills already committed, in USD, with their due dates. What is due
-   *  before the next contribution is not money available to invest. */
-  expectedOutgoings?: ExpectedOutgoing[];
+  /** Expected payments in and out, in USD, with their dates and repeats —
+   *  the user's own Money → Expected list. */
+  expectedItems?: ExpectedItem[];
+  /** The budget's total monthly spending — compared against the Expected
+   *  list, never spread into the forecast as invented dated lines. */
+  budgetMonthlySpending?: number;
   /** Injectable for tests; the surfaces leave it out and get the real clock. */
   today?: Date;
 }
@@ -62,12 +67,31 @@ export interface LadderView {
   next: RungFill | null;
   /** What reaches the allocation. */
   investable: number;
-  /** When the next contribution lands, and what is free by then. */
+  /** When the next contribution lands, and what is safe to put in. */
   available: AvailableToContribute;
   /** The amount the ladder allocated, and whether the user fixed it by hand
    *  rather than letting it follow what is actually free. */
   budget: number;
   budgetIsCustom: boolean;
+}
+
+export interface AvailableToContribute {
+  nextDate: Date;
+  daysUntil: number;
+  /** Cash in accounts that are not the emergency fund — the ledger's opening. */
+  cash: number;
+  /** The accounts that cash is in, so the opening line can name them. */
+  cashAccounts: CashAccount[];
+  /** Counted income and bills across the cycle. */
+  income: number;
+  committed: number;
+  /** The lowest the balance falls before the next contribution; never negative. */
+  free: number;
+  /** False when no expected payments are recorded at all, so nothing was
+   *  subtracted and the figure is only today's balance. */
+  hasExpectedData: boolean;
+  /** Every line behind the figure. */
+  forecast: CashflowForecast;
 }
 
 /** What the emergency fund field shows, before any override. */
@@ -106,12 +130,21 @@ export function buildLadderView(
      the money they are keeping precisely so they do not have to. */
   const efIds = new Set(measuredEf.accounts.map((a) => a.id));
   const contributable = facts.cashAccounts.filter((a) => !efIds.has(a.id));
-  const available = availableToContribute(
-    sumBalances(contributable),
-    facts.expectedOutgoings ?? [],
-    schedule,
-    facts.today ?? new Date(),
-  );
+  const today = facts.today ?? new Date();
+  const items = facts.expectedItems ?? [];
+  const forecast = buildForecast(sumBalances(contributable), items, schedule, today);
+  const nextDate = nextContributionDate(schedule, today);
+  const available: AvailableToContribute = {
+    nextDate,
+    daysUntil: daysUntil(nextDate, today),
+    cash: forecast.opening,
+    cashAccounts: contributable,
+    income: forecast.income,
+    committed: forecast.expenses,
+    free: forecast.safeToContribute,
+    hasExpectedData: items.length > 0,
+    forecast,
+  };
   const budget = budgetOverride ?? available.free;
 
   const expenses = ladder.expensesOverride ?? measuredExpenses(ladder.expenseSource, facts);

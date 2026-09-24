@@ -17,6 +17,8 @@ import {
   type AccountFacts,
 } from "@/lib/contribution-ladder";
 import { describeAccounts } from "@/lib/emergency-fund-accounts";
+import { recurrenceToMonthly } from "@/lib/recurring-detect";
+import ContributionLedger from "./ContributionLedger";
 import { supabase } from "@/lib/supabase";
 import {
   aggregateHoldingsByTicker, planContribution, planImportMerge, targetsSumTo100,
@@ -79,7 +81,7 @@ export type ContributionsTabProps = Partial<AccountFacts>;
    either the last complete month or the average of them. */
 export default function ContributionsTab({
   cashAccounts = [], manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
-  expectedOutgoings, today,
+  expectedItems, today, budgetMonthlySpending,
 }: ContributionsTabProps = {}) {
   const [rows, setRows] = useState<Row[]>(EXAMPLE);
   /* Null means "whatever is actually free by the next contribution date".
@@ -185,7 +187,7 @@ export default function ContributionsTab({
      answer, and two copies of it would drift. */
   const facts: AccountFacts = {
     cashAccounts, manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
-    expectedOutgoings, today,
+    expectedItems, today, budgetMonthlySpending,
   };
   const measuredEf = measuredEmergencyFund(efAccountIds, facts);
   const efAccounts = measuredEf.accounts;
@@ -371,7 +373,12 @@ export default function ContributionsTab({
   const set = (id: string, patch: Partial<Row>) =>
     editRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
+  // Two different periods on one page. The allocation table below is per
+  // purchase, so it follows buy-in; the header is about money arriving, so it
+  // follows the contribution cadence. Using buy-in for both made someone paid
+  // monthly and buying weekly read "the next week's money".
   const periodWord = frequency === "monthly" ? "month" : frequency === "weekly" ? "week" : "day";
+  const arrivalWord = schedule.cadence === "weekly" ? "week" : "month";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--uf-s5)" }}>
@@ -379,7 +386,7 @@ export default function ContributionsTab({
         <h2 className="uf-t-h2" style={{ margin: 0 }}>Next contribution</h2>
         <p className="uf-t-body" style={{ color: "var(--uf-ink-2)", margin: "var(--uf-s2) 0 0", maxWidth: 560 }}>
           Set what you want to hold and what you hold now. This works out where
-          the next {periodWord}&apos;s money should go to close the gap. Everything
+          the next {arrivalWord}&apos;s money should go to close the gap. Everything
           on this page is saved as you type.
         </p>
         {/* Quiet, and only after something has actually been written — a
@@ -400,7 +407,7 @@ export default function ContributionsTab({
             down so the row of inputs no longer lined up. */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--uf-s5)", alignItems: "flex-start" }}>
           <Field label="Contribution" htmlFor="uf-budget" style={{ minWidth: 170 }}
-                 hint={budgetOverride !== null ? "A figure you set — clear it to follow your cash" : "What is free by then"}>
+                 hint={budgetOverride !== null ? "A figure you set — clear it to follow your cash" : "Safe to put in — worked out below"}>
             <Input id="uf-budget" numeric inputMode="decimal" value={budget}
                    onChange={(e) => editBudget(e.target.value)} />
             {budgetOverride !== null && (
@@ -440,22 +447,18 @@ export default function ContributionsTab({
           </Field>
         </div>
 
-        {/* The subtraction, not just its answer. With no expected payments
-            recorded nothing is subtracted, so the figure reads high — and
-            high is the direction that tells someone to invest their rent.
-            Showing the working is what makes that visible. */}
+        {/* The whole ledger, not a one-line sum: a figure nobody can trace is
+            a figure nobody should move money on. Hidden only when the user
+            has fixed the amount by hand, since then there is nothing to
+            explain. */}
         {budgetOverride === null && (
-          <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "var(--uf-s3) 0 0" }}>
-            <span style={mono}>{fmtUsd(view.available.cash)}</span> in cash outside your emergency fund
-            {view.available.hasExpectedData ? (
-              <> · less <span style={mono}>{fmtUsd(view.available.committed)}</span> due before{" "}
-                {view.available.nextDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                {" "}· <span style={mono}>{fmtUsd(view.available.free)}</span> free</>
-            ) : (
-              <> · nothing recorded as due, so this assumes none of it is spoken for.{" "}
-                <strong>Add your bills in Money → Expected</strong> to make this figure real.</>
-            )}
-          </p>
+          <ContributionLedger
+            available={view.available}
+            budgetMonthlySpending={budgetMonthlySpending}
+            expectedMonthlyBills={(expectedItems ?? [])
+              .filter((i) => i.type === "expense")
+              .reduce((sum, i) => sum + recurrenceToMonthly(i.amountUSD, i.recurrence), 0)}
+          />
         )}
       </Card>
 
