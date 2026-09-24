@@ -19,6 +19,7 @@ funnel_landing_viewed
            → funnel_calculator_step_viewed (step_id=savings)
            → funnel_calculator_step_viewed (step_id=portfolio)
            → funnel_calculator_revealed
+           → funnel_reveal_step_viewed (step_id=freedom_age … save, or unreachable)
            → funnel_reveal_cta_clicked
            → funnel_signup_started
            → funnel_signup_completed
@@ -137,6 +138,24 @@ querying history.
     | `2m_5m` | `gte_5m`.
   - `years_to_fire_bucket` - `lt_5` | `5_10` | `10_20` | `20_30` | `gte_30`.
   - `landing_source` - optional route/source label.
+
+### `funnel_reveal_step_viewed`
+
+- **Where**: `app/components/RevealFlow.tsx` reports each step through its
+  `onStepViewed` prop (an effect on the current step), and `app/HomeClient.tsx`
+  sends the event, as it does for `funnel_reveal_cta_clicked`; RevealFlow
+  itself stays free of analytics imports. Fires once per step per reveal:
+  going back to a step already seen does not send it again.
+- **Why it exists**: `funnel_reveal_cta_clicked` only counts the people who
+  clicked save. Everyone else stopped somewhere in six screens, and without
+  this the three answers (left on the freedom date, left partway, reached the
+  save step and did not click) look the same.
+- **Properties**:
+  - `step_id` — `freedom_age` (2), `life_years` (3), `freedom_number` (4),
+    `stack_up` (5), `expat` (6), `save` (7); or `unreachable`, the single
+    screen shown instead when the inputs never reach the freedom number.
+  - `step_index` — RevealFlow's step number, 2–7. Step 1 is the loading
+    screen and is not sent.
 
 ### `funnel_reveal_cta_clicked`
 

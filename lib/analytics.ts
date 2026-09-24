@@ -18,6 +18,8 @@ import {
   type CalculatorRevealedProperties,
   type RevealCtaClickedProperties,
   type RevealCtaPlacement,
+  type RevealStepId,
+  type RevealStepViewedProperties,
   type SignupStartedProperties,
   type SignupCompletedProperties,
   type DashboardFirstViewProperties,
@@ -289,6 +291,15 @@ export function trackHysaEmptyStateCtaClicked(input: {
     placement: input.placement ?? 'assets_empty_state',
   });
   capture(FunnelEvents.HYSA_EMPTY_STATE_CTA_CLICKED, props);
+}
+
+/** Once per step per reveal; RevealFlow keeps the seen set. */
+export function trackRevealStepViewed(input: { stepId: RevealStepId; stepIndex: number }) {
+  const props: RevealStepViewedProperties = withVersion({
+    step_id: input.stepId,
+    step_index: input.stepIndex,
+  });
+  capture(FunnelEvents.REVEAL_STEP_VIEWED, props);
 }
 
 export function trackRevealCtaClicked(input: {

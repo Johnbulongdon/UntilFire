@@ -48,6 +48,15 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 **Priority order while pursuing $3k MRR:**
 - Fix blockers in mobile and end-to-end no-login activation.
+  *2026-09-24 funnel review (counts kept out of this public repo):* most
+  people who finish the calculator also reach its result; the losses are
+  before starting and after the result. After the result, most of those who
+  go on to sign in leave the Google-only sign-in page within seconds, which
+  makes a non-Google option the first fix. Repeated short sessions from a
+  few devices, most likely testing, inflate landing and mobile counts; open
+  the site once per test browser with `?uf_internal=1` to flag them. Each result step is now
+  measured (`funnel_reveal_step_viewed`), so drop-off inside the six result
+  screens is visible from this date.
 - Verify Stripe checkout, return, subscription sync, and billing portal before depending on paid conversion.
 - Finalize free vs Pro packaging around "personal FIRE adviser" and the plan.
 - Add post-result save/email/share loops that do not expose sensitive finances.

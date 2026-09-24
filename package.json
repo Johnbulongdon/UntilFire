@@ -35,6 +35,7 @@
     "test:expense-reads-paged": "node --experimental-strip-types --no-warnings scripts/verify-expense-reads-paged.mjs",
     "test:plaid-refresh": "node --experimental-strip-types --no-warnings scripts/verify-plaid-refresh.mjs",
     "test:plaid-billing": "node --experimental-strip-types --no-warnings scripts/verify-plaid-billing.mjs",
+    "test:reveal-step-tracking": "node --experimental-strip-types --no-warnings scripts/verify-reveal-step-tracking.mjs",
     "test:manual-category-icons": "node scripts/verify-manual-category-icons.mjs",
     "test:monthly-checkin": "node scripts/verify-monthly-checkin-card.mjs",
     "validate": "npm run typecheck && npm run lint && npm run build",

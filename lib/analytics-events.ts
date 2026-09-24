@@ -24,6 +24,10 @@ export const FunnelEvents = {
   // unexplained drop, and a reveal that does not persuade looks identical to
   // a login page nobody trusts.
   REVEAL_CTA_CLICKED: 'funnel_reveal_cta_clicked',
+  // Each result step, once per reveal. REVEAL_CTA_CLICKED only says who
+  // clicked save; this says where everyone else stopped: on the freedom date
+  // itself, somewhere in the middle, or on the save step without clicking.
+  REVEAL_STEP_VIEWED: 'funnel_reveal_step_viewed',
   SIGNUP_STARTED: 'funnel_signup_started',
   SIGNUP_COMPLETED: 'funnel_signup_completed',
   DASHBOARD_FIRST_VIEW: 'funnel_dashboard_first_view',
@@ -101,6 +105,27 @@ export interface CalculatorRevealedProperties extends BaseFunnelProperties {
 }
 
 export type RevealCtaPlacement = 'reveal_save_step' | 'unreachable';
+
+/** The result steps in RevealFlow, in order. `unreachable` is the single
+ *  screen shown instead when the inputs never reach the freedom number. */
+export type RevealStepId =
+  | 'freedom_age' | 'life_years' | 'freedom_number' | 'stack_up' | 'expat' | 'save'
+  | 'unreachable';
+
+export const REVEAL_STEP_IDS: Record<number, RevealStepId> = {
+  2: 'freedom_age',
+  3: 'life_years',
+  4: 'freedom_number',
+  5: 'stack_up',
+  6: 'expat',
+  7: 'save',
+};
+
+export interface RevealStepViewedProperties extends BaseFunnelProperties {
+  step_id: RevealStepId;
+  /** RevealFlow's step number, 2–7 (1 is the loading screen). */
+  step_index: number;
+}
 
 export interface RevealCtaClickedProperties extends BaseFunnelProperties {
   placement: RevealCtaPlacement;
