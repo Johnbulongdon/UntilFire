@@ -9,7 +9,7 @@
  * Run: npm run test:contribution-ladder
  */
 import {
-  buildLadderView, ladderViewFromPlan, measuredEmergencyFund, measuredExpenses,
+  buildLadderView, dayToDayAllowance, ladderViewFromPlan, measuredEmergencyFund, measuredExpenses,
   planBudgetOverride, EMERGENCY_FLOOR_MONTHS, EMERGENCY_TARGET_MONTHS,
 } from "../lib/contribution-ladder.ts";
 import { toCashAccounts } from "../lib/emergency-fund-accounts.ts";
@@ -129,39 +129,39 @@ check("expenses follow the month the user picked",
     today,
     // Capital One savings is the emergency fund; Chase checking is not, so
     // only the checking balance is contributable.
-    expectedItems: [{ description: "Bills", amountUSD: 2482, type: "expense", dueDate: "2026-03-22", recurrence: "none" }],
+    expectedItems: [{ description: "Bills", amountUSD: 2400, type: "expense", dueDate: "2026-03-22", recurrence: "none" }],
   };
   const sched = { cadence: "monthly", anchorDay: 25 };
 
   const live = buildLadderView(stored(), null, facts, sched);
   check("the contribution is cash outside the emergency fund, less what is due",
-    live.available.cash === 3100 && live.available.committed === 2482 && live.budget === 618,
+    live.available.cash === 3100 && live.available.committed === 2400 && live.budget === 700,
     `${live.available.cash} - ${live.available.committed} = ${live.budget}`);
   check("the emergency fund is not offered up for investing",
     !live.available.cash || live.available.cash === 3100,
     "12,400 of savings must not appear in the contributable figure");
   check("the countdown comes with it", live.available.daysUntil === 5, `${live.available.daysUntil}`);
   check("and the ladder allocates that amount, not a typed one",
-    Math.round(live.waterfall.fills.reduce((s, f) => s + f.amount, 0)) === 618);
+    Math.round(live.waterfall.fills.reduce((s, f) => s + f.amount, 0)) === 700);
 
   // A bill due three days AFTER the contribution still has to be paid from
   // this cycle's money. An earlier version ignored it — which is precisely
   // the case where investing everything on the day bounces the bill.
   const later = buildLadderView(stored(), null,
-    { ...facts, expectedItems: [{ description: "Bills", amountUSD: 2482, type: "expense", dueDate: "2026-03-28", recurrence: "none" }] }, sched);
+    { ...facts, expectedItems: [{ description: "Bills", amountUSD: 2400, type: "expense", dueDate: "2026-03-28", recurrence: "none" }] }, sched);
   check("a bill falling just after the contribution date is still held back",
-    later.budget === 618, `${later.budget} — was 3100 before the forecast`);
+    later.budget === 700, `${later.budget} — was 3100 before the forecast`);
   const nextCycle = buildLadderView(stored(), null,
-    { ...facts, expectedItems: [{ description: "Bills", amountUSD: 2482, type: "expense", dueDate: "2026-04-26", recurrence: "none" }] }, sched);
+    { ...facts, expectedItems: [{ description: "Bills", amountUSD: 2400, type: "expense", dueDate: "2026-04-26", recurrence: "none" }] }, sched);
   check("a bill in the NEXT cycle does not reduce this one",
     nextCycle.budget === 3100, `${nextCycle.budget}`);
   const withPay = buildLadderView(stored(), null,
     { ...facts, expectedItems: [
-      { description: "Bills", amountUSD: 2482, type: "expense", dueDate: "2026-03-22", recurrence: "none" },
-      { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-03-25", recurrence: "none" },
+      { description: "Bills", amountUSD: 2400, type: "expense", dueDate: "2026-03-22", recurrence: "none" },
+      { description: "Salary", amountUSD: 4000, type: "income", dueDate: "2026-03-25", recurrence: "none" },
     ] }, sched);
   check("income on contribution day adds to what can go in",
-    withPay.budget === 3618 && withPay.available.income === 3000, `${withPay.budget}`);
+    withPay.budget === 4700 && withPay.available.income === 4000, `${withPay.budget}`);
 
   // The dangerous case, restated at this level.
   const blind = buildLadderView(stored(), null, { ...facts, expectedItems: [] }, sched);
@@ -192,6 +192,41 @@ check("expenses follow the month the user picked",
     planBudgetOverride({ ...legacy, budget: 0 }) === null);
   check("a plan with no schedule gets the default rather than crashing",
     ladderViewFromPlan(legacy, { ...FACTS, today: new Date(2026, 2, 20) })?.available.nextDate != null);
+}
+
+// ── Day-to-day spending: last month's needs, not the whole budget
+{
+  const today = new Date(2026, 8, 24);           // 24 September
+  const sched = { cadence: "monthly", anchorDay: 15 };
+  const bills = [
+    { description: "Rent", amountUSD: 1200, type: "expense", dueDate: "2026-10-01", recurrence: "monthly", category: "housing" },
+  ];
+  const lastMonthSpending = {
+    year: 2026, monthIndex: 7,                     // August, 31 days
+    needs: [
+      { description: "Rent transfer", category: "housing", amountUSD: 1200 },
+      { description: "Groceries", category: "food", amountUSD: 310 },
+    ],
+    wants: 400, untagged: 900,                     // a trip, say — not a daily cost
+  };
+  const facts = { ...FACTS, today, expectedItems: bills, budgetMonthlySpending: 3000, lastMonthSpending };
+
+  const basis = dayToDayAllowance(facts, bills);
+  check("the estimate comes from last month's needs when they are tagged",
+    basis?.kind === "needs" && Math.abs(basis.perDay - 310 / 31) < 1e-9,
+    `${basis?.kind} $${basis?.perDay.toFixed(2)}/day`);
+  check("wants and untagged spending are reported, not counted",
+    basis?.kind === "needs" && basis.wants === 400 && basis.untagged === 900 && basis.monthly === 310);
+  const view = buildLadderView(stored(), null, facts, sched);
+  check("the forecast uses the same daily figure the ledger explains",
+    view.available.allowanceBasis?.kind === "needs" &&
+    Math.abs(view.available.forecast.dailyAllowance - 310 / 31) < 1e-9);
+
+  const noTags = dayToDayAllowance({ ...facts, lastMonthSpending: { ...lastMonthSpending, needs: [] } }, bills);
+  check("with no tagged needs it falls back to the budget less repeating bills",
+    noTags?.kind === "budget" && noTags.monthly === 1800, `${noTags?.kind} ${noTags?.monthly}`);
+  check("with neither, there is no estimate rather than a made-up one",
+    dayToDayAllowance({ ...FACTS, today }, bills) === null);
 }
 
 let failed = 0;

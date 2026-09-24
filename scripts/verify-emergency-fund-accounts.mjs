@@ -69,8 +69,9 @@ const relinked = toCashAccounts(ACCOUNTS.map((a) => ({ ...a, id: `new-${a.id}` }
 check("after a relink, a stale id list falls back to savings rather than reading zero",
   sumBalances(resolveEmergencyAccounts(relinked, ["a1", "a4"])) === 15000,
   `${sumBalances(resolveEmergencyAccounts(relinked, ["a1", "a4"]))}`);
-check("an empty choice also falls back, rather than reading zero",
-  sumBalances(resolveEmergencyAccounts(cash, [])) === 15000);
+check("unticking every account is honoured: none of them is the buffer",
+  resolveEmergencyAccounts(cash, []).length === 0 &&
+  sumBalances(resolveEmergencyAccounts(cash, [])) === 0);
 check("no connected accounts is zero, not a crash",
   sumBalances(resolveEmergencyAccounts([], null)) === 0 &&
   sumBalances(resolveEmergencyAccounts([], ["a1"])) === 0);

@@ -139,11 +139,17 @@ paper over.
    market, never a current account (this month's spending) or brokerage cash
    (waiting to be invested), and the user can tick exactly which accounts
    count — `lib/emergency-fund-accounts.ts`, guarded by
-   `test:emergency-fund-accounts`. Needs vary month to month, so the expenses
+   `test:emergency-fund-accounts`. The ticks live on the Money → Net Worth
+   "Connected Bank Accounts" card, where accounts are organised (D-12); this
+   page names the accounts its figure comes from and links there. The choice
+   is still stored in the plan (`ladder.efAccountIds`), and
+   `saveEmergencyAccountIds` patches only that field, creating an empty plan
+   when there is none. Needs vary month to month, so the expenses
    field follows the last complete month by default, or the average, or a
    number the user sets. A stored account list whose ids no longer match
    anything falls back to savings rather than reporting a buffer of zero:
-   relinking a Plaid item reissues every id.
+   relinking a Plaid item reissues every id. An empty list is different: it
+   is someone unticking every account, and it means none.
 
    Two more details that are easy to get wrong. An override is `null` when it
    is following the account, not the account's current number — storing the
@@ -212,6 +218,20 @@ paper over.
    month. For a budget whose repeating bills are all listed, Left for the
    month equals the Budget's own surplus.
 
+   The daily rate now comes from what was actually spent (D-11): last
+   complete month's need-tagged spending over that month's days
+   (`needsAllowance`, chosen by `dayToDayAllowance`). A need already on the
+   Expected list is left out, whether it matches by name, by the category of
+   a repeating bill, or by an amount within 5% of one. The amount match
+   exists because rent paid as transfers to a person has no merchant name to
+   match. Wants and untagged spending are not counted; last month's trip is
+   not a daily cost. They are reported beside the figure so a missing tag is
+   visible. The Budget-based figure above is the fallback when nothing was
+   tagged. The ledger note lists every counted category and every exclusion
+   with its reason, and the month view uses the same function on the same
+   unpaid rows, so the two pages agree. Name matching is Unicode-aware; the
+   old a–z tokenizer reduced Chinese merchant names to nothing.
+
    Every figure here is only as good as the balances under it, and two things
    were wrong with those. Balances were added in their own currencies as if
    they were dollars; they are now converted once where the dashboard loads
@@ -219,8 +239,9 @@ paper over.
    excluded and flagged rather than counted at face value. And balances only
    refresh when a connection is synced by hand, so one connection had sat at
    its June figures unnoticed; the ledger now names any account more than
-   three days stale, zero balances included. Net Worth's emergency fund reads
-   the same chosen accounts as this page (`useSavedEmergencyAccountIds`).
+   three days stale, zero balances included. Net Worth, where the accounts
+   are chosen, and this page read the same saved choice
+   (`useSavedEmergencyAccountIds`).
 
    Still open: syncing on its own rather than by hand, and the household
    summary (`lib/household.ts`), which sums partner balances server-side

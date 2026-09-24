@@ -6,6 +6,7 @@ import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
 import ExpectedMonth from "./ExpectedMonth";
+import type { AccountFacts } from "@/lib/contribution-ladder";
 import { parseIsoDate } from "@/lib/contribution-schedule";
 import {
   detectRecurring, toRecurrence, sameMerchant,
@@ -216,7 +217,7 @@ function PaymentCard({
 
 export default function ExpectedPaymentsTab({
   userId, defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [],
-  budgetMonthlySpending = 0,
+  budgetMonthlySpending = 0, lastMonthSpending,
 }: {
   userId: string;
   defaultCurrency?: string;
@@ -225,6 +226,7 @@ export default function ExpectedPaymentsTab({
   preferredCurrencies?: string[];
   /** The Budget tab's monthly spending, for the month view's day-to-day line. */
   budgetMonthlySpending?: number;
+  lastMonthSpending?: AccountFacts["lastMonthSpending"];
 }) {
   const [payments, setPayments] = useState<ExpectedPayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -458,9 +460,11 @@ export default function ExpectedPaymentsTab({
           type: p.transaction_type,
           dueDate: p.due_date,
           recurrence: p.recurrence,
+          category: p.category,
           completed: !!p.completed_at,
         }))}
         budgetMonthlySpending={budgetMonthlySpending}
+        lastMonthSpending={lastMonthSpending}
         formatAmount={formatAmount}
       />
 

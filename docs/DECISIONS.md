@@ -132,6 +132,8 @@ A balance only on contribution day missed bills immediately afterward; ignoring
 income and counting recurring bills once also misrepresented available cash.
 **Trade-off:** Unvisited months have no snapshot; user overrides must stay distinct
 from following account values. Email is a separate unfinished return channel.
+*(Where the accounts are selected is refined by D-12: in Money → Net Worth, not
+on the Contributions page.)*
 **Source:** [Next contribution](design/next-contribution.md), app
 `96e9d63` through `2af3cb8`. Preserve its rationale before changing the algorithm.
 
@@ -149,7 +151,10 @@ The older sprint sequence and first-launch checklist are historical.
 
 ### D-10 — September 24: plan the month from dated payments, estimate the rest
 
-**Status:** Active. Authorised by the founder on 2026-09-24.
+**Status:** Active. Authorised by the founder on 2026-09-24. **The allowance's
+source is superseded by [D-11](#d-11--september-24-day-to-day-spending-from-last-months-needs):**
+it is now last month's need-tagged spending, with this Budget-based figure as the
+fallback. The month view, labelled estimate lines and no-double-counting rule stand.
 **Decision:** Expected payments are the dated half of a month's budget. Money →
 Expected opens on a month view in date order: every expected payment in and out,
 repeats included, then one **day-to-day spending** line for the budget's spending
@@ -182,6 +187,90 @@ spread then lands on the wrong days — model the card statement instead); or
 Expected lists most spending, making the allowance small enough to drop; or users
 ask to set the allowance directly rather than derive it from the Budget.
 **Source:** [Next contribution](design/next-contribution.md) · `lib/cashflow-forecast.ts`.
+
+### D-11 — September 24: day-to-day spending from last month's needs
+
+**Status:** Active. Authorised by the founder on 2026-09-24. Supersedes D-10's
+allowance source.
+**Decision:** The day-to-day line in the contribution forecast and in the Expected
+month view is last complete month's **need-tagged** spending divided by that
+month's days, less any need already on the Expected list. A need is left out when
+its name matches an expense on the list, when its category is the category of a
+repeating bill on the list, or when its category's total is within 5% of an
+unclaimed repeating bill's monthly amount (rent paid as transfers to a person has
+no merchant name to match). Each bill accounts for at most one category. Wants
+and untagged spending are not counted, but they are reported beside the figure.
+With no tagged needs last month, the D-10 figure (Budget spending less repeating
+bills) is the fallback. With neither, there is no estimate.
+**Why:** The founder's Budget total included one-off and discretionary spending,
+so the daily estimate ran several times higher than their actual daily needs.
+Travel dominated last month's untagged spending. A daily rate built from it
+charged every future day for a trip that happened once, so the safe contribution
+understated what could go in. Needs are the part of spending that recurs.
+**Rejected:** (a) All of last month's spending per day, which counts the trip
+every day. (b) Keeping the Budget figure, which is a plan, not what was spent, and
+includes the same dated bills in another form. (c) A multi-month needs average,
+which smooths lumpy months but lags a real change such as a rent rise. Last month
+matches what "what I spend" usually means and the Emergency Fund's default month.
+**Trade-off:** Accuracy depends on tagging. An untagged grocery run is left out
+and understates the estimate, so the note names the untagged total and says to
+tag it. The amount match can remove a category that coincidentally equals a bill.
+The note lists every exclusion with its reason so a wrong one is visible. Matching
+names needed Unicode-aware tokens: the old a–z tokenizer reduced Chinese merchant
+names to nothing, so they never matched.
+**Evidence:** `npm run test:cashflow-forecast` (UTC+8 and UTC−7) covers name,
+category and amount exclusions, one bill per category, one-offs and the null case.
+`test:contribution-ladder` covers the needs source, wants and untagged excluded,
+the budget fallback, and the forecast using the same rate. A browser preview with a
+fixture shaped like a real month showed the ledger note and a month line agreeing
+at $11.36/day. Live behaviour on a real account has not been observed yet.
+**Revisit when:** users rarely tag needs (consider a suggested need/want split
+first); a lumpy month makes the figure swing noticeably (consider a two- or
+three-month median); or users ask to set the day-to-day figure themselves.
+**Source:** [Next contribution](design/next-contribution.md) ·
+`lib/cashflow-forecast.ts` (`needsAllowance`) · `lib/contribution-ladder.ts`
+(`dayToDayAllowance`).
+
+### D-12 — September 24: choose emergency-fund accounts where accounts are organised
+
+**Status:** Active. Authorised by the founder on 2026-09-24. Refines D-08's account
+selection.
+**Decision:** Each cash account on the Money → Net Worth "Connected Bank Accounts"
+card has an **Emergency fund** tick. Plan → Contributions, the Home card and the
+Emergency Fund card all read that one saved choice. Contributions shows where its
+figure comes from and links to Net Worth instead of keeping its own picker. The
+choice stays in the stored contribution plan (`ladder.efAccountIds`), so no
+migration is needed. Saving it patches only that field, creating an empty plan if
+none exists. `null` still means "my savings accounts". An explicitly empty list
+now means none: unticking every account is honoured, rather than falling back to
+savings. The relink fallback remains, so stale IDs matching no account still read
+as savings.
+**Why:** The founder asked for one place to organise bank accounts. Which account
+is a buffer is a fact about the account, not a planning assumption (D-05: Money
+owns actual finances). A picker on Contributions changed a figure on three pages
+from a page about something else. The old empty-list fallback re-ticked savings
+the moment the last box was cleared and overstated the fund, the one direction it
+must not be wrong in.
+**Rejected:** (a) Keeping the picker on Contributions, which is the second place
+the founder asked to avoid. (b) Having both, which gives two controls for one fact.
+(c) A new column on `plaid_accounts`, which is cleaner storage but needs a
+migration and a second source during rollout. The plan field already syncs
+through local and account storage.
+**Trade-off:** The choice lives in the contribution plan rather than on the
+account, so it will not reach any future surface that doesn't read the plan. If
+another surface needs it, move it to the account.
+**Evidence:** `test:contribution-plan` covers creating a plan, changing nothing
+else, the `null` reset and copying the list. `test:emergency-fund-accounts` covers
+empty meaning none and the relink fallback. A browser preview of the real Net Worth
+component, in light and dark at 1280 and 390, confirmed that ticking updates the
+card's summary and the saved plan, that Contributions reads it after remounting,
+and that reset, keyboard toggling and focus rings work. The signed-in dashboard
+itself was not exercised.
+**Revisit when:** a second feature needs "is this account a buffer?" (move it to
+the account row), or households need per-person emergency funds.
+**Source:** [Next contribution](design/next-contribution.md) ·
+`lib/contribution-store.ts` (`saveEmergencyAccountIds`) · `app/dashboard/page.tsx`
+(Net Worth).
 
 ## How to add or supersede a decision
 

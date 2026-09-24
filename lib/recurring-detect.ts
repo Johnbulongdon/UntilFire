@@ -143,12 +143,23 @@ const NOISE = new Set([
   "purchase", "online", "store", "and", "for", "from", "ref",
 ]);
 
+/* Scripts written without spaces, where two characters already make a name
+   (美团, 张三). A two-letter Latin token is usually noise; a two-character
+   CJK one usually is not. */
+const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+
+/* Letters in any script, not only a–z. The previous [^a-z0-9] turned every
+   non-Latin name into nothing, so 中国移动 never matched even 中国移动 and a
+   suggestion already on the Expected list kept being offered. Accents are
+   stripped first so Latin names compare as they did before. */
 function tokens(s: string): string[] {
   return s
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
     .toLowerCase()
-    .replace(/[^a-z0-9\s]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
     .split(/\s+/)
-    .filter((t) => t.length > 2 && !NOISE.has(t) && !/^\d+$/.test(t));
+    .filter((t) => (t.length > 2 || (t.length === 2 && CJK.test(t))) && !NOISE.has(t) && !/^\d+$/.test(t));
 }
 
 export function sameMerchant(a: string, b: string): boolean {

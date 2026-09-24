@@ -8,23 +8,29 @@
  * payment in and out for the month, day by day, then one line for the
  * budget's day-to-day spending that has no date, then what is left.
  *
- * The allowance line is the budget's monthly spending less the repeating
- * bills already listed here, so a bill is never counted twice — and adding a
- * regular payment to Expected moves it out of the estimate and onto its day.
- * The same dates and the same allowance drive the contribution forecast in
- * Plan → Contributions, so what is planned here is what that page works from.
+ * The allowance line is last month's need-tagged spending, less any need
+ * that is already listed here — by name, by category, or by amount — so a
+ * bill is never counted twice, and adding a regular payment to Expected
+ * moves it out of the estimate and onto its day. Wants and untagged
+ * spending are left out: a trip last month is not a daily cost. With no
+ * tagged month to go on, it falls back to the budget less the repeating
+ * bills. The same dates and the same allowance drive the contribution
+ * forecast in Plan → Contributions, so what is planned here is what that
+ * page works from.
  */
 
 import { useState } from "react";
 import { Button } from "@/components/ui";
-import {
-  expandForMonth, monthlyAllowance, type ExpectedItem,
-} from "@/lib/cashflow-forecast";
+import { expandForMonth, type ExpectedItem } from "@/lib/cashflow-forecast";
+import { daysInMonth } from "@/lib/contribution-schedule";
+import { dayToDayAllowance, type AccountFacts } from "@/lib/contribution-ladder";
 
 export interface ExpectedMonthProps {
   items: (ExpectedItem & { completed?: boolean })[];
-  /** The Budget tab's monthly spending, for the day-to-day allowance line. */
+  /** The Budget tab's monthly spending — the fallback for the day-to-day line. */
   budgetMonthlySpending: number;
+  /** Last complete month's spending by tag: the day-to-day line's source. */
+  lastMonthSpending?: AccountFacts["lastMonthSpending"];
   /** Formats a USD amount in the user's display currency. */
   formatAmount: (usd: number) => string;
   /** Injectable for tests. */
@@ -37,11 +43,23 @@ const dayLabel = (iso: string) => {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 };
 
-export default function ExpectedMonth({ items, budgetMonthlySpending, formatAmount, today = new Date() }: ExpectedMonthProps) {
+export default function ExpectedMonth({
+  items, budgetMonthlySpending, lastMonthSpending, formatAmount, today = new Date(),
+}: ExpectedMonthProps) {
   const [offset, setOffset] = useState(0);
   const view = new Date(today.getFullYear(), today.getMonth() + offset, 1);
   const lines = expandForMonth(items, view.getFullYear(), view.getMonth());
-  const allowance = monthlyAllowance(budgetMonthlySpending, items);
+  /* The same estimate the contribution forecast uses, from the same rows —
+     the unpaid ones — so the two pages agree. Measured needs are a daily
+     rate, so they scale to the month on view; a budget figure is already
+     monthly and is used as it stands. */
+  const basis = dayToDayAllowance(
+    { cashAccounts: [], budgetMonthlySpending, lastMonthSpending },
+    items.filter((i) => !i.completed),
+  );
+  const allowance = !basis ? 0
+    : basis.kind === "needs" ? basis.perDay * daysInMonth(view.getFullYear(), view.getMonth())
+    : basis.monthly;
 
   const incoming = lines.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
   const datedOut = -lines.filter((l) => l.amount < 0).reduce((s, l) => s + l.amount, 0);
@@ -91,8 +109,12 @@ export default function ExpectedMonth({ items, budgetMonthlySpending, formatAmou
               <li className="uf-month-row uf-month-allowance">
                 <span className="uf-month-date">All month</span>
                 <span className="uf-month-what">
-                  Day-to-day spending
-                  <span className="uf-month-tag">estimate · your budget less the repeating bills above</span>
+                  {basis?.kind === "needs" ? "Day-to-day needs" : "Day-to-day spending"}
+                  <span className="uf-month-tag">
+                    {basis?.kind === "needs"
+                      ? `estimate · your needs in ${basis.monthLabel}, less those listed above`
+                      : "estimate · your budget less the repeating bills above"}
+                  </span>
                 </span>
                 <span className="uf-month-amt" style={mono}>{signed(-allowance)}</span>
               </li>

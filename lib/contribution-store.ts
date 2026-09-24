@@ -12,11 +12,11 @@
  * currency symbol.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  newerPlan, planHasContent, rowsToPlan, sanitiseLadder, type AssetPlan,
-  type ContributionPlan, type Frequency, type PlanRow, type StoredPlan,
+  newerPlan, rowsToPlan, sanitiseLadder, stampPlan, withEmergencyAccountIds,
+  type AssetPlan, type ContributionPlan, type Frequency, type PlanRow, type StoredPlan,
 } from "@/lib/contribution";
 import type { ContributionSchedule } from "@/lib/contribution-schedule";
 
@@ -184,27 +184,64 @@ export async function saveSnapshot(
 }
 
 /**
- * Which accounts the user has chosen as their emergency fund, from the saved
- * plan, for surfaces other than the Contributions page.
+ * Save which accounts hold the emergency fund, changing nothing else in the
+ * plan.
  *
- * The emergency fund used to have two definitions: Contributions followed the
- * accounts ticked there, while Net Worth counted savings accounts only — so
- * ticking a checking account changed one page and not the other. Reading the
- * same saved choice keeps them one answer. `null` means no choice has been
- * made, which resolves to savings accounts, exactly as on Contributions.
+ * Reads the newer of the two stored copies first, so a choice made on this
+ * device does not roll back an allocation edited on another. Saves run one
+ * after another: two quick taps would otherwise race, and the older of them
+ * could land last and undo the newer.
  */
-export function useSavedEmergencyAccountIds(): string[] | null {
+let efSaveQueue: Promise<unknown> = Promise.resolve();
+export function saveEmergencyAccountIds(ids: string[] | null): Promise<SaveResult> {
+  const run = async (): Promise<SaveResult> => {
+    const local = readLocalPlan();
+    const cloud = await loadCloudPlan();
+    const plan = stampPlan(withEmergencyAccountIds(newerPlan(local, cloud), ids));
+    writeLocalPlan(plan);
+    return saveCloudPlan(plan);
+  };
+  const next = efSaveQueue.then(run, run);
+  efSaveQueue = next;
+  return next;
+}
+
+/**
+ * Which accounts the user has chosen as their emergency fund, from the saved
+ * plan, and a way to change it.
+ *
+ * The choice is made where the accounts are organised — Money → Net Worth —
+ * and read everywhere else: Contributions, the Home card and the Emergency
+ * Fund card all resolve the same saved list, so ticking a checking account
+ * changes every figure at once rather than one page. `null` means no choice
+ * has been made, which resolves to savings accounts.
+ */
+export function useSavedEmergencyAccountIds(): {
+  ids: string[] | null;
+  choose: (ids: string[] | null) => void;
+  saveState: "idle" | "saving" | SaveResult;
+} {
   const [ids, setIds] = useState<string[] | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | SaveResult>("idle");
+  // A choice made before the account copy arrives wins over it: the network
+  // must not untick the box someone has just ticked.
+  const chosen = useRef(false);
   useEffect(() => {
     let cancelled = false;
     const local = readLocalPlan();
     if (local?.ladder) setIds(local.ladder.efAccountIds);
     void loadCloudPlan().then((cloud) => {
-      if (cancelled) return;
+      if (cancelled || chosen.current) return;
       const winner = newerPlan(local, cloud);
       if (winner?.ladder) setIds(winner.ladder.efAccountIds);
     });
     return () => { cancelled = true; };
   }, []);
-  return ids;
+  const choose = (next: string[] | null) => {
+    chosen.current = true;
+    setIds(next);
+    setSaveState("saving");
+    void saveEmergencyAccountIds(next).then(setSaveState);
+  };
+  return { ids, choose, saveState };
 }

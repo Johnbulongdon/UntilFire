@@ -20,8 +20,8 @@ import NextContributionCard from "./NextContributionCard";
 import { measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
-import { isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
-import { accountInUSD } from "@/lib/account-currency";
+import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
+import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
@@ -3685,7 +3685,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   withdrawalRate: number; setWithdrawalRate: (v: number) => void;
   actualNetCashflow?: number;
   displayCurrency: string; displayRates: Record<string, number>;
-  plaidAccounts?: PlaidAccount[];
+  plaidAccounts?: (PlaidAccount & Partial<ConvertedFields>)[];
   onUpgradeClick?: () => void;
   onRefreshAccounts?: () => void;
   emergencyFundMonthlyBase?: number;
@@ -3701,7 +3701,11 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const bankAssets = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment");
   const bankAssetsTotal = bankAssets.reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const [hideZeroAssets, setHideZeroAssets] = useState(true);
-  const visibleAssets = hideZeroAssets ? bankAssets.filter(a => (a.balance_current ?? 0) !== 0) : bankAssets;
+  // Zero by the bank's own figure: a balance with no exchange rate reads $0
+  // after conversion, and hiding it would hide the warning that it isn't counted.
+  const visibleAssets = hideZeroAssets
+    ? bankAssets.filter(a => (a.native_balance_current ?? a.balance_current ?? 0) !== 0)
+    : bankAssets;
   const hiddenAssetCount = bankAssets.length - visibleAssets.length;
 
   // ── Account type metadata ────────────────────────────────────────────────
@@ -3781,15 +3785,23 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const savingsAccts = bankAssets.filter(isSavingsAccount);
   const hasPlaidSavings = savingsAccts.length > 0;
   const hasHysa = savingsAccts.some(a => (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD);
-  // The same accounts, and the same rule, as Plan → Contributions: whatever
-  // the user ticked there, or savings accounts if they haven't chosen. It
-  // used to count savings only, so ticking a checking account there changed
-  // that page's emergency fund and not this one.
-  const savedEfIds = useSavedEmergencyAccountIds();
-  const emergencyFundBalance = measuredEmergencyFund(savedEfIds, {
+  // Which accounts are the emergency fund is chosen here, on the tiles below,
+  // because this is where the accounts are organised. Plan → Contributions
+  // and Home read the same saved choice. Until one is made, savings and
+  // money market count; a current account is spending money, not a buffer.
+  const { ids: savedEfIds, choose: chooseEfIds, saveState: efSaveState } = useSavedEmergencyAccountIds();
+  const efMeasured = measuredEmergencyFund(savedEfIds, {
     cashAccounts: toCashAccounts(bankAssets),
     manualCashSavings: cashSavings,
-  }).balance;
+  });
+  const emergencyFundBalance = efMeasured.balance;
+  const efIds = new Set(efMeasured.accounts.map((a) => a.id));
+  // Toggle from what is ticked on screen, not from the stored list: after a
+  // relink the stored ids match nothing and the savings default is showing.
+  const toggleEfAccount = (id: string) => {
+    const current = efMeasured.accounts.map((a) => a.id);
+    chooseEfIds(current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
+  };
   const connectedBreakdown = {
     brokerageCash: bankAssets
       .filter(a => a.type === "investment")
@@ -3816,16 +3828,16 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 16 }}>🏦</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#064E3B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Bank Accounts</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Bank Accounts</span>
             </div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               {hiddenAssetCount > 0 || !hideZeroAssets ? (
-                <button onClick={() => setHideZeroAssets(h => !h)} style={{ background: "none", border: "none", color: "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                <button onClick={() => setHideZeroAssets(h => !h)} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
                   {hideZeroAssets ? `Show $0 (${hiddenAssetCount})` : "Hide $0"}
                 </button>
               ) : null}
               {onRefreshAccounts && (
-                <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#047857", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "var(--uf-pos-ink)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
                   ↻ Refresh
                 </button>
               )}
@@ -3845,21 +3857,82 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                   <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                     <span style={{ background: meta.color + "18", color: meta.color, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{meta.label}</span>
                     {isHysaAccount && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>HYSA ✓</span>}
-                    {a.mask && <span style={{ fontSize: 11, color: "#94A3B8" }}>•••• {a.mask}</span>}
+                    {a.mask && <span style={{ fontSize: 11, color: "var(--uf-ink-2)" }}>•••• {a.mask}</span>}
                   </div>
                   <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", marginTop: 2 }}>{fmtMoney(a.balance_current ?? 0)}</div>
                   {a.balance_available != null && a.balance_available !== a.balance_current && (
-                    <div style={{ fontSize: 11, color: "#94A3B8" }}>{fmtMoney(a.balance_available)} available</div>
+                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)" }}>{fmtMoney(a.balance_available)} available</div>
+                  )}
+                  {a.native_currency && a.native_currency !== "USD" && a.native_balance_current != null && (
+                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
+                      {a.native_balance_current.toLocaleString("en-US", { style: "currency", currency: a.native_currency, maximumFractionDigits: 0 })}
+                      {a.converted === false ? " · no exchange rate, not counted" : ""}
+                    </div>
+                  )}
+                  {(daysSinceSync(a.updated_at) ?? 0) > STALE_AFTER_DAYS && (
+                    <div style={{ fontSize: 11, color: "var(--uf-warn-ink)" }}>
+                      Balance from {new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </div>
                   )}
                   {isSavingsType && <ApyField account={a} />}
+                  {a.type === "depository" && (
+                    <label className="uf-nw-ef">
+                      <input type="checkbox" checked={efIds.has(a.id)} onChange={() => toggleEfAccount(a.id)} />
+                      Emergency fund
+                    </label>
+                  )}
                 </div>
               );
             })}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(5,150,105,0.2)" }}>
-            <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: "#064E3B" }}>{fmtMoney(bankAssetsTotal)}</span>
+            <span style={{ fontSize: 13, color: "var(--uf-ink-2)", fontWeight: 600 }}>Total from banks</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-ink)" }}>{fmtMoney(bankAssetsTotal)}</span>
           </div>
+          {bankAssets.some((a) => a.type === "depository") && (
+            <div className="uf-nw-ef-summary" data-testid="uf-nw-ef-summary">
+              <span>
+                <strong>Emergency fund {fmtMoney(emergencyFundBalance)}</strong>
+                {" — "}
+                {efMeasured.accounts.length > 0
+                  ? `${describeAccounts(efMeasured.accounts)}.`
+                  : "no accounts ticked."}
+                {" "}
+                {savedEfIds === null
+                  ? "Savings accounts count until you choose. Tick any account that holds your buffer; Contributions and Home use the same choice."
+                  : "Contributions and Home use the same choice."}
+              </span>
+              {savedEfIds !== null && (
+                <button type="button" className="uf-nw-ef-reset" onClick={() => chooseEfIds(null)}>
+                  Back to my savings accounts
+                </button>
+              )}
+              {efSaveState === "failed" && (
+                <span style={{ color: "var(--uf-warn-ink)" }}>Saved on this device — it didn&apos;t reach your account. It will retry when you change it again.</span>
+              )}
+            </div>
+          )}
+          <style>{`
+            .uf-nw-ef {
+              display: flex; align-items: center; gap: 8px; min-height: 32px;
+              margin-top: auto; padding-top: 6px; border-top: 1px solid var(--uf-border);
+              font-size: 12px; font-weight: 600; color: var(--uf-ink-2); cursor: pointer;
+            }
+            .uf-nw-ef input { width: 16px; height: 16px; margin: 0; accent-color: var(--uf-green); flex: none; cursor: pointer; }
+            .uf-nw-ef:has(input:checked) { color: var(--uf-ink); }
+            .uf-nw-ef input:focus-visible, .uf-nw-ef-reset:focus-visible {
+              outline: 2px solid var(--uf-green); outline-offset: 2px;
+            }
+            .uf-nw-ef-summary {
+              display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+              margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--uf-ink-2);
+            }
+            .uf-nw-ef-summary strong { color: var(--uf-ink); font-weight: 700; }
+            .uf-nw-ef-reset {
+              background: none; border: none; padding: 4px 0; min-height: 24px; cursor: pointer;
+              font: inherit; font-weight: 600; color: var(--uf-ink); text-decoration: underline;
+            }
+          `}</style>
         </div>
       )}
 
@@ -5392,7 +5465,7 @@ export default function Dashboard() {
   type CommittedRow = { amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
   const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string }[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string; description?: string }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   /* Every balance in dollars, converted once here so that every total built
      from them — net worth, cash, the emergency fund, the contribution
@@ -5444,6 +5517,27 @@ export default function Dashboard() {
       .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
     return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
   }, [recentTransactions, rates]);
+  /* Last complete month's spending, split by tag, in dollars. The
+     contribution forecast's day-to-day estimate is built from the needs; the
+     wants and untagged totals are shown beside it so it is clear what was
+     left out — a trip in an untagged month is not a daily cost. */
+  const lastMonthSpending = useMemo(() => {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const key = `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}`;
+    const month = recentTransactions.filter(t => t.transaction_type === "expense" && t.date.startsWith(key));
+    const inUsd = (t: typeof month[number]) => toUSD(netAmt(t), t.currency, rates);
+    const has = (t: typeof month[number], tag: string) => (t.tags || []).includes(tag);
+    return {
+      year: first.getFullYear(),
+      monthIndex: first.getMonth(),
+      needs: month.filter(t => has(t, "need")).map(t => ({
+        description: t.description ?? "", category: t.category ?? null, amountUSD: inUsd(t),
+      })),
+      wants: month.filter(t => has(t, "want")).reduce((sum, t) => sum + inUsd(t), 0),
+      untagged: month.filter(t => !has(t, "need") && !has(t, "want")).reduce((sum, t) => sum + inUsd(t), 0),
+    };
+  }, [recentTransactions, rates]);
   const histNeedsAvg = useMemo(() => {
     const vals = needsByMonth.map(([, v]) => v);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
@@ -5493,6 +5587,7 @@ export default function Dashboard() {
       dueDate: r.due_date,
       recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "")
         ? r.recurrence : "none") as Recurrence,
+      category: r.category,
     })),
     [committedRows, rates],
   );
@@ -5503,14 +5598,15 @@ export default function Dashboard() {
     averageNeeds: histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds,
     realReturn: growthRate,
     expectedItems: contributionItems,
+    lastMonthSpending,
     budgetMonthlySpending: Object.entries(effectiveExpenses)
       .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
       .reduce((sum, [, v]) => sum + (v as number), 0),
-  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses]);
+  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending]);
   // Already-committed outgoings still ahead of us this month, in USD.
   // Overdue rows count too: an unpaid bill is still owed.
   //
-  // The query behind committedRows reaches 70 days out and includes income,
+  // The query behind committedRows has no date bound and includes income,
   // because the contribution forecast needs both. These totals are the Budget
   // tab's "committed this month", so they filter back to this month's bills —
   // without that, widening the query quietly widened them too.
@@ -5678,10 +5774,10 @@ export default function Dashboard() {
         // Both directions. The contribution forecast needs income — payday
         // is when there is money to contribute — and the Budget tab's
         // committed totals below filter back down to expenses themselves.
-        // 70 days rather than end-of-month: a contribution due on the 25th
-        // has bills falling after the 1st ahead of it, and bounding at the
-        // month edge would drop them and overstate what is free to invest.
-        .lt("due_date", new Date(Date.now() + 70 * 86400000).toISOString().slice(0, 10))
+        // No date bound: the forecast only expands what falls in its own
+        // window, and the day-to-day estimate needs every listed bill — an
+        // annual one paid last month must still come out of last month's
+        // needs, exactly as it does in the month view in Expected.
         .then(({ data: cmt }) => {
           if (cmt) setCommittedRows(cmt as CommittedRow[]);
         });
@@ -5698,7 +5794,7 @@ export default function Dashboard() {
 
       const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
-      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category")
+      supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, description")
         .eq("user_id", session.user.id)
         .gte("date", historyStart)
         .order("date", { ascending: true })
@@ -6393,7 +6489,7 @@ export default function Dashboard() {
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
-                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} />}
+                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
                 )}
@@ -6513,7 +6609,7 @@ export default function Dashboard() {
               <GoalsPageTab userId={userId} monthlyExpenses={monthlyExpenses} />
             )}
             {tab === "contributions" && (
-              <ContributionsTab {...contributionFacts} />
+              <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
             )}
             {tab === "citizenship" && <CitizenshipTab />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}

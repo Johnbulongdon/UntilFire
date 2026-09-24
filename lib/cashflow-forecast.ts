@@ -31,7 +31,7 @@ import {
 
 // One definition of what a repeat can be — the Expected tab's. Type-only, so
 // the guard scripts' type stripping erases it and needs no extension.
-import { recurrenceToMonthly, type Recurrence } from "./recurring-detect.ts";
+import { recurrenceToMonthly, sameMerchant, type Recurrence } from "./recurring-detect.ts";
 export type { Recurrence };
 
 export interface ExpectedItem {
@@ -42,6 +42,8 @@ export interface ExpectedItem {
   /** ISO `YYYY-MM-DD`. For a repeating item, this is its next unpaid occurrence. */
   dueDate: string;
   recurrence: Recurrence;
+  /** The spending category, when the item has one. */
+  category?: string | null;
 }
 
 /** A calendar day as `YYYY-MM-DD` in local time. `toISOString()` converts to
@@ -118,6 +120,114 @@ export function monthlyAllowance(budgetMonthlySpending: number, items: ExpectedI
     .filter((i) => i.type === "expense" && i.recurrence !== "none")
     .reduce((sum, i) => sum + recurrenceToMonthly(i.amountUSD, i.recurrence), 0);
   return Math.max(0, (budgetMonthlySpending || 0) - listed);
+}
+
+/* ── Day-to-day needs, from what was actually spent ────────────────────────
+ *
+ * The budget is what someone intends to spend, and it includes wants. A
+ * forecast of what will leave the account before the next contribution is
+ * better built from what did: last month's spending tagged as a need. That
+ * leaves out wants and anything untagged — a trip, a one-off — which is the
+ * difference between a steady daily drain and one expensive month.
+ *
+ * Needs that are already dated lines on the Expected list must not also be
+ * spread across every day, or the forecast subtracts them twice. Three
+ * signals find them, in order, and every exclusion carries its reason:
+ *   1. name   — the transaction's name matches an Expected item's;
+ *   2. category — a repeating Expected bill has the same category;
+ *   3. amount — the category's total for the month is within 5% of a
+ *      repeating bill's monthly amount. Rent paid as a transfer to a person
+ *      carries the landlord's name, not "Rent", and may be split in two;
+ *      its total still equals the bill.
+ * When nothing matches, the bill is counted twice — the cautious direction,
+ * since it understates what is free rather than overstating it.
+ */
+
+export interface NeedTransaction {
+  description: string;
+  category: string | null;
+  /** Positive, in USD. */
+  amountUSD: number;
+}
+
+export interface NeedsAllowance {
+  /** "August 2026" — the month the estimate is taken from. */
+  monthLabel: string;
+  days: number;
+  /** Counted needs for that month, and as a daily rate. */
+  monthly: number;
+  perDay: number;
+  counted: { category: string; amount: number }[];
+  excluded: { category: string; amount: number; because: string }[];
+}
+
+const AMOUNT_MATCH = 0.05;
+
+export function needsAllowance(
+  needs: NeedTransaction[],
+  items: ExpectedItem[],
+  year: number,
+  monthIndex: number,
+): NeedsAllowance | null {
+  const usable = needs.filter((n) => Number.isFinite(n.amountUSD) && n.amountUSD > 0);
+  if (usable.length === 0) return null;
+  const bills = items.filter((i) => i.type === "expense");
+  const repeating = bills.filter((i) => i.recurrence !== "none");
+  const excluded: NeedsAllowance["excluded"] = [];
+  const addExcluded = (category: string, amount: number, because: string) => {
+    const found = excluded.find((e) => e.category === category && e.because === because);
+    if (found) found.amount += amount; else excluded.push({ category, amount, because });
+  };
+
+  // 1. By name, transaction by transaction.
+  const afterNames: NeedTransaction[] = [];
+  for (const n of usable) {
+    const bill = bills.find((b) => sameMerchant(b.description, n.description));
+    if (bill) addExcluded(n.category || "other", n.amountUSD, `matches ${bill.description} on your Expected list`);
+    else afterNames.push(n);
+  }
+
+  // 2 and 3. By category, a whole category at a time.
+  const byCategory = new Map<string, number>();
+  for (const n of afterNames) {
+    const c = n.category || "other";
+    byCategory.set(c, (byCategory.get(c) ?? 0) + n.amountUSD);
+  }
+  const claimed = new Set<ExpectedItem>();
+  for (const [category, total] of [...byCategory]) {
+    const bill = repeating.find((b) => !claimed.has(b) && b.category && b.category === category);
+    if (bill) {
+      claimed.add(bill);
+      addExcluded(category, total, `${bill.description} on your Expected list is ${category}`);
+      byCategory.delete(category);
+    }
+  }
+  for (const [category, total] of [...byCategory]) {
+    // The closest unclaimed bill whose monthly amount is within 5% of the total.
+    const candidates = repeating
+      .filter((b) => !claimed.has(b))
+      .map((b) => ({ b, monthly: recurrenceToMonthly(b.amountUSD, b.recurrence) }))
+      .filter(({ monthly }) => monthly > 0 && Math.abs(monthly - total) / monthly <= AMOUNT_MATCH)
+      .sort((x, y) => Math.abs(x.monthly - total) - Math.abs(y.monthly - total));
+    if (candidates[0]) {
+      claimed.add(candidates[0].b);
+      addExcluded(category, total, `same amount as ${candidates[0].b.description} on your Expected list`);
+      byCategory.delete(category);
+    }
+  }
+
+  const counted = [...byCategory].map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount);
+  const monthly = counted.reduce((sum, c) => sum + c.amount, 0);
+  const days = daysInMonth(year, monthIndex);
+  return {
+    monthLabel: new Date(year, monthIndex, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    days,
+    monthly,
+    perDay: monthly / days,
+    counted,
+    excluded,
+  };
 }
 
 /** A monthly allowance as a daily rate, over an average month. */

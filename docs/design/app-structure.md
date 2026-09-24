@@ -123,6 +123,10 @@ won't be deep-linkable. `goals` was missing from it for exactly this reason.
   feeling redundant as Scenarios grows. Merge then, not now.
 - **Net Worth and Debts moved from Plan to Money.** They record what you have
   today; they are the same kind of thing as Cashflow, not a plan.
+- **Which accounts are the emergency fund is set in Net Worth** (D-12). It is a
+  fact about an account, so it lives on the Connected Bank Accounts card where
+  accounts are organised. Plan → Contributions and Home read it and link back
+  rather than offering a second picker.
 
 ## Known gap — not fixed by this structure
 

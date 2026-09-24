@@ -10,7 +10,7 @@
  *
  * Run: npm run test:contribution-plan
  */
-import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows, isCashTicker, cashSymbol, ladderToStored, storedToLadder, sanitiseLadder, planHasContent, newerPlan, stampPlan, EMPTY_LADDER } from "../lib/contribution.ts";
+import { planContribution, bandFor, statusFor, targetsSumTo100, aggregateHoldingsByTicker, planImportMerge, rowsToPlan, planToRows, isCashTicker, cashSymbol, ladderToStored, storedToLadder, sanitiseLadder, planHasContent, newerPlan, stampPlan, withEmergencyAccountIds, EMPTY_LADDER } from "../lib/contribution.ts";
 
 const checks = [];
 const check = (name, ok, detail = "") => checks.push({ name, ok, detail });
@@ -441,6 +441,30 @@ for (const row of SHEET) {
     newerPlan(saved, stale).budget === 500, `${newerPlan(saved, stale).budget}`);
   check("stamping records when, and changes nothing else",
     saved.updatedAt === 1_700_000_100_000 && saved.targets[0].symbol === "VTI");
+}
+
+// ── Choosing the emergency fund's accounts from Net Worth
+{
+  const fresh = withEmergencyAccountIds(null, ["chk-1", "sav-1"]);
+  check("choosing accounts with no saved plan creates one that restores",
+    planHasContent(fresh) && fresh.targets.length === 0 && fresh.ladder.efAccountIds.join() === "chk-1,sav-1");
+  check("and it leaves the contribution amount following real cash, not fixed at 0",
+    fresh.budget === 0 && fresh.budgetOverride === undefined);
+  const existing = {
+    targets: [{ symbol: "VTI", targetPct: 1 }], holdings: [{ symbol: "VTI", value: 900 }],
+    budget: 0, frequency: "weekly", budgetOverride: 250,
+    ladder: { ...ladderToStored(EMPTY_LADDER), monthlyMatch: 150, efAccountIds: null },
+  };
+  const patched = withEmergencyAccountIds(existing, ["sav-1"]);
+  check("choosing accounts changes nothing else in an existing plan",
+    patched.targets === existing.targets && patched.frequency === "weekly" && patched.budgetOverride === 250 &&
+    patched.ladder.monthlyMatch === 150 && patched.ladder.efAccountIds.join() === "sav-1");
+  check("going back to savings accounts stores null, not an empty choice",
+    withEmergencyAccountIds(patched, null).ladder.efAccountIds === null);
+  const ids = ["a"];
+  const copy = withEmergencyAccountIds(null, ids);
+  ids.push("b");
+  check("the stored list is a copy, not the caller's array", copy.ladder.efAccountIds.join() === "a");
 }
 
 let failed = 0;

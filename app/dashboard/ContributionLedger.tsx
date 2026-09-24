@@ -32,6 +32,11 @@ export interface ContributionLedgerProps {
 // payment read the same way on one ledger.
 const fmt = (n: number) =>
   `${n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// "personal_care" → "Personal care".
+const label = (category: string) => {
+  const t = category.replace(/_/g, " ");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
 // A balance in its own currency, for beside the dollar figure.
 const native = (n: number, currency: string) => {
   try {
@@ -51,6 +56,7 @@ export default function ContributionLedger({
   available, budgetMonthlySpending = 0, expectedMonthlyBills,
 }: ContributionLedgerProps) {
   const f = available.forecast;
+  const basis = available.allowanceBasis;
   const todayIso = f.days[0]?.iso;
   // The forecast's own "today", so staleness is judged against the same day
   // the ledger starts from.
@@ -112,7 +118,7 @@ export default function ContributionLedger({
               <div key={`${d.iso}-${i}`} className="uf-ledger-row">
                 <span className="uf-ledger-date">{i === 0 ? (d.iso === todayIso ? "Today" : day(d.iso)) : ""}</span>
                 <span className="uf-ledger-what">
-                  {e.description}
+                  {e.estimate && basis?.kind === "needs" ? "Day-to-day needs" : e.description}
                   {e.estimate ? (
                     <span className="uf-ledger-tag">
                       estimate · {e.estimate.days} {e.estimate.days === 1 ? "day" : "days"} × {fmt(e.estimate.perDay)}
@@ -199,13 +205,36 @@ export default function ContributionLedger({
           No expected payments are recorded, so nothing is subtracted and this is only today&apos;s balance.
           Add your bills and income in <strong>Money → Expected</strong> to make it real.
         </p>
-      ) : f.dailyAllowance > 0 ? (
-        <p className="uf-t-small uf-ledger-note">
-          <strong>Day-to-day spending</strong> is an estimate, not a dated payment: your budget&apos;s{" "}
-          <span style={mono}>{fmt(budgetMonthlySpending)}</span> a month less the{" "}
+      ) : basis?.kind === "needs" ? (
+        <div className="uf-t-small uf-ledger-note" data-testid="uf-ledger-basis">
+          <p style={{ margin: 0 }}>
+            <strong>Day-to-day needs</strong> are an estimate from what you actually spent: needs in{" "}
+            {basis.monthLabel} came to <span style={mono}>{fmt(basis.monthly)}</span> over {basis.days} days,
+            about <span style={mono}>{fmt(basis.perDay)}</span> a day
+            {basis.counted.length > 0 && <> — {basis.counted.map((c) => `${label(c.category)} ${fmt(c.amount)}`).join(", ")}</>}.
+          </p>
+          {basis.excluded.length > 0 && (
+            <p style={{ margin: "var(--uf-s1) 0 0" }}>
+              Left out because they&apos;re already dated lines above:{" "}
+              {basis.excluded.map((e) => `${label(e.category)} ${fmt(e.amount)} (${e.because})`).join("; ")}.
+            </p>
+          )}
+          {(basis.wants > 0 || basis.untagged > 0) && (
+            <p style={{ margin: "var(--uf-s1) 0 0" }}>
+              Not counted: {[
+                basis.wants > 0 ? `${fmt(basis.wants)} of wants` : null,
+                basis.untagged > 0 ? `${fmt(basis.untagged)} not tagged need or want` : null,
+              ].filter(Boolean).join(" and ")}. If any of that is a regular need, tag it in Transactions and it will count.
+            </p>
+          )}
+        </div>
+      ) : basis?.kind === "budget" ? (
+        <p className="uf-t-small uf-ledger-note" data-testid="uf-ledger-basis">
+          <strong>Day-to-day spending</strong> is an estimate from your budget, since no spending last month is
+          tagged as a need: <span style={mono}>{fmt(budgetMonthlySpending)}</span> a month less the{" "}
           <span style={mono}>{fmt(expectedMonthlyBills)}</span> of repeating bills already listed leaves{" "}
           <span style={mono}>{fmt(unlisted)}</span>, about <span style={mono}>{fmt(f.dailyAllowance)}</span> a day.
-          Add a regular payment to Money → Expected and it moves out of the estimate and onto its date.
+          Tag your needs in Transactions and the estimate will follow what you actually spend.
         </p>
       ) : budgetMonthlySpending === 0 ? (
         <p className="uf-t-small uf-ledger-note">

@@ -90,6 +90,11 @@ export function toCashAccounts(accounts: PlaidAccountLike[]): CashAccount[] {
  * reissued. Reading that as "nothing selected" would report an emergency fund
  * of zero to someone whose money had not moved, so it falls back to the
  * default instead.
+ *
+ * An empty list is different: it is someone unticking every account, which
+ * says none of them is the buffer. Falling back there would re-tick their
+ * savings the moment they untick the last one, and overstate the fund in
+ * the one direction it must not be wrong in.
  */
 export function resolveEmergencyAccounts(
   accounts: CashAccount[],
@@ -97,6 +102,7 @@ export function resolveEmergencyAccounts(
 ): CashAccount[] {
   const byDefault = accounts.filter((a) => a.isSavings);
   if (!selectedIds) return byDefault;
+  if (selectedIds.length === 0) return [];
   const chosen = accounts.filter((a) => selectedIds.includes(a.id));
   return chosen.length > 0 ? chosen : byDefault;
 }

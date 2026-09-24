@@ -66,7 +66,10 @@ const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVaria
    builds them once and hands the object to both, so the two surfaces cannot
    end up looking at different inputs. cashAccounts is optional here because
    the page renders perfectly well with none. */
-export type ContributionsTabProps = Partial<AccountFacts>;
+export type ContributionsTabProps = Partial<AccountFacts> & {
+  /** Opens Money → Net Worth, where the emergency fund's accounts are chosen. */
+  onChooseAccounts?: () => void;
+};
 
 /* Three of the ladder's inputs are things the app already knows, so they are
    read from the account rather than asked for again. They stay editable: a
@@ -82,7 +85,7 @@ export type ContributionsTabProps = Partial<AccountFacts>;
    either the last complete month or the average of them. */
 export default function ContributionsTab({
   cashAccounts = [], manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
-  expectedItems, today, budgetMonthlySpending,
+  expectedItems, today, budgetMonthlySpending, lastMonthSpending, onChooseAccounts,
 }: ContributionsTabProps = {}) {
   const [rows, setRows] = useState<Row[]>(EXAMPLE);
   /* Null means "whatever is actually free by the next contribution date".
@@ -188,7 +191,7 @@ export default function ContributionsTab({
      answer, and two copies of it would drift. */
   const facts: AccountFacts = {
     cashAccounts, manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
-    expectedItems, today, budgetMonthlySpending,
+    expectedItems, today, budgetMonthlySpending, lastMonthSpending,
   };
   const measuredEf = measuredEmergencyFund(efAccountIds, facts);
   const efAccounts = measuredEf.accounts;
@@ -234,16 +237,6 @@ export default function ContributionsTab({
   };
 
   const threshold = thrOverride ?? String(accountThresholdPct);
-
-  const [pickingAccounts, setPickingAccounts] = useState(false);
-  const toggleEfAccount = (id: string) => {
-    // The first tick turns "my savings accounts" into an explicit list, so
-    // that unticking one of them has something to remove it from.
-    const current = efAccountIds ?? efAccounts.map((a) => a.id);
-    patchFields({
-      efAccountIds: current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
-    });
-  };
 
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
@@ -488,10 +481,12 @@ export default function ContributionsTab({
               {efOverride !== null && hasAccountEf && (
                 <Button variant="ghost" size="sm" onClick={() => setEfOverride(null)}>Use my accounts</Button>
               )}
-              {cashAccounts.length > 0 && (
-                <Button variant="ghost" size="sm" aria-expanded={pickingAccounts}
-                        onClick={() => setPickingAccounts((v) => !v)}>
-                  {pickingAccounts ? "Done" : "Choose accounts"}
+              {/* Which accounts count is chosen where the accounts are
+                  organised, so there is one place to change it and every
+                  page follows. */}
+              {cashAccounts.length > 0 && onChooseAccounts && (
+                <Button variant="ghost" size="sm" onClick={onChooseAccounts}>
+                  Choose in Net Worth
                 </Button>
               )}
             </div>
@@ -529,46 +524,6 @@ export default function ContributionsTab({
             )}
           </Field>
         </div>
-
-        {pickingAccounts && cashAccounts.length > 0 && (
-          <div className="uf-ef-picker">
-            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "0 0 var(--uf-s2)" }}>
-              Which of these is your emergency fund? Savings and money market
-              are ticked to start with — a current account is this month&apos;s
-              spending, not a buffer.
-            </p>
-            {cashAccounts.map((a) => {
-              const on = efAccounts.some((x) => x.id === a.id);
-              return (
-                <label key={a.id} className="uf-ef-account">
-                  <input type="checkbox" checked={on} onChange={() => toggleEfAccount(a.id)} />
-                  <span className="uf-t-body" style={{ flex: 1, minWidth: 0 }}>
-                    {a.label}
-                    {a.mask && <span style={{ color: "var(--uf-ink-2)" }}> ····{a.mask}</span>}
-                    <span className="uf-t-label" style={{ color: "var(--uf-ink-2)", textTransform: "capitalize", marginLeft: "var(--uf-s2)" }}>
-                      {a.subtype}
-                      {a.apy != null && a.apy > 0 ? ` · ${a.apy}% APY` : ""}
-                    </span>
-                  </span>
-                  <span style={{ ...mono, fontSize: 14, textAlign: "right" }}>
-                    {a.currency !== "USD" && (
-                      <span style={{ color: "var(--uf-ink-2)", marginRight: "var(--uf-s2)" }}>
-                        {a.nativeBalance.toLocaleString("en-US", { style: "currency", currency: a.currency, maximumFractionDigits: 0 })}
-                      </span>
-                    )}
-                    {a.converted ? fmtUsd(a.balance) : "not counted"}
-                  </span>
-                </label>
-              );
-            })}
-            {efAccountIds !== null && (
-              <Button variant="ghost" size="sm" style={{ marginTop: "var(--uf-s2)" }}
-                      onClick={() => patchFields({ efAccountIds: null })}>
-                Back to my savings accounts
-              </Button>
-            )}
-          </div>
-        )}
 
         <div style={{ marginTop: "var(--uf-s5)" }}>
           <div className="uf-t-label" style={{ textTransform: "uppercase", letterSpacing: "0.09em", color: "var(--uf-ink-2)", marginBottom: "var(--uf-s2)" }}>
@@ -759,16 +714,6 @@ export default function ContributionsTab({
           display: grid; grid-template-columns: 1.4fr 1fr 0.7fr auto auto;
           gap: var(--uf-s3); align-items: center; padding: var(--uf-s2) 0;
         }
-        .uf-ef-picker {
-          margin-top: var(--uf-s4); padding: var(--uf-s4);
-          background: var(--uf-surface); border-radius: var(--uf-r-card);
-        }
-        .uf-ef-account {
-          display: flex; align-items: center; gap: var(--uf-s3);
-          padding: var(--uf-s2) 0; cursor: pointer;
-        }
-        .uf-ef-account + .uf-ef-account { border-top: 1px solid var(--uf-border); }
-        .uf-ef-account input { width: 18px; height: 18px; accent-color: var(--uf-green); flex: none; }
         .uf-ladder-steps { margin-top: var(--uf-s5); border-top: 1px solid var(--uf-border); }
         .uf-ladder-step {
           display: grid; grid-template-columns: 22px 1fr auto auto;

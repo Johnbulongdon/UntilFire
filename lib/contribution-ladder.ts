@@ -23,7 +23,8 @@ import {
   daysUntil, DEFAULT_SCHEDULE, nextContributionDate, type ContributionSchedule,
 } from "./contribution-schedule.ts";
 import {
-  buildForecast, monthlyAllowance, perDay, type CashflowForecast, type ExpectedItem,
+  buildForecast, monthlyAllowance, needsAllowance, perDay,
+  type CashflowForecast, type ExpectedItem, type NeedTransaction, type NeedsAllowance,
 } from "./cashflow-forecast.ts";
 
 /** The same floor and target the Home safety runway uses. */
@@ -45,6 +46,15 @@ export interface AccountFacts {
   /** The budget's total monthly spending — compared against the Expected
    *  list, never spread into the forecast as invented dated lines. */
   budgetMonthlySpending?: number;
+  /** Last complete month's spending by tag, in USD. Needs drive the
+   *  day-to-day estimate; wants and untagged are reported, not counted. */
+  lastMonthSpending?: {
+    year: number;
+    monthIndex: number;
+    needs: NeedTransaction[];
+    wants: number;
+    untagged: number;
+  };
   /** Injectable for tests; the surfaces leave it out and get the real clock. */
   today?: Date;
 }
@@ -92,6 +102,30 @@ export interface AvailableToContribute {
   hasExpectedData: boolean;
   /** Every line behind the figure. */
   forecast: CashflowForecast;
+  /** Where the day-to-day estimate came from, so the ledger can say. */
+  allowanceBasis: AllowanceBasis | null;
+}
+
+export type AllowanceBasis =
+  | ({ kind: "needs"; wants: number; untagged: number } & NeedsAllowance)
+  | { kind: "budget"; monthly: number; perDay: number };
+
+/**
+ * The day-to-day spending estimate, and what it rests on (D-11).
+ *
+ * Last complete month's need-tagged spending, less needs already dated on
+ * the Expected list, per day of that month. What someone actually spent on
+ * needs is a better forecast than what they budgeted, which includes wants;
+ * and a month with a trip in it is not a month of daily costs. When there is
+ * no tagged history to go on, the budget-based estimate stands in, labelled
+ * as such.
+ */
+export function dayToDayAllowance(facts: AccountFacts, items: ExpectedItem[]): AllowanceBasis | null {
+  const last = facts.lastMonthSpending;
+  const fromNeeds = last ? needsAllowance(last.needs, items, last.year, last.monthIndex) : null;
+  if (fromNeeds && last) return { kind: "needs", wants: last.wants, untagged: last.untagged, ...fromNeeds };
+  const monthly = monthlyAllowance(facts.budgetMonthlySpending ?? 0, items);
+  return monthly > 0 ? { kind: "budget", monthly, perDay: perDay(monthly) } : null;
 }
 
 /** What the emergency fund field shows, before any override. */
@@ -132,8 +166,8 @@ export function buildLadderView(
   const contributable = facts.cashAccounts.filter((a) => !efIds.has(a.id));
   const today = facts.today ?? new Date();
   const items = facts.expectedItems ?? [];
-  const allowance = monthlyAllowance(facts.budgetMonthlySpending ?? 0, items);
-  const forecast = buildForecast(sumBalances(contributable), items, schedule, today, perDay(allowance));
+  const allowanceBasis = dayToDayAllowance(facts, items);
+  const forecast = buildForecast(sumBalances(contributable), items, schedule, today, allowanceBasis?.perDay ?? 0);
   const nextDate = nextContributionDate(schedule, today);
   const available: AvailableToContribute = {
     nextDate,
@@ -145,6 +179,7 @@ export function buildLadderView(
     free: forecast.safeToContribute,
     hasExpectedData: items.length > 0,
     forecast,
+    allowanceBasis,
   };
   const budget = budgetOverride ?? available.free;
 

@@ -14,8 +14,9 @@
  */
 import {
   addRecurrence, isoDay, expandExpected, buildForecast,
-  monthlyAllowance, perDay, expandForMonth,
+  monthlyAllowance, perDay, expandForMonth, needsAllowance,
 } from "../lib/cashflow-forecast.ts";
+import { sameMerchant } from "../lib/recurring-detect.ts";
 
 const checks = [];
 const check = (name, ok, detail = "") => checks.push({ name, ok, detail });
@@ -123,28 +124,29 @@ check("quarterly is three calendar months; yearly keeps a leap day sensible",
 
 // ── A nearly empty checking account and a stale salary row
 {
-  // The shape that produced an unexplained "$34": little cash, one small
-  // monthly bill, and a one-off salary that was due and never marked received.
+  // The shape behind a small figure nobody could explain: little cash, one
+  // small monthly bill, and a one-off salary that was due and never marked
+  // received.
   const today = d(2026, 9, 24);
   const items = [
-    { description: "China Mobile", amountUSD: 6.88, type: "expense", dueDate: "2026-09-28", recurrence: "monthly" },
-    { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-09-15", recurrence: "none" },
+    { description: "Phone", amountUSD: 8, type: "expense", dueDate: "2026-09-28", recurrence: "monthly" },
+    { description: "Salary", amountUSD: 4000, type: "income", dueDate: "2026-09-15", recurrence: "none" },
   ];
-  const f = buildForecast(40.91, items, { cadence: "monthly", anchorDay: 1 }, today);
+  const f = buildForecast(60, items, { cadence: "monthly", anchorDay: 1 }, today);
   check("the ledger reproduces the figure line by line",
     f.days.map((x) => `${x.iso}:${x.balance.toFixed(2)}`).join(" ") ===
-    "2026-09-24:40.91 2026-09-28:34.03 2026-10-01:34.03 2026-10-28:27.15",
+    "2026-09-24:60.00 2026-09-28:52.00 2026-10-01:52.00 2026-10-28:44.00",
     f.days.map((x) => `${x.iso}:${x.balance.toFixed(2)}`).join(" "));
   check("October's phone bill now counts, because it falls before the next cycle",
-    Math.abs(f.safeToContribute - 27.15) < 0.005, f.safeToContribute.toFixed(2));
+    Math.abs(f.safeToContribute - 44) < 0.005, f.safeToContribute.toFixed(2));
   check("the stale Salary is listed as not counted, not silently dropped",
     f.uncounted.length === 1 && f.uncounted[0].description === "Salary");
 
   // Same account, salary made monthly and payday moved to match it.
-  const fixed = buildForecast(40.91,
+  const fixed = buildForecast(60,
     [items[0], { ...items[1], recurrence: "monthly" }], { cadence: "monthly", anchorDay: 15 }, today);
   check("recording the salary as monthly and contributing on payday changes the answer",
-    Math.abs(fixed.safeToContribute - 3027.15) < 0.005 && fixed.income === 3000,
+    Math.abs(fixed.safeToContribute - 4044) < 0.005 && fixed.income === 4000,
     `${fixed.safeToContribute.toFixed(2)} — and every dollar of it is on a line of the ledger`);
 }
 
@@ -201,7 +203,7 @@ check("quarterly is three calendar months; yearly keeps a leap day sensible",
     // Rent's row has rolled to November after October was ticked paid.
     { description: "Rent", amountUSD: 1500, type: "expense", dueDate: "2026-11-01", recurrence: "monthly" },
     { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-10-15", recurrence: "monthly" },
-    { description: "Phone", amountUSD: 6.88, type: "expense", dueDate: "2026-10-28", recurrence: "monthly" },
+    { description: "Phone", amountUSD: 8, type: "expense", dueDate: "2026-10-28", recurrence: "monthly" },
     { description: "Weekly shop", amountUSD: 80, type: "expense", dueDate: "2026-10-03", recurrence: "weekly" },
     { description: "Flight", amountUSD: 400, type: "expense", dueDate: "2026-10-20", recurrence: "none", completed: true },
     { description: "Last month's bonus", amountUSD: 500, type: "income", dueDate: "2026-09-30", recurrence: "none" },
@@ -224,19 +226,75 @@ check("quarterly is three calendar months; yearly keeps a leap day sensible",
 
   // The month as a budget: dated lines plus the allowance give the same
   // monthly surplus the category budget does, now with dates on it.
-  const budgetSpending = 2482;
+  const budgetSpending = 3200;
   const dated = [
-    { description: "Rent A", amountUSD: 1500, type: "expense", dueDate: "2026-10-01", recurrence: "monthly" },
-    { description: "Rent B", amountUSD: 435, type: "expense", dueDate: "2026-10-07", recurrence: "monthly" },
-    { description: "Phone", amountUSD: 6.88, type: "expense", dueDate: "2026-10-28", recurrence: "monthly" },
-    { description: "Salary", amountUSD: 3000, type: "income", dueDate: "2026-10-15", recurrence: "monthly" },
+    { description: "Rent A", amountUSD: 1400, type: "expense", dueDate: "2026-10-01", recurrence: "monthly" },
+    { description: "Rent B", amountUSD: 500, type: "expense", dueDate: "2026-10-07", recurrence: "monthly" },
+    { description: "Phone", amountUSD: 8, type: "expense", dueDate: "2026-10-28", recurrence: "monthly" },
+    { description: "Salary", amountUSD: 4000, type: "income", dueDate: "2026-10-15", recurrence: "monthly" },
   ];
   const lines = expandForMonth(dated, 2026, 9);
   const out = -lines.filter((l) => l.amount < 0).reduce((s, l) => s + l.amount, 0) + monthlyAllowance(budgetSpending, dated);
   const inc = lines.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
   check("dated bills plus the allowance equal the budget's spending — nothing counted twice",
     Math.abs(out - budgetSpending) < 1e-6, out.toFixed(2));
-  check("so the month's surplus matches the budget's", Math.abs(inc - out - 518) < 1e-6, (inc - out).toFixed(2));
+  check("so the month's surplus matches the budget's", Math.abs(inc - out - 800) < 1e-6, (inc - out).toFixed(2));
+}
+
+// ── Matching names, in any script
+check("a Chinese name matches itself", sameMerchant("中国移动", "中国移动"),
+  "the old a–z tokenizer turned it into nothing, so it matched nothing");
+check("two different Chinese names do not match", !sameMerchant("中国移动", "中国银行"));
+check("a two-character name is kept, with or without a repeated label", sameMerchant("张三(张三)", "张三"));
+check("Latin names match as before",
+  sameMerchant("Netflix", "NETFLIX.COM") && sameMerchant("Spotify Family", "Spotify UK") && !sameMerchant("Shell", "BP"));
+check("accents no longer stop a match", sameMerchant("Café Nero", "CAFE NERO LONDON"));
+
+// ── Day-to-day needs from last month's tagged spending
+{
+  const CNY = 7.1;
+  const t = (description, category, cny) => ({ description, category, amountUSD: cny / CNY });
+  // A month shaped like a real one: rent paid as two transfers to a person,
+  // a phone bill, and the day-to-day needs the estimate is actually for.
+  const august = [
+    t("Landlord transfer", "housing", 100), t("Landlord transfer", "housing", 2900),
+    t("中国移动", "utilities", 60),
+    t("Vet clinic", "pets", 1200), t("Market", "food", 800), t("Pharmacy", "healthcare", 500),
+  ];
+  const expected = [
+    { description: "Rent", amountUSD: 3000 / CNY, type: "expense", dueDate: "2026-10-07", recurrence: "monthly", category: null },
+    { description: "中国移动", amountUSD: 8, type: "expense", dueDate: "2026-09-28", recurrence: "monthly", category: "utilities" },
+    { description: "Other rent", amountUSD: 1200, type: "expense", dueDate: "2026-10-01", recurrence: "monthly", category: null },
+  ];
+  const a = needsAllowance(august, expected, 2026, 7);
+  const cats = (list) => list.map((x) => x.category).sort().join(",");
+  check("the phone bill is recognised by name and left out", a.excluded.some((e) => e.category === "utilities" && e.because.includes("matches")));
+  check("rent paid as a split transfer to a person is recognised by its amount",
+    a.excluded.some((e) => e.category === "housing" && e.because.includes("same amount as Rent")),
+    JSON.stringify(a.excluded.map((e) => [e.category, e.because])));
+  check("what is left is the day-to-day needs", cats(a.counted) === "food,healthcare,pets", cats(a.counted));
+  check("per day is last month's total over that month's days",
+    a.days === 31 && Math.abs(a.perDay - (1200 + 800 + 500) / CNY / 31) < 1e-9,
+    `$${a.perDay.toFixed(2)}/day from ${a.monthLabel}`);
+  check("a bill with no matching spending claims nothing",
+    !a.excluded.some((e) => e.because.includes("Other rent")));
+
+  // The cautious direction when nothing matches: counted, not dropped.
+  const unmatched = needsAllowance([t("Landlord transfer", "housing", 3000)], [], 2026, 7);
+  check("with nothing on the Expected list to match, a need is counted — never silently dropped",
+    unmatched.counted.length === 1 && unmatched.monthly > 0);
+  check("a category total far from any bill is not treated as that bill",
+    needsAllowance([t("Landlord transfer", "housing", 2000)], expected.slice(0, 1), 2026, 7).counted.length === 1);
+  check("a category named on a repeating bill is left out whatever its amount",
+    needsAllowance([t("Anything", "utilities", 999)], expected, 2026, 7).counted.length === 0);
+  check("one bill claims at most one category",
+    needsAllowance([t("A", "housing", 3000), t("B", "pets", 3000)], expected.slice(0, 1), 2026, 7).counted.length === 1);
+  check("a one-off on the list matches by name but does not claim a whole category",
+    needsAllowance([t("Dentist", "healthcare", 500), t("Pharmacy", "healthcare", 100)],
+      [{ description: "Dentist", amountUSD: 70, type: "expense", dueDate: "2026-10-05", recurrence: "none", category: "healthcare" }],
+      2026, 7).counted.map((c) => Math.round(c.amount * CNY)).join() === "100");
+  check("no tagged needs gives no estimate, rather than an estimate of zero",
+    needsAllowance([], expected, 2026, 7) === null);
 }
 
 let failed = 0;

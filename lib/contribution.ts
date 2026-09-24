@@ -537,6 +537,22 @@ export function newerPlan(local: StoredPlan | null, cloud: StoredPlan | null): S
   return (local.updatedAt ?? 0) > (cloud.updatedAt ?? 0) ? local : cloud;
 }
 
+/**
+ * A plan with the emergency fund's accounts set and nothing else changed.
+ *
+ * The choice is made in Money → Net Worth, where the accounts are organised,
+ * so it has to be able to write into a plan Contributions has never saved.
+ * That plan starts empty: no allocation, no fixed amount (so the amount
+ * follows the cash that is actually free), and a ladder holding only this.
+ */
+export function withEmergencyAccountIds(plan: StoredPlan | null, ids: string[] | null): StoredPlan {
+  const base: StoredPlan = plan ?? { targets: [], holdings: [], budget: 0, frequency: "monthly" };
+  return {
+    ...base,
+    ladder: { ...(base.ladder ?? ladderToStored(EMPTY_LADDER)), efAccountIds: ids ? [...ids] : null },
+  };
+}
+
 /** Stamp a plan as written now. Called once per edit and the same object
  *  goes to both stores, so the two copies carry the same timestamp when the
  *  account write succeeds and differ only when it did not happen. */
