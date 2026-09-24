@@ -58,6 +58,8 @@ All notable changes to UntilFire are documented here.
   assertions while sticky positioning and bottom padding exist as inline styles.
   Follow up with behavior/browser verification before revising those guards;
   this pass does not establish that either flow is correct or remove tests.
+  *Followed up the same day: both flows were checked in a browser and both
+  guards revised. See "Guards triaged" below.*
 
 ### Added
 - **Every line behind the contribution figure.** The Contributions page shows a day-by-day ledger under the amount: the opening balance and the accounts it comes from, each expected payment in and out on its date, the running balance, contribution day, and the low point the figure is taken from. A bare total nobody can trace is a total nobody should move money on.
@@ -82,6 +84,8 @@ All notable changes to UntilFire are documented here.
 - **Chinese merchant names never matched anything.** Matching kept only a–z letters, so 中国移动 reduced to nothing. It matched no bill, and a Chinese-named bill already on the Expected list was suggested again as a new recurring payment. Matching is now Unicode-aware: two-character names count in scripts written without spaces, and accents no longer block a match (Café Nero = CAFE NERO).
 - "Hide $0" on the Connected Bank Accounts card hid accounts whose currency has no exchange rate, because they convert to $0, and with them the warning that they aren't counted. It now goes by the bank's own balance.
 - The Connected Bank Accounts card's heading, total, account masks and controls used fixed colours. They were nearly invisible in dark mode, and the grey masks were below 3:1 in light. They now use the theme's ink tokens.
+- **Custom categories never reached your account, and a deleted one came back.** The shared category hook built its save to `user_budget` but never executed it: a Supabase query only sends when awaited or `.then()`'d. Adding or deleting a category changed only the one device, and the refetch whenever the tab regained focus restored whatever the account still held, so a deleted category reappeared. The save now runs, and nothing is written until the account's copy has been read once, so a stale cache on one device cannot overwrite a newer list saved from another. Checked in a browser against a stubbed account: delete-then-refocus stays deleted, a stale cache with a slow server writes nothing early, and a new user's first category is saved. Broken since `f39a66f` (July 22).
+- The currency picker on the calculator's income step had no accessible name: its "Currency:" text was not a label, so a screen reader announced an unnamed combo box. It is now a real label.
 - **The Emergency Fund card was unreadable in dark mode.** Its headline was dark text on a dark card, its two panels were pale boxes, and its labels, figures, status badges, HYSA note and progress bar used fixed light-theme colours. It now uses theme tokens, and each state's faint tint is mixed from them. Every text in the card measures at least 4.6:1 in light and 6.9:1 in dark, in all four states at 390 and 1280 px. The progress bar, which Home's emergency-fund card also uses, fills with the status ink shades (at least 4.2:1 against its track; amber was under 3:1 before). "Rebuilding" is now neutral rather than sky blue, matching its state pill, since the design system has no blue. The state still shows in words and icons, not only in colour.
 
 ### Added — guards
@@ -89,6 +93,14 @@ All notable changes to UntilFire are documented here.
 - `npm run test:cashflow-forecast` — runs in UTC+8 and UTC−7, since the date bugs it guards against only exist away from Greenwich.
 - Extended `test:cashflow-forecast` (needs-based estimate, multi-script name matching), `test:contribution-ladder` (estimate source and fallback), `test:contribution-plan` (saving the account choice from Net Worth) and `test:emergency-fund-accounts` (an empty choice means none).
 - Replaced forecast and ladder fixtures copied from a real account's balances and budget with generic figures.
+
+### Guards triaged
+Twelve `test:*` scripts failed on an untouched main. Each was traced with `git log -S` to the commit where its code diverged, and its behaviour was checked in a browser:
+- **Stale — code moved, behaviour intact:** `seo`, `income-default`, `savings-period-input` and `fire-type-cta` read `app/page.tsx`, but the flow moved to `app/HomeClient.tsx` in `15d5a49`. `cashflow-mobile-save`: the styles went inline in `60dcf09`. `categories-management`: persistence moved into `useCustomCategories` in `f39a66f`. `manual-category-icons`: the summary's category list moved to the parent in `1fcc2ad`. `reveal-save-plan-cta`: the sandbox lacked the analytics call added in `eb53299`.
+- **Stale — deliberate product change:** `calm-startup` (the `?feedback=` link from the monthly email, `6a76189`, is still user-initiated). `city-page-seo` (titles lead with the number, `9908ea5`). `achieved-fire-reveal` (the reveal was rebuilt as `RevealFlow`, `ea47d24`). `currency-selection` (the currency cards were removed as dead in `7d3c88c`). `savings-period-input` (savings capped at income, whole-unit steps, `b2344b8`).
+- Each revised guard asserts the current behaviour, not new source text. Where a guard could be weakened, a negative control showed it still fails on the regression it exists for.
+- **Real regressions found and fixed:** custom categories never syncing (above), the unlabelled currency select (above), and `categories-management` now also fails if the sync is left unexecuted.
+- **Still failing, on purpose:** `test:seo`'s last check. The FIRE Type quiz link was in the hero's CTA row (`c81693d`) and did not survive the landing redesign (`274a215`), which recorded no reason; the homepage no longer links to the quiz at all. The guard had been passing against `HeroScreen.tsx`, which has not been rendered since. It now reads the hero that renders, and whether the link returns awaits a product decision.
 
 ## [Unreleased] - 2026-09-23
 

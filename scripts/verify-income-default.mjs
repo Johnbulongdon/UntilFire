@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 
-const source = fs.readFileSync("app/page.tsx", "utf8");
+// The onboarding flow moved into app/HomeClient.tsx with the homepage's
+// server/client split (15d5a49); read both so the checks follow the code.
+const source = ["app/page.tsx", "app/HomeClient.tsx"]
+  .map((file) => fs.readFileSync(file, "utf8"))
+  .join("\n");
 
 const checks = [];
 const check = (name, ok) => checks.push({ name, ok });

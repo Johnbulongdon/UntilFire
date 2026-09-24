@@ -14,8 +14,18 @@ const maxDrawerZ = drawerZMatches.length ? Math.max(...drawerZMatches) : 0;
 
 check("dashboard mobile bottom nav z-index is discoverable", bottomNavZ > 0);
 check("cashflow mobile drawer is layered above dashboard bottom nav", maxDrawerZ > bottomNavZ);
-check("cashflow quick form footer stays sticky on mobile", /\.cf-quick-form-footer\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/s.test(source));
-check("cashflow form has extra mobile bottom breathing room", /\.cf-quick-form-body\s*\{[^}]*padding-bottom:\s*(?:calc\([^)]*(?:80|96|112|120)px|(?:80|96|112|120)px)/s.test(source));
+// Since 60dcf09 these styles are inline on the elements rather than in a CSS
+// rule, so either form counts: the class's rule, or the element's style prop.
+const inlineStyleOf = (className) =>
+  source.match(new RegExp(`className="${className}"\\s+style=\\{\\{([^]*?)\\}\\}>`))?.[1] ?? "";
+const footerInline = inlineStyleOf("cf-quick-form-footer");
+const bodyInline = inlineStyleOf("cf-quick-form-body");
+check("cashflow quick form footer stays sticky on mobile",
+  /\.cf-quick-form-footer\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/s.test(source) ||
+  (/position:\s*"sticky"/.test(footerInline) && /bottom:\s*0\b/.test(footerInline)));
+check("cashflow form has extra mobile bottom breathing room",
+  /\.cf-quick-form-body\s*\{[^}]*padding-bottom:\s*(?:calc\([^)]*(?:80|96|112|120)px|(?:80|96|112|120)px)/s.test(source) ||
+  /paddingBottom:\s*"(?:calc\([^)]*(?:80|96|112|120)px|(?:80|96|112|120)px)/.test(bodyInline));
 
 const failed = checks.filter((c) => !c.ok);
 for (const c of checks) console.log(`${c.ok ? "✓" : "✗"} ${c.name}`);

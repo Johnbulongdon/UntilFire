@@ -25,6 +25,10 @@ export function useCustomCategories() {
   const [customCats, setCustomCats] = useState<CustomCategory[]>(loadCustomCats);
   const [customSubCats, setCustomSubCats] = useState<Record<string, string[]>>(loadCustomSubCats);
   const pendingRef = useRef<{ cats: CustomCategory[]; subCats: Record<string, string[]> } | null>(null);
+  // Nothing is written until the account's copy has been read once. The local
+  // cache can be stale — another device may have changed the list since — and
+  // writing it first would overwrite that newer copy.
+  const hydratedRef = useRef(false);
 
   const syncToSupabase = useCallback((cats: CustomCategory[], subCats: Record<string, string[]>) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -32,11 +36,16 @@ export function useCustomCategories() {
       supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
         .then(({ data }) => {
           const cur = (data?.expenses as Record<string, unknown>) || {};
+          // A query builder only sends its request when awaited or .then()'d.
+          // Left bare, this upsert never ran: changes stayed on one device,
+          // and the refetch on focus put a deleted category straight back.
           supabase.from("user_budget").upsert({
             user_id: session.user.id,
             expenses: { ...cur, _custom_cats: cats, _custom_subcats: subCats },
             updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
+          }, { onConflict: "user_id" }).then(({ error }) => {
+            if (error) console.warn("[categories] sync to account failed:", error.message);
+          });
         });
     });
   }, []);
@@ -46,6 +55,7 @@ export function useCustomCategories() {
 
   // Debounced sync to Supabase whenever local state changes
   useEffect(() => {
+    if (!hydratedRef.current) return;
     pendingRef.current = { cats: customCats, subCats: customSubCats };
     const id = setTimeout(() => {
       syncToSupabase(customCats, customSubCats);
@@ -67,7 +77,9 @@ export function useCustomCategories() {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle()
-          .then(({ data }) => {
+          .then(({ data, error }) => {
+            if (error) return;
+            hydratedRef.current = true;
             if (!data?.expenses) return;
             const { _custom_cats, _custom_subcats } = data.expenses as Record<string, unknown>;
             if (Array.isArray(_custom_cats)) setCustomCats(_custom_cats as CustomCategory[]);

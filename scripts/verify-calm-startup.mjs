@@ -26,8 +26,19 @@ const checks = [
     pass: /const \[open,\s*setOpen\]\s*=\s*useState\(false\)/.test(feedbackWidget),
   },
   {
-    name: 'feedback widget opens only from explicit click handler',
-    pass: feedbackWidget.includes('onClick={() => setOpen(true)}') && (feedbackWidget.match(/setOpen\(true\)/g) ?? []).length === 1,
+    // Two openers, both a person's own action: the floating button, and the
+    // monthly email's "Tell me what to build next" link, which lands on
+    // /dashboard?feedback=feature (6a76189). Anything else opening it is the
+    // unprompted survey this guard exists to stop.
+    name: 'feedback widget opens only from an explicit click or the ?feedback= link someone clicked',
+    pass: (() => {
+      const openers = feedbackWidget.match(/setOpen\(true\)/g) ?? [];
+      if (openers.length !== 2 || !feedbackWidget.includes('onClick={() => setOpen(true)}')) return false;
+      // The deep-link opener must bail out when the param is absent, and
+      // strip it afterwards so a refresh does not reopen the dialog.
+      const link = feedbackWidget.match(/params\.get\("feedback"\)[^]*?setOpen\(true\)[^]*?replaceState/);
+      return !!link && /if \(requested === null\) return;/.test(link[0]) && /params\.delete\("feedback"\)/.test(link[0]);
+    })(),
   },
   {
     name: 'survey copy is optional and gentle',

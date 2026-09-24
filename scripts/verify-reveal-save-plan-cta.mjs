@@ -69,7 +69,11 @@ assert.ok(handler, 'Starting-point save handler exists');
 for (const retireYear of [2048, null]) {
   let saved;
   let destination;
+  // The handler records which CTA was used before saving (eb53299), so the
+  // sandbox provides the analytics call and checks what it was given.
+  const tracked = [];
   const scope = {
+    trackRevealCtaClicked: (props) => { tracked.push(JSON.parse(JSON.stringify(props))); },
     exports: {}, Math, Date, takeHome: 60000, savings: 1000,
     city: { name: 'Austin', col: 48000 }, stateKey: 'TX',
     result: { fireTarget: 1200000, retireYear }, planningAge: 30,
@@ -80,7 +84,8 @@ for (const retireYear of [2048, null]) {
   vm.runInNewContext(ts.transpileModule(`exports.save = ${handler};`, {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText, scope);
-  scope.exports.save();
+  scope.exports.save('reveal_save_step');
+  assert.deepEqual(tracked, [{ placement: 'reveal_save_step', landingSource: 'beta' }], 'the save click is tracked once, with its placement');
   assert.equal(saved.monthlyIncome, 5000);
   assert.equal(saved.monthlySavings, 1000);
   assert.equal(saved.monthlySpendEstimate, 4000);

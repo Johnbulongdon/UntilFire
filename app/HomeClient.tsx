@@ -237,8 +237,11 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
       <p className="uf-step-label">Step 2 of 4</p>
       {onCurrencyChange && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-          <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Currency:</span>
+          {/* A real label, so assistive tech announces "Currency", not an
+              unnamed combo box. */}
+          <label htmlFor="uf-income-currency" style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Currency:</label>
           <select
+            id="uf-income-currency"
             value={currency}
             onChange={e => onCurrencyChange(e.target.value as SupportedCurrency)}
             style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1.5px solid var(--accent)", borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", appearance: "none", WebkitAppearance: "none" }}

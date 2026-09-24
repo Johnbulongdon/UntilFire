@@ -32,9 +32,12 @@ assert(
 );
 
 assert(
+  // The summary's per-category breakdown moved into the parent (1fcc2ad): it
+  // is built from allExpenseCats, which appends the custom categories, and
+  // each one takes its own colour and emoji through resolveDisplay.
   src.includes('expenseCategories={allExpenseCats}') &&
-  src.includes('const byCat = expenseCategories.map((cat) => {') &&
-  src.includes('const { color, emoji } = resolveDisplay(base, catCustomizations, cat.key);'),
+  /const allExpenseCats = useMemo\(\(\) => \{[^]*?return \[\.\.\.EXPENSE_CATEGORIES, \.\.\.uniqueCustom\];/.test(src) &&
+  /const byCat = useMemo\(\(\) => \{\s*return allExpenseCats\s*\.map\(\(cat\) => \{[^]*?const \{ color, emoji \} = resolveDisplay\(base, catCustomizations, cat\.key\);/.test(src),
   'monthly summary also includes custom category colors and emoji'
 );
 

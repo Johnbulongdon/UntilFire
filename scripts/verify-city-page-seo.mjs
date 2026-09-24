@@ -9,15 +9,19 @@ assert.match(
   'generic city H1 should include a real text space before the line break so crawlers read “Calculator for …”, not “Calculatorfor …”',
 )
 
+// The wording changed on purpose in 9908ea5: the title now leads with the
+// city's number ("Retire in Seattle: You Need $2.1M"), because the old
+// category-shaped title matched every competing result. What must hold is
+// that both are specific to the city.
 assert.match(
   source,
-  /title: `\$\{data\.name\} FIRE Number Calculator \| UntilFire`/,
+  /title: `[^`]*\$\{data\.name\}[^`]*\| UntilFire`/,
   'generic city pages should have city-specific title metadata',
 )
 
 assert.match(
   source,
-  /description: `How much do you need to retire in \$\{data\.name\}\?/,
+  /description: `[^`]*\$\{data\.name\}[^`]*`/,
   'generic city pages should have city-specific meta descriptions',
 )
 
