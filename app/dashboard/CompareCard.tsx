@@ -3,6 +3,7 @@
 import PercentileTrack from "@/app/components/PercentileTrack";
 import { compareNetWorth } from "@/lib/net-worth-compare";
 import { NET_WORTH_BENCHMARKS } from "@/lib/net-worth-benchmarks";
+import { NET_WORTH_INFLATION } from "@/lib/net-worth-inflation";
 
 /**
  * Home: net worth against US households of the same age.
@@ -26,6 +27,7 @@ export default function CompareCard({ netWorthUsd, age, currency, onOpenAssumpti
   const comparison = compareNetWorth(
     { netWorthUsd, age: age > 0 ? age : null, ageAssumed: !(age > 0), currency },
     NET_WORTH_BENCHMARKS,
+    NET_WORTH_INFLATION,
   );
 
   // In US dollars, no comparison means no data table yet: show nothing
@@ -75,7 +77,10 @@ export default function CompareCard({ netWorthUsd, age, currency, onOpenAssumpti
             </>
           )}
         </span>
-        <span>Federal Reserve Survey of Consumer Finances, {comparison.surveyYear}</span>
+        <span>
+          Federal Reserve Survey of Consumer Finances, {comparison.surveyYear}
+          {comparison.adjustedThrough && <>, adjusted for inflation to {comparison.adjustedThrough}</>}
+        </span>
       </div>
     </div>
   );

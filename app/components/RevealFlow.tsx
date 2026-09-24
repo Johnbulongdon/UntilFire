@@ -376,7 +376,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                 </button>
               )}
               <div style={{ fontSize: 11, color: "var(--uf-ink-2)", maxWidth: 460 }}>
-                {netWorthComparison && <>Net worth: Federal Reserve Survey of Consumer Finances, {netWorthComparison.surveyYear} (the latest), by age of the household&apos;s reference person. </>}
+                {netWorthComparison && <>Net worth: Federal Reserve Survey of Consumer Finances, {netWorthComparison.surveyYear} (the latest), by age of the household&apos;s reference person{netWorthComparison.adjustedThrough && <>, adjusted for inflation to {netWorthComparison.adjustedThrough} (BLS consumer price index)</>}. </>}
                 Savings: ~{usBaselineRate}% U.S. personal saving rate (BEA/FRED); 25% is a common FIRE savings target.
               </div>
             </div>

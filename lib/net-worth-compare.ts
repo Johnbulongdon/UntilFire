@@ -30,6 +30,20 @@ export interface NetWorthComparison {
   /** Age was not given, so the comparison is with all households. */
   allAges: boolean
   surveyYear: number
+  /** Month the survey's dollars were brought forward to ("August 2026"), or null if not adjusted. */
+  adjustedThrough: string | null
+}
+
+/**
+ * Prices since the survey year (lib/net-worth-inflation.ts, generated from
+ * the BLS consumer price index). Today's net worth is brought back to survey
+ * dollars before it is placed, so both sides are in the same money (D-07).
+ */
+export interface InflationAdjustment {
+  /** CPI-U for `through` divided by the survey year's annual average. */
+  factor: number
+  /** Latest month of the index used, e.g. "August 2026". */
+  through: string
 }
 
 const BAND_LABEL: Record<AgeBand, string> = {
@@ -73,6 +87,7 @@ export function shareBelow(value: number, cutpoints: number[]): number {
 export function compareNetWorth(
   input: { netWorthUsd: number; age: number | null | undefined; ageAssumed: boolean; currency: string },
   benchmarks: NetWorthBenchmarks,
+  inflation: InflationAdjustment | null = null,
 ): NetWorthComparison | null {
   if (input.currency !== 'USD') return null
   if (!Number.isFinite(input.netWorthUsd)) return null
@@ -80,13 +95,16 @@ export function compareNetWorth(
   const band = allAges ? 'all' : ageBand(input.age)
   const cutpoints = benchmarks.bands[band]
   if (!cutpoints || cutpoints.length !== 99) return null
-  const share = shareBelow(input.netWorthUsd, cutpoints)
+  const valid = inflation != null && Number.isFinite(inflation.factor) && inflation.factor > 0
+  const inSurveyDollars = valid ? input.netWorthUsd / inflation.factor : input.netWorthUsd
+  const share = shareBelow(inSurveyDollars, cutpoints)
   return {
     band,
     bandLabel: BAND_LABEL[band],
     aheadOfPct: Math.min(99, Math.floor(share)),
-    aboveTop: share >= 99 && input.netWorthUsd > cutpoints[98],
+    aboveTop: share >= 99 && inSurveyDollars > cutpoints[98],
     allAges,
     surveyYear: benchmarks.year,
+    adjustedThrough: valid ? inflation.through : null,
   }
 }
