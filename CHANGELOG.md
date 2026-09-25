@@ -4,6 +4,12 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-25
 
+### Singapore search entry
+- Lead the Singapore FIRE guide's search snippet with its estimated answer, label
+  displayed amounts as USD, and add spending-sensitivity examples so visitors can
+  pressure-test the 25x baseline before continuing to a calculator. Let curated
+  city explanations stack on phones instead of compressing into a narrow column.
+
 ### SEO identity
 - Lead homepage search/social metadata with UntilFire, explicitly provide the
   site name and add "Until Fire" as an alternate name in the existing markup.

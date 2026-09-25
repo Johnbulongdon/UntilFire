@@ -11,6 +11,8 @@ type CityLandingSeed = {
   audienceNote: string
   costAngle: string
   taxAngle: string
+  searchTitle?: string
+  searchDescription?: string
 }
 
 const CITY_PAGE_SEEDS: CityLandingSeed[] = [
@@ -58,6 +60,9 @@ const CITY_PAGE_SEEDS: CityLandingSeed[] = [
       'Your housing assumptions matter a lot here, because changing your recurring spend changes both your target portfolio and the pace at which you can fund it.',
     taxAngle:
       'Relatively light effective taxes can make the gap between gross income and investable cash much healthier than peers expect.',
+    searchTitle: 'Singapore FIRE Number: $1.8M Estimate | UntilFire',
+    searchDescription:
+      "$1.8M is UntilFire's USD baseline for Singapore, based on $72,000 annual spending and the 25x rule. Compare spending scenarios and calculate your timeline.",
   },
   {
     slug: 'shanghai',
@@ -114,23 +119,23 @@ export const cityLandingPages = CITY_PAGE_SEEDS.map((seed) => {
     monthlyCost,
     fireTarget,
     comparedToUsAverage,
-    title: `${seed.keyword} Calculator and Planning Guide | UntilFire`,
-    description: `Estimate a realistic FIRE number for ${city.name} using city-specific cost of living, taxes, and retirement math. See spending, target portfolio, and the next calculator to use.`,
+    title: seed.searchTitle ?? `${seed.keyword} Calculator and Planning Guide | UntilFire`,
+    description: seed.searchDescription ?? `Estimate a realistic FIRE number for ${city.name} using city-specific cost of living, taxes, and retirement math. See spending, target portfolio, and the next calculator to use.`,
     canonicalUrl: `https://www.untilfire.com/fire-number/${seed.slug}`,
     heroTitle: `What is a realistic FIRE number in ${city.name}?`,
     intro:
       `Use ${city.name} as the baseline for your FIRE planning. UntilFire starts with an estimated annual spending profile for the city, then turns that into a retirement target you can pressure-test with your actual income and savings.`,
     summaryItems: [
       {
-        label: 'Estimated annual spending',
+        label: 'Estimated annual spending (USD)',
         value: usd(city.col),
       },
       {
-        label: 'Estimated monthly spending',
+        label: 'Estimated monthly spending (USD)',
         value: usd(monthlyCost),
       },
       {
-        label: '25x FIRE target',
+        label: '25x FIRE target (USD)',
         value: usd(fireTarget),
       },
     ],

@@ -95,3 +95,21 @@ Next bounded investigations, in order:
 - Brand metadata: prepared for Claude review; not yet a measured ranking outcome.
 - No claim that either change will take position 40 to 10. Use intermediate
   query-level progress and qualified conversions to decide the next investment.
+
+## Singapore FIRE-number experiment
+
+The short stored page report shows the Singapore guide in the first-page range
+without an observed click. The sample is small, and separate query/page reports
+do not identify which searches produced those page impressions. Treat this as a
+bounded snippet and usefulness experiment, not proof of a CTR problem.
+
+Lead Singapore's search title and description with the estimated answer. State
+that the page's money figures use US dollars, and show lower, baseline and higher
+spending scenarios so a visitor can see how the 25x rule changes. Keep the same
+canonical URL and calculators; do not create a Singapore keyword variant page.
+
+After production is confirmed, wait for a complete 28-day window plus reporting
+lag. Review page impressions, clicks, CTR and weighted position together, then
+check continuation into a calculator result. Do not attribute registrations to
+this page without a source-aware funnel, and do not rewrite the snippet again on
+a few days of data.
