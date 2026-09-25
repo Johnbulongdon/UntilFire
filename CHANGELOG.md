@@ -12,6 +12,14 @@ All notable changes to UntilFire are documented here.
   comparison, data and inflation factor as the result screen (D-19); nothing
   typed is recorded. Hands on to the freedom date. Listed in the sitemap and on
   the calculators page. Recorded as D-20.
+- Net worth now compares with US households in five-year age groups (18–24,
+  25–29 … 70–74, 75+) rather than ten-year ones, on the page, the result screen
+  and Home: at 26 you are compared with 25–29, not with everyone under 35. The
+  page table shows how many households were surveyed in each group and drops
+  the top-1% column, which a few hundred households can't support. The build
+  still checks the Fed's published ten-year medians from the same data.
+  Single years from UntilFire's own users are a recorded future direction.
+  Recorded as D-21.
 
 ### SEO identity
 - Replaced a learning-page link to the removed Monte Carlo feature with the
