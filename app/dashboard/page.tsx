@@ -16,6 +16,7 @@ import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import ContributionsTab from "./ContributionsTab";
+import CompareCard from "./CompareCard";
 import NextContributionCard from "./NextContributionCard";
 import { measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
@@ -1843,6 +1844,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       {/* ── Your goals: the measurable targets set via the PERMA intro flow
           or added by hand in Plan -> Goals. Read-only here — Home never
           gets its own inputs, per docs/design/app-structure.md. ───────── */}
+      <DashSlot id="compare" layout={layout} editing={editing} dragging={draggingId === "compare"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+        <CompareCard netWorthUsd={currentNetWorth} age={fireAge} currency={displayCurrency} onOpenAssumptions={() => onTabChange?.("fire-calculator")} />
+      </DashSlot>
       <DashSlot id="goals" layout={layout} editing={editing} dragging={draggingId === "goals"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
