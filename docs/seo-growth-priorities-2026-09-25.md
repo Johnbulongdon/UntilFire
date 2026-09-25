@@ -4,6 +4,8 @@ Baseline: `614f1b0000a95a27b1292a52d2875e2c9448684f`. This review separates
 search discovery from conversion. Private Search Console counts stay out of this
 public repository. Refer to the dated SEO audits and `seo-workplan.md` for prior
 changes; do not treat pending PRs as production improvements.
+Reconciled with `c9474a01c3f58d3b1eb6d0ca659d8b32c58d50f5`, including the
+site-wide FAQ removal and visible no-income-tax FAQ corrections, before handoff.
 
 ## What the available evidence supports
 
