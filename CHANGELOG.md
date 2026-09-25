@@ -14,6 +14,9 @@ All notable changes to UntilFire are documented here.
   the calculators page. Recorded as D-20.
 
 ### SEO identity
+- Replaced a learning-page link to the removed Monte Carlo feature with the
+  existing free FIRE estimate. Recorded evidence-based organic growth priorities
+  in `docs/seo-growth-priorities-2026-09-25.md`; no paid promotion is authorized.
 - Lead homepage search/social metadata with UntilFire, explicitly provide the
   site name and add "Until Fire" as an alternate name in the existing markup.
 - Remove the unimplemented `/?q=` SearchAction and an unverified usage-count
