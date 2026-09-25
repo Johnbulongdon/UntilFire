@@ -14,6 +14,21 @@ All notable changes to UntilFire are documented here.
   claim; correct comments that treated sameAs as a guaranteed brand-ranking fix.
 - Record the ongoing SEO evidence and measurement backlog in `docs/seo-workplan.md`.
   No product UI, calculation, redirect or indexing policy changes.
+- Removed the site-wide FAQ structured data from the root layout. It described
+  questions no page shows and appeared on every page, beside each page's own FAQ
+  schema. The homepage now builds its FAQ schema from its visible FAQ; the other
+  FAQ pages keep theirs. `test:seo` guards both.
+- The no-income-tax states page now shows the two questions its FAQ structured
+  data describes, generated from one source. The callout became "common
+  questions"; the state list in the first answer comes from the page's own data,
+  and it notes that Washington taxes large long-term capital gains.
+- Delaware, Hawaii, Kentucky, South Dakota and West Virginia had no display
+  name (Hawaii's was filed under the wrong code), so their state pages were
+  published at bare codes ("FIRE Number in sd") and South Dakota's card on the
+  no-income-tax page was blank and linked nowhere. They now have names and
+  pages at `/fire-number/states/<name>`; the old code URLs redirect
+  permanently. Hawaii's cities now appear in the West Coast region. `test:seo`
+  fails if a US state with cities has no name.
 
 ## [Unreleased] - 2026-09-24
 
