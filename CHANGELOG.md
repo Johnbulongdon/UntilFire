@@ -39,6 +39,10 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-24
 
 ### SEO content
+- Repaired learning-article dark-mode colors and added visible breadcrumb
+  navigation backed by matching Article/WebPage/BreadcrumbList structured data.
+  Article content, dates, canonical URLs and calculator links are unchanged.
+  See `docs/seo-learn-template-2026-09-25.md`.
 - Improved the savings-rate landing page's mobile navigation and result layout,
   connected input labels and visible keyboard focus, and added a post-result
   path to the full calculator with an acquisition-source label. Calculations,

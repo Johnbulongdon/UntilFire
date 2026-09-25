@@ -1,0 +1,59 @@
+.page {
+  background: var(--uf-ground);
+  color: var(--uf-ink);
+}
+
+.page :global(.uf-article-shell) {
+  background: var(--uf-card);
+  border-color: var(--uf-border);
+  box-shadow: var(--uf-e1);
+}
+
+.page :global(.uf-article-dek),
+.page :global(.uf-article-meta),
+.page :global(.uf-article-body) p {
+  color: var(--uf-ink-2);
+}
+
+.page :global(.uf-article-body) h2 {
+  color: var(--uf-ink);
+}
+
+.page a:focus-visible {
+  outline: 2px solid var(--uf-green);
+  outline-offset: 4px;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uf-s2) var(--uf-s3);
+  list-style: none;
+  margin: 0 0 var(--uf-s4);
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.breadcrumbs li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--uf-s3);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.breadcrumbs a {
+  color: var(--uf-green-900);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.primaryLink {
+  color: #fff;
+  min-height: 48px;
+}
+
+:global(.dark) .primaryLink {
+  color: var(--uf-ground);
+}
