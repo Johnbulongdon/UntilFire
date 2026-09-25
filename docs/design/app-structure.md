@@ -127,6 +127,9 @@ won't be deep-linkable. `goals` was missing from it for exactly this reason.
   fact about an account, so it lives on the Connected Bank Accounts card where
   accounts are organised. Plan → Contributions and Home read it and link back
   rather than offering a second picker.
+- **How you compare sits on Home** (D-19). It interprets two things Home
+  already has, the net worth it shows and the age set in Plan → Freedom Date,
+  so it adds no input; its "Change" link goes to that Plan setting.
 
 ## Known gap — not fixed by this structure
 

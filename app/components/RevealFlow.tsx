@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Logo from "@/app/components/Logo";
+import PercentileTrack from "@/app/components/PercentileTrack";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
+import type { NetWorthComparison } from "@/lib/net-worth-compare";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 
 // Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
@@ -32,6 +34,8 @@ export interface RevealFlowProps {
   usBaselineRate: number;
   /** Common FIRE savings-rate target (25%). */
   fireBenchmarkRate: number;
+  /** Net worth against US households of the same age (step 5); null outside the US. */
+  netWorthComparison?: NetWorthComparison | null;
 
   /** Expat-FIRE globe data (step 6). */
   expatHome: { name: string; lat: number; lng: number };
@@ -67,9 +71,23 @@ const KEYFRAMES = `
 @keyframes rf-dot{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
 @keyframes rf-page{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes rf-bar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes rf-bar-x{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes rf-glow{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media (prefers-reduced-motion: reduce){
   .rf-root:not([data-motion="play"]) *{animation:none!important;transition:none!important}
+}
+/* Step 5 with the net-worth comparison is the tallest screen: on short
+   viewports tighten it so Continue stays on screen without scrolling. */
+@media (max-height: 820px){
+  .rf-root[data-dense] .rf-stage{padding:8px 0!important}
+  .rf-root[data-dense] .rf-s5{gap:8px!important}
+  .rf-root[data-dense] .rf-s5-rule{margin:0!important}
+  .rf-root[data-dense] .rf-bar{--rf-bar-scale:.6}
+  .rf-root[data-dense] .rf-bar-col{gap:6px!important}
+  .rf-root[data-dense] .rf-bar-val{font-size:20px!important}
+}
+@media (max-height: 700px){
+  .rf-root[data-dense] .rf-s5-extra{display:none}
 }
 `;
 
@@ -116,7 +134,7 @@ function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, f
 export default function RevealFlow(props: RevealFlowProps) {
   const {
     freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, isAlreadyFire,
-    fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate,
+    fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
     expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, onAdjust, onShare, onStepViewed,
   } = props;
@@ -219,7 +237,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   );
 
   return (
-    <div className="rf-root" data-motion={playMotion ? "play" : "system"} style={shell}>
+    <div className="rf-root" data-motion={playMotion ? "play" : "system"} data-dense={step === 5 && netWorthComparison ? "" : undefined} style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
       <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 42%, transparent 36%, var(--uf-surface))", pointerEvents: "none", zIndex: 1 }} />
 
@@ -248,7 +266,7 @@ export default function RevealFlow(props: RevealFlowProps) {
       </div>
 
       {/* stage — the keyed wrapper re-mounts per step, so rf-page animates every page-to-page transition */}
-      <div style={stage}>
+      <div className="rf-stage" style={stage}>
         <div key={step} style={{ width: "100%", display: "flex", justifyContent: "center", ...anim("rf-page .45s cubic-bezier(.2,.8,.2,1) both") }}>
 
           {/* 2 — freedom age */}
@@ -329,25 +347,37 @@ export default function RevealFlow(props: RevealFlowProps) {
 
           {/* 5 — how you stack up (honest benchmarks) */}
           {step === 5 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center", ...anim("rf-up .55s ease both") }}>
+            <div className="rf-s5" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: netWorthComparison ? 14 : 20, textAlign: "center", ...anim("rf-up .55s ease both") }}>
               <div style={eyebrow}>HOW YOU STACK UP</div>
-              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
+              {netWorthComparison && (
+                <>
+                  <NetWorthStanding comparison={netWorthComparison} reduce={reduce} />
+                  <div aria-hidden className="rf-s5-rule" style={{ width: "min(420px, 80vw)", height: 1, background: "var(--uf-border)", margin: "6px 0" }} />
+                </>
+              )}
+              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: netWorthComparison ? "clamp(18px, 3.4vw, 22px)" : "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
                 {beatsUs
                   ? <>You save <span style={{ color: TEAL }}>{savingsRatePct}%</span> of your take-home</>
                   : <>You&apos;re saving <span style={{ color: TEAL }}>{savingsRatePct}%</span> right now</>}
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(20px, 5vw, 32px)", padding: "0 8px", marginTop: 8 }}>
-                <Bar heightPct={usBaselineRate / maxRate} value={`${usBaselineRate}%`} label="U.S. average" tone="dim" delay=".15s" reduce={reduce} />
-                <Bar heightPct={fireBenchmarkRate / maxRate} value={`${fireBenchmarkRate}%`} label="Typical FIRE saver" tone="mid" delay=".3s" reduce={reduce} />
-                <Bar heightPct={savingsRatePct / maxRate} value={`${savingsRatePct}%`} label="You" tone="you" delay=".45s" reduce={reduce} youBadge />
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(20px, 5vw, 32px)", padding: "0 8px", marginTop: netWorthComparison ? 0 : 8 }}>
+                <Bar heightPct={usBaselineRate / maxRate} value={`${usBaselineRate}%`} label="U.S. average" tone="dim" delay=".15s" reduce={reduce} compact={Boolean(netWorthComparison)} />
+                <Bar heightPct={fireBenchmarkRate / maxRate} value={`${fireBenchmarkRate}%`} label="Typical FIRE saver" tone="mid" delay=".3s" reduce={reduce} compact={Boolean(netWorthComparison)} />
+                <Bar heightPct={savingsRatePct / maxRate} value={`${savingsRatePct}%`} label="You" tone="you" delay=".45s" reduce={reduce} youBadge compact={Boolean(netWorthComparison)} />
               </div>
-              <div style={subtle}>
+              <div className="rf-s5-extra" style={subtle}>
                 {beatsUs
                   ? <>That&apos;s about <b style={{ color: TEAL }}>{savingsMultiple.toFixed(1)}×</b> the ~{usBaselineRate}% average U.S. saver{savingsRatePct >= fireBenchmarkRate ? ", already past the 25% FIRE pace." : ", closing on the 25% FIRE pace."}</>
                   : <>Your savings rate is a starting point. A useful goal should fit your income, essential costs, and priorities.</>}
               </div>
+              {netWorthComparison?.allAges && (
+                <button onClick={onAdjust} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
+                  Add your age for a comparison with people your age →
+                </button>
+              )}
               <div style={{ fontSize: 11, color: "var(--uf-ink-2)", maxWidth: 460 }}>
-                Benchmarks: ~{usBaselineRate}% U.S. personal saving rate (BEA/FRED); 25% is a common FIRE savings target.
+                {netWorthComparison && <>Net worth: Federal Reserve Survey of Consumer Finances, {netWorthComparison.surveyYear} (the latest), by age of the household&apos;s reference person{netWorthComparison.adjustedThrough && <>, adjusted for inflation to {netWorthComparison.adjustedThrough} (BLS consumer price index)</>}. </>}
+                Savings: ~{usBaselineRate}% U.S. personal saving rate (BEA/FRED); 25% is a common FIRE savings target.
               </div>
             </div>
           )}
@@ -441,20 +471,54 @@ function Legend({ color, label, highlight }: { color: string; label: string; hig
   );
 }
 
-function Bar({ heightPct, value, label, tone, delay, reduce, youBadge }: {
-  heightPct: number; value: string; label: string; tone: "dim" | "mid" | "you"; delay: string; reduce: boolean; youBadge?: boolean;
+/**
+ * Net worth against US households of the same age, as a position on a line.
+ * Always phrased as how many have less: a comparison meant to orient, not to
+ * rank anyone down.
+ */
+function NetWorthStanding({ comparison, reduce }: { comparison: NetWorthComparison; reduce: boolean }) {
+  const { aheadOfPct, aboveTop, bandLabel } = comparison;
+  const who = `US households ${bandLabel}`;
+  const position = aboveTop ? 99.5 : Math.max(0.5, aheadOfPct);
+  const headline = aboveTop
+    ? <>Your net worth is ahead of <span style={{ color: TEAL }}>more than 99%</span> of {who}</>
+    : aheadOfPct >= 1
+      ? <>Your net worth is ahead of <span style={{ color: TEAL }}>{aheadOfPct}%</span> of {who}</>
+      : <>Your net worth is at the start line</>;
+  const note = aheadOfPct >= 50
+    ? "The line marks the median: half of these households have more, half have less."
+    : aheadOfPct >= 1
+      ? "Net worth tends to grow with the years you stay invested. Your freedom date shows how far that takes you."
+      : `Most ${who} have more saved today. Where you start isn't where you finish.`;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+      <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(20px, 3.8vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em", maxWidth: 520, lineHeight: 1.2 }}>
+        {headline}
+      </div>
+      <PercentileTrack
+        position={position}
+        label={aboveTop ? `Ahead of more than 99% of ${who}` : `Ahead of ${aheadOfPct}% of ${who}`}
+        fillAnimation={reduce ? undefined : "rf-bar-x .8s .15s cubic-bezier(.2,.8,.2,1) both"}
+      />
+      <div style={{ fontSize: 13, color: "var(--uf-ink-2)", lineHeight: 1.55, maxWidth: 440 }}>{note}</div>
+    </div>
+  );
+}
+
+function Bar({ heightPct, value, label, tone, delay, reduce, youBadge, compact }: {
+  heightPct: number; value: string; label: string; tone: "dim" | "mid" | "you"; delay: string; reduce: boolean; youBadge?: boolean; compact?: boolean;
 }) {
-  const maxPx = 148;
+  const maxPx = compact ? 92 : 148;
   const h = Math.max(24, Math.round(Math.max(0, Math.min(1, heightPct)) * maxPx));
   const bg = tone === "you" ? TEAL : tone === "mid" ? "var(--uf-ink-3)" : "var(--uf-border-2)";
   const valueColor = tone === "you" ? TEAL : tone === "mid" ? "var(--uf-ink-2)" : "var(--uf-ink-2)";
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
+    <div className="rf-bar-col" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
       {youBadge && (
         <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", color: BG, background: TEAL, borderRadius: 6, padding: "3px 9px" }}>YOU</span>
       )}
-      <div style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: tone === "you" ? 30 : 22, fontWeight: 800, color: valueColor }}>{value}</div>
-      <div style={{ width: tone === "you" ? 90 : 78, height: h, borderRadius: "8px 8px 0 0", background: bg, transformOrigin: "bottom", boxShadow: tone === "you" ? `0 0 42px rgba(${TEAL_RGB},0.42)` : undefined, animation: reduce ? "none" : `rf-bar .65s ${delay} cubic-bezier(.2,.8,.2,1) both` }} />
+      <div className="rf-bar-val" style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: tone === "you" ? 30 : 22, fontWeight: 800, color: valueColor }}>{value}</div>
+      <div className="rf-bar" style={{ width: tone === "you" ? 90 : 78, height: `calc(${h}px * var(--rf-bar-scale, 1))`, borderRadius: "8px 8px 0 0", background: bg, transformOrigin: "bottom", boxShadow: tone === "you" ? `0 0 42px rgba(${TEAL_RGB},0.42)` : undefined, animation: reduce ? "none" : `rf-bar .65s ${delay} cubic-bezier(.2,.8,.2,1) both` }} />
       <div style={{ fontSize: 13, color: tone === "you" ? TEAL : "var(--uf-ink-2)", fontWeight: tone === "you" ? 600 : 400 }}>{label}</div>
     </div>
   );
