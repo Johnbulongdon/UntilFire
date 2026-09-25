@@ -36,6 +36,20 @@ export default function NoIncomeTaxStatesPage() {
   const avgCost = Math.round(stateStats.reduce((sum, s) => sum + s.avgCol, 0) / stateStats.length)
   const potentialTaxSavings = 0.05 * 100_000 // rough estimate: 5% tax rate * typical income
 
+  // The visible FAQ and its structured data share one source, so the schema
+  // only ever describes questions this page shows.
+  const stateNames = stateStats.map((s) => STATE_NAMES[s.stateKey])
+  const faqs = [
+    {
+      question: 'Which US states have no income tax?',
+      answer: `${stateStats.length} US states have no state tax on wages: ${stateNames.slice(0, -1).join(', ')} and ${stateNames[stateNames.length - 1]}. Washington does tax large long-term capital gains, which can matter when you sell investments in retirement.`,
+    },
+    {
+      question: 'How much can I save with no state income tax?',
+      answer: 'On a $100,000 income, a 5% state income tax is $5,000 a year. Invested instead, that compounds over 30 years into meaningful portfolio growth. Combined with disciplined spending and a lower-cost city in these states, it can bring your FIRE target closer.',
+    },
+  ]
+
   return (
     <>
       <style>{`
@@ -143,14 +157,17 @@ export default function NoIncomeTaxStatesPage() {
           </div>
         </section>
 
-        {/* Tax benefit callout */}
+        {/* Questions about no-income-tax states */}
         <section style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 16, padding: '24px', marginBottom: 48 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--uf-green-900)', margin: '0 0 12px' }}>
-            Why no-income-tax states matter for FIRE
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--uf-green-900)', margin: '0 0 16px' }}>
+            No-income-tax states and FIRE: common questions
           </h2>
-          <p style={{ margin: 0, fontSize: 15, color: 'var(--uf-ink-2)', lineHeight: 1.7 }}>
-            A 5% state tax on a $100k income means $5,000/year stays in your pocket instead of going to the state. Over 30 years, that compounds into meaningful portfolio growth. Combined with disciplined spending and a lower-cost city in these states, you can hit your FIRE target years faster.
-          </p>
+          {faqs.map(({ question, answer }, i) => (
+            <div key={question} style={{ marginTop: i === 0 ? 0 : 16 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--uf-green-900)', margin: '0 0 6px' }}>{question}</h3>
+              <p style={{ margin: 0, fontSize: 15, color: 'var(--uf-ink-2)', lineHeight: 1.7 }}>{answer}</p>
+            </div>
+          ))}
         </section>
 
         {/* Bottom CTA */}
@@ -213,24 +230,11 @@ export default function NoIncomeTaxStatesPage() {
             {
               '@context': 'https://schema.org',
               '@type': 'FAQPage',
-              mainEntity: [
-                {
-                  '@type': 'Question',
-                  name: 'Which US states have no income tax?',
-                  acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: 'Nine US states have zero state income tax: Texas, Florida, Nevada, Washington, Tennessee, Wyoming, South Dakota, Alaska, and New Hampshire.',
-                  },
-                },
-                {
-                  '@type': 'Question',
-                  name: 'How much can I save with no state income tax?',
-                  acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: 'On a $100,000 income, avoiding 5% state income tax saves $5,000/year. Over 30 years, that compounds into significant portfolio growth when invested.',
-                  },
-                },
-              ],
+              mainEntity: faqs.map(({ question, answer }) => ({
+                '@type': 'Question',
+                name: question,
+                acceptedAnswer: { '@type': 'Answer', text: answer },
+              })),
             },
           ]),
         }}

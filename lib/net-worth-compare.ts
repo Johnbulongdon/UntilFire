@@ -108,3 +108,35 @@ export function compareNetWorth(
     adjustedThrough: valid ? inflation.through : null,
   }
 }
+
+/** Age bands in table order, youngest first, for the by-age table. */
+export const AGE_BANDS: Exclude<AgeBand, 'all'>[] = ['under_35', '35_44', '45_54', '55_64', '65_74', '75_plus']
+
+/** Short age wording for a table row: "Under 35", "35–44", "75+". */
+export const AGE_BAND_SHORT: Record<AgeBand, string> = {
+  all: 'All ages',
+  under_35: 'Under 35',
+  '35_44': '35–44',
+  '45_54': '45–54',
+  '55_64': '55–64',
+  '65_74': '65–74',
+  '75_plus': '75+',
+}
+
+/**
+ * The net worth at a percentile of a band, in today's dollars: the survey's
+ * cutpoint brought forward with the same factor the comparison divides by.
+ * `pct` is 1–99; 50 is the median.
+ */
+export function percentileToday(
+  benchmarks: NetWorthBenchmarks,
+  band: AgeBand,
+  pct: number,
+  inflation: InflationAdjustment | null = null,
+): number | null {
+  const cutpoints = benchmarks.bands[band]
+  if (!cutpoints || cutpoints.length !== 99) return null
+  if (!Number.isInteger(pct) || pct < 1 || pct > 99) return null
+  const valid = inflation != null && Number.isFinite(inflation.factor) && inflation.factor > 0
+  return cutpoints[pct - 1] * (valid ? inflation.factor : 1)
+}

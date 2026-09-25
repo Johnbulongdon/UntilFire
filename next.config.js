@@ -33,6 +33,33 @@ const nextConfig = {
         destination: '/learn/barista-fire',
         permanent: true,
       },
+      // These states had no display name (Hawaii's was filed under the wrong
+      // code), so their state pages were published at their state codes.
+      {
+        source: '/fire-number/states/de_us',
+        destination: '/fire-number/states/delaware',
+        permanent: true,
+      },
+      {
+        source: '/fire-number/states/hi',
+        destination: '/fire-number/states/hawaii',
+        permanent: true,
+      },
+      {
+        source: '/fire-number/states/ky',
+        destination: '/fire-number/states/kentucky',
+        permanent: true,
+      },
+      {
+        source: '/fire-number/states/sd',
+        destination: '/fire-number/states/southdakota',
+        permanent: true,
+      },
+      {
+        source: '/fire-number/states/wv',
+        destination: '/fire-number/states/westvirginia',
+        permanent: true,
+      },
     ]
   },
 }

@@ -4,6 +4,15 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-25
 
+### Net worth by age
+- New page: `/calculators/net-worth-by-age`. Enter a net worth, and optionally an
+  age, to see how it compares with US households your age, then a table of the
+  median and 25th–99th percentiles for every age group in August 2026 dollars,
+  where the numbers come from, and a FAQ whose structured data matches it. Same
+  comparison, data and inflation factor as the result screen (D-19); nothing
+  typed is recorded. Hands on to the freedom date. Listed in the sitemap and on
+  the calculators page. Recorded as D-20.
+
 ### SEO identity
 - Lead homepage search/social metadata with UntilFire, explicitly provide the
   site name and add "Until Fire" as an alternate name in the existing markup.
@@ -11,6 +20,21 @@ All notable changes to UntilFire are documented here.
   claim; correct comments that treated sameAs as a guaranteed brand-ranking fix.
 - Record the ongoing SEO evidence and measurement backlog in `docs/seo-workplan.md`.
   No product UI, calculation, redirect or indexing policy changes.
+- Removed the site-wide FAQ structured data from the root layout. It described
+  questions no page shows and appeared on every page, beside each page's own FAQ
+  schema. The homepage now builds its FAQ schema from its visible FAQ; the other
+  FAQ pages keep theirs. `test:seo` guards both.
+- The no-income-tax states page now shows the two questions its FAQ structured
+  data describes, generated from one source. The callout became "common
+  questions"; the state list in the first answer comes from the page's own data,
+  and it notes that Washington taxes large long-term capital gains.
+- Delaware, Hawaii, Kentucky, South Dakota and West Virginia had no display
+  name (Hawaii's was filed under the wrong code), so their state pages were
+  published at bare codes ("FIRE Number in sd") and South Dakota's card on the
+  no-income-tax page was blank and linked nowhere. They now have names and
+  pages at `/fire-number/states/<name>`; the old code URLs redirect
+  permanently. Hawaii's cities now appear in the West Coast region. `test:seo`
+  fails if a US state with cities has no name.
 
 ## [Unreleased] - 2026-09-24
 
@@ -19,6 +43,10 @@ All notable changes to UntilFire are documented here.
   navigation backed by matching Article/WebPage/BreadcrumbList structured data.
   Article content, dates, canonical URLs and calculator links are unchanged.
   See `docs/seo-learn-template-2026-09-25.md`.
+- Improved the savings-rate landing page's mobile navigation and result layout,
+  connected input labels and visible keyboard focus, and added a post-result
+  path to the full calculator with an acquisition-source label. Calculations,
+  defaults, indexing and the free-before-signup flow are unchanged.
 - Clarified Coast FIRE inflation, contribution timing and withdrawal assumptions;
   added return-sensitivity examples and model limits, removed a repeated FAQ
   heading, and aligned visible FAQ answers with structured data. Calculator logic
