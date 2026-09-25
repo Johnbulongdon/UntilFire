@@ -45,6 +45,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: siteUrl('/calculators/net-worth-by-age'),
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
       url: siteUrl('/calculators/4-percent-rule'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
