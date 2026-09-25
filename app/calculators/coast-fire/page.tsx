@@ -2,16 +2,44 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import CoastFireCalculator from './CoastFireCalculator'
 
+// The rendered FAQ and structured answers share one source.
+const faqs = [
+  {
+    question: 'What is my Coast FIRE number?',
+    answer: 'Your Coast FIRE number is the amount invested today that could grow to your retirement target without further contributions. It depends on annual retirement spending, withdrawal rate, years until retirement, and assumed real return. Current investments and monthly contributions determine when you might reach that threshold.',
+  },
+  {
+    question: 'Does this Coast FIRE calculator account for inflation?',
+    answer: "Yes, through the return you enter. Use an after-inflation (real) annual return and spending in today's money. Do not enter a nominal return and assume inflation will be subtracted automatically. For example, 7% nominal growth with 3% inflation is about 3.9% real growth: (1.07 / 1.03) - 1. Fees and taxes are not deducted automatically either.",
+  },
+  {
+    question: 'Can I stop saving now, or only at my Coast FIRE age?',
+    answer: 'Those are different questions. The Coast number is the threshold for stopping contributions today. The calculator also uses your existing savings and monthly contributions to estimate the earliest age you could reach that threshold. Moving Stop paying in at compares a chosen plan with continuing to contribute until retirement. You still need income to cover living costs during the coasting years; this model assumes no portfolio withdrawals until retirement.',
+  },
+  {
+    question: 'Is Coast FI the same as Coast FIRE?',
+    answer: 'Yes, both refer to the same milestone. Reaching it means retirement contributions could become optional under your assumptions; it does not mean work is already optional or retirement is guaranteed.',
+  },
+  {
+    question: 'Is Coast FIRE the same as Barista FIRE?',
+    answer: 'No. Coast FIRE assumes the retirement portfolio stays invested without withdrawals while other income covers living costs. Barista FIRE usually combines part-time work with portfolio income or other resources to cover current spending. Working part time can fit either approach, but drawing from the portfolio before retirement changes the Coast FIRE calculation.',
+  },
+  {
+    question: 'What inputs matter most for Coast FIRE?',
+    answer: 'All four target assumptions matter. Spending changes the target proportionally; a lower withdrawal rate raises it. Return and years to retirement compound together. For a $1,250,000 retirement target in 30 years, the Coast number is about $164,000 at 7% real return, $289,000 at 5%, or $515,000 at 3%. These are scenarios, not predicted returns.',
+  },
+]
+
 export const metadata: Metadata = {
   title: 'Coast FIRE Calculator — Find Your Coast FI Number | UntilFire',
   description:
-    'Calculate your Coast FIRE number -the amount you need saved today so that compound growth alone carries you to full retirement, without any more contributions. Free calculator.',
+    'Estimate your Coast FIRE number and the age you could stop saving. Compare contributions, retirement spending and inflation-adjusted returns. Free, no login.',
   keywords:
     'coast FIRE calculator, coast FI calculator, coast fire number, coast FI number, barista FIRE calculator, semi-retirement calculator, how much to save to coast',
   alternates: { canonical: 'https://www.untilfire.com/calculators/coast-fire' },
   openGraph: {
     title: 'Coast FIRE Calculator | UntilFire',
-    description: 'Find the number where you can stop saving and let compound growth finish the job.',
+    description: 'Estimate when you could stop retirement contributions and compare the assumptions behind your Coast FIRE plan.',
     url: 'https://www.untilfire.com/calculators/coast-fire',
     siteName: 'UntilFire',
     type: 'website',
@@ -19,7 +47,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Coast FIRE Calculator | UntilFire',
-    description: 'Find the number where you can stop saving and let compound growth finish the job.',
+    description: 'Estimate when you could stop retirement contributions and compare the assumptions behind your Coast FIRE plan.',
   },
 }
 
@@ -46,7 +74,7 @@ export default function CoastFirePage() {
               Coast FIRE is one division. Work out the portfolio you need at retirement, then
               discount it back to today at whatever return you expect to earn between now and
               then. What comes out is the amount that, left alone, grows into the full number
-              without another penny from you.
+              without further contributions, if those assumptions hold.
             </p>
 
             <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s3)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
@@ -60,7 +88,7 @@ export default function CoastFirePage() {
               growth ahead, so at a 7% real return the discount factor is 1.07<sup>30</sup>, or
               about 7.6. Divide and you get roughly <strong>$164,000</strong>. Reach that, and
               you could stop contributing today and still land on $1,250,000 at 65 — provided the
-              7% holds, which is the whole gamble.
+              assumed growth is achieved. This is a scenario, not a guaranteed outcome.
             </p>
 
             <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>Coast FIRE number by age</h3>
@@ -102,54 +130,44 @@ export default function CoastFirePage() {
               Change any assumption in the calculator above and the whole curve moves.
             </p>
 
+            <h2 className="uf-t-h2" style={{ margin: '0 0 var(--uf-s4)' }}>How to choose your Coast FIRE inputs</h2>
+            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
+              Keep savings, contributions and spending in the same currency. Count the investments
+              intended to fund retirement, rather than money reserved for near-term bills or an
+              emergency fund. Enter annual retirement spending in today&apos;s money, including
+              costs the portfolio must cover such as housing, healthcare and withdrawal taxes.
+            </p>
+            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
+              The monthly contribution is converted to an annual amount and added at the end of
+              each projected year. Pension and Social Security start dates, investment fees and
+              taxes are not modelled separately. The 7% return and 4% withdrawal defaults are
+              editable assumptions; compare lower returns and different spending before relying
+              on the result. Even small{' '}
+              <a href="https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins/updated" style={{ color: 'var(--uf-green)', textDecoration: 'underline' }}>
+                investment fees reduce long-term growth
+              </a>.
+            </p>
+            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s5)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
+              The chart uses constant annual growth and shows ten years after retirement. It is
+              not a lifetime sustainability test. Learn how{' '}
+              <Link href="/learn/sequence-of-returns-risk" style={{ color: 'var(--uf-green)', textDecoration: 'underline' }}>
+                the order of investment returns affects retirement withdrawals
+              </Link>{' '}
+              before treating a smooth projection as a promise.
+            </p>
+
             <h2 className="uf-t-h2" style={{ margin: '0 0 var(--uf-s4)' }}>Coast FIRE FAQ</h2>
 
-            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
-              What is my Coast FIRE number?
-            </h3>
-            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
-              It is personal to three things: what you expect to spend in retirement, when you
-              want to retire, and what return you assume. There is no single figure — someone
-              retiring at 50 needs far more today than someone retiring at 65, because the second
-              has fifteen more years of compounding doing the work. Put your own three numbers
-              into the calculator above rather than borrowing anyone else&apos;s.
-            </p>
+            {faqs.map(({ question, answer }) => (
+              <div key={question}>
+                <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>{question}</h3>
+                <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
+                  {answer}
+                </p>
+              </div>
+            ))}
 
-            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
-              Is Coast FI the same as Coast FIRE?
-            </h3>
-            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
-              Yes — two names for the same milestone. Some people prefer &ldquo;Coast FI&rdquo;
-              because it drops the &ldquo;retire early&rdquo; part, which is fair: reaching it
-              does not oblige you to retire at all. It means contributions have become optional,
-              not that work has.
-            </p>
-
-            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
-              Is Coast FIRE the same as Barista FIRE?
-            </h3>
-
-            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
-              Is Coast FIRE the same as Barista FIRE?
-            </h3>
-            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
-              No. Coast FIRE means your existing investments can grow into a full retirement on
-              their own. Barista FIRE usually means you still work part time to cover today&apos;s
-              expenses while they do it.
-            </p>
-
-            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
-              What inputs matter most?
-            </h3>
-            <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
-              Expected return and years remaining, by a wide margin. Both sit in an exponent, so a
-              single percentage point moves the Coast number far more than a change to your
-              spending does. Try 6% against 7% above and watch the curve.
-            </p>
-
-            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>
-              Where does this fit with the rest?
-            </h3>
+            <h3 className="uf-t-h3" style={{ margin: '0 0 var(--uf-s2)' }}>Plan the next step</h3>
             <p className="uf-t-body" style={{ margin: 0, color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
               Use the{' '}
               <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>
@@ -171,7 +189,7 @@ export default function CoastFirePage() {
             '@context': 'https://schema.org',
             '@type': 'SoftwareApplication',
             name: 'Coast FIRE Calculator',
-            description: 'Calculate your Coast FIRE number — how much to save now so you never need to contribute again.',
+            description: 'Estimate your Coast FIRE number and when retirement contributions could become optional under your assumptions.',
             url: 'https://www.untilfire.com/calculators/coast-fire',
             applicationCategory: 'FinanceApplication',
             operatingSystem: 'Any',
@@ -193,48 +211,11 @@ export default function CoastFirePage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
-            mainEntity: [
-              {
-                '@type': 'Question',
-                name: 'What is my Coast FIRE number?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'It depends on three things: what you expect to spend in retirement, when you want to retire, and what return you assume. Coast number = (annual spending \u00f7 withdrawal rate) \u00f7 (1 + return) raised to the years remaining. At $50,000 a year, a 4% withdrawal rate, a 7% real return and retirement at 65, a 35-year-old needs about $164,000.',
-                },
-              },
-              {
-                '@type': 'Question',
-                name: 'Is Coast FI the same as Coast FIRE?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'Yes, two names for the same milestone. Coast FI drops the \u201cretire early\u201d part, which is fair: reaching it means contributions have become optional, not that work has.',
-                },
-              },
-              {
-                '@type': 'Question',
-                name: 'Is Coast FIRE the same as Barista FIRE?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'No. Coast FIRE means your existing investments can grow into a full retirement on their own. Barista FIRE usually means you still work part time to cover today\u2019s expenses while they do it.',
-                },
-              },
-              {
-                '@type': 'Question',
-                name: 'What inputs matter most for Coast FIRE?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'Expected return and years remaining, by a wide margin. Both sit in an exponent, so a single percentage point moves the Coast FIRE number far more than a change to your spending does.',
-                },
-              },
-              {
-                '@type': 'Question',
-                name: 'Where does Coast FIRE fit with a full FIRE number?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'Coast FIRE is the milestone before full financial independence. Work out the full number and a date first, then treat Coast FIRE as the earlier point where contributions become optional.',
-                },
-              },
-            ],
+            mainEntity: faqs.map(({ question, answer }) => ({
+              '@type': 'Question',
+              name: question,
+              acceptedAnswer: { '@type': 'Answer', text: answer },
+            })),
           }),
         }}
       />

@@ -5,6 +5,10 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-24
 
 ### SEO content
+- Clarified Coast FIRE inflation, contribution timing and withdrawal assumptions;
+  added return-sensitivity examples and model limits, removed a repeated FAQ
+  heading, and aligned visible FAQ answers with structured data. Calculator logic
+  and defaults are unchanged. See `docs/seo-coast-content-2026-09-25.md`.
 - Clarified the savings-rate calculator's search description, formula and annual
   inputs. Replaced conflicting fixed retirement timelines with the actual model
   assumptions, clarified payroll contributions, and kept one main heading.
