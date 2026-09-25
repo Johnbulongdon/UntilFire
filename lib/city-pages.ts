@@ -11,6 +11,9 @@ type CityLandingSeed = {
   audienceNote: string
   costAngle: string
   taxAngle: string
+  searchTitle?: string
+  searchDescription?: string
+  currencyCode?: 'USD'
 }
 
 const CITY_PAGE_SEEDS: CityLandingSeed[] = [
@@ -28,6 +31,10 @@ const CITY_PAGE_SEEDS: CityLandingSeed[] = [
       'Housing and lifestyle inflation can quietly erase the Texas-tax advantage if your spending rises with income.',
     taxAngle:
       'Texas has no state income tax, which means take-home pay can convert into invested savings faster than in high-tax states.',
+    searchTitle: 'Austin FIRE Number: $1.36M Estimate | UntilFire',
+    searchDescription:
+      "$1.36M is UntilFire's Austin baseline, based on $54,300 annual spending and the 25x rule. Compare USD spending scenarios and calculate your timeline.",
+    currencyCode: 'USD',
   },
   {
     slug: 'london',
@@ -114,23 +121,23 @@ export const cityLandingPages = CITY_PAGE_SEEDS.map((seed) => {
     monthlyCost,
     fireTarget,
     comparedToUsAverage,
-    title: `${seed.keyword} Calculator and Planning Guide | UntilFire`,
-    description: `Estimate a realistic FIRE number for ${city.name} using city-specific cost of living, taxes, and retirement math. See spending, target portfolio, and the next calculator to use.`,
+    title: seed.searchTitle ?? `${seed.keyword} Calculator and Planning Guide | UntilFire`,
+    description: seed.searchDescription ?? `Estimate a realistic FIRE number for ${city.name} using city-specific cost of living, taxes, and retirement math. See spending, target portfolio, and the next calculator to use.`,
     canonicalUrl: `https://www.untilfire.com/fire-number/${seed.slug}`,
     heroTitle: `What is a realistic FIRE number in ${city.name}?`,
     intro:
       `Use ${city.name} as the baseline for your FIRE planning. UntilFire starts with an estimated annual spending profile for the city, then turns that into a retirement target you can pressure-test with your actual income and savings.`,
     summaryItems: [
       {
-        label: 'Estimated annual spending',
+        label: `Estimated annual spending${seed.currencyCode ? ` (${seed.currencyCode})` : ''}`,
         value: usd(city.col),
       },
       {
-        label: 'Estimated monthly spending',
+        label: `Estimated monthly spending${seed.currencyCode ? ` (${seed.currencyCode})` : ''}`,
         value: usd(monthlyCost),
       },
       {
-        label: '25x FIRE target',
+        label: `25x FIRE target${seed.currencyCode ? ` (${seed.currencyCode})` : ''}`,
         value: usd(fireTarget),
       },
     ],
