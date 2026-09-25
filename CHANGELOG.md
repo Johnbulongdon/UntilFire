@@ -5,6 +5,10 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-24
 
 ### SEO content
+- Improved the savings-rate landing page's mobile navigation and result layout,
+  connected input labels and visible keyboard focus, and added a post-result
+  path to the full calculator with an acquisition-source label. Calculations,
+  defaults, indexing and the free-before-signup flow are unchanged.
 - Clarified the savings-rate calculator's search description, formula and annual
   inputs. Replaced conflicting fixed retirement timelines with the actual model
   assumptions, clarified payroll contributions, and kept one main heading.

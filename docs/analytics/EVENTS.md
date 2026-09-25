@@ -60,6 +60,10 @@ Do not wire a new screen to `step_id=currency`.
 - `landing_source` is a coarse route/source label such as `learn-hub`,
   `calculator-savings-rate`, or `fire-number-austin-tx`. It is used for
   acquisition attribution, not personal identification.
+- `calculator-savings-rate-result` identifies the savings-rate page's post-result
+  link into the main calculator. It uses the existing `source` / `landing_source`
+  path, not a new event. It records continuation origin, not proof of a Google
+  visit or a completed signup. No calculator amounts are passed in the link.
 
 ## Person properties
 
