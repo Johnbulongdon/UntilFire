@@ -35,6 +35,16 @@ assert.match(
   /How spending changes the \{page\.city\.name\} FIRE number/,
   'the USD curated-city experiment should make the 25x target sensitive to spending assumptions',
 )
+assert.match(
+  source,
+  /\['Scenario', '25x FIRE target \(USD\)', 'Annual spending \(USD\)', 'Monthly spending \(USD\)'\]/,
+  'the spending table should put the FIRE target right after the scenario, so it shows on a phone without scrolling',
+)
+assert.match(
+  source,
+  /\[scenario\.annual \* 25, scenario\.annual, scenario\.annual \/ 12\]/,
+  'the spending table cells should follow the same column order as its headings',
+)
 
 // The wording changed on purpose in 9908ea5: the title now leads with the
 // city's number ("Retire in Seattle: You Need $2.1M"), because the old
