@@ -14,19 +14,24 @@ const COLUMNS = [
   { pct: 25, label: '25th percentile' },
   { pct: 75, label: '75th percentile' },
   { pct: 90, label: '90th percentile' },
-  { pct: 99, label: 'Top 1% starts at' },
 ]
+// No top-1% column: a five-year group has a few hundred survey households,
+// so its top 1% is two or three of them — not a figure worth printing.
 
 const at = (band: AgeBand, pct: number) =>
   formatMoney(percentileToday(NET_WORTH_BENCHMARKS, band, pct, NET_WORTH_INFLATION) ?? 0, { style: 'compact' })
 
-const medians = AGE_BANDS.map((b) => `${at(b, 50)} ${b === 'under_35' ? 'under 35' : b === '75_plus' ? 'at 75 and over' : `at ${AGE_BAND_SHORT[b]}`}`)
+const SAMPLE: AgeBand[] = ['18_24', '25_29', '30_34', '40_44', '50_54', '60_64']
+const medians = SAMPLE.map((b) => `${at(b, 50)} at ${AGE_BAND_SHORT[b]}`)
+const households = (band: AgeBand) => NET_WORTH_BENCHMARKS.households?.[band]
+// Largest gap between our ten-year medians and the Fed's, from the build's check.
+const FED_GAP_PCT = Math.max(...Object.values(NET_WORTH_BENCHMARKS.fedCheck ?? {}).map((c) => Math.abs(c.ours - c.published) / c.published * 100))
 
 // The visible FAQ and its structured data share this list.
 const faqs = [
   {
     question: 'What is the median net worth by age in the US?',
-    answer: `In ${THROUGH} dollars, the median US household net worth is about ${medians.slice(0, -1).join(', ')} and ${medians[medians.length - 1]}. Across all ages it is about ${at('all', 50)}. Source: Federal Reserve Survey of Consumer Finances, ${YEAR}.`,
+    answer: `In ${THROUGH} dollars, the median US household net worth is about ${medians.slice(0, -1).join(', ')} and ${medians[medians.length - 1]}. Across all ages it is about ${at('all', 50)}. The table above has every five-year age group. Source: Federal Reserve Survey of Consumer Finances, ${YEAR}.`,
   },
   {
     question: 'What counts as net worth?',
@@ -76,7 +81,7 @@ export default function NetWorthByAgePage() {
           <article style={card}>
             <h2 className="uf-t-h2" style={{ margin: '0 0 var(--uf-s2)' }}>US household net worth by age</h2>
             <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)' }}>
-              In {THROUGH} dollars, by the age of the household&apos;s reference person. Each column is the net worth that share of households falls below: at the median, half have less.
+              In {THROUGH} dollars, in five-year groups by the age of the household&apos;s reference person. Each column is the net worth that share of households falls below: at the median, half have less. Groups with fewer households surveyed, such as 18–24, are less precise.
             </p>
             <div style={{ overflowX: 'auto' }}>
               <table className="uf-t-data" style={{ borderCollapse: 'collapse', width: '100%', fontSize: 14 }}>
@@ -84,6 +89,7 @@ export default function NetWorthByAgePage() {
                   <tr>
                     <th scope="col" style={{ ...cell, textAlign: 'left' }}>Age</th>
                     {COLUMNS.map((c) => <th key={c.pct} scope="col" style={cell}>{c.label}</th>)}
+                    <th scope="col" style={cell}>Households surveyed</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -91,6 +97,7 @@ export default function NetWorthByAgePage() {
                     <tr key={band} style={band === 'all' ? { fontWeight: 700 } : undefined}>
                       <th scope="row" style={{ ...cell, textAlign: 'left' }}>{AGE_BAND_SHORT[band]}</th>
                       {COLUMNS.map((c) => <td key={c.pct} style={cell}>{at(band, c.pct)}</td>)}
+                      <td style={{ ...cell, color: 'var(--uf-ink-2)' }}>{households(band)?.toLocaleString('en-US') ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -101,7 +108,7 @@ export default function NetWorthByAgePage() {
           <article style={card}>
             <h2 className="uf-t-h2" style={{ margin: '0 0 var(--uf-s3)' }}>Where these numbers come from</h2>
             <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s3)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
-              The Federal Reserve&apos;s <a href="https://www.federalreserve.gov/econres/scfindex.htm" style={link}>Survey of Consumer Finances</a> ({YEAR}, the latest), weighted across all five of its data sets, grouped by the age of the household&apos;s reference person. Each group&apos;s median is within 2% of the Fed&apos;s published figure.
+              The Federal Reserve&apos;s <a href="https://www.federalreserve.gov/econres/scfindex.htm" style={link}>Survey of Consumer Finances</a> ({YEAR}, the latest), weighted across all five of its data sets, grouped by the age of the household&apos;s reference person into five-year groups. The Fed publishes medians for ten-year groups only; built from the same rows, ours are each within {FED_GAP_PCT.toFixed(1)}% of them.
               Amounts are brought forward with the <a href="https://www.bls.gov/cpi/" style={link}>BLS consumer price index</a> to {THROUGH}.
             </p>
             <p className="uf-t-body" style={{ margin: 0, color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>

@@ -629,6 +629,45 @@ Fed's 2025 survey (the table regenerates from the same scripts).
 **Source:** `app/calculators/net-worth-by-age/`, `percentileToday` in
 `lib/net-worth-compare.ts`, `test:net-worth-compare`.
 
+### D-21 — September 25: five-year age groups now; single years from UntilFire's own users later
+
+**Status:** Active. Authorised by the founder on 2026-09-25. Refines D-19's
+age groups; D-19 and D-20 otherwise stand.
+**Decision:** The net worth comparison (result screen, Home card and the net
+worth by age page) compares with US households in five-year age groups
+(18–24, 25–29 … 70–74, 75+) instead of the Fed's ten-year groups. The page
+table shows the households surveyed in each group and drops the top-1%
+column. The founder wants single years once UntilFire has enough users of
+its own; that is recorded below as a future direction, not built.
+**Why:** "Under 35" put a 26-year-old against people up to 34, when the
+survey's median is about $35k at 25–29 and $103k at 30–34 (today's dollars):
+the wide group made young users look further behind than they are. Single
+years from the same survey are not honest: it has about 4,600 households in
+all and only 40–90 at each age, so single-year medians swing wildly (26:
+$27k, 27: $73k, 29: $44k; 31: $122k, 32: $50k). Five-year groups have 111 to
+536 households each, the finest split the data supports.
+**Guardrails:** The Fed publishes ten-year medians only, so the build script
+also builds those from the same rows and refuses to write unless each is
+within 2% of the Fed's Table 2 (all are within 0.3%); it also refuses a group
+under 100 households. The generated file records both (`households`,
+`fedCheck`), and `test:net-worth-compare` checks them. 18–24 (111 households)
+is the thinnest group; the page says small groups are less precise.
+**Future direction — single years from UntilFire's users:** revisit once
+UntilFire holds enough users' net worth by age. That is a different comparison,
+not a finer version of this one: it would compare with other UntilFire users,
+who skew towards savers, rather than with US households, so the wording must
+say "UntilFire users aged 26", never "US households". It also needs, before
+any build: a minimum number of users per single year (on the order of a few
+hundred, like the survey groups here) and a fallback to the five-year survey
+groups below it; only aggregates, never an individual's figure; the privacy
+policy and consent covering this use of saved net worth; and internal/test
+accounts excluded. Until each single year clears the minimum, keep the survey.
+**Revisit when:** UntilFire has a few hundred users with a saved net worth at
+each single age being shown; or the Fed's 2025 survey is published (rerun
+`scripts/build-net-worth-benchmarks.mjs`).
+**Source:** `scripts/build-net-worth-benchmarks.mjs`, `lib/net-worth-benchmarks.ts`,
+`lib/net-worth-compare.ts`, `app/calculators/net-worth-by-age/`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,
