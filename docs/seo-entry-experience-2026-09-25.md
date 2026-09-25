@@ -4,6 +4,8 @@ Baseline: `cd2b2faa88c741869110464555ded0ef87b9cd34`. The user asked that SEO
 pages serve real visitors well and help them continue toward registration.
 This pass follows the existing free-value-before-signup direction (D-02),
 without changing the calculator model or introducing an early account gate.
+Reconciled with `bc43982c21b6c95c68f8fee2de9cc7f4501659ee` before handoff,
+preserving the new net-worth comparison. Its regression guard also passed.
 
 ## Observed friction
 
