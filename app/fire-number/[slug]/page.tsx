@@ -377,7 +377,9 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
                 <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse' }}>
                   <thead style={{ background: 'var(--uf-surface)' }}>
                     <tr>
-                      {['Scenario', 'Annual spending (USD)', 'Monthly spending (USD)', '25x FIRE target (USD)'].map((heading) => (
+                      {/* The target first: on a phone the table scrolls sideways, and it is the
+                          number the page is about. */}
+                      {['Scenario', '25x FIRE target (USD)', 'Annual spending (USD)', 'Monthly spending (USD)'].map((heading) => (
                         <th key={heading} scope="col" style={{ padding: '12px 16px', borderBottom: '1px solid var(--uf-border)', color: 'var(--uf-ink-2)', fontSize: 12, fontWeight: 700, letterSpacing: '0.05em', textAlign: 'left', textTransform: 'uppercase' }}>
                           {heading}
                         </th>
@@ -390,7 +392,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
                         <th scope="row" style={{ padding: '15px 16px', borderBottom: index < spendingScenarios.length - 1 ? '1px solid var(--uf-border)' : 'none', color: 'var(--uf-ink)', fontSize: 14, fontWeight: 700, textAlign: 'left' }}>
                           {scenario.label}
                         </th>
-                        {[scenario.annual, scenario.annual / 12, scenario.annual * 25].map((amount) => (
+                        {[scenario.annual * 25, scenario.annual, scenario.annual / 12].map((amount) => (
                           <td key={amount} style={{ padding: '15px 16px', borderBottom: index < spendingScenarios.length - 1 ? '1px solid var(--uf-border)' : 'none', color: 'var(--uf-ink-2)', fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>
                             {formatMoney(amount)}
                           </td>

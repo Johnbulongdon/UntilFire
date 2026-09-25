@@ -11,6 +11,8 @@ All notable changes to UntilFire are documented here.
   curated city explanations stack on phones instead of compressing into a narrow
   column, and replace Austin's unrelated international recommendations with four
   Texas city comparisons.
+- The Austin spending table puts the 25x FIRE target right after the scenario,
+  so it shows on a phone without scrolling the table sideways.
 
 ### Net worth by age
 - New page: `/calculators/net-worth-by-age`. Enter a net worth, and optionally an
