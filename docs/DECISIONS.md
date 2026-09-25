@@ -603,6 +603,32 @@ standard exists for another large visitor country.
 `lib/net-worth-benchmarks.ts` (generated), `app/components/PercentileTrack.tsx`,
 `app/components/RevealFlow.tsx`, `app/dashboard/CompareCard.tsx`.
 
+### D-20 — September 25: a net worth by age page, as a way in from search
+
+**Status:** Active. Authorised by the founder on 2026-09-25.
+**Decision:** `/calculators/net-worth-by-age` puts D-19's comparison on a page
+of its own: age and net worth in, "ahead of X% of US households your age" out,
+then the median and 25th–99th percentiles for every age group, how the
+numbers were made, and a FAQ. It hands on to the freedom date
+(`/?source=net-worth-by-age`). It is a page rather than another card because
+a card inside the calculator or behind sign-in can't rank or be linked to.
+**Why:** Search Console shows the site ranking on page one only where
+competition is thin, and far down for head terms. "Net worth by age" is a
+larger search than Coast FIRE, and a table of the Fed's figures in today's
+dollars is the kind of source other sites link to, which the domain lacks.
+**Guardrails:** The same `compareNetWorth`, generated table and inflation
+factor as the result, so the page cannot disagree with it. The table and FAQ
+amounts come from the generated data, not typed-in figures. The inputs and
+result are marked `ph-no-capture`, so session recordings never hold what
+someone types about their money; the page says so. US households only.
+**Trade-off:** Established sites rank for the head term; expect this page to
+start on pages two to four and win longer queries first. It widens the entry
+points beyond the freedom date, so it must keep handing on to it.
+**Revisit when:** 28 days of Search Console data after deployment, or the
+Fed's 2025 survey (the table regenerates from the same scripts).
+**Source:** `app/calculators/net-worth-by-age/`, `percentileToday` in
+`lib/net-worth-compare.ts`, `test:net-worth-compare`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,

@@ -4,6 +4,15 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-25
 
+### Net worth by age
+- New page: `/calculators/net-worth-by-age`. Enter a net worth, and optionally an
+  age, to see how it compares with US households your age, then a table of the
+  median and 25th–99th percentiles for every age group in August 2026 dollars,
+  where the numbers come from, and a FAQ whose structured data matches it. Same
+  comparison, data and inflation factor as the result screen (D-19); nothing
+  typed is recorded. Hands on to the freedom date. Listed in the sitemap and on
+  the calculators page. Recorded as D-20.
+
 ### SEO identity
 - Replaced a learning-page link to the removed Monte Carlo feature with the
   existing free FIRE estimate. Recorded evidence-based organic growth priorities
@@ -33,6 +42,14 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-24
 
 ### SEO content
+- Repaired learning-article dark-mode colors and added visible breadcrumb
+  navigation backed by matching Article/WebPage/BreadcrumbList structured data.
+  Article content, dates, canonical URLs and calculator links are unchanged.
+  See `docs/seo-learn-template-2026-09-25.md`.
+- Improved the savings-rate landing page's mobile navigation and result layout,
+  connected input labels and visible keyboard focus, and added a post-result
+  path to the full calculator with an acquisition-source label. Calculations,
+  defaults, indexing and the free-before-signup flow are unchanged.
 - Clarified Coast FIRE inflation, contribution timing and withdrawal assumptions;
   added return-sensitivity examples and model limits, removed a repeated FAQ
   heading, and aligned visible FAQ answers with structured data. Calculator logic
