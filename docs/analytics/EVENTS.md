@@ -60,6 +60,9 @@ Do not wire a new screen to `step_id=currency`.
 - `landing_source` is a coarse route/source label such as `learn-hub`,
   `calculator-savings-rate`, or `fire-number-austin-tx`. It is used for
   acquisition attribution, not personal identification.
+- `learn-sequence-risk` labels the sequence-risk article's link to the free FIRE
+  estimate. It uses the existing acquisition path; it does not imply a simulation,
+  an organic search visit or a completed signup. No financial inputs are passed.
 
 ## Person properties
 
