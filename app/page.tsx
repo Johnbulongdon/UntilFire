@@ -3,15 +3,22 @@ import { cityLandingPages } from "@/lib/city-pages";
 import HomeClient from "./HomeClient";
 
 export const metadata = {
-  title: 'FIRE Calculator — Find Your Freedom Date in 60 Seconds | UntilFire',
+  title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
   description:
-    'Free FIRE calculator: enter your income, savings, and spending to see your FIRE number and freedom date instantly. No login. Used by thousands of people planning early retirement.',
+    'UntilFire helps you estimate your FIRE number and freedom date from your income, spending and savings. Explore your path to financial independence, free with no login.',
   alternates: { canonical: 'https://www.untilfire.com/' },
   openGraph: {
-    title: 'FIRE Calculator — Find Your Freedom Date in 60 Seconds',
-    description: 'Free FIRE calculator: find your FIRE number and early retirement date in under a minute. No login required.',
+    title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
+    description: 'Estimate your FIRE number and freedom date with UntilFire. Free financial independence planning, no login required.',
+    siteName: 'UntilFire',
     url: 'https://www.untilfire.com/',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
+    description: 'Estimate your FIRE number and freedom date with UntilFire. Free financial independence planning, no login required.',
+    images: ['https://www.untilfire.com/opengraph-image'],
   },
 }
 
@@ -155,6 +162,22 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* The homepage's only FAQ schema, from the same source as the visible
+          FAQ above. Other pages carry their own; the layout carries none. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: homeFaqs.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          }),
+        }}
+      />
     </>
   );
 }

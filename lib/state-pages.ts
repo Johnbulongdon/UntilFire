@@ -47,8 +47,12 @@ export const STATE_NAMES: Record<string, string> = {
   ms: 'Mississippi',
   wy: 'Wyoming',
   ak: 'Alaska',
+  sd: 'South Dakota',
+  wv: 'West Virginia',
   mt: 'Montana',
-  hm: 'Hawaii',
+  hi: 'Hawaii',
+  ky: 'Kentucky',
+  de_us: 'Delaware',
 }
 
 const STATE_SLUG_MAP: Record<string, string> = {
@@ -96,8 +100,12 @@ const STATE_SLUG_MAP: Record<string, string> = {
   mississippi: 'ms',
   wyoming: 'wy',
   alaska: 'ak',
+  southdakota: 'sd',
+  westvirginia: 'wv',
   montana: 'mt',
-  hawaii: 'hm',
+  hawaii: 'hi',
+  kentucky: 'ky',
+  delaware: 'de_us',
 }
 
 function slugToState(slug: string): string | null {

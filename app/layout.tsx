@@ -142,76 +142,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
-              '@type': 'FAQPage',
-              mainEntity: [
-                {
-                  '@type': 'Question',
-                  name: 'What is a FIRE number?',
-                  acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: 'Your FIRE number is the total savings or investment portfolio you need to retire early and live off investment returns indefinitely. It is typically calculated as 25× your annual expenses, based on the 4% safe withdrawal rate.',
-                  },
-                },
-                {
-                  '@type': 'Question',
-                  name: 'How do I calculate my freedom date?',
-                  acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: 'Your freedom date is the point when your investments can cover your living expenses without needing to work. UntilFire calculates it from your income, monthly savings, current net worth, and target spending, then projects when your portfolio hits 25× annual expenses.',
-                  },
-                },
-                {
-                  '@type': 'Question',
-                  name: 'What is the difference between lean FIRE, fat FIRE, barista FIRE, and coast FIRE?',
-                  acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: 'Lean FIRE means retiring on a minimal budget (typically under $40k/year). Fat FIRE means retiring with a larger portfolio for a comfortable lifestyle. Barista FIRE means partially retiring with part-time work to cover some expenses. Coast FIRE means you have saved enough that, with no further contributions, your portfolio will grow to your FIRE number by traditional retirement age.',
-                  },
-                },
-                {
-                  '@type': 'Question',
-                  name: 'How much do I need to retire early?',
-                  acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: 'You need approximately 25 times your annual expenses invested in a diversified portfolio to retire early — this is known as your FIRE number. For example, if you spend $50,000 per year, you need roughly $1.25 million. UntilFire calculates your exact target based on your location, spending, and tax situation.',
-                  },
-                },
-                {
-                  '@type': 'Question',
-                  name: 'What savings rate do I need for financial independence?',
-                  acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: 'Higher savings rates dramatically shorten the timeline to financial independence. Saving 10% of your income takes roughly 40 years. Saving 25% takes about 32 years. Saving 50% takes around 17 years. Saving 70%+ can get you to financial independence in under 10 years. UntilFire shows your exact timeline based on your current numbers.',
-                  },
-                },
-                {
-                  '@type': 'Question',
-                  name: 'What is the 4% rule for retirement?',
-                  acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: "The 4% rule states that you can withdraw 4% of your portfolio in the first year of retirement, then adjust for inflation each year, with a high probability of the portfolio lasting 30+ years. It comes from the Trinity Study. This means your FIRE number is 25× your annual expenses (1 ÷ 4% = 25).",
-                  },
-                },
-              ],
-            }),
-          }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
               '@type': 'WebSite',
               name: 'UntilFire',
+              alternateName: ['Until Fire', 'untilfire.com'],
               url: SITE_URL,
-              potentialAction: {
-                '@type': 'SearchAction',
-                target: {
-                  '@type': 'EntryPoint',
-                  urlTemplate: `${SITE_URL}/?q={search_term_string}`,
-                },
-                'query-input': 'required name=search_term_string',
-              },
             }),
           }}
         />
@@ -222,6 +156,7 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'UntilFire',
+              alternateName: 'Until Fire',
               url: SITE_URL,
               logo: `${SITE_URL}/icon.png`,
               description: 'Personal finance that sets you free. UntilFire helps you calculate your FIRE number, freedom date, and monthly plan to reach financial independence.',
