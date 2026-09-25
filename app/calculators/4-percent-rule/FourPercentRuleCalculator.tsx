@@ -1,272 +1,165 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import Logo from '@/app/components/Logo'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { formatMoney } from "@/lib/money";
+import Logo from '@/app/components/Logo'
+import { Badge, Card, Field, Input, Progress, SegmentedControl } from '@/components/ui'
+import {
+  DEFAULT_WITHDRAWAL_RATE, RECOMMENDED_TAX_RATE, TAX_RATES, WITHDRAWAL_RATES,
+  fireNumber, fireProgress, recommendedWithdrawalRate,
+} from '@/lib/fire-number'
+import { formatMoney } from '@/lib/money'
+import styles from './FireNumber.module.css'
+import Factor from './Factor'
 
-const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
-
-const C = {
-  bg: 'var(--uf-surface)',
-  card: 'var(--uf-card)',
-  border: 'var(--uf-border)',
-  text: 'var(--uf-ink)',
-  muted: 'var(--uf-ink-2)',
-  mutedLight: 'var(--uf-ink-3)',
-  accent: 'var(--uf-green)',
-  teal: 'var(--uf-teal)',
-}
-
-const inputStyle: React.CSSProperties = {
-  background: 'var(--uf-card)',
-  border: `1px solid ${C.border}`,
-  borderRadius: 8,
-  color: C.text,
-  fontSize: 16,
-  padding: '11px 14px',
-  width: '100%',
-  outline: 'none',
-  boxSizing: 'border-box',
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 13,
-  color: C.muted,
-  marginBottom: 6,
-  display: 'block',
-  fontWeight: 500,
-}
-
-
-const RATES = [
-  { rate: 3.0, label: '3.0%', note: 'Very conservative · 33× expenses' },
-  { rate: 3.5, label: '3.5%', note: 'Conservative · 28.6× expenses' },
-  { rate: 4.0, label: '4.0%', note: 'Standard · 25× expenses · Trinity Study' },
-  { rate: 4.5, label: '4.5%', note: 'Moderate · 22.2× expenses' },
-  { rate: 5.0, label: '5.0%', note: 'Aggressive · 20× expenses' },
-]
-
-const MONTHLY_CATEGORIES = [
-  { label: 'Housing (rent/mortgage)', key: 'housing', default: 1800 },
-  { label: 'Food & groceries', key: 'food', default: 600 },
+const CATEGORIES = [
+  { label: 'Housing', key: 'housing', default: 1800 },
+  { label: 'Food and groceries', key: 'food', default: 600 },
   { label: 'Transport', key: 'transport', default: 400 },
-  { label: 'Health & insurance', key: 'health', default: 300 },
-  { label: 'Entertainment & travel', key: 'entertainment', default: 400 },
+  { label: 'Health and insurance', key: 'health', default: 300 },
+  { label: 'Fun and travel', key: 'fun', default: 400 },
   { label: 'Everything else', key: 'other', default: 500 },
 ]
 
+const num = (raw: string) => (raw.trim() === '' ? 0 : Number(raw) || 0)
+const whole = (n: number) => formatMoney(Math.round(n))
+const pctLabel = (n: number) => `${n}%`
+
+/**
+ * The FIRE number with every factor named. Each one starts at the plain 25×
+ * rule and carries a recommendation the reader can take with one tap, so the
+ * number is theirs and they can see what moved it. Maths: lib/fire-number.ts.
+ */
 export default function FourPercentRuleCalculator() {
-  const [mode, setMode] = useState<'simple' | 'detailed'>('simple')
-  const [annualExpenses, setAnnualExpenses] = useState('60000')
-  const [selectedRate, setSelectedRate] = useState(4.0)
-  const [currentSavings, setCurrentSavings] = useState('0')
+  const [mode, setMode] = useState<'total' | 'categories'>('total')
+  const [spendingRaw, setSpendingRaw] = useState('60000')
   const [categories, setCategories] = useState<Record<string, string>>(
-    Object.fromEntries(MONTHLY_CATEGORIES.map(c => [c.key, String(c.default)]))
+    Object.fromEntries(CATEGORIES.map((c) => [c.key, String(c.default)])),
   )
+  const [rate, setRate] = useState<number>(DEFAULT_WITHDRAWAL_RATE)
+  const [stopAgeRaw, setStopAgeRaw] = useState('')
+  const [tax, setTax] = useState(0)
+  const [incomeRaw, setIncomeRaw] = useState('')
+  const [savedRaw, setSavedRaw] = useState('')
 
-  const { fireNumber, gap, progressPct, rateTable, monthlyBudget } = useMemo(() => {
-    const monthlyBudget = Object.values(categories).reduce((s, v) => s + (parseFloat(v) || 0), 0)
-    const exp = mode === 'detailed' ? monthlyBudget * 12 : (parseFloat(annualExpenses) || 60000)
-    const saved = parseFloat(currentSavings) || 0
+  const spending = mode === 'total'
+    ? num(spendingRaw)
+    : Object.values(categories).reduce((sum, v) => sum + num(v), 0) * 12
+  const stopAge = stopAgeRaw.trim() === '' ? null : Math.floor(Number(stopAgeRaw))
+  const stopAgeValid = stopAge === null || (Number.isFinite(stopAge) && stopAge >= 18 && stopAge <= 90)
+  const rec = recommendedWithdrawalRate(stopAgeValid ? stopAge : null)
+  const income = num(incomeRaw)
+  const saved = num(savedRaw)
 
-    const fireNumber = exp / (selectedRate / 100)
-    const gap = Math.max(0, fireNumber - saved)
-    const progressPct = fireNumber > 0 ? Math.min((saved / fireNumber) * 100, 100) : 0
-
-    const rateTable = RATES.map(({ rate, label, note }) => ({
-      rate,
-      label,
-      note,
-      fireNumber: exp / (rate / 100),
-      isSelected: rate === selectedRate,
-    }))
-
-    return { fireNumber, gap, progressPct, rateTable, monthlyBudget }
-  }, [annualExpenses, selectedRate, currentSavings, categories, mode])
-
-  const exp = mode === 'detailed' ? monthlyBudget * 12 : (parseFloat(annualExpenses) || 60000)
+  const r = useMemo(
+    () => fireNumber({ annualSpending: spending, otherIncome: income, taxRatePct: tax, withdrawalRatePct: rate }),
+    [spending, income, tax, rate],
+  )
+  const progress = fireProgress(saved, r.fireNumber)
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
-      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="auto" size={22} />
-        </Link>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>
-          <Link href="/?source=calculator-4-percent-rule" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid var(--uf-green)', padding: '6px 14px', borderRadius: 6 }}>
-            FIRE date →
-          </Link>
-        </div>
+    <div className={styles.page} style={{ background: 'var(--uf-ground)', color: 'var(--uf-ink)' }}>
+      <nav style={{ borderBottom: '1px solid var(--uf-border)', padding: 'var(--uf-s4) var(--uf-s6)', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--uf-s4)', flexWrap: 'wrap' }}>
+        <Link href="/" style={{ textDecoration: 'none' }}><Logo variant="auto" size={22} /></Link>
+        <Link href="/calculators" className="uf-t-body" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>← All calculators</Link>
       </nav>
 
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 80px' }}>
-        <div style={{ marginBottom: 36 }}>
-          <div style={{ fontSize: 12, color: C.accent, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 12 }}>
-            FIRE · Retirement
-          </div>
-          <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 12px', lineHeight: 1.1 }}>
-            FIRE Number Calculator
-          </h1>
-          <p style={{ fontSize: 16, color: C.muted, margin: 0, lineHeight: 1.7 }}>
-            Your FIRE number is how much you need invested to retire — calculated using the safe withdrawal rate.
-            The standard is 4% (from the 1998 Trinity Study), meaning 25× your annual expenses.
-            Adjust the rate below to see how it shifts your target.
+      <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--uf-s7) var(--uf-s6) var(--uf-s5)' }}>
+        <header style={{ marginBottom: 'var(--uf-s6)', maxWidth: 680 }}>
+          <Badge tone="muted" style={{ marginBottom: 'var(--uf-s3)' }}>FIRE · Retirement</Badge>
+          <h1 className="uf-t-h1" style={{ margin: '0 0 var(--uf-s3)', lineHeight: 1.1 }}>FIRE Number Calculator</h1>
+          <p className="uf-t-lead" style={{ color: 'var(--uf-ink-2)', margin: 0 }}>
+            How much you need invested for work to become optional. It starts at the common rule, 25× your yearly spending,
+            and shows every factor that changes it, with our recommendation for each.
           </p>
-        </div>
+        </header>
 
-        {/* Mode toggle */}
-        <div style={{ display: 'flex', gap: 2, background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: 4, marginBottom: 24, width: 'fit-content' }}>
-          {(['simple', 'detailed'] as const).map((m) => (
-            <button key={m} onClick={() => setMode(m)} style={{
-              padding: '8px 20px',
-              borderRadius: 7,
-              border: 'none',
-              background: mode === m ? C.accent : 'transparent',
-              color: mode === m ? 'var(--uf-card)' : C.muted,
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-              fontFamily: "'Manrope', sans-serif",
-            }}>
-              {m === 'simple' ? 'Simple' : 'Itemised budget'}
-            </button>
-          ))}
-        </div>
-
-        {/* Inputs */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '32px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          {mode === 'simple' ? (
-            <div style={{ display: 'grid', gap: 20 }}>
-              <div>
-                <label style={labelStyle}>Annual expenses in retirement ($)</label>
-                <input type="number" value={annualExpenses} onChange={e => setAnnualExpenses(e.target.value)} style={inputStyle} min="0" step="1000" />
+        <div className="uf-calc ph-no-capture">
+          <div className={`uf-calc-results ${styles.results}`}>
+            <Card>
+              <div className="uf-t-label" style={{ color: 'var(--uf-ink-2)' }}>Your FIRE number</div>
+              <div className="uf-t-data" aria-live="polite" style={{ fontSize: 40, fontWeight: 700, margin: 'var(--uf-s1) 0 var(--uf-s4)' }}>
+                {whole(r.fireNumber)}
               </div>
-              <div>
-                <label style={labelStyle}>Current savings / investments ($)</label>
-                <input type="number" value={currentSavings} onChange={e => setCurrentSavings(e.target.value)} style={inputStyle} min="0" step="1000" />
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: 16 }}>
-              <div style={{ fontSize: 14, color: C.muted, marginBottom: 4 }}>Monthly expenses in retirement</div>
-              {MONTHLY_CATEGORIES.map((cat) => (
-                <div key={cat.key} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <label style={{ ...labelStyle, margin: 0, flex: 1, minWidth: 180 }}>{cat.label}</label>
-                  <div style={{ position: 'relative', width: 160 }}>
-                    <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.muted, pointerEvents: 'none' }}>$</span>
-                    <input
-                      type="number"
-                      value={categories[cat.key]}
-                      onChange={e => setCategories(prev => ({ ...prev, [cat.key]: e.target.value }))}
-                      style={{ ...inputStyle, paddingLeft: 24, width: '100%' }}
-                      min="0"
-                      step="50"
-                    />
-                  </div>
-                </div>
-              ))}
-              <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: C.muted, fontSize: 14, fontWeight: 600 }}>Monthly total</span>
-                <span style={{ color: C.text, fontWeight: 700, fontSize: 18 }}>{formatMoney(monthlyBudget)}</span>
-              </div>
-              <div style={{ marginTop: 8 }}>
-                <label style={labelStyle}>Current savings / investments ($)</label>
-                <input type="number" value={currentSavings} onChange={e => setCurrentSavings(e.target.value)} style={inputStyle} min="0" step="1000" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Primary result */}
-        <div style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 16, padding: '28px 32px', marginBottom: 24 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
-            <div>
-              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
-                Your FIRE number at {selectedRate}%
-              </div>
-              <div style={{ fontSize: 44, fontWeight: 800, color: C.accent, letterSpacing: '-0.04em' }}>{compactMoney(fireNumber)}</div>
-              <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{formatMoney(fireNumber)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>
-                Annual spending covered
-              </div>
-              <div style={{ fontSize: 44, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>{formatMoney(exp)}</div>
-            </div>
-          </div>
-
-          {/* Progress */}
-          {parseFloat(currentSavings) > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 13, color: C.muted }}>Progress to FIRE</span>
-                <span style={{ fontSize: 13, color: C.accent, fontWeight: 700 }}>{progressPct.toFixed(1)}%</span>
-              </div>
-              <div style={{ height: 10, background: 'var(--uf-green-100)', borderRadius: 999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${progressPct}%`, background: C.accent, borderRadius: 999 }} />
-              </div>
-              {gap > 0 && (
-                <div style={{ fontSize: 13, color: C.muted, marginTop: 8 }}>
-                  <span style={{ color: C.text, fontWeight: 600 }}>{compactMoney(gap)}</span> to go
-                </div>
+              <dl className={`uf-t-body ${styles.breakdown}`}>
+                <dt>{whole(spending)} a year × {Number(r.multiple.toFixed(1))}</dt><dd className="uf-t-data">{whole(r.fromSpending)}</dd>
+                {r.otherIncomeReduction > 0 && <><dt>Other income covers {whole(income)} a year</dt><dd className="uf-t-data">−{whole(r.otherIncomeReduction)}</dd></>}
+                {r.taxAddition > 0 && <><dt>Tax on withdrawals ({tax}%)</dt><dd className="uf-t-data">+{whole(r.taxAddition)}</dd></>}
+              </dl>
+              <p className="uf-t-body" style={{ margin: 'var(--uf-s4) 0 0', color: 'var(--uf-ink-2)' }}>
+                {r.fireNumber > 0
+                  ? <>In your first year without work you&apos;d take out {whole(r.firstYearWithdrawal)} ({rate}%), then raise it with prices each year. All amounts are in today&apos;s dollars.</>
+                  : <>Other income covers your spending, so you don&apos;t need savings to pay for it.</>}
+              </p>
+              {saved > 0 && (
+                <Progress value={progress / 100} label="Progress to your FIRE number" caption={`${formatMoney(saved, { style: 'compact' })} of ${formatMoney(r.fireNumber, { style: 'compact' })}`} style={{ marginTop: 'var(--uf-s4)' }} />
               )}
-            </div>
-          )}
-
-          {/* Rate comparison table */}
-          <div style={{ borderTop: '1px solid var(--uf-green-100)', paddingTop: 20 }}>
-            <div style={{ fontSize: 13, color: C.muted, marginBottom: 14, fontWeight: 600 }}>
-              Compare withdrawal rates — click to select
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {rateTable.map(({ rate, label, note, fireNumber: fn, isSelected }) => (
-                <button key={rate} onClick={() => setSelectedRate(rate)} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  background: isSelected ? 'var(--uf-green-100)' : 'var(--uf-card)',
-                  border: isSelected ? '1px solid var(--uf-teal-line)' : '1px solid var(--uf-border)',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  fontFamily: "'Manrope', sans-serif",
-                }}>
-                  <div>
-                    <span style={{ color: isSelected ? C.accent : C.text, fontWeight: isSelected ? 700 : 500, fontSize: 15 }}>
-                      {label}
-                    </span>
-                    <span style={{ color: C.muted, fontSize: 12, marginLeft: 10 }}>{note}</span>
-                  </div>
-                  <span style={{ color: isSelected ? C.accent : C.text, fontWeight: 700, fontSize: 16 }}>{compactMoney(fn)}</span>
-                </button>
-              ))}
-            </div>
+              <div style={{ borderTop: '1px solid var(--uf-border)', marginTop: 'var(--uf-s4)', paddingTop: 'var(--uf-s4)' }}>
+                <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s3)' }}>Your number is the target. Your freedom date is when you reach it.</p>
+                <Link href="/?source=calculator-4-percent-rule" className={`uf-t-body ${styles.primaryLink}`}>Find your freedom date →</Link>
+              </div>
+            </Card>
           </div>
-        </div>
 
-        {/* SEO content */}
-        <div style={{ color: C.muted, lineHeight: 1.8, fontSize: 15 }}>
-          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.02em' }}>
-            What is the 4% rule?
-          </h2>
-          <p style={{ marginBottom: 16 }}>
-            The 4% rule (also called the safe withdrawal rate, or SWR) comes from the 1998 Trinity Study.
-            Researchers found that a 4% annual withdrawal from a diversified portfolio survived 30+ years
-            in 96% of historical market scenarios, including the Great Depression and 1970s stagflation.
-          </p>
-          <p style={{ marginBottom: 16 }}>
-            <strong style={{ color: C.text }}>Your FIRE number = Annual expenses ÷ Withdrawal rate</strong>
-            <br />
-            At 4%, that&apos;s 25× your annual spending. At 3%, it&apos;s 33×. At 5%, it&apos;s 20×.
-          </p>
-          <p>
-            Early retirees (before 65) typically use 3–3.5% for extra safety — your portfolio needs to last
-            40–50 years, not 30. The 4% rule was designed for traditional 30-year retirements starting around age 65.
-          </p>
+          <div className="uf-calc-inputs">
+            <Card style={{ display: 'grid', gap: 'var(--uf-s5)' }}>
+              <Factor title="Yearly spending" hint="What you'll spend each year once work is optional. Most people start from what they spend now; include health insurance if you'll leave an employer plan.">
+                <SegmentedControl label="How to enter spending" size="sm" value={mode} onChange={setMode} options={[{ value: 'total', label: 'Total' }, { value: 'categories', label: 'By category' }]} />
+                {mode === 'total' ? (
+                  <Field label="Per year (USD)" htmlFor="fn-spending">
+                    <Input id="fn-spending" numeric type="number" inputMode="decimal" min={0} step={1000} value={spendingRaw} onChange={(e) => setSpendingRaw(e.target.value)} />
+                  </Field>
+                ) : CATEGORIES.map((c) => (
+                  <Field key={c.key} label={`${c.label} per month`} htmlFor={`fn-${c.key}`}>
+                    <Input id={`fn-${c.key}`} numeric type="number" inputMode="decimal" min={0} step={50} value={categories[c.key]} onChange={(e) => setCategories((prev) => ({ ...prev, [c.key]: e.target.value }))} />
+                  </Field>
+                ))}
+              </Factor>
+
+              <Factor
+                title="Withdrawal rate"
+                hint="The share of your savings you take out in the first year. Lower is safer and needs a bigger number."
+                recommendation={`${rec.rate}%. ${rec.why}`}
+                onUseRecommendation={rate === rec.rate ? undefined : () => setRate(rec.rate)}
+              >
+                <SegmentedControl label="Withdrawal rate" size="sm" value={String(rate)} onChange={(v) => setRate(Number(v))} options={WITHDRAWAL_RATES.map((v) => ({ value: String(v), label: pctLabel(v) }))} />
+                <Field label="Age you want to stop working (optional)" htmlFor="fn-stop-age" error={stopAgeValid ? undefined : 'Enter an age from 18 to 90.'}>
+                  <Input id="fn-stop-age" numeric type="number" inputMode="numeric" min={18} max={90} placeholder="e.g. 45" value={stopAgeRaw} onChange={(e) => setStopAgeRaw(e.target.value)} />
+                </Field>
+              </Factor>
+
+              <Factor
+                title="Tax on withdrawals"
+                hint="Money from a traditional 401(k) or IRA is taxed as income when you take it out; Roth money isn't, and taxable accounts usually owe less."
+                recommendation={`${RECOMMENDED_TAX_RATE}% if most of your savings are in a traditional 401(k) or IRA, or you're not sure. Leave it at 0% if they're mostly Roth.`}
+                onUseRecommendation={tax === RECOMMENDED_TAX_RATE ? undefined : () => setTax(RECOMMENDED_TAX_RATE)}
+              >
+                <SegmentedControl label="Tax on withdrawals" size="sm" value={String(tax)} onChange={(v) => setTax(Number(v))} options={TAX_RATES.map((v) => ({ value: String(v), label: pctLabel(v) }))} />
+              </Factor>
+
+              <Factor
+                title="Other income"
+                hint="A pension, rent or part-time work you'll have from the day you stop. It pays for part of your spending, so you need less saved."
+                recommendation="Leave it blank unless it's reliable and starts when you stop. Social Security starts at 62 at the earliest, so leave it out if you'll stop sooner."
+              >
+                <Field label="Per year (USD)" htmlFor="fn-income">
+                  <Input id="fn-income" numeric type="number" inputMode="decimal" min={0} step={1000} placeholder="0" value={incomeRaw} onChange={(e) => setIncomeRaw(e.target.value)} />
+                </Field>
+              </Factor>
+
+              <Factor title="Saved so far (optional)" hint="Investments and savings meant for this goal. Shows how far along you are.">
+                <Field label="USD" htmlFor="fn-saved">
+                  <Input id="fn-saved" numeric type="number" inputMode="decimal" min={0} step={1000} placeholder="0" value={savedRaw} onChange={(e) => setSavedRaw(e.target.value)} />
+                </Field>
+              </Factor>
+
+              <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-3)' }}>Calculated in your browser. Nothing you enter is sent or saved.</p>
+            </Card>
+          </div>
+          <div className={styles.miniBar} aria-hidden="true">
+            <span className="uf-t-label" style={{ color: 'var(--uf-ink-2)' }}>Your FIRE number</span>
+            <span className="uf-t-data" style={{ fontSize: 18, fontWeight: 700 }}>{whole(r.fireNumber)}</span>
+          </div>
         </div>
       </div>
     </div>

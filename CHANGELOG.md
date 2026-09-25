@@ -4,6 +4,22 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-25
 
+### What does FIRE mean
+- The FIRE article now answers "What does FIRE mean?" in its first two
+  sentences, for search snippets, with a quick FIRE number box (spending × 25)
+  under the definition and four FAQs whose structured data matches them. Title:
+  "What Does FIRE Mean? Financial Independence, Retire Early". The URL is unchanged.
+  Articles can now carry an updated date and FAQs.
+
+### FIRE number calculator
+- Rebuilt on the design system with every factor named: yearly spending,
+  withdrawal rate (with an optional stop age), tax on withdrawals and other
+  income, each with what it means and a recommendation you can take with one
+  tap. The working shows under the number (on phones a bar keeps the number in
+  view while you change factors), and the page publishes the formula
+  and a worked example. Starts at the plain 25× rule. Recorded as D-23.
+- The page had two h1 headings; it now has one.
+
 ### Austin search entry
 - Lead the Austin FIRE guide's search snippet with its estimated answer, label
   its planning amounts as USD, and add spending-sensitivity examples so visitors

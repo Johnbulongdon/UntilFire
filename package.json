@@ -37,6 +37,7 @@
     "test:plaid-billing": "node --experimental-strip-types --no-warnings scripts/verify-plaid-billing.mjs",
     "test:reveal-step-tracking": "node --experimental-strip-types --no-warnings scripts/verify-reveal-step-tracking.mjs",
     "test:email-signin": "node --experimental-strip-types --no-warnings scripts/verify-email-signin.mjs",
+    "test:fire-number": "node --experimental-strip-types --no-warnings scripts/verify-fire-number.mjs",
     "test:net-worth-compare": "node --experimental-strip-types --no-warnings scripts/verify-net-worth-compare.mjs",
     "test:manual-category-icons": "node scripts/verify-manual-category-icons.mjs",
     "test:monthly-checkin": "node scripts/verify-monthly-checkin-card.mjs",
