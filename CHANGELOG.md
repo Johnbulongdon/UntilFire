@@ -5,6 +5,10 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-24
 
 ### SEO content
+- Repaired learning-article dark-mode colors and added visible breadcrumb
+  navigation backed by matching Article/WebPage/BreadcrumbList structured data.
+  Article content, dates, canonical URLs and calculator links are unchanged.
+  See `docs/seo-learn-template-2026-09-25.md`.
 - Clarified the savings-rate calculator's search description, formula and annual
   inputs. Replaced conflicting fixed retirement timelines with the actual model
   assumptions, clarified payroll contributions, and kept one main heading.
