@@ -20,6 +20,11 @@ All notable changes to UntilFire are documented here.
   still checks the Fed's published ten-year medians from the same data.
   Single years from UntilFire's own users are a recorded future direction.
   Recorded as D-21.
+- Share your net worth result: a button under the result shares a link whose
+  preview image reads "Ahead of 72% of US households aged 25–29". It carries
+  the age group and percentage only, never the amount; the link opens a
+  noindex page that leads to the calculator. Share sheet on phones, copied
+  link elsewhere. Recorded as D-22.
 
 ### SEO identity
 - Replaced a learning-page link to the removed Monte Carlo feature with the

@@ -10,6 +10,7 @@ import { NET_WORTH_BENCHMARKS } from '@/lib/net-worth-benchmarks'
 import { NET_WORTH_INFLATION } from '@/lib/net-worth-inflation'
 import { formatMoney } from '@/lib/money'
 import styles from './NetWorthByAge.module.css'
+import ShareResult from './ShareResult'
 
 /**
  * Net worth against US households of the same age, as a page of its own.
@@ -49,7 +50,7 @@ export default function NetWorthByAgeCalculator() {
           justifyContent: 'space-between', gap: 'var(--uf-s4)', flexWrap: 'wrap',
         }}
       >
-        <Link href="/" style={{ textDecoration: 'none' }}><Logo variant="light" size={22} /></Link>
+        <Link href="/" style={{ textDecoration: 'none' }}><Logo variant="auto" size={22} /></Link>
         <Link href="/calculators" className="uf-t-body" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>
           ← All calculators
         </Link>
@@ -108,6 +109,9 @@ export default function NetWorthByAgeCalculator() {
                     >
                       Find your freedom date →
                     </Link>
+                  </div>
+                  <div style={{ borderTop: '1px solid var(--uf-border)', marginTop: 'var(--uf-s4)', paddingTop: 'var(--uf-s4)' }}>
+                    <ShareResult comparison={comparison} />
                   </div>
                 </>
               ) : (

@@ -668,6 +668,29 @@ each single age being shown; or the Fed's 2025 survey is published (rerun
 **Source:** `scripts/build-net-worth-benchmarks.mjs`, `lib/net-worth-benchmarks.ts`,
 `lib/net-worth-compare.ts`, `app/calculators/net-worth-by-age/`.
 
+### D-22 — September 25: share where you stand, never what you have
+
+**Status:** Active. Authorised by the founder on 2026-09-25.
+**Decision:** The net worth by age result has a "Share your result" button.
+It shares a link to `/calculators/net-worth-by-age/share?a=<age group>&p=<percent>`
+(`p=top` for "more than 99%") whose preview image (`/api/og/net-worth`) reads
+"Ahead of 72% of US households aged 25–29". The link, image and landing page
+carry only the age group and the whole percentage, never an amount, and the
+landing page leads to the calculator. Nothing is offered at the start line
+(under 1%). On phones it opens the share sheet; elsewhere it copies the link.
+**Why:** A standing people are glad to post is distribution the site lacks
+(see D-20); an amount is private and would make sharing feel unsafe.
+**Guardrails:** `lib/net-worth-share.ts` accepts only a known age group and
+a whole percentage from 1 to 99, so a hand-edited link can't put other text
+on the image. The share page is noindex and canonical to the net worth page,
+so shared links don't compete with it in search. `test:net-worth-compare`
+covers the parsing, that a link never contains the amount, the noindex and
+canonical, and that the image reads the same validated values.
+**Measure:** landings on the share path are ordinary pageviews in PostHog; no
+new event. Compare them with views of the net worth page after 28 days.
+**Source:** `app/calculators/net-worth-by-age/ShareResult.tsx`,
+`app/calculators/net-worth-by-age/share/page.tsx`, `app/api/og/net-worth/route.tsx`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,

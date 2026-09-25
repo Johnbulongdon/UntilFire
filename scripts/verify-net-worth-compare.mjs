@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { weightedCutpoints } from '../lib/weighted-percentiles.ts';
 import { ageBand, shareBelow, compareNetWorth, percentileToday, AGE_BANDS } from '../lib/net-worth-compare.ts';
+import { parseNetWorthShare, shareFromComparison, sharePath } from '../lib/net-worth-share.ts';
 
 const checks = [];
 const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
@@ -122,6 +123,31 @@ let failed = 0;
   check('it is in the sitemap and the calculators list',
     /siteUrl\('\/calculators\/net-worth-by-age'\)/.test(readFileSync('app/sitemap.ts', 'utf8'))
       && /'\/calculators\/net-worth-by-age'/.test(readFileSync('app/calculators/page.tsx', 'utf8')));
+}
+
+// ── Sharing a result (/calculators/net-worth-by-age/share)
+{
+  check('a share link reads only a known age group and a whole percentage',
+    JSON.stringify(parseNetWorthShare('25_29', '72')) === '{"band":"25_29","pct":72}'
+      && JSON.stringify(parseNetWorthShare('all', 'top')) === '{"band":"all","pct":null}'
+      && [['under_35', '50'], ['25_29', '0'], ['25_29', '100'], ['25_29', '7.5'], ['25_29', '150000'], ['25_29', undefined], [undefined, '50'], ['<b>', '50']]
+        .every(([a, p]) => parseNetWorthShare(a, p) === null));
+  const cuts = Array.from({ length: 99 }, (_, i) => (i + 1) * 1000);
+  const bm = { year: 2022, bands: Object.fromEntries(['all', ...AGE_BANDS].map((b) => [b, cuts])) };
+  const c = compareNetWorth({ netWorthUsd: 72_345, age: 26, ageAssumed: false, currency: 'USD' }, bm);
+  const link = sharePath(shareFromComparison(c));
+  check('the link carries the age group and percentage, never the amount',
+    link === '/calculators/net-worth-by-age/share?a=25_29&p=72' && !/72345|72,345/.test(link), link);
+  const start = compareNetWorth({ netWorthUsd: -5_000, age: 26, ageAssumed: false, currency: 'USD' }, bm);
+  const top = compareNetWorth({ netWorthUsd: 1e9, age: 26, ageAssumed: false, currency: 'USD' }, bm);
+  check('at the start line there is nothing to share; past the top it shares "more than 99%"',
+    shareFromComparison(start) === null && sharePath(shareFromComparison(top)).endsWith('p=top'));
+  const sharePage = readFileSync('app/calculators/net-worth-by-age/share/page.tsx', 'utf8');
+  check('the share page is noindex and canonical to the net worth page, with the preview image',
+    /robots: \{ index: false, follow: true \}/.test(sharePage) && /canonical: PAGE_URL/.test(sharePage) && /\/api\/og\/net-worth\?a=/.test(sharePage));
+  const og = readFileSync('app/api/og/net-worth/route.tsx', 'utf8');
+  check('the preview image reads the same validated share', /parseNetWorthShare\(searchParams\.get\('a'\), searchParams\.get\('p'\)\)/.test(og));
+  check('the result offers the share', /<ShareResult comparison=\{comparison\} \/>/.test(readFileSync('app/calculators/net-worth-by-age/NetWorthByAgeCalculator.tsx', 'utf8')));
 }
 
 for (const c of checks) {
