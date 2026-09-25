@@ -4,6 +4,14 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-25
 
+### Austin search entry
+- Lead the Austin FIRE guide's search snippet with its estimated answer, label
+  its planning amounts as USD, and add spending-sensitivity examples so visitors
+  can pressure-test the 25x baseline before continuing to a calculator. Let
+  curated city explanations stack on phones instead of compressing into a narrow
+  column, and replace Austin's unrelated international recommendations with four
+  Texas city comparisons.
+
 ### SEO identity
 - Lead homepage search/social metadata with UntilFire, explicitly provide the
   site name and add "Until Fire" as an alternate name in the existing markup.

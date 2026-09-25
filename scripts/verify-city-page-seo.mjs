@@ -2,11 +2,38 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 
 const source = readFileSync('app/fire-number/[slug]/page.tsx', 'utf8')
+const curatedCitySource = readFileSync('lib/city-pages.ts', 'utf8')
+const austinSeed = curatedCitySource.match(/\{\s*slug: 'austin-tx',[\s\S]*?\n  \},/)?.[0]
+const singaporeSeed = curatedCitySource.match(/\{\s*slug: 'singapore',[\s\S]*?\n  \},/)?.[0]
+
+assert.ok(austinSeed, 'Austin curated-city seed should exist')
+assert.ok(singaporeSeed, 'Singapore curated-city seed should exist')
 
 assert.match(
   source,
   /FIRE Number Calculator\{['"]\s['"]\}\s*<br \/>for \{data\.name\}/,
   'generic city H1 should include a real text space before the line break so crawlers read “Calculator for …”, not “Calculatorfor …”',
+)
+
+assert.match(
+  austinSeed,
+  /searchTitle: 'Austin FIRE Number: \$1\.36M Estimate \| UntilFire'/,
+  'Austin search metadata should lead with the estimated answer',
+)
+assert.match(
+  austinSeed,
+  /currencyCode: 'USD'/,
+  'Austin should identify the currency used for its planning estimates',
+)
+assert.doesNotMatch(
+  singaporeSeed,
+  /currencyCode: 'USD'/,
+  'Singapore should not be presented as a USD-targeted search experiment',
+)
+assert.match(
+  source,
+  /How spending changes the \{page\.city\.name\} FIRE number/,
+  'the USD curated-city experiment should make the 25x target sensitive to spending assumptions',
 )
 
 // The wording changed on purpose in 9908ea5: the title now leads with the
@@ -51,6 +78,34 @@ if (existsSync(builtGenericCityPage)) {
     'FIRE Number Calculator for Idaho Falls, ID',
     'built generic city H1 should be crawler-readable with a space between Calculator and for',
   )
+}
+
+const builtAustinPage = '.next/server/app/fire-number/austin-tx.html'
+if (existsSync(builtAustinPage)) {
+  const html = readFileSync(builtAustinPage, 'utf8')
+  assert.match(html, /<title>Austin FIRE Number: \$1\.36M Estimate \| UntilFire<\/title>/i)
+  for (const expected of [
+    'Spending sensitivity',
+    'All amounts are in US dollars',
+    '$1,018,125',
+    '$1,357,500',
+    '$1,696,875',
+    'Dallas, TX',
+    'Houston, TX',
+    'San Antonio, TX',
+    'Fort Worth, TX',
+  ]) {
+    assert.match(html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Austin page missing ${expected}`)
+  }
+  assert.doesNotMatch(html, /Compare nearby FIRE planning paths/)
+  assert.doesNotMatch(html, /FIRE NUMBER SINGAPORE/)
+}
+
+const builtSingaporePage = '.next/server/app/fire-number/singapore.html'
+if (existsSync(builtSingaporePage)) {
+  const html = readFileSync(builtSingaporePage, 'utf8')
+  assert.doesNotMatch(html, /Spending sensitivity/)
+  assert.doesNotMatch(html, /All amounts are in US dollars/)
 }
 
 console.log('City page SEO checks passed')

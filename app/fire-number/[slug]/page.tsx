@@ -181,6 +181,24 @@ export default async function FireNumberSlugPage({ params }: Props) {
 function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
   const article = getLearnArticle(page.articleSlug)
   const source = `fire-number-${page.slug}`
+  const spendingScenarios = page.currencyCode === 'USD'
+    ? [
+        { label: 'Lower-spend plan', annual: page.city.col * 0.75 },
+        { label: 'UntilFire baseline', annual: page.city.col },
+        { label: 'Higher-spend plan', annual: page.city.col * 1.25 },
+      ]
+    : []
+  const relatedCityCards = page.slug === 'austin-tx'
+    ? CITIES
+        .filter((city) => city.state === page.city.state && city.key !== page.city.key)
+        .slice(0, 4)
+        .map((city) => ({
+          slug: city.key,
+          keyword: `FIRE number ${city.name}`,
+          city,
+          fireTarget: city.col * 25,
+        }))
+    : cityLandingPages.filter((entry) => entry.slug !== page.slug)
 
   return (
     <>
@@ -190,7 +208,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
             <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Home</Link>
             <Link href="/calculators" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Calculators</Link>
             <Link href="/learn" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Learn</Link>
-            <span style={{ color: 'var(--uf-ink-3)' }}>{page.city.name}</span>
+            <span style={{ color: 'var(--uf-ink-2)' }}>{page.city.name}</span>
           </nav>
 
           <section
@@ -250,7 +268,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
           <section
             style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.6fr) minmax(280px, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
               gap: 18,
               marginBottom: 28,
             }}
@@ -339,14 +357,63 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
             </aside>
           </section>
 
+          {spendingScenarios.length > 0 ? (
+            <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px', marginBottom: 28 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                Spending sensitivity
+              </p>
+              <h2 style={{ margin: '0 0 12px', fontSize: 28, color: 'var(--uf-ink)', letterSpacing: '-0.03em' }}>
+                How spending changes the {page.city.name} FIRE number
+              </h2>
+              <p style={{ margin: '0 0 20px', maxWidth: 780, fontSize: 15, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>
+                The city estimate is a starting point, not a spending target. Use the scenarios below to see how your annual budget changes the portfolio implied by the 25x rule. All amounts are in US dollars.
+              </p>
+              <div
+                role="region"
+                aria-label={`${page.city.name} FIRE spending scenarios`}
+                tabIndex={0}
+                style={{ overflowX: 'auto', border: '1px solid var(--uf-border)', borderRadius: 14 }}
+              >
+                <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse' }}>
+                  <thead style={{ background: 'var(--uf-surface)' }}>
+                    <tr>
+                      {['Scenario', 'Annual spending (USD)', 'Monthly spending (USD)', '25x FIRE target (USD)'].map((heading) => (
+                        <th key={heading} scope="col" style={{ padding: '12px 16px', borderBottom: '1px solid var(--uf-border)', color: 'var(--uf-ink-2)', fontSize: 12, fontWeight: 700, letterSpacing: '0.05em', textAlign: 'left', textTransform: 'uppercase' }}>
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {spendingScenarios.map((scenario, index) => (
+                      <tr key={scenario.label} style={{ background: scenario.label === 'UntilFire baseline' ? 'var(--uf-green-50)' : 'var(--uf-card)' }}>
+                        <th scope="row" style={{ padding: '15px 16px', borderBottom: index < spendingScenarios.length - 1 ? '1px solid var(--uf-border)' : 'none', color: 'var(--uf-ink)', fontSize: 14, fontWeight: 700, textAlign: 'left' }}>
+                          {scenario.label}
+                        </th>
+                        {[scenario.annual, scenario.annual / 12, scenario.annual * 25].map((amount) => (
+                          <td key={amount} style={{ padding: '15px 16px', borderBottom: index < spendingScenarios.length - 1 ? '1px solid var(--uf-border)' : 'none', color: 'var(--uf-ink-2)', fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>
+                            {formatMoney(amount)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ margin: '16px 0 0', fontSize: 13, lineHeight: 1.7, color: 'var(--uf-ink-2)' }}>
+                The 25x rule is a planning heuristic. Taxes, investment returns, retirement length, healthcare and your actual spending can change the amount you need.
+              </p>
+            </section>
+          ) : null}
+
           <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 20 }}>
               <div>
                 <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                  Popular city pages
+                  {page.slug === 'austin-tx' ? 'Texas comparisons' : 'Popular city pages'}
                 </p>
                 <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.15, letterSpacing: '-0.03em', color: 'var(--uf-ink)' }}>
-                  Compare nearby FIRE planning paths
+                  {page.slug === 'austin-tx' ? 'Compare FIRE numbers across Texas' : 'Compare other FIRE planning paths'}
                 </h2>
               </div>
               <Link href="/learn/topics" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
@@ -355,9 +422,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
-              {cityLandingPages
-                .filter((entry) => entry.slug !== page.slug)
-                .map((entry) => (
+              {relatedCityCards.map((entry) => (
                   <Link
                     key={entry.slug}
                     href={`/fire-number/${entry.slug}`}
@@ -379,7 +444,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
                       {entry.city.name}
                     </div>
                     <div style={{ fontSize: 14, color: 'var(--uf-ink-2)', lineHeight: 1.7 }}>
-                      Annual baseline {formatMoney(entry.city.col)} · target {formatMoney(entry.fireTarget)}
+                      Annual {page.slug === 'austin-tx' ? 'USD ' : ''}baseline {formatMoney(entry.city.col)} · target {formatMoney(entry.fireTarget)}
                     </div>
                   </Link>
                 ))}
