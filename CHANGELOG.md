@@ -26,6 +26,20 @@ All notable changes to UntilFire are documented here.
   noindex page that leads to the calculator. Share sheet on phones, copied
   link elsewhere. Recorded as D-22.
 
+### Dark mode
+- Primary buttons are readable in dark mode: their label now uses the card
+  surface colour instead of white, which was 3.1:1 on the dark theme's green
+  (under the 4.5:1 text needs); it is now 5.5:1 there and 4.5:1 in light mode.
+  The same fix covers the green buttons built by hand: the landing page's two
+  "Find my freedom date" buttons, the calculator's Continue / Show my freedom
+  date, the result's "Save my starting point", Coast FIRE's header link and a
+  dashboard action, and the selected city on the result's expat globe (the
+  hover green is 7.1:1 in dark, where white was 2.4:1). The design system's note on the white label is updated to match.
+- The UntilFire logo follows the theme on the five calculator pages and the
+  dashboard sidebar and mobile header, where it was dark green on the dark
+  theme. `/share` and `/learn/topics` keep the fixed-colour logo because their
+  backgrounds stay light in both themes.
+
 ### SEO identity
 - Replaced a learning-page link to the removed Monte Carlo feature with the
   existing free FIRE estimate. Recorded evidence-based organic growth priorities

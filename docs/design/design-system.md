@@ -89,8 +89,13 @@ large text and padding of 8px/16px (sm), 11px/22px (md), and 14px/28px (lg).
 `Stat` uses a 20px medium value, 12px delta text, and 5px internal spacing.
 These component-specific values are not permission to invent page-level sizes
 or rewrite UI during documentation work. Review and document new exceptions
-at the primitive level. `Button` also owns its existing white primary-label
-literal; reuse it rather than inventing a nonexistent `--uf-on-green` token.
+at the primitive level. `Button`'s primary label uses `--uf-card`, not white:
+white on the dark theme's green (`#2FA383`) is 3.1:1, under the 4.5:1 its
+text needs, while `--uf-card` is 4.5:1 on the light green and 5.5:1 on the
+dark one. Reuse `Button` (or that colour) for green-filled actions rather
+than inventing an `--uf-on-green` token. `Logo variant="auto"` belongs on
+any surface that follows the theme; `light` and `dark` are for surfaces that
+stay one colour in both themes.
 
 ## The primitives
 

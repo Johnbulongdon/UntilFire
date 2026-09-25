@@ -80,7 +80,7 @@ export default function APYCalculator() {
         justifyContent: 'space-between',
       }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="light" size={22} />
+          <Logo variant="auto" size={22} />
         </Link>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>

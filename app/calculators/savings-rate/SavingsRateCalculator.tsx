@@ -68,7 +68,7 @@ export default function SavingsRateCalculator() {
     <div className={styles.page} style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
       <nav className={styles.nav} style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--uf-s4)' }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="light" size={22} />
+          <Logo variant="auto" size={22} />
         </Link>
         <div className={styles.navLinks}>
           <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>

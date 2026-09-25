@@ -230,7 +230,7 @@ export default function RevealFlow(props: RevealFlowProps) {
         <p style={subtle}>Your current inputs do not reach your freedom number within our 65-year projection. This is a snapshot of today, not a verdict on your future.</p>
         <div style={{ fontSize: 28, fontWeight: 800 }}>Freedom number: {formatCompact(fireTarget)}</div>
         <p style={subtle}>Save your starting point, then choose a goal that fits your situation.</p>
-        <button onClick={() => onSave("unreachable")} style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>Save my starting point →</button>
+        <button onClick={() => onSave("unreachable")} style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>Save my starting point →</button>
         <button onClick={onAdjust} style={{ background: "none", border: "none", color: "var(--uf-ink)", textDecoration: "underline", padding: 12, cursor: "pointer" }}>Adjust inputs</button>
       </main>
     </div>
@@ -408,7 +408,7 @@ export default function RevealFlow(props: RevealFlowProps) {
               </div>
               <div style={subtle}>Keep the numbers you entered so you can choose a goal and track your progress.</div>
 
-              <button onClick={() => onSave("reveal_save_step")} style={{ width: "100%", background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>
+              <button onClick={() => onSave("reveal_save_step")} style={{ width: "100%", background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>
                 Save my starting point →
               </button>
               <div style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>Free to start · No credit card · Takes 30 seconds</div>

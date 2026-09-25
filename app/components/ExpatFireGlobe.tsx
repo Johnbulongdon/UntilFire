@@ -105,13 +105,14 @@ export default function ExpatFireGlobe({ home, baseAge, cities, playMotion = fal
                 display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 1,
                 padding: "11px 18px", borderRadius: 12, cursor: "pointer", transition: "all .15s ease",
                 background: active ? "var(--uf-green)" : "var(--uf-card)",
-                color: active ? "#fff" : "var(--uf-ink)",
+                color: active ? "var(--uf-card)" : "var(--uf-ink)",
                 border: "1px solid var(--uf-border-2)",
                 font: "inherit",
               }}
             >
               <span style={{ fontSize: 15, fontWeight: 700 }}>{c.label}</span>
-              <span style={{ fontSize: 12, opacity: 0.7 }}>{c.sub}</span>
+              {/* Full strength on the green: dimmed, the 12px line fell under 4.5:1. */}
+              <span style={{ fontSize: 12, opacity: active ? 1 : 0.7 }}>{c.sub}</span>
             </button>
           );
         })}
