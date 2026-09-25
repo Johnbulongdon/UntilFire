@@ -9,6 +9,7 @@ import { compareNetWorth, percentileToday } from '@/lib/net-worth-compare'
 import { NET_WORTH_BENCHMARKS } from '@/lib/net-worth-benchmarks'
 import { NET_WORTH_INFLATION } from '@/lib/net-worth-inflation'
 import { formatMoney } from '@/lib/money'
+import styles from './NetWorthByAge.module.css'
 
 /**
  * Net worth against US households of the same age, as a page of its own.
@@ -98,9 +99,9 @@ export default function NetWorthByAgeCalculator() {
                     </p>
                     <Link
                       href="/?source=net-worth-by-age"
-                      className="uf-t-body"
+                      className={`uf-t-body ${styles.primaryLink}`}
                       style={{
-                        display: 'inline-block', background: 'var(--uf-green)', color: '#fff',
+                        display: 'inline-block', background: 'var(--uf-green)',
                         padding: 'var(--uf-s3) var(--uf-s5)', borderRadius: 999,
                         fontWeight: 700, textDecoration: 'none',
                       }}
