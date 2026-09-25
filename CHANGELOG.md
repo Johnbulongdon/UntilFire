@@ -4,6 +4,15 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-25
 
+### Net worth by age
+- New page: `/calculators/net-worth-by-age`. Enter a net worth, and optionally an
+  age, to see how it compares with US households your age, then a table of the
+  median and 25th–99th percentiles for every age group in August 2026 dollars,
+  where the numbers come from, and a FAQ whose structured data matches it. Same
+  comparison, data and inflation factor as the result screen (D-19); nothing
+  typed is recorded. Hands on to the freedom date. Listed in the sitemap and on
+  the calculators page. Recorded as D-20.
+
 ### SEO identity
 - Lead homepage search/social metadata with UntilFire, explicitly provide the
   site name and add "Until Fire" as an alternate name in the existing markup.

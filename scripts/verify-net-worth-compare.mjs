@@ -10,7 +10,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { weightedCutpoints } from '../lib/weighted-percentiles.ts';
-import { ageBand, shareBelow, compareNetWorth } from '../lib/net-worth-compare.ts';
+import { ageBand, shareBelow, compareNetWorth, percentileToday } from '../lib/net-worth-compare.ts';
 
 const checks = [];
 const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
@@ -98,6 +98,27 @@ check('the inflation adjustment is generated from the BLS index, and plausible',
   inflJson ?? 'placeholder');
 
 let failed = 0;
+// ── The net worth by age page (/calculators/net-worth-by-age)
+{
+  const bench = { year: 2022, bands: { all: Array.from({ length: 99 }, (_, i) => (i + 1) * 1000) } };
+  check('a percentile in today\'s dollars is the survey cutpoint times the factor',
+    percentileToday(bench, 'all', 50, { factor: 1.1, through: 'X' }) === 50_000 * 1.1
+      && percentileToday(bench, 'all', 50, null) === 50_000
+      && percentileToday(bench, 'all', 0, null) === null && percentileToday(bench, 'all', 100, null) === null);
+  const page = readFileSync('app/calculators/net-worth-by-age/page.tsx', 'utf8');
+  const calc = readFileSync('app/calculators/net-worth-by-age/NetWorthByAgeCalculator.tsx', 'utf8');
+  check('the page compares with the same function, data and inflation factor as the result',
+    /compareNetWorth\(/.test(calc) && /NET_WORTH_BENCHMARKS/.test(calc) && /NET_WORTH_INFLATION/.test(calc));
+  check('the page table and FAQ use the generated data, not typed-in amounts',
+    /percentileToday\(NET_WORTH_BENCHMARKS/.test(page) && !/\$\d{2,3},\d{3}/.test(page));
+  check('its FAQ schema is generated from the visible FAQ', /\{faqs\.map\(/.test(page) && /'FAQPage',\s*mainEntity:\s*faqs\.map/.test(page));
+  check('what someone types is kept out of session recordings', /ph-no-capture/.test(calc));
+  check('it hands on to the freedom date, tagged with its source', /href="\/\?source=net-worth-by-age"/.test(calc));
+  check('it is in the sitemap and the calculators list',
+    /siteUrl\('\/calculators\/net-worth-by-age'\)/.test(readFileSync('app/sitemap.ts', 'utf8'))
+      && /'\/calculators\/net-worth-by-age'/.test(readFileSync('app/calculators/page.tsx', 'utf8')));
+}
+
 for (const c of checks) {
   console.log(`${c.ok ? '✓' : '✗'} ${c.name}${c.detail && !c.ok ? `  — ${c.detail}` : ''}`);
   if (!c.ok) failed++;

@@ -60,6 +60,9 @@ Do not wire a new screen to `step_id=currency`.
 - `landing_source` is a coarse route/source label such as `learn-hub`,
   `calculator-savings-rate`, or `fire-number-austin-tx`. It is used for
   acquisition attribution, not personal identification.
+- `net-worth-by-age` labels the net worth by age page's link into the main
+  calculator. It uses the existing `source` / `landing_source` path, not a new
+  event, and passes no amounts: the page's inputs stay in the browser.
 
 ## Person properties
 

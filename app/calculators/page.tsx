@@ -39,6 +39,13 @@ const CALCULATORS = [
     accent: '#0EA5E9',
   },
   {
+    href: '/calculators/net-worth-by-age',
+    name: 'Net Worth by Age Calculator',
+    description: 'Compare your net worth with US households your age, from Federal Reserve data adjusted to today’s dollars.',
+    keyword: 'net worth by age calculator',
+    accent: 'var(--uf-teal)',
+  },
+  {
     href: '/calculators/compound-interest',
     name: 'Compound Interest Calculator',
     description: 'Project investment growth over time with monthly contributions and compounding.',
