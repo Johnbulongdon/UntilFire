@@ -203,15 +203,8 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
               name: 'UntilFire',
+              alternateName: ['Until Fire', 'untilfire.com'],
               url: SITE_URL,
-              potentialAction: {
-                '@type': 'SearchAction',
-                target: {
-                  '@type': 'EntryPoint',
-                  urlTemplate: `${SITE_URL}/?q={search_term_string}`,
-                },
-                'query-input': 'required name=search_term_string',
-              },
             }),
           }}
         />
@@ -222,6 +215,7 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'UntilFire',
+              alternateName: 'Until Fire',
               url: SITE_URL,
               logo: `${SITE_URL}/icon.png`,
               description: 'Personal finance that sets you free. UntilFire helps you calculate your FIRE number, freedom date, and monthly plan to reach financial independence.',

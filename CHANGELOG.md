@@ -2,13 +2,30 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-25
+
+### SEO identity
+- Lead homepage search/social metadata with UntilFire, explicitly provide the
+  site name and add "Until Fire" as an alternate name in the existing markup.
+- Remove the unimplemented `/?q=` SearchAction and an unverified usage-count
+  claim; correct comments that treated sameAs as a guaranteed brand-ranking fix.
+- Record the ongoing SEO evidence and measurement backlog in `docs/seo-workplan.md`.
+  No product UI, calculation, redirect or indexing policy changes.
+
 ## [Unreleased] - 2026-09-24
 
 ### SEO content
+<<<<<<< HEAD
 - Repaired learning-article dark-mode colors and added visible breadcrumb
   navigation backed by matching Article/WebPage/BreadcrumbList structured data.
   Article content, dates, canonical URLs and calculator links are unchanged.
   See `docs/seo-learn-template-2026-09-25.md`.
+=======
+- Clarified Coast FIRE inflation, contribution timing and withdrawal assumptions;
+  added return-sensitivity examples and model limits, removed a repeated FAQ
+  heading, and aligned visible FAQ answers with structured data. Calculator logic
+  and defaults are unchanged. See `docs/seo-coast-content-2026-09-25.md`.
+>>>>>>> origin/main
 - Clarified the savings-rate calculator's search description, formula and annual
   inputs. Replaced conflicting fixed retirement timelines with the actual model
   assumptions, clarified payroll contributions, and kept one main heading.
