@@ -43,6 +43,12 @@ const siteConfig = fs.readFileSync(path.join(repoRoot, 'lib/site.ts'), 'utf8');
 assert.match(siteConfig, /SITE_URL\s*=\s*['"]https:\/\/www\.untilfire\.com['"]/, 'SITE_URL must use canonical www host');
 assert.match(siteConfig, /siteUrl\(/, 'siteUrl helper should centralize absolute URL generation');
 
+// FAQ structured data belongs to the page that shows the questions. The layout
+// once carried a site-wide FAQPage that appeared on every page, invisible and
+// duplicating each page's own; the homepage builds its schema from homeFaqs.
+assert.doesNotMatch(fs.readFileSync(path.join(repoRoot, 'app/layout.tsx'), 'utf8'), /FAQPage/, 'app/layout.tsx must not carry FAQPage schema; it would repeat on every page');
+assert.match(fs.readFileSync(path.join(repoRoot, 'app/page.tsx'), 'utf8'), /'FAQPage',\s*mainEntity:\s*homeFaqs\.map/, 'Homepage FAQPage schema should be generated from the visible homeFaqs');
+
 // The landing flow moved from app/page.tsx into app/HomeClient.tsx when the
 // homepage was split into a server shell and a client flow (15d5a49), so the
 // checks below read both.

@@ -11,6 +11,10 @@ All notable changes to UntilFire are documented here.
   claim; correct comments that treated sameAs as a guaranteed brand-ranking fix.
 - Record the ongoing SEO evidence and measurement backlog in `docs/seo-workplan.md`.
   No product UI, calculation, redirect or indexing policy changes.
+- Removed the site-wide FAQ structured data from the root layout. It described
+  questions no page shows and appeared on every page, beside each page's own FAQ
+  schema. The homepage now builds its FAQ schema from its visible FAQ; the other
+  FAQ pages keep theirs. `test:seo` guards both.
 
 ## [Unreleased] - 2026-09-24
 

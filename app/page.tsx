@@ -162,6 +162,22 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* The homepage's only FAQ schema, from the same source as the visible
+          FAQ above. Other pages carry their own; the layout carries none. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: homeFaqs.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          }),
+        }}
+      />
     </>
   );
 }
