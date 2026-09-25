@@ -2,6 +2,8 @@
 
 Baseline: `bc43982c21b6c95c68f8fee2de9cc7f4501659ee`. This is a shared-template
 repair, not a new content campaign or a rewrite of recently changed calculators.
+Reconciled with `614f1b0000a95a27b1292a52d2875e2c9448684f` before handoff,
+preserving the integrated brand and Coast FIRE changes and both changelog entries.
 
 ## Evidence and rationale
 
@@ -29,6 +31,10 @@ JavaScript or tracking events are needed.
 Verify the production build and rendered Article/WebPage/BreadcrumbList graph,
 including agreement with visible breadcrumb links. Check long titles, navigation,
 one main heading, keyboard focus, mobile/desktop layout and light/dark readability.
+Production build, focused ESLint and SEO guard passed. Rendered output checks
+covered all 16 article routes: connected graph nodes, four breadcrumb positions
+and one h1. Browser checks confirmed visible-path/schema agreement, stage-link
+navigation and no overflow at 390px and 1280px; both themes were inspected.
 Keep Google's live URL Inspection and Rich Results verification as post-deployment
 checks; local validation does not prove Google's crawl or presentation.
 
