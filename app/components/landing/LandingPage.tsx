@@ -1112,7 +1112,7 @@ const CSS7 = `
     display: inline-flex; align-items: center; gap: 10px;
     height: 60px; padding: 0 38px; border-radius: var(--uf-r-pill); cursor: pointer;
     background: var(--uf-green); border: 1px solid transparent;
-    backdrop-filter: blur(14px); color: #fff; font-family: ${F}; font-size: 18px; font-weight: 700;
+    backdrop-filter: blur(14px); color: var(--uf-card); font-family: ${F}; font-size: 18px; font-weight: 700;
     box-shadow: var(--uf-e2);
   }
   .uf7-arrow { color: currentColor; opacity: 0.72; }
@@ -1284,7 +1284,7 @@ const CSS7 = `
   .uf7-pcol li { font-size: 16px; line-height: 1.5; color: var(--uf-ink-2); padding: 8px 0; border-top: 1px solid var(--uf-surface); }
   .uf7-pcol li:first-child { border-top: none; }
   .uf7-pro-cta { margin-top: 28px; display: inline-block; padding: 14px 34px; border-radius: 2px; border: none; cursor: pointer; font-size: 16px; font-weight: 800; color: var(--uf-ground); background: linear-gradient(90deg, #b8ffe9, var(--uf-teal) 50%, var(--uf-teal)); box-shadow: 0 14px 34px rgba(34,211,165,0.26); font-family: ${F}; }
-  .uf7-free-cta { margin-top: 28px; display: inline-block; padding: 13px 30px; border-radius: var(--uf-r-pill); cursor: pointer; font-size: 16px; font-weight: 700; color: #fff; background: var(--uf-green); border: 1px solid transparent; font-family: ${F}; }
+  .uf7-free-cta { margin-top: 28px; display: inline-block; padding: 13px 30px; border-radius: var(--uf-r-pill); cursor: pointer; font-size: 16px; font-weight: 700; color: var(--uf-card); background: var(--uf-green); border: 1px solid transparent; font-family: ${F}; }
 
   .uf7-quote-mark { font-family: ${SERIF}; font-size: 90px; line-height: 0.4; color: rgba(98,250,227,0.5); }
   .uf7-big-quote { margin: 34px auto 0; font-family: ${SERIF}; font-size: clamp(26px, 4vw, 40px); line-height: 1.3; max-width: 780px; }

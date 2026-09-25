@@ -1634,7 +1634,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           </div>
           <button
             onClick={openThisMonthsMove}
-            style={{ alignSelf: "flex-start", border: "none", background: "var(--uf-green)", color: "#fff", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+            style={{ alignSelf: "flex-start", border: "none", background: "var(--uf-green)", color: "var(--uf-card)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
           >
             See this month&apos;s move →
           </button>
@@ -6226,7 +6226,7 @@ export default function Dashboard() {
       )}
 
       <header className="uf-mobile-topbar" aria-label="Mobile dashboard header">
-        <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="light" size={22} /></Link>
+        <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="auto" size={22} /></Link>
         <div className="uf-mobile-top-title">
           <strong>UntilFire</strong>
           <span>{freedomDateCompactLabel ? `Free · ${freedomDateCompactLabel}` : tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
@@ -6264,7 +6264,7 @@ export default function Dashboard() {
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
-          <Link href="/" className="uf-sidebar-logo"><Logo variant="light" size={26} /></Link>
+          <Link href="/" className="uf-sidebar-logo"><Logo variant="auto" size={26} /></Link>
 
           {freedomDateLabel && (
             <div className="uf-sidebar-freedom">
