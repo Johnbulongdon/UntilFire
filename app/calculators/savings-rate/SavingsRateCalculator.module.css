@@ -1,0 +1,86 @@
+.page input:focus-visible,
+.page a:focus-visible {
+  outline: 2px solid var(--uf-green);
+  outline-offset: 4px;
+}
+
+.navLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--uf-s4);
+}
+
+.navLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.secondaryLink {
+  color: var(--uf-green);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid var(--uf-green);
+  padding: var(--uf-s2) var(--uf-s4);
+  border-radius: var(--uf-r-pill);
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--uf-s5);
+  margin-bottom: var(--uf-s5);
+}
+
+.results > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Navigation uses a real link so it retains normal keyboard and browser behavior. */
+.primaryLink {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--uf-s2);
+  min-height: 48px;
+  padding: var(--uf-s3) var(--uf-s5);
+  border-radius: var(--uf-r-pill);
+  background: var(--uf-green);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  text-align: center;
+}
+
+:global(.dark) .primaryLink {
+  color: var(--uf-ground);
+}
+
+@media (max-width: 600px) {
+  .navLinks {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .results {
+    grid-template-columns: 1fr;
+  }
+
+  .results > div + div {
+    border-top: 1px solid var(--uf-border);
+    padding-top: var(--uf-s4);
+  }
+
+  .primaryLink {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+.nav {
+  row-gap: var(--uf-s4);
+}
+

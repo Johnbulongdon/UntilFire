@@ -39,6 +39,10 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-24
 
 ### SEO content
+- Improved the savings-rate landing page's mobile navigation and result layout,
+  connected input labels and visible keyboard focus, and added a post-result
+  path to the full calculator with an acquisition-source label. Calculations,
+  defaults, indexing and the free-before-signup flow are unchanged.
 - Clarified Coast FIRE inflation, contribution timing and withdrawal assumptions;
   added return-sensitivity examples and model limits, removed a repeated FAQ
   heading, and aligned visible FAQ answers with structured data. Calculator logic
