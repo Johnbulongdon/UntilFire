@@ -10,13 +10,23 @@
  * money is in another currency, so they get no net-worth comparison.
  */
 
-export type AgeBand = 'all' | 'under_35' | '35_44' | '45_54' | '55_64' | '65_74' | '75_plus'
+/**
+ * Five-year age groups (D-21). Single years would be finer, but the survey
+ * has only 40–90 households at each age, too few for a stable distribution.
+ */
+export type AgeBand =
+  | 'all' | '18_24' | '25_29' | '30_34' | '35_39' | '40_44' | '45_49'
+  | '50_54' | '55_59' | '60_64' | '65_69' | '70_74' | '75_plus'
 
 export interface NetWorthBenchmarks {
   /** Survey year; amounts are in that year's dollars. */
   year: number
   /** Cutpoints at 1% … 99% for each band. */
   bands: Record<AgeBand, number[]>
+  /** Survey households behind each band (rows ÷ 5 implicates). */
+  households?: Partial<Record<AgeBand, number>>
+  /** The Fed's published ten-year medians beside ours from the same rows. */
+  fedCheck?: Record<string, { ours: number; published: number }>
 }
 
 export interface NetWorthComparison {
@@ -48,21 +58,38 @@ export interface InflationAdjustment {
 
 const BAND_LABEL: Record<AgeBand, string> = {
   all: 'of all ages',
-  under_35: 'under 35',
-  '35_44': 'aged 35–44',
-  '45_54': 'aged 45–54',
-  '55_64': 'aged 55–64',
-  '65_74': 'aged 65–74',
+  '18_24': 'aged 18–24',
+  '25_29': 'aged 25–29',
+  '30_34': 'aged 30–34',
+  '35_39': 'aged 35–39',
+  '40_44': 'aged 40–44',
+  '45_49': 'aged 45–49',
+  '50_54': 'aged 50–54',
+  '55_59': 'aged 55–59',
+  '60_64': 'aged 60–64',
+  '65_69': 'aged 65–69',
+  '70_74': 'aged 70–74',
   '75_plus': 'aged 75 and over',
+}
+
+/** "aged 25–29"-style wording for a band, or "of all ages". */
+export function ageBandLabel(band: AgeBand): string {
+  return BAND_LABEL[band]
 }
 
 export function ageBand(age: number | null | undefined): AgeBand {
   if (age == null || !Number.isFinite(age)) return 'all'
-  if (age < 35) return 'under_35'
-  if (age < 45) return '35_44'
-  if (age < 55) return '45_54'
-  if (age < 65) return '55_64'
-  if (age < 75) return '65_74'
+  if (age < 25) return '18_24'
+  if (age < 30) return '25_29'
+  if (age < 35) return '30_34'
+  if (age < 40) return '35_39'
+  if (age < 45) return '40_44'
+  if (age < 50) return '45_49'
+  if (age < 55) return '50_54'
+  if (age < 60) return '55_59'
+  if (age < 65) return '60_64'
+  if (age < 70) return '65_69'
+  if (age < 75) return '70_74'
   return '75_plus'
 }
 
@@ -107,4 +134,45 @@ export function compareNetWorth(
     surveyYear: benchmarks.year,
     adjustedThrough: valid ? inflation.through : null,
   }
+}
+
+/** Age bands in table order, youngest first, for the by-age table. */
+export const AGE_BANDS: Exclude<AgeBand, 'all'>[] = [
+  '18_24', '25_29', '30_34', '35_39', '40_44', '45_49',
+  '50_54', '55_59', '60_64', '65_69', '70_74', '75_plus',
+]
+
+/** Short age wording for a table row: "25–29", "75+". */
+export const AGE_BAND_SHORT: Record<AgeBand, string> = {
+  all: 'All ages',
+  '18_24': '18–24',
+  '25_29': '25–29',
+  '30_34': '30–34',
+  '35_39': '35–39',
+  '40_44': '40–44',
+  '45_49': '45–49',
+  '50_54': '50–54',
+  '55_59': '55–59',
+  '60_64': '60–64',
+  '65_69': '65–69',
+  '70_74': '70–74',
+  '75_plus': '75+',
+}
+
+/**
+ * The net worth at a percentile of a band, in today's dollars: the survey's
+ * cutpoint brought forward with the same factor the comparison divides by.
+ * `pct` is 1–99; 50 is the median.
+ */
+export function percentileToday(
+  benchmarks: NetWorthBenchmarks,
+  band: AgeBand,
+  pct: number,
+  inflation: InflationAdjustment | null = null,
+): number | null {
+  const cutpoints = benchmarks.bands[band]
+  if (!cutpoints || cutpoints.length !== 99) return null
+  if (!Number.isInteger(pct) || pct < 1 || pct > 99) return null
+  const valid = inflation != null && Number.isFinite(inflation.factor) && inflation.factor > 0
+  return cutpoints[pct - 1] * (valid ? inflation.factor : 1)
 }

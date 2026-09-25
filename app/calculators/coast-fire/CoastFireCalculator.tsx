@@ -186,7 +186,7 @@ export default function CoastFireCalculator() {
           justifyContent: 'space-between', gap: 'var(--uf-s4)', flexWrap: 'wrap',
         }}
       >
-        <Link href="/" style={{ textDecoration: 'none' }}><Logo variant="light" size={22} /></Link>
+        <Link href="/" style={{ textDecoration: 'none' }}><Logo variant="auto" size={22} /></Link>
         <div style={{ display: 'flex', gap: 'var(--uf-s4)', alignItems: 'center' }}>
           <Link href="/calculators" className="uf-t-body" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>
             ← All calculators
@@ -197,7 +197,7 @@ export default function CoastFireCalculator() {
             href="/?source=calculator-coast-fire"
             className="uf-t-body"
             style={{
-              background: 'var(--uf-green)', color: '#fff',
+              background: 'var(--uf-green)', color: 'var(--uf-card)',
               padding: 'var(--uf-s2) var(--uf-s4)', borderRadius: 999,
               fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap',
             }}

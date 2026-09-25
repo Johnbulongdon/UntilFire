@@ -603,6 +603,94 @@ standard exists for another large visitor country.
 `lib/net-worth-benchmarks.ts` (generated), `app/components/PercentileTrack.tsx`,
 `app/components/RevealFlow.tsx`, `app/dashboard/CompareCard.tsx`.
 
+### D-20 — September 25: a net worth by age page, as a way in from search
+
+**Status:** Active. Authorised by the founder on 2026-09-25.
+**Decision:** `/calculators/net-worth-by-age` puts D-19's comparison on a page
+of its own: age and net worth in, "ahead of X% of US households your age" out,
+then the median and 25th–99th percentiles for every age group, how the
+numbers were made, and a FAQ. It hands on to the freedom date
+(`/?source=net-worth-by-age`). It is a page rather than another card because
+a card inside the calculator or behind sign-in can't rank or be linked to.
+**Why:** Search Console shows the site ranking on page one only where
+competition is thin, and far down for head terms. "Net worth by age" is a
+larger search than Coast FIRE, and a table of the Fed's figures in today's
+dollars is the kind of source other sites link to, which the domain lacks.
+**Guardrails:** The same `compareNetWorth`, generated table and inflation
+factor as the result, so the page cannot disagree with it. The table and FAQ
+amounts come from the generated data, not typed-in figures. The inputs and
+result are marked `ph-no-capture`, so session recordings never hold what
+someone types about their money; the page says so. US households only.
+**Trade-off:** Established sites rank for the head term; expect this page to
+start on pages two to four and win longer queries first. It widens the entry
+points beyond the freedom date, so it must keep handing on to it.
+**Revisit when:** 28 days of Search Console data after deployment, or the
+Fed's 2025 survey (the table regenerates from the same scripts).
+**Source:** `app/calculators/net-worth-by-age/`, `percentileToday` in
+`lib/net-worth-compare.ts`, `test:net-worth-compare`.
+
+### D-21 — September 25: five-year age groups now; single years from UntilFire's own users later
+
+**Status:** Active. Authorised by the founder on 2026-09-25. Refines D-19's
+age groups; D-19 and D-20 otherwise stand.
+**Decision:** The net worth comparison (result screen, Home card and the net
+worth by age page) compares with US households in five-year age groups
+(18–24, 25–29 … 70–74, 75+) instead of the Fed's ten-year groups. The page
+table shows the households surveyed in each group and drops the top-1%
+column. The founder wants single years once UntilFire has enough users of
+its own; that is recorded below as a future direction, not built.
+**Why:** "Under 35" put a 26-year-old against people up to 34, when the
+survey's median is about $35k at 25–29 and $103k at 30–34 (today's dollars):
+the wide group made young users look further behind than they are. Single
+years from the same survey are not honest: it has about 4,600 households in
+all and only 40–90 at each age, so single-year medians swing wildly (26:
+$27k, 27: $73k, 29: $44k; 31: $122k, 32: $50k). Five-year groups have 111 to
+536 households each, the finest split the data supports.
+**Guardrails:** The Fed publishes ten-year medians only, so the build script
+also builds those from the same rows and refuses to write unless each is
+within 2% of the Fed's Table 2 (all are within 0.3%); it also refuses a group
+under 100 households. The generated file records both (`households`,
+`fedCheck`), and `test:net-worth-compare` checks them. 18–24 (111 households)
+is the thinnest group; the page says small groups are less precise.
+**Future direction — single years from UntilFire's users:** revisit once
+UntilFire holds enough users' net worth by age. That is a different comparison,
+not a finer version of this one: it would compare with other UntilFire users,
+who skew towards savers, rather than with US households, so the wording must
+say "UntilFire users aged 26", never "US households". It also needs, before
+any build: a minimum number of users per single year (on the order of a few
+hundred, like the survey groups here) and a fallback to the five-year survey
+groups below it; only aggregates, never an individual's figure; the privacy
+policy and consent covering this use of saved net worth; and internal/test
+accounts excluded. Until each single year clears the minimum, keep the survey.
+**Revisit when:** UntilFire has a few hundred users with a saved net worth at
+each single age being shown; or the Fed's 2025 survey is published (rerun
+`scripts/build-net-worth-benchmarks.mjs`).
+**Source:** `scripts/build-net-worth-benchmarks.mjs`, `lib/net-worth-benchmarks.ts`,
+`lib/net-worth-compare.ts`, `app/calculators/net-worth-by-age/`.
+
+### D-22 — September 25: share where you stand, never what you have
+
+**Status:** Active. Authorised by the founder on 2026-09-25.
+**Decision:** The net worth by age result has a "Share your result" button.
+It shares a link to `/calculators/net-worth-by-age/share?a=<age group>&p=<percent>`
+(`p=top` for "more than 99%") whose preview image (`/api/og/net-worth`) reads
+"Ahead of 72% of US households aged 25–29". The link, image and landing page
+carry only the age group and the whole percentage, never an amount, and the
+landing page leads to the calculator. Nothing is offered at the start line
+(under 1%). On phones it opens the share sheet; elsewhere it copies the link.
+**Why:** A standing people are glad to post is distribution the site lacks
+(see D-20); an amount is private and would make sharing feel unsafe.
+**Guardrails:** `lib/net-worth-share.ts` accepts only a known age group and
+a whole percentage from 1 to 99, so a hand-edited link can't put other text
+on the image. The share page is noindex and canonical to the net worth page,
+so shared links don't compete with it in search. `test:net-worth-compare`
+covers the parsing, that a link never contains the amount, the noindex and
+canonical, and that the image reads the same validated values.
+**Measure:** landings on the share path are ordinary pageviews in PostHog; no
+new event. Compare them with views of the net worth page after 28 days.
+**Source:** `app/calculators/net-worth-by-age/ShareResult.tsx`,
+`app/calculators/net-worth-by-age/share/page.tsx`, `app/api/og/net-worth/route.tsx`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,

@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react'
 import Logo from '@/app/components/Logo'
 import Link from 'next/link'
+import { Card, Field, Input, Stat } from '@/components/ui'
+import styles from './SavingsRateCalculator.module.css'
 
 const C = {
   bg: 'var(--uf-surface)',
@@ -13,26 +15,6 @@ const C = {
   mutedLight: 'var(--uf-ink-3)',
   accent: 'var(--uf-green)',
   teal: 'var(--uf-teal)',
-}
-
-const inputStyle: React.CSSProperties = {
-  background: 'var(--uf-card)',
-  border: `1px solid ${C.border}`,
-  borderRadius: 8,
-  color: C.text,
-  fontSize: 16,
-  padding: '11px 14px',
-  width: '100%',
-  outline: 'none',
-  boxSizing: 'border-box',
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 13,
-  color: C.muted,
-  marginBottom: 6,
-  display: 'block',
-  fontWeight: 500,
 }
 
 function yearsToFIRE(sr: number, annualReturn = 0.07, currentSavings = 0, annualIncome = 100000): number {
@@ -83,15 +65,15 @@ export default function SavingsRateCalculator() {
     y === Infinity ? '50+ yrs' : y < 1 ? 'Already FIRE!' : `${y.toFixed(1)} yrs`
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
-      <nav style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div className={styles.page} style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
+      <nav className={styles.nav} style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--uf-s4)' }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="light" size={22} />
+          <Logo variant="auto" size={22} />
         </Link>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+        <div className={styles.navLinks}>
           <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>
-          <Link href="/?source=calculator-savings-rate" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid var(--uf-green)', padding: '6px 14px', borderRadius: 6 }}>
-            FIRE number →
+          <Link href="/?source=calculator-savings-rate" className={styles.secondaryLink}>
+            Find my freedom date →
           </Link>
         </div>
       </nav>
@@ -111,42 +93,27 @@ export default function SavingsRateCalculator() {
           </p>
         </div>
 
-        {/* Inputs */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: '32px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'grid', gap: 20 }}>
-            <div>
-              <label style={labelStyle}>Annual take-home income (after tax, $)</label>
-              <input type="number" value={income} onChange={e => setIncome(e.target.value)} style={inputStyle} min="0" step="1000" />
-            </div>
-            <div>
-              <label style={labelStyle}>Annual expenses ($)</label>
-              <input type="number" value={expenses} onChange={e => setExpenses(e.target.value)} style={inputStyle} min="0" step="1000" />
-            </div>
-            <div>
-              <label style={labelStyle}>Current savings / investments ($)</label>
-              <input type="number" value={currentSavings} onChange={e => setCurrentSavings(e.target.value)} style={inputStyle} min="0" step="1000" />
-            </div>
+        {/* Inputs remain annual; IDs connect the labels for keyboard and screen-reader use. */}
+        <Card style={{ marginBottom: 'var(--uf-s5)' }}>
+          <div style={{ display: 'grid', gap: 'var(--uf-s5)' }}>
+            <Field label="Annual take-home income (after tax, $)" htmlFor="savings-income">
+              <Input id="savings-income" numeric type="number" value={income} onChange={e => setIncome(e.target.value)} style={{ fontSize: 16 }} min="0" step="1000" />
+            </Field>
+            <Field label="Annual expenses ($)" htmlFor="savings-expenses">
+              <Input id="savings-expenses" numeric type="number" value={expenses} onChange={e => setExpenses(e.target.value)} style={{ fontSize: 16 }} min="0" step="1000" />
+            </Field>
+            <Field label="Current savings / investments ($)" htmlFor="savings-investments">
+              <Input id="savings-investments" numeric type="number" value={currentSavings} onChange={e => setCurrentSavings(e.target.value)} style={{ fontSize: 16 }} min="0" step="1000" />
+            </Field>
           </div>
-        </div>
+        </Card>
 
-        {/* Primary result */}
-        <div style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 16, padding: '28px 32px', marginBottom: 24 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 28 }}>
-            <div>
-              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Your savings rate</div>
-              <div style={{ fontSize: 44, fontWeight: 800, color: C.accent, letterSpacing: '-0.04em' }}>{Math.round(sr * 100)}%</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Monthly saved</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: C.text, letterSpacing: '-0.04em' }}>
-                ${Math.round(monthlySaved).toLocaleString()}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: C.muted, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>Years to FIRE</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--uf-green-700)', letterSpacing: '-0.04em' }}>{fmtYrs(years)}</div>
-              <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>7% return, 4% withdrawal</div>
-            </div>
+        <Card role="region" aria-labelledby="savings-result-heading" style={{ marginBottom: 'var(--uf-s5)' }}>
+          <h2 id="savings-result-heading" className="uf-t-h2" style={{ margin: '0 0 var(--uf-s5)' }}>Your savings snapshot</h2>
+          <div className={styles.results}>
+            <Stat label="Your savings rate" value={`${Math.round(sr * 100)}%`} />
+            <Stat label="Monthly saved" value={`$${Math.round(monthlySaved).toLocaleString()}`} />
+            <Stat label="Years to FIRE" value={fmtYrs(years)} tone="freedom" delta="7% return, 4% withdrawal" deltaTone="default" />
           </div>
 
           {/* Rate vs years table */}
@@ -178,7 +145,21 @@ export default function SavingsRateCalculator() {
               ))}
             </div>
           </div>
-        </div>
+        </Card>
+
+        <Card role="region" aria-labelledby="savings-next-heading" style={{ marginBottom: 'var(--uf-s6)' }}>
+          <h2 id="savings-next-heading" className="uf-t-h2" style={{ margin: '0 0 var(--uf-s3)' }}>Turn your savings rate into a plan</h2>
+          <p className="uf-t-lead" style={{ color: C.muted, margin: '0 0 var(--uf-s4)' }}>
+            Explore your income, spending and investments in the full calculator to find your
+            freedom date. Then choose whether to create an account to save your plan and track progress.
+          </p>
+          <Link href="/?source=calculator-savings-rate-result" className={styles.primaryLink}>
+            Find my freedom date <span aria-hidden="true">→</span>
+          </Link>
+          <p className="uf-t-small" style={{ color: C.muted, margin: 'var(--uf-s3) 0 0' }}>
+            Free to calculate. No account needed to see your result.
+          </p>
+        </Card>
 
         {/* SEO content */}
         <div style={{ color: C.muted, lineHeight: 1.8, fontSize: 15 }}>
@@ -198,7 +179,7 @@ export default function SavingsRateCalculator() {
           <p>
             These are planning estimates, not a promise that investments will earn 7% or that
             a 4% withdrawal will last. Taxes, fees, changing expenses and uneven market returns
-            are not modeled separately. Use the FIRE calculator below to explore your wider plan.
+            are not modeled separately. Use the full FIRE calculator to explore your wider plan.
           </p>
         </div>
       </div>

@@ -60,6 +60,16 @@ Do not wire a new screen to `step_id=currency`.
 - `landing_source` is a coarse route/source label such as `learn-hub`,
   `calculator-savings-rate`, or `fire-number-austin-tx`. It is used for
   acquisition attribution, not personal identification.
+- `learn-sequence-risk` labels the sequence-risk article's link to the free FIRE
+  estimate. It uses the existing acquisition path; it does not imply a simulation,
+  an organic search visit or a completed signup. No financial inputs are passed.
+- `calculator-savings-rate-result` identifies the savings-rate page's post-result
+  link into the main calculator. It uses the existing `source` / `landing_source`
+  path, not a new event. It records continuation origin, not proof of a Google
+  visit or a completed signup. No calculator amounts are passed in the link.
+- `net-worth-by-age` labels the net worth by age page's link into the main
+  calculator. It uses the existing `source` / `landing_source` path, not a new
+  event, and passes no amounts: the page's inputs stay in the browser.
 
 ## Person properties
 

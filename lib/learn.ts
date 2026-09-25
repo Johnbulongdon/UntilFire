@@ -691,7 +691,7 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
     secondaryStages: ['living-in-fire'],
     relatedCalculators: [
       { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
-      { href: '/dashboard', label: 'Run Monte Carlo in Dashboard' },
+      { href: '/?source=learn-sequence-risk', label: 'Explore a FIRE estimate' },
     ],
   },
   'how-fire-assumptions-change-your-retirement-date': {

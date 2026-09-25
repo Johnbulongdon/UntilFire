@@ -1315,7 +1315,7 @@ export default function HomeClient() {
 
         /* -- BUTTONS -- */
         .uf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 8px; font-family: var(--font-body); font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; }
-        .uf-btn-primary { background: var(--accent); color: #fff; }
+        .uf-btn-primary { background: var(--accent); color: var(--uf-card); }
         .uf-btn-primary:hover:not(:disabled) { background: var(--teal-bright); transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
         .uf-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
         .uf-btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }

@@ -12,7 +12,46 @@ All notable changes to UntilFire are documented here.
   column, and replace Austin's unrelated international recommendations with four
   Texas city comparisons.
 
+### Net worth by age
+- New page: `/calculators/net-worth-by-age`. Enter a net worth, and optionally an
+  age, to see how it compares with US households your age, then a table of the
+  median and 25th–99th percentiles for every age group in August 2026 dollars,
+  where the numbers come from, and a FAQ whose structured data matches it. Same
+  comparison, data and inflation factor as the result screen (D-19); nothing
+  typed is recorded. Hands on to the freedom date. Listed in the sitemap and on
+  the calculators page. Recorded as D-20.
+- Net worth now compares with US households in five-year age groups (18–24,
+  25–29 … 70–74, 75+) rather than ten-year ones, on the page, the result screen
+  and Home: at 26 you are compared with 25–29, not with everyone under 35. The
+  page table shows how many households were surveyed in each group and drops
+  the top-1% column, which a few hundred households can't support. The build
+  still checks the Fed's published ten-year medians from the same data.
+  Single years from UntilFire's own users are a recorded future direction.
+  Recorded as D-21.
+- Share your net worth result: a button under the result shares a link whose
+  preview image reads "Ahead of 72% of US households aged 25–29". It carries
+  the age group and percentage only, never the amount; the link opens a
+  noindex page that leads to the calculator. Share sheet on phones, copied
+  link elsewhere. Recorded as D-22.
+
+### Dark mode
+- Primary buttons are readable in dark mode: their label now uses the card
+  surface colour instead of white, which was 3.1:1 on the dark theme's green
+  (under the 4.5:1 text needs); it is now 5.5:1 there and 4.5:1 in light mode.
+  The same fix covers the green buttons built by hand: the landing page's two
+  "Find my freedom date" buttons, the calculator's Continue / Show my freedom
+  date, the result's "Save my starting point", Coast FIRE's header link and a
+  dashboard action, and the selected city on the result's expat globe (the
+  hover green is 7.1:1 in dark, where white was 2.4:1). The design system's note on the white label is updated to match.
+- The UntilFire logo follows the theme on the five calculator pages and the
+  dashboard sidebar and mobile header, where it was dark green on the dark
+  theme. `/share` and `/learn/topics` keep the fixed-colour logo because their
+  backgrounds stay light in both themes.
+
 ### SEO identity
+- Replaced a learning-page link to the removed Monte Carlo feature with the
+  existing free FIRE estimate. Recorded evidence-based organic growth priorities
+  in `docs/seo-growth-priorities-2026-09-25.md`; no paid promotion is authorized.
 - Lead homepage search/social metadata with UntilFire, explicitly provide the
   site name and add "Until Fire" as an alternate name in the existing markup.
 - Remove the unimplemented `/?q=` SearchAction and an unverified usage-count
@@ -38,6 +77,14 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-24
 
 ### SEO content
+- Repaired learning-article dark-mode colors and added visible breadcrumb
+  navigation backed by matching Article/WebPage/BreadcrumbList structured data.
+  Article content, dates, canonical URLs and calculator links are unchanged.
+  See `docs/seo-learn-template-2026-09-25.md`.
+- Improved the savings-rate landing page's mobile navigation and result layout,
+  connected input labels and visible keyboard focus, and added a post-result
+  path to the full calculator with an acquisition-source label. Calculations,
+  defaults, indexing and the free-before-signup flow are unchanged.
 - Clarified Coast FIRE inflation, contribution timing and withdrawal assumptions;
   added return-sensitivity examples and model limits, removed a repeated FAQ
   heading, and aligned visible FAQ answers with structured data. Calculator logic

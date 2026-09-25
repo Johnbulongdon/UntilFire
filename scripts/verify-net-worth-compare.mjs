@@ -10,7 +10,8 @@
  */
 import { readFileSync } from 'node:fs';
 import { weightedCutpoints } from '../lib/weighted-percentiles.ts';
-import { ageBand, shareBelow, compareNetWorth } from '../lib/net-worth-compare.ts';
+import { ageBand, shareBelow, compareNetWorth, percentileToday, AGE_BANDS } from '../lib/net-worth-compare.ts';
+import { parseNetWorthShare, shareFromComparison, sharePath } from '../lib/net-worth-share.ts';
 
 const checks = [];
 const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
@@ -39,13 +40,14 @@ const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
 // ── The comparison
 {
   const cuts = Array.from({ length: 99 }, (_, i) => (i + 1) * 1000);
-  const bands = Object.fromEntries(['all', 'under_35', '35_44', '45_54', '55_64', '65_74', '75_plus'].map((b) => [b, cuts]));
+  const bands = Object.fromEntries(['all', ...AGE_BANDS].map((b) => [b, cuts]));
   const bm = { year: 2022, bands };
-  check('age bands follow the survey: 34/35, 44/45, 74/75',
-    ageBand(34) === 'under_35' && ageBand(35) === '35_44' && ageBand(44) === '35_44' && ageBand(45) === '45_54' && ageBand(74) === '65_74' && ageBand(75) === '75_plus' && ageBand(null) === 'all');
+  check('age groups are five years wide: 24/25, 26, 29/30, 74/75',
+    ageBand(18) === '18_24' && ageBand(24) === '18_24' && ageBand(25) === '25_29' && ageBand(26) === '25_29' && ageBand(29) === '25_29'
+      && ageBand(30) === '30_34' && ageBand(44) === '40_44' && ageBand(74) === '70_74' && ageBand(75) === '75_plus' && ageBand(null) === 'all');
   check('outside US dollars there is no comparison', compareNetWorth({ netWorthUsd: 50_000, age: 40, ageAssumed: false, currency: 'HKD' }, bm) === null);
   const withAge = compareNetWorth({ netWorthUsd: 62_400, age: 40, ageAssumed: false, currency: 'USD' }, bm);
-  check('with an age it compares with that age, rounding down', withAge.band === '35_44' && withAge.aheadOfPct === 62 && !withAge.allAges && withAge.bandLabel === 'aged 35–44', JSON.stringify(withAge));
+  check('with an age it compares with that age, rounding down', withAge.band === '40_44' && withAge.aheadOfPct === 62 && !withAge.allAges && withAge.bandLabel === 'aged 40–44', JSON.stringify(withAge));
   const assumed = compareNetWorth({ netWorthUsd: 62_400, age: 30, ageAssumed: true, currency: 'USD' }, bm);
   check('an assumed age compares with all households, and says so', assumed.band === 'all' && assumed.allAges && assumed.bandLabel === 'of all ages');
   const top = compareNetWorth({ netWorthUsd: 1e9, age: 40, ageAssumed: false, currency: 'USD' }, bm);
@@ -81,13 +83,17 @@ const json = data.match(/NET_WORTH_BENCHMARKS: NetWorthBenchmarks = (\{[\s\S]*\}
 let parsed = null;
 try { parsed = JSON.parse(json); } catch {}
 const PUBLISHED_MEDIANS = JSON.parse(readFileSync('scripts/scf-published-medians.json', 'utf8'));
-check("the Fed's published medians cover all seven groups",
+check("the Fed's published medians cover all seven of its groups",
   ['all', 'under_35', '35_44', '45_54', '55_64', '65_74', '75_plus'].every((b) => Number(PUBLISHED_MEDIANS[b]) > 0));
-check('every band has 99 cutpoints in order',
-  !!parsed && Object.keys(PUBLISHED_MEDIANS).every((b) => parsed.bands[b]?.length === 99 && parsed.bands[b].every((v, i, a) => i === 0 || v >= a[i - 1])));
-check("each band's median is within 2% of the Fed's published median",
-  !!parsed && Object.entries(PUBLISHED_MEDIANS).every(([b, m]) => Math.abs(parsed.bands[b][49] - m) / m <= 0.02),
-  parsed ? Object.entries(PUBLISHED_MEDIANS).map(([b, m]) => `${b} ${parsed.bands[b]?.[49]} vs ${m}`).join('; ') : 'unparsed');
+check('every five-year group and all ages has 99 cutpoints in order',
+  !!parsed && ['all', ...AGE_BANDS].every((b) => parsed.bands[b]?.length === 99 && parsed.bands[b].every((v, i, a) => i === 0 || v >= a[i - 1])));
+check('every group has at least 100 survey households behind it',
+  !!parsed && ['all', ...AGE_BANDS].every((b) => parsed.households?.[b] >= 100),
+  parsed ? JSON.stringify(parsed.households) : 'unparsed');
+check("the same rows reproduce the Fed's ten-year medians within 2%",
+  !!parsed && Object.entries(PUBLISHED_MEDIANS).every(([b, m]) => parsed.fedCheck?.[b]?.published === m && Math.abs(parsed.fedCheck[b].ours - m) / m <= 0.02)
+    && parsed.fedCheck.all.ours === parsed.bands.all[49],
+  parsed ? Object.entries(PUBLISHED_MEDIANS).map(([b, m]) => `${b} ${parsed.fedCheck?.[b]?.ours} vs ${m}`).join('; ') : 'unparsed');
 
 const infl = readFileSync('lib/net-worth-inflation.ts', 'utf8');
 const inflJson = infl.match(/NET_WORTH_INFLATION: InflationAdjustment \| null = (\{[^\n]*\})/)?.[1];
@@ -98,6 +104,52 @@ check('the inflation adjustment is generated from the BLS index, and plausible',
   inflJson ?? 'placeholder');
 
 let failed = 0;
+// ── The net worth by age page (/calculators/net-worth-by-age)
+{
+  const bench = { year: 2022, bands: { all: Array.from({ length: 99 }, (_, i) => (i + 1) * 1000) } };
+  check('a percentile in today\'s dollars is the survey cutpoint times the factor',
+    percentileToday(bench, 'all', 50, { factor: 1.1, through: 'X' }) === 50_000 * 1.1
+      && percentileToday(bench, 'all', 50, null) === 50_000
+      && percentileToday(bench, 'all', 0, null) === null && percentileToday(bench, 'all', 100, null) === null);
+  const page = readFileSync('app/calculators/net-worth-by-age/page.tsx', 'utf8');
+  const calc = readFileSync('app/calculators/net-worth-by-age/NetWorthByAgeCalculator.tsx', 'utf8');
+  check('the page compares with the same function, data and inflation factor as the result',
+    /compareNetWorth\(/.test(calc) && /NET_WORTH_BENCHMARKS/.test(calc) && /NET_WORTH_INFLATION/.test(calc));
+  check('the page table and FAQ use the generated data, not typed-in amounts',
+    /percentileToday\(NET_WORTH_BENCHMARKS/.test(page) && !/\$\d{2,3},\d{3}/.test(page));
+  check('its FAQ schema is generated from the visible FAQ', /\{faqs\.map\(/.test(page) && /'FAQPage',\s*mainEntity:\s*faqs\.map/.test(page));
+  check('what someone types is kept out of session recordings', /ph-no-capture/.test(calc));
+  check('it hands on to the freedom date, tagged with its source', /href="\/\?source=net-worth-by-age"/.test(calc));
+  check('it is in the sitemap and the calculators list',
+    /siteUrl\('\/calculators\/net-worth-by-age'\)/.test(readFileSync('app/sitemap.ts', 'utf8'))
+      && /'\/calculators\/net-worth-by-age'/.test(readFileSync('app/calculators/page.tsx', 'utf8')));
+}
+
+// ── Sharing a result (/calculators/net-worth-by-age/share)
+{
+  check('a share link reads only a known age group and a whole percentage',
+    JSON.stringify(parseNetWorthShare('25_29', '72')) === '{"band":"25_29","pct":72}'
+      && JSON.stringify(parseNetWorthShare('all', 'top')) === '{"band":"all","pct":null}'
+      && [['under_35', '50'], ['25_29', '0'], ['25_29', '100'], ['25_29', '7.5'], ['25_29', '150000'], ['25_29', undefined], [undefined, '50'], ['<b>', '50']]
+        .every(([a, p]) => parseNetWorthShare(a, p) === null));
+  const cuts = Array.from({ length: 99 }, (_, i) => (i + 1) * 1000);
+  const bm = { year: 2022, bands: Object.fromEntries(['all', ...AGE_BANDS].map((b) => [b, cuts])) };
+  const c = compareNetWorth({ netWorthUsd: 72_345, age: 26, ageAssumed: false, currency: 'USD' }, bm);
+  const link = sharePath(shareFromComparison(c));
+  check('the link carries the age group and percentage, never the amount',
+    link === '/calculators/net-worth-by-age/share?a=25_29&p=72' && !/72345|72,345/.test(link), link);
+  const start = compareNetWorth({ netWorthUsd: -5_000, age: 26, ageAssumed: false, currency: 'USD' }, bm);
+  const top = compareNetWorth({ netWorthUsd: 1e9, age: 26, ageAssumed: false, currency: 'USD' }, bm);
+  check('at the start line there is nothing to share; past the top it shares "more than 99%"',
+    shareFromComparison(start) === null && sharePath(shareFromComparison(top)).endsWith('p=top'));
+  const sharePage = readFileSync('app/calculators/net-worth-by-age/share/page.tsx', 'utf8');
+  check('the share page is noindex and canonical to the net worth page, with the preview image',
+    /robots: \{ index: false, follow: true \}/.test(sharePage) && /canonical: PAGE_URL/.test(sharePage) && /\/api\/og\/net-worth\?a=/.test(sharePage));
+  const og = readFileSync('app/api/og/net-worth/route.tsx', 'utf8');
+  check('the preview image reads the same validated share', /parseNetWorthShare\(searchParams\.get\('a'\), searchParams\.get\('p'\)\)/.test(og));
+  check('the result offers the share', /<ShareResult comparison=\{comparison\} \/>/.test(readFileSync('app/calculators/net-worth-by-age/NetWorthByAgeCalculator.tsx', 'utf8')));
+}
+
 for (const c of checks) {
   console.log(`${c.ok ? '✓' : '✗'} ${c.name}${c.detail && !c.ok ? `  — ${c.detail}` : ''}`);
   if (!c.ok) failed++;

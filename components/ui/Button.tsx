@@ -22,7 +22,10 @@ const SIZES: Record<ButtonSize, React.CSSProperties> = {
 };
 
 const VARIANTS: Record<ButtonVariant, React.CSSProperties> = {
-  primary:   { background: "var(--uf-green)", color: "#fff", borderColor: "transparent" },
+  // The label is the card surface colour, not white: white on the dark
+  // theme's lighter green is 3.1:1, under the 4.5:1 text needs. --uf-card is
+  // 4.5:1 on the light green and 5.5:1 on the dark one.
+  primary:   { background: "var(--uf-green)", color: "var(--uf-card)", borderColor: "transparent" },
   secondary: { background: "var(--uf-card)", color: "var(--uf-ink)", borderColor: "var(--uf-border-2)" },
   ghost:     { background: "transparent", color: "var(--uf-ink-2)", borderColor: "transparent" },
   danger:    { background: "transparent", color: "var(--uf-neg)", borderColor: "var(--uf-neg)" },
