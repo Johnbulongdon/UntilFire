@@ -48,6 +48,9 @@ assert.match(siteConfig, /siteUrl\(/, 'siteUrl helper should centralize absolute
 // duplicating each page's own; the homepage builds its schema from homeFaqs.
 assert.doesNotMatch(fs.readFileSync(path.join(repoRoot, 'app/layout.tsx'), 'utf8'), /FAQPage/, 'app/layout.tsx must not carry FAQPage schema; it would repeat on every page');
 assert.match(fs.readFileSync(path.join(repoRoot, 'app/page.tsx'), 'utf8'), /'FAQPage',\s*mainEntity:\s*homeFaqs\.map/, 'Homepage FAQPage schema should be generated from the visible homeFaqs');
+const noTaxStatesSource = fs.readFileSync(path.join(repoRoot, 'app/fire-number/no-income-tax-states/page.tsx'), 'utf8');
+assert.match(noTaxStatesSource, /\{faqs\.map\(/, 'No-income-tax states page should render its FAQ visibly');
+assert.match(noTaxStatesSource, /'FAQPage',\s*mainEntity:\s*faqs\.map/, 'No-income-tax states FAQPage schema should be generated from the visible faqs');
 
 // The landing flow moved from app/page.tsx into app/HomeClient.tsx when the
 // homepage was split into a server shell and a client flow (15d5a49), so the
@@ -115,7 +118,26 @@ const requiredRedirectSources = [
   '/fire-number-calculator',
   '/coast-fire-calculator',
   '/barista-fire-calculator',
+  '/fire-number/states/de_us',
+  '/fire-number/states/hi',
+  '/fire-number/states/ky',
+  '/fire-number/states/sd',
+  '/fire-number/states/wv',
 ];
+
+// Every US state with cities needs a display name: the state page's slug and
+// title come from it. Without one the page is published at the bare code
+// ("FIRE Number in sd") and cards that name the state render blank (Delaware,
+// Hawaii, Kentucky, South Dakota and West Virginia did).
+const fireDataSource = fs.readFileSync(path.join(repoRoot, 'lib/fire-data.ts'), 'utf8');
+const statePagesSource = fs.readFileSync(path.join(repoRoot, 'lib/state-pages.ts'), 'utf8');
+const [stateNamesBlock] = statePagesSource.split('const STATE_SLUG_MAP');
+const usCityStates = new Set([...fireDataSource.matchAll(/state: '([a-z_]+)', flag: '🇺🇸'/g)].map((m) => m[1]));
+const namedStates = new Set([...stateNamesBlock.matchAll(/^\s+([a-z_]+): '/gm)].map((m) => m[1]));
+assert.ok(usCityStates.size > 40, 'Should find the US city states in lib/fire-data.ts');
+for (const state of usCityStates) {
+  assert.ok(namedStates.has(state), `lib/state-pages.ts STATE_NAMES is missing US state ${state}`);
+}
 
 for (const source of requiredRedirectSources) {
   assert.match(nextConfig, new RegExp(`source:\\s*['"]${source}['"]`), `Missing redirect for stale indexed URL ${source}`);

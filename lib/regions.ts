@@ -62,7 +62,7 @@ const REGION_DEFINITIONS: RegionData[] = [
     tagline: 'High cost, but high income potential too.',
     description:
       'California, Oregon, and Washington combine the highest tech salaries with some of the highest living costs in the US. San Francisco demands $2.75M+ for FIRE, while smaller Oregon cities are closer to $1.3M. Washington has no income tax — a major advantage for high earners in Seattle.',
-    stateKeys: ['ca', 'or', 'wa', 'ak', 'hm'],
+    stateKeys: ['ca', 'or', 'wa', 'ak', 'hi'],
     canonicalUrl: 'https://www.untilfire.com/fire-number/regions/west-coast',
   },
 ]
