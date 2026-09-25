@@ -2,6 +2,16 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-25
+
+### SEO identity
+- Lead homepage search/social metadata with UntilFire, explicitly provide the
+  site name and add "Until Fire" as an alternate name in the existing markup.
+- Remove the unimplemented `/?q=` SearchAction and an unverified usage-count
+  claim; correct comments that treated sameAs as a guaranteed brand-ranking fix.
+- Record the ongoing SEO evidence and measurement backlog in `docs/seo-workplan.md`.
+  No product UI, calculation, redirect or indexing policy changes.
+
 ## [Unreleased] - 2026-09-24
 
 ### SEO content

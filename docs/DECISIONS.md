@@ -62,6 +62,15 @@ continuation with current evidence instead of hiding first value.
 **Source:** Vault Decision Log (May), Product Positioning (July 16),
 Gentle Onboarding Principles; current [requirements](PRD.md).
 
+**September 25 SEO clarification:** Lead homepage search and social titles with
+UntilFire while retaining the FIRE calculator and financial-freedom purpose.
+The user's brand-search report motivates clearer identity, not a finding that
+Google has penalised or excluded the homepage. Record the spoken variant
+"Until Fire" in the existing entity markup, remove unsupported search actions
+and unverified usage claims, and keep the visible product flow unchanged.
+Measure after deployment; metadata and sameAs are not ranking guarantees.
+See [SEO work plan](seo-workplan.md) for evidence gaps and next steps.
+
 ### D-03 — July 16: deterministic guidance before an AI adviser
 
 **Status:** Active sequencing; named allocation recommendations unresolved.
