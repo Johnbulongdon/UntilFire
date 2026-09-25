@@ -72,6 +72,11 @@ const BAND_LABEL: Record<AgeBand, string> = {
   '75_plus': 'aged 75 and over',
 }
 
+/** "aged 25–29"-style wording for a band, or "of all ages". */
+export function ageBandLabel(band: AgeBand): string {
+  return BAND_LABEL[band]
+}
+
 export function ageBand(age: number | null | undefined): AgeBand {
   if (age == null || !Number.isFinite(age)) return 'all'
   if (age < 25) return '18_24'
