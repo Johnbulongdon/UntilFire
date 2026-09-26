@@ -5993,6 +5993,9 @@ export default function Dashboard() {
         if (!sessionStorage.getItem('uf_dv')) {
           sessionStorage.setItem('uf_dv', '1');
           trackDashboardFirstView({ hadCalculatorPrefill: hadPrefill, viaUpgrade: wasUpgradedRef.current });
+          // A creator's /r/<code> link left a cookie; the server credits this
+          // account to them if it is new (D-27). Fire and forget.
+          fetch("/api/referrals/claim", { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => {});
         }
       });
       // Load net worth snapshot history for the "actual progress" chart line.

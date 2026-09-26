@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { getAcquisitionSource } from '@/lib/acquisition'
 import { trackSignupStarted } from '@/lib/analytics'
 import { peekCalculatorPrefill } from '@/lib/journey'
-import { finishSignIn } from '@/lib/auth-finish'
+import { afterSignInPath, finishSignIn } from '@/lib/auth-finish'
 import { isPlausibleEmail, normaliseCode } from '@/lib/auth-user'
 import { Button, Field, Input } from '@/components/ui'
 
@@ -61,10 +61,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push('/dashboard')
+      if (session) router.push(afterSignInPath())
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session && !finishingWithCode.current) router.push('/dashboard')
+      if (event === 'SIGNED_IN' && session && !finishingWithCode.current) router.push(afterSignInPath())
     })
     return () => subscription.unsubscribe()
   }, [router])
