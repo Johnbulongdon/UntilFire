@@ -416,624 +416,114 @@ function Closing7({ onStart }: { onStart: () => void }) {
 
 /* ── Footer ──────────────────────────────────────────────────────────── */
 function FooterSection() {
+  const recognitions = [
+    {
+      rank: "#1",
+      name: "Startup Fast",
+      detail: "Daily Winner",
+      href: "https://startupfa.st/projects/untilfire",
+    },
+    {
+      rank: "#3",
+      name: "Uneed",
+      detail: "Product of the Day",
+      href: "https://www.uneed.best/tool/untilfire",
+    },
+  ];
+
+  const badgeRequiredListings = [
+    {
+      name: "Startup Fast",
+      href: "https://startupfa.st/projects/untilfire",
+      badge: "https://startupfa.st/images/badges/top1-dark.svg",
+    },
+    {
+      name: "SaaSLineup",
+      href: "https://saaslineup.com/product/untilfire?ref=badge",
+      badge: "https://saaslineup.com/badge/untilfire.svg",
+    },
+    {
+      name: "TheSaaSDir",
+      href: "https://thesaasdir.com/product/untilfire?ref=badge",
+      badge: "https://thesaasdir.com/badge/untilfire.svg",
+    },
+    {
+      name: "TheMicroSaaSDir",
+      href: "https://themicrosaasdir.com/product/untilfire?ref=badge",
+      badge: "https://themicrosaasdir.com/badge/untilfire.svg",
+    },
+  ];
+
+  const verifiedListings = [
+    ["Launchstag", "https://launchstag.com/p/untilfire"],
+    ["ToolDirs", "https://tooldirs.com/product/untilfire"],
+    ["First Look", "https://firstlook.tools/product/untilfire"],
+    ["Noonlaunch", "https://noonlaunch.com/product/untilfire"],
+    ["ShowMySites", "https://www.showmysites.com/ngjohn101/untilfire/"],
+  ];
+
   return (
-    <footer style={{ background: "var(--uf-ground)", borderTop: "1px solid var(--uf-border)", padding: "48px 24px 32px" }}>
-      <div style={{ maxWidth: 800, margin: "0 auto" }}>
-        {/* Links */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 28, flexWrap: "wrap", marginBottom: 32 }}>
+    <footer className="uf7-footer">
+      <div className="uf7-footer-inner">
+        <div className="uf7-footer-links">
           {[
             ["How it works", "#how"],
             ["Learn", "/learn"],
             ["Pricing", "#pricing"],
             ["FAQ", "#faq"],
           ].map(([label, href]) => (
-            <a key={label} href={href} style={{ fontSize: 16, fontWeight: 600, color: "var(--uf-ink-2)", textDecoration: "none" }}>{label}</a>
+            <a key={label} href={href}>{label}</a>
           ))}
         </div>
 
-        {/* Wordmark */}
-        <div style={{
-          fontFamily: F, fontWeight: 800, fontSize: "clamp(56px, 14vw, 140px)", lineHeight: 0.85,
-          letterSpacing: "-0.05em", textAlign: "center", color: "#ffffff",
-          opacity: 0.08,
-        }}>
-          untilfire
-        </div>
+        <div className="uf7-footer-wordmark">untilfire</div>
 
-        {/* Bottom */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
+        <section className="uf7-recognition" aria-labelledby="uf7-recognition-title">
+          <div className="uf7-recognition-copy">
+            <p className="uf7-recognition-kicker">Independent recognition</p>
+            <h2 id="uf7-recognition-title">A couple of milestones we&apos;re proud of.</h2>
+          </div>
+          <div className="uf7-recognition-list">
+            {recognitions.map((recognition) => (
+              <a
+                key={recognition.name}
+                href={recognition.href}
+                target="_blank"
+                rel="noopener"
+                className="uf7-recognition-card"
+                aria-label={`${recognition.name}: ${recognition.rank} ${recognition.detail}`}
+              >
+                <span className="uf7-recognition-rank">{recognition.rank}</span>
+                <span>
+                  <strong>{recognition.name}</strong>
+                  <small>{recognition.detail}</small>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <details className="uf7-listings">
+          <summary>Verified backlink partners</summary>
+          <div className="uf7-listings-badges" aria-label="Badge-required directory partners">
+            {badgeRequiredListings.map((listing) => (
+              <a key={listing.name} href={listing.href} target="_blank" rel="noopener">
+                {/* These official badge assets remain in the page because each
+                    free listing requires its badge for the backlink to stay live. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={listing.badge} alt={`Featured on ${listing.name}`} loading="lazy" />
+              </a>
+            ))}
+          </div>
+          <div className="uf7-listings-links">
+            {verifiedListings.map(([name, href]) => (
+              <a key={name} href={href} target="_blank" rel="noopener">{name}</a>
+            ))}
+          </div>
+        </details>
+
+        <div className="uf7-footer-bottom">
           <span>© 2026 UntilFire</span>
-          <a
-            href="https://www.founder.best/products/untilfire?ref=founderbest"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://www.founder.best/top1.png"
-              alt="UntilFire — #1 Product of the Week on Founder.best"
-              width={200}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://startupfa.st/projects/untilfire"
-            target="_blank"
-            rel="noopener"
-            title="Startup Fast Top 1 Daily Winner"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://startupfa.st/images/badges/top1-dark.svg"
-              alt="Startup Fast Top 1 Daily Winner"
-              style={{ width: 195, height: "auto" }}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://startupfa.me/s/untilfire?utm_source=www.untilfire.com"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://startupfa.me/badges/featured-badge-small.webp"
-              alt="UntilFire - Featured on Startup Fame"
-              width={224}
-              height={36}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://tooldynamo.com/tools/untilfire"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://tooldynamo.com/assets/images/badge.png"
-              alt="Tool Dynamo"
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://stackdirectory.com/product/untilfire"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://stackdirectory.com/assets/images/badge.png"
-              alt="Stack Directory"
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://launchstag.com/p/untilfire"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://launchstag.com/badge-dark.svg"
-              alt="Featured on Launchstag"
-              width={198}
-              height={62}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://saascity.io/live/untilfire"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://saascity.io/badges/featured-dark.svg"
-              alt="Featured on SaaS City"
-              width={150}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://saaslineup.com/product/untilfire?ref=badge"
-            target="_blank"
-            rel="dofollow"
-            title="Featured on SaaSLineup"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://saaslineup.com/badge/untilfire.svg"
-              alt="Featured on SaaSLineup"
-              width={160}
-              height={44}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://thesaasdir.com/product/untilfire?ref=badge"
-            target="_blank"
-            rel="dofollow"
-            title="Featured on TheSaaSDir"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://thesaasdir.com/badge/untilfire.svg"
-              alt="Featured on TheSaaSDir"
-              width={160}
-              height={44}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://themicrosaasdir.com/product/untilfire?ref=badge"
-            target="_blank"
-            rel="dofollow"
-            title="Featured on TheMicroSaaSDir"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://themicrosaasdir.com/badge/untilfire.svg"
-              alt="Featured on TheMicroSaaSDir"
-              width={160}
-              height={44}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://tooldirs.com/product/untilfire"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://tooldirs.com/badge/badge_dark.svg"
-              alt="Featured on ToolDirs"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://launchbuff.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Featured on LaunchBuff"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://launchbuff.com/badge-featured-dark.svg"
-              alt="Featured on LaunchBuff"
-              width={256}
-              height={80}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://startuplist.ing/p/xoooie?utm_source=www.untilfire.com"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://startuplist.ing/badges/dark-normal.svg"
-              alt="Featured on StartupList.ing"
-              width={171}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://www.uneed.best/tool/untilfire"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://www.uneed.best/POTD3A.png"
-              alt="Uneed POTD3 Badge"
-              style={{ width: 250 }}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://startups.fm/startups/untilfire"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://startups.fm/badge/untilfire"
-              alt="Featured on Startups.fm"
-              width={240}
-              height={63}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://startupspotlight.co/startup/untilfire"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://startupspotlight.co/api/badge/cmqpzklis000e15nktsharpa4?variant=dark&v=2"
-              alt="Featured on StartupSpotlight"
-              width={248}
-              height={48}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://firstlook.tools/product/untilfire"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://firstlook.tools/badge/badge_transparent.svg"
-              alt="Featured on First Look"
-              width={200}
-              height={54}
-            />
-          </a>
-          <a
-            href="https://wired.business"
-            target="_blank"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://wired.business/badge0-dark.svg"
-              alt="Featured on Wired Business"
-              width={200}
-              height={54}
-            />
-          </a>
-          <a
-            href="https://startupbase.io/products/untilfire-2?utm_source=startupbase&utm_medium=badge&utm_campaign=launch-badge-light"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://statics.startupbase.io/site/badges/launched-on-sb.svg"
-              alt="Launched on StartupBase"
-              width={255}
-              height={55}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://fazier.com/"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=launched&theme=light"
-              alt="Launched on Fazier"
-              width={105}
-              height={55}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://noonlaunch.com/product/untilfire"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://noonlaunch.com/badges/untilfire.svg"
-              alt="Featured on Noonlaunch"
-              width={200}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://twelve.tools"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://twelve.tools/badge0-dark.svg"
-              alt="Featured on Twelve Tools"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://marketingdb.live"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://marketingdb.live/badge.svg"
-              alt="MarketingDB Badge"
-              width={160}
-              height={48}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://kittylaunch.com/p/untilfire"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://kittylaunch.com/api/public/badges/launch_badge.svg?theme=light&name=UntilFire"
-              width={280}
-              alt="UntilFire on KittyLaunch"
-              data-kittylaunch-badge="1"
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://postmake.io"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://postmake.io/postmake_badge_dark.png"
-              alt="Featured on Postmake"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://confettisaas.com/submit"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://www.touched-grass.com/api/embed-badge?uuid=1dIUP7WnnC&theme=light&bg=grass"
-              alt="ConfettiSaaS.com touched grass today!"
-              width={220}
-              height={47}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://abacklaunch.com"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://abacklaunch.com/badges/featured-on-dark.svg"
-              alt="Listed on Aback Launch"
-              width={150}
-              height={32}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://saasgrow.app?ref=untilfire.com"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://saasgrow.app/api/badge?type=featured&style=dark"
-              alt="UntilFire on SaaSGrow"
-              width={240}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://toolfame.com/item/untilfire"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://toolfame.com/badge-light.svg"
-              alt="Featured on toolfame.com"
-              style={{ height: 54, width: "auto" }}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://dododirectory.com"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://dododirectory.com/badge-dark.png"
-              alt="Featured on DodoDirectory"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://sumodir.com/item/untilfire-wwwuntilfirecom"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://sumodir.com/badge.png"
-              alt="Featured on SumoDir"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://web-review.com"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://web-review.com/badge.png"
-              alt="Featured on Web Review"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://saasbison.com"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://saasbison.com/badge.png"
-              alt="Featured on SaaSBison"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://toolfio.com"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://toolfio.com/toolfio-dark-badge.png"
-              alt="Featured on Toolfio"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://gets.tools"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://gets.tools/badge/badge_dark.svg"
-              alt="Featured on Gets.Tools"
-              width={125}
-              height={44}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://tooldisk.com"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://tooldisk.com/badge/badge_dark.svg"
-              alt="Featured on ToolDisk.com"
-              width={125}
-              height={44}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://dofollow.tools"
-            target="_blank"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://dofollow.tools/badge/badge_dark.svg"
-              alt="Featured on Dofollow.Tools"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://www.showmysites.com"
-            target="_blank"
-            rel="noopener"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://www.showmysites.com/static/backlink/gray_border.webp"
-              alt="ShowMySites Badge"
-              width={200}
-              height={60}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://startupdirectory.net"
-            rel="dofollow"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://startupdirectory.net/badge/featured-light.svg"
-              alt="Featured on StartupDirectory"
-              width={200}
-              height={54}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://launchpadly.co/startup/untilfire?ref=badge"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-launchpadly-badge="untilfire"
-            data-launchpadly-badge-variant="minimal"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://launchpadly.co/embed/badges/startup/untilfire.svg?variant=minimal"
-              alt="Launchpadly Startup Directory"
-              width={220}
-              height={28}
-              style={{ display: "block", border: 0 }}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://sellwithboost.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://sellwithboost.com/badge/listing-dark.svg"
-              alt="Listed on Sell With boost"
-              style={{ height: 40, width: "auto" }}
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://hicyou.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-          >
-            <img
-              src="https://hicyou.com/badge/featured-dark.svg"
-              alt="Featured"
-              loading="lazy"
-            />
-          </a>
-          <a
-            href="https://curlship.com"
-            target="_blank"
-            rel="noopener"
-            title="Listed on CurlShip"
-            style={{ color: "var(--uf-ink-2)", textDecoration: "none" }}
-          >
-            Listed on CurlShip
-          </a>
           <span>Make work optional</span>
         </div>
       </div>
@@ -1042,10 +532,87 @@ function FooterSection() {
 }
 
 
-
 const CSS7 = `
   .uf7-root { background: var(--uf-ground); color: var(--uf-ink); overflow-x: hidden; }
   .uf7-root * { box-sizing: border-box; }
+  .uf7-footer {
+    background: var(--uf-ground);
+    border-top: 1px solid var(--uf-border);
+    padding: 48px 24px 32px;
+  }
+  .uf7-footer-inner { max-width: 980px; margin: 0 auto; }
+  .uf7-footer-links {
+    display: flex; justify-content: center; gap: 28px; flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .uf7-footer-links a {
+    color: var(--uf-ink-2); font-size: 16px; font-weight: 600; text-decoration: none;
+  }
+  .uf7-footer-links a:hover { color: var(--uf-ink); }
+  .uf7-footer-wordmark {
+    color: #fff; font-family: ${F}; font-size: clamp(56px, 14vw, 140px);
+    font-weight: 800; letter-spacing: -0.05em; line-height: 0.85;
+    opacity: 0.08; text-align: center;
+  }
+  .uf7-recognition {
+    display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(420px, 1.2fr);
+    gap: 32px; align-items: center; margin-top: 34px; padding: 28px 0;
+    border-top: 1px solid var(--uf-border); border-bottom: 1px solid var(--uf-border);
+  }
+  .uf7-recognition-kicker {
+    margin: 0 0 7px; color: var(--uf-progress-ink, var(--uf-teal));
+    font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .uf7-recognition-copy h2 {
+    margin: 0; color: var(--uf-ink); font-size: clamp(22px, 3vw, 30px);
+    line-height: 1.15; letter-spacing: -0.035em;
+  }
+  .uf7-recognition-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .uf7-recognition-card {
+    display: flex; min-height: 82px; align-items: center; gap: 14px;
+    padding: 14px; color: var(--uf-ink); text-decoration: none;
+    background: var(--uf-surface); border: 1px solid var(--uf-border); border-radius: 16px;
+    transition: border-color 180ms ease, transform 180ms ease;
+  }
+  .uf7-recognition-card:hover {
+    border-color: var(--uf-control-border, var(--uf-ink-2)); transform: translateY(-2px);
+  }
+  .uf7-recognition-card:focus-visible {
+    outline: 3px solid var(--uf-teal); outline-offset: 3px;
+  }
+  .uf7-recognition-rank {
+    display: grid; width: 48px; height: 48px; flex: 0 0 48px; place-items: center;
+    border-radius: 50%; color: var(--uf-ground); background: var(--uf-action, var(--uf-ink));
+    font-family: ${MONO}; font-size: 16px; font-weight: 800;
+  }
+  .uf7-recognition-card strong,
+  .uf7-recognition-card small { display: block; }
+  .uf7-recognition-card strong { font-size: 16px; line-height: 1.25; }
+  .uf7-recognition-card small { margin-top: 4px; color: var(--uf-ink-2); font-size: 13px; line-height: 1.35; }
+  .uf7-listings { margin: 18px auto 0; color: var(--uf-ink-2); font-size: 13px; text-align: center; }
+  .uf7-listings summary {
+    display: inline-block; cursor: pointer; font-weight: 650; list-style-position: inside;
+  }
+  .uf7-listings summary:hover { color: var(--uf-ink); }
+  .uf7-listings-badges {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+    max-width: 760px; margin: 18px auto 0;
+  }
+  .uf7-listings-badges a {
+    display: flex; min-height: 58px; align-items: center; justify-content: center;
+    padding: 8px; border: 1px solid var(--uf-border); border-radius: 10px;
+    background: var(--uf-surface);
+  }
+  .uf7-listings-badges img { display: block; max-width: 100%; max-height: 42px; width: auto; height: auto; }
+  .uf7-listings-links {
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 18px;
+    max-width: 760px; margin: 16px auto 0;
+  }
+  .uf7-listings-links a { color: var(--uf-ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .uf7-footer-bottom {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    gap: 12px; padding-top: 24px; color: var(--uf-ink-2); font-size: 14px; font-weight: 500;
+  }
   .uf7-grain {
     position: fixed; inset: 0; pointer-events: none; z-index: 40;
     opacity: 0.14; mix-blend-mode: overlay;
@@ -1327,6 +894,13 @@ const CSS7 = `
     .uf7-curve { height: 148px; }
     .uf7-curve-last { display: none; }
     .uf7-curve-axis { font-size: 13px; padding: 0 14px; }
+    .uf7-footer { padding: 40px 20px 28px; }
+    .uf7-footer-links { gap: 18px 24px; }
+    .uf7-footer-wordmark { font-size: clamp(54px, 22vw, 88px); }
+    .uf7-recognition { grid-template-columns: 1fr; gap: 20px; padding: 24px 0; }
+    .uf7-recognition-list { grid-template-columns: 1fr; }
+    .uf7-listings-badges { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .uf7-footer-bottom { justify-content: center; text-align: center; }
   }
   /* Section rules run the full width of the window while the text keeps its
      margin. Rules that stopped at the 1060px column were part of why
@@ -1419,3 +993,4 @@ export default function LandingPage({ onStart, signedIn = false }: { onStart: ()
     </div>
   );
 }
+
