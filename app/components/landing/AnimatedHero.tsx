@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { calcFIRE } from "@/lib/fire";
+import { calcFIRE, REAL_RETURN } from "@/lib/fire";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 const EXAMPLE = { age: 30, balance: 0, annualSpend: 36000, monthlySave: 800 };
@@ -8,8 +8,8 @@ function project(save: number, spend = EXAMPLE.annualSpend, balance = EXAMPLE.ba
   return calcFIRE(Math.max(0, Math.round(save)), spend, EXAMPLE.age, Math.max(0, balance));
 }
 function balanceAt(year: number, save: number, balance = EXAMPLE.balance) {
-  const growth = Math.pow(1.07, year);
-  return balance * growth + save * 12 / .07 * (growth - 1);
+  const growth = Math.pow(1 + REAL_RETURN, year);
+  return balance * growth + save * 12 / REAL_RETURN * (growth - 1);
 }
 
 /* The sun, rebuilt from public/logo/horizon-color.svg rather than eyeballed.
@@ -132,7 +132,7 @@ return <div className="uf-motion"><div className={motion?"motion-on":"motion-off
         <div className="motion-controls"><button type="button" onClick={()=>{setMotion(true);setReplay(v=>v+1);}}>Replay animation</button><button type="button" aria-pressed={!motion} onClick={()=>setMotion(v=>!v)}>{motion?"Reduce motion":"Enable motion"}</button></div>
         <div className="balance-control"><label htmlFor="balance">Already invested <span>(USD)</span></label><input id="balance" type="number" min="0" max="5000000" step="1000" value={balance} onChange={e=>setBalance(Math.min(5000000,Math.max(0,Math.round(Number(e.target.value)||0))))}/><small>The example starts from $0. Add existing investments to see their effect.</small></div>
         <div className="saving-control"><div className="slider-heading"><label htmlFor="savings">What if you saved a little more?</label><output htmlFor="savings">${money(savings)} <small>/ month</small></output></div><input id="savings" type="range" min="0" max="3000" step="50" value={savings} onChange={e=>setSavings(Number(e.target.value))} aria-valuetext={`$${money(savings)} per month`} /><div className="slider-bottom"><span>$0</span><span>Drag to explore your example</span><span>$3,000</span></div><p className="difference" aria-live="polite">{difference===null?'No retirement date within this projection. Add savings or existing investments.':Math.abs(difference)<.05?'Small changes can move your freedom date.':`${Math.abs(difference).toFixed(1)} years ${difference>0?'earlier':'later'} than saving $800 a month.`}</p></div>
-        <details className="assumptions"><summary>Example assumptions</summary><p>Age 30 · ${money(balance)} already invested · $36,000 annual retirement spending · 7% real annual growth · 25× spending target ($900,000). Contributions modeled annually. Everything is in today’s dollars. Estimates are illustrative, not guaranteed. Your own income and expenses are collected in the calculator.</p></details>
+        <details className="assumptions"><summary>Example assumptions</summary><p>Age 30 · ${money(balance)} already invested · $36,000 annual retirement spending · {(REAL_RETURN * 100).toFixed(1)}% real annual growth (the S&P 500 since 1928) · 25× spending target ($900,000). Contributions modeled annually. Everything is in today’s dollars. Estimates are illustrative, not guaranteed. Your own income and expenses are collected in the calculator.</p></details>
         <div className="hero-bottom"><span>YOUR MONEY HAS A FUTURE.</span><a href="#how">See how it unfolds ↓</a></div>
       </section>
 <style>{HERO_CSS}</style></div></div>;

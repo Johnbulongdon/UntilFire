@@ -7,7 +7,8 @@
  * Run: npm run test:fire-number
  */
 import { readFileSync } from 'node:fs';
-import { fireNumber, recommendedWithdrawalRate, fireProgress, DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, RETURN_OPTIONS } from '../lib/fire-number.ts';
+import { fireNumber, recommendedWithdrawalRate, fireProgress, DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, GROWTH_CHOICES } from '../lib/fire-number.ts';
+import { SP500_HISTORY } from '../lib/sp500-history.ts';
 import { calcFIRE, yearsToTarget, REAL_RETURN } from '../lib/fire/strategies/traditional.ts';
 import { monthsToFire } from '../lib/purchase-impact.ts';
 
@@ -49,7 +50,7 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   const engine = calcFIRE(2000, 50000, 30, 50000);
   const shared = yearsToTarget(50000, 24000, 1_250_000);
   check('freedom date and the shared projection agree', near(engine.years, shared), `${engine.years} vs ${shared}`);
-  check('purchase impact measures on the same clock', near(monthsToFire(50000, 2000, 1_250_000, 0.07) / 12, shared), String(monthsToFire(50000, 2000, 1_250_000, 0.07) / 12));
+  check('purchase impact measures on the same clock', near(monthsToFire(50000, 2000, 1_250_000, REAL_RETURN) / 12, shared), String(monthsToFire(50000, 2000, 1_250_000, REAL_RETURN) / 12));
   check('age in the freedom year rounds like the year (30 + 20.7 years → 50)', engine.age === 30 + Math.floor(engine.years), `${engine.age} after ${engine.years}`);
   check('already there is zero years', yearsToTarget(2_000_000, 0, 1_000_000) === 0);
   check('never reached within the cap is null', yearsToTarget(0, 0, 1_000_000) === null);
@@ -66,24 +67,32 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   check('purchase impact logo follows the theme', read('app/calculators/purchase-impact/PurchaseImpactCalculator.tsx').includes('<Logo variant="auto"'));
 }
 
-// ── Growth after inflation is a factor (D-24)
+// ── Growth after inflation is a factor, grounded in S&P 500 history (D-24)
 {
-  check('the default growth is the engine\'s 7%', DEFAULT_RETURN_PCT === Math.round(REAL_RETURN * 100) && DEFAULT_RETURN_PCT === 7);
-  check('the recommendation (5%) is one of the choices', RETURN_OPTIONS.includes(RECOMMENDED_RETURN_PCT) && RECOMMENDED_RETURN_PCT === 5);
+  const H = SP500_HISTORY;
+  const since1928 = H.periods.find((p) => p.id === 'since1928');
+  check('default growth is the S&P 500 since 1928 after inflation, and the engine uses it', DEFAULT_RETURN_PCT === since1928.realPct && Math.abs(REAL_RETURN - since1928.realPct / 100) < 1e-12, `${DEFAULT_RETURN_PCT} ${REAL_RETURN}`);
+  check('the history is plausible: since 1928, 9.5–10.8% before inflation and 6–7.5% after', since1928.nominalPct >= 9.5 && since1928.nominalPct <= 10.8 && since1928.realPct >= 6 && since1928.realPct <= 7.5, JSON.stringify(since1928));
+  check('every period earns less after inflation than before', H.periods.every((p) => p.realPct < p.nominalPct));
+  check('the recommendation is the cautious choice, and history beat it more often than the default', RECOMMENDED_RETURN_PCT === 5 && H.cautious.beatShare > since1928.beatShare, `${H.cautious.beatShare} vs ${since1928.beatShare}`);
+  check('the worst 30 years is the lowest choice and every stretch beat it', H.worst.realPct === Math.min(...GROWTH_CHOICES.map((c) => c.realPct)) && H.worst.beatShare === 100);
+  check('a higher rate is never beaten more often than a lower one', GROWTH_CHOICES.every((a) => GROWTH_CHOICES.every((b) => !(a.realPct > b.realPct) || a.beatShare <= b.beatShare)));
+  check('the data runs through the last full year', H.through >= 2025 && H.windows === H.through - 1957 + 1, `${H.through} ${H.windows}`);
   const at7 = calcFIRE(2000, 50000, 30, 50000, 0.07).years, at5 = calcFIRE(2000, 50000, 30, 50000, 0.05).years;
-  check('the cautious rate gives a later date (20.7 → 24.2 years)', at5 > at7 && Math.abs(at7 - 20.7) < 0.05 && Math.abs(at5 - 24.2) < 0.05, `${at7} ${at5}`);
+  check('the cautious rate gives a later date (20.7 → 24.2 years at 7% and 5%)', at5 > at7 && Math.abs(at7 - 20.7) < 0.05 && Math.abs(at5 - 24.2) < 0.05, `${at7} ${at5}`);
   const home = read('app/HomeClient.tsx');
   check('free result: growth is state, and every projection uses it', home.includes('useState<number>(DEFAULT_RETURN_PCT)') && home.includes('const marketReturn = returnPct / 100;') && !home.includes('const marketReturn = REAL_RETURN'));
   check('free result: the choice carries into the dashboard', home.includes('realReturn: marketReturn') && read('app/dashboard/page.tsx').includes('prefill.realReturn'));
   check('free result: age rounds like the year', home.includes('planningAge + Math.floor(result.years)') && !home.includes('planningAge + Math.round(projection.years)'));
   const flow = read('app/components/RevealFlow.tsx');
-  check('free result says what growth it assumes and offers the recommendation', flow.includes('growth a year after inflation') && flow.includes('onReturnChange('));
+  check('free result names where its growth comes from and opens the history', flow.includes('average since 1928') && flow.includes('onReturnChange(') && flow.includes('Where does this come from?') && home.includes('growthPicker={<GrowthChoicePicker'));
   const card = read('app/dashboard/FireAssumptionsCard.tsx');
-  check('Plan assumptions: growth control with recommendation', card.includes('RETURN_RECOMMENDATION') && card.includes('onGrowthRateChange('));
+  check('Plan assumptions: the history picker with the recommendation', card.includes('RETURN_RECOMMENDATION') && card.includes('<GrowthChoicePicker'));
+  check('dashboard treats the old typed 0.07 as never chosen', read('app/dashboard/page.tsx').includes('fp.growthRate !== 0.07'));
   const dash = read('app/dashboard/page.tsx');
   check('dashboard wires the saved growth into the card and expat views', dash.includes('onGrowthRateChange={setGrowthRate}') && !/calcFIRE\([^)]*portfolioBalance\);/.test(dash));
   check('savings rate page: growth is a factor', read('app/calculators/savings-rate/SavingsRateCalculator.tsx').includes('yearsToFIRE(sr, returnPct / 100'));
-  check('Coast FIRE: growth carries the recommendation', read('app/calculators/coast-fire/CoastFireCalculator.tsx').includes('RETURN_RECOMMENDATION'));
+  check('Coast FIRE and savings rate use the history picker', read('app/calculators/coast-fire/CoastFireCalculator.tsx').includes('<GrowthChoicePicker') && read('app/calculators/savings-rate/SavingsRateCalculator.tsx').includes('<GrowthChoicePicker'));
 }
 
 // ── Wiring

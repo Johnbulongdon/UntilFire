@@ -4,18 +4,24 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
-### Growth after inflation is a factor
-- The free result now says it assumes 7% growth a year after inflation, and
-  offers one tap to see the date at the cautious 5% we recommend. The choice
-  carries into the dashboard at sign-up.
-- Plan's assumptions card lets you choose 4–7% growth, with the recommendation
-  and a "Use recommended" button. The saved growth rate existed but could not
-  be changed before. The dashboard's expat comparisons now use it too.
-- The savings rate page has growth as a factor, and Coast FIRE's return slider
-  carries the recommendation. The savings rate page's method note no longer
-  describes the monthly model it stopped using. Recorded as D-24.
-- The free result's freedom age now rounds like its year. It could show one
-  year older than the year implied, the same bug fixed in the engine yesterday.
+### Growth after inflation, chosen from S&P 500 history
+- Growth is now a choice among stretches of S&P 500 history: the last 10, 20
+  or 50 years, since 1928, a cautious 5%, or the worst 30 years on record. Each
+  shows its return before and after inflation, and how often every 30-year
+  stretch since 1928 did as well. Generated from Shiller's data and BLS
+  inflation by `scripts/build-sp500-history.mjs`.
+- The default is the measured since-1928 figure, 6.9% after inflation (it was
+  typed as 7%), so default dates move one to three months later. We recommend 5%.
+- The free result says what it assumes and where that comes from, switches to
+  5% in one tap, and opens the history on request. The choice carries into the
+  dashboard at sign-up.
+- Plan's assumptions card, the savings rate calculator and Coast FIRE use the
+  same history picker. The dashboard's saved growth rate could not be changed
+  before; the dashboard's expat comparisons now use it too.
+- The savings rate page's method note no longer describes the monthly model it
+  stopped using. The landing hero's example now uses the same rate as its date.
+- The free result's freedom age now rounds like its year (the engine was fixed
+  yesterday; the result screen had its own copy). Recorded as D-24.
 
 ## [Unreleased] - 2026-09-25
 

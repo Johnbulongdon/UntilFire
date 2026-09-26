@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
 import { calcFIRE, calcTakeHome } from "@/lib/fire";
 import { DEFAULT_RETURN_PCT } from "@/lib/fire-number";
+import GrowthChoicePicker from "@/app/components/GrowthChoicePicker";
 import {
   trackLandingViewed,
   trackCalculatorStepViewed,
@@ -1070,6 +1071,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         yearsToFire={yearsToFire}
         returnPct={returnPct}
         onReturnChange={setReturnPct}
+        growthPicker={<GrowthChoicePicker value={returnPct} onChange={setReturnPct} />}
         planningAge={planningAge}
         ageWasAssumed={ageWasAssumed}
         isAlreadyFire={isAlreadyFire}

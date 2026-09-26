@@ -29,6 +29,8 @@ export interface RevealFlowProps {
   /** Growth after inflation the result uses, in percent (D-24). */
   returnPct: number;
   onReturnChange: (pct: number) => void;
+  /** The history behind the growth, opened from the freedom-age step. */
+  growthPicker?: React.ReactNode;
   isAlreadyFire: boolean;
   fireTarget: number;
   /** 0–100, how much of the target is already invested. */
@@ -62,6 +64,7 @@ const BG = "var(--uf-ground)";
 // bright teal "free years" — --uf-green is too close in hue to teal at this
 // lightness and the two read as one colour in the dot grid.
 const WORKING = "var(--uf-ink-3)";
+const linkButton: React.CSSProperties = { background: "none", border: "none", padding: 0, color: "var(--uf-green)", font: "700 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 };
 // Mirrors --uf-teal in .dark — needed for translucent glows/tints, which
 // rgba() can't derive from a CSS var.
 const TEAL_RGB = "53,201,174";
@@ -137,7 +140,7 @@ function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, f
 
 export default function RevealFlow(props: RevealFlowProps) {
   const {
-    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, onReturnChange, isAlreadyFire,
+    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, onReturnChange, growthPicker, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
     expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, onAdjust, onShare, onStepViewed,
@@ -148,6 +151,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   const [playMotion, setPlayMotion] = useState(true);
   const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
+  const [showGrowth, setShowGrowth] = useState(false);
 
   const replay = () => { setPlayMotion(true); setStep(1); };
   const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
@@ -292,16 +296,27 @@ export default function RevealFlow(props: RevealFlowProps) {
                 </div>
               )}
               {!isAlreadyFire && (
-                <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", position: "relative", maxWidth: 420, ...anim("rf-up .7s 1.8s ease both") }}>
-                  {returnPct === RECOMMENDED_RETURN_PCT
-                    ? <>Using a cautious {returnPct}% growth a year after inflation, as we recommend. </>
-                    : <>Assumes {returnPct}% growth a year after inflation. We recommend planning at a cautious {RECOMMENDED_RETURN_PCT}%. </>}
+                <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", position: "relative", maxWidth: 440, ...anim("rf-up .7s 1.8s ease both") }}>
+                  {returnPct === DEFAULT_RETURN_PCT
+                    ? <>Assumes {returnPct}% growth a year after inflation, the S&amp;P 500&apos;s average since 1928. </>
+                    : returnPct === RECOMMENDED_RETURN_PCT
+                      ? <>Using a cautious {returnPct}% growth a year after inflation, as we recommend. </>
+                      : <>Using {returnPct}% growth a year after inflation. </>}
                   <button
                     onClick={() => onReturnChange(returnPct === RECOMMENDED_RETURN_PCT ? DEFAULT_RETURN_PCT : RECOMMENDED_RETURN_PCT)}
-                    style={{ background: "none", border: "none", padding: 0, color: "var(--uf-green)", font: "700 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}
+                    style={linkButton}
                   >
-                    {returnPct === RECOMMENDED_RETURN_PCT ? `See it at ${DEFAULT_RETURN_PCT}%` : `See it at ${RECOMMENDED_RETURN_PCT}%`}
+                    {returnPct === RECOMMENDED_RETURN_PCT ? `See it at ${DEFAULT_RETURN_PCT}%` : `See it at a cautious ${RECOMMENDED_RETURN_PCT}%`}
                   </button>
+                  {growthPicker && (
+                    <>
+                      {" · "}
+                      <button onClick={() => setShowGrowth((v) => !v)} aria-expanded={showGrowth} style={linkButton}>
+                        {showGrowth ? "Hide the history" : "Where does this come from?"}
+                      </button>
+                      {showGrowth && <div style={{ marginTop: 12, textAlign: "left" }}>{growthPicker}</div>}
+                    </>
+                  )}
                 </div>
               )}
               {ageWasAssumed && !isAlreadyFire && (

@@ -8,14 +8,14 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 const require = createRequire(import.meta.url);
 // The reveal's own lib imports, loaded from source rather than stubbed.
-const loadTs = (path) => {
+const loadTs = (path, deps = {}) => {
   const mod = { exports: {} };
   vm.runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
-  }).outputText, { exports: mod.exports, module: mod, require });
+  }).outputText, { exports: mod.exports, module: mod, require: (id) => deps[id] ?? require(id) });
   return mod.exports;
 };
-const fireNumber = loadTs('lib/fire-number.ts');
+const fireNumber = loadTs('lib/fire-number.ts', { './sp500-history.ts': loadTs('lib/sp500-history.ts') });
 // Exercise the real final-step component/callback without the video or animation.
 const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.tsx', 'utf8'), {
@@ -29,7 +29,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
 });
 const props = {
   freedomAge: 52, freedomYear: 2048, yearsToFire: 22, planningAge: 30,
-  ageWasAssumed: false, returnPct: 7, onReturnChange: () => {}, isAlreadyFire: false, fireTarget: 1200000, pctThere: 0,
+  ageWasAssumed: false, returnPct: fireNumber.DEFAULT_RETURN_PCT, onReturnChange: () => {}, isAlreadyFire: false, fireTarget: 1200000, pctThere: 0,
   savingsRatePct: 20, usBaselineRate: 5, fireBenchmarkRate: 25,
   expatHome: { name: 'Austin', lat: 30, lng: -97 }, expatBaseAge: 52, expatCities: [],
   formatCompact: (n) => `$${n}`, onAdjust: () => {}, onShare: () => {},

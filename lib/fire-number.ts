@@ -13,6 +13,8 @@
  * See docs/DECISIONS.md D-23.
  */
 
+import { SP500_HISTORY } from './sp500-history.ts'
+
 export const WITHDRAWAL_RATES = [3, 3.5, 4, 4.5, 5] as const
 export const TAX_RATES = [0, 5, 10, 15, 20] as const
 
@@ -96,14 +98,38 @@ export function fireProgress(saved: number, target: number): number {
 /**
  * The growth a portfolio earns each year after inflation. It sets how fast
  * savings reach the FIRE number, so it moves the freedom date more than any
- * other assumption. UntilFire's default stays 7% (D-07: the stock market's
- * long-run average after inflation); the recommendation is 5%, because a
- * real portfolio holds some bonds and cash, pays fees, and can meet bad years
- * early. A plan that still works at 5% is the safer one to act on. D-24.
+ * other assumption. Rather than asserting a number, every choice is a piece of
+ * S&P 500 history (lib/sp500-history.ts) with how often every 30-year stretch
+ * since 1928 did at least that well, so a reader can see why 5% is cautious
+ * and 11% is optimistic, and pick how sure they want to be. D-24.
  */
-export const RETURN_OPTIONS = [4, 5, 6, 7] as const
-/** REAL_RETURN (lib/fire) as a whole percentage; test:fire-number keeps them equal. */
-export const DEFAULT_RETURN_PCT = 7
-export const RECOMMENDED_RETURN_PCT = 5
+export interface GrowthChoice {
+  id: string
+  label: string
+  /** e.g. "1928–2025". */
+  span: string
+  /** After inflation: what the freedom date uses. */
+  realPct: number
+  /** Before inflation, as the figure is usually quoted; null where not a period. */
+  nominalPct: number | null
+  /** Share of 30-year stretches since 1928 that did at least this well. */
+  beatShare: number
+}
+
+const H = SP500_HISTORY
+export const GROWTH_CHOICES: GrowthChoice[] = [
+  ...H.periods.map((p) => ({ id: p.id, label: p.label, span: `${p.from}–${p.to}`, realPct: p.realPct, nominalPct: p.nominalPct, beatShare: p.beatShare })),
+  { id: 'cautious', label: 'Cautious', span: 'A margin below the average', realPct: H.cautious.realPct, nominalPct: null, beatShare: H.cautious.beatShare },
+  { id: 'worst30', label: 'Worst 30 years on record', span: `${H.worst.from}–${H.worst.to}`, realPct: H.worst.realPct, nominalPct: null, beatShare: H.worst.beatShare },
+]
+
+/** The S&P 500 since 1928 after inflation: the engine's REAL_RETURN, as a percentage. */
+export const DEFAULT_RETURN_PCT = H.periods.find((p) => p.id === 'since1928')!.realPct
+/** Cautious: history beat it in most 30-year stretches, not just the average one. */
+export const RECOMMENDED_RETURN_PCT = H.cautious.realPct
+export const SP500_THROUGH = H.through
+export const SP500_WINDOWS = H.windows
+
+const byId = (id: string) => GROWTH_CHOICES.find((c) => c.id === id)!
 export const RETURN_RECOMMENDATION =
-  '5%, a cautious plan. 7% is the stock market’s long-run average after inflation; a real portfolio with some bonds, fees and a bad early decade has earned less, so a date that holds at 5% is safer to act on.'
+  `${RECOMMENDED_RETURN_PCT}%. The S&P 500 did at least this well in ${byId('cautious').beatShare}% of 30-year stretches since 1928; its full-history average, ${DEFAULT_RETURN_PCT}%, in only ${byId('since1928').beatShare}%. Recent decades were higher, but a plan should hold up if the next 30 years are ordinary.`

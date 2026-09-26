@@ -3,10 +3,11 @@
 import { useState, useMemo } from 'react'
 import Logo from '@/app/components/Logo'
 import Link from 'next/link'
-import { Card, Field, Input, SegmentedControl, Stat } from '@/components/ui'
+import { Card, Field, Input, Stat } from '@/components/ui'
 import styles from './SavingsRateCalculator.module.css'
 import { REAL_RETURN, yearsToTarget } from '@/lib/fire/strategies/traditional'
-import { DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, RETURN_OPTIONS, RETURN_RECOMMENDATION } from '@/lib/fire-number'
+import { DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, RETURN_RECOMMENDATION } from '@/lib/fire-number'
+import GrowthChoicePicker from '@/app/components/GrowthChoicePicker'
 import Factor from '@/app/calculators/4-percent-rule/Factor'
 
 const C = {
@@ -103,11 +104,11 @@ export default function SavingsRateCalculator() {
             </Field>
             <Factor
               title="Growth after inflation"
-              hint="How much your investments grow each year, beyond prices rising. Higher brings the date closer; lower is safer."
+              hint="How much your investments grow each year, beyond prices rising. Higher brings the date closer; lower is surer."
               recommendation={RETURN_RECOMMENDATION}
               onUseRecommendation={returnPct === RECOMMENDED_RETURN_PCT ? undefined : () => setReturnPct(RECOMMENDED_RETURN_PCT)}
             >
-              <SegmentedControl label="Growth after inflation" size="sm" value={String(returnPct)} onChange={(v) => setReturnPct(Number(v))} options={RETURN_OPTIONS.map((v) => ({ value: String(v), label: `${v}%` }))} />
+              <GrowthChoicePicker value={returnPct} onChange={setReturnPct} />
             </Factor>
           </div>
         </Card>
@@ -176,8 +177,8 @@ export default function SavingsRateCalculator() {
             to cover. Changing your starting investments also changes the timeline.
           </p>
           <p style={{ marginBottom: 16 }}>
-            The model grows your investments once a year at the growth you choose (7% after
-            inflation by default; we recommend planning at 5%) and adds the year&apos;s savings, the
+            The model grows your investments once a year at the growth you choose ({DEFAULT_RETURN_PCT}% after
+            inflation by default, the S&amp;P 500&apos;s average since 1928; we recommend planning at a cautious 5%) and adds the year&apos;s savings, the
             same projection as the freedom date calculator. Your FIRE target is 25 times annual
             expenses, using a 4% withdrawal assumption. Amounts are in today&apos;s purchasing power;
             returns and spending are held constant.

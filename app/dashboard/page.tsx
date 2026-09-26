@@ -321,7 +321,7 @@ const isBrokerageInvestmentAccount = (account: PlaidAccount) => (
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
   totalDebt, mortgageBalance, mortgageMonthly,
-  growthRate = 0.07, withdrawalRate = 0.04, years = 50,
+  growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50,
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
 }: {
@@ -5356,7 +5356,7 @@ export default function Dashboard() {
   const [totalDebt,       setTotalDebt]       = useState(0);
   const [mortgageBalance, setMortgageBalance] = useState(0);
   const [mortgageMonthly, setMortgageMonthly] = useState(0);
-  const [growthRate,      setGrowthRate]      = useState(0.07);
+  const [growthRate,      setGrowthRate]      = useState(REAL_RETURN);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
   const [taxEnabled,        setTaxEnabled]        = useState(false);
   const [retirementTaxRate, setRetirementTaxRate] = useState(0.15);
@@ -5882,7 +5882,9 @@ export default function Dashboard() {
           setTotalDebt(fp.totalDebt || 0);
           setMortgageBalance(fp.mortgageBalance || 0);
           setMortgageMonthly(fp.mortgageMonthly || 0);
-          setGrowthRate(fp.growthRate || prefill.realReturn || 0.07);
+          // 0.07 was the typed default every profile saved before growth could be
+          // chosen (D-24), so it means "never chosen": use today's measured default.
+          setGrowthRate(fp.growthRate && fp.growthRate !== 0.07 ? fp.growthRate : (prefill.realReturn || REAL_RETURN));
           setWithdrawalRate(fp.withdrawalRate || 0.04);
           setCityName(fp.cityName || prefill.cityName || "");
           setRetirementCityName(fp.retirementCityName || "");

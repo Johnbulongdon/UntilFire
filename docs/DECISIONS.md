@@ -142,6 +142,9 @@ disconnected from the user's target age. Later code unified mixed 10%/7% return
 assumptions to one 7% real assumption.
 **Trade-off / revisit:** Any confidence model needs an approved redesign and
 focused regression checks, not a resurrected historical plan.
+**Update (D-24):** the 7% is now measured rather than typed: the S&P 500's
+return after inflation since 1928, 6.9% through 2025, and people can choose
+other stretches of history.
 **Source:** App `15acd8d` (August 17 commit; changelog records August 16),
 `f79d688`; [changelog](../CHANGELOG.md).
 The March fixed-starting-balance and mixed-default details below are superseded.
@@ -720,37 +723,62 @@ quick box. `test:fire-number` pins the worked examples published on the page.
 **Revisit:** if readers mostly take the recommendations, consider starting there.
 **Source:** `lib/fire-number.ts`, `app/calculators/4-percent-rule/`.
 
-### D-24 — September 26: growth after inflation is a factor, with 5% recommended
+### D-24 — September 26: growth after inflation is chosen from S&P 500 history, 5% recommended
 
-**Status:** Active. Authorised by the founder on 2026-09-26 ("Make the return an
-adjustable factor with a recommendation"). Builds on D-07 without reversing it.
-**Decision:** The growth a portfolio earns after inflation is shown and
-adjustable (4%, 5%, 6% or 7%) wherever a freedom date is calculated:
-- The free result says what it assumes, with a one-tap switch between 7% and
-  5%. Every figure on the result follows the switch, and the choice carries
-  into the dashboard at sign-up.
-- Plan's assumptions card has the control, saved with the other planning
-  assumptions (`fire_profile.growthRate`, which existed but could not be
-  changed). The dashboard's expat comparisons now use it too.
-- The savings rate page has it as a factor, and Coast FIRE's return slider
-  carries the recommendation.
+**Status:** Active. Authorised by the founder on 2026-09-26: "Make the return an
+adjustable factor with a recommendation", then "tell the user how we got this
+number … are you more comfortable using S&P since the start, which is lower, or
+… the past 20 years or past 50 years". Refines D-07's 7%; does not reverse it.
+**Decision:** The growth assumption is a choice among stretches of S&P 500
+history, not a number to take on trust. Each choice shows the return before and
+after inflation, and how often every 30-year stretch since 1928 did at least as
+well. Figures are through 2025, with dividends reinvested:
 
-The default stays 7% (D-07: the stock market's long-run average after
-inflation), so no one's date moves unless they choose. We recommend 5%: a real
-portfolio holds some bonds and cash, pays fees, and can meet a bad first
-decade, so a date that holds at 5% is safer to act on.
-**Why:** The return moves the date more than any other assumption (for one
-example person, 20.7 years at 7% and 24.2 at 5%). The audit found it hidden on
-the free result and unchangeable in the dashboard, which undercuts the
-"standard" we want other sites to cite.
+| Choice | Before inflation | After | 30-year stretches that did as well |
+|---|---|---|---|
+| Last 10 years | 14.7% | 11.1% | 0% |
+| Last 20 years | 10.9% | 8.1% | 26% |
+| Last 50 years | 12.0% | 8.1% | 26% |
+| Since 1928 (default) | 10.2% | 6.9% | 62% |
+| Cautious (recommended) | — | 5.0% | 86% |
+| Worst 30 years (1965–1994) | — | 4.3% | 100% |
+
+The default is the measured since-1928 figure, now the engine's `REAL_RETURN`
+(6.9%, where D-07's typed 7% came from). Default dates move one to three months
+later. We recommend 5%: history beat it in most 30-year stretches, not just the
+average one, so a plan built on it holds if the next 30 years are ordinary.
+**Where:**
+- The free result says what it assumes and where it comes from. It switches to
+  5% in one tap, and "Where does this come from?" opens the history.
+- Plan's assumptions card, the savings rate calculator and Coast FIRE show the
+  same history picker.
+- The dashboard's saved `fire_profile.growthRate` could not be changed before.
+  Every profile saved the typed 0.07, so 0.07 is read as "never chosen" and
+  shows today's default. The choice made on the free result carries into the
+  dashboard at sign-up.
+**Why:** The return moves the date more than any other assumption (20.7 years
+at 7%, 24.2 at 5% for one example). A bare "7%, or 5% if cautious" invites
+"why not 4? why not 3?". History answers that, and shows why recent decades
+(8–11%) are the optimistic choice.
+**Data:** `scripts/build-sp500-history.mjs` generates `lib/sp500-history.ts`.
+- Sources: Robert Shiller's monthly S&P 500 data (the github.com/datasets
+  republication) and BLS CPI-U. BLS replaces Shiller's CPI wherever it has a
+  month, since his latest months are estimates.
+- Dividends after June 2023 are held at the last reported level, which errs
+  cautious.
+- The script refuses to write if the settled CPI months disagree, or if the
+  since-1928 figure leaves the 9.5–10.8% range published series agree on.
+- Damodaran's NYU table, the usual citation, was unreachable from the build
+  environment. Rebuild from it when available.
 **Alternatives:** Making 5% the default was left for the founder. It would move
-every existing date later by years, so it needs its own decision.
-**Guardrails:** Options and wording live in `lib/fire-number.ts`, and
-`test:fire-number` checks the default equals the engine's `REAL_RETURN`.
-**Revisit:** if most people who see the switch take 5%, consider making it the
-default.
-**Source:** `app/HomeClient.tsx`, `app/components/RevealFlow.tsx`,
-`app/dashboard/FireAssumptionsCard.tsx`, `lib/fire-number.ts`.
+every existing date later by years.
+**Guardrails:** `test:fire-number` checks the default equals the since-1928
+figure, the ordering (a higher rate is never beaten more often), and the
+wiring. `test:fire-projection` checks the engine's default.
+**Revisit:** yearly, when a new full year of data exists. If most people take
+5%, consider making it the default.
+**Source:** `lib/sp500-history.ts`, `lib/fire-number.ts`,
+`app/components/GrowthChoicePicker.tsx`, `app/components/RevealFlow.tsx`.
 
 ## How to add or supersede a decision
 
