@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 
 const source = readFileSync('app/fire-number/[slug]/page.tsx', 'utf8')
+const fireDataSource = readFileSync('lib/fire-data.ts', 'utf8')
 const curatedCitySource = readFileSync('lib/city-pages.ts', 'utf8')
 const nextConfigSource = readFileSync('next.config.js', 'utf8')
 const sitemapSource = readFileSync('app/sitemap.ts', 'utf8')
@@ -92,9 +93,33 @@ assert.match(
   'generic city pages should keep crawlable internal links to related city pages',
 )
 
+assert.match(
+  fireDataSource,
+  /export const US_CITY_COST_DATA_UPDATED = 'September 17, 2026'/,
+  'US city cost estimates should expose their last reviewed date',
+)
+for (const expected of [
+  'How the {data.name} estimate is built',
+  'All amounts are annual US dollars',
+  'American Community Survey median gross rent for recent movers',
+  'Non-housing spending uses a {formatMoney(34_000)}',
+  'https://api.census.gov/data/2024/acs/acs5/groups/B25113.html',
+  'https://api.census.gov/data/2024/acs/acs5/groups/B25064.html',
+  'href="/calculators/4-percent-rule"',
+  'href={statePageHref}',
+]) {
+  assert.ok(source.includes(expected), `generic US city methodology missing: ${expected}`)
+}
+
 const builtGenericCityPage = '.next/server/app/fire-number/idahofalls.html'
 if (existsSync(builtGenericCityPage)) {
   const html = readFileSync(builtGenericCityPage, 'utf8')
+  const visibleText = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&apos;/g, "'")
+    .replace(/\s+/g, ' ')
   const h1 = html
     .match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
     .replace(/<[^>]+>/g, '')
@@ -106,6 +131,17 @@ if (existsSync(builtGenericCityPage)) {
     'FIRE Number Calculator for Idaho Falls, ID',
     'built generic city H1 should be crawler-readable with a space between Calculator and for',
   )
+  for (const expected of [
+    'How the Idaho Falls, ID estimate is built',
+    'Updated September 17, 2026',
+    'All amounts are annual US dollars',
+    'Census recent-mover rent table',
+    'Census all-renter fallback table',
+    'Test the 25× assumption',
+    'Compare FIRE costs across Idaho',
+  ]) {
+    assert.ok(visibleText.includes(expected), `built generic city page missing ${expected}`)
+  }
 }
 
 const builtAustinPage = '.next/server/app/fire-number/austin-tx.html'

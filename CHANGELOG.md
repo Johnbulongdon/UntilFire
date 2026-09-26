@@ -32,6 +32,12 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-25
 
+### US city estimate sources
+- The 226 generic US city FIRE guides now show when their cost baselines were
+  reviewed, label the figures as USD, explain the Census housing and national
+  non-housing inputs, and link to official source data. Each guide also links to
+  its state comparison and the 4% rule calculator. Calculations are unchanged.
+
 ### What does FIRE mean
 - The FIRE article now answers "What does FIRE mean?" in its first two
   sentences, for search snippets, with a quick FIRE number box (spending × 25)
