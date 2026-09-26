@@ -8,6 +8,16 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-26
 
+### Creator referral program: 30% for 12 months
+- `untilfire.com/invite`: creators get a link (`/r/<code>`), choose PayPal
+  or Wise, and see visits, signups, paying customers and earnings.
+- Earnings are 30% of what each referred customer pays, excluding tax, for
+  their first 12 months of paying, held 30 days for refunds, paid monthly
+  once $20 is ready. `/invite/terms` spells it out.
+- `/admin` → Referrals: what each creator is owed, "mark paid" with the
+  PayPal or Wise transaction id, pause a creator, reverse a commission.
+- Profile links to the program. Sign-in can now return to `/invite`. D-27.
+
 ### Pro is $9 a month or $79 a year, with a 30-day free trial
 - New prices for new subscribers. Anyone already on $3 or $30 keeps it.
 - The free trial is 30 days, down from 90.

@@ -7,6 +7,7 @@ import { trackCheckoutSucceededServer } from "@/lib/analytics-server";
 import { Resend } from "resend";
 import { buildTrialReminderEmail } from "@/lib/email-html";
 import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
+import { recordReferralCommission, reverseReferralCommission } from "@/lib/referrals-server";
 
 export const dynamic = "force-dynamic";
 
@@ -168,6 +169,26 @@ export async function POST(req: NextRequest) {
           { user_id: existing.user_id, trial_reminder_sent_at: new Date().toISOString() },
           { onConflict: "user_id" },
         );
+      break;
+    }
+
+    // Creator referrals (D-27). Money collected earns the referring creator
+    // their share; a refund or a dispute takes it back before it is paid.
+    case "invoice.paid": {
+      const result = await recordReferralCommission(supabaseAdmin, event.data.object as Stripe.Invoice);
+      if (result.startsWith("error")) console.error("[webhook] referral commission:", result);
+      break;
+    }
+    case "charge.refunded":
+    case "charge.dispute.created": {
+      const obj = event.data.object as Stripe.Charge | Stripe.Dispute;
+      const pi = typeof obj.payment_intent === "string" ? obj.payment_intent : obj.payment_intent?.id ?? null;
+      try {
+        const result = await reverseReferralCommission(stripe, supabaseAdmin, pi, event.type === "charge.refunded" ? "refunded" : "disputed");
+        if (result.startsWith("error")) console.error("[webhook] referral reversal:", result);
+      } catch (err) {
+        console.error("[webhook] referral reversal failed:", err);
+      }
       break;
     }
   }

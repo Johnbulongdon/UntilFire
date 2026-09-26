@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
+import { REFERRAL_RATE_LABEL } from "@/lib/referrals";
 import HouseholdSection from "./HouseholdSection";
 
 interface PlaidItem {
@@ -431,6 +432,15 @@ export default function ProfileTab({
           </p>
         )}
       </div>
+
+      {/* Creator program (D-27): the way in for existing users who write or post. */}
+      <a href="/invite" style={{ ...cardStyle, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit" }}>
+        <span>
+          <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>Creator program</span>
+          <span style={{ fontSize: 13, color: "var(--uf-text-2)" }}>Share UntilFire and earn {REFERRAL_RATE_LABEL} of what your readers pay for a year.</span>
+        </span>
+        <span aria-hidden="true" style={{ color: "var(--uf-green)", fontWeight: 700 }}>→</span>
+      </a>
 
       {/* Connected Banks */}
       <div style={cardStyle}>
