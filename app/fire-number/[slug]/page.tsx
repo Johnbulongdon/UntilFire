@@ -1024,4 +1024,3 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
     </>
   );
 }
-

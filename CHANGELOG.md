@@ -405,4 +405,3 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - SEO: OG image, JSON-LD, canonical URLs, sitemap, robots.txt
 - Supabase + Google OAuth auth flow
 - Stripe integration with Pro paywall (later opened to all users)
-

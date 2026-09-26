@@ -155,4 +155,3 @@ if (existsSync(builtSingaporePage)) {
 }
 
 console.log('City page SEO checks passed')
-

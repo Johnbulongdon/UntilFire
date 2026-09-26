@@ -131,4 +131,3 @@ Each city now links to the corresponding state comparison page and the 4% rule
 calculator from that methodology block. This creates a useful city → state and
 city → calculator path without generating more near-duplicate pages. The change
 does not alter cost data, formulas, metadata or indexability.
-

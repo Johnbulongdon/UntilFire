@@ -684,4 +684,3 @@ export const TAX_CA_PROVINCES: { value: string; label: string }[] = [
 // `lib/fire/strategies/traditional.ts` and `lib/fire/tax/*`). This module is
 // the city/tax dataset only — keeping data and engine separate is what makes
 // the planner swappable without touching the wizard.
-
