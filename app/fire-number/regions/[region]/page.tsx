@@ -9,6 +9,7 @@ import {
 } from '@/lib/regions'
 import { getStatePageSlug } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
+import { cityPagePath } from "@/lib/city-pages";
 
 type Props = {
   params: Promise<{ region: string }>
@@ -164,7 +165,7 @@ export default async function RegionHubPage({ params }: Props) {
                   >
                     <td style={{ padding: '13px 16px', color: 'var(--uf-ink-3)', fontWeight: 600 }}>{i + 1}</td>
                     <td style={{ padding: '13px 16px' }}>
-                      <Link href={`/fire-number/${city.key}`} style={{ textDecoration: 'none', color: 'var(--uf-green-900)', fontWeight: 700 }}>
+                      <Link href={cityPagePath(city.key)} style={{ textDecoration: 'none', color: 'var(--uf-green-900)', fontWeight: 700 }}>
                         {city.name}
                       </Link>
                     </td>
@@ -239,14 +240,14 @@ export default async function RegionHubPage({ params }: Props) {
           <section style={{ marginBottom: 56, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-teal-line)', borderRadius: 14, padding: '20px 22px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--uf-green)', marginBottom: 8 }}>Cheapest in region</div>
-              <Link href={`/fire-number/${stats.cheapest.key}`} style={{ textDecoration: 'none' }}>
+              <Link href={cityPagePath(stats.cheapest.key)} style={{ textDecoration: 'none' }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--uf-green-900)' }}>{stats.cheapest.name}</div>
                 <div style={{ fontSize: 13, color: 'var(--uf-ink-2)', marginTop: 4 }}>{formatMoney(stats.cheapest.col)}/yr · {formatMoney(stats.cheapest.fireTarget)} FIRE target</div>
               </Link>
             </div>
             <div style={{ background: 'var(--uf-warn-bg)', border: '1px solid var(--uf-warn)', borderRadius: 14, padding: '20px 22px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#EA580C', marginBottom: 8 }}>Most expensive</div>
-              <Link href={`/fire-number/${stats.mostExpensive.key}`} style={{ textDecoration: 'none' }}>
+              <Link href={cityPagePath(stats.mostExpensive.key)} style={{ textDecoration: 'none' }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: '#9A3412' }}>{stats.mostExpensive.name}</div>
                 <div style={{ fontSize: 13, color: '#92400E', marginTop: 4 }}>{formatMoney(stats.mostExpensive.col)}/yr · {formatMoney(stats.mostExpensive.fireTarget)} FIRE target</div>
               </Link>

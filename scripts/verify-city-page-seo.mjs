@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 
 const source = readFileSync('app/fire-number/[slug]/page.tsx', 'utf8')
 const fireDataSource = readFileSync('lib/fire-data.ts', 'utf8')
@@ -27,6 +27,22 @@ assert.match(
   /!curatedCityKeys\.has\(city\.key\)/,
   'the sitemap should omit generic aliases for curated city pages',
 )
+
+// City links go through cityPagePath, so a curated guide at a different slug
+// (Austin is austin-tx) is linked directly, not through its redirect.
+assert.match(
+  curatedCitySource,
+  /export function cityPagePath\(cityKey: string\)[\s\S]*?curatedSlugByCityKey\.get\(cityKey\) \?\? cityKey/,
+  'cityPagePath should map a curated city key to its slug',
+)
+const walk = (dir) => readdirSync(dir).flatMap((name) => {
+  const path = `${dir}/${name}`
+  return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) ? [path] : []
+})
+const keyLinks = [...walk('app'), ...walk('components')]
+  .filter((file) => !file.endsWith('app/sitemap.ts'))
+  .flatMap((file) => [...readFileSync(file, 'utf8').matchAll(/href=\{`\/fire-number\/\$\{[\w.]*key\}`\}/g)].map((m) => `${file}: ${m[0]}`))
+assert.deepEqual(keyLinks, [], 'city links should use cityPagePath(key), not /fire-number/${key}')
 
 assert.match(
   source,
@@ -89,7 +105,7 @@ assert.match(
 
 assert.match(
   source,
-  /href=\{`\/fire-number\/\$\{c\.key\}`\}/,
+  /href=\{cityPagePath\(c\.key\)\}/,
   'generic city pages should keep crawlable internal links to related city pages',
 )
 

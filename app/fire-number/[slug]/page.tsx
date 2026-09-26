@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getLearnArticle } from '@/lib/learn'
-import { cityLandingPages, getCityLandingPage } from '@/lib/city-pages'
+import { cityLandingPages, getCityLandingPage, cityPagePath } from '@/lib/city-pages'
 import type { CityLandingPage } from '@/lib/city-pages'
 import { CITIES, STATE_TAX, US_CITY_COST_DATA_UPDATED, costRangeFor, isUS } from '@/lib/fire-data'
 import type { City } from '@/lib/fire-data'
@@ -928,7 +928,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               {relatedCities.map((c) => (
                 <Link
                   key={c.key}
-                  href={`/fire-number/${c.key}`}
+                  href={cityPagePath(c.key)}
                   style={{
                     display: "flex",
                     alignItems: "center",

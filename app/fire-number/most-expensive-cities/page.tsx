@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getMostExpensiveCities } from '@/lib/ranking-pages'
 import { formatMoney } from "@/lib/money";
+import { cityPagePath } from "@/lib/city-pages";
 
 
 export const metadata: Metadata = {
@@ -120,7 +121,7 @@ export default function MostExpensiveCitiesPage() {
                   >
                     <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 700, color: 'var(--uf-ink-2)' }}>{idx + 1}</td>
                     <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 700, color: 'var(--uf-green-900)' }}>
-                      <Link href={`/fire-number/${city.key}`} style={{ color: 'var(--uf-green)', textDecoration: 'none' }}>
+                      <Link href={cityPagePath(city.key)} style={{ color: 'var(--uf-green)', textDecoration: 'none' }}>
                         {city.name}
                       </Link>
                     </td>

@@ -4,6 +4,13 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
+### City links go straight to each city's page
+- City lists (the FIRE number hub, state and region pages, cheapest and most
+  expensive cities, nearby cities, Learn) now link Austin to
+  `/fire-number/austin-tx` directly, instead of through the redirect from
+  `/fire-number/austin` (#151). Links go through `cityPagePath`, and
+  `test:city-page-seo` fails if a page builds `/fire-number/${key}` again.
+
 ### Growth after inflation, chosen from S&P 500 history
 - Growth is now a choice among stretches of S&P 500 history, each starting at
   an event that explains it: since 1928 (the full record), 1946 (after World War
