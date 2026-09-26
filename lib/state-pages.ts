@@ -138,6 +138,8 @@ export interface StatePage {
   description: string
   canonicalUrl: string
   heroTitle: string
+  /** "1 city" or "12 cities": a count that reads right for states with one. */
+  cityCountLabel: string
 }
 
 // Generate all state pages
@@ -154,6 +156,7 @@ export const statePages: StatePage[] = Array.from(allStates)
     const fireTarget = avgCol * 25
     const taxInfo = STATE_TAX[stateKey]
     const noIncomeTax = taxInfo?.rate === 0
+    const cityCountLabel = cities.length === 1 ? '1 city' : `${cities.length} cities`
 
     return {
       stateKey,
@@ -163,8 +166,9 @@ export const statePages: StatePage[] = Array.from(allStates)
       fireTarget,
       avgCityColAccross: avgCol,
       noIncomeTax,
-      title: `FIRE Number in ${stateName}: ${cities.length} Cities & Tax Guide | UntilFire`,
-      description: `Compare FIRE baselines across ${cities.length} cities in ${stateName}. Local cost of living, state tax context (${noIncomeTax ? 'no income tax' : taxInfo?.label || 'state taxes apply'}), and retirement target for each city.`,
+      cityCountLabel,
+      title: `FIRE Number in ${stateName}: ${cities.length === 1 ? '1 City' : `${cities.length} Cities`} & Tax Guide | UntilFire`,
+      description: `Compare FIRE baselines across ${cityCountLabel} in ${stateName}. Local cost of living, state tax context (${noIncomeTax ? 'no income tax' : taxInfo?.label || 'state taxes apply'}), and retirement target for each city.`,
       canonicalUrl: `https://www.untilfire.com/fire-number/states/${slug}`,
       heroTitle: `FIRE Number & Cost of Living in ${stateName}`,
     }
