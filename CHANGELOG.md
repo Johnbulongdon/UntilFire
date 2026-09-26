@@ -4,6 +4,11 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
+### Dashboard button on the landing page when signed in
+- Signed-in visitors who stay on the landing page (internal test accounts skip
+  the automatic redirect) see "Dashboard" in the top bar in place of "Get
+  started", one tap into the app. Signed-out visitors see no change.
+
 ### Fewer words on the dashboard Home and Plan
 - Plan's assumptions show growth in one line ("6.9% growth a year after
   inflation, recommended. Change"), like the free result, with "At 6.9%, your
