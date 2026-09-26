@@ -4,6 +4,15 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
+### Search titles that show the answer
+- Singapore, Dubai, London and Shanghai now show their FIRE number in the
+  Google result ("Singapore FIRE Number: $1.8M (USD) Estimate"), like the US
+  city pages already did. They rank on page one with almost no clicks under a
+  generic "Calculator and Planning Guide" title.
+- The savings rate calculator's title says what the answer looks like: "Save
+  50%, Retire in 15 Years". `test:fire-number` checks the 15 and 42 years
+  quoted against the projection.
+
 ### Coast FIRE calculator: the number first, with Social Security and couples
 - The first result is now your Coast FIRE number (what you need invested today
   to stop paying in) and how much of it you have. Before, the page only showed

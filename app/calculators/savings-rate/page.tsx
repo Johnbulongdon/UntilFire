@@ -3,9 +3,12 @@ import Link from 'next/link'
 import SavingsRateCalculator from './SavingsRateCalculator'
 
 export const metadata: Metadata = {
-  title: 'Savings Rate Calculator: Savings % & Years to FIRE | UntilFire',
+  // Page one (7.6) with no clicks: say what the answer looks like. 50% is 15
+  // years from zero at the recommended 6.9% (yearsToTarget), and
+  // test:fire-number checks both figures against it.
+  title: 'Savings Rate Calculator: Save 50%, Retire in 15 Years | UntilFire',
   description:
-    'Calculate your savings percentage from take-home income and expenses. Compare estimated years to FIRE using your current investments. Free, no signup required.',
+    'Save 10% and FIRE takes about 42 years; save 50% and it takes 15. Enter your take-home pay and spending to see your savings rate and years to FIRE. Free, no signup.',
   keywords:
     'savings rate calculator, FIRE savings rate, how long to retire calculator, financial independence calculator, savings percentage calculator, how much to save to retire',
   alternates: { canonical: 'https://www.untilfire.com/calculators/savings-rate' },
