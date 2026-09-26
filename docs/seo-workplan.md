@@ -117,3 +117,18 @@ lag. Review page impressions, clicks, CTR and weighted position together, then
 check continuation into a calculator result. Do not attribute registrations to
 this page without a source-aware funnel, and do not rewrite the snippet again on
 a few days of data.
+
+## US city evidence and topic paths
+
+The generic US city guides now explain the evidence behind their planning
+baseline in the page itself. Each page names the September 17, 2026 review date,
+labels every amount as USD, explains the Census renter-median housing input and
+the $34,000 national non-housing baseline, and links to the official Census
+source tables. The copy also distinguishes an estimate from a household budget and
+the 25x guideline from a guarantee.
+
+Each city now links to the corresponding state comparison page and the 4% rule
+calculator from that methodology block. This creates a useful city → state and
+city → calculator path without generating more near-duplicate pages. The change
+does not alter cost data, formulas, metadata or indexability.
+

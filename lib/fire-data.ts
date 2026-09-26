@@ -4,6 +4,9 @@
 // state = key into STATE_TAX for local tax rate
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Last reviewed promotion date for the US city cost baselines below. */
+export const US_CITY_COST_DATA_UPDATED = 'September 17, 2026'
+
 export interface City {
   name: string;
   key: string;
@@ -681,3 +684,4 @@ export const TAX_CA_PROVINCES: { value: string; label: string }[] = [
 // `lib/fire/strategies/traditional.ts` and `lib/fire/tax/*`). This module is
 // the city/tax dataset only — keeping data and engine separate is what makes
 // the planner swappable without touching the wizard.
+

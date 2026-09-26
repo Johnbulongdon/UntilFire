@@ -4,8 +4,9 @@ import { notFound } from 'next/navigation'
 import { getLearnArticle } from '@/lib/learn'
 import { cityLandingPages, getCityLandingPage } from '@/lib/city-pages'
 import type { CityLandingPage } from '@/lib/city-pages'
-import { CITIES, STATE_TAX, costRangeFor, isUS } from '@/lib/fire-data'
+import { CITIES, STATE_TAX, US_CITY_COST_DATA_UPDATED, costRangeFor, isUS } from '@/lib/fire-data'
 import type { City } from '@/lib/fire-data'
+import { getStatePageSlug, STATE_NAMES } from '@/lib/state-pages'
 import { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'
 import CityCalcWidget from '../CityCalcWidget'
 import { formatMoney } from "@/lib/money";
@@ -496,6 +497,8 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   const tax = STATE_TAX[data.state];
   const taxRate = tax?.rate ?? 0;
   const taxLabel = tax?.label ?? data.state.toUpperCase();
+  const stateName = STATE_NAMES[data.state] ?? taxLabel;
+  const statePageHref = `/fire-number/states/${getStatePageSlug(data.state)}`;
 
   const SCENARIOS = [75000, 100000, 150000];
   const SAVINGS_RATE = 0.20;
@@ -727,6 +730,67 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
             </p>
           </div>
         </div>
+
+        {/* Methodology and sources */}
+        <section
+          aria-labelledby="city-methodology-heading"
+          style={{
+            background: "var(--uf-card)",
+            border: "1px solid var(--uf-border)",
+            borderRadius: 16,
+            padding: "24px 22px",
+            marginBottom: 40,
+          }}
+        >
+          <div style={{ ...heading, marginBottom: 8 }}>Data and assumptions</div>
+          <h2
+            id="city-methodology-heading"
+            style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 12px" }}
+          >
+            How the {data.name} estimate is built
+          </h2>
+          <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
+            Updated {US_CITY_COST_DATA_UPDATED}. All amounts are annual US dollars. Housing uses the US Census
+            Bureau&apos;s American Community Survey median gross rent for recent movers, with the all-renter median
+            used when the recent-mover figure is unavailable. Non-housing spending uses a {formatMoney(34_000)}
+            national annual baseline. Together they produce the {formatMoney(data.col)} planning estimate above.
+          </p>
+          <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
+            The displayed range reflects renter medians and Census margins of error, so it is a starting point rather
+            than a household budget. Replace it with your own spending in the calculator. The FIRE target applies the
+            common 25× guideline; it does not guarantee that a portfolio will last.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 18px", fontSize: 14, lineHeight: 1.7 }}>
+            <a
+              href="https://api.census.gov/data/2024/acs/acs5/groups/B25113.html"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}
+            >
+              Census recent-mover rent table
+            </a>
+            <a
+              href="https://api.census.gov/data/2024/acs/acs5/groups/B25064.html"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}
+            >
+              Census all-renter fallback table
+            </a>
+            <Link
+              href="/calculators/4-percent-rule"
+              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}
+            >
+              Test the 25× assumption
+            </Link>
+            <Link
+              href={statePageHref}
+              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}
+            >
+              Compare FIRE costs across {stateName}
+            </Link>
+          </div>
+        </section>
 
         {/* FIRE variants for this city */}
         <div style={{ marginBottom: 40 }}>
@@ -960,3 +1024,4 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
     </>
   );
 }
+
