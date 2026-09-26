@@ -7,22 +7,17 @@ import WorldGlobe from "./WorldGlobe";
 import Logo from "@/app/components/Logo";
 import { CITIES } from "@/lib/fire-data";
 import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL } from "@/lib/pricing";
+import { REAL_RETURN, yearsToTarget } from "@/lib/fire/strategies/traditional";
 
 
 const F = "'Manrope', sans-serif";
 const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
 const MONO = "'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 
-/* Same core assumptions as the calculator: 7% growth, 25x annual spending. */
-const GROWTH_MONTHLY = 0.07 / 12;
+/* The calculator's own projection (lib/fire): 7% real growth, 25x annual spending. */
 function monthsToTarget(startBalance: number, monthlySave: number, target: number): number {
-  let bal = startBalance;
-  let m = 0;
-  while (bal < target && m < 1200) {
-    bal = bal * (1 + GROWTH_MONTHLY) + monthlySave;
-    m += 1;
-  }
-  return m;
+  const years = yearsToTarget(startBalance, monthlySave * 12, target, REAL_RETURN, 100);
+  return years === null ? 1200 : Math.ceil(years * 12);
 }
 
 function futureDate(monthsFromNow: number): Date {

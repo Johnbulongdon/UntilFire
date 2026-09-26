@@ -20,6 +20,18 @@ All notable changes to UntilFire are documented here.
   and a worked example. Starts at the plain 25× rule. Recorded as D-23.
 - The page had two h1 headings; it now has one.
 
+### One answer across calculators
+- The savings rate, purchase impact and landing page projections now use the
+  freedom date's own growth model (`yearsToTarget` in `lib/fire`) instead of
+  their own monthly loops, so the same person gets the same years to FIRE on
+  every page. Their results shift by up to about 8 months. City pages use the
+  shared 7% real return instead of a typed copy. `test:fire-number` checks the
+  pages agree.
+- The age shown at your freedom date now rounds the same way as the year; it
+  was a year ahead (for example 51 instead of 50 at 30 with 20.7 years to go).
+- The purchase impact page's logo was white on a cream bar in light mode; it
+  now follows the theme.
+
 ### Austin search entry
 - Lead the Austin FIRE guide's search snippet with its estimated answer, label
   its planning amounts as USD, and add spending-sensitivity examples so visitors

@@ -28,6 +28,45 @@ export const REAL_RETURN = 0.07;
  * Year-over-year balance update mirrors the v1 reveal exactly so this seam
  * does not move any user-visible numbers.
  */
+/**
+ * Years for a balance to reach a target: grows once a year at the real
+ * return, with the year's contributions added at its end, and interpolated
+ * to the fraction of the year when it crosses. Every calculator that answers
+ * "how long until…" uses this, so the same inputs give the same answer
+ * everywhere. Returns null if the target isn't reached within `maxYears`.
+ */
+export function yearsToTarget(
+  startingBalance: number,
+  annualContribution: number,
+  target: number,
+  realReturn: number = REAL_RETURN,
+  maxYears = 65,
+): number | null {
+  if (startingBalance >= target) return 0;
+  let bal = startingBalance;
+  let balPrev = startingBalance;
+  let yrs = 0;
+  while (bal < target && yrs < maxYears) {
+    balPrev = bal;
+    bal = bal * (1 + realReturn) + annualContribution;
+    yrs++;
+  }
+  if (bal < target) return null;
+  // Interpolate to find the exact fractional year when balance crosses the target
+  if (realReturn === 0) {
+    return annualContribution > 0 ? (yrs - 1) + Math.min(1, Math.max(0, (target - balPrev) / annualContribution)) : yrs;
+  }
+  const k = annualContribution / realReturn;
+  const ratio = (target + k) / (balPrev + k);
+  if (!(ratio > 1)) return yrs;
+  const t = Math.log(ratio) / Math.log(1 + realReturn);
+  return (yrs - 1) + Math.min(Math.max(t, 0), 1);
+}
+
+/**
+ * Traditional FIRE: 25× annual expenses target (4% safe withdrawal), 7% real
+ * return assumption, capped at 65 years of accumulation.
+ */
 function compute({
   monthlySavings,
   annualExpenses,
@@ -38,37 +77,20 @@ function compute({
   maxYears = 65,
 }: FireInputs): FireOutput {
   const fireTarget = annualExpenses * (1 / withdrawalRate);
-  let bal = startingBalance;
-  let balPrev = startingBalance;
-  let yrs = 0;
-  while (bal < fireTarget && yrs < maxYears) {
-    balPrev = bal;
-    bal = bal * (1 + expectedRealReturn) + monthlySavings * 12;
-    yrs++;
-  }
-  if (bal < fireTarget) {
+  const years = yearsToTarget(startingBalance, monthlySavings * 12, fireTarget, expectedRealReturn, maxYears);
+  if (years === null) {
     return { fireTarget, years: null, retireYear: null };
-  }
-  // Interpolate to find the exact fractional year when balance crosses FIRE target
-  let fractionalYears = yrs;
-  if (yrs > 0) {
-    const annual = monthlySavings * 12;
-    const k = annual / expectedRealReturn;
-    const ratio = (fireTarget + k) / (balPrev + k);
-    if (expectedRealReturn === 0 && annual > 0) {
-      fractionalYears = (yrs - 1) + Math.min(1, Math.max(0, (fireTarget - balPrev) / annual));
-    } else if (ratio > 1) {
-      const t = Math.log(ratio) / Math.log(1 + expectedRealReturn);
-      fractionalYears = (yrs - 1) + Math.min(Math.max(t, 0), 1);
-    }
   }
   const out: FireOutput = {
     fireTarget,
-    years: fractionalYears,
-    retireYear: new Date().getFullYear() + Math.floor(fractionalYears),
+    years,
+    retireYear: new Date().getFullYear() + Math.floor(years),
   };
+  // The age in the freedom year: rounded the same way as the year, so the
+  // two never disagree (it used to count whole years up while the year
+  // counted down, putting the age a year ahead).
   if (typeof currentAge === 'number' && currentAge > 0) {
-    out.age = currentAge + yrs;
+    out.age = currentAge + Math.floor(years);
   }
   return out;
 }

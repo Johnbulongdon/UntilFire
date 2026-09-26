@@ -1,17 +1,16 @@
-// months to reach target from current savings + monthly contributions
+import { yearsToTarget } from './fire/strategies/traditional.ts';
+
+// Months to reach the target from current savings and monthly contributions.
+// Uses the same growth model as the freedom date (lib/fire), so a purchase's
+// delay is measured on the same clock as the date it delays.
 export function monthsToFire(
   savings: number,
   monthlyContrib: number,
   target: number,
   annualRate: number
 ): number {
-  if (savings >= target) return 0;
-  const r = annualRate / 12;
-  if (r === 0) return monthlyContrib > 0 ? (target - savings) / monthlyContrib : Infinity;
-  const mr = monthlyContrib / r;
-  const denom = savings + mr;
-  if (denom <= 0) return Infinity;
-  return Math.log((target + mr) / denom) / Math.log(1 + r);
+  const years = yearsToTarget(savings, monthlyContrib * 12, target, annualRate, 100);
+  return years === null ? Infinity : years * 12;
 }
 
 export type PurchaseImpactResult = {

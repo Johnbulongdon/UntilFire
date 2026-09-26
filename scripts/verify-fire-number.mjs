@@ -8,6 +8,8 @@
  */
 import { readFileSync } from 'node:fs';
 import { fireNumber, recommendedWithdrawalRate, fireProgress } from '../lib/fire-number.ts';
+import { calcFIRE, yearsToTarget } from '../lib/fire/strategies/traditional.ts';
+import { monthsToFire } from '../lib/purchase-impact.ts';
 
 const checks = [];
 const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
@@ -40,6 +42,29 @@ const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 // ── Progress
 check('progress is capped at 100', fireProgress(3_000_000, 1_500_000) === 100 && near(fireProgress(750_000, 1_500_000), 50));
 check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0);
+
+// ── One answer everywhere (the calculator audit)
+{
+  // Spends $50k, saves $2,000 a month, has $50k invested, age 30.
+  const engine = calcFIRE(2000, 50000, 30, 50000);
+  const shared = yearsToTarget(50000, 24000, 1_250_000);
+  check('freedom date and the shared projection agree', near(engine.years, shared), `${engine.years} vs ${shared}`);
+  check('purchase impact measures on the same clock', near(monthsToFire(50000, 2000, 1_250_000, 0.07) / 12, shared), String(monthsToFire(50000, 2000, 1_250_000, 0.07) / 12));
+  check('age in the freedom year rounds like the year (30 + 20.7 years → 50)', engine.age === 30 + Math.floor(engine.years), `${engine.age} after ${engine.years}`);
+  check('already there is zero years', yearsToTarget(2_000_000, 0, 1_000_000) === 0);
+  check('never reached within the cap is null', yearsToTarget(0, 0, 1_000_000) === null);
+  const own = [
+    ['app/calculators/savings-rate/SavingsRateCalculator.tsx', 'yearsToTarget('],
+    ['app/components/landing/LandingPage.tsx', 'yearsToTarget('],
+    ['lib/purchase-impact.ts', 'yearsToTarget('],
+  ];
+  for (const [file, needle] of own) {
+    const src = read(file);
+    check(`${file.split('/').pop()} uses the shared projection, not its own loop`, src.includes(needle) && !/monthlyReturn|GROWTH_MONTHLY|annualRate \/ 12/.test(src));
+  }
+  check('city pages use the shared return, not a typed 0.07', !read('app/fire-number/[slug]/page.tsx').includes('= 0.07'));
+  check('purchase impact logo follows the theme', read('app/calculators/purchase-impact/PurchaseImpactCalculator.tsx').includes('<Logo variant="auto"'));
+}
 
 // ── Wiring
 {

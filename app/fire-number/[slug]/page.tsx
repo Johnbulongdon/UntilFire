@@ -531,7 +531,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   const baristaTarget = Math.round(fireTarget * 0.5)
   const COAST_FROM_AGE = 30
   const COAST_TO_AGE = 65
-  const COAST_REAL_RETURN = 0.07
+  const COAST_REAL_RETURN = REAL_RETURN
   const coastTarget = Math.round(fireTarget / Math.pow(1 + COAST_REAL_RETURN, COAST_TO_AGE - COAST_FROM_AGE))
   const fireVariants = [
     { label: 'Coast FIRE', value: coastTarget, note: `Invest this by age ${COAST_FROM_AGE} and growth alone (≈7% real) can reach full FIRE by ${COAST_TO_AGE} — no further contributions needed.` },

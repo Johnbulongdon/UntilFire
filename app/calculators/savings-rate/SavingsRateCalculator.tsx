@@ -5,6 +5,7 @@ import Logo from '@/app/components/Logo'
 import Link from 'next/link'
 import { Card, Field, Input, Stat } from '@/components/ui'
 import styles from './SavingsRateCalculator.module.css'
+import { REAL_RETURN, yearsToTarget } from '@/lib/fire/strategies/traditional'
 
 const C = {
   bg: 'var(--uf-surface)',
@@ -17,21 +18,13 @@ const C = {
   teal: 'var(--uf-teal)',
 }
 
-function yearsToFIRE(sr: number, annualReturn = 0.07, currentSavings = 0, annualIncome = 100000): number {
+// The freedom date's own projection (lib/fire), so this page and the main
+// calculator give the same answer for the same person.
+function yearsToFIRE(sr: number, annualReturn = REAL_RETURN, currentSavings = 0, annualIncome = 100000): number {
   if (sr <= 0) return Infinity
   if (sr >= 1) return 0
-  const monthlyReturn = annualReturn / 12
-  const monthlySavings = (annualIncome * sr) / 12
   const annualExpenses = annualIncome * (1 - sr)
-  const fireTarget = annualExpenses * 25
-
-  let balance = currentSavings
-  for (let month = 0; month < 1200; month++) {
-    balance += monthlySavings
-    balance *= 1 + monthlyReturn
-    if (balance >= fireTarget) return month / 12
-  }
-  return Infinity
+  return yearsToTarget(currentSavings, annualIncome * sr, annualExpenses * 25, annualReturn, 100) ?? Infinity
 }
 
 const BENCHMARK_RATES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
@@ -50,11 +43,11 @@ export default function SavingsRateCalculator() {
     const monthlySaved = annualSaved / 12
     const sr = inc > 0 ? annualSaved / inc : 0
 
-    const years = yearsToFIRE(sr, 0.07, saved, inc)
+    const years = yearsToFIRE(sr, REAL_RETURN, saved, inc)
 
     const table = BENCHMARK_RATES.map((rate) => ({
       rate,
-      years: yearsToFIRE(rate, 0.07, saved, inc),
+      years: yearsToFIRE(rate, REAL_RETURN, saved, inc),
       isYours: Math.abs(rate - sr) < 0.025,
     }))
 
