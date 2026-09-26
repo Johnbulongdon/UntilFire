@@ -4,6 +4,19 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
+### Fewer words on the FIRE number and savings rate calculators
+- Each factor in the FIRE number calculator is now a title, its control, and
+  "Recommended: 3.5% · Use". What the factor means, and why we recommend what
+  we do, sit behind a "?" beside the title. The intro and result card are
+  shorter; the working stays.
+- The savings rate calculator shows growth in one line ("6.9% growth a year
+  after inflation, recommended. Change") and opens the history list on tap. The
+  inputs and the answer now fit on one phone screen, where before the answer
+  sat below the open list.
+- Words at phone size: FIRE number first screen 100 to 62, calculator 306 to
+  103; savings rate first screen 85 to 57. The explanations below each
+  calculator are unchanged, for search.
+
 ### Fewer words on the free result
 - The growth list is now one line per choice: its name, a five-dot meter for
   how often history did as well, and the rate. Only the selected row shows its

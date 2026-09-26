@@ -6,9 +6,8 @@ import Link from 'next/link'
 import { Card, Field, Input, Stat } from '@/components/ui'
 import styles from './SavingsRateCalculator.module.css'
 import { REAL_RETURN, yearsToTarget } from '@/lib/fire/strategies/traditional'
-import { DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, RETURN_RECOMMENDATION } from '@/lib/fire-number'
-import GrowthChoicePicker from '@/app/components/GrowthChoicePicker'
-import Factor from '@/app/calculators/4-percent-rule/Factor'
+import { DEFAULT_RETURN_PCT } from '@/lib/fire-number'
+import GrowthSetting from '@/app/components/GrowthSetting'
 
 const C = {
   bg: 'var(--uf-surface)',
@@ -84,9 +83,7 @@ export default function SavingsRateCalculator() {
             Savings Rate Calculator
           </h1>
           <p style={{ fontSize: 16, color: C.muted, margin: 0, lineHeight: 1.7 }}>
-            Enter your annual take-home income, expenses and current investments to find
-            your savings percentage. Compare how saving more could change your estimated
-            years to financial independence — free, with no signup.
+            See how your savings rate sets your years to freedom.
           </p>
         </div>
 
@@ -102,14 +99,7 @@ export default function SavingsRateCalculator() {
             <Field label="Current savings / investments ($)" htmlFor="savings-investments">
               <Input id="savings-investments" numeric type="number" value={currentSavings} onChange={e => setCurrentSavings(e.target.value)} style={{ fontSize: 16 }} min="0" step="1000" />
             </Field>
-            <Factor
-              title="Growth after inflation"
-              hint="How much your investments grow each year, beyond prices rising. Higher brings the date closer; lower is surer."
-              recommendation={RETURN_RECOMMENDATION}
-              onUseRecommendation={returnPct === RECOMMENDED_RETURN_PCT ? undefined : () => setReturnPct(RECOMMENDED_RETURN_PCT)}
-            >
-              <GrowthChoicePicker value={returnPct} onChange={setReturnPct} />
-            </Factor>
+            <GrowthSetting value={returnPct} onChange={setReturnPct} />
           </div>
         </Card>
 

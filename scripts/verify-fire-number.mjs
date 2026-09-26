@@ -105,7 +105,11 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   const dash = read('app/dashboard/page.tsx');
   check('dashboard wires the saved growth into the card and expat views', dash.includes('onGrowthRateChange={setGrowthRate}') && !/calcFIRE\([^)]*portfolioBalance\);/.test(dash));
   check('savings rate page: growth is a factor', read('app/calculators/savings-rate/SavingsRateCalculator.tsx').includes('yearsToFIRE(sr, returnPct / 100'));
-  check('Coast FIRE and savings rate use the history picker', read('app/calculators/coast-fire/CoastFireCalculator.tsx').includes('<GrowthChoicePicker') && read('app/calculators/savings-rate/SavingsRateCalculator.tsx').includes('<GrowthChoicePicker'));
+  check('Coast FIRE uses the history picker; savings rate shows growth in one line that opens it', read('app/calculators/coast-fire/CoastFireCalculator.tsx').includes('<GrowthChoicePicker') && read('app/calculators/savings-rate/SavingsRateCalculator.tsx').includes('<GrowthSetting') && read('app/components/GrowthSetting.tsx').includes('<GrowthChoicePicker'));
+  {
+    const factor = read('app/calculators/4-percent-rule/Factor.tsx');
+    check('calculator factors keep explanations behind a tap and recommend in a few words', factor.includes('aria-expanded={open}') && factor.includes('{open && (') && factor.includes('recommendationWhy'));
+  }
 }
 
 // ── Wiring
