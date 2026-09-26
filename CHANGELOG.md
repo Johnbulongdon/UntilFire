@@ -38,7 +38,9 @@ All notable changes to UntilFire are documented here.
   can pressure-test the 25x baseline before continuing to a calculator. Let
   curated city explanations stack on phones instead of compressing into a narrow
   column, and replace Austin's unrelated international recommendations with four
-  Texas city comparisons.
+  Texas city comparisons. Consolidate the generic `/fire-number/austin` route
+  into the state-qualified `/fire-number/austin-tx` canonical and remove the
+  duplicate route from the sitemap.
 - The Austin spending table puts the 25x FIRE target right after the scenario,
   so it shows on a phone without scrolling the table sideways.
 

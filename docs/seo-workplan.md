@@ -106,8 +106,10 @@ bounded snippet and usefulness experiment, not proof of a CTR problem.
 Lead Austin's search title and description with the estimated answer. Label the
 page's planning figures as USD, and show lower, baseline and higher spending
 scenarios so a visitor can see how the 25x rule changes. Keep the same canonical
-URL and calculators; do not create an Austin keyword variant page. Replace its
-unrelated international "nearby" cards with crawlable comparisons to Dallas,
+URL and calculators; permanently redirect the generic `/fire-number/austin`
+alias to `/fire-number/austin-tx` and omit the alias from the sitemap rather
+than maintaining two indexable Austin pages. Replace its unrelated international
+"nearby" cards with crawlable comparisons to Dallas,
 Houston, San Antonio and Fort Worth. Do not apply this USD experiment to
 international city pages without local-currency data or a properly sourced
 conversion method.
