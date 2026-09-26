@@ -398,6 +398,61 @@ function calcProjection({
   return { data, fireYear, fireTarget, annualSavings };
 }
 
+/**
+ * The freedom date exactly as Home shows it, for anywhere else that needs it
+ * (Plan shows it beside the assumptions that move it). One function, so the
+ * two screens cannot drift: same expenses, target spending, cash including
+ * linked accounts, tax settings and growth.
+ */
+function freedomProjection({
+  income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
+  growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
+  taxEnabled, retirementTaxRate, rothPct,
+}: {
+  income: number; expenses: Record<string, number>; k401: number; rothIRA: number; taxable: number;
+  cashSavings: number; totalDebt: number; mortgageBalance: number; mortgageMonthly: number;
+  growthRate: number; withdrawalRate: number; plaidAccounts: PlaidAccount[];
+  retirementCityCol: number; lifestyleMultiplier: number; monthlyWorkCosts?: number;
+  taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
+}) {
+  const monthlyExpenses = Object.entries(expenses)
+    .filter(([k]) => !k.startsWith("_"))
+    .reduce((s, [, v]) => s + (v || 0), 0);
+  // Work costs disappear at retirement → FIRE target uses adjusted spend.
+  const retirementMonthlyExpenses = monthlyWorkCosts ? Math.max(0, monthlyExpenses - monthlyWorkCosts) : monthlyExpenses;
+  const targetMonthlyExpenses = retirementCityCol > 0
+    ? (retirementCityCol * lifestyleMultiplier) / 12
+    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
+  const plaidAssets = plaidAccounts
+    .filter(a => a.type === "depository" || a.type === "investment")
+    .reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const result = calcProjection({
+    annualIncome: income * 12, monthlyExpenses,
+    k401, rothIRA, taxable, cashSavings: cashSavings + plaidAssets, totalDebt, mortgageBalance, mortgageMonthly,
+    growthRate, withdrawalRate, targetMonthlyExpenses,
+    taxEnabled, retirementTaxRate, rothPct,
+  });
+  return { ...result, exactDate: exactFreedomDateFrom(result.data, result.fireYear, result.fireTarget) };
+}
+
+/**
+ * Exact freedom date: interpolate between the yearly projection points that
+ * bracket the FIRE-target crossing. A smoothed estimate over a yearly-step
+ * projection, not a day-by-day simulation.
+ */
+function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number | null, fireTarget: number): Date | null {
+  if (fireYear === null || fireYear <= 0) return null;
+  const prevPoint = data[fireYear - 1];
+  const curPoint = data[fireYear];
+  if (!prevPoint || !curPoint) return null;
+  const prevVal = prevPoint["Investable"] ?? 0;
+  const curVal = curPoint["Investable"] ?? 0;
+  const span = curVal - prevVal;
+  const fraction = span > 0 ? Math.min(1, Math.max(0, (fireTarget - prevVal) / span)) : 0;
+  const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+  return new Date(Date.now() + (fireYear - 1 + fraction) * msPerYear);
+}
+
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currency, rates }: {
   value: number; onChange: (v: number) => void;
@@ -577,12 +632,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     .reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const totalCash = cashSavings + plaidAssets;
 
-  const { data, fireYear, fireTarget, annualSavings } = useMemo(() => calcProjection({
-    annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly,
-    growthRate, withdrawalRate, targetMonthlyExpenses,
+  // Shared with Plan's freedom date (freedomProjection), so the two can't disagree.
+  const { data, fireYear, fireTarget, annualSavings } = useMemo(() => freedomProjection({
+    income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
+    growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
     taxEnabled, retirementTaxRate, rothPct,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses, taxEnabled, retirementTaxRate, rothPct]);
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct]);
 
   const nextMoveScenarios = useMemo(() => {
     if (!(income > 0 && fireYear !== null)) return null;
@@ -831,18 +886,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // bracket the FIRE-target crossing, same technique the chart already uses
   // for its monthly points. This is a smoothed estimate over a yearly-step
   // projection, not a day-by-day simulation.
-  const exactFreedomDate = useMemo(() => {
-    if (fireYear === null || fireYear <= 0) return null;
-    const prevPoint = rawChartData[fireYear - 1];
-    const curPoint = rawChartData[fireYear];
-    if (!prevPoint || !curPoint) return null;
-    const prevVal = prevPoint["Investable"] ?? 0;
-    const curVal = curPoint["Investable"] ?? 0;
-    const span = curVal - prevVal;
-    const fraction = span > 0 ? Math.min(1, Math.max(0, (fireTarget - prevVal) / span)) : 0;
-    const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
-    return new Date(Date.now() + (fireYear - 1 + fraction) * msPerYear);
-  }, [fireYear, rawChartData, fireTarget]);
+  const exactFreedomDate = useMemo(() => exactFreedomDateFrom(rawChartData, fireYear, fireTarget), [fireYear, rawChartData, fireTarget]);
 
   useEffect(() => {
     onFreedomDateChange?.(exactFreedomDate);
@@ -4980,6 +5024,39 @@ function TaxProfileCard({
 }
 
 // ─── FIRE Calculator Menu Tab ────────────────────────────────────────────────
+/**
+ * The freedom date on Plan, above the assumptions that move it. Without it,
+ * changing growth, city or lifestyle here visibly did nothing: the date only
+ * showed on Home. Same numbers as Home (freedomProjection).
+ */
+function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears }: {
+  date: Date | null; fireAge: number; years: number | null; growthPct: number; deltaYears: number | null;
+}) {
+  const label = date ? date.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
+  const age = date && fireAge > 0 && years !== null ? Math.floor(fireAge + years) : null;
+  return (
+    <section aria-live="polite" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 24px" }}>
+      <div className="uf-t-label" style={{ color: "var(--uf-ink-2)", marginBottom: 6 }}>Your freedom date</div>
+      {label ? (
+        <>
+          <div style={{ fontFamily: "var(--uf-font-display)", fontSize: 34, fontWeight: 700, color: "var(--uf-ink)", lineHeight: 1.1 }}>{label}</div>
+          <div className="uf-t-body" style={{ color: "var(--uf-ink-2)", marginTop: 6 }}>
+            {age !== null ? <>At {age}, </> : null}at {growthPct.toFixed(1)}% growth a year after inflation.
+            {deltaYears !== null && Math.abs(deltaYears) >= 0.05 && (
+              <> That&apos;s <b style={{ color: "var(--uf-ink)" }}>{Math.abs(deltaYears).toFixed(1)} years {deltaYears > 0 ? "later" : "earlier"}</b> than at the {(REAL_RETURN * 100).toFixed(1)}% default.</>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>
+          Not reached under these assumptions yet. Saving more, spending less or a different city moves it.
+        </div>
+      )}
+      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 8 }}>Change any assumption below and this date moves.</div>
+    </section>
+  );
+}
+
 function FireCalcMenuTab({
   fireAge,
   onOpenInvestSim,
@@ -5010,10 +5087,10 @@ function FireCalcMenuTab({
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
       <div>
         <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "#19181E", margin: "0 0 6px", letterSpacing: "-0.5px" }}>
-          Freedom Date
+          More tools
         </h2>
         <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>
-          Start with your core freedom-date view. Assumptions live in Profile; advanced checks stay here when you need them.
+          Optional checks beyond the freedom date above.
         </p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
@@ -5585,6 +5662,18 @@ export default function Dashboard() {
     [effectiveExpenses],
   );
   const emergencyFundMonthlyBase = histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds;
+  // The freedom date Home shows, computed here too so Plan can show it beside
+  // the assumptions that move it, and what the growth choice changed.
+  const planFreedomInputs = useMemo(() => ({
+    income: effectiveIncome, expenses: effectiveExpenses as Record<string, number>, k401, rothIRA, taxable, cashSavings,
+    totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier,
+    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, taxEnabled, retirementTaxRate, rothPct,
+  }), [effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, taxEnabled, retirementTaxRate, rothPct]);
+  const planFreedom = useMemo(() => freedomProjection({ ...planFreedomInputs, growthRate }), [planFreedomInputs, growthRate]);
+  const planFreedomAtDefault = useMemo(
+    () => (growthRate === REAL_RETURN ? planFreedom : freedomProjection({ ...planFreedomInputs, growthRate: REAL_RETURN })),
+    [planFreedomInputs, growthRate, planFreedom],
+  );
   /* The contribution ladder reads the emergency fund from real accounts, so
      it needs the accounts rather than a total: which ones count is the user's
      to decide, and a savings account and a current account are not the same
@@ -6592,7 +6681,17 @@ export default function Dashboard() {
                   <>
                     {/* The inputs the freedom date is computed from, next to the
                         date itself. They lived in Profile until 18 Sep 2026. */}
+                    <PlanFreedomDate
+                      date={planFreedom.exactDate}
+                      fireAge={fireAge}
+                      years={planFreedom.exactDate ? (planFreedom.exactDate.getTime() - Date.now()) / (365.25 * 24 * 60 * 60 * 1000) : null}
+                      growthPct={growthRate * 100}
+                      deltaYears={planFreedom.exactDate && planFreedomAtDefault.exactDate
+                        ? (planFreedom.exactDate.getTime() - planFreedomAtDefault.exactDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                        : null}
+                    />
                     <FireAssumptionsCard
+                      freedomDateLabel={planFreedom.exactDate ? planFreedom.exactDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null}
                       fireAge={fireAge}
                       onFireAgeChange={setFireAge}
                       retirementCityName={retirementCityName}
@@ -6757,7 +6856,7 @@ function ExpatFireDashTab({
         return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
       })
       .sort((a, b) => (a.years ?? Infinity) - (b.years ?? Infinity) || a.col - b.col);
-  }, [monthlySavings, portfolioBalance, age]);
+  }, [monthlySavings, portfolioBalance, age, growthRate]);
 
   // Run the bar from today to roughly when the bulk of cities have unlocked.
   const sliderMax = useMemo(() => {
