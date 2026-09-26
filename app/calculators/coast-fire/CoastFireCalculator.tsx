@@ -7,6 +7,8 @@ import {
 } from 'recharts'
 import Logo from '@/app/components/Logo'
 import { Badge, Card, Money, Slider, Stat } from '@/components/ui'
+import { DEFAULT_RETURN_PCT } from '@/lib/fire-number'
+import GrowthChoicePicker from '@/app/components/GrowthChoicePicker'
 import { formatMoney } from '@/lib/money'
 
 /**
@@ -78,7 +80,7 @@ export default function CoastFireCalculator() {
   const [stopAge, setStopAge] = useState(45)
   const [retireAge, setRetireAge] = useState(65)
   const [annualExpenses, setAnnualExpenses] = useState(50_000)
-  const [returnRate, setReturnRate] = useState(7)
+  const [returnRate, setReturnRate] = useState<number>(DEFAULT_RETURN_PCT)
   const [withdrawalRate, setWithdrawalRate] = useState(4)
 
   const [chartRef, chartWidth] = useWidth<HTMLDivElement>(320)
@@ -421,7 +423,8 @@ export default function CoastFireCalculator() {
                   min={10_000} max={250_000} step={1_000} format={money} />
                 <Slider label="Expected annual return" value={returnRate} onChange={setReturnRate}
                   min={1} max={12} step={0.1} format={pct}
-                  hint="After inflation. 7% is an assumption, not a forecast; compare lower returns too." />
+                  hint="After inflation. Pick a stretch of history below, or set your own." />
+                <GrowthChoicePicker value={returnRate} onChange={setReturnRate} />
                 <Slider label="Withdrawal rate" value={withdrawalRate} onChange={setWithdrawalRate}
                   min={2} max={6} step={0.1} format={pct}
                   hint="4% is the common starting point." />

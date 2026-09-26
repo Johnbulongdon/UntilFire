@@ -142,6 +142,9 @@ disconnected from the user's target age. Later code unified mixed 10%/7% return
 assumptions to one 7% real assumption.
 **Trade-off / revisit:** Any confidence model needs an approved redesign and
 focused regression checks, not a resurrected historical plan.
+**Update (D-24):** the 7% is now measured rather than typed: the S&P 500's
+return after inflation since 1928, 6.9% through 2025, and people can choose
+other stretches of history.
 **Source:** App `15acd8d` (August 17 commit; changelog records August 16),
 `f79d688`; [changelog](../CHANGELOG.md).
 The March fixed-starting-balance and mixed-default details below are superseded.
@@ -719,6 +722,76 @@ rejected: the existing one already carries the "FIRE number calculator" title.
 quick box. `test:fire-number` pins the worked examples published on the page.
 **Revisit:** if readers mostly take the recommendations, consider starting there.
 **Source:** `lib/fire-number.ts`, `app/calculators/4-percent-rule/`.
+
+### D-24 — September 26: growth after inflation is chosen from S&P 500 history, 5% recommended
+
+**Status:** Active. Authorised by the founder on 2026-09-26: "Make the return an
+adjustable factor with a recommendation", then "tell the user how we got this
+number … are you more comfortable using S&P since the start, which is lower, or
+… the past 20 years or past 50 years". Refines D-07's 7%; does not reverse it.
+**Decision:** The growth assumption is a choice among stretches of S&P 500
+history, not a number to take on trust. Each choice shows the return before and
+after inflation, and how often every 30-year stretch since 1928 did at least as
+well. Figures are through 2025, with dividends reinvested:
+
+| Choice | Why this start | Before inflation | After | 30-year stretches that did as well |
+|---|---|---|---|---|
+| Since 1928 (default) | The full record | 10.2% | 6.9% | 62% |
+| Since 1946 | After World War II | 11.2% | 7.3% | 51% |
+| Since 1972 | After the gold standard ended | 11.1% | 7.0% | 59% |
+| Since 1982 | The long bull market as inflation fell | 12.1% | 9.0% | 10% |
+| Since 2000 | Starting at the dot-com peak | 8.1% | 5.4% | 80% |
+| Since 2009 | Starting just after the 2008 crash | 15.0% | 12.1% | 0% |
+| Cautious (recommended) | A margin below the average | ≈8.2% | 5.0% | 86% |
+| Worst 30 years (1965–1994) | High inflation ate the gains | 9.9% | 4.3% | 100% |
+
+Start years are events with a reason, chosen with the founder instead of
+rolling "last 10/20/50 years". The start changes the answer: from the 2000 peak
+it is 5.4%, from just after the 2008 crash 12.1%. Every long, neutral start
+(1928, 1946, 1957, 1972) lands between 6.7% and 7.3%.
+
+The picker switches between before inflation (what an account statement shows)
+and after inflation (what the date uses), and explains the gap. The free
+result's freedom number switches between today's dollars and the freedom
+year's dollars. Its inflation is the chosen stretch's, or the long-run 3.0%.
+It says the date does not change: only the size of the number does.
+
+The default is the measured since-1928 figure, now the engine's `REAL_RETURN`
+(6.9%, where D-07's typed 7% came from). Default dates move one to three months
+later. We recommend 5%: history beat it in most 30-year stretches, not just the
+average one, so a plan built on it holds if the next 30 years are ordinary.
+**Where:**
+- The free result says what it assumes and where it comes from. It switches to
+  5% in one tap, and "Where does this come from?" opens the history.
+- Plan's assumptions card, the savings rate calculator and Coast FIRE show the
+  same history picker.
+- The dashboard's saved `fire_profile.growthRate` could not be changed before.
+  Every profile saved the typed 0.07, so 0.07 is read as "never chosen" and
+  shows today's default. The choice made on the free result carries into the
+  dashboard at sign-up.
+**Why:** The return moves the date more than any other assumption (20.7 years
+at 7%, 24.2 at 5% for one example). A bare "7%, or 5% if cautious" invites
+"why not 4? why not 3?". History answers that, and shows why recent decades
+(8–11%) are the optimistic choice.
+**Data:** `scripts/build-sp500-history.mjs` generates `lib/sp500-history.ts`.
+- Sources: Robert Shiller's monthly S&P 500 data (the github.com/datasets
+  republication) and BLS CPI-U. BLS replaces Shiller's CPI wherever it has a
+  month, since his latest months are estimates.
+- Dividends after June 2023 are held at the last reported level, which errs
+  cautious.
+- The script refuses to write if the settled CPI months disagree, or if the
+  since-1928 figure leaves the 9.5–10.8% range published series agree on.
+- Damodaran's NYU table, the usual citation, was unreachable from the build
+  environment. Rebuild from it when available.
+**Alternatives:** Making 5% the default was left for the founder. It would move
+every existing date later by years.
+**Guardrails:** `test:fire-number` checks the default equals the since-1928
+figure, the ordering (a higher rate is never beaten more often), and the
+wiring. `test:fire-projection` checks the engine's default.
+**Revisit:** yearly, when a new full year of data exists. If most people take
+5%, consider making it the default.
+**Source:** `lib/sp500-history.ts`, `lib/fire-number.ts`,
+`app/components/GrowthChoicePicker.tsx`, `app/components/RevealFlow.tsx`.
 
 ## How to add or supersede a decision
 

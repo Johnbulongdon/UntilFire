@@ -7,6 +7,7 @@ import PercentileTrack from "@/app/components/PercentileTrack";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
 import type { NetWorthComparison } from "@/lib/net-worth-compare";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
+import { DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT } from "@/lib/fire-number";
 
 // Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
 const ExpatFireGlobe = dynamic(() => import("@/app/components/ExpatFireGlobe"), {
@@ -25,6 +26,13 @@ export interface RevealFlowProps {
   yearsToFire: number | null;
   planningAge: number;
   ageWasAssumed: boolean;
+  /** Growth after inflation the result uses, in percent (D-24). */
+  returnPct: number;
+  onReturnChange: (pct: number) => void;
+  /** The history behind the growth, opened from the freedom-age step. */
+  growthPicker?: React.ReactNode;
+  /** The freedom number as an account would show it in the freedom year. */
+  futureDollars?: { year: number; amount: number; inflationPct: number } | null;
   isAlreadyFire: boolean;
   fireTarget: number;
   /** 0–100, how much of the target is already invested. */
@@ -58,6 +66,7 @@ const BG = "var(--uf-ground)";
 // bright teal "free years" — --uf-green is too close in hue to teal at this
 // lightness and the two read as one colour in the dot grid.
 const WORKING = "var(--uf-ink-3)";
+const linkButton: React.CSSProperties = { background: "none", border: "none", padding: 0, color: "var(--uf-green)", font: "700 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 };
 // Mirrors --uf-teal in .dark — needed for translucent glows/tints, which
 // rgba() can't derive from a CSS var.
 const TEAL_RGB = "53,201,174";
@@ -133,7 +142,7 @@ function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, f
 
 export default function RevealFlow(props: RevealFlowProps) {
   const {
-    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, isAlreadyFire,
+    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, onReturnChange, growthPicker, futureDollars, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
     expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, onAdjust, onShare, onStepViewed,
@@ -144,6 +153,8 @@ export default function RevealFlow(props: RevealFlowProps) {
   const [playMotion, setPlayMotion] = useState(true);
   const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
+  const [showGrowth, setShowGrowth] = useState(false);
+  const [showFuture, setShowFuture] = useState(false);
 
   const replay = () => { setPlayMotion(true); setStep(1); };
   const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
@@ -287,6 +298,30 @@ export default function RevealFlow(props: RevealFlowProps) {
                   Most people wait until 65. You don&apos;t have to.
                 </div>
               )}
+              {!isAlreadyFire && (
+                <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", position: "relative", maxWidth: 440, ...anim("rf-up .7s 1.8s ease both") }}>
+                  {returnPct === DEFAULT_RETURN_PCT
+                    ? <>Assumes {returnPct}% growth a year after inflation, the S&amp;P 500&apos;s average since 1928. </>
+                    : returnPct === RECOMMENDED_RETURN_PCT
+                      ? <>Using a cautious {returnPct}% growth a year after inflation, as we recommend. </>
+                      : <>Using {returnPct}% growth a year after inflation. </>}
+                  <button
+                    onClick={() => onReturnChange(returnPct === RECOMMENDED_RETURN_PCT ? DEFAULT_RETURN_PCT : RECOMMENDED_RETURN_PCT)}
+                    style={linkButton}
+                  >
+                    {returnPct === RECOMMENDED_RETURN_PCT ? `See it at ${DEFAULT_RETURN_PCT}%` : `See it at a cautious ${RECOMMENDED_RETURN_PCT}%`}
+                  </button>
+                  {growthPicker && (
+                    <>
+                      {" · "}
+                      <button onClick={() => setShowGrowth((v) => !v)} aria-expanded={showGrowth} style={linkButton}>
+                        {showGrowth ? "Hide the history" : "Where does this come from?"}
+                      </button>
+                      {showGrowth && <div style={{ marginTop: 12, textAlign: "left" }}>{growthPicker}</div>}
+                    </>
+                  )}
+                </div>
+              )}
               {ageWasAssumed && !isAlreadyFire && (
                 <button onClick={onAdjust} style={{ marginTop: 2, background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
                   Based on an assumed age of {planningAge} — add yours for a sharper date →
@@ -332,10 +367,34 @@ export default function RevealFlow(props: RevealFlowProps) {
                   <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring 1.7s .2s cubic-bezier(.2,.8,.2,1) both" }} />
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>{numText}</div>
-                  <div style={{ fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 600 }}>invested</div>
+                  <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>
+                    {showFuture && futureDollars ? formatCompact(futureDollars.amount) : numText}
+                  </div>
+                  <div style={{ fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 600 }}>
+                    {showFuture && futureDollars ? `invested, in ${futureDollars.year} dollars` : "invested, in today's dollars"}
+                  </div>
                 </div>
               </div>
+              {futureDollars && (
+                <div style={{ display: "grid", gap: 8, justifyItems: "center", maxWidth: 440 }}>
+                  <div role="radiogroup" aria-label="Show amounts in" style={{ display: "inline-flex", gap: 2, padding: 3, borderRadius: 999, background: "var(--uf-surface-2)" }}>
+                    {([["today", "Today's dollars"], ["future", `${futureDollars.year} dollars`]] as const).map(([v, label]) => {
+                      const on = (v === "future") === showFuture;
+                      return (
+                        <button key={v} role="radio" aria-checked={on} onClick={() => setShowFuture(v === "future")}
+                          style={{ font: "700 12px Manrope, sans-serif", padding: "6px 12px", borderRadius: 999, border: "1px solid transparent", cursor: "pointer", background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: on ? "var(--uf-e1)" : "none" }}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+                    {showFuture
+                      ? <>Roughly what your account would show in {futureDollars.year}, with prices rising about {futureDollars.inflationPct.toFixed(1)}% a year. It buys what {formatCompact(fireTarget)} buys today: same date, same freedom.</>
+                      : <>In today&apos;s dollars, so you can compare it with what things cost now. Your account will show a bigger number by then, because prices rise too.</>}
+                  </div>
+                </div>
+              )}
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--uf-ink)" }}>
                 {pctThere > 0
                   ? <>You&apos;re already <b style={{ color: TEAL }}>{Math.round(pctThere)}%</b> of the way there</>
