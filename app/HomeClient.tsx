@@ -10,7 +10,7 @@ import { CITY_COORDS } from "@/lib/city-coords";
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
 import { calcFIRE, calcTakeHome } from "@/lib/fire";
-import { DEFAULT_RETURN_PCT } from "@/lib/fire-number";
+import { DEFAULT_RETURN_PCT, inflationFor } from "@/lib/fire-number";
 import GrowthChoicePicker from "@/app/components/GrowthChoicePicker";
 import {
   trackLandingViewed,
@@ -1072,6 +1072,11 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         returnPct={returnPct}
         onReturnChange={setReturnPct}
         growthPicker={<GrowthChoicePicker value={returnPct} onChange={setReturnPct} />}
+        futureDollars={result.years && result.years > 0 && result.retireYear !== null ? {
+          year: result.retireYear,
+          inflationPct: inflationFor(returnPct),
+          amount: result.fireTarget * Math.pow(1 + inflationFor(returnPct) / 100, result.years),
+        } : null}
         planningAge={planningAge}
         ageWasAssumed={ageWasAssumed}
         isAlreadyFire={isAlreadyFire}

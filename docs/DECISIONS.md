@@ -734,14 +734,27 @@ history, not a number to take on trust. Each choice shows the return before and
 after inflation, and how often every 30-year stretch since 1928 did at least as
 well. Figures are through 2025, with dividends reinvested:
 
-| Choice | Before inflation | After | 30-year stretches that did as well |
-|---|---|---|---|
-| Last 10 years | 14.7% | 11.1% | 0% |
-| Last 20 years | 10.9% | 8.1% | 26% |
-| Last 50 years | 12.0% | 8.1% | 26% |
-| Since 1928 (default) | 10.2% | 6.9% | 62% |
-| Cautious (recommended) | — | 5.0% | 86% |
-| Worst 30 years (1965–1994) | — | 4.3% | 100% |
+| Choice | Why this start | Before inflation | After | 30-year stretches that did as well |
+|---|---|---|---|---|
+| Since 1928 (default) | The full record | 10.2% | 6.9% | 62% |
+| Since 1946 | After World War II | 11.2% | 7.3% | 51% |
+| Since 1972 | After the gold standard ended | 11.1% | 7.0% | 59% |
+| Since 1982 | The long bull market as inflation fell | 12.1% | 9.0% | 10% |
+| Since 2000 | Starting at the dot-com peak | 8.1% | 5.4% | 80% |
+| Since 2009 | Starting just after the 2008 crash | 15.0% | 12.1% | 0% |
+| Cautious (recommended) | A margin below the average | ≈8.2% | 5.0% | 86% |
+| Worst 30 years (1965–1994) | High inflation ate the gains | 9.9% | 4.3% | 100% |
+
+Start years are events with a reason, chosen with the founder instead of
+rolling "last 10/20/50 years". The start changes the answer: from the 2000 peak
+it is 5.4%, from just after the 2008 crash 12.1%. Every long, neutral start
+(1928, 1946, 1957, 1972) lands between 6.7% and 7.3%.
+
+The picker switches between before inflation (what an account statement shows)
+and after inflation (what the date uses), and explains the gap. The free
+result's freedom number switches between today's dollars and the freedom
+year's dollars. Its inflation is the chosen stretch's, or the long-run 3.0%.
+It says the date does not change: only the size of the number does.
 
 The default is the measured since-1928 figure, now the engine's `REAL_RETURN`
 (6.9%, where D-07's typed 7% came from). Default dates move one to three months

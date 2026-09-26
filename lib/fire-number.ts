@@ -106,22 +106,48 @@ export function fireProgress(saved: number, target: number): number {
 export interface GrowthChoice {
   id: string
   label: string
+  /** Why this stretch is worth considering. */
+  why: string
   /** e.g. "1928–2025". */
   span: string
   /** After inflation: what the freedom date uses. */
   realPct: number
-  /** Before inflation, as the figure is usually quoted; null where not a period. */
-  nominalPct: number | null
+  /** Before inflation, as an account statement shows it. */
+  nominalPct: number
+  /** Inflation over the same years (the gap between the two). */
+  inflationPct: number
+  /** True where the before-inflation figure assumes the long-run inflation rather than measuring it. */
+  nominalEstimated: boolean
   /** Share of 30-year stretches since 1928 that did at least this well. */
   beatShare: number
 }
 
 const H = SP500_HISTORY
+const LONG_RUN_INFLATION = H.periods.find((p) => p.id === 'since1928')!.inflationPct
+const withInflation = (realPct: number, inflationPct: number) =>
+  Math.round(((1 + realPct / 100) * (1 + inflationPct / 100) - 1) * 1000) / 10
+
 export const GROWTH_CHOICES: GrowthChoice[] = [
-  ...H.periods.map((p) => ({ id: p.id, label: p.label, span: `${p.from}–${p.to}`, realPct: p.realPct, nominalPct: p.nominalPct, beatShare: p.beatShare })),
-  { id: 'cautious', label: 'Cautious', span: 'A margin below the average', realPct: H.cautious.realPct, nominalPct: null, beatShare: H.cautious.beatShare },
-  { id: 'worst30', label: 'Worst 30 years on record', span: `${H.worst.from}–${H.worst.to}`, realPct: H.worst.realPct, nominalPct: null, beatShare: H.worst.beatShare },
+  ...H.periods.map((p) => ({
+    id: p.id, label: p.label, why: p.why, span: `${p.from}–${p.to}`,
+    realPct: p.realPct, nominalPct: p.nominalPct, inflationPct: p.inflationPct, nominalEstimated: false, beatShare: p.beatShare,
+  })),
+  {
+    id: 'cautious', label: 'Cautious', why: 'A margin below the long-run average, for a plan that holds in an ordinary 30 years.',
+    span: 'Our recommendation', realPct: H.cautious.realPct, nominalPct: withInflation(H.cautious.realPct, LONG_RUN_INFLATION),
+    inflationPct: LONG_RUN_INFLATION, nominalEstimated: true, beatShare: H.cautious.beatShare,
+  },
+  {
+    id: 'worst30', label: 'Worst 30 years on record', why: 'Fine on paper, but high inflation ate most of it.',
+    span: `${H.worst.from}–${H.worst.to}`, realPct: H.worst.realPct, nominalPct: H.worst.nominalPct,
+    inflationPct: H.worst.inflationPct, nominalEstimated: false, beatShare: H.worst.beatShare,
+  },
 ]
+
+/** Inflation to assume alongside a growth rate: the matching stretch's, else the long-run average. */
+export function inflationFor(realPct: number): number {
+  return GROWTH_CHOICES.find((c) => c.realPct === realPct)?.inflationPct ?? LONG_RUN_INFLATION
+}
 
 /** The S&P 500 since 1928 after inflation: the engine's REAL_RETURN, as a percentage. */
 export const DEFAULT_RETURN_PCT = H.periods.find((p) => p.id === 'since1928')!.realPct

@@ -31,6 +31,8 @@ export interface RevealFlowProps {
   onReturnChange: (pct: number) => void;
   /** The history behind the growth, opened from the freedom-age step. */
   growthPicker?: React.ReactNode;
+  /** The freedom number as an account would show it in the freedom year. */
+  futureDollars?: { year: number; amount: number; inflationPct: number } | null;
   isAlreadyFire: boolean;
   fireTarget: number;
   /** 0–100, how much of the target is already invested. */
@@ -140,7 +142,7 @@ function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, f
 
 export default function RevealFlow(props: RevealFlowProps) {
   const {
-    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, onReturnChange, growthPicker, isAlreadyFire,
+    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, onReturnChange, growthPicker, futureDollars, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
     expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, onAdjust, onShare, onStepViewed,
@@ -152,6 +154,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
   const [showGrowth, setShowGrowth] = useState(false);
+  const [showFuture, setShowFuture] = useState(false);
 
   const replay = () => { setPlayMotion(true); setStep(1); };
   const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
@@ -364,10 +367,34 @@ export default function RevealFlow(props: RevealFlowProps) {
                   <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring 1.7s .2s cubic-bezier(.2,.8,.2,1) both" }} />
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>{numText}</div>
-                  <div style={{ fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 600 }}>invested</div>
+                  <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>
+                    {showFuture && futureDollars ? formatCompact(futureDollars.amount) : numText}
+                  </div>
+                  <div style={{ fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 600 }}>
+                    {showFuture && futureDollars ? `invested, in ${futureDollars.year} dollars` : "invested, in today's dollars"}
+                  </div>
                 </div>
               </div>
+              {futureDollars && (
+                <div style={{ display: "grid", gap: 8, justifyItems: "center", maxWidth: 440 }}>
+                  <div role="radiogroup" aria-label="Show amounts in" style={{ display: "inline-flex", gap: 2, padding: 3, borderRadius: 999, background: "var(--uf-surface-2)" }}>
+                    {([["today", "Today's dollars"], ["future", `${futureDollars.year} dollars`]] as const).map(([v, label]) => {
+                      const on = (v === "future") === showFuture;
+                      return (
+                        <button key={v} role="radio" aria-checked={on} onClick={() => setShowFuture(v === "future")}
+                          style={{ font: "700 12px Manrope, sans-serif", padding: "6px 12px", borderRadius: 999, border: "1px solid transparent", cursor: "pointer", background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: on ? "var(--uf-e1)" : "none" }}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+                    {showFuture
+                      ? <>Roughly what your account would show in {futureDollars.year}, with prices rising about {futureDollars.inflationPct.toFixed(1)}% a year. It buys what {formatCompact(fireTarget)} buys today: same date, same freedom.</>
+                      : <>In today&apos;s dollars, so you can compare it with what things cost now. Your account will show a bigger number by then, because prices rise too.</>}
+                  </div>
+                </div>
+              )}
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--uf-ink)" }}>
                 {pctThere > 0
                   ? <>You&apos;re already <b style={{ color: TEAL }}>{Math.round(pctThere)}%</b> of the way there</>

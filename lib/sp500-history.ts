@@ -6,12 +6,16 @@
 export interface Sp500Period {
   id: string
   label: string
+  /** Why this start year is used. */
+  why: string
   from: number
   to: number
   /** Average yearly return, compounded, before inflation. */
   nominalPct: number
   /** The same after inflation: what the freedom date uses. */
   realPct: number
+  /** Average inflation over the same years. */
+  inflationPct: number
   /** Share of all 30-year stretches since 1928 that did at least this well. */
   beatShare: number
 }
@@ -22,40 +26,70 @@ export const SP500_HISTORY = {
   "windows": 69,
   "periods": [
     {
-      "id": "last10",
-      "label": "Last 10 years",
-      "from": 2016,
-      "to": 2025,
-      "nominalPct": 14.7,
-      "realPct": 11.1,
-      "beatShare": 0
-    },
-    {
-      "id": "last20",
-      "label": "Last 20 years",
-      "from": 2006,
-      "to": 2025,
-      "nominalPct": 10.9,
-      "realPct": 8.1,
-      "beatShare": 26
-    },
-    {
-      "id": "last50",
-      "label": "Last 50 years",
-      "from": 1976,
-      "to": 2025,
-      "nominalPct": 12,
-      "realPct": 8.1,
-      "beatShare": 26
-    },
-    {
       "id": "since1928",
       "label": "Since 1928",
+      "why": "The full record, through the Depression, wars, inflation and crashes.",
       "from": 1928,
       "to": 2025,
       "nominalPct": 10.2,
       "realPct": 6.9,
+      "inflationPct": 3,
       "beatShare": 62
+    },
+    {
+      "id": "since1946",
+      "label": "Since 1946",
+      "why": "After World War II, when today’s global financial system began.",
+      "from": 1946,
+      "to": 2025,
+      "nominalPct": 11.2,
+      "realPct": 7.3,
+      "inflationPct": 3.7,
+      "beatShare": 51
+    },
+    {
+      "id": "since1972",
+      "label": "Since 1972",
+      "why": "After the US left the gold standard in 1971: today’s kind of money.",
+      "from": 1972,
+      "to": 2025,
+      "nominalPct": 11.1,
+      "realPct": 7,
+      "inflationPct": 3.9,
+      "beatShare": 59
+    },
+    {
+      "id": "since1982",
+      "label": "Since 1982",
+      "why": "The long bull market as inflation fell. An unusually good stretch.",
+      "from": 1982,
+      "to": 2025,
+      "nominalPct": 12.1,
+      "realPct": 9,
+      "inflationPct": 2.9,
+      "beatShare": 10
+    },
+    {
+      "id": "since2000",
+      "label": "Since 2000",
+      "why": "Starting at the dot-com peak, through two crashes. Bad timing.",
+      "from": 2000,
+      "to": 2025,
+      "nominalPct": 8.1,
+      "realPct": 5.4,
+      "inflationPct": 2.6,
+      "beatShare": 80
+    },
+    {
+      "id": "since2009",
+      "label": "Since 2009",
+      "why": "Starting just after the 2008 crash. Lucky timing.",
+      "from": 2009,
+      "to": 2025,
+      "nominalPct": 15,
+      "realPct": 12.1,
+      "inflationPct": 2.6,
+      "beatShare": 0
     }
   ],
   "cautious": {
@@ -66,6 +100,8 @@ export const SP500_HISTORY = {
     "from": 1965,
     "to": 1994,
     "realPct": 4.3,
+    "nominalPct": 9.9,
+    "inflationPct": 5.4,
     "beatShare": 100
   },
   "dividendsEstimatedAfter": "2023-06",

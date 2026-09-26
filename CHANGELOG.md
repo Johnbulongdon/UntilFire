@@ -5,11 +5,18 @@ All notable changes to UntilFire are documented here.
 ## [Unreleased] - 2026-09-26
 
 ### Growth after inflation, chosen from S&P 500 history
-- Growth is now a choice among stretches of S&P 500 history: the last 10, 20
-  or 50 years, since 1928, a cautious 5%, or the worst 30 years on record. Each
-  shows its return before and after inflation, and how often every 30-year
-  stretch since 1928 did as well. Generated from Shiller's data and BLS
-  inflation by `scripts/build-sp500-history.mjs`.
+- Growth is now a choice among stretches of S&P 500 history, each starting at
+  an event that explains it: since 1928 (the full record), 1946 (after World War
+  II), 1972 (after the gold standard), 1982 (the long bull market), 2000 (the
+  dot-com peak) and 2009 (after the 2008 crash). There is also a cautious 5%,
+  and the worst 30 years on record. Each shows its return, why its start
+  matters, and how often every 30-year stretch since 1928 did as well.
+  Generated from Shiller's data and BLS inflation by
+  `scripts/build-sp500-history.mjs`.
+- The picker switches between before inflation (what an account statement
+  shows) and after inflation, and explains the difference. The free result's
+  freedom number switches between today's dollars and the freedom year's
+  dollars, and says the date stays the same.
 - The default is the measured since-1928 figure, 6.9% after inflation (it was
   typed as 7%), so default dates move one to three months later. We recommend 5%.
 - The free result says what it assumes and where that comes from, switches to
