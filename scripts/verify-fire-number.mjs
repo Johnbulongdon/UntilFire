@@ -93,6 +93,10 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   check('the result switches between today\'s and future dollars and says the date is the same', flow2.includes('futureDollars') && flow2.includes('Same buying power, same date') && read('app/HomeClient.tsx').includes('Math.pow(1 + inflationFor(returnPct) / 100, result.years)'));
   const at7 = calcFIRE(2000, 50000, 30, 50000, 0.07).years, at5 = calcFIRE(2000, 50000, 30, 50000, 0.05).years;
   check('the cautious rate gives a later date (20.7 → 24.2 years at 7% and 5%)', at5 > at7 && Math.abs(at7 - 20.7) < 0.05 && Math.abs(at5 - 24.2) < 0.05, `${at7} ${at5}`);
+  // The savings rate page's search title quotes years to FIRE; keep them true.
+  const srMeta = read('app/calculators/savings-rate/page.tsx');
+  const yearsAt = (rate) => Math.round(yearsToTarget(0, rate, 25 * (1 - rate)));
+  check('savings rate title: 50% is 15 years, 10% is 42', yearsAt(0.5) === 15 && yearsAt(0.1) === 42 && srMeta.includes('Save 50%, Retire in 15 Years') && srMeta.includes('Save 10% and FIRE takes about 42 years'), `${yearsAt(0.5)} ${yearsAt(0.1)}`);
   const home = read('app/HomeClient.tsx');
   check('free result: growth is state, and every projection uses it', home.includes('useState<number>(DEFAULT_RETURN_PCT)') && home.includes('const marketReturn = returnPct / 100;') && !home.includes('const marketReturn = REAL_RETURN'));
   check('free result: the choice carries into the dashboard', home.includes('realReturn: marketReturn') && read('app/dashboard/page.tsx').includes('prefill.realReturn'));

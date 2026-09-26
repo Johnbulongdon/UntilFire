@@ -98,8 +98,20 @@ const CITY_PAGE_SEEDS: CityLandingSeed[] = [
   },
 ]
 
+/** "Dubai, UAE" → "Dubai": the country adds length a title cannot spare. */
+function shortName(name: string) {
+  return name.split(',')[0]
+}
+
 function usd(amount: number) {
   return `$${Math.round(amount).toLocaleString()}`
+}
+
+/** $1.8M, $800K: the size a search result can show at a glance. */
+function usdCompact(amount: number) {
+  return amount >= 1_000_000
+    ? `$${(amount / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+    : `$${Math.round(amount / 1_000)}K`
 }
 
 export const cityLandingPages = CITY_PAGE_SEEDS.map((seed) => {
@@ -121,8 +133,13 @@ export const cityLandingPages = CITY_PAGE_SEEDS.map((seed) => {
     monthlyCost,
     fireTarget,
     comparedToUsAverage,
-    title: seed.searchTitle ?? `${seed.keyword} Calculator and Planning Guide | UntilFire`,
-    description: seed.searchDescription ?? `Estimate a realistic FIRE number for ${city.name} using city-specific cost of living, taxes, and retirement math. See spending, target portfolio, and the next calculator to use.`,
+    // Lead with the answer. These pages rank on page one (London 6.2,
+    // Singapore 6.7, Dubai 8.3) with almost no clicks under a title shaped
+    // like every competing result; the number is what the searcher asked for.
+    // The figures are US dollars, so the title says so rather than guessing a
+    // local-currency amount.
+    title: seed.searchTitle ?? `${shortName(city.name)} FIRE Number: ${usdCompact(fireTarget)} (USD) Estimate | UntilFire`,
+    description: seed.searchDescription ?? `${usdCompact(fireTarget)} is UntilFire's ${shortName(city.name)} baseline: 25× about ${usd(city.col)} a year of spending, in US dollars. Change the spending and see your own timeline.`,
     canonicalUrl: `https://www.untilfire.com/fire-number/${seed.slug}`,
     heroTitle: `What is a realistic FIRE number in ${city.name}?`,
     intro:

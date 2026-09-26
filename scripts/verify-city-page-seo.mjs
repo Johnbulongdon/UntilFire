@@ -56,6 +56,11 @@ assert.match(
   'Austin search metadata should lead with the estimated answer',
 )
 assert.match(
+  curatedCitySource,
+  /title: seed\.searchTitle \?\? `\$\{shortName\(city\.name\)\} FIRE Number: \$\{usdCompact\(fireTarget\)\} \(USD\) Estimate \| UntilFire`/,
+  'curated city pages without their own title should lead with the FIRE number, marked as USD',
+)
+assert.match(
   austinSeed,
   /currencyCode: 'USD'/,
   'Austin should identify the currency used for its planning estimates',
