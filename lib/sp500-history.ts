@@ -28,7 +28,7 @@ export const SP500_HISTORY = {
     {
       "id": "since1928",
       "label": "Since 1928",
-      "why": "The full record, through the Depression, wars, inflation and crashes.",
+      "why": "The full record: Depression, wars, crashes.",
       "from": 1928,
       "to": 2025,
       "nominalPct": 10.2,
@@ -39,7 +39,7 @@ export const SP500_HISTORY = {
     {
       "id": "since1946",
       "label": "Since 1946",
-      "why": "After World War II, when today’s global financial system began.",
+      "why": "After World War II: modern markets.",
       "from": 1946,
       "to": 2025,
       "nominalPct": 11.2,
@@ -50,7 +50,7 @@ export const SP500_HISTORY = {
     {
       "id": "since1972",
       "label": "Since 1972",
-      "why": "After the US left the gold standard in 1971: today’s kind of money.",
+      "why": "After the gold standard ended.",
       "from": 1972,
       "to": 2025,
       "nominalPct": 11.1,
@@ -61,7 +61,7 @@ export const SP500_HISTORY = {
     {
       "id": "since1982",
       "label": "Since 1982",
-      "why": "The long bull market as inflation fell. An unusually good stretch.",
+      "why": "The long bull market. Unusually good.",
       "from": 1982,
       "to": 2025,
       "nominalPct": 12.1,
@@ -72,7 +72,7 @@ export const SP500_HISTORY = {
     {
       "id": "since2000",
       "label": "Since 2000",
-      "why": "Starting at the dot-com peak, through two crashes. Bad timing.",
+      "why": "From the dot-com peak. Bad timing.",
       "from": 2000,
       "to": 2025,
       "nominalPct": 8.1,
@@ -83,7 +83,7 @@ export const SP500_HISTORY = {
     {
       "id": "since2009",
       "label": "Since 2009",
-      "why": "Starting just after the 2008 crash. Lucky timing.",
+      "why": "From the 2008 crash. Lucky timing.",
       "from": 2009,
       "to": 2025,
       "nominalPct": 15,

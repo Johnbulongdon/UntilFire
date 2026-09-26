@@ -1070,7 +1070,6 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         freedomYear={result.retireYear}
         yearsToFire={yearsToFire}
         returnPct={returnPct}
-        onReturnChange={setReturnPct}
         growthPicker={<GrowthChoicePicker value={returnPct} onChange={setReturnPct} />}
         futureDollars={result.years && result.years > 0 && result.retireYear !== null ? {
           year: result.retireYear,

@@ -4,6 +4,21 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
+### Fewer words on the free result
+- The growth list is now one line per choice: its name, a five-dot meter for
+  how often history did as well, and the rate. Only the selected row shows its
+  reason and details. It went from 248 words to 44.
+- The result's growth line reads "6.9% growth a year after inflation, as we
+  recommend. Change", and "Change" opens the list. The two links it replaces
+  are gone.
+- The freedom number shows its future-dollars explanation only when you switch
+  to future dollars, in one shorter line. The stack-up step keeps its bars and
+  shows "4.8× the average saver"; its sources sit behind a "Sources" tap. The
+  expat step says "Tap a city to compare."
+- Words per step at phone size, counting the 6-word header: freedom age about
+  58 to 41, freedom number 62 to 35, stack-up 130 to 52, expat 66 to 50.
+  Design-system rule 7 records the limit for doing screens.
+
 ### Plan shows the freedom date its assumptions move
 - Plan's Freedom Date tab now shows the freedom date at the top, and says how
   far the growth choice moved it from the default. The same date appears

@@ -125,6 +125,15 @@ import { Button, Card, Field, Input, Badge, Stat } from "@/components/ui";
 5. **Teal is not a button.** See the one rule.
 6. **Both themes, always.** Use tokens, then verify light and dark rendering;
    tokens alone do not guarantee contrast, hierarchy, or correct states.
+7. **Doing screens stay short.** On screens where people act (the free
+   calculator and result, calculator tools, Home and Plan), write a headline of
+   8 words or fewer and at most one supporting line, then a number, visual or
+   button. Use a label rather than a sentence. Put explanations and sources
+   behind a tap ("Change", "Sources", a selected row's detail). Show with a
+   number, bar or dots what would otherwise be a sentence. Reading pages
+   (articles, city guides, the text below a calculator) may run long for search.
+   The founder set this on 2026-09-26 after comparing the site with Duolingo
+   and Liftoff. Before, result steps ran 38–130 words and the growth list 248.
 
 ## Interaction and verification
 

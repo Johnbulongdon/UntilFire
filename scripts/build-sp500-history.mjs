@@ -94,12 +94,12 @@ const period = (id, label, from, why) => {
   return { id, label, why, from, to: END, nominalPct: pct(n), realPct: pct(r), inflationPct: pct(inflation(n, r)), beatShare: beatShare(pct(r)) };
 };
 const periods = [
-  period('since1928', 'Since 1928', 1928, 'The full record, through the Depression, wars, inflation and crashes.'),
-  period('since1946', 'Since 1946', 1946, 'After World War II, when today’s global financial system began.'),
-  period('since1972', 'Since 1972', 1972, 'After the US left the gold standard in 1971: today’s kind of money.'),
-  period('since1982', 'Since 1982', 1982, 'The long bull market as inflation fell. An unusually good stretch.'),
-  period('since2000', 'Since 2000', 2000, 'Starting at the dot-com peak, through two crashes. Bad timing.'),
-  period('since2009', 'Since 2009', 2009, 'Starting just after the 2008 crash. Lucky timing.'),
+  period('since1928', 'Since 1928', 1928, 'The full record: Depression, wars, crashes.'),
+  period('since1946', 'Since 1946', 1946, 'After World War II: modern markets.'),
+  period('since1972', 'Since 1972', 1972, 'After the gold standard ended.'),
+  period('since1982', 'Since 1982', 1982, 'The long bull market. Unusually good.'),
+  period('since2000', 'Since 2000', 2000, 'From the dot-com peak. Bad timing.'),
+  period('since2009', 'Since 2009', 2009, 'From the 2008 crash. Lucky timing.'),
 ];
 const since1928 = periods.find((p) => p.id === 'since1928');
 if (since1928.nominalPct < 9.5 || since1928.nominalPct > 10.8) throw new Error(`Since-1928 return ${since1928.nominalPct}% is outside 9.5–10.8%`);
