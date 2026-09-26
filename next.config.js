@@ -33,6 +33,14 @@ const nextConfig = {
         destination: '/learn/barista-fire',
         permanent: true,
       },
+      {
+        // Austin's curated guide uses the state-qualified route. Keep the
+        // shorter legacy route as a single permanent hop so both URLs do not
+        // compete for the same city intent.
+        source: '/fire-number/austin',
+        destination: '/fire-number/austin-tx',
+        permanent: true,
+      },
       // These states had no display name (Hawaii's was filed under the wrong
       // code), so their state pages were published at their state codes.
       {
