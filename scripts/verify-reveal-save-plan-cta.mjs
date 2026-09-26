@@ -7,6 +7,15 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 const require = createRequire(import.meta.url);
+// The reveal's own lib imports, loaded from source rather than stubbed.
+const loadTs = (path, deps = {}) => {
+  const mod = { exports: {} };
+  vm.runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText, { exports: mod.exports, module: mod, require: (id) => deps[id] ?? require(id) });
+  return mod.exports;
+};
+const fireNumber = loadTs('lib/fire-number.ts', { './sp500-history.ts': loadTs('lib/sp500-history.ts') });
 // Exercise the real final-step component/callback without the video or animation.
 const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.tsx', 'utf8'), {
@@ -16,11 +25,11 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
   require: (id) => id === 'react' ? {
     ...React, useEffect: () => {}, useMemo: (fn) => fn(), useRef: (value) => ({ current: value }),
     useState: (value) => [value === 1 ? 7 : typeof value === 'function' ? value() : value, () => {}],
-  } : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : require(id),
+  } : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/lib/fire-number' ? fireNumber : require(id),
 });
 const props = {
   freedomAge: 52, freedomYear: 2048, yearsToFire: 22, planningAge: 30,
-  ageWasAssumed: false, isAlreadyFire: false, fireTarget: 1200000, pctThere: 0,
+  ageWasAssumed: false, returnPct: fireNumber.DEFAULT_RETURN_PCT, onReturnChange: () => {}, isAlreadyFire: false, fireTarget: 1200000, pctThere: 0,
   savingsRatePct: 20, usBaselineRate: 5, fireBenchmarkRate: 25,
   expatHome: { name: 'Austin', lat: 30, lng: -97 }, expatBaseAge: 52, expatCities: [],
   formatCompact: (n) => `$${n}`, onAdjust: () => {}, onShare: () => {},
@@ -77,7 +86,7 @@ for (const retireYear of [2048, null]) {
     exports: {}, Math, Date, takeHome: 60000, savings: 1000,
     city: { name: 'Austin', col: 48000 }, stateKey: 'TX',
     result: { fireTarget: 1200000, retireYear }, planningAge: 30,
-    portfolioBalance: 25000, landingSource: 'beta', currency: 'USD',
+    portfolioBalance: 25000, landingSource: 'beta', currency: 'USD', marketReturn: 0.05,
     saveCalculatorPrefill: (value) => { saved = JSON.parse(JSON.stringify(value)); },
     router: { push: (path) => { destination = path; } },
   };
@@ -91,6 +100,7 @@ for (const retireYear of [2048, null]) {
   assert.equal(saved.monthlySpendEstimate, 4000);
   assert.equal(saved.portfolioBalance, 25000);
   assert.equal(saved.retireYear, retireYear ?? undefined);
+  assert.equal(saved.realReturn, 0.05, 'the growth the result was shown at carries into the dashboard');
   assert.equal(destination, '/login');
 }
 console.log('Starting-point handoff preserves entered finances and omits unreached dates.');

@@ -14,7 +14,7 @@ const F = "'Manrope', sans-serif";
 const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
 const MONO = "'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 
-/* The calculator's own projection (lib/fire): 7% real growth, 25x annual spending. */
+/* The calculator's own projection (lib/fire): REAL_RETURN growth, 25x annual spending. */
 function monthsToTarget(startBalance: number, monthlySave: number, target: number): number {
   const years = yearsToTarget(startBalance, monthlySave * 12, target, REAL_RETURN, 100);
   return years === null ? 1200 : Math.ceil(years * 12);

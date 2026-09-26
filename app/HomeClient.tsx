@@ -9,7 +9,9 @@ import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
-import { calcFIRE, calcTakeHome, REAL_RETURN } from "@/lib/fire";
+import { calcFIRE, calcTakeHome } from "@/lib/fire";
+import { DEFAULT_RETURN_PCT, inflationFor } from "@/lib/fire-number";
+import GrowthChoicePicker from "@/app/components/GrowthChoicePicker";
 import {
   trackLandingViewed,
   trackCalculatorStepViewed,
@@ -978,7 +980,10 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const router = useRouter();
   const planningAge = currentAge ?? 30;
   const ageWasAssumed = currentAge == null;
-  const marketReturn = REAL_RETURN;
+  // Growth after inflation: 7% by default (D-07), with a one-tap switch to
+  // the cautious 5% we recommend (D-24). Every figure on the result follows it.
+  const [returnPct, setReturnPct] = useState<number>(DEFAULT_RETURN_PCT);
+  const marketReturn = returnPct / 100;
 
   const result = calcFIRE(savings, city.col, planningAge, portfolioBalance, marketReturn);
   const takeHome = income;
@@ -994,7 +999,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const isAlreadyFire = result.years === 0;
   const yearsToFire = result.years === null ? null : Math.round(result.years);
-  const freedomAge = yearsToFire === null ? null : planningAge + yearsToFire;
+  // The age in the freedom year, rounded like the year itself (lib/fire).
+  const freedomAge = result.years === null ? null : planningAge + Math.floor(result.years);
   const pctThere = result.fireTarget > 0
     ? Math.max(0, Math.min(100, Math.round((portfolioBalance / result.fireTarget) * 100)))
     : 0;
@@ -1026,7 +1032,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
       if (!c || !co || c.col >= city.col || freedomAge === null) return null;
       const projection = calcFIRE(savings, c.col, planningAge, portfolioBalance, marketReturn);
       if (projection.years === null) return null;
-      const age = planningAge + Math.round(projection.years);
+      const age = planningAge + Math.floor(projection.years);
       return { key: k, name: c.name.split(",")[0], country: (c.name.split(", ")[1] ?? "").trim(), lat: co.lat, lng: co.lng, age, delta: freedomAge - age };
     })
     .filter((x): x is ExpatCity => x !== null && x.delta > 0)
@@ -1043,7 +1049,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const onSave = (placement: RevealCtaPlacement) => {
     trackRevealCtaClicked({ placement, landingSource });
-    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency });
+    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, realReturn: marketReturn });
     router.push("/login");
   };
 
@@ -1063,6 +1069,14 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         freedomAge={freedomAge}
         freedomYear={result.retireYear}
         yearsToFire={yearsToFire}
+        returnPct={returnPct}
+        onReturnChange={setReturnPct}
+        growthPicker={<GrowthChoicePicker value={returnPct} onChange={setReturnPct} />}
+        futureDollars={result.years && result.years > 0 && result.retireYear !== null ? {
+          year: result.retireYear,
+          inflationPct: inflationFor(returnPct),
+          amount: result.fireTarget * Math.pow(1 + inflationFor(returnPct) / 100, result.years),
+        } : null}
         planningAge={planningAge}
         ageWasAssumed={ageWasAssumed}
         isAlreadyFire={isAlreadyFire}

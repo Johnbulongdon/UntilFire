@@ -15,6 +15,8 @@ export type CalculatorPrefill = {
   portfolioBalance?: number
   landingSource?: string
   defaultCurrency?: string
+  /** Growth after inflation the result was shown at, e.g. 0.05 (D-24). */
+  realReturn?: number
 }
 
 function readPrefill(): CalculatorPrefill | null {

@@ -1,10 +1,14 @@
 import type { FireInputs, FireOutput, FireStrategy } from '../types';
+import { SP500_HISTORY } from '../../sp500-history.ts';
 
 /**
  * The one growth assumption for the whole product.
  *
- * REAL, not nominal: roughly the ~10% long-run average total return of a broad
- * equity index minus roughly 3% long-run inflation. Because it is real, every
+ * REAL, not nominal: what the S&P 500 returned a year since 1928 with
+ * dividends reinvested, after inflation (lib/sp500-history.ts, generated from
+ * Shiller's data and BLS CPI; 6.9% through 2025, from 10.2% before inflation).
+ * It was typed as 7% before it was measured (D-07); people can choose other
+ * periods of history, or a cautious 5%, where they plan (D-24). Because it is real, every
  * target derived from it (25x annual spending) stays in TODAY's dollars, which
  * is both what the FIRE convention quotes and the only version a human can
  * judge — "$1.25M" means something, "$2.24M in 2043 money" does not.
@@ -19,7 +23,7 @@ import type { FireInputs, FireOutput, FireStrategy } from '../types';
  * still comparing it against a today's-dollar target, reporting freedom dates
  * several years too early. Import it; never re-type the literal.
  */
-export const REAL_RETURN = 0.07;
+export const REAL_RETURN = SP500_HISTORY.periods.find((p) => p.id === 'since1928')!.realPct / 100;
 
 /**
  * Traditional FIRE: 25× annual expenses target (4% safe withdrawal), 7% real

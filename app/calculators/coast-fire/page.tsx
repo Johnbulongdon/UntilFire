@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { DEFAULT_RETURN_PCT } from '@/lib/fire-number'
 import Link from 'next/link'
 import CoastFireCalculator from './CoastFireCalculator'
 
@@ -140,7 +141,7 @@ export default function CoastFirePage() {
             <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
               The monthly contribution is converted to an annual amount and added at the end of
               each projected year. Pension and Social Security start dates, investment fees and
-              taxes are not modelled separately. The 7% return and 4% withdrawal defaults are
+              taxes are not modelled separately. The return (the S&amp;P 500&apos;s {DEFAULT_RETURN_PCT}% a year after inflation since 1928) and 4% withdrawal defaults are
               editable assumptions; compare lower returns and different spending before relying
               on the result. Even small{' '}
               <a href="https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins/updated" style={{ color: 'var(--uf-green)', textDecoration: 'underline' }}>
