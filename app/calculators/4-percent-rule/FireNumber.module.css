@@ -1,0 +1,70 @@
+/* The FIRE number's working: each factor's effect on its own line. */
+.breakdown {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--uf-s2) var(--uf-s4);
+  margin: 0;
+  padding-top: var(--uf-s3);
+  border-top: 1px solid var(--uf-border);
+  color: var(--uf-ink-2);
+}
+
+.breakdown dd {
+  margin: 0;
+  text-align: right;
+  color: var(--uf-ink);
+}
+
+/* The green call to action. The label uses the card colour, not white:
+   white on dark-mode green is below 4.5:1 (see docs/design/design-system.md). */
+.primaryLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--uf-s5);
+  border-radius: 999px;
+  background: var(--uf-green);
+  color: var(--uf-card);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* On a phone the results card, with its working, is most of the screen, so
+   it scrolls away rather than sticking; the bar keeps the number in view
+   while the factors are changed. On a wide screen the card sits beside the
+   factors and the bar isn't needed. */
+:global(.uf-calc-results).results {
+  position: static;
+}
+
+.miniBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--uf-s3);
+  padding: var(--uf-s3) var(--uf-s5);
+  background: var(--uf-card);
+  border-top: 1px solid var(--uf-border);
+  box-shadow: var(--uf-e1);
+}
+
+.page {
+  padding-bottom: 64px;
+}
+
+@media (min-width: 900px) {
+  :global(.uf-calc-results).results {
+    position: sticky;
+  }
+  .miniBar {
+    display: none;
+  }
+  .page {
+    padding-bottom: 0;
+  }
+}

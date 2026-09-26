@@ -691,6 +691,35 @@ new event. Compare them with views of the net worth page after 28 days.
 **Source:** `app/calculators/net-worth-by-age/ShareResult.tsx`,
 `app/calculators/net-worth-by-age/share/page.tsx`, `app/api/og/net-worth/route.tsx`.
 
+### D-23 — September 25: the FIRE number shows every factor, with a recommendation for each
+
+**Status:** Active. Authorised by the founder on 2026-09-25 ("you can autopilot
+for the calculator first, just tell me what your decisions are").
+**Decision:** The FIRE number calculator (`/calculators/4-percent-rule`, which
+already targets "FIRE number calculator") names each factor that moves the
+number — yearly spending, withdrawal rate, tax on withdrawals, other income —
+with what it means, a control, and our recommendation, one tap to take it.
+Formula: (spending − other income) ÷ (1 − tax) ÷ withdrawal rate, in today's
+dollars. It starts at the plain rule (4%, no tax, no other income), so the
+first number matches the familiar 25× and the "What does FIRE mean?" article.
+Recommendations: withdrawal rate by years to age 95 (up to 30 → 4%, the
+Trinity Study horizon; up to 45 → 3.5%; beyond → 3%; no age → 4%); tax 10% if
+savings are mostly traditional 401(k)/IRA or unknown, 0% if mostly Roth; other
+income only if reliable and starting when work stops, and Social Security left
+out when stopping before 62, because income that starts later needs the
+freedom date projection. The working shows under the number.
+**Why:** FIRE calculators disagree because each picks factors silently. Showing
+them, with a default and a recommendation, is the start of a published standard
+other sites can check against and cite (the traffic plan), and lets readers see
+what their number means.
+**Alternatives:** Defaulting to the recommendations was rejected for now: the
+first number would differ from the 25× every other source quotes. A new URL was
+rejected: the existing one already carries the "FIRE number calculator" title.
+**Guardrails:** Maths lives in `lib/fire-number.ts`, shared with the article's
+quick box. `test:fire-number` pins the worked examples published on the page.
+**Revisit:** if readers mostly take the recommendations, consider starting there.
+**Source:** `lib/fire-number.ts`, `app/calculators/4-percent-rule/`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,

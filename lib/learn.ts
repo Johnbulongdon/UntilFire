@@ -4,6 +4,7 @@ export type BodyNode =
   | { type: 'p'; text: string }
   | { type: 'ul'; items: string[] }
   | { type: 'ol'; items: string[] }
+  | { type: 'fire-number' }
 
 export type LearnArticle = {
   slug: string
@@ -12,7 +13,11 @@ export type LearnArticle = {
   category: string
   publishedAt: string
   readTime: string
+  /** Set when the article is revised; published otherwise stands. */
+  updatedAt?: string
   body: BodyNode[]
+  /** Shown at the end of the article and emitted as FAQPage schema. */
+  faqs?: { question: string; answer: string }[]
 }
 
 export type LearnStageId =
@@ -53,14 +58,18 @@ function ol(items: string[]): BodyNode { return { type: 'ol', items } }
 export const learnArticles: LearnArticle[] = [
   {
     slug: 'what-is-fire-financial-independence-retire-early',
-    title: 'What Is FIRE? Financial Independence, Retire Early Explained',
-    description: 'A complete introduction to the FIRE movement — what financial independence means, how early retirement works, and the key numbers behind it.',
+    title: 'What Does FIRE Mean? Financial Independence, Retire Early',
+    description: 'What FIRE means in personal finance, how the FIRE number works, and the key numbers behind retiring early — with a quick calculator for your own number.',
     category: 'FIRE Basics',
     publishedAt: '2026-05-01',
+    updatedAt: '2026-09-25',
     readTime: '7 min read',
     body: [
-      h2('What does FIRE stand for?'),
-      p('FIRE stands for Financial Independence, Retire Early. It is a personal finance movement built around one core idea: save and invest aggressively enough that your portfolio generates enough passive income to cover your living expenses — indefinitely. At that point, paid work becomes optional.'),
+      h2('What does FIRE mean?'),
+      p('FIRE stands for Financial Independence, Retire Early. It means saving and investing enough that your investments can pay for your living costs, so paid work becomes optional. The usual target, your FIRE number, is about 25 times what you spend in a year.'),
+      p('In personal finance, FIRE is a plan rather than a date on a calendar: some people stop working entirely, others keep working on their own terms. Either way, the goal is the same — work becomes a choice.'),
+      { type: 'fire-number' },
+      h2('Where FIRE came from'),
       p('The FIRE movement grew out of the early retirement community in the 1990s, popularised in large part by the book Your Money or Your Life by Vicki Robin and Joe Dominguez. It accelerated dramatically through the 2010s as bloggers like Mr. Money Mustache demonstrated that retiring in your 30s or 40s was achievable on ordinary incomes.'),
       h2('How does FIRE actually work?'),
       p('FIRE has a simple mechanical core. You track your annual spending, multiply it by 25, and that is your target portfolio size. The multiplier comes from the 4% safe withdrawal rule: a diversified portfolio can support annual withdrawals of 4% of its starting value — inflation-adjusted — over a 30-year retirement without running out.'),
@@ -86,6 +95,12 @@ export const learnArticles: LearnArticle[] = [
       h2('Is FIRE realistic?'),
       p('FIRE is achievable for a much wider range of households than the critics assume, but it requires honest accounting. The key inputs are income stability, controllable expenses, a long enough timeline, and a willingness to invest in low-cost diversified funds rather than saving cash. It is not a guaranteed outcome — market returns matter, and sequence-of-returns risk is real. But the framework is sound, and millions of people have used it to reach meaningful financial independence before traditional retirement age.'),
       p('The best place to start is calculating your current savings rate and running a FIRE projection. Even if full FIRE takes 20 years, seeing the trajectory clearly makes the trade-offs easier to reason about.'),
+    ],
+    faqs: [
+      { question: 'What does FIRE stand for?', answer: 'FIRE stands for Financial Independence, Retire Early. It is the goal of saving and investing enough that your investments cover your living costs, so paid work becomes optional.' },
+      { question: 'What is a FIRE number?', answer: 'Your FIRE number is how much you need invested to cover a year of spending, every year. The common rule is 25 times your annual spending, which comes from the 4% rule: spending $50,000 a year means a FIRE number of about $1,250,000.' },
+      { question: 'Do you have to retire early to do FIRE?', answer: 'No. Many people reach financial independence and keep working part-time, change careers or take long breaks. The point of FIRE is that work becomes optional, not that it stops.' },
+      { question: 'What are Lean FIRE, Fat FIRE and Coast FIRE?', answer: 'Lean FIRE targets a low-spending retirement, Fat FIRE a high-spending one, and Coast FIRE means investing enough early that growth alone reaches your target by a normal retirement age, so you only need to cover today’s costs.' },
     ],
   },
   {
@@ -627,6 +642,7 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
     secondaryStages: ['building-momentum'],
     relatedCalculators: [
       { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
       { href: '/calculators/savings-rate', label: 'Savings Rate Calculator' },
     ],
   },

@@ -70,6 +70,9 @@ Do not wire a new screen to `step_id=currency`.
 - `net-worth-by-age` labels the net worth by age page's link into the main
   calculator. It uses the existing `source` / `landing_source` path, not a new
   event, and passes no amounts: the page's inputs stay in the browser.
+- `learn-fire-meaning` labels the link from the quick FIRE number box in the
+  "What does FIRE mean?" article into the main calculator. It uses the same
+  path and passes no amounts.
 
 ## Person properties
 

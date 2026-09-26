@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cityLandingPages } from '@/lib/city-pages'
 import styles from './Article.module.css'
+import FireNumberQuick from './FireNumberQuick'
 import { SITE_URL } from '@/lib/site'
 import {
   getLearnArticle,
@@ -87,7 +88,7 @@ export default async function LearnArticlePage({ params }: Props) {
                 headline: article.title,
                 description: article.description,
                 datePublished: article.publishedAt,
-                dateModified: article.publishedAt,
+                dateModified: article.updatedAt ?? article.publishedAt,
                 author: { '@type': 'Organization', name: 'UntilFire', url: SITE_URL },
                 publisher: { '@type': 'Organization', name: 'UntilFire', url: SITE_URL },
                 url: articleUrl,
@@ -110,6 +111,15 @@ export default async function LearnArticlePage({ params }: Props) {
                   name: crumb.name, item: `${SITE_URL}${crumb.href}`,
                 })),
               },
+              // The visible FAQ at the end of the article and this share one list.
+              ...(article.faqs?.length ? [{
+                '@type': 'FAQPage',
+                '@id': `${articleUrl}#faq`,
+                mainEntity: article.faqs.map(({ question, answer }) => ({
+                  '@type': 'Question', name: question,
+                  acceptedAnswer: { '@type': 'Answer', text: answer },
+                })),
+              }] : []),
             ],
           }),
         }}
@@ -132,7 +142,7 @@ export default async function LearnArticlePage({ params }: Props) {
           <span>{primaryStage.label}</span>
           <span>{article.category}</span>
           <span>{article.readTime}</span>
-          <span>{article.publishedAt}</span>
+          <span>{article.updatedAt ? `Updated ${article.updatedAt}` : article.publishedAt}</span>
         </div>
         <h1>{article.title}</h1>
         <p className="uf-article-dek">{article.description}</p>
@@ -170,8 +180,20 @@ export default async function LearnArticlePage({ params }: Props) {
                 {node.items.map((item, j) => <li key={j} style={{ marginBottom: 6 }}>{item}</li>)}
               </ol>
             )
+            if (node.type === 'fire-number') return <FireNumberQuick key={i} />
             return <p key={i}>{node.text}</p>
           })}
+          {article.faqs && article.faqs.length > 0 && (
+            <>
+              <h2>Common questions</h2>
+              {article.faqs.map(({ question, answer }) => (
+                <div key={question}>
+                  <h3 style={{ fontSize: 19, color: 'var(--uf-ink)', margin: '18px 0 8px', letterSpacing: '-0.01em' }}>{question}</h3>
+                  <p>{answer}</p>
+                </div>
+              ))}
+            </>
+          )}
         </div>
         <div style={{ marginTop: 40, paddingTop: 32, borderTop: '1px solid var(--uf-border)', display: 'grid', gap: 18 }}>
           <div>
