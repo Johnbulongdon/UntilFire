@@ -67,7 +67,7 @@ const PRO_FEATURES: { title: string; detail: string }[] = [
  * It has three states rather than two on purpose. Someone who subscribed once
  * and cancelled is not eligible for another trial — the checkout route only
  * attaches trial_period_days when there is no stripe_subscription_id on file —
- * but this modal promised "3 months free" to everyone, so a returning customer
+ * but this modal promised a free trial to everyone, so a returning customer
  * read an offer, clicked it, and was charged straight away. Defaulting to
  * "trial" while we wait would recreate that for the moment before the row
  * arrives, and defaulting to "no trial" would hide a real offer from a genuine

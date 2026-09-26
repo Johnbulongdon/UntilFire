@@ -87,7 +87,7 @@ export default async function StateFireNumberPage({ params }: Props) {
             {page.heroTitle}
           </h1>
           <p style={{ fontSize: 17, color: 'var(--uf-ink-2)', margin: '0 0 32px', lineHeight: 1.65, maxWidth: 700 }}>
-            Explore FIRE baselines across {page.cities.length} cities in {page.stateName}. {page.noIncomeTax ? `No state income tax means more savings turn into invested capital.` : `State taxes affect your take-home, so we show local tax context for each city.`} Find your target and compare retirement timelines.
+            Explore FIRE baselines across {page.cityCountLabel} in {page.stateName}. {page.noIncomeTax ? `No state income tax means more savings turn into invested capital.` : `State taxes affect your take-home, so we show local tax context for each city.`} Find your target and compare retirement timelines.
           </p>
 
           {/* Key stats */}

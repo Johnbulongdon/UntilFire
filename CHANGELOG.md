@@ -2,7 +2,23 @@
 
 All notable changes to UntilFire are documented here.
 
-## [Unreleased] - 2026-09-26
+The site deploys to production on every merge to `main`, so there is no
+unreleased queue: each section is the day its changes shipped. Add new entries
+under today's date, creating the heading if it is not there yet.
+
+## 2026-09-26
+
+### Pro is $9 a month or $79 a year, with a 30-day free trial
+- New prices for new subscribers. Anyone already on $3 or $30 keeps it.
+- The free trial is 30 days, down from 90.
+- Every price and trial mention reads `lib/pricing.ts`; the two hard-coded
+  "3 months free" texts (landing page, Profile) now do too. D-26.
+
+### Housekeeping
+- State pages with one city say "1 city" (and "1 City" in the search title)
+  instead of "1 cities".
+- This changelog drops its fourteen "Unreleased" headings for plain ship
+  dates: every merge deploys, so nothing here was ever unreleased.
 
 ### Search titles that show the answer
 - Singapore, Dubai, London and Shanghai now show their FIRE number in the
@@ -117,7 +133,7 @@ All notable changes to UntilFire are documented here.
 - The free result's freedom age now rounds like its year (the engine was fixed
   yesterday; the result screen had its own copy). Recorded as D-24.
 
-## [Unreleased] - 2026-09-25
+## 2026-09-25
 
 ### US city estimate sources
 - The 226 generic US city FIRE guides now show when their cost baselines were
@@ -227,7 +243,7 @@ All notable changes to UntilFire are documented here.
   permanently. Hawaii's cities now appear in the West Coast region. `test:seo`
   fails if a US state with cities has no name.
 
-## [Unreleased] - 2026-09-24
+## 2026-09-24
 
 ### SEO content
 - Repaired learning-article dark-mode colors and added visible breadcrumb
@@ -372,7 +388,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - **Real regressions found and fixed:** custom categories never syncing (above), the unlabelled currency select (above), and `categories-management` now also fails if the sync is left unexecuted.
 - `test:seo`'s FIRE Type check had been passing against `HeroScreen.tsx`, which has not been rendered since the landing redesign (`274a215`), and the redesign had dropped the link. The guard now reads the hero that renders, and it passes because the link was restored (D-13).
 
-## [Unreleased] - 2026-09-23
+## 2026-09-23
 
 ### Added
 - **Next contribution.** A tab under Plan that works out where this period's money should go, and a Home card that says it without being gone looking for. The order is a published convention — emergency floor, employer match, expensive debt, emergency target, tax-advantaged, cheap-debt overpayment, then invest the rest — and every rung can be moved or switched off. The allocation maths is ported from the spreadsheet it replaces, guarded against the sheet's own figures.
@@ -387,21 +403,21 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Added — guards
 - `npm run test:contribution-plan`, `test:contribution-waterfall`, `test:contribution-ladder`, `test:contribution-schedule`, `test:emergency-fund-accounts`, `test:classification-rules`.
 
-## [Unreleased] - 2026-09-20
+## 2026-09-20
 
 ### Added
 - **Transactions can carry a time of day, and never have to.** Plaid supplies one for the institutions that send it, a statement import recovers the one already sitting in its date column, and the add/edit form has an optional **Time** field next to the date. The time shows in the transaction list when there is one and nothing at all when there isn't — a blank stays blank rather than becoming midnight.
 - Stored as an instant, not a wall clock, so "14:30" typed in Hong Kong still reads 14:30 there and shifts correctly for a household partner elsewhere. `date` remains the field everything groups and totals by; where the two disagree at a day boundary, the date wins.
 - `npm run test:transaction-time` — covers the ways a time goes wrong quietly: Plaid's 00:00 placeholder must not become a confident midnight, `authorized_datetime` must win over `datetime`, a time buried in an ISO or WeChat date cell must be recovered, and a round trip through the form must come back unchanged.
 
-## [Unreleased] - 2026-09-19
+## 2026-09-19
 
 ### Added
 - **Home is arrangeable.** An **Edit** button turns Home's cards into draggable tiles: drag by the grip to reorder, press × to remove one, press the width control to make it narrow or wide, and put anything you removed back from the tray underneath. Saved per user in `profiles.dashboard_layout`. Defaults are exactly the current layout, so nothing changes until you change it.
 - Dragging is pointer-based rather than HTML5 drag-and-drop, which never fires on touch. Reordering still happens through CSS `order`, so a card's contents never move in the DOM mid-drag. Card content is inert while editing, so a drag can't also press something inside a card.
 - `npm run test:dashboard-layout` — covers the layout merge, which fails silently in every direction: a card added later must appear for someone who customised before it existed, an id since removed must drop, a corrupt value must fall back rather than empty the page, and a required card must stay visible however it was stored.
 
-## [Unreleased] - 2026-09-18
+## 2026-09-18
 
 ### Added
 - **Household (P1)** — invite one partner to share a household, from `Profile → Household`. They create their own account, keep their own login and their own numbers; joining adds a shared view on top rather than merging anything. Invite by email, one live invitation at a time (re-inviting supersedes rather than stacks, so a corrected address cannot leave an old link redeemable), 14-day expiry, and **Disconnect** — one symmetric action either person can take instantly without the other's approval, because at two members with symmetric visibility "I leave" and "I remove you" have the same outcome.
@@ -424,23 +440,23 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - A household holds exactly two people, enforced by `member_slot` + `UNIQUE (household_id, member_slot)` — a slot rather than a count trigger, because a unique index cannot be raced.
 - `0035_household_revoke_anon` — Supabase grants EXECUTE on new `public` functions to `anon` individually, so `REVOKE ... FROM PUBLIC` in 0016 did not achieve what its comment claimed.
 
-## [Unreleased] - 2026-09-12
+## 2026-09-12
 
 ### Added
 - Per-month spending analysis on `Money → Insights` (`MonthInsight`) — pick any month with data, see its categories ranked by size, and switch individual categories off. The comparison baseline recomputes with the same exclusions applied to every other month, so excluding Travel drops both the headline and the median it is measured against rather than comparing a filtered month against an unfiltered one. Median rather than mean, since the outlier month is what the exclusions exist to see past. A conditional line translates the result into the FIRE target at 25× annual spending — phrased as "if every month looked like this one", because one month is not a rate.
 
-## [Unreleased] - 2026-08-29
+## 2026-08-29
 
 ### Added
 - "Your month" check-in card on Home (`DashTab`) — closes the monthly loop by combining last month's actual result (`consistencyMonths`, on-track or off-plan, savings vs. short) with this month's top recommendation (`topTasks[0]`) into one verdict, with a CTA that scrolls to the existing top-tasks card. Dismissible per calendar month (`uf_checkin_dismissed_YYYY-MM`), so it reappears as a fresh check-in each month rather than sitting as a permanent fixture.
 - `funnel_next_move_opened` analytics event — fires when the check-in card's CTA is clicked, giving the top-tasks recommendations their first real click target (previously informational only).
 
-## [Unreleased] - 2026-08-16
+## 2026-08-16
 
 ### Removed
 - Monte Carlo "Confidence Check" page (`FIRE Calculator → Simulate`) — the success-probability copy overclaimed 10,000 simulations while the code ran 1,000, and "before your target age" was actually a flat 40-year horizon from today regardless of the user's real age. Removed rather than patched pending a redesign that ties it correctly into the plan's real freedom date. `MonteCarloCard`, `SimulationsTab`, and `lib/fire/monte-carlo.ts` deleted.
 
-## [Unreleased] - 2026-07-10
+## 2026-07-10
 
 ### Added
 - Transaction import now accepts Excel (.xlsx/.xls) files through the same column-mapping, duplicate-detection, and currency-inference pipeline as CSV
@@ -451,7 +467,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Fixed
 - Excel imports with title/metadata rows before the real header (e.g. WeChat Pay Excel exports) now correctly detect the real header row instead of leaving all column-mapping dropdowns blank — ported the same header-row scan already used for CSV imports
 
-## [Unreleased] - 2026-06-15
+## 2026-06-15
 
 ### Added
 - CSV import modal: full column-mapping UI with a step machine (upload → map → review → importing → done), batch insert in chunks of 50
@@ -473,7 +489,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - FIRE Type share card content simplified and avatar crop tightened for cleaner framing
 - Wordmark: orange removed from "Fire" text on the FIRE Type page to fix branding inconsistency
 
-## [Unreleased] - 2026-05-26
+## 2026-05-26
 
 ### Changed
 - Dashboard emergency-fund logic now excludes brokerage cash reserved for investing from the emergency-fund "Current Savings" figure, while still counting that money in total cash/assets.
@@ -483,7 +499,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Verification
 - `npm run build` passed after the dashboard emergency-fund update and Google-login callback cleanup.
 
-## [Unreleased] - 2026-05-02
+## 2026-05-02
 
 ### Changed
 - `supabase-setup.sql` rewritten to match the live app: drops the legacy `user_plans` schema and now creates `user_budget`, `expenses`, `subscriptions`, and `waitlist` with RLS policies + `updated_at` triggers. Idempotent — safe to re-run.

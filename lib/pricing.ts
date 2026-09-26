@@ -10,30 +10,44 @@
  * No imports, so anything can read it — including lib/email-html.ts, which
  * stays otherwise dependency-free so the admin can render a preview client-side.
  *
- * The amounts here are display copy. The amount actually charged lives in
- * Stripe, keyed by STRIPE_PRO_PRICE_ID / STRIPE_PRO_ANNUAL_PRICE_ID. Changing
- * a number here without changing the Stripe price changes what you promise,
- * not what you bill — always move both.
+ * The amounts here are display copy. The amount actually charged is the
+ * Stripe price named in STRIPE_PRICE_IDS below, kept in this same file so the
+ * promise and the charge change in one commit. A new price means a new Stripe
+ * price (prices are immutable) and a new ID here, never an edited amount alone.
  */
 
-export const PRO_MONTHLY_USD = 3;
-export const PRO_ANNUAL_USD = 30;
+// D-26: $9 a month or $79 a year, a 30-day trial. At $3 the business kept
+// about 37% of each payment after Stripe and running costs; at these prices
+// it keeps 74–77%, a normal SaaS margin, and a 30% creator commission stays
+// profitable. Subscribers on the old $3 and $30 prices keep them.
+export const PRO_MONTHLY_USD = 9;
+export const PRO_ANNUAL_USD = 79;
+
+/**
+ * The live Stripe prices checkout charges. Price IDs are public identifiers,
+ * not secrets. They used to live in Vercel settings, which could drift from
+ * the amounts above and needed a separate step to change; D-26.
+ */
+export const STRIPE_PRICE_IDS = {
+  month: "price_1UJxZl00a94Lv0ThTgwqpSCo", // $9 / month
+  year: "price_1UJxZp00a94Lv0ThgzJbrdi8", // $79 / year
+} as const;
 
 /** Stripe's trial_period_days, granted to first-time subscribers only. */
-export const TRIAL_DAYS = 90;
-export const TRIAL_LABEL = "3 months free";
+export const TRIAL_DAYS = 30;
+export const TRIAL_LABEL = "30 days free";
 
 export type BillingInterval = "month" | "year";
 
-/** $30/yr is $2.50/mo. */
+/** $79/yr is $6.58/mo. */
 export const ANNUAL_PER_MONTH_USD = PRO_ANNUAL_USD / 12;
 
-/** $36 of monthly vs $30 of annual — two months. */
+/** $108 of monthly vs $79 of annual — three months. */
 export const ANNUAL_MONTHS_FREE = Math.round((PRO_MONTHLY_USD * 12 - PRO_ANNUAL_USD) / PRO_MONTHLY_USD);
 
 export const ANNUAL_SAVING_PCT = Math.round((1 - PRO_ANNUAL_USD / (PRO_MONTHLY_USD * 12)) * 100);
 
-/** "$3", "$2.50" — whole dollars stay whole, so $3/mo doesn't read as $3.00. */
+/** "$9", "$6.58" — whole dollars stay whole, so $9/mo doesn't read as $9.00. */
 export function formatPrice(usd: number): string {
   return Number.isInteger(usd) ? `$${usd}` : `$${usd.toFixed(2)}`;
 }

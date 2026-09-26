@@ -6,7 +6,7 @@ import AnimatedHero from "./AnimatedHero";
 import WorldGlobe from "./WorldGlobe";
 import Logo from "@/app/components/Logo";
 import { CITIES } from "@/lib/fire-data";
-import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL } from "@/lib/pricing";
+import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { REAL_RETURN, yearsToTarget } from "@/lib/fire/strategies/traditional";
 
 
@@ -328,7 +328,7 @@ function Pricing7({ onStart }: { onStart: () => void }) {
           <div className="uf7-pcol uf7-rv">
             <div className="uf7-tier">Pro</div>
             <div className="uf7-amount">{PRO_MONTHLY_LABEL} <small>/mo after trial, or {PRO_ANNUAL_LABEL}/yr</small></div>
-            <span className="uf7-trial-note">Three months free</span>
+            <span className="uf7-trial-note">{TRIAL_LABEL}</span>
             <ul>
               <li>Everything in Free</li>
               <li>Ranked next moves by time saved</li>

@@ -442,7 +442,8 @@ Disconnect keeps the connection listed with an error instead of dropping the
 row. (2) New connections require Transactions only, and ask for Investments
 through `required_if_supported_products`. Investments is then added, and
 billed, only when the person picks an investment account. (3) Pro stays at
-$3 a month or $30 a year.
+$3 a month or $30 a year. **Superseded by D-26** (2026-09-26): $9 a month or
+$79 a year, with a 30-day trial.
 **Why:** Plaid bills Transactions and Investments monthly for each connection
 it still has, used or not, and only `/item/remove` ends that. It needs the
 access token, which only our row holds. Account deletion cascaded the rows
@@ -829,6 +830,48 @@ chart draws, the page's worked example, the edges, and the wiring.
 **Revisit:** when Search Console shows where the page settles, about four
 weeks after release.
 **Source:** `lib/coast-fire.ts`, `app/calculators/coast-fire/`.
+
+### D-26 — September 26: Pro is $9 a month or $79 a year, with a 30-day trial
+
+**Status:** Active. Authorised by the founder on 2026-09-26: "change the deal
+to 9 dollars per month and 79 per year. And change it to a 30-day trial
+period." Supersedes D-17's third point (Pro stays at $3).
+**Decision:** Pro is $9 a month or $79 a year ($6.58 a month, 27% less). The
+free trial is 30 days, down from 90. Subscribers on the old $3 and $30 prices
+keep them: the old Stripe prices stay active and existing subscriptions are
+not migrated. The calculator and the free dashboard stay free.
+**Why:** The margin, worked through with the founder while designing a creator
+referral program. Each payment loses Stripe's 2.9% + $0.30, and each Pro
+account costs about $1.50 a month to run (mostly bank connections):
+
+| Price | Kept per month | Share kept |
+|---|---|---|
+| $3 / month | $1.11 | 37% |
+| $30 / year | $0.90 | 36% |
+| $9 / month | $6.94 | 77% |
+| $79 / year | $4.87 | 74% |
+
+Typical SaaS keeps 75–80%. At $3, any creator commission above about 36%
+lost money on every customer, and even 20% left a creator about $0.60 a
+month. At $9, a 30% commission for 12 months is affordable. Comparable apps
+with bank sync or FIRE planning (Monarch, YNAB, Copilot, ProjectionLab)
+charge about $95–120 a year, so $79 stays the cheaper option. The $3k MRR
+goal needs about 335 subscribers instead of 1,000. D-17 rejected a rise for
+lack of conversion data; there is still none, and there were no paying
+customers to protect, which makes this the cheapest time to test the price.
+The 30-day trial brings the first payment, and any creator commission, two
+months sooner, and a month is enough to connect a bank and see a monthly
+next move.
+**Where:** `lib/pricing.ts` holds the display prices and `TRIAL_DAYS`. Every
+page, the upgrade modal, Profile and the pricing structured data read it.
+Stripe charges the price IDs in `STRIPE_PRICE_IDS`, in the same file, so the
+promise and the charge change in one commit. They used to be Vercel settings
+(`STRIPE_PRO_PRICE_ID`, `STRIPE_PRO_ANNUAL_PRICE_ID`), which could drift from
+the page and needed a separate step at release; those are no longer read. The trial reminder email reads
+the price from the subscription itself, so grandfathered subscribers see $3.
+**Revisit:** once 30 or more trials have ended: trial-to-paid rate and the
+monthly/annual split. If almost nobody converts, test $6 before assuming the
+product needs to be free.
 
 ## How to add or supersede a decision
 

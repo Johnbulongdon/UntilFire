@@ -421,7 +421,7 @@ export default function ProfileTab({
               onClick={onUpgradeClick}
               style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
             >
-              Try 3 months free
+              Try {TRIAL_LABEL}
             </button>
           )}
         </div>
