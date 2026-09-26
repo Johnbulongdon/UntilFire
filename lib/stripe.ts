@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { STRIPE_PRICE_IDS } from "./pricing";
 
 let _stripe: Stripe | null = null;
 
@@ -21,15 +22,12 @@ export const stripe = new Proxy({} as Stripe, {
   },
 });
 
-export const STRIPE_PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID ?? "";
-export const STRIPE_PRO_ANNUAL_PRICE_ID = process.env.STRIPE_PRO_ANNUAL_PRICE_ID ?? "";
-
 /**
- * Which Stripe price to charge. Annual falls back to monthly when the annual
- * price isn't configured, so a missing env var downgrades the plan rather than
- * sending someone to a checkout with no line item.
+ * Which Stripe price to charge: the IDs beside the display prices in
+ * lib/pricing.ts, so what the page promises and what checkout bills cannot
+ * drift apart. The STRIPE_PRO_PRICE_ID and STRIPE_PRO_ANNUAL_PRICE_ID
+ * variables in Vercel are no longer read.
  */
 export function priceIdFor(interval: "month" | "year"): string {
-  if (interval === "year" && STRIPE_PRO_ANNUAL_PRICE_ID) return STRIPE_PRO_ANNUAL_PRICE_ID;
-  return STRIPE_PRO_PRICE_ID;
+  return STRIPE_PRICE_IDS[interval];
 }

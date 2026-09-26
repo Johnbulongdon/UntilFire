@@ -10,10 +10,10 @@
  * No imports, so anything can read it — including lib/email-html.ts, which
  * stays otherwise dependency-free so the admin can render a preview client-side.
  *
- * The amounts here are display copy. The amount actually charged lives in
- * Stripe, keyed by STRIPE_PRO_PRICE_ID / STRIPE_PRO_ANNUAL_PRICE_ID. Changing
- * a number here without changing the Stripe price changes what you promise,
- * not what you bill — always move both.
+ * The amounts here are display copy. The amount actually charged is the
+ * Stripe price named in STRIPE_PRICE_IDS below, kept in this same file so the
+ * promise and the charge change in one commit. A new price means a new Stripe
+ * price (prices are immutable) and a new ID here, never an edited amount alone.
  */
 
 // D-26: $9 a month or $79 a year, a 30-day trial. At $3 the business kept
@@ -22,6 +22,16 @@
 // profitable. Subscribers on the old $3 and $30 prices keep them.
 export const PRO_MONTHLY_USD = 9;
 export const PRO_ANNUAL_USD = 79;
+
+/**
+ * The live Stripe prices checkout charges. Price IDs are public identifiers,
+ * not secrets. They used to live in Vercel settings, which could drift from
+ * the amounts above and needed a separate step to change; D-26.
+ */
+export const STRIPE_PRICE_IDS = {
+  month: "price_1UJxZl00a94Lv0ThTgwqpSCo", // $9 / month
+  year: "price_1UJxZp00a94Lv0ThgzJbrdi8", // $79 / year
+} as const;
 
 /** Stripe's trial_period_days, granted to first-time subscribers only. */
 export const TRIAL_DAYS = 30;

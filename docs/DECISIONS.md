@@ -864,9 +864,10 @@ months sooner, and a month is enough to connect a bank and see a monthly
 next move.
 **Where:** `lib/pricing.ts` holds the display prices and `TRIAL_DAYS`. Every
 page, the upgrade modal, Profile and the pricing structured data read it.
-Stripe charges the prices named by `STRIPE_PRO_PRICE_ID` and
-`STRIPE_PRO_ANNUAL_PRICE_ID` in Vercel, which must be switched to the $9 and
-$79 prices in the same release as the copy. The trial reminder email reads
+Stripe charges the price IDs in `STRIPE_PRICE_IDS`, in the same file, so the
+promise and the charge change in one commit. They used to be Vercel settings
+(`STRIPE_PRO_PRICE_ID`, `STRIPE_PRO_ANNUAL_PRICE_ID`), which could drift from
+the page and needed a separate step at release; those are no longer read. The trial reminder email reads
 the price from the subscription itself, so grandfathered subscribers see $3.
 **Revisit:** once 30 or more trials have ended: trial-to-paid rate and the
 monthly/annual split. If almost nobody converts, test $6 before assuming the
