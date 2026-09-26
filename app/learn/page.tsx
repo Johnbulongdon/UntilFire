@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { cityLandingPages } from '@/lib/city-pages'
+import { cityLandingPages, cityPagePath } from '@/lib/city-pages'
 import { getStageArticles, learnStages } from '@/lib/learn'
 import { CITIES, isUS } from '@/lib/fire-data'
 import { formatMoney } from "@/lib/money";
@@ -198,7 +198,7 @@ export default function LearnHubPage() {
                     You&apos;ll need <strong>{formatMoney(fireTarget)}</strong> to reach FIRE in {city.name}, based on local
                     cost-of-living data. See income scenarios and calculate your personal timeline.
                   </p>
-                  <Link href={`/fire-number/${city.key}`} className="uf-hub-link">
+                  <Link href={cityPagePath(city.key)} className="uf-hub-link">
                     Calculate →
                   </Link>
                 </article>

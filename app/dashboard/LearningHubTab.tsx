@@ -4,6 +4,7 @@ import { useState } from "react";
 import { learnArticles } from "@/lib/learn";
 import { CITIES, STATE_TAX, isUS } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
+import { cityPagePath } from "@/lib/city-pages";
 
 type SubTab = "articles" | "topics" | "calculators" | "cities";
 
@@ -296,7 +297,7 @@ export default function LearningHubTab() {
                 {byState[stateName].map((city) => (
                   <a
                     key={city.key}
-                    href={`/fire-number/${city.key}`}
+                    href={cityPagePath(city.key)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="lhub-card-link"

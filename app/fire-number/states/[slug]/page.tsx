@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getStatePage, statePages } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
+import { cityPagePath } from "@/lib/city-pages";
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -119,7 +120,7 @@ export default async function StateFireNumberPage({ params }: Props) {
             {page.cities.map((city) => (
               <Link
                 key={city.key}
-                href={`/fire-number/${city.key}`}
+                href={cityPagePath(city.key)}
                 className="state-city-card"
                 style={{
                   textDecoration: 'none',

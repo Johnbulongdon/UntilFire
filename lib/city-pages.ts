@@ -149,3 +149,16 @@ export type CityLandingPage = (typeof cityLandingPages)[number]
 export function getCityLandingPage(slug: string) {
   return cityLandingPages.find((page) => page.slug === slug)
 }
+
+const curatedSlugByCityKey = new Map(cityLandingPages.map((page) => [page.city.key, page.slug]))
+
+/**
+ * A city's FIRE page. A curated guide can live at a different slug from the
+ * city's key (Austin is `/fire-number/austin-tx`, and `/fire-number/austin`
+ * redirects there), so link through this rather than building
+ * `/fire-number/${key}`, which would send people and crawlers through the
+ * redirect.
+ */
+export function cityPagePath(cityKey: string) {
+  return `/fire-number/${curatedSlugByCityKey.get(cityKey) ?? cityKey}`
+}

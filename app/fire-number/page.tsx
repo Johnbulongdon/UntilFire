@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CITIES, STATE_TAX, isUS } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
 import { countriesByCost } from "@/lib/country-pages";
+import { cityPagePath } from "@/lib/city-pages";
 
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
@@ -181,7 +182,7 @@ export default function FireNumberHubPage() {
               {byState[stateName].map((city) => (
                 <Link
                   key={city.key}
-                  href={`/fire-number/${city.key}`}
+                  href={cityPagePath(city.key)}
                   className="city-card"
                   style={{
                     display: "flex",

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { CITIES, STATE_TAX, isUS } from '@/lib/fire-data'
 import { STATE_NAMES, getStatePageSlug } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
+import { cityPagePath } from "@/lib/city-pages";
 
 
 export const metadata: Metadata = {
@@ -159,12 +160,12 @@ export default function FireByStatePage() {
                   <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-green-900)' }}>{formatMoney(state.avgCol)}</td>
                   <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-teal)' }}>{formatMoney(state.fireTarget)}</td>
                   <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--uf-ink-2)' }}>
-                    <Link href={`/fire-number/${state.cheapest.key}`} style={{ color: 'var(--uf-green)', textDecoration: 'none' }}>
+                    <Link href={cityPagePath(state.cheapest.key)} style={{ color: 'var(--uf-green)', textDecoration: 'none' }}>
                       {state.cheapest.name.split(',')[0]}
                     </Link>
                   </td>
                   <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--uf-ink-2)' }}>
-                    <Link href={`/fire-number/${state.mostExpensive.key}`} style={{ color: 'var(--uf-neg)', textDecoration: 'none' }}>
+                    <Link href={cityPagePath(state.mostExpensive.key)} style={{ color: 'var(--uf-neg)', textDecoration: 'none' }}>
                       {state.mostExpensive.name.split(',')[0]}
                     </Link>
                   </td>
