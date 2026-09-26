@@ -7,7 +7,7 @@
  * Run: npm run test:fire-number
  */
 import { readFileSync } from 'node:fs';
-import { fireNumber, recommendedWithdrawalRate, fireProgress, DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, GROWTH_CHOICES, inflationFor } from '../lib/fire-number.ts';
+import { fireNumber, recommendedWithdrawalRate, fireProgress, DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, CAUTIOUS_RETURN_PCT, GROWTH_CHOICES, inflationFor } from '../lib/fire-number.ts';
 import { SP500_HISTORY } from '../lib/sp500-history.ts';
 import { calcFIRE, yearsToTarget, REAL_RETURN } from '../lib/fire/strategies/traditional.ts';
 import { monthsToFire } from '../lib/purchase-impact.ts';
@@ -74,7 +74,10 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   check('default growth is the S&P 500 since 1928 after inflation, and the engine uses it', DEFAULT_RETURN_PCT === since1928.realPct && Math.abs(REAL_RETURN - since1928.realPct / 100) < 1e-12, `${DEFAULT_RETURN_PCT} ${REAL_RETURN}`);
   check('the history is plausible: since 1928, 9.5–10.8% before inflation and 6–7.5% after', since1928.nominalPct >= 9.5 && since1928.nominalPct <= 10.8 && since1928.realPct >= 6 && since1928.realPct <= 7.5, JSON.stringify(since1928));
   check('every period earns less after inflation than before', H.periods.every((p) => p.realPct < p.nominalPct));
-  check('the recommendation is the cautious choice, and history beat it more often than the default', RECOMMENDED_RETURN_PCT === 5 && H.cautious.beatShare > since1928.beatShare, `${H.cautious.beatShare} vs ${since1928.beatShare}`);
+  check('one answer: the recommendation is the default, the full record since 1928', RECOMMENDED_RETURN_PCT === DEFAULT_RETURN_PCT && DEFAULT_RETURN_PCT === since1928.realPct);
+  check('the cautious 5% is extra margin: history beat it more often than the recommendation', CAUTIOUS_RETURN_PCT === 5 && H.cautious.beatShare > since1928.beatShare, `${H.cautious.beatShare} vs ${since1928.beatShare}`);
+  const pickerSrc = read('app/components/GrowthChoicePicker.tsx');
+  check('the picker marks one choice, not a separate default and recommendation', pickerSrc.includes('>Recommended</Badge>') && !pickerSrc.includes('>Default</Badge>'));
   check('the worst 30 years is the lowest choice and every stretch beat it', H.worst.realPct === Math.min(...GROWTH_CHOICES.map((c) => c.realPct)) && H.worst.beatShare === 100);
   check('a higher rate is never beaten more often than a lower one', GROWTH_CHOICES.every((a) => GROWTH_CHOICES.every((b) => !(a.realPct > b.realPct) || a.beatShare <= b.beatShare)));
   check('the data runs through the last full year', H.through >= 2025 && H.windows === H.through - 1957 + 1, `${H.through} ${H.windows}`);
@@ -94,7 +97,7 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   check('free result: the choice carries into the dashboard', home.includes('realReturn: marketReturn') && read('app/dashboard/page.tsx').includes('prefill.realReturn'));
   check('free result: age rounds like the year', home.includes('planningAge + Math.floor(result.years)') && !home.includes('planningAge + Math.round(projection.years)'));
   const flow = read('app/components/RevealFlow.tsx');
-  check('free result names where its growth comes from and opens the history', flow.includes('average since 1928') && flow.includes('onReturnChange(') && flow.includes('Where does this come from?') && home.includes('growthPicker={<GrowthChoicePicker'));
+  check('free result names where its growth comes from and opens the history', flow.includes('full record since 1928, as we recommend') && flow.includes('for extra margin') && flow.includes('onReturnChange(') && flow.includes('Where does this come from?') && home.includes('growthPicker={<GrowthChoicePicker'));
   const card = read('app/dashboard/FireAssumptionsCard.tsx');
   check('Plan assumptions: the history picker with the recommendation', card.includes('RETURN_RECOMMENDATION') && card.includes('<GrowthChoicePicker'));
   check('dashboard treats the old typed 0.07 as never chosen', read('app/dashboard/page.tsx').includes('fp.growthRate !== 0.07'));

@@ -42,6 +42,8 @@ interface Props {
   /** Growth after inflation, as a fraction (0.069). */
   growthRate: number;
   onGrowthRateChange: (rate: number) => void;
+  /** The freedom date at these assumptions, shown under the growth picker so a choice visibly moves it. */
+  freedomDateLabel?: string | null;
 }
 
 const LIFESTYLE_TIERS = [
@@ -105,6 +107,7 @@ export default function FireAssumptionsCard({
   displayCurrency,
   growthRate,
   onGrowthRateChange,
+  freedomDateLabel,
 }: Props) {
   const [saved, setSaved] = useState(false);
   const [citySearch, setCitySearch] = useState(retirementCityName);
@@ -281,6 +284,13 @@ export default function FireAssumptionsCard({
           How much your investments grow each year, beyond prices rising. Higher brings the date closer; lower is surer.
         </p>
         <GrowthChoicePicker value={returnPct} onChange={(v) => { onGrowthRateChange(v / 100); flash(); }} />
+        {freedomDateLabel !== undefined && (
+          <p aria-live="polite" style={{ margin: "10px 0 0", fontSize: 14, color: "var(--uf-ink)", fontWeight: 700 }}>
+            {freedomDateLabel
+              ? <>At {returnPct.toFixed(1)}%, your freedom date is {freedomDateLabel}.</>
+              : <>At {returnPct.toFixed(1)}%, your freedom date isn&apos;t reached yet.</>}
+          </p>
+        )}
         <div style={{ marginTop: 10, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 12px", display: "grid", gap: 8, justifyItems: "start" }}>
           <p style={{ fontSize: 13, color: "var(--uf-ink)", lineHeight: 1.6, margin: 0 }}>
             <strong>Recommended: </strong>{RETURN_RECOMMENDATION}

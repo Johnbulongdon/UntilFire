@@ -4,6 +4,18 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
+### Plan shows the freedom date its assumptions move
+- Plan's Freedom Date tab now shows the freedom date at the top, and says how
+  far the growth choice moved it from the default. The same date appears
+  directly under the growth picker. Before this, choosing a different growth
+  rate changed Home's date but nothing visible on Plan. Plan and Home compute
+  the date with one shared function (`freedomProjection`), so they can't
+  disagree. The expat comparisons now recompute when growth changes. The stale
+  "Assumptions live in Profile" line is gone. `test:plan-freedom-date` covers it.
+- One answer on growth: the recommendation is now the default, 6.9% (the S&P
+  500's full record since 1928), instead of recommending 5% while defaulting to
+  6.9%. The cautious 5% stays one tap away, labelled as extra margin. D-24.
+
 ### City links go straight to each city's page
 - City lists (the FIRE number hub, state and region pages, cheapest and most
   expensive cities, nearby cities, Learn) now link Austin to

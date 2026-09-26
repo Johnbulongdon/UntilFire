@@ -133,8 +133,8 @@ export const GROWTH_CHOICES: GrowthChoice[] = [
     realPct: p.realPct, nominalPct: p.nominalPct, inflationPct: p.inflationPct, nominalEstimated: false, beatShare: p.beatShare,
   })),
   {
-    id: 'cautious', label: 'Cautious', why: 'A margin below the long-run average, for a plan that holds in an ordinary 30 years.',
-    span: 'Our recommendation', realPct: H.cautious.realPct, nominalPct: withInflation(H.cautious.realPct, LONG_RUN_INFLATION),
+    id: 'cautious', label: 'Cautious', why: 'Extra margin below the full record, if you would rather plan for a weaker 30 years.',
+    span: 'Extra margin', realPct: H.cautious.realPct, nominalPct: withInflation(H.cautious.realPct, LONG_RUN_INFLATION),
     inflationPct: LONG_RUN_INFLATION, nominalEstimated: true, beatShare: H.cautious.beatShare,
   },
   {
@@ -151,11 +151,17 @@ export function inflationFor(realPct: number): number {
 
 /** The S&P 500 since 1928 after inflation: the engine's REAL_RETURN, as a percentage. */
 export const DEFAULT_RETURN_PCT = H.periods.find((p) => p.id === 'since1928')!.realPct
-/** Cautious: history beat it in most 30-year stretches, not just the average one. */
-export const RECOMMENDED_RETURN_PCT = H.cautious.realPct
+/**
+ * We recommend the default: the full record since 1928 is the most neutral
+ * figure, through the Depression, wars and crashes. The cautious 5% stays one
+ * tap away for anyone who wants extra margin (D-24).
+ */
+export const RECOMMENDED_RETURN_PCT = DEFAULT_RETURN_PCT
+/** Extra margin: history beat it in most 30-year stretches, not just the average one. */
+export const CAUTIOUS_RETURN_PCT = H.cautious.realPct
 export const SP500_THROUGH = H.through
 export const SP500_WINDOWS = H.windows
 
 const byId = (id: string) => GROWTH_CHOICES.find((c) => c.id === id)!
 export const RETURN_RECOMMENDATION =
-  `${RECOMMENDED_RETURN_PCT}%. The S&P 500 did at least this well in ${byId('cautious').beatShare}% of 30-year stretches since 1928; its full-history average, ${DEFAULT_RETURN_PCT}%, in only ${byId('since1928').beatShare}%. Recent decades were higher, but a plan should hold up if the next 30 years are ordinary.`
+  `${DEFAULT_RETURN_PCT}%, the S&P 500's full record since 1928, through the Depression, wars, inflation and crashes. It is the most neutral figure: ${byId('since1928').beatShare}% of 30-year stretches did at least this well. For extra margin, the cautious ${CAUTIOUS_RETURN_PCT}% was matched in ${byId('cautious').beatShare}%.`

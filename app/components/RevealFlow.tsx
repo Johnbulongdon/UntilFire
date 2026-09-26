@@ -7,7 +7,7 @@ import PercentileTrack from "@/app/components/PercentileTrack";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
 import type { NetWorthComparison } from "@/lib/net-worth-compare";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
-import { DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT } from "@/lib/fire-number";
+import { CAUTIOUS_RETURN_PCT, DEFAULT_RETURN_PCT } from "@/lib/fire-number";
 
 // Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
 const ExpatFireGlobe = dynamic(() => import("@/app/components/ExpatFireGlobe"), {
@@ -301,15 +301,15 @@ export default function RevealFlow(props: RevealFlowProps) {
               {!isAlreadyFire && (
                 <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", position: "relative", maxWidth: 440, ...anim("rf-up .7s 1.8s ease both") }}>
                   {returnPct === DEFAULT_RETURN_PCT
-                    ? <>Assumes {returnPct}% growth a year after inflation, the S&amp;P 500&apos;s average since 1928. </>
-                    : returnPct === RECOMMENDED_RETURN_PCT
-                      ? <>Using a cautious {returnPct}% growth a year after inflation, as we recommend. </>
+                    ? <>Assumes {returnPct}% growth a year after inflation: the S&amp;P 500&apos;s full record since 1928, as we recommend. </>
+                    : returnPct === CAUTIOUS_RETURN_PCT
+                      ? <>Using a cautious {returnPct}% growth a year after inflation, for extra margin. </>
                       : <>Using {returnPct}% growth a year after inflation. </>}
                   <button
-                    onClick={() => onReturnChange(returnPct === RECOMMENDED_RETURN_PCT ? DEFAULT_RETURN_PCT : RECOMMENDED_RETURN_PCT)}
+                    onClick={() => onReturnChange(returnPct === DEFAULT_RETURN_PCT ? CAUTIOUS_RETURN_PCT : DEFAULT_RETURN_PCT)}
                     style={linkButton}
                   >
-                    {returnPct === RECOMMENDED_RETURN_PCT ? `See it at ${DEFAULT_RETURN_PCT}%` : `See it at a cautious ${RECOMMENDED_RETURN_PCT}%`}
+                    {returnPct === DEFAULT_RETURN_PCT ? `See it at a cautious ${CAUTIOUS_RETURN_PCT}%` : `Back to the recommended ${DEFAULT_RETURN_PCT}%`}
                   </button>
                   {growthPicker && (
                     <>

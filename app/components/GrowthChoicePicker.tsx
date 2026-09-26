@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Badge, SegmentedControl } from '@/components/ui'
 import {
-  DEFAULT_RETURN_PCT, GROWTH_CHOICES, RECOMMENDED_RETURN_PCT, SP500_THROUGH, SP500_WINDOWS,
+  GROWTH_CHOICES, RECOMMENDED_RETURN_PCT, SP500_THROUGH, SP500_WINDOWS,
 } from '@/lib/fire-number'
 
 interface Props {
@@ -73,7 +73,6 @@ export default function GrowthChoicePicker({ value, onChange }: Props) {
               <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--uf-s2)' }}>
                 <span className="uf-t-body" style={{ fontWeight: 700 }}>{c.label}</span>
                 {c.realPct === RECOMMENDED_RETURN_PCT && <Badge tone="positive">Recommended</Badge>}
-                {c.realPct === DEFAULT_RETURN_PCT && <Badge tone="muted">Default</Badge>}
               </span>
               <span className="uf-t-data" style={{ fontWeight: 700, fontSize: 16 }}>
                 {c.nominalEstimated && view === 'before' ? '≈' : ''}{pct(main)}
