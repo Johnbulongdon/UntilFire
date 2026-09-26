@@ -109,6 +109,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }))
 
   const curatedCitySlugs = new Set(cityLandingPages.map((page) => page.slug))
+  const curatedCityKeys = new Set(cityLandingPages.map((page) => page.city.key))
 
   const curatedCityRoutes: MetadataRoute.Sitemap = cityLandingPages.map((page) => ({
     url: siteUrl(`/fire-number/${page.slug}`),
@@ -118,7 +119,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }))
 
   const usCityRoutes: MetadataRoute.Sitemap = CITIES
-    .filter((city) => isUS(city.state) && !curatedCitySlugs.has(city.key))
+    .filter((city) => isUS(city.state) && !curatedCitySlugs.has(city.key) && !curatedCityKeys.has(city.key))
     .map((city) => ({
       url: siteUrl(`/fire-number/${city.key}`),
       lastModified: new Date(),

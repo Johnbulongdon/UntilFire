@@ -2,6 +2,34 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-26
+
+### Growth after inflation, chosen from S&P 500 history
+- Growth is now a choice among stretches of S&P 500 history, each starting at
+  an event that explains it: since 1928 (the full record), 1946 (after World War
+  II), 1972 (after the gold standard), 1982 (the long bull market), 2000 (the
+  dot-com peak) and 2009 (after the 2008 crash). There is also a cautious 5%,
+  and the worst 30 years on record. Each shows its return, why its start
+  matters, and how often every 30-year stretch since 1928 did as well.
+  Generated from Shiller's data and BLS inflation by
+  `scripts/build-sp500-history.mjs`.
+- The picker switches between before inflation (what an account statement
+  shows) and after inflation, and explains the difference. The free result's
+  freedom number switches between today's dollars and the freedom year's
+  dollars, and says the date stays the same.
+- The default is the measured since-1928 figure, 6.9% after inflation (it was
+  typed as 7%), so default dates move one to three months later. We recommend 5%.
+- The free result says what it assumes and where that comes from, switches to
+  5% in one tap, and opens the history on request. The choice carries into the
+  dashboard at sign-up.
+- Plan's assumptions card, the savings rate calculator and Coast FIRE use the
+  same history picker. The dashboard's saved growth rate could not be changed
+  before; the dashboard's expat comparisons now use it too.
+- The savings rate page's method note no longer describes the monthly model it
+  stopped using. The landing hero's example now uses the same rate as its date.
+- The free result's freedom age now rounds like its year (the engine was fixed
+  yesterday; the result screen had its own copy). Recorded as D-24.
+
 ## [Unreleased] - 2026-09-25
 
 ### US city estimate sources
@@ -44,7 +72,9 @@ All notable changes to UntilFire are documented here.
   can pressure-test the 25x baseline before continuing to a calculator. Let
   curated city explanations stack on phones instead of compressing into a narrow
   column, and replace Austin's unrelated international recommendations with four
-  Texas city comparisons.
+  Texas city comparisons. Consolidate the generic `/fire-number/austin` route
+  into the state-qualified `/fire-number/austin-tx` canonical and remove the
+  duplicate route from the sitemap.
 - The Austin spending table puts the 25x FIRE target right after the scenario,
   so it shows on a phone without scrolling the table sideways.
 

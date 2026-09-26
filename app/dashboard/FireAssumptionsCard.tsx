@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
+import { Button } from "@/components/ui";
+import { RECOMMENDED_RETURN_PCT, RETURN_RECOMMENDATION } from "@/lib/fire-number";
+import GrowthChoicePicker from "@/app/components/GrowthChoicePicker";
 
 /**
  * The assumptions a freedom date is computed from: age, where freedom gets
@@ -36,6 +39,9 @@ interface Props {
   taxKey: string;
   onTaxKeyChange: (key: string) => void;
   displayCurrency: string;
+  /** Growth after inflation, as a fraction (0.069). */
+  growthRate: number;
+  onGrowthRateChange: (rate: number) => void;
 }
 
 const LIFESTYLE_TIERS = [
@@ -97,6 +103,8 @@ export default function FireAssumptionsCard({
   taxKey,
   onTaxKeyChange,
   displayCurrency,
+  growthRate,
+  onGrowthRateChange,
 }: Props) {
   const [saved, setSaved] = useState(false);
   const [citySearch, setCitySearch] = useState(retirementCityName);
@@ -115,6 +123,7 @@ export default function FireAssumptionsCard({
   const targetAnnualSpend = retirementCityCol > 0 ? retirementCityCol * lifestyleMultiplier : 0;
   const targetFireNumber = targetAnnualSpend * 25;
   const showMoney = (n: number) => formatMoney(n, { currency: displayCurrency });
+  const returnPct = Math.round(growthRate * 1000) / 10;
 
   function flash() {
     setSaved(true);
@@ -263,6 +272,23 @@ export default function FireAssumptionsCard({
             </div>
           );
         })()}
+      </div>
+
+      {/* Growth after inflation (D-24): the assumption that moves the date most. */}
+      <div style={{ marginTop: 18 }}>
+        <label style={labelStyle}>Growth after inflation</label>
+        <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: "0 0 8px" }}>
+          How much your investments grow each year, beyond prices rising. Higher brings the date closer; lower is surer.
+        </p>
+        <GrowthChoicePicker value={returnPct} onChange={(v) => { onGrowthRateChange(v / 100); flash(); }} />
+        <div style={{ marginTop: 10, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 12px", display: "grid", gap: 8, justifyItems: "start" }}>
+          <p style={{ fontSize: 13, color: "var(--uf-ink)", lineHeight: 1.6, margin: 0 }}>
+            <strong>Recommended: </strong>{RETURN_RECOMMENDATION}
+          </p>
+          {returnPct === RECOMMENDED_RETURN_PCT
+            ? <span style={{ fontSize: 13, color: "var(--uf-ink-3)" }}>&#10003; Using the recommendation</span>
+            : <Button variant="secondary" size="sm" onClick={() => { onGrowthRateChange(RECOMMENDED_RETURN_PCT / 100); flash(); }}>Use recommended</Button>}
+        </div>
       </div>
     </div>
   );

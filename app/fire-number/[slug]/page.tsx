@@ -537,7 +537,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   const COAST_REAL_RETURN = REAL_RETURN
   const coastTarget = Math.round(fireTarget / Math.pow(1 + COAST_REAL_RETURN, COAST_TO_AGE - COAST_FROM_AGE))
   const fireVariants = [
-    { label: 'Coast FIRE', value: coastTarget, note: `Invest this by age ${COAST_FROM_AGE} and growth alone (≈7% real) can reach full FIRE by ${COAST_TO_AGE} — no further contributions needed.` },
+    { label: 'Coast FIRE', value: coastTarget, note: `Invest this by age ${COAST_FROM_AGE} and growth alone (≈${(COAST_REAL_RETURN * 100).toFixed(1)}% real) can reach full FIRE by ${COAST_TO_AGE} — no further contributions needed.` },
     { label: 'Barista FIRE', value: baristaTarget, note: `Portfolio covers roughly half of ${data.name}'s ${formatMoney(data.col)} annual spending; part-time work bridges the rest.` },
     { label: 'Lean FIRE', value: leanTarget, note: `A leaner ${formatMoney(Math.round(data.col * 0.7))}/year lifestyle in ${data.name} (about 70% of the baseline), at the 25× rule.` },
     { label: 'Full FIRE', value: fireTarget, note: `The standard 25× target on ${data.name}'s ${formatMoney(data.col)} annual baseline.` },

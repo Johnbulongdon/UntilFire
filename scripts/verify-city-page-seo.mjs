@@ -4,11 +4,29 @@ import { existsSync, readFileSync } from 'node:fs'
 const source = readFileSync('app/fire-number/[slug]/page.tsx', 'utf8')
 const fireDataSource = readFileSync('lib/fire-data.ts', 'utf8')
 const curatedCitySource = readFileSync('lib/city-pages.ts', 'utf8')
+const nextConfigSource = readFileSync('next.config.js', 'utf8')
+const sitemapSource = readFileSync('app/sitemap.ts', 'utf8')
 const austinSeed = curatedCitySource.match(/\{\s*slug: 'austin-tx',[\s\S]*?\n  \},/)?.[0]
 const singaporeSeed = curatedCitySource.match(/\{\s*slug: 'singapore',[\s\S]*?\n  \},/)?.[0]
 
 assert.ok(austinSeed, 'Austin curated-city seed should exist')
 assert.ok(singaporeSeed, 'Singapore curated-city seed should exist')
+
+assert.match(
+  nextConfigSource,
+  /source: '\/fire-number\/austin',[\s\S]*?destination: '\/fire-number\/austin-tx',[\s\S]*?permanent: true/,
+  'the legacy Austin route should permanently redirect to the state-qualified canonical route',
+)
+assert.match(
+  sitemapSource,
+  /const curatedCityKeys = new Set\(cityLandingPages\.map\(\(page\) => page\.city\.key\)\)/,
+  'the sitemap should identify curated pages by their underlying city key',
+)
+assert.match(
+  sitemapSource,
+  /!curatedCityKeys\.has\(city\.key\)/,
+  'the sitemap should omit generic aliases for curated city pages',
+)
 
 assert.match(
   source,
