@@ -69,15 +69,14 @@ export default function FourPercentRuleCalculator() {
           <Badge tone="muted" style={{ marginBottom: 'var(--uf-s3)' }}>FIRE · Retirement</Badge>
           <h1 className="uf-t-h1" style={{ margin: '0 0 var(--uf-s3)', lineHeight: 1.1 }}>FIRE Number Calculator</h1>
           <p className="uf-t-lead" style={{ color: 'var(--uf-ink-2)', margin: 0 }}>
-            How much you need invested for work to become optional. It starts at the common rule, 25× your yearly spending,
-            and shows every factor that changes it, with our recommendation for each.
+            How much you need invested to make work optional.
           </p>
         </header>
 
         <div className="uf-calc ph-no-capture">
           <div className={`uf-calc-results ${styles.results}`}>
             <Card>
-              <div className="uf-t-label" style={{ color: 'var(--uf-ink-2)' }}>Your FIRE number</div>
+              <div className="uf-t-label" style={{ color: 'var(--uf-ink-2)' }}>Your FIRE number · today&apos;s dollars</div>
               <div className="uf-t-data" aria-live="polite" style={{ fontSize: 40, fontWeight: 700, margin: 'var(--uf-s1) 0 var(--uf-s4)' }}>
                 {whole(r.fireNumber)}
               </div>
@@ -88,15 +87,14 @@ export default function FourPercentRuleCalculator() {
               </dl>
               <p className="uf-t-body" style={{ margin: 'var(--uf-s4) 0 0', color: 'var(--uf-ink-2)' }}>
                 {r.fireNumber > 0
-                  ? <>In your first year without work you&apos;d take out {whole(r.firstYearWithdrawal)} ({rate}%), then raise it with prices each year. All amounts are in today&apos;s dollars.</>
-                  : <>Other income covers your spending, so you don&apos;t need savings to pay for it.</>}
+                  ? <>First year: take out {whole(r.firstYearWithdrawal)}, then raise it with prices.</>
+                  : <>Other income covers your spending.</>}
               </p>
               {saved > 0 && (
                 <Progress value={progress / 100} label="Progress to your FIRE number" caption={`${formatMoney(saved, { style: 'compact' })} of ${formatMoney(r.fireNumber, { style: 'compact' })}`} style={{ marginTop: 'var(--uf-s4)' }} />
               )}
               <div style={{ borderTop: '1px solid var(--uf-border)', marginTop: 'var(--uf-s4)', paddingTop: 'var(--uf-s4)' }}>
-                <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s3)' }}>Your number is the target. Your freedom date is when you reach it.</p>
-                <Link href="/?source=calculator-4-percent-rule" className={`uf-t-body ${styles.primaryLink}`}>Find your freedom date →</Link>
+                <Link href="/?source=calculator-4-percent-rule" className={`uf-t-body ${styles.primaryLink}`}>When will you reach it? →</Link>
               </div>
             </Card>
           </div>
@@ -119,8 +117,10 @@ export default function FourPercentRuleCalculator() {
               <Factor
                 title="Withdrawal rate"
                 hint="The share of your savings you take out in the first year. Lower is safer and needs a bigger number."
-                recommendation={`${rec.rate}%. ${rec.why}`}
+                recommendation={`${rec.rate}%`}
+                recommendationWhy={rec.why}
                 onUseRecommendation={rate === rec.rate ? undefined : () => setRate(rec.rate)}
+                applied={rate === rec.rate}
               >
                 <SegmentedControl label="Withdrawal rate" size="sm" value={String(rate)} onChange={(v) => setRate(Number(v))} options={WITHDRAWAL_RATES.map((v) => ({ value: String(v), label: pctLabel(v) }))} />
                 <Field label="Age you want to stop working (optional)" htmlFor="fn-stop-age" error={stopAgeValid ? undefined : 'Enter an age from 18 to 90.'}>
@@ -131,8 +131,10 @@ export default function FourPercentRuleCalculator() {
               <Factor
                 title="Tax on withdrawals"
                 hint="Money from a traditional 401(k) or IRA is taxed as income when you take it out; Roth money isn't, and taxable accounts usually owe less."
-                recommendation={`${RECOMMENDED_TAX_RATE}% if most of your savings are in a traditional 401(k) or IRA, or you're not sure. Leave it at 0% if they're mostly Roth.`}
+                recommendation={`${RECOMMENDED_TAX_RATE}%`}
+                recommendationWhy={`${RECOMMENDED_TAX_RATE}% if most of your savings are in a traditional 401(k) or IRA, or you're not sure. 0% if they're mostly Roth.`}
                 onUseRecommendation={tax === RECOMMENDED_TAX_RATE ? undefined : () => setTax(RECOMMENDED_TAX_RATE)}
+                applied={tax === RECOMMENDED_TAX_RATE}
               >
                 <SegmentedControl label="Tax on withdrawals" size="sm" value={String(tax)} onChange={(v) => setTax(Number(v))} options={TAX_RATES.map((v) => ({ value: String(v), label: pctLabel(v) }))} />
               </Factor>
@@ -140,7 +142,8 @@ export default function FourPercentRuleCalculator() {
               <Factor
                 title="Other income"
                 hint="A pension, rent or part-time work you'll have from the day you stop. It pays for part of your spending, so you need less saved."
-                recommendation="Leave it blank unless it's reliable and starts when you stop. Social Security starts at 62 at the earliest, so leave it out if you'll stop sooner."
+                recommendation="only if it starts when you stop"
+                recommendationWhy="Count income that's reliable and starts the day you stop. Social Security starts at 62 at the earliest, so leave it out if you'll stop sooner."
               >
                 <Field label="Per year (USD)" htmlFor="fn-income">
                   <Input id="fn-income" numeric type="number" inputMode="decimal" min={0} step={1000} placeholder="0" value={incomeRaw} onChange={(e) => setIncomeRaw(e.target.value)} />
@@ -153,7 +156,7 @@ export default function FourPercentRuleCalculator() {
                 </Field>
               </Factor>
 
-              <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-3)' }}>Calculated in your browser. Nothing you enter is sent or saved.</p>
+              <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-3)' }}>Private: stays in your browser.</p>
             </Card>
           </div>
           <div className={styles.miniBar} aria-hidden="true">
