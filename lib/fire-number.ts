@@ -92,3 +92,18 @@ export function fireProgress(saved: number, target: number): number {
   if (!(target > 0)) return saved > 0 ? 100 : 0
   return Math.min(Math.max(saved / target, 0), 1) * 100
 }
+
+/**
+ * The growth a portfolio earns each year after inflation. It sets how fast
+ * savings reach the FIRE number, so it moves the freedom date more than any
+ * other assumption. UntilFire's default stays 7% (D-07: the stock market's
+ * long-run average after inflation); the recommendation is 5%, because a
+ * real portfolio holds some bonds and cash, pays fees, and can meet bad years
+ * early. A plan that still works at 5% is the safer one to act on. D-24.
+ */
+export const RETURN_OPTIONS = [4, 5, 6, 7] as const
+/** REAL_RETURN (lib/fire) as a whole percentage; test:fire-number keeps them equal. */
+export const DEFAULT_RETURN_PCT = 7
+export const RECOMMENDED_RETURN_PCT = 5
+export const RETURN_RECOMMENDATION =
+  '5%, a cautious plan. 7% is the stock market’s long-run average after inflation; a real portfolio with some bonds, fees and a bad early decade has earned less, so a date that holds at 5% is safer to act on.'

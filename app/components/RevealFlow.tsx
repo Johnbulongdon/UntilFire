@@ -7,6 +7,7 @@ import PercentileTrack from "@/app/components/PercentileTrack";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
 import type { NetWorthComparison } from "@/lib/net-worth-compare";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
+import { DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT } from "@/lib/fire-number";
 
 // Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
 const ExpatFireGlobe = dynamic(() => import("@/app/components/ExpatFireGlobe"), {
@@ -25,6 +26,9 @@ export interface RevealFlowProps {
   yearsToFire: number | null;
   planningAge: number;
   ageWasAssumed: boolean;
+  /** Growth after inflation the result uses, in percent (D-24). */
+  returnPct: number;
+  onReturnChange: (pct: number) => void;
   isAlreadyFire: boolean;
   fireTarget: number;
   /** 0–100, how much of the target is already invested. */
@@ -133,7 +137,7 @@ function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, f
 
 export default function RevealFlow(props: RevealFlowProps) {
   const {
-    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, isAlreadyFire,
+    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, onReturnChange, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
     expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, onAdjust, onShare, onStepViewed,
@@ -285,6 +289,19 @@ export default function RevealFlow(props: RevealFlowProps) {
               {!isAlreadyFire && (
                 <div style={{ ...subtle, marginTop: 4, position: "relative", ...anim("rf-up .7s 1.65s ease both") }}>
                   Most people wait until 65. You don&apos;t have to.
+                </div>
+              )}
+              {!isAlreadyFire && (
+                <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", position: "relative", maxWidth: 420, ...anim("rf-up .7s 1.8s ease both") }}>
+                  {returnPct === RECOMMENDED_RETURN_PCT
+                    ? <>Using a cautious {returnPct}% growth a year after inflation, as we recommend. </>
+                    : <>Assumes {returnPct}% growth a year after inflation. We recommend planning at a cautious {RECOMMENDED_RETURN_PCT}%. </>}
+                  <button
+                    onClick={() => onReturnChange(returnPct === RECOMMENDED_RETURN_PCT ? DEFAULT_RETURN_PCT : RECOMMENDED_RETURN_PCT)}
+                    style={{ background: "none", border: "none", padding: 0, color: "var(--uf-green)", font: "700 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}
+                  >
+                    {returnPct === RECOMMENDED_RETURN_PCT ? `See it at ${DEFAULT_RETURN_PCT}%` : `See it at ${RECOMMENDED_RETURN_PCT}%`}
+                  </button>
                 </div>
               )}
               {ageWasAssumed && !isAlreadyFire && (

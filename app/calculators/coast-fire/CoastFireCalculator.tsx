@@ -6,7 +6,8 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ReferenceDot,
 } from 'recharts'
 import Logo from '@/app/components/Logo'
-import { Badge, Card, Money, Slider, Stat } from '@/components/ui'
+import { Badge, Button, Card, Money, Slider, Stat } from '@/components/ui'
+import { RECOMMENDED_RETURN_PCT, RETURN_RECOMMENDATION } from '@/lib/fire-number'
 import { formatMoney } from '@/lib/money'
 
 /**
@@ -421,7 +422,15 @@ export default function CoastFireCalculator() {
                   min={10_000} max={250_000} step={1_000} format={money} />
                 <Slider label="Expected annual return" value={returnRate} onChange={setReturnRate}
                   min={1} max={12} step={0.1} format={pct}
-                  hint="After inflation. 7% is an assumption, not a forecast; compare lower returns too." />
+                  hint="After inflation. 7% is the stock market's long-run average, not a forecast." />
+                <div style={{ background: 'var(--uf-surface)', border: '1px solid var(--uf-border)', borderRadius: 'var(--uf-r-control)', padding: 'var(--uf-s3)', display: 'grid', gap: 'var(--uf-s2)', justifyItems: 'start' }}>
+                  <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink)' }}>
+                    <strong>Recommended: </strong>{RETURN_RECOMMENDATION}
+                  </p>
+                  {returnRate === RECOMMENDED_RETURN_PCT
+                    ? <span className="uf-t-small" style={{ color: 'var(--uf-ink-3)' }}>✓ Using the recommendation</span>
+                    : <Button variant="secondary" size="sm" onClick={() => setReturnRate(RECOMMENDED_RETURN_PCT)}>Use recommended</Button>}
+                </div>
                 <Slider label="Withdrawal rate" value={withdrawalRate} onChange={setWithdrawalRate}
                   min={2} max={6} step={0.1} format={pct}
                   hint="4% is the common starting point." />

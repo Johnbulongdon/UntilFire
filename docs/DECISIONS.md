@@ -720,6 +720,38 @@ quick box. `test:fire-number` pins the worked examples published on the page.
 **Revisit:** if readers mostly take the recommendations, consider starting there.
 **Source:** `lib/fire-number.ts`, `app/calculators/4-percent-rule/`.
 
+### D-24 — September 26: growth after inflation is a factor, with 5% recommended
+
+**Status:** Active. Authorised by the founder on 2026-09-26 ("Make the return an
+adjustable factor with a recommendation"). Builds on D-07 without reversing it.
+**Decision:** The growth a portfolio earns after inflation is shown and
+adjustable (4%, 5%, 6% or 7%) wherever a freedom date is calculated:
+- The free result says what it assumes, with a one-tap switch between 7% and
+  5%. Every figure on the result follows the switch, and the choice carries
+  into the dashboard at sign-up.
+- Plan's assumptions card has the control, saved with the other planning
+  assumptions (`fire_profile.growthRate`, which existed but could not be
+  changed). The dashboard's expat comparisons now use it too.
+- The savings rate page has it as a factor, and Coast FIRE's return slider
+  carries the recommendation.
+
+The default stays 7% (D-07: the stock market's long-run average after
+inflation), so no one's date moves unless they choose. We recommend 5%: a real
+portfolio holds some bonds and cash, pays fees, and can meet a bad first
+decade, so a date that holds at 5% is safer to act on.
+**Why:** The return moves the date more than any other assumption (for one
+example person, 20.7 years at 7% and 24.2 at 5%). The audit found it hidden on
+the free result and unchangeable in the dashboard, which undercuts the
+"standard" we want other sites to cite.
+**Alternatives:** Making 5% the default was left for the founder. It would move
+every existing date later by years, so it needs its own decision.
+**Guardrails:** Options and wording live in `lib/fire-number.ts`, and
+`test:fire-number` checks the default equals the engine's `REAL_RETURN`.
+**Revisit:** if most people who see the switch take 5%, consider making it the
+default.
+**Source:** `app/HomeClient.tsx`, `app/components/RevealFlow.tsx`,
+`app/dashboard/FireAssumptionsCard.tsx`, `lib/fire-number.ts`.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,

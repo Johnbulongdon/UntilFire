@@ -7,8 +7,8 @@
  * Run: npm run test:fire-number
  */
 import { readFileSync } from 'node:fs';
-import { fireNumber, recommendedWithdrawalRate, fireProgress } from '../lib/fire-number.ts';
-import { calcFIRE, yearsToTarget } from '../lib/fire/strategies/traditional.ts';
+import { fireNumber, recommendedWithdrawalRate, fireProgress, DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, RETURN_OPTIONS } from '../lib/fire-number.ts';
+import { calcFIRE, yearsToTarget, REAL_RETURN } from '../lib/fire/strategies/traditional.ts';
 import { monthsToFire } from '../lib/purchase-impact.ts';
 
 const checks = [];
@@ -64,6 +64,26 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   }
   check('city pages use the shared return, not a typed 0.07', !read('app/fire-number/[slug]/page.tsx').includes('= 0.07'));
   check('purchase impact logo follows the theme', read('app/calculators/purchase-impact/PurchaseImpactCalculator.tsx').includes('<Logo variant="auto"'));
+}
+
+// ── Growth after inflation is a factor (D-24)
+{
+  check('the default growth is the engine\'s 7%', DEFAULT_RETURN_PCT === Math.round(REAL_RETURN * 100) && DEFAULT_RETURN_PCT === 7);
+  check('the recommendation (5%) is one of the choices', RETURN_OPTIONS.includes(RECOMMENDED_RETURN_PCT) && RECOMMENDED_RETURN_PCT === 5);
+  const at7 = calcFIRE(2000, 50000, 30, 50000, 0.07).years, at5 = calcFIRE(2000, 50000, 30, 50000, 0.05).years;
+  check('the cautious rate gives a later date (20.7 → 24.2 years)', at5 > at7 && Math.abs(at7 - 20.7) < 0.05 && Math.abs(at5 - 24.2) < 0.05, `${at7} ${at5}`);
+  const home = read('app/HomeClient.tsx');
+  check('free result: growth is state, and every projection uses it', home.includes('useState<number>(DEFAULT_RETURN_PCT)') && home.includes('const marketReturn = returnPct / 100;') && !home.includes('const marketReturn = REAL_RETURN'));
+  check('free result: the choice carries into the dashboard', home.includes('realReturn: marketReturn') && read('app/dashboard/page.tsx').includes('prefill.realReturn'));
+  check('free result: age rounds like the year', home.includes('planningAge + Math.floor(result.years)') && !home.includes('planningAge + Math.round(projection.years)'));
+  const flow = read('app/components/RevealFlow.tsx');
+  check('free result says what growth it assumes and offers the recommendation', flow.includes('growth a year after inflation') && flow.includes('onReturnChange('));
+  const card = read('app/dashboard/FireAssumptionsCard.tsx');
+  check('Plan assumptions: growth control with recommendation', card.includes('RETURN_RECOMMENDATION') && card.includes('onGrowthRateChange('));
+  const dash = read('app/dashboard/page.tsx');
+  check('dashboard wires the saved growth into the card and expat views', dash.includes('onGrowthRateChange={setGrowthRate}') && !/calcFIRE\([^)]*portfolioBalance\);/.test(dash));
+  check('savings rate page: growth is a factor', read('app/calculators/savings-rate/SavingsRateCalculator.tsx').includes('yearsToFIRE(sr, returnPct / 100'));
+  check('Coast FIRE: growth carries the recommendation', read('app/calculators/coast-fire/CoastFireCalculator.tsx').includes('RETURN_RECOMMENDATION'));
 }
 
 // ── Wiring

@@ -5882,7 +5882,7 @@ export default function Dashboard() {
           setTotalDebt(fp.totalDebt || 0);
           setMortgageBalance(fp.mortgageBalance || 0);
           setMortgageMonthly(fp.mortgageMonthly || 0);
-          setGrowthRate(fp.growthRate || 0.07);
+          setGrowthRate(fp.growthRate || prefill.realReturn || 0.07);
           setWithdrawalRate(fp.withdrawalRate || 0.04);
           setCityName(fp.cityName || prefill.cityName || "");
           setRetirementCityName(fp.retirementCityName || "");
@@ -5898,6 +5898,7 @@ export default function Dashboard() {
           if (prefill.currentAge) setFireAge(prefill.currentAge);
           if (prefill.cityName) setCityName(prefill.cityName);
           if (prefill.portfolioBalance && prefill.portfolioBalance > 0) setCashSavings(prefill.portfolioBalance);
+          if (prefill.realReturn) setGrowthRate(prefill.realReturn);
         }
         isLoaded.current = true;
         setProfileLoading(false);
@@ -6600,6 +6601,8 @@ export default function Dashboard() {
                       taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
                       onTaxKeyChange={handleTaxKeyChange}
                       displayCurrency={defaultCurrency}
+                      growthRate={growthRate}
+                      onGrowthRateChange={setGrowthRate}
                     />
                     <FireCalcMenuTab
                       fireAge={fireAge}
@@ -6648,6 +6651,7 @@ export default function Dashboard() {
                 age={fireAge}
                 cityName={cityName}
                 isDark={isDark}
+                growthRate={growthRate}
                 onEditAssumptions={() => { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }}
               />
             )}
@@ -6687,7 +6691,9 @@ function ExpatFireDashTab({
   cityName,
   isDark,
   onEditAssumptions,
+  growthRate,
 }: {
+  growthRate: number;
   portfolioBalance: number;
   monthlySavings: number;
   age: number;
@@ -6745,7 +6751,7 @@ function ExpatFireDashTab({
     return CITIES
       .filter(c => CITY_COORDS[c.key])
       .map(c => {
-        const r = calcFIRE(monthlySavings, c.col, age || undefined, portfolioBalance);
+        const r = calcFIRE(monthlySavings, c.col, age || undefined, portfolioBalance, growthRate);
         return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
       })
       .sort((a, b) => (a.years ?? Infinity) - (b.years ?? Infinity) || a.col - b.col);
@@ -6790,6 +6796,7 @@ function ExpatFireDashTab({
   if (selectedCityKey) {
     return (
       <ExpatCityDetail
+        growthRate={growthRate}
         cityKey={selectedCityKey}
         portfolioBalance={portfolioBalance}
         monthlySavings={monthlySavings}
@@ -6987,7 +6994,9 @@ function ExpatCityDetail({
   currentCityKey,
   isDark,
   onBack,
+  growthRate,
 }: {
+  growthRate: number;
   cityKey: string;
   portfolioBalance: number;
   monthlySavings: number;
@@ -7020,8 +7029,8 @@ function ExpatCityDetail({
   const currentCol = currentCity?.col ?? 60000;
   const targetCol = targetCity.col;
 
-  const currentFire = calcFIRE(monthlySavings, currentCol, age || undefined, portfolioBalance);
-  const targetFire = calcFIRE(monthlySavings, targetCol, age || undefined, portfolioBalance);
+  const currentFire = calcFIRE(monthlySavings, currentCol, age || undefined, portfolioBalance, growthRate);
+  const targetFire = calcFIRE(monthlySavings, targetCol, age || undefined, portfolioBalance, growthRate);
 
   const currentYears = currentFire.years;
   const targetYears = targetFire.years;

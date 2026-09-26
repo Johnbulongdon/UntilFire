@@ -2,6 +2,21 @@
 
 All notable changes to UntilFire are documented here.
 
+## [Unreleased] - 2026-09-26
+
+### Growth after inflation is a factor
+- The free result now says it assumes 7% growth a year after inflation, and
+  offers one tap to see the date at the cautious 5% we recommend. The choice
+  carries into the dashboard at sign-up.
+- Plan's assumptions card lets you choose 4–7% growth, with the recommendation
+  and a "Use recommended" button. The saved growth rate existed but could not
+  be changed before. The dashboard's expat comparisons now use it too.
+- The savings rate page has growth as a factor, and Coast FIRE's return slider
+  carries the recommendation. The savings rate page's method note no longer
+  describes the monthly model it stopped using. Recorded as D-24.
+- The free result's freedom age now rounds like its year. It could show one
+  year older than the year implied, the same bug fixed in the engine yesterday.
+
 ## [Unreleased] - 2026-09-25
 
 ### What does FIRE mean

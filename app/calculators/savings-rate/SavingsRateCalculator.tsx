@@ -3,9 +3,11 @@
 import { useState, useMemo } from 'react'
 import Logo from '@/app/components/Logo'
 import Link from 'next/link'
-import { Card, Field, Input, Stat } from '@/components/ui'
+import { Card, Field, Input, SegmentedControl, Stat } from '@/components/ui'
 import styles from './SavingsRateCalculator.module.css'
 import { REAL_RETURN, yearsToTarget } from '@/lib/fire/strategies/traditional'
+import { DEFAULT_RETURN_PCT, RECOMMENDED_RETURN_PCT, RETURN_OPTIONS, RETURN_RECOMMENDATION } from '@/lib/fire-number'
+import Factor from '@/app/calculators/4-percent-rule/Factor'
 
 const C = {
   bg: 'var(--uf-surface)',
@@ -33,6 +35,7 @@ export default function SavingsRateCalculator() {
   const [income, setIncome] = useState('80000')
   const [expenses, setExpenses] = useState('50000')
   const [currentSavings, setCurrentSavings] = useState('20000')
+  const [returnPct, setReturnPct] = useState<number>(DEFAULT_RETURN_PCT)
 
   const { sr, monthlySaved, years, table } = useMemo(() => {
     const inc = parseFloat(income) || 0
@@ -43,16 +46,16 @@ export default function SavingsRateCalculator() {
     const monthlySaved = annualSaved / 12
     const sr = inc > 0 ? annualSaved / inc : 0
 
-    const years = yearsToFIRE(sr, REAL_RETURN, saved, inc)
+    const years = yearsToFIRE(sr, returnPct / 100, saved, inc)
 
     const table = BENCHMARK_RATES.map((rate) => ({
       rate,
-      years: yearsToFIRE(rate, REAL_RETURN, saved, inc),
+      years: yearsToFIRE(rate, returnPct / 100, saved, inc),
       isYours: Math.abs(rate - sr) < 0.025,
     }))
 
     return { sr, monthlySaved, annualSaved, years, table }
-  }, [income, expenses, currentSavings])
+  }, [income, expenses, currentSavings, returnPct])
 
   const fmtYrs = (y: number) =>
     y === Infinity ? '50+ yrs' : y < 1 ? 'Already FIRE!' : `${y.toFixed(1)} yrs`
@@ -98,6 +101,14 @@ export default function SavingsRateCalculator() {
             <Field label="Current savings / investments ($)" htmlFor="savings-investments">
               <Input id="savings-investments" numeric type="number" value={currentSavings} onChange={e => setCurrentSavings(e.target.value)} style={{ fontSize: 16 }} min="0" step="1000" />
             </Field>
+            <Factor
+              title="Growth after inflation"
+              hint="How much your investments grow each year, beyond prices rising. Higher brings the date closer; lower is safer."
+              recommendation={RETURN_RECOMMENDATION}
+              onUseRecommendation={returnPct === RECOMMENDED_RETURN_PCT ? undefined : () => setReturnPct(RECOMMENDED_RETURN_PCT)}
+            >
+              <SegmentedControl label="Growth after inflation" size="sm" value={String(returnPct)} onChange={(v) => setReturnPct(Number(v))} options={RETURN_OPTIONS.map((v) => ({ value: String(v), label: `${v}%` }))} />
+            </Factor>
           </div>
         </Card>
 
@@ -106,7 +117,7 @@ export default function SavingsRateCalculator() {
           <div className={styles.results}>
             <Stat label="Your savings rate" value={`${Math.round(sr * 100)}%`} />
             <Stat label="Monthly saved" value={`$${Math.round(monthlySaved).toLocaleString()}`} />
-            <Stat label="Years to FIRE" value={fmtYrs(years)} tone="freedom" delta="7% return, 4% withdrawal" deltaTone="default" />
+            <Stat label="Years to FIRE" value={fmtYrs(years)} tone="freedom" delta={`${returnPct}% growth, 4% withdrawal`} deltaTone="default" />
           </div>
 
           {/* Rate vs years table */}
@@ -165,12 +176,14 @@ export default function SavingsRateCalculator() {
             to cover. Changing your starting investments also changes the timeline.
           </p>
           <p style={{ marginBottom: 16 }}>
-            The model adds savings each month and applies one twelfth of an assumed 7% annual
-            real return. Your FIRE target is 25 times annual expenses, using a 4% withdrawal
-            assumption. Amounts are in today&apos;s purchasing power; returns and spending are held constant.
+            The model grows your investments once a year at the growth you choose (7% after
+            inflation by default; we recommend planning at 5%) and adds the year&apos;s savings, the
+            same projection as the freedom date calculator. Your FIRE target is 25 times annual
+            expenses, using a 4% withdrawal assumption. Amounts are in today&apos;s purchasing power;
+            returns and spending are held constant.
           </p>
           <p>
-            These are planning estimates, not a promise that investments will earn 7% or that
+            These are planning estimates, not a promise that investments will grow at the rate you choose or that
             a 4% withdrawal will last. Taxes, fees, changing expenses and uneven market returns
             are not modeled separately. Use the full FIRE calculator to explore your wider plan.
           </p>
