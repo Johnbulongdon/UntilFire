@@ -431,19 +431,35 @@ function FooterSection() {
     },
   ];
 
+  const badgeRequiredListings = [
+    {
+      name: "Startup Fast",
+      href: "https://startupfa.st/projects/untilfire",
+      badge: "https://startupfa.st/images/badges/top1-dark.svg",
+    },
+    {
+      name: "SaaSLineup",
+      href: "https://saaslineup.com/product/untilfire?ref=badge",
+      badge: "https://saaslineup.com/badge/untilfire.svg",
+    },
+    {
+      name: "TheSaaSDir",
+      href: "https://thesaasdir.com/product/untilfire?ref=badge",
+      badge: "https://thesaasdir.com/badge/untilfire.svg",
+    },
+    {
+      name: "TheMicroSaaSDir",
+      href: "https://themicrosaasdir.com/product/untilfire?ref=badge",
+      badge: "https://themicrosaasdir.com/badge/untilfire.svg",
+    },
+  ];
+
   const verifiedListings = [
-    ["SaaSLineup", "https://saaslineup.com/product/untilfire/"],
-    ["TheSaaSDir", "https://thesaasdir.com/product/untilfire/"],
-    ["TheMicroSaaSDir", "https://themicrosaasdir.com/product/untilfire/"],
     ["Launchstag", "https://launchstag.com/p/untilfire"],
     ["ToolDirs", "https://tooldirs.com/product/untilfire"],
     ["First Look", "https://firstlook.tools/product/untilfire"],
     ["Noonlaunch", "https://noonlaunch.com/product/untilfire"],
-    ["DodoDirectory", "https://dododirectory.com/item/untilfire"],
-    ["SumoDir", "https://sumodir.com/item/untilfire-wwwuntilfirecom"],
-    ["Toolfio", "https://toolfio.com/item/untilfire"],
     ["ShowMySites", "https://www.showmysites.com/ngjohn101/untilfire/"],
-    ["CurlShip", "https://curlship.com"],
   ];
 
   return (
@@ -488,7 +504,17 @@ function FooterSection() {
         </section>
 
         <details className="uf7-listings">
-          <summary>Verified directory listings</summary>
+          <summary>Verified backlink partners</summary>
+          <div className="uf7-listings-badges" aria-label="Badge-required directory partners">
+            {badgeRequiredListings.map((listing) => (
+              <a key={listing.name} href={listing.href} target="_blank" rel="noopener">
+                {/* These official badge assets remain in the page because each
+                    free listing requires its badge for the backlink to stay live. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={listing.badge} alt={`Featured on ${listing.name}`} loading="lazy" />
+              </a>
+            ))}
+          </div>
           <div className="uf7-listings-links">
             {verifiedListings.map(([name, href]) => (
               <a key={name} href={href} target="_blank" rel="noopener">{name}</a>
@@ -568,6 +594,16 @@ const CSS7 = `
     display: inline-block; cursor: pointer; font-weight: 650; list-style-position: inside;
   }
   .uf7-listings summary:hover { color: var(--uf-ink); }
+  .uf7-listings-badges {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+    max-width: 760px; margin: 18px auto 0;
+  }
+  .uf7-listings-badges a {
+    display: flex; min-height: 58px; align-items: center; justify-content: center;
+    padding: 8px; border: 1px solid var(--uf-border); border-radius: 10px;
+    background: var(--uf-surface);
+  }
+  .uf7-listings-badges img { display: block; max-width: 100%; max-height: 42px; width: auto; height: auto; }
   .uf7-listings-links {
     display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 18px;
     max-width: 760px; margin: 16px auto 0;
@@ -863,6 +899,7 @@ const CSS7 = `
     .uf7-footer-wordmark { font-size: clamp(54px, 22vw, 88px); }
     .uf7-recognition { grid-template-columns: 1fr; gap: 20px; padding: 24px 0; }
     .uf7-recognition-list { grid-template-columns: 1fr; }
+    .uf7-listings-badges { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .uf7-footer-bottom { justify-content: center; text-align: center; }
   }
   /* Section rules run the full width of the window while the text keeps its
