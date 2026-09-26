@@ -1,1 +1,157 @@
-import assert from 'node:assert/strict'\nimport { existsSync, readFileSync } from 'node:fs'\n\nconst source = readFileSync('app/fire-number/[slug]/page.tsx', 'utf8')\nconst fireDataSource = readFileSync('lib/fire-data.ts', 'utf8')\nconst curatedCitySource = readFileSync('lib/city-pages.ts', 'utf8')\nconst austinSeed = curatedCitySource.match(/\{\s*slug: 'austin-tx',[\s\S]*?\n  \},/)?.[0]\nconst singaporeSeed = curatedCitySource.match(/\{\s*slug: 'singapore',[\s\S]*?\n  \},/)?.[0]\n\nassert.ok(austinSeed, 'Austin curated-city seed should exist')\nassert.ok(singaporeSeed, 'Singapore curated-city seed should exist')\n\nassert.match(\n  source,\n  /FIRE Number Calculator\{['"]\s['"]\}\s*<br \/>for \{data\.name\}/,\n  'generic city H1 should include a real text space before the line break so crawlers read “Calculator for …”, not “Calculatorfor …”',\n)\n\nassert.match(\n  austinSeed,\n  /searchTitle: 'Austin FIRE Number: \$1\.36M Estimate \| UntilFire'/,\n  'Austin search metadata should lead with the estimated answer',\n)\nassert.match(\n  austinSeed,\n  /currencyCode: 'USD'/,\n  'Austin should identify the currency used for its planning estimates',\n)\nassert.doesNotMatch(\n  singaporeSeed,\n  /currencyCode: 'USD'/,\n  'Singapore should not be presented as a USD-targeted search experiment',\n)\nassert.match(\n  source,\n  /How spending changes the \{page\.city\.name\} FIRE number/,\n  'the USD curated-city experiment should make the 25x target sensitive to spending assumptions',\n)\nassert.match(\n  source,\n  /\['Scenario', '25x FIRE target \(USD\)', 'Annual spending \(USD\)', 'Monthly spending \(USD\)'\]/,\n  'the spending table should put the FIRE target right after the scenario, so it shows on a phone without scrolling',\n)\nassert.match(\n  source,\n  /\[scenario\.annual \* 25, scenario\.annual, scenario\.annual \/ 12\]/,\n  'the spending table cells should follow the same column order as its headings',\n)\n\n// The wording changed on purpose in 9908ea5: the title now leads with the\n// city's number ("Retire in Seattle: You Need $2.1M"), because the old\n// category-shaped title matched every competing result. What must hold is\n// that both are specific to the city.\nassert.match(\n  source,\n  /title: `[^`]*\$\{data\.name\}[^`]*\| UntilFire`/,\n  'generic city pages should have city-specific title metadata',\n)\n\nassert.match(\n  source,\n  /description: `[^`]*\$\{data\.name\}[^`]*`/,\n  'generic city pages should have city-specific meta descriptions',\n)\n\nassert.match(\n  source,\n  /alternates: \{ canonical: `https:\/\/www\.untilfire\.com\/fire-number\/\$\{data\.key\}` \}/,\n  'generic city pages should have canonical URLs for their /fire-number/{city} route',\n)\n\nassert.match(\n  source,\n  /href=\{`\/fire-number\/\$\{c\.key\}`\}/,\n  'generic city pages should keep crawlable internal links to related city pages',\n)\n\nassert.match(\n  fireDataSource,\n  /export const US_CITY_COST_DATA_UPDATED = 'September 17, 2026'/,\n  'US city cost estimates should expose their last reviewed date',\n)\nfor (const expected of [\n  'How the {data.name} estimate is built',\n  'All amounts are annual US dollars',\n  'American Community Survey median gross rent for recent movers',\n  'Non-housing spending uses a {formatMoney(34_000)}',\n  'https://api.census.gov/data/2024/acs/acs5/groups/B25113.html',\n  'https://api.census.gov/data/2024/acs/acs5/groups/B25064.html',\n  'href="/calculators/4-percent-rule"',\n  'href={statePageHref}',\n]) {\n  assert.ok(source.includes(expected), `generic US city methodology missing: ${expected}`)\n}\n\nconst builtGenericCityPage = '.next/server/app/fire-number/idahofalls.html'\nif (existsSync(builtGenericCityPage)) {\n  const html = readFileSync(builtGenericCityPage, 'utf8')\n  const visibleText = html\n    .replace(/<script[\s\S]*?<\/script>/gi, ' ')\n    .replace(/<style[\s\S]*?<\/style>/gi, ' ')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&apos;/g, "'")\n    .replace(/\s+/g, ' ')\n  const h1 = html\n    .match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]\n    .replace(/<[^>]+>/g, '')\n    .replace(/\s+/g, ' ')\n    .trim()\n\n  assert.equal(\n    h1,\n    'FIRE Number Calculator for Idaho Falls, ID',\n    'built generic city H1 should be crawler-readable with a space between Calculator and for',\n  )\n  for (const expected of [\n    'How the Idaho Falls, ID estimate is built',\n    'Updated September 17, 2026',\n    'All amounts are annual US dollars',\n    'Census recent-mover rent table',\n    'Census all-renter fallback table',\n    'Test the 25× assumption',\n    'Compare FIRE costs across Idaho',\n  ]) {\n    assert.ok(visibleText.includes(expected), `built generic city page missing ${expected}`)\n  }\n}\n\nconst builtAustinPage = '.next/server/app/fire-number/austin-tx.html'\nif (existsSync(builtAustinPage)) {\n  const html = readFileSync(builtAustinPage, 'utf8')\n  assert.match(html, /<title>Austin FIRE Number: \$1\.36M Estimate \| UntilFire<\/title>/i)\n  for (const expected of [\n    'Spending sensitivity',\n    'All amounts are in US dollars',\n    '$1,018,125',\n    '$1,357,500',\n    '$1,696,875',\n    'Dallas, TX',\n    'Houston, TX',\n    'San Antonio, TX',\n    'Fort Worth, TX',\n  ]) {\n    assert.match(html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Austin page missing ${expected}`)\n  }\n  assert.doesNotMatch(html, /Compare nearby FIRE planning paths/)\n  assert.doesNotMatch(html, /FIRE NUMBER SINGAPORE/)\n}\n\nconst builtSingaporePage = '.next/server/app/fire-number/singapore.html'\nif (existsSync(builtSingaporePage)) {\n  const html = readFileSync(builtSingaporePage, 'utf8')\n  assert.doesNotMatch(html, /Spending sensitivity/)\n  assert.doesNotMatch(html, /All amounts are in US dollars/)\n}\n\nconsole.log('City page SEO checks passed')\n
+import assert from 'node:assert/strict'
+import { existsSync, readFileSync } from 'node:fs'
+
+const source = readFileSync('app/fire-number/[slug]/page.tsx', 'utf8')
+const fireDataSource = readFileSync('lib/fire-data.ts', 'utf8')
+const curatedCitySource = readFileSync('lib/city-pages.ts', 'utf8')
+const austinSeed = curatedCitySource.match(/\{\s*slug: 'austin-tx',[\s\S]*?\n  \},/)?.[0]
+const singaporeSeed = curatedCitySource.match(/\{\s*slug: 'singapore',[\s\S]*?\n  \},/)?.[0]
+
+assert.ok(austinSeed, 'Austin curated-city seed should exist')
+assert.ok(singaporeSeed, 'Singapore curated-city seed should exist')
+
+assert.match(
+  source,
+  /FIRE Number Calculator\{['"]\s['"]\}\s*<br \/>for \{data\.name\}/,
+  'generic city H1 should include a real text space before the line break so crawlers read “Calculator for …”, not “Calculatorfor …”',
+)
+
+assert.match(
+  austinSeed,
+  /searchTitle: 'Austin FIRE Number: \$1\.36M Estimate \| UntilFire'/,
+  'Austin search metadata should lead with the estimated answer',
+)
+assert.match(
+  austinSeed,
+  /currencyCode: 'USD'/,
+  'Austin should identify the currency used for its planning estimates',
+)
+assert.doesNotMatch(
+  singaporeSeed,
+  /currencyCode: 'USD'/,
+  'Singapore should not be presented as a USD-targeted search experiment',
+)
+assert.match(
+  source,
+  /How spending changes the \{page\.city\.name\} FIRE number/,
+  'the USD curated-city experiment should make the 25x target sensitive to spending assumptions',
+)
+assert.match(
+  source,
+  /\['Scenario', '25x FIRE target \(USD\)', 'Annual spending \(USD\)', 'Monthly spending \(USD\)'\]/,
+  'the spending table should put the FIRE target right after the scenario, so it shows on a phone without scrolling',
+)
+assert.match(
+  source,
+  /\[scenario\.annual \* 25, scenario\.annual, scenario\.annual \/ 12\]/,
+  'the spending table cells should follow the same column order as its headings',
+)
+
+// The wording changed on purpose in 9908ea5: the title now leads with the
+// city's number ("Retire in Seattle: You Need $2.1M"), because the old
+// category-shaped title matched every competing result. What must hold is
+// that both are specific to the city.
+assert.match(
+  source,
+  /title: `[^`]*\$\{data\.name\}[^`]*\| UntilFire`/,
+  'generic city pages should have city-specific title metadata',
+)
+
+assert.match(
+  source,
+  /description: `[^`]*\$\{data\.name\}[^`]*`/,
+  'generic city pages should have city-specific meta descriptions',
+)
+
+assert.match(
+  source,
+  /alternates: \{ canonical: `https:\/\/www\.untilfire\.com\/fire-number\/\$\{data\.key\}` \}/,
+  'generic city pages should have canonical URLs for their /fire-number/{city} route',
+)
+
+assert.match(
+  source,
+  /href=\{`\/fire-number\/\$\{c\.key\}`\}/,
+  'generic city pages should keep crawlable internal links to related city pages',
+)
+
+assert.match(
+  fireDataSource,
+  /export const US_CITY_COST_DATA_UPDATED = 'September 17, 2026'/,
+  'US city cost estimates should expose their last reviewed date',
+)
+for (const expected of [
+  'How the {data.name} estimate is built',
+  'All amounts are annual US dollars',
+  'American Community Survey median gross rent for recent movers',
+  'Non-housing spending uses a {formatMoney(34_000)}',
+  'https://api.census.gov/data/2024/acs/acs5/groups/B25113.html',
+  'https://api.census.gov/data/2024/acs/acs5/groups/B25064.html',
+  'href="/calculators/4-percent-rule"',
+  'href={statePageHref}',
+]) {
+  assert.ok(source.includes(expected), `generic US city methodology missing: ${expected}`)
+}
+
+const builtGenericCityPage = '.next/server/app/fire-number/idahofalls.html'
+if (existsSync(builtGenericCityPage)) {
+  const html = readFileSync(builtGenericCityPage, 'utf8')
+  const visibleText = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&apos;/g, "'")
+    .replace(/\s+/g, ' ')
+  const h1 = html
+    .match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  assert.equal(
+    h1,
+    'FIRE Number Calculator for Idaho Falls, ID',
+    'built generic city H1 should be crawler-readable with a space between Calculator and for',
+  )
+  for (const expected of [
+    'How the Idaho Falls, ID estimate is built',
+    'Updated September 17, 2026',
+    'All amounts are annual US dollars',
+    'Census recent-mover rent table',
+    'Census all-renter fallback table',
+    'Test the 25× assumption',
+    'Compare FIRE costs across Idaho',
+  ]) {
+    assert.ok(visibleText.includes(expected), `built generic city page missing ${expected}`)
+  }
+}
+
+const builtAustinPage = '.next/server/app/fire-number/austin-tx.html'
+if (existsSync(builtAustinPage)) {
+  const html = readFileSync(builtAustinPage, 'utf8')
+  assert.match(html, /<title>Austin FIRE Number: \$1\.36M Estimate \| UntilFire<\/title>/i)
+  for (const expected of [
+    'Spending sensitivity',
+    'All amounts are in US dollars',
+    '$1,018,125',
+    '$1,357,500',
+    '$1,696,875',
+    'Dallas, TX',
+    'Houston, TX',
+    'San Antonio, TX',
+    'Fort Worth, TX',
+  ]) {
+    assert.match(html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Austin page missing ${expected}`)
+  }
+  assert.doesNotMatch(html, /Compare nearby FIRE planning paths/)
+  assert.doesNotMatch(html, /FIRE NUMBER SINGAPORE/)
+}
+
+const builtSingaporePage = '.next/server/app/fire-number/singapore.html'
+if (existsSync(builtSingaporePage)) {
+  const html = readFileSync(builtSingaporePage, 'utf8')
+  assert.doesNotMatch(html, /Spending sensitivity/)
+  assert.doesNotMatch(html, /All amounts are in US dollars/)
+}
+
+console.log('City page SEO checks passed')

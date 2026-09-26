@@ -1,1 +1,1026 @@
-import type { Metadata } from 'next'\nimport Link from 'next/link'\nimport { notFound } from 'next/navigation'\nimport { getLearnArticle } from '@/lib/learn'\nimport { cityLandingPages, getCityLandingPage } from '@/lib/city-pages'\nimport type { CityLandingPage } from '@/lib/city-pages'\nimport { CITIES, STATE_TAX, US_CITY_COST_DATA_UPDATED, costRangeFor, isUS } from '@/lib/fire-data'\nimport type { City } from '@/lib/fire-data'\nimport { getStatePageSlug, STATE_NAMES } from '@/lib/state-pages'\nimport { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'\nimport CityCalcWidget from '../CityCalcWidget'\nimport { formatMoney } from "@/lib/money";\n\ntype Props = {\n  params: Promise<{ slug: string }>\n}\n\nconst US_CITIES = CITIES.filter((city) => isUS(city.state))\nconst SORTED_US_CITIES_BY_COST = [...US_CITIES].sort((a, b) => b.col - a.col)\nconst US_CITY_COUNT = US_CITIES.length\nconst US_MEDIAN_COL = [...US_CITIES].sort((a, b) => a.col - b.col)[Math.floor(US_CITIES.length / 2)]?.col ?? 52_000\n\n\n\nfunction ordinal(value: number) {\n  const mod10 = value % 10\n  const mod100 = value % 100\n\n  if (mod10 === 1 && mod100 !== 11) return `${value}st`\n  if (mod10 === 2 && mod100 !== 12) return `${value}nd`\n  if (mod10 === 3 && mod100 !== 13) return `${value}rd`\n  return `${value}th`\n}\n\nfunction getNationalCostRank(city: City) {\n  const rank = SORTED_US_CITIES_BY_COST.findIndex((entry) => entry.key === city.key) + 1\n  return {\n    rank,\n    total: US_CITY_COUNT,\n  }\n}\n\nfunction getCostBand(city: City) {\n  if (city.col >= 80_000) return 'very-high'\n  if (city.col >= 62_000) return 'high'\n  if (city.col >= 48_000) return 'mid'\n  return 'lower'\n}\n\nfunction getSuggestedCalculator(city: City, taxRate: number) {\n  if (city.col >= 70_000) {\n    return {\n      href: '/calculators/savings-rate',\n      label: 'Savings Rate Calculator',\n      reason: `In ${city.name}, small spending changes move the target quickly, so your savings rate matters more than almost anything else.`,\n    }\n  }\n\n  if (taxRate === 0) {\n    return {\n      href: '/calculators/coast-fire',\n      label: 'Coast FIRE Calculator',\n      reason: `Lower tax drag can turn more income into invested cash, which makes Coast FIRE scenarios especially worth testing in ${city.name}.`,\n    }\n  }\n\n  return {\n    href: '/calculators/4-percent-rule',\n    label: 'FIRE Number Calculator',\n    reason: `The quickest next step after a city baseline is pressure-testing your withdrawal-rate assumptions for ${city.name}.`,\n  }\n}\n\nfunction getRelatedArticleSlug(city: City, taxRate: number) {\n  if (city.col >= 70_000) return 'how-fire-assumptions-change-your-retirement-date'\n  if (taxRate === 0) return 'why-savings-rate-matters-more-than-income'\n  if (city.col <= 46_000) return 'coast-fire-vs-full-fire'\n  return 'how-much-money-do-i-need-to-retire'\n}\n\nexport async function generateStaticParams() {\n  const paths = new Map<string, { slug: string }>()\n  for (const page of cityLandingPages) {\n    paths.set(page.slug, { slug: page.slug })\n  }\n  for (const city of US_CITIES) {\n    paths.set(city.key, { slug: city.key })\n  }\n  return Array.from(paths.values())\n}\n\nexport async function generateMetadata({ params }: Props): Promise<Metadata> {\n  const { slug } = await params\n  const page = getCityLandingPage(slug)\n\n  if (page) {\n    return {\n      title: page.title,\n      description: page.description,\n      keywords: `${page.keyword}, FIRE calculator, retirement calculator, financial independence calculator, ${page.city.name}`,\n      robots: {\n        index: true,\n        follow: true,\n      },\n      alternates: {\n        canonical: page.canonicalUrl,\n      },\n      openGraph: {\n        title: page.title,\n        description: page.description,\n        url: page.canonicalUrl,\n        siteName: 'UntilFire',\n        type: 'article',\n        images: [{ url: `/api/og/city/${page.city.key}`, width: 1200, height: 630, alt: `FIRE number for ${page.city.name}` }],\n      },\n      twitter: {\n        card: 'summary_large_image',\n        title: page.title,\n        description: page.description,\n        images: [`/api/og/city/${page.city.key}`],\n      },\n    }\n  }\n\n  const data = US_CITIES.find((city) => city.key === slug)\n  if (!data) return {}\n\n  const rank = getNationalCostRank(data)\n\n  // Lead with the answer, not the category.\n  //\n  // These pages rank 3rd to 9th and take 2.4% of the clicks, against roughly\n  // 5% normal for those positions. The old title — "<City> FIRE Number\n  // Calculator" — is the same shape as every competing result, so nothing in\n  // the SERP distinguishes it. Someone searching "seattle fire number" wants\n  // the number; showing it is the strongest signal that this page has what\n  // they asked for, and the description carries the reason to click anyway:\n  // the generic figure is not theirs until they put their own savings rate in.\n  const target = formatMoney(data.col * 25, { style: "compact" })\n\n  return {\n    title: `Retire in ${data.name}: You Need ${target} | UntilFire`,\n    description: `${target} is the FIRE number for ${data.name} — 25× a local cost of living of ${formatMoney(data.col)}/year. See how many years that is at your savings rate, and what a move would change.`,\n    keywords: `${data.name} FIRE number, ${data.name} FIRE calculator, retire in ${data.name}, ${data.name} cost of living, financial independence ${data.name}`,\n    robots: {\n      index: true,\n      follow: true,\n    },\n    alternates: { canonical: `https://www.untilfire.com/fire-number/${data.key}` },\n    openGraph: {\n      title: `${data.name} FIRE Number Calculator and Cost Guide`,\n      description: `${data.name} ranks ${ordinal(rank.rank)} out of ${rank.total} US city baselines in UntilFire. Use local cost and tax context to estimate your target and timeline.`,\n      url: `https://www.untilfire.com/fire-number/${data.key}`,\n      type: 'website',\n      images: [{ url: `/api/og/city/${data.key}`, width: 1200, height: 630, alt: `FIRE number for ${data.name}` }],\n    },\n    twitter: {\n      card: 'summary_large_image',\n      title: `${data.name} FIRE Number Calculator and Cost Guide`,\n      description: `${data.name} FIRE target: ${formatMoney(data.col * 25)} (based on ${formatMoney(data.col)}/year local cost of living).`,\n      images: [`/api/og/city/${data.key}`],\n    },\n  }\n}\n\nexport default async function FireNumberSlugPage({ params }: Props) {\n  const { slug } = await params\n  const page = getCityLandingPage(slug)\n\n  if (page) {\n    return <CuratedCityFireNumberPage page={page} />\n  }\n\n  const data = US_CITIES.find((city) => city.key === slug)\n  if (!data) {\n    notFound()\n  }\n\n  return <GenericCityFireNumberPage data={data} />\n}\n\nfunction CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {\n  const article = getLearnArticle(page.articleSlug)\n  const source = `fire-number-${page.slug}`\n  const spendingScenarios = page.currencyCode === 'USD'\n    ? [\n        { label: 'Lower-spend plan', annual: page.city.col * 0.75 },\n        { label: 'UntilFire baseline', annual: page.city.col },\n        { label: 'Higher-spend plan', annual: page.city.col * 1.25 },\n      ]\n    : []\n  const relatedCityCards = page.slug === 'austin-tx'\n    ? CITIES\n        .filter((city) => city.state === page.city.state && city.key !== page.city.key)\n        .slice(0, 4)\n        .map((city) => ({\n          slug: city.key,\n          keyword: `FIRE number ${city.name}`,\n          city,\n          fireTarget: city.col * 25,\n        }))\n    : cityLandingPages.filter((entry) => entry.slug !== page.slug)\n\n  return (\n    <>\n      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>\n        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 24px 88px' }}>\n          <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26, fontSize: 13 }}>\n            <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Home</Link>\n            <Link href="/calculators" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Calculators</Link>\n            <Link href="/learn" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Learn</Link>\n            <span style={{ color: 'var(--uf-ink-2)' }}>{page.city.name}</span>\n          </nav>\n\n          <section\n            style={{\n              background: 'linear-gradient(135deg, var(--uf-card) 0%, var(--uf-green-50) 100%)',\n              border: '1px solid var(--uf-green-100)',\n              borderRadius: 24,\n              padding: '34px 28px',\n              marginBottom: 28,\n            }}\n          >\n            <p style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', margin: '0 0 14px' }}>\n              City FIRE Guide\n            </p>\n            <h1 style={{ fontSize: 'clamp(34px, 5vw, 56px)', lineHeight: 1.02, color: 'var(--uf-ink)', letterSpacing: '-0.05em', margin: '0 0 16px' }}>\n              {page.heroTitle}\n            </h1>\n            <p style={{ maxWidth: 760, fontSize: 17, lineHeight: 1.8, color: 'var(--uf-ink-2)', margin: '0 0 24px' }}>\n              {page.intro}\n            </p>\n\n            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>\n              <Link\n                href={`/?source=${source}`}\n                style={{ textDecoration: 'none', background: 'linear-gradient(135deg, var(--uf-green), var(--uf-green-900))', color: 'var(--uf-card)', padding: '12px 18px', borderRadius: 10, fontWeight: 700, fontSize: 14 }}\n              >\n                Run the full FIRE calculator\n              </Link>\n              <Link\n                href={`${page.calculatorHref}?source=${source}`}\n                style={{ textDecoration: 'none', background: 'var(--uf-card)', color: 'var(--uf-ink)', padding: '12px 18px', borderRadius: 10, border: '1px solid var(--uf-border)', fontWeight: 700, fontSize: 14 }}\n              >\n                Open {page.calculatorLabel}\n              </Link>\n            </div>\n\n            <div\n              style={{\n                display: 'grid',\n                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',\n                gap: 14,\n              }}\n            >\n              {page.summaryItems.map((item) => (\n                <div key={item.label} style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 16, padding: '18px 18px 16px' }}>\n                  <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>\n                    {item.label}\n                  </div>\n                  <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--uf-ink)' }}>\n                    {item.value}\n                  </div>\n                </div>\n              ))}\n            </div>\n          </section>\n\n          <section\n            style={{\n              display: 'grid',\n              gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',\n              gap: 18,\n              marginBottom: 28,\n            }}\n          >\n            <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>\n              <h2 style={{ margin: '0 0 16px', fontSize: 28, color: 'var(--uf-ink)', letterSpacing: '-0.03em' }}>\n                Why {page.city.name} changes your FIRE math\n              </h2>\n              <p style={{ margin: '0 0 16px', fontSize: 15, lineHeight: 1.9, color: 'var(--uf-ink-2)' }}>\n                {page.audienceNote}\n              </p>\n              <p style={{ margin: '0 0 16px', fontSize: 15, lineHeight: 1.9, color: 'var(--uf-ink-2)' }}>\n                {page.costAngle}\n              </p>\n              <p style={{ margin: '0 0 24px', fontSize: 15, lineHeight: 1.9, color: 'var(--uf-ink-2)' }}>\n                {page.taxAngle}\n              </p>\n\n              <div style={{ display: 'grid', gap: 12 }}>\n                {[\n                  {\n                    label: 'Local tax context',\n                    value: page.taxLabel,\n                  },\n                  {\n                    label: 'Compared with a $52,000/year US baseline',\n                    value:\n                      page.comparedToUsAverage >= 0\n                        ? `${formatMoney(page.comparedToUsAverage)} higher`\n                        : `${formatMoney(Math.abs(page.comparedToUsAverage))} lower`,\n                  },\n                  {\n                    label: '25x rule implication',\n                    value: `Every $1,000/year you cut lowers the target by ${formatMoney(25_000)}.`,\n                  },\n                ].map((item) => (\n                  <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--uf-surface)', border: '1px solid var(--uf-border)', borderRadius: 14, padding: '16px 16px 14px' }}>\n                    <div style={{ fontSize: 12, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>\n                      {item.label}\n                    </div>\n                    <div style={{ fontSize: 16, lineHeight: 1.6, color: 'var(--uf-ink)', fontWeight: 600 }}>\n                      {item.value}\n                    </div>\n                  </div>\n                ))}\n              </div>\n            </article>\n\n            <aside style={{ display: 'grid', gap: 18 }}>\n              <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '24px 20px' }}>\n                <div style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>\n                  Next best tool\n                </div>\n                <h2 style={{ margin: '0 0 10px', fontSize: 22, lineHeight: 1.2, color: 'var(--uf-ink)' }}>\n                  Go from city estimate to your actual timeline.\n                </h2>\n                <p style={{ margin: '0 0 14px', fontSize: 14, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>\n                  Start with {page.calculatorLabel} if you want one specific answer, or use the full UntilFire calculator if you want your retirement date adjusted for income, savings, and taxes.\n                </p>\n                <div style={{ display: 'grid', gap: 10 }}>\n                  <Link href={`/?source=${source}`} style={{ textDecoration: 'none', background: 'var(--uf-green-900)', color: 'var(--uf-card)', borderRadius: 10, padding: '12px 14px', fontWeight: 700, fontSize: 14 }}>\n                    Calculate my FIRE date\n                  </Link>\n                  <Link href={`${page.calculatorHref}?source=${source}`} style={{ textDecoration: 'none', background: 'var(--uf-green-50)', color: 'var(--uf-green-900)', borderRadius: 10, padding: '12px 14px', fontWeight: 700, fontSize: 14 }}>\n                    Open {page.calculatorLabel}\n                  </Link>\n                </div>\n              </div>\n\n              {article ? (\n                <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '24px 20px' }}>\n                  <div style={{ fontSize: 12, color: '#0F766E', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>\n                    Related reading\n                  </div>\n                  <h2 style={{ margin: '0 0 8px', fontSize: 20, lineHeight: 1.25, color: 'var(--uf-ink)' }}>\n                    {page.articleTitle}\n                  </h2>\n                  <p style={{ margin: '0 0 14px', fontSize: 14, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>\n                    {article.description}\n                  </p>\n                  <Link href={`/learn/${article.slug}`} style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>\n                    Read the guide\n                  </Link>\n                </div>\n              ) : null}\n            </aside>\n          </section>\n\n          {spendingScenarios.length > 0 ? (\n            <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px', marginBottom: 28 }}>\n              <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>\n                Spending sensitivity\n              </p>\n              <h2 style={{ margin: '0 0 12px', fontSize: 28, color: 'var(--uf-ink)', letterSpacing: '-0.03em' }}>\n                How spending changes the {page.city.name} FIRE number\n              </h2>\n              <p style={{ margin: '0 0 20px', maxWidth: 780, fontSize: 15, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>\n                The city estimate is a starting point, not a spending target. Use the scenarios below to see how your annual budget changes the portfolio implied by the 25x rule. All amounts are in US dollars.\n              </p>\n              <div\n                role="region"\n                aria-label={`${page.city.name} FIRE spending scenarios`}\n                tabIndex={0}\n                style={{ overflowX: 'auto', border: '1px solid var(--uf-border)', borderRadius: 14 }}\n              >\n                <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse' }}>\n                  <thead style={{ background: 'var(--uf-surface)' }}>\n                    <tr>\n                      {/* The target first: on a phone the table scrolls sideways, and it is the\n                          number the page is about. */}\n                      {['Scenario', '25x FIRE target (USD)', 'Annual spending (USD)', 'Monthly spending (USD)'].map((heading) => (\n                        <th key={heading} scope="col" style={{ padding: '12px 16px', borderBottom: '1px solid var(--uf-border)', color: 'var(--uf-ink-2)', fontSize: 12, fontWeight: 700, letterSpacing: '0.05em', textAlign: 'left', textTransform: 'uppercase' }}>\n                          {heading}\n                        </th>\n                      ))}\n                    </tr>\n                  </thead>\n                  <tbody>\n                    {spendingScenarios.map((scenario, index) => (\n                      <tr key={scenario.label} style={{ background: scenario.label === 'UntilFire baseline' ? 'var(--uf-green-50)' : 'var(--uf-card)' }}>\n                        <th scope="row" style={{ padding: '15px 16px', borderBottom: index < spendingScenarios.length - 1 ? '1px solid var(--uf-border)' : 'none', color: 'var(--uf-ink)', fontSize: 14, fontWeight: 700, textAlign: 'left' }}>\n                          {scenario.label}\n                        </th>\n                        {[scenario.annual * 25, scenario.annual, scenario.annual / 12].map((amount) => (\n                          <td key={amount} style={{ padding: '15px 16px', borderBottom: index < spendingScenarios.length - 1 ? '1px solid var(--uf-border)' : 'none', color: 'var(--uf-ink-2)', fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>\n                            {formatMoney(amount)}\n                          </td>\n                        ))}\n                      </tr>\n                    ))}\n                  </tbody>\n                </table>\n              </div>\n              <p style={{ margin: '16px 0 0', fontSize: 13, lineHeight: 1.7, color: 'var(--uf-ink-2)' }}>\n                The 25x rule is a planning heuristic. Taxes, investment returns, retirement length, healthcare and your actual spending can change the amount you need.\n              </p>\n            </section>\n          ) : null}\n\n          <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>\n            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 20 }}>\n              <div>\n                <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>\n                  {page.slug === 'austin-tx' ? 'Texas comparisons' : 'Popular city pages'}\n                </p>\n                <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.15, letterSpacing: '-0.03em', color: 'var(--uf-ink)' }}>\n                  {page.slug === 'austin-tx' ? 'Compare FIRE numbers across Texas' : 'Compare other FIRE planning paths'}\n                </h2>\n              </div>\n              <Link href="/learn/topics" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>\n                Browse FIRE topics\n              </Link>\n            </div>\n\n            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>\n              {relatedCityCards.map((entry) => (\n                  <Link\n                    key={entry.slug}\n                    href={`/fire-number/${entry.slug}`}\n                    style={{\n                      textDecoration: 'none',\n                      background: 'var(--uf-surface)',\n                      border: '1px solid var(--uf-border)',\n                      borderRadius: 16,\n                      padding: '18px 16px',\n                      display: 'flex',\n                      flexDirection: 'column',\n                      gap: 10,\n                    }}\n                  >\n                    <div style={{ fontSize: 12, color: 'var(--uf-ink-2)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>\n                      {entry.keyword}\n                    </div>\n                    <div style={{ fontSize: 19, color: 'var(--uf-ink)', fontWeight: 800, letterSpacing: '-0.02em' }}>\n                      {entry.city.name}\n                    </div>\n                    <div style={{ fontSize: 14, color: 'var(--uf-ink-2)', lineHeight: 1.7 }}>\n                      Annual {page.slug === 'austin-tx' ? 'USD ' : ''}baseline {formatMoney(entry.city.col)} · target {formatMoney(entry.fireTarget)}\n                    </div>\n                  </Link>\n                ))}\n            </div>\n          </section>\n        </div>\n      </main>\n\n      <script\n        type="application/ld+json"\n        dangerouslySetInnerHTML={{\n          __html: JSON.stringify([\n            {\n              '@context': 'https://schema.org',\n              '@type': 'BreadcrumbList',\n              itemListElement: [\n                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },\n                { '@type': 'ListItem', position: 2, name: 'Calculators', item: 'https://www.untilfire.com/calculators' },\n                { '@type': 'ListItem', position: 3, name: page.city.name, item: page.canonicalUrl },\n              ],\n            },\n            {\n              '@context': 'https://schema.org',\n              '@type': 'WebPage',\n              name: page.title,\n              description: page.description,\n              url: page.canonicalUrl,\n              about: {\n                '@type': 'Thing',\n                name: `FIRE planning in ${page.city.name}`,\n              },\n            },\n          ]),\n        }}\n      />\n    </>\n  )\n}\n\nfunction GenericCityFireNumberPage({ data }: { data: City }) {\n\n  const fireTarget = data.col * 25;\n  // Null where nothing was measured, in which case the page shows the plain\n  // figure. Never a made-up band: dressing a guess as a measurement is the\n  // failure this range exists to avoid.\n  const costRange = costRangeFor(data);\n  const tax = STATE_TAX[data.state];\n  const taxRate = tax?.rate ?? 0;\n  const taxLabel = tax?.label ?? data.state.toUpperCase();\n  const stateName = STATE_NAMES[data.state] ?? taxLabel;\n  const statePageHref = `/fire-number/states/${getStatePageSlug(data.state)}`;\n\n  const SCENARIOS = [75000, 100000, 150000];\n  const SAVINGS_RATE = 0.20;\n  const START_AGE = 30;\n\n  const scenarios = SCENARIOS.map((gross) => {\n    const { takeHome } = calcTakeHome(gross, data.state);\n    const monthlySavings = (takeHome * SAVINGS_RATE) / 12;\n    const result = calcFIRE(monthlySavings, data.col, START_AGE, 0);\n    return { gross, takeHome, monthlySavings, ...result };\n  });\n\n  const relatedCities = US_CITIES\n    .filter((c) => c.state === data.state && c.key !== data.key)\n    .slice(0, 5);\n\n  const nationalRank = getNationalCostRank(data)\n  const costBand = getCostBand(data)\n  const spendDelta = data.col - US_MEDIAN_COL\n  const suggestedCalculator = getSuggestedCalculator(data, taxRate)\n  const relatedArticle = getLearnArticle(getRelatedArticleSlug(data, taxRate))\n  const nearestHigherCostCity = SORTED_US_CITIES_BY_COST\n    .filter((city) => city.col > data.col)\n    .sort((a, b) => a.col - b.col)[0]\n  const nearestLowerCostCity = SORTED_US_CITIES_BY_COST\n    .filter((city) => city.col < data.col)\n    .sort((a, b) => b.col - a.col)[0]\n\n  // City-specific FIRE variant targets (numbers differ per city so each page\n  // carries genuinely unique, keyword-relevant content — lean/coast/barista/fat FIRE).\n  const leanTarget = Math.round(data.col * 0.7) * 25\n  const fatTarget = Math.round(data.col * 1.5) * 25\n  const baristaTarget = Math.round(fireTarget * 0.5)\n  const COAST_FROM_AGE = 30\n  const COAST_TO_AGE = 65\n  const COAST_REAL_RETURN = REAL_RETURN\n  const coastTarget = Math.round(fireTarget / Math.pow(1 + COAST_REAL_RETURN, COAST_TO_AGE - COAST_FROM_AGE))\n  const fireVariants = [\n    { label: 'Coast FIRE', value: coastTarget, note: `Invest this by age ${COAST_FROM_AGE} and growth alone (≈7% real) can reach full FIRE by ${COAST_TO_AGE} — no further contributions needed.` },\n    { label: 'Barista FIRE', value: baristaTarget, note: `Portfolio covers roughly half of ${data.name}'s ${formatMoney(data.col)} annual spending; part-time work bridges the rest.` },\n    { label: 'Lean FIRE', value: leanTarget, note: `A leaner ${formatMoney(Math.round(data.col * 0.7))}/year lifestyle in ${data.name} (about 70% of the baseline), at the 25× rule.` },\n    { label: 'Full FIRE', value: fireTarget, note: `The standard 25× target on ${data.name}'s ${formatMoney(data.col)} annual baseline.` },\n    { label: 'Fat FIRE', value: fatTarget, note: `A more comfortable ${formatMoney(Math.round(data.col * 1.5))}/year lifestyle in ${data.name} (about 1.5× the baseline).` },\n  ]\n\n  // How much to save each month to hit the full FIRE target over different timelines,\n  // assuming the shared real return compounded monthly from $0 (matches the\n  // scenario table assumption above).\n  const SAVINGS_TIMELINES = [10, 15, 20, 25, 30]\n  const SAVINGS_MONTHLY_RATE = REAL_RETURN / 12\n  const savingsByTimeline = SAVINGS_TIMELINES.map((yrs) => {\n    const months = yrs * 12\n    const monthly = (fireTarget * SAVINGS_MONTHLY_RATE) / (Math.pow(1 + SAVINGS_MONTHLY_RATE, months) - 1)\n    return { yrs, monthly }\n  })\n\n  const cityFaqs = [\n    {\n      question: `What FIRE number should I use for ${data.name}?`,\n      answer: `A simple baseline for ${data.name} is ${formatMoney(fireTarget)}, which comes from multiplying the local annual spending estimate of ${formatMoney(data.col)} by 25. That is a starting point, not a final answer: your housing, taxes, and personal spending rhythm still matter.`,\n    },\n    {\n      question: `Is ${data.name} expensive for FIRE planning?`,\n      answer:\n        spendDelta >= 0\n          ? `${data.name} sits about ${formatMoney(spendDelta)} above the current UntilFire median US city baseline of ${formatMoney(US_MEDIAN_COL)} per year, so spending control matters more than average here.`\n          : `${data.name} sits about ${formatMoney(Math.abs(spendDelta))} below the current UntilFire median US city baseline of ${formatMoney(US_MEDIAN_COL)} per year, which can make the target easier to reach if income holds up.`,\n    },\n    {\n      question: `How do taxes affect FIRE in ${data.name}?`,\n      answer:\n        taxRate === 0\n          ? `${data.name} benefits from a state with no income tax, so more of each raise can turn into invested savings. That does not remove lifestyle risk, but it can shorten the path to FIRE if spending stays disciplined.`\n          : `${data.name} uses ${taxLabel}, so pre-tax contributions and realistic take-home assumptions matter. Taxes do not change the 25x rule directly, but they do change how quickly you can fund it.`,\n    },\n    {\n      question: `What is the lean FIRE and fat FIRE number for ${data.name}?`,\n      answer: `Lean FIRE in ${data.name} — a leaner lifestyle at about 70% of the local baseline — works out to roughly ${formatMoney(leanTarget)}. Fat FIRE, a more comfortable lifestyle at about 1.5× the baseline, is closer to ${formatMoney(fatTarget)}. Standard (full) FIRE sits at ${formatMoney(fireTarget)}, and Coast FIRE — the amount that can grow into full FIRE on its own by age ${COAST_TO_AGE} if invested by age ${COAST_FROM_AGE} — is about ${formatMoney(coastTarget)}.`,\n    },\n  ]\n\n  const heading: React.CSSProperties = {\n    fontSize: 13,\n    fontWeight: 700,\n    color: "var(--uf-ink-2)",\n    letterSpacing: "0.08em",\n    textTransform: "uppercase",\n    marginBottom: 10,\n    marginTop: 0,\n  };\n\n  return (\n    <>\n      <style>{`\n        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');\n        *, *::before, *::after { box-sizing: border-box; }\n        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }\n        a { color: inherit; }\n        table { border-collapse: collapse; width: 100%; }\n        th { text-align: left; }\n        @media(max-width: 640px) {\n          .city-hero-grid { grid-template-columns: 1fr !important; }\n          .city-scenario-table th, .city-scenario-table td { padding: 10px 12px !important; font-size: 13px !important; }\n          .city-related { grid-template-columns: repeat(2, 1fr) !important; }\n        }\n      `}</style>\n\n      <div style={{ maxWidth: 860, margin: "0 auto", padding: "32px 24px 80px" }}>\n\n        {/* Breadcrumb */}\n        <nav style={{ fontSize: 13, color: "var(--uf-ink-3)", marginBottom: 24, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>\n          <Link href="/" style={{ textDecoration: "none", color: "var(--uf-ink-3)" }}>UntilFire</Link>\n          <span>›</span>\n          <Link href="/fire-number" style={{ textDecoration: "none", color: "var(--uf-ink-3)" }}>FIRE Number by City</Link>\n          <span>›</span>\n          <span style={{ color: "var(--uf-green-900)", fontWeight: 600 }}>{data.name}</span>\n        </nav>\n\n        {/* Hero */}\n        <div style={{ marginBottom: 40 }}>\n          <div style={{ fontSize: 40, marginBottom: 8 }}>{data.flag}</div>\n          <h1 style={{ fontSize: 36, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.8px", margin: "0 0 12px", lineHeight: 1.1 }}>\n            FIRE Number Calculator{' '}<br />for {data.name}\n          </h1>\n          <p style={{ fontSize: 17, color: "var(--uf-ink-2)", margin: 0, lineHeight: 1.6, maxWidth: 580 }}>\n            How much do you need to retire in {data.name}? Based on a local cost of living of{" "}\n            <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(data.col)}/year</strong>\n            {costRange && (\n              costRange.capped\n                ? <> &mdash; plausibly {formatMoney(costRange.low)} or more</>\n                : <> &mdash; plausibly {formatMoney(costRange.low)} to {formatMoney(costRange.high)}</>\n            )}\n            , your FIRE target is{" "}\n            <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(fireTarget)}</strong>.\n          </p>\n        </div>\n\n        {/* Key stats */}\n        <div className="city-hero-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>\n          {[\n            {\n              label: "Annual cost of living",\n              value: formatMoney(data.col),\n              // The range replaces "local baseline", which said nothing. A\n              // reader who can see the spread knows how far to trust the\n              // middle of it — and knows to put their own number in.\n              sub: costRange\n                ? costRange.capped\n                  ? `typically ${formatMoney(costRange.low)} and up`\n                  : `typically ${formatMoney(costRange.low)}\u2013${formatMoney(costRange.high)}`\n                : "local baseline",\n            },\n            { label: "FIRE target (25× rule)", value: formatMoney(fireTarget), sub: "4% withdrawal" },\n            { label: "State income tax", value: taxRate === 0 ? "0% — no income tax" : `${(taxRate * 100).toFixed(1)}%`, sub: taxLabel },\n          ].map(({ label, value, sub }) => (\n            <div key={label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "20px 22px" }}>\n              <div style={heading}>{label}</div>\n              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.4px" }}>{value}</div>\n              <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>{sub}</div>\n            </div>\n          ))}\n        </div>\n\n        {/* Scenarios table */}\n        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 32 }}>\n          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--uf-border)" }}>\n            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-green-900)", margin: 0 }}>\n              Sample retirement timelines in {data.name}\n            </h2>\n            <p style={{ fontSize: 13, color: "var(--uf-ink-3)", margin: "4px 0 0" }}>\n              Starting at age 30 with $0 saved, 20% savings rate\n            </p>\n          </div>\n          <table className="city-scenario-table">\n            <thead style={{ background: "var(--uf-surface)" }}>\n              <tr>\n                {["Annual income", "Take-home pay", "Monthly savings", "Years to FIRE", "Retire at age"].map((h) => (\n                  <th key={h} style={{ padding: "12px 24px", fontSize: 12, fontWeight: 700, color: "var(--uf-ink-2)", letterSpacing: "0.05em", textTransform: "uppercase", borderBottom: "1px solid var(--uf-border)" }}>{h}</th>\n                ))}\n              </tr>\n            </thead>\n            <tbody>\n              {scenarios.map((s, i) => (\n                <tr key={s.gross} style={{ borderBottom: i < scenarios.length - 1 ? "1px solid var(--uf-surface-2)" : "none" }}>\n                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>{formatMoney(s.gross)}</td>\n                  <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--uf-ink-2)" }}>{formatMoney(s.takeHome)}</td>\n                  <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--uf-ink-2)" }}>{formatMoney(s.monthlySavings)}</td>\n                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "var(--uf-green-900)" }}>{s.years === null ? "Not reached" : `${Math.round(s.years)} yrs`}</td>\n                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "var(--uf-teal)" }}>\n                    {s.years === null ? "—" : START_AGE + Math.round(s.years)}\n                  </td>\n                </tr>\n              ))}\n            </tbody>\n          </table>\n        </div>\n\n        {/* Interactive calc */}\n        <CityCalcWidget city={data} />\n\n        {/* Editorial content */}\n        <div style={{ marginTop: 48, marginBottom: 40 }}>\n          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.4px", marginBottom: 16 }}>\n            What does it take to retire in {data.name}?\n          </h2>\n          <div style={{ fontSize: 15, color: "var(--uf-ink-2)", lineHeight: 1.75, display: "flex", flexDirection: "column", gap: 14 }}>\n            <p style={{ margin: 0 }}>\n              Using the 4% rule — the most widely used FIRE guideline — retiring in {data.name} requires a portfolio of{" "}\n              <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(fireTarget)}</strong>. This assumes you&apos;ll spend{" "}\n              {formatMoney(data.col)} per year and withdraw 4% of your portfolio annually, which historical data suggests can\n              sustain a 30+ year retirement.\n            </p>\n            <p style={{ margin: 0 }}>\n              {costBand === 'very-high'\n                ? `${data.name} is one of the most expensive FIRE baselines in UntilFire, ranking ${ordinal(nationalRank.rank)} out of ${nationalRank.total} US cities. In places like this, housing and recurring lifestyle costs usually matter more than trying to optimise tiny line items.`\n                : costBand === 'high'\n                  ? `${data.name} sits in the higher-cost group of US city baselines. You usually need both a healthy income and a disciplined savings rate to keep the target from drifting upward.`\n                  : costBand === 'mid'\n                    ? `${data.name} sits near the middle of UntilFire's US city range. That makes it useful for testing whether the real lever is spending discipline, tax efficiency, or simply earning more.`\n                    : `${data.name} lands in the lower-cost end of UntilFire's US city range, which can make FIRE more reachable if income remains stable and lifestyle creep stays under control.`}\n            </p>\n            <p style={{ margin: 0 }}>\n              {taxRate === 0\n                ? `${data.name} is in a no-state-income-tax environment, so more of each raise can become invested cash. That advantage compounds only if spending does not rise just as fast.`\n                : `${data.name} residents face ${taxLabel}, so pre-tax contributions and a realistic take-home estimate matter. FIRE math breaks when people plan from gross salary instead of the amount they can actually invest.`}\n            </p>\n            <p style={{ margin: 0 }}>\n              The biggest levers are still your savings rate and your timeline. Saving 20% of take-home instead of 10% can cut years off the journey, and starting earlier lowers the amount your portfolio has to do later.\n            </p>\n          </div>\n        </div>\n\n        {/* Methodology and sources */}\n        <section\n          aria-labelledby="city-methodology-heading"\n          style={{\n            background: "var(--uf-card)",\n            border: "1px solid var(--uf-border)",\n            borderRadius: 16,\n            padding: "24px 22px",\n            marginBottom: 40,\n          }}\n        >\n          <div style={{ ...heading, marginBottom: 8 }}>Data and assumptions</div>\n          <h2\n            id="city-methodology-heading"\n            style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 12px" }}\n          >\n            How the {data.name} estimate is built\n          </h2>\n          <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>\n            Updated {US_CITY_COST_DATA_UPDATED}. All amounts are annual US dollars. Housing uses the US Census\n            Bureau&apos;s American Community Survey median gross rent for recent movers, with the all-renter median\n            used when the recent-mover figure is unavailable. Non-housing spending uses a {formatMoney(34_000)}\n            national annual baseline. Together they produce the {formatMoney(data.col)} planning estimate above.\n          </p>\n          <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>\n            The displayed range reflects renter medians and Census margins of error, so it is a starting point rather\n            than a household budget. Replace it with your own spending in the calculator. The FIRE target applies the\n            common 25× guideline; it does not guarantee that a portfolio will last.\n          </p>\n          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 18px", fontSize: 14, lineHeight: 1.7 }}>\n            <a\n              href="https://api.census.gov/data/2024/acs/acs5/groups/B25113.html"\n              target="_blank"\n              rel="noreferrer"\n              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}\n            >\n              Census recent-mover rent table\n            </a>\n            <a\n              href="https://api.census.gov/data/2024/acs/acs5/groups/B25064.html"\n              target="_blank"\n              rel="noreferrer"\n              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}\n            >\n              Census all-renter fallback table\n            </a>\n            <Link\n              href="/calculators/4-percent-rule"\n              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}\n            >\n              Test the 25× assumption\n            </Link>\n            <Link\n              href={statePageHref}\n              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}\n            >\n              Compare FIRE costs across {stateName}\n            </Link>\n          </div>\n        </section>\n\n        {/* FIRE variants for this city */}\n        <div style={{ marginBottom: 40 }}>\n          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.4px", marginBottom: 8 }}>\n            Lean, Coast, Barista, and Fat FIRE numbers for {data.name}\n          </h2>\n          <p style={{ fontSize: 15, color: "var(--uf-ink-2)", lineHeight: 1.75, margin: "0 0 20px", maxWidth: 640 }}>\n            Not everyone wants the same retirement. Here is how the main FIRE variants translate to {data.name}&apos;s{" "}\n            {formatMoney(data.col)}/year cost-of-living baseline, so you can target the lifestyle you actually want.\n          </p>\n          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>\n            {fireVariants.map((v) => (\n              <div key={v.label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "20px 18px" }}>\n                <div style={heading}>{v.label} in {data.name}</div>\n                <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.5px", marginBottom: 8 }}>{formatMoney(v.value)}</div>\n                <p style={{ margin: 0, fontSize: 13.5, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>{v.note}</p>\n              </div>\n            ))}\n          </div>\n        </div>\n\n        {/* Monthly savings to retire in this city */}\n        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 40 }}>\n          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--uf-border)" }}>\n            <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: 0 }}>\n              How much to save each month to retire in {data.name}\n            </h2>\n            <p style={{ fontSize: 13, color: "var(--uf-ink-3)", margin: "4px 0 0" }}>\n              Monthly investing needed to reach the {formatMoney(fireTarget)} target, starting from $0 at a ~7% average annual return after inflation\n            </p>\n          </div>\n          <table className="city-scenario-table">\n            <thead style={{ background: "var(--uf-surface)" }}>\n              <tr>\n                {["Timeline", "Save per month", "Retire at age (from 30)"].map((h) => (\n                  <th key={h} style={{ padding: "12px 24px", fontSize: 12, fontWeight: 700, color: "var(--uf-ink-2)", letterSpacing: "0.05em", textTransform: "uppercase", borderBottom: "1px solid var(--uf-border)" }}>{h}</th>\n                ))}\n              </tr>\n            </thead>\n            <tbody>\n              {savingsByTimeline.map((row, i) => (\n                <tr key={row.yrs} style={{ borderBottom: i < savingsByTimeline.length - 1 ? "1px solid var(--uf-surface-2)" : "none" }}>\n                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>{row.yrs} years</td>\n                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "var(--uf-green-900)" }}>{formatMoney(row.monthly)}/mo</td>\n                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "var(--uf-teal)" }}>{30 + row.yrs}</td>\n                </tr>\n              ))}\n            </tbody>\n          </table>\n        </div>\n\n        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 40 }}>\n          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>\n            <div style={heading}>National context</div>\n            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", marginBottom: 8 }}>\n              {ordinal(nationalRank.rank)} of {nationalRank.total}\n            </div>\n            <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>\n              {data.name} ranks by annual spending baseline among UntilFire&apos;s US cities, which helps explain whether your target is being pushed mostly by local costs or by your own spending choices.\n            </p>\n          </div>\n\n          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>\n            <div style={heading}>Compared with the US median</div>\n            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", marginBottom: 8 }}>\n              {spendDelta >= 0 ? `${formatMoney(spendDelta)} higher` : `${formatMoney(Math.abs(spendDelta))} lower`}\n            </div>\n            <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>\n              The current UntilFire median US city baseline is {formatMoney(US_MEDIAN_COL)}/year. Every {formatMoney(1_000)} of annual spending changes the 25× target by {formatMoney(25_000)}.\n            </p>\n          </div>\n\n          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>\n            <div style={heading}>Closest cost comparisons</div>\n            <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>\n              {nearestHigherCostCity ? `Nearest higher baseline: ${nearestHigherCostCity.name} at ${formatMoney(nearestHigherCostCity.col)}/year.` : 'This is already among the highest baselines in the current data set.'}\n            </p>\n            <p style={{ margin: "10px 0 0", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>\n              {nearestLowerCostCity ? `Nearest lower baseline: ${nearestLowerCostCity.name} at ${formatMoney(nearestLowerCostCity.col)}/year.` : 'This is already among the lowest baselines in the current data set.'}\n            </p>\n          </div>\n        </div>\n\n        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 40 }}>\n          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>\n            <div style={heading}>Next calculator</div>\n            <h2 style={{ fontSize: 20, lineHeight: 1.25, margin: "0 0 10px", color: "var(--uf-ink)" }}>\n              {suggestedCalculator.label}\n            </h2>\n            <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>\n              {suggestedCalculator.reason}\n            </p>\n            <Link href={suggestedCalculator.href} style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none", fontSize: 14 }}>\n              Open {suggestedCalculator.label}\n            </Link>\n          </div>\n\n          {relatedArticle ? (\n            <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>\n              <div style={heading}>Related reading</div>\n              <h2 style={{ fontSize: 20, lineHeight: 1.25, margin: "0 0 10px", color: "var(--uf-ink)" }}>\n                {relatedArticle.title}\n              </h2>\n              <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>\n                {relatedArticle.description}\n              </p>\n              <Link href={`/learn/${relatedArticle.slug}`} style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none", fontSize: 14 }}>\n                Read the guide\n              </Link>\n            </div>\n          ) : null}\n        </div>\n\n        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "24px 22px", marginBottom: 40 }}>\n          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 16px" }}>\n            Questions people ask about FIRE in {data.name}\n          </h2>\n          <div style={{ display: "grid", gap: 14 }}>\n            {cityFaqs.map((faq) => (\n              <div key={faq.question} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: "16px 16px 14px" }}>\n                <h3 style={{ margin: "0 0 8px", fontSize: 16, color: "var(--uf-ink)" }}>{faq.question}</h3>\n                <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>{faq.answer}</p>\n              </div>\n            ))}\n          </div>\n        </div>\n\n        {/* Related cities */}\n        {relatedCities.length > 0 && (\n          <div style={{ marginBottom: 48 }}>\n            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-green-900)", marginBottom: 16 }}>\n              Other cities in the same state\n            </h2>\n            <div className="city-related" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>\n              {relatedCities.map((c) => (\n                <Link\n                  key={c.key}\n                  href={`/fire-number/${c.key}`}\n                  style={{\n                    display: "flex",\n                    alignItems: "center",\n                    gap: 10,\n                    padding: "14px 16px",\n                    background: "var(--uf-card)",\n                    border: "1px solid var(--uf-border)",\n                    borderRadius: 10,\n                    textDecoration: "none",\n                    fontSize: 14,\n                    fontWeight: 600,\n                    color: "var(--uf-green-900)",\n                    transition: "border-color 0.15s",\n                  }}\n                >\n                  <span style={{ fontSize: 20 }}>{c.flag}</span>\n                  <div>\n                    <div>{c.name}</div>\n                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", fontWeight: 400 }}>{formatMoney(c.col * 25)} target</div>\n                  </div>\n                </Link>\n              ))}\n            </div>\n          </div>\n        )}\n\n        {/* Bottom CTA */}\n        <div style={{ background: "linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)", borderRadius: 16, padding: "32px 36px", textAlign: "center" }}>\n          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-card)", margin: "0 0 10px", letterSpacing: "-0.4px" }}>\n            Ready to build your real FIRE plan?\n          </h2>\n          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", margin: "0 0 24px" }}>\n            Track your spending, model your investments, and see exactly when you can retire in {data.name}.\n          </p>\n          <Link\n            href="/dashboard"\n            style={{\n              display: "inline-block",\n              background: "var(--uf-teal)",\n              color: "var(--uf-green-900)",\n              padding: "14px 32px",\n              borderRadius: 8,\n              fontSize: 15,\n              fontWeight: 800,\n              textDecoration: "none",\n              letterSpacing: "-0.2px",\n            }}\n          >\n            Start free — no credit card\n          </Link>\n        </div>\n      </div>\n\n      <script\n        type="application/ld+json"\n        dangerouslySetInnerHTML={{\n          __html: JSON.stringify([\n            {\n              '@context': 'https://schema.org',\n              '@type': 'BreadcrumbList',\n              itemListElement: [\n                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },\n                { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },\n                { '@type': 'ListItem', position: 3, name: data.name, item: `https://www.untilfire.com/fire-number/${data.key}` },\n              ],\n            },\n            {\n              '@context': 'https://schema.org',\n              '@type': 'WebPage',\n              name: `${data.name} FIRE Number Calculator and Cost Guide`,\n              description: `Estimate a realistic FIRE number for ${data.name} using local annual spending of ${formatMoney(data.col)}, state tax context, and retirement math.`,\n              url: `https://www.untilfire.com/fire-number/${data.key}`,\n              about: {\n                '@type': 'Thing',\n                name: `FIRE planning in ${data.name}`,\n              },\n            },\n            {\n              '@context': 'https://schema.org',\n              '@type': 'FAQPage',\n              mainEntity: cityFaqs.map((faq) => ({\n                '@type': 'Question',\n                name: faq.question,\n                acceptedAnswer: {\n                  '@type': 'Answer',\n                  text: faq.answer,\n                },\n              })),\n            },\n          ]),\n        }}\n      />\n    </>\n  );\n}\n
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { getLearnArticle } from '@/lib/learn'
+import { cityLandingPages, getCityLandingPage } from '@/lib/city-pages'
+import type { CityLandingPage } from '@/lib/city-pages'
+import { CITIES, STATE_TAX, US_CITY_COST_DATA_UPDATED, costRangeFor, isUS } from '@/lib/fire-data'
+import type { City } from '@/lib/fire-data'
+import { getStatePageSlug, STATE_NAMES } from '@/lib/state-pages'
+import { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'
+import CityCalcWidget from '../CityCalcWidget'
+import { formatMoney } from "@/lib/money";
+
+type Props = {
+  params: Promise<{ slug: string }>
+}
+
+const US_CITIES = CITIES.filter((city) => isUS(city.state))
+const SORTED_US_CITIES_BY_COST = [...US_CITIES].sort((a, b) => b.col - a.col)
+const US_CITY_COUNT = US_CITIES.length
+const US_MEDIAN_COL = [...US_CITIES].sort((a, b) => a.col - b.col)[Math.floor(US_CITIES.length / 2)]?.col ?? 52_000
+
+
+
+function ordinal(value: number) {
+  const mod10 = value % 10
+  const mod100 = value % 100
+
+  if (mod10 === 1 && mod100 !== 11) return `${value}st`
+  if (mod10 === 2 && mod100 !== 12) return `${value}nd`
+  if (mod10 === 3 && mod100 !== 13) return `${value}rd`
+  return `${value}th`
+}
+
+function getNationalCostRank(city: City) {
+  const rank = SORTED_US_CITIES_BY_COST.findIndex((entry) => entry.key === city.key) + 1
+  return {
+    rank,
+    total: US_CITY_COUNT,
+  }
+}
+
+function getCostBand(city: City) {
+  if (city.col >= 80_000) return 'very-high'
+  if (city.col >= 62_000) return 'high'
+  if (city.col >= 48_000) return 'mid'
+  return 'lower'
+}
+
+function getSuggestedCalculator(city: City, taxRate: number) {
+  if (city.col >= 70_000) {
+    return {
+      href: '/calculators/savings-rate',
+      label: 'Savings Rate Calculator',
+      reason: `In ${city.name}, small spending changes move the target quickly, so your savings rate matters more than almost anything else.`,
+    }
+  }
+
+  if (taxRate === 0) {
+    return {
+      href: '/calculators/coast-fire',
+      label: 'Coast FIRE Calculator',
+      reason: `Lower tax drag can turn more income into invested cash, which makes Coast FIRE scenarios especially worth testing in ${city.name}.`,
+    }
+  }
+
+  return {
+    href: '/calculators/4-percent-rule',
+    label: 'FIRE Number Calculator',
+    reason: `The quickest next step after a city baseline is pressure-testing your withdrawal-rate assumptions for ${city.name}.`,
+  }
+}
+
+function getRelatedArticleSlug(city: City, taxRate: number) {
+  if (city.col >= 70_000) return 'how-fire-assumptions-change-your-retirement-date'
+  if (taxRate === 0) return 'why-savings-rate-matters-more-than-income'
+  if (city.col <= 46_000) return 'coast-fire-vs-full-fire'
+  return 'how-much-money-do-i-need-to-retire'
+}
+
+export async function generateStaticParams() {
+  const paths = new Map<string, { slug: string }>()
+  for (const page of cityLandingPages) {
+    paths.set(page.slug, { slug: page.slug })
+  }
+  for (const city of US_CITIES) {
+    paths.set(city.key, { slug: city.key })
+  }
+  return Array.from(paths.values())
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const page = getCityLandingPage(slug)
+
+  if (page) {
+    return {
+      title: page.title,
+      description: page.description,
+      keywords: `${page.keyword}, FIRE calculator, retirement calculator, financial independence calculator, ${page.city.name}`,
+      robots: {
+        index: true,
+        follow: true,
+      },
+      alternates: {
+        canonical: page.canonicalUrl,
+      },
+      openGraph: {
+        title: page.title,
+        description: page.description,
+        url: page.canonicalUrl,
+        siteName: 'UntilFire',
+        type: 'article',
+        images: [{ url: `/api/og/city/${page.city.key}`, width: 1200, height: 630, alt: `FIRE number for ${page.city.name}` }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: page.title,
+        description: page.description,
+        images: [`/api/og/city/${page.city.key}`],
+      },
+    }
+  }
+
+  const data = US_CITIES.find((city) => city.key === slug)
+  if (!data) return {}
+
+  const rank = getNationalCostRank(data)
+
+  // Lead with the answer, not the category.
+  //
+  // These pages rank 3rd to 9th and take 2.4% of the clicks, against roughly
+  // 5% normal for those positions. The old title — "<City> FIRE Number
+  // Calculator" — is the same shape as every competing result, so nothing in
+  // the SERP distinguishes it. Someone searching "seattle fire number" wants
+  // the number; showing it is the strongest signal that this page has what
+  // they asked for, and the description carries the reason to click anyway:
+  // the generic figure is not theirs until they put their own savings rate in.
+  const target = formatMoney(data.col * 25, { style: "compact" })
+
+  return {
+    title: `Retire in ${data.name}: You Need ${target} | UntilFire`,
+    description: `${target} is the FIRE number for ${data.name} — 25× a local cost of living of ${formatMoney(data.col)}/year. See how many years that is at your savings rate, and what a move would change.`,
+    keywords: `${data.name} FIRE number, ${data.name} FIRE calculator, retire in ${data.name}, ${data.name} cost of living, financial independence ${data.name}`,
+    robots: {
+      index: true,
+      follow: true,
+    },
+    alternates: { canonical: `https://www.untilfire.com/fire-number/${data.key}` },
+    openGraph: {
+      title: `${data.name} FIRE Number Calculator and Cost Guide`,
+      description: `${data.name} ranks ${ordinal(rank.rank)} out of ${rank.total} US city baselines in UntilFire. Use local cost and tax context to estimate your target and timeline.`,
+      url: `https://www.untilfire.com/fire-number/${data.key}`,
+      type: 'website',
+      images: [{ url: `/api/og/city/${data.key}`, width: 1200, height: 630, alt: `FIRE number for ${data.name}` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${data.name} FIRE Number Calculator and Cost Guide`,
+      description: `${data.name} FIRE target: ${formatMoney(data.col * 25)} (based on ${formatMoney(data.col)}/year local cost of living).`,
+      images: [`/api/og/city/${data.key}`],
+    },
+  }
+}
+
+export default async function FireNumberSlugPage({ params }: Props) {
+  const { slug } = await params
+  const page = getCityLandingPage(slug)
+
+  if (page) {
+    return <CuratedCityFireNumberPage page={page} />
+  }
+
+  const data = US_CITIES.find((city) => city.key === slug)
+  if (!data) {
+    notFound()
+  }
+
+  return <GenericCityFireNumberPage data={data} />
+}
+
+function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
+  const article = getLearnArticle(page.articleSlug)
+  const source = `fire-number-${page.slug}`
+  const spendingScenarios = page.currencyCode === 'USD'
+    ? [
+        { label: 'Lower-spend plan', annual: page.city.col * 0.75 },
+        { label: 'UntilFire baseline', annual: page.city.col },
+        { label: 'Higher-spend plan', annual: page.city.col * 1.25 },
+      ]
+    : []
+  const relatedCityCards = page.slug === 'austin-tx'
+    ? CITIES
+        .filter((city) => city.state === page.city.state && city.key !== page.city.key)
+        .slice(0, 4)
+        .map((city) => ({
+          slug: city.key,
+          keyword: `FIRE number ${city.name}`,
+          city,
+          fireTarget: city.col * 25,
+        }))
+    : cityLandingPages.filter((entry) => entry.slug !== page.slug)
+
+  return (
+    <>
+      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 24px 88px' }}>
+          <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26, fontSize: 13 }}>
+            <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Home</Link>
+            <Link href="/calculators" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Calculators</Link>
+            <Link href="/learn" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Learn</Link>
+            <span style={{ color: 'var(--uf-ink-2)' }}>{page.city.name}</span>
+          </nav>
+
+          <section
+            style={{
+              background: 'linear-gradient(135deg, var(--uf-card) 0%, var(--uf-green-50) 100%)',
+              border: '1px solid var(--uf-green-100)',
+              borderRadius: 24,
+              padding: '34px 28px',
+              marginBottom: 28,
+            }}
+          >
+            <p style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', margin: '0 0 14px' }}>
+              City FIRE Guide
+            </p>
+            <h1 style={{ fontSize: 'clamp(34px, 5vw, 56px)', lineHeight: 1.02, color: 'var(--uf-ink)', letterSpacing: '-0.05em', margin: '0 0 16px' }}>
+              {page.heroTitle}
+            </h1>
+            <p style={{ maxWidth: 760, fontSize: 17, lineHeight: 1.8, color: 'var(--uf-ink-2)', margin: '0 0 24px' }}>
+              {page.intro}
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+              <Link
+                href={`/?source=${source}`}
+                style={{ textDecoration: 'none', background: 'linear-gradient(135deg, var(--uf-green), var(--uf-green-900))', color: 'var(--uf-card)', padding: '12px 18px', borderRadius: 10, fontWeight: 700, fontSize: 14 }}
+              >
+                Run the full FIRE calculator
+              </Link>
+              <Link
+                href={`${page.calculatorHref}?source=${source}`}
+                style={{ textDecoration: 'none', background: 'var(--uf-card)', color: 'var(--uf-ink)', padding: '12px 18px', borderRadius: 10, border: '1px solid var(--uf-border)', fontWeight: 700, fontSize: 14 }}
+              >
+                Open {page.calculatorLabel}
+              </Link>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 14,
+              }}
+            >
+              {page.summaryItems.map((item) => (
+                <div key={item.label} style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 16, padding: '18px 18px 16px' }}>
+                  <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+                    {item.label}
+                  </div>
+                  <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--uf-ink)' }}>
+                    {item.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
+              gap: 18,
+              marginBottom: 28,
+            }}
+          >
+            <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>
+              <h2 style={{ margin: '0 0 16px', fontSize: 28, color: 'var(--uf-ink)', letterSpacing: '-0.03em' }}>
+                Why {page.city.name} changes your FIRE math
+              </h2>
+              <p style={{ margin: '0 0 16px', fontSize: 15, lineHeight: 1.9, color: 'var(--uf-ink-2)' }}>
+                {page.audienceNote}
+              </p>
+              <p style={{ margin: '0 0 16px', fontSize: 15, lineHeight: 1.9, color: 'var(--uf-ink-2)' }}>
+                {page.costAngle}
+              </p>
+              <p style={{ margin: '0 0 24px', fontSize: 15, lineHeight: 1.9, color: 'var(--uf-ink-2)' }}>
+                {page.taxAngle}
+              </p>
+
+              <div style={{ display: 'grid', gap: 12 }}>
+                {[
+                  {
+                    label: 'Local tax context',
+                    value: page.taxLabel,
+                  },
+                  {
+                    label: 'Compared with a $52,000/year US baseline',
+                    value:
+                      page.comparedToUsAverage >= 0
+                        ? `${formatMoney(page.comparedToUsAverage)} higher`
+                        : `${formatMoney(Math.abs(page.comparedToUsAverage))} lower`,
+                  },
+                  {
+                    label: '25x rule implication',
+                    value: `Every $1,000/year you cut lowers the target by ${formatMoney(25_000)}.`,
+                  },
+                ].map((item) => (
+                  <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--uf-surface)', border: '1px solid var(--uf-border)', borderRadius: 14, padding: '16px 16px 14px' }}>
+                    <div style={{ fontSize: 12, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      {item.label}
+                    </div>
+                    <div style={{ fontSize: 16, lineHeight: 1.6, color: 'var(--uf-ink)', fontWeight: 600 }}>
+                      {item.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <aside style={{ display: 'grid', gap: 18 }}>
+              <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '24px 20px' }}>
+                <div style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
+                  Next best tool
+                </div>
+                <h2 style={{ margin: '0 0 10px', fontSize: 22, lineHeight: 1.2, color: 'var(--uf-ink)' }}>
+                  Go from city estimate to your actual timeline.
+                </h2>
+                <p style={{ margin: '0 0 14px', fontSize: 14, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>
+                  Start with {page.calculatorLabel} if you want one specific answer, or use the full UntilFire calculator if you want your retirement date adjusted for income, savings, and taxes.
+                </p>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <Link href={`/?source=${source}`} style={{ textDecoration: 'none', background: 'var(--uf-green-900)', color: 'var(--uf-card)', borderRadius: 10, padding: '12px 14px', fontWeight: 700, fontSize: 14 }}>
+                    Calculate my FIRE date
+                  </Link>
+                  <Link href={`${page.calculatorHref}?source=${source}`} style={{ textDecoration: 'none', background: 'var(--uf-green-50)', color: 'var(--uf-green-900)', borderRadius: 10, padding: '12px 14px', fontWeight: 700, fontSize: 14 }}>
+                    Open {page.calculatorLabel}
+                  </Link>
+                </div>
+              </div>
+
+              {article ? (
+                <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '24px 20px' }}>
+                  <div style={{ fontSize: 12, color: '#0F766E', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
+                    Related reading
+                  </div>
+                  <h2 style={{ margin: '0 0 8px', fontSize: 20, lineHeight: 1.25, color: 'var(--uf-ink)' }}>
+                    {page.articleTitle}
+                  </h2>
+                  <p style={{ margin: '0 0 14px', fontSize: 14, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>
+                    {article.description}
+                  </p>
+                  <Link href={`/learn/${article.slug}`} style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
+                    Read the guide
+                  </Link>
+                </div>
+              ) : null}
+            </aside>
+          </section>
+
+          {spendingScenarios.length > 0 ? (
+            <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px', marginBottom: 28 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                Spending sensitivity
+              </p>
+              <h2 style={{ margin: '0 0 12px', fontSize: 28, color: 'var(--uf-ink)', letterSpacing: '-0.03em' }}>
+                How spending changes the {page.city.name} FIRE number
+              </h2>
+              <p style={{ margin: '0 0 20px', maxWidth: 780, fontSize: 15, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>
+                The city estimate is a starting point, not a spending target. Use the scenarios below to see how your annual budget changes the portfolio implied by the 25x rule. All amounts are in US dollars.
+              </p>
+              <div
+                role="region"
+                aria-label={`${page.city.name} FIRE spending scenarios`}
+                tabIndex={0}
+                style={{ overflowX: 'auto', border: '1px solid var(--uf-border)', borderRadius: 14 }}
+              >
+                <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse' }}>
+                  <thead style={{ background: 'var(--uf-surface)' }}>
+                    <tr>
+                      {/* The target first: on a phone the table scrolls sideways, and it is the
+                          number the page is about. */}
+                      {['Scenario', '25x FIRE target (USD)', 'Annual spending (USD)', 'Monthly spending (USD)'].map((heading) => (
+                        <th key={heading} scope="col" style={{ padding: '12px 16px', borderBottom: '1px solid var(--uf-border)', color: 'var(--uf-ink-2)', fontSize: 12, fontWeight: 700, letterSpacing: '0.05em', textAlign: 'left', textTransform: 'uppercase' }}>
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {spendingScenarios.map((scenario, index) => (
+                      <tr key={scenario.label} style={{ background: scenario.label === 'UntilFire baseline' ? 'var(--uf-green-50)' : 'var(--uf-card)' }}>
+                        <th scope="row" style={{ padding: '15px 16px', borderBottom: index < spendingScenarios.length - 1 ? '1px solid var(--uf-border)' : 'none', color: 'var(--uf-ink)', fontSize: 14, fontWeight: 700, textAlign: 'left' }}>
+                          {scenario.label}
+                        </th>
+                        {[scenario.annual * 25, scenario.annual, scenario.annual / 12].map((amount) => (
+                          <td key={amount} style={{ padding: '15px 16px', borderBottom: index < spendingScenarios.length - 1 ? '1px solid var(--uf-border)' : 'none', color: 'var(--uf-ink-2)', fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>
+                            {formatMoney(amount)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ margin: '16px 0 0', fontSize: 13, lineHeight: 1.7, color: 'var(--uf-ink-2)' }}>
+                The 25x rule is a planning heuristic. Taxes, investment returns, retirement length, healthcare and your actual spending can change the amount you need.
+              </p>
+            </section>
+          ) : null}
+
+          <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 20 }}>
+              <div>
+                <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                  {page.slug === 'austin-tx' ? 'Texas comparisons' : 'Popular city pages'}
+                </p>
+                <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.15, letterSpacing: '-0.03em', color: 'var(--uf-ink)' }}>
+                  {page.slug === 'austin-tx' ? 'Compare FIRE numbers across Texas' : 'Compare other FIRE planning paths'}
+                </h2>
+              </div>
+              <Link href="/learn/topics" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
+                Browse FIRE topics
+              </Link>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
+              {relatedCityCards.map((entry) => (
+                  <Link
+                    key={entry.slug}
+                    href={`/fire-number/${entry.slug}`}
+                    style={{
+                      textDecoration: 'none',
+                      background: 'var(--uf-surface)',
+                      border: '1px solid var(--uf-border)',
+                      borderRadius: 16,
+                      padding: '18px 16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 10,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: 'var(--uf-ink-2)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                      {entry.keyword}
+                    </div>
+                    <div style={{ fontSize: 19, color: 'var(--uf-ink)', fontWeight: 800, letterSpacing: '-0.02em' }}>
+                      {entry.city.name}
+                    </div>
+                    <div style={{ fontSize: 14, color: 'var(--uf-ink-2)', lineHeight: 1.7 }}>
+                      Annual {page.slug === 'austin-tx' ? 'USD ' : ''}baseline {formatMoney(entry.city.col)} · target {formatMoney(entry.fireTarget)}
+                    </div>
+                  </Link>
+                ))}
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+                { '@type': 'ListItem', position: 2, name: 'Calculators', item: 'https://www.untilfire.com/calculators' },
+                { '@type': 'ListItem', position: 3, name: page.city.name, item: page.canonicalUrl },
+              ],
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'WebPage',
+              name: page.title,
+              description: page.description,
+              url: page.canonicalUrl,
+              about: {
+                '@type': 'Thing',
+                name: `FIRE planning in ${page.city.name}`,
+              },
+            },
+          ]),
+        }}
+      />
+    </>
+  )
+}
+
+function GenericCityFireNumberPage({ data }: { data: City }) {
+
+  const fireTarget = data.col * 25;
+  // Null where nothing was measured, in which case the page shows the plain
+  // figure. Never a made-up band: dressing a guess as a measurement is the
+  // failure this range exists to avoid.
+  const costRange = costRangeFor(data);
+  const tax = STATE_TAX[data.state];
+  const taxRate = tax?.rate ?? 0;
+  const taxLabel = tax?.label ?? data.state.toUpperCase();
+  const stateName = STATE_NAMES[data.state] ?? taxLabel;
+  const statePageHref = `/fire-number/states/${getStatePageSlug(data.state)}`;
+
+  const SCENARIOS = [75000, 100000, 150000];
+  const SAVINGS_RATE = 0.20;
+  const START_AGE = 30;
+
+  const scenarios = SCENARIOS.map((gross) => {
+    const { takeHome } = calcTakeHome(gross, data.state);
+    const monthlySavings = (takeHome * SAVINGS_RATE) / 12;
+    const result = calcFIRE(monthlySavings, data.col, START_AGE, 0);
+    return { gross, takeHome, monthlySavings, ...result };
+  });
+
+  const relatedCities = US_CITIES
+    .filter((c) => c.state === data.state && c.key !== data.key)
+    .slice(0, 5);
+
+  const nationalRank = getNationalCostRank(data)
+  const costBand = getCostBand(data)
+  const spendDelta = data.col - US_MEDIAN_COL
+  const suggestedCalculator = getSuggestedCalculator(data, taxRate)
+  const relatedArticle = getLearnArticle(getRelatedArticleSlug(data, taxRate))
+  const nearestHigherCostCity = SORTED_US_CITIES_BY_COST
+    .filter((city) => city.col > data.col)
+    .sort((a, b) => a.col - b.col)[0]
+  const nearestLowerCostCity = SORTED_US_CITIES_BY_COST
+    .filter((city) => city.col < data.col)
+    .sort((a, b) => b.col - a.col)[0]
+
+  // City-specific FIRE variant targets (numbers differ per city so each page
+  // carries genuinely unique, keyword-relevant content — lean/coast/barista/fat FIRE).
+  const leanTarget = Math.round(data.col * 0.7) * 25
+  const fatTarget = Math.round(data.col * 1.5) * 25
+  const baristaTarget = Math.round(fireTarget * 0.5)
+  const COAST_FROM_AGE = 30
+  const COAST_TO_AGE = 65
+  const COAST_REAL_RETURN = REAL_RETURN
+  const coastTarget = Math.round(fireTarget / Math.pow(1 + COAST_REAL_RETURN, COAST_TO_AGE - COAST_FROM_AGE))
+  const fireVariants = [
+    { label: 'Coast FIRE', value: coastTarget, note: `Invest this by age ${COAST_FROM_AGE} and growth alone (≈7% real) can reach full FIRE by ${COAST_TO_AGE} — no further contributions needed.` },
+    { label: 'Barista FIRE', value: baristaTarget, note: `Portfolio covers roughly half of ${data.name}'s ${formatMoney(data.col)} annual spending; part-time work bridges the rest.` },
+    { label: 'Lean FIRE', value: leanTarget, note: `A leaner ${formatMoney(Math.round(data.col * 0.7))}/year lifestyle in ${data.name} (about 70% of the baseline), at the 25× rule.` },
+    { label: 'Full FIRE', value: fireTarget, note: `The standard 25× target on ${data.name}'s ${formatMoney(data.col)} annual baseline.` },
+    { label: 'Fat FIRE', value: fatTarget, note: `A more comfortable ${formatMoney(Math.round(data.col * 1.5))}/year lifestyle in ${data.name} (about 1.5× the baseline).` },
+  ]
+
+  // How much to save each month to hit the full FIRE target over different timelines,
+  // assuming the shared real return compounded monthly from $0 (matches the
+  // scenario table assumption above).
+  const SAVINGS_TIMELINES = [10, 15, 20, 25, 30]
+  const SAVINGS_MONTHLY_RATE = REAL_RETURN / 12
+  const savingsByTimeline = SAVINGS_TIMELINES.map((yrs) => {
+    const months = yrs * 12
+    const monthly = (fireTarget * SAVINGS_MONTHLY_RATE) / (Math.pow(1 + SAVINGS_MONTHLY_RATE, months) - 1)
+    return { yrs, monthly }
+  })
+
+  const cityFaqs = [
+    {
+      question: `What FIRE number should I use for ${data.name}?`,
+      answer: `A simple baseline for ${data.name} is ${formatMoney(fireTarget)}, which comes from multiplying the local annual spending estimate of ${formatMoney(data.col)} by 25. That is a starting point, not a final answer: your housing, taxes, and personal spending rhythm still matter.`,
+    },
+    {
+      question: `Is ${data.name} expensive for FIRE planning?`,
+      answer:
+        spendDelta >= 0
+          ? `${data.name} sits about ${formatMoney(spendDelta)} above the current UntilFire median US city baseline of ${formatMoney(US_MEDIAN_COL)} per year, so spending control matters more than average here.`
+          : `${data.name} sits about ${formatMoney(Math.abs(spendDelta))} below the current UntilFire median US city baseline of ${formatMoney(US_MEDIAN_COL)} per year, which can make the target easier to reach if income holds up.`,
+    },
+    {
+      question: `How do taxes affect FIRE in ${data.name}?`,
+      answer:
+        taxRate === 0
+          ? `${data.name} benefits from a state with no income tax, so more of each raise can turn into invested savings. That does not remove lifestyle risk, but it can shorten the path to FIRE if spending stays disciplined.`
+          : `${data.name} uses ${taxLabel}, so pre-tax contributions and realistic take-home assumptions matter. Taxes do not change the 25x rule directly, but they do change how quickly you can fund it.`,
+    },
+    {
+      question: `What is the lean FIRE and fat FIRE number for ${data.name}?`,
+      answer: `Lean FIRE in ${data.name} — a leaner lifestyle at about 70% of the local baseline — works out to roughly ${formatMoney(leanTarget)}. Fat FIRE, a more comfortable lifestyle at about 1.5× the baseline, is closer to ${formatMoney(fatTarget)}. Standard (full) FIRE sits at ${formatMoney(fireTarget)}, and Coast FIRE — the amount that can grow into full FIRE on its own by age ${COAST_TO_AGE} if invested by age ${COAST_FROM_AGE} — is about ${formatMoney(coastTarget)}.`,
+    },
+  ]
+
+  const heading: React.CSSProperties = {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "var(--uf-ink-2)",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    marginBottom: 10,
+    marginTop: 0,
+  };
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
+        a { color: inherit; }
+        table { border-collapse: collapse; width: 100%; }
+        th { text-align: left; }
+        @media(max-width: 640px) {
+          .city-hero-grid { grid-template-columns: 1fr !important; }
+          .city-scenario-table th, .city-scenario-table td { padding: 10px 12px !important; font-size: 13px !important; }
+          .city-related { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `}</style>
+
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "32px 24px 80px" }}>
+
+        {/* Breadcrumb */}
+        <nav style={{ fontSize: 13, color: "var(--uf-ink-3)", marginBottom: 24, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <Link href="/" style={{ textDecoration: "none", color: "var(--uf-ink-3)" }}>UntilFire</Link>
+          <span>›</span>
+          <Link href="/fire-number" style={{ textDecoration: "none", color: "var(--uf-ink-3)" }}>FIRE Number by City</Link>
+          <span>›</span>
+          <span style={{ color: "var(--uf-green-900)", fontWeight: 600 }}>{data.name}</span>
+        </nav>
+
+        {/* Hero */}
+        <div style={{ marginBottom: 40 }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>{data.flag}</div>
+          <h1 style={{ fontSize: 36, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.8px", margin: "0 0 12px", lineHeight: 1.1 }}>
+            FIRE Number Calculator{' '}<br />for {data.name}
+          </h1>
+          <p style={{ fontSize: 17, color: "var(--uf-ink-2)", margin: 0, lineHeight: 1.6, maxWidth: 580 }}>
+            How much do you need to retire in {data.name}? Based on a local cost of living of{" "}
+            <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(data.col)}/year</strong>
+            {costRange && (
+              costRange.capped
+                ? <> &mdash; plausibly {formatMoney(costRange.low)} or more</>
+                : <> &mdash; plausibly {formatMoney(costRange.low)} to {formatMoney(costRange.high)}</>
+            )}
+            , your FIRE target is{" "}
+            <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(fireTarget)}</strong>.
+          </p>
+        </div>
+
+        {/* Key stats */}
+        <div className="city-hero-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
+          {[
+            {
+              label: "Annual cost of living",
+              value: formatMoney(data.col),
+              // The range replaces "local baseline", which said nothing. A
+              // reader who can see the spread knows how far to trust the
+              // middle of it — and knows to put their own number in.
+              sub: costRange
+                ? costRange.capped
+                  ? `typically ${formatMoney(costRange.low)} and up`
+                  : `typically ${formatMoney(costRange.low)}\u2013${formatMoney(costRange.high)}`
+                : "local baseline",
+            },
+            { label: "FIRE target (25× rule)", value: formatMoney(fireTarget), sub: "4% withdrawal" },
+            { label: "State income tax", value: taxRate === 0 ? "0% — no income tax" : `${(taxRate * 100).toFixed(1)}%`, sub: taxLabel },
+          ].map(({ label, value, sub }) => (
+            <div key={label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "20px 22px" }}>
+              <div style={heading}>{label}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.4px" }}>{value}</div>
+              <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Scenarios table */}
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 32 }}>
+          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--uf-border)" }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-green-900)", margin: 0 }}>
+              Sample retirement timelines in {data.name}
+            </h2>
+            <p style={{ fontSize: 13, color: "var(--uf-ink-3)", margin: "4px 0 0" }}>
+              Starting at age 30 with $0 saved, 20% savings rate
+            </p>
+          </div>
+          <table className="city-scenario-table">
+            <thead style={{ background: "var(--uf-surface)" }}>
+              <tr>
+                {["Annual income", "Take-home pay", "Monthly savings", "Years to FIRE", "Retire at age"].map((h) => (
+                  <th key={h} style={{ padding: "12px 24px", fontSize: 12, fontWeight: 700, color: "var(--uf-ink-2)", letterSpacing: "0.05em", textTransform: "uppercase", borderBottom: "1px solid var(--uf-border)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {scenarios.map((s, i) => (
+                <tr key={s.gross} style={{ borderBottom: i < scenarios.length - 1 ? "1px solid var(--uf-surface-2)" : "none" }}>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>{formatMoney(s.gross)}</td>
+                  <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--uf-ink-2)" }}>{formatMoney(s.takeHome)}</td>
+                  <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--uf-ink-2)" }}>{formatMoney(s.monthlySavings)}</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "var(--uf-green-900)" }}>{s.years === null ? "Not reached" : `${Math.round(s.years)} yrs`}</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "var(--uf-teal)" }}>
+                    {s.years === null ? "—" : START_AGE + Math.round(s.years)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Interactive calc */}
+        <CityCalcWidget city={data} />
+
+        {/* Editorial content */}
+        <div style={{ marginTop: 48, marginBottom: 40 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.4px", marginBottom: 16 }}>
+            What does it take to retire in {data.name}?
+          </h2>
+          <div style={{ fontSize: 15, color: "var(--uf-ink-2)", lineHeight: 1.75, display: "flex", flexDirection: "column", gap: 14 }}>
+            <p style={{ margin: 0 }}>
+              Using the 4% rule — the most widely used FIRE guideline — retiring in {data.name} requires a portfolio of{" "}
+              <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(fireTarget)}</strong>. This assumes you&apos;ll spend{" "}
+              {formatMoney(data.col)} per year and withdraw 4% of your portfolio annually, which historical data suggests can
+              sustain a 30+ year retirement.
+            </p>
+            <p style={{ margin: 0 }}>
+              {costBand === 'very-high'
+                ? `${data.name} is one of the most expensive FIRE baselines in UntilFire, ranking ${ordinal(nationalRank.rank)} out of ${nationalRank.total} US cities. In places like this, housing and recurring lifestyle costs usually matter more than trying to optimise tiny line items.`
+                : costBand === 'high'
+                  ? `${data.name} sits in the higher-cost group of US city baselines. You usually need both a healthy income and a disciplined savings rate to keep the target from drifting upward.`
+                  : costBand === 'mid'
+                    ? `${data.name} sits near the middle of UntilFire's US city range. That makes it useful for testing whether the real lever is spending discipline, tax efficiency, or simply earning more.`
+                    : `${data.name} lands in the lower-cost end of UntilFire's US city range, which can make FIRE more reachable if income remains stable and lifestyle creep stays under control.`}
+            </p>
+            <p style={{ margin: 0 }}>
+              {taxRate === 0
+                ? `${data.name} is in a no-state-income-tax environment, so more of each raise can become invested cash. That advantage compounds only if spending does not rise just as fast.`
+                : `${data.name} residents face ${taxLabel}, so pre-tax contributions and a realistic take-home estimate matter. FIRE math breaks when people plan from gross salary instead of the amount they can actually invest.`}
+            </p>
+            <p style={{ margin: 0 }}>
+              The biggest levers are still your savings rate and your timeline. Saving 20% of take-home instead of 10% can cut years off the journey, and starting earlier lowers the amount your portfolio has to do later.
+            </p>
+          </div>
+        </div>
+
+        {/* Methodology and sources */}
+        <section
+          aria-labelledby="city-methodology-heading"
+          style={{
+            background: "var(--uf-card)",
+            border: "1px solid var(--uf-border)",
+            borderRadius: 16,
+            padding: "24px 22px",
+            marginBottom: 40,
+          }}
+        >
+          <div style={{ ...heading, marginBottom: 8 }}>Data and assumptions</div>
+          <h2
+            id="city-methodology-heading"
+            style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 12px" }}
+          >
+            How the {data.name} estimate is built
+          </h2>
+          <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
+            Updated {US_CITY_COST_DATA_UPDATED}. All amounts are annual US dollars. Housing uses the US Census
+            Bureau&apos;s American Community Survey median gross rent for recent movers, with the all-renter median
+            used when the recent-mover figure is unavailable. Non-housing spending uses a {formatMoney(34_000)}
+            national annual baseline. Together they produce the {formatMoney(data.col)} planning estimate above.
+          </p>
+          <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
+            The displayed range reflects renter medians and Census margins of error, so it is a starting point rather
+            than a household budget. Replace it with your own spending in the calculator. The FIRE target applies the
+            common 25× guideline; it does not guarantee that a portfolio will last.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 18px", fontSize: 14, lineHeight: 1.7 }}>
+            <a
+              href="https://api.census.gov/data/2024/acs/acs5/groups/B25113.html"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}
+            >
+              Census recent-mover rent table
+            </a>
+            <a
+              href="https://api.census.gov/data/2024/acs/acs5/groups/B25064.html"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}
+            >
+              Census all-renter fallback table
+            </a>
+            <Link
+              href="/calculators/4-percent-rule"
+              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}
+            >
+              Test the 25× assumption
+            </Link>
+            <Link
+              href={statePageHref}
+              style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none" }}
+            >
+              Compare FIRE costs across {stateName}
+            </Link>
+          </div>
+        </section>
+
+        {/* FIRE variants for this city */}
+        <div style={{ marginBottom: 40 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.4px", marginBottom: 8 }}>
+            Lean, Coast, Barista, and Fat FIRE numbers for {data.name}
+          </h2>
+          <p style={{ fontSize: 15, color: "var(--uf-ink-2)", lineHeight: 1.75, margin: "0 0 20px", maxWidth: 640 }}>
+            Not everyone wants the same retirement. Here is how the main FIRE variants translate to {data.name}&apos;s{" "}
+            {formatMoney(data.col)}/year cost-of-living baseline, so you can target the lifestyle you actually want.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+            {fireVariants.map((v) => (
+              <div key={v.label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "20px 18px" }}>
+                <div style={heading}>{v.label} in {data.name}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.5px", marginBottom: 8 }}>{formatMoney(v.value)}</div>
+                <p style={{ margin: 0, fontSize: 13.5, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>{v.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Monthly savings to retire in this city */}
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 40 }}>
+          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--uf-border)" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: 0 }}>
+              How much to save each month to retire in {data.name}
+            </h2>
+            <p style={{ fontSize: 13, color: "var(--uf-ink-3)", margin: "4px 0 0" }}>
+              Monthly investing needed to reach the {formatMoney(fireTarget)} target, starting from $0 at a ~7% average annual return after inflation
+            </p>
+          </div>
+          <table className="city-scenario-table">
+            <thead style={{ background: "var(--uf-surface)" }}>
+              <tr>
+                {["Timeline", "Save per month", "Retire at age (from 30)"].map((h) => (
+                  <th key={h} style={{ padding: "12px 24px", fontSize: 12, fontWeight: 700, color: "var(--uf-ink-2)", letterSpacing: "0.05em", textTransform: "uppercase", borderBottom: "1px solid var(--uf-border)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {savingsByTimeline.map((row, i) => (
+                <tr key={row.yrs} style={{ borderBottom: i < savingsByTimeline.length - 1 ? "1px solid var(--uf-surface-2)" : "none" }}>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>{row.yrs} years</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 800, color: "var(--uf-green-900)" }}>{formatMoney(row.monthly)}/mo</td>
+                  <td style={{ padding: "16px 24px", fontSize: 15, fontWeight: 700, color: "var(--uf-teal)" }}>{30 + row.yrs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 40 }}>
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={heading}>National context</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", marginBottom: 8 }}>
+              {ordinal(nationalRank.rank)} of {nationalRank.total}
+            </div>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>
+              {data.name} ranks by annual spending baseline among UntilFire&apos;s US cities, which helps explain whether your target is being pushed mostly by local costs or by your own spending choices.
+            </p>
+          </div>
+
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={heading}>Compared with the US median</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", marginBottom: 8 }}>
+              {spendDelta >= 0 ? `${formatMoney(spendDelta)} higher` : `${formatMoney(Math.abs(spendDelta))} lower`}
+            </div>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>
+              The current UntilFire median US city baseline is {formatMoney(US_MEDIAN_COL)}/year. Every {formatMoney(1_000)} of annual spending changes the 25× target by {formatMoney(25_000)}.
+            </p>
+          </div>
+
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={heading}>Closest cost comparisons</div>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
+              {nearestHigherCostCity ? `Nearest higher baseline: ${nearestHigherCostCity.name} at ${formatMoney(nearestHigherCostCity.col)}/year.` : 'This is already among the highest baselines in the current data set.'}
+            </p>
+            <p style={{ margin: "10px 0 0", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
+              {nearestLowerCostCity ? `Nearest lower baseline: ${nearestLowerCostCity.name} at ${formatMoney(nearestLowerCostCity.col)}/year.` : 'This is already among the lowest baselines in the current data set.'}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 40 }}>
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={heading}>Next calculator</div>
+            <h2 style={{ fontSize: 20, lineHeight: 1.25, margin: "0 0 10px", color: "var(--uf-ink)" }}>
+              {suggestedCalculator.label}
+            </h2>
+            <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
+              {suggestedCalculator.reason}
+            </p>
+            <Link href={suggestedCalculator.href} style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none", fontSize: 14 }}>
+              Open {suggestedCalculator.label}
+            </Link>
+          </div>
+
+          {relatedArticle ? (
+            <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+              <div style={heading}>Related reading</div>
+              <h2 style={{ fontSize: 20, lineHeight: 1.25, margin: "0 0 10px", color: "var(--uf-ink)" }}>
+                {relatedArticle.title}
+              </h2>
+              <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
+                {relatedArticle.description}
+              </p>
+              <Link href={`/learn/${relatedArticle.slug}`} style={{ color: "var(--uf-green)", fontWeight: 700, textDecoration: "none", fontSize: 14 }}>
+                Read the guide
+              </Link>
+            </div>
+          ) : null}
+        </div>
+
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "24px 22px", marginBottom: 40 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 16px" }}>
+            Questions people ask about FIRE in {data.name}
+          </h2>
+          <div style={{ display: "grid", gap: 14 }}>
+            {cityFaqs.map((faq) => (
+              <div key={faq.question} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: "16px 16px 14px" }}>
+                <h3 style={{ margin: "0 0 8px", fontSize: 16, color: "var(--uf-ink)" }}>{faq.question}</h3>
+                <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>{faq.answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Related cities */}
+        {relatedCities.length > 0 && (
+          <div style={{ marginBottom: 48 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-green-900)", marginBottom: 16 }}>
+              Other cities in the same state
+            </h2>
+            <div className="city-related" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              {relatedCities.map((c) => (
+                <Link
+                  key={c.key}
+                  href={`/fire-number/${c.key}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "14px 16px",
+                    background: "var(--uf-card)",
+                    border: "1px solid var(--uf-border)",
+                    borderRadius: 10,
+                    textDecoration: "none",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "var(--uf-green-900)",
+                    transition: "border-color 0.15s",
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>{c.flag}</span>
+                  <div>
+                    <div>{c.name}</div>
+                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", fontWeight: 400 }}>{formatMoney(c.col * 25)} target</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bottom CTA */}
+        <div style={{ background: "linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)", borderRadius: 16, padding: "32px 36px", textAlign: "center" }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-card)", margin: "0 0 10px", letterSpacing: "-0.4px" }}>
+            Ready to build your real FIRE plan?
+          </h2>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", margin: "0 0 24px" }}>
+            Track your spending, model your investments, and see exactly when you can retire in {data.name}.
+          </p>
+          <Link
+            href="/dashboard"
+            style={{
+              display: "inline-block",
+              background: "var(--uf-teal)",
+              color: "var(--uf-green-900)",
+              padding: "14px 32px",
+              borderRadius: 8,
+              fontSize: 15,
+              fontWeight: 800,
+              textDecoration: "none",
+              letterSpacing: "-0.2px",
+            }}
+          >
+            Start free — no credit card
+          </Link>
+        </div>
+      </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.untilfire.com/' },
+                { '@type': 'ListItem', position: 2, name: 'FIRE Number by City', item: 'https://www.untilfire.com/fire-number' },
+                { '@type': 'ListItem', position: 3, name: data.name, item: `https://www.untilfire.com/fire-number/${data.key}` },
+              ],
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'WebPage',
+              name: `${data.name} FIRE Number Calculator and Cost Guide`,
+              description: `Estimate a realistic FIRE number for ${data.name} using local annual spending of ${formatMoney(data.col)}, state tax context, and retirement math.`,
+              url: `https://www.untilfire.com/fire-number/${data.key}`,
+              about: {
+                '@type': 'Thing',
+                name: `FIRE planning in ${data.name}`,
+              },
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: cityFaqs.map((faq) => ({
+                '@type': 'Question',
+                name: faq.question,
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: faq.answer,
+                },
+              })),
+            },
+          ]),
+        }}
+      />
+    </>
+  );
+}
