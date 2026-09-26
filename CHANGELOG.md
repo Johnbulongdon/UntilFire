@@ -8,6 +8,12 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-26
 
+### Pro is $9 a month or $79 a year, with a 30-day free trial
+- New prices for new subscribers. Anyone already on $3 or $30 keeps it.
+- The free trial is 30 days, down from 90.
+- Every price and trial mention reads `lib/pricing.ts`; the two hard-coded
+  "3 months free" texts (landing page, Profile) now do too. D-26.
+
 ### Housekeeping
 - State pages with one city say "1 city" (and "1 City" in the search title)
   instead of "1 cities".

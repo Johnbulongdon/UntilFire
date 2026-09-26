@@ -441,7 +441,7 @@ export function buildDay3Email(ask: NudgeAsk, unsubscribeUrl: string, ctx: Nudge
 
 export function buildTrialReminderEmail(
   trialEndDate: string,
-  /** What Stripe will actually charge, e.g. "$3/month" or "$30/year". */
+  /** What Stripe will actually charge, e.g. "$9/month" or "$79/year". */
   priceLabel: string = `${PRO_MONTHLY_LABEL}/month`,
 ): string {
   const hero = heroCard(
