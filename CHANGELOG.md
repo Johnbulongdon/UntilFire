@@ -4,6 +4,16 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
+### Coast FIRE calculator: the number first, with Social Security and couples
+- The first result is now your Coast FIRE number (what you need invested today
+  to stop paying in) and how much of it you have. Before, the page only showed
+  the age you could stop.
+- New inputs: Social Security or a pension, a year in today's money, and the
+  age it starts. Income that starts after you retire leaves a gap your pot
+  covers, and the target includes it. "Two of us" adds a partner's benefit.
+- Two new FAQ answers (Social Security, couples) and a search description that
+  mentions both, since those are what people search for. D-25.
+
 ### Dashboard button on the landing page when signed in
 - Signed-in visitors who stay on the landing page (internal test accounts skip
   the automatic redirect) see "Dashboard" in the top bar in place of "Get

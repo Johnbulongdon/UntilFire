@@ -26,6 +26,14 @@ const faqs = [
     answer: 'No. Coast FIRE assumes the retirement portfolio stays invested without withdrawals while other income covers living costs. Barista FIRE usually combines part-time work with portfolio income or other resources to cover current spending. Working part time can fit either approach, but drawing from the portfolio before retirement changes the Coast FIRE calculation.',
   },
   {
+    question: 'Does this Coast FIRE calculator include Social Security?',
+    answer: "Yes. Enter your expected Social Security or pension in today's money and the age it starts. Income that starts at retirement lowers the spending your portfolio must cover. Income that starts later leaves a gap: your portfolio pays everything until then, and the calculator adds the cost of bridging those years to your target. Your Social Security statement at ssa.gov shows estimates by claiming age.",
+  },
+  {
+    question: 'How does Coast FIRE work for couples?',
+    answer: "Choose Two of us and enter the household's combined savings, contributions and retirement spending, plus each person's Social Security or pension. Enter the age a partner's benefit starts in your age: if your partner is three years younger and claims at 67, that is 64 for you. A second benefit usually lowers the Coast number, and a later start raises the bridge cost.",
+  },
+  {
     question: 'What inputs matter most for Coast FIRE?',
     answer: 'All four target assumptions matter. Spending changes the target proportionally; a lower withdrawal rate raises it. Return and years to retirement compound together. For a $1,250,000 retirement target in 30 years, the Coast number is about $164,000 at 7% real return, $289,000 at 5%, or $515,000 at 3%. These are scenarios, not predicted returns.',
   },
@@ -34,7 +42,7 @@ const faqs = [
 export const metadata: Metadata = {
   title: 'Coast FIRE Calculator — Find Your Coast FI Number | UntilFire',
   description:
-    'Estimate your Coast FIRE number and the age you could stop saving. Compare contributions, retirement spending and inflation-adjusted returns. Free, no login.',
+    'Find your Coast FIRE number and the age you could stop saving. Includes Social Security, pensions and couples, with inflation-adjusted returns. Free, no login.',
   keywords:
     'coast FIRE calculator, coast FI calculator, coast fire number, coast FI number, barista FIRE calculator, semi-retirement calculator, how much to save to coast',
   alternates: { canonical: 'https://www.untilfire.com/calculators/coast-fire' },
@@ -140,8 +148,8 @@ export default function CoastFirePage() {
             </p>
             <p className="uf-t-body" style={{ margin: '0 0 var(--uf-s4)', color: 'var(--uf-ink-2)', lineHeight: 1.75 }}>
               The monthly contribution is converted to an annual amount and added at the end of
-              each projected year. Pension and Social Security start dates, investment fees and
-              taxes are not modelled separately. The return (the S&amp;P 500&apos;s {DEFAULT_RETURN_PCT}% a year after inflation since 1928) and 4% withdrawal defaults are
+              each projected year. Social Security and pensions are entered with their start
+              ages; investment fees and taxes are not modelled separately. The return (the S&amp;P 500&apos;s {DEFAULT_RETURN_PCT}% a year after inflation since 1928) and 4% withdrawal defaults are
               editable assumptions; compare lower returns and different spending before relying
               on the result. Even small{' '}
               <a href="https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins/updated" style={{ color: 'var(--uf-green)', textDecoration: 'underline' }}>

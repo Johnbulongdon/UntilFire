@@ -6,10 +6,11 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ReferenceDot,
 } from 'recharts'
 import Logo from '@/app/components/Logo'
-import { Badge, Card, Money, Slider, Stat } from '@/components/ui'
+import { Badge, Card, Money, SegmentedControl, Slider, Stat } from '@/components/ui'
 import { DEFAULT_RETURN_PCT } from '@/lib/fire-number'
 import GrowthChoicePicker from '@/app/components/GrowthChoicePicker'
 import { formatMoney } from '@/lib/money'
+import { coastNumberAt, coastTarget, incomeAt, type RetirementIncome } from '@/lib/coast-fire'
 
 /**
  * Coast FIRE calculator.
@@ -82,6 +83,13 @@ export default function CoastFireCalculator() {
   const [annualExpenses, setAnnualExpenses] = useState(50_000)
   const [returnRate, setReturnRate] = useState<number>(DEFAULT_RETURN_PCT)
   const [withdrawalRate, setWithdrawalRate] = useState(4)
+  // Income after work stops. Zero by default, so the classic Coast number
+  // (and the page's worked example) is what a first visit sees.
+  const [benefit, setBenefit] = useState(0)
+  const [benefitAge, setBenefitAge] = useState(67)
+  const [household, setHousehold] = useState<'one' | 'two'>('one')
+  const [partnerBenefit, setPartnerBenefit] = useState(0)
+  const [partnerBenefitAge, setPartnerBenefitAge] = useState(67)
 
   const [chartRef, chartWidth] = useWidth<HTMLDivElement>(320)
   const [dragging, setDragging] = useState(false)
@@ -92,7 +100,11 @@ export default function CoastFireCalculator() {
     const contribution = monthlyContribution * 12
     const retire = Math.max(currentAge + 1, retireAge)
     const planTo = retire + YEARS_PAST_RETIREMENT
-    const fireTarget = wr > 0 ? annualExpenses / wr : 0
+    const incomes: RetirementIncome[] = [
+      { annual: benefit, startAge: benefitAge },
+      ...(household === 'two' ? [{ annual: partnerBenefit, startAge: partnerBenefitAge }] : []),
+    ].filter((i) => i.annual > 0)
+    const fireTarget = coastTarget(annualExpenses, wr, r, retire, incomes)
     // Clamped here rather than pushed back into state: the age sliders can
     // move underneath this one, and correcting state from a render is how you
     // get a loop.
@@ -106,7 +118,7 @@ export default function CoastFireCalculator() {
         out.push({ age: a, value: Math.max(0, Math.round(bal)) })
         bal = a < retire
           ? bal * (1 + r) + (a < stopAt ? contribution : 0)
-          : bal * (1 + r) - annualExpenses
+          : bal * (1 + r) - Math.max(0, annualExpenses - incomeAt(a, incomes))
         if (bal < 0) bal = 0
       }
       return out
@@ -129,11 +141,11 @@ export default function CoastFireCalculator() {
      * computing — it is the classic Coast FIRE answer — but it is now a fact
      * shown alongside the plan rather than the thing that positions the dot.
      */
-    const coastNumberAt = (a: number) => fireTarget / Math.pow(1 + r, Math.max(0, retire - a))
+    const coastNumber = coastNumberAt(fireTarget, r, currentAge, retire)
     let earliest: number | null = null
     let bal = currentSavings
     for (let a = currentAge; a <= retire; a++) {
-      if (bal >= coastNumberAt(a)) { earliest = a; break }
+      if (bal >= coastNumberAt(fireTarget, r, a, retire)) { earliest = a; break }
       bal = bal * (1 + r) + contribution
     }
 
@@ -142,7 +154,8 @@ export default function CoastFireCalculator() {
     const atRetireContributing = at(contributing, retire)
 
     return {
-      fireTarget, series, retire, stop, earliest,
+      fireTarget, coastNumber, series, retire, stop, earliest,
+      benefits: incomeAt(Infinity, incomes),
       atStop, atRetire, atRetireContributing,
       income: atRetire * wr,
       incomeContributing: atRetireContributing * wr,
@@ -151,7 +164,8 @@ export default function CoastFireCalculator() {
       ceiling: Math.max(fireTarget, ...series.map((p) => Math.max(p.coasting, p.contributing))) * 1.08,
       yearsPayingIn: Math.max(0, stop - currentAge),
     }
-  }, [currentAge, currentSavings, monthlyContribution, stopAge, retireAge, annualExpenses, returnRate, withdrawalRate])
+  }, [currentAge, currentSavings, monthlyContribution, stopAge, retireAge, annualExpenses, returnRate, withdrawalRate,
+    benefit, benefitAge, household, partnerBenefit, partnerBenefitAge])
 
   // Shorter on a phone: the results card is sticky, so every pixel it takes is
   // a pixel of sliders the reader cannot see while dragging them.
@@ -226,6 +240,17 @@ export default function CoastFireCalculator() {
           <div className="uf-calc-results">
             <Card>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--uf-s4)', marginBottom: 'var(--uf-s4)' }}>
+                {/* The number people search for, first: what they need
+                    invested today to stop paying in now. */}
+                <Stat
+                  label="Your Coast FIRE number"
+                  value={<Money amount={result.coastNumber} format="compact" size={narrow ? 24 : 34} />}
+                  delta={
+                    currentSavings >= result.coastNumber
+                      ? 'Reached: you could stop paying in today'
+                      : `You have ${Math.floor((currentSavings / Math.max(1, result.coastNumber)) * 100)}% of it`
+                  }
+                />
                 <Stat
                   label="Stop paying in at"
                   value={<span className="uf-t-data" style={{ fontSize: narrow ? 24 : 34, fontWeight: 700, color: 'var(--uf-teal)' }}>{result.stop}</span>}
@@ -243,11 +268,6 @@ export default function CoastFireCalculator() {
                       ? `${formatMoney(result.shortfall, { style: 'compact' })} short`
                       : `${formatMoney(result.fireTarget, { style: 'compact' })} target, cleared`
                   }
-                />
-                <Stat
-                  label={`Income from ${result.retire}`}
-                  value={<span className="uf-t-data" style={{ fontSize: narrow ? 20 : 26, fontWeight: 700 }}>{perMonth(result.income)}</span>}
-                  delta={narrow ? `at ${withdrawalRate}%` : `${formatMoney(result.income)} a year at ${withdrawalRate}%`}
                 />
               </div>
 
@@ -421,6 +441,35 @@ export default function CoastFireCalculator() {
                   hint="When spending starts, not when contributions stop." />
                 <Slider label="Annual spending in retirement" value={annualExpenses} onChange={setAnnualExpenses}
                   min={10_000} max={250_000} step={1_000} format={money} />
+                <Slider label="Social Security or pension, a year" value={benefit} onChange={setBenefit}
+                  min={0} max={60_000} step={500} format={money}
+                  hint="In today's money. Lowers what your pot must cover." />
+                {benefit > 0 && (
+                  <Slider label="It starts at" value={benefitAge} onChange={setBenefitAge}
+                    min={50} max={75} step={1} format={ageLabel}
+                    hint="Your pot covers the years before it starts." />
+                )}
+                <SegmentedControl
+                  label="Planning for"
+                  size="sm"
+                  value={household}
+                  onChange={setHousehold}
+                  options={[{ value: 'one', label: 'Just me' }, { value: 'two', label: 'Two of us' }]}
+                />
+                {household === 'two' && (
+                  <>
+                    <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-2)' }}>
+                      Enter savings, contributions and spending for the household.
+                    </p>
+                    <Slider label="Partner's Social Security or pension, a year" value={partnerBenefit} onChange={setPartnerBenefit}
+                      min={0} max={60_000} step={500} format={money} />
+                    {partnerBenefit > 0 && (
+                      <Slider label="It starts when you are" value={partnerBenefitAge} onChange={setPartnerBenefitAge}
+                        min={40} max={85} step={1} format={ageLabel}
+                        hint="Your age then, so a younger partner's 67 is later here." />
+                    )}
+                  </>
+                )}
                 <Slider label="Expected annual return" value={returnRate} onChange={setReturnRate}
                   min={1} max={12} step={0.1} format={pct}
                   hint="After inflation. Pick a stretch of history below, or set your own." />
@@ -437,7 +486,8 @@ export default function CoastFireCalculator() {
           <p className="uf-t-body" style={{ color: 'var(--uf-ink-2)', margin: 0, lineHeight: 1.75 }}>
             Paying in {formatMoney(monthlyContribution)} a month until{' '}
             <strong style={{ color: 'var(--uf-ink)' }}>{result.stop}</strong>, you retire at {result.retire}
-            {' '}on <strong style={{ color: 'var(--uf-ink)' }}>{perMonth(result.income)}</strong>.
+            {' '}on <strong style={{ color: 'var(--uf-ink)' }}>{perMonth(result.income)}</strong> from your pot
+            {result.benefits > 0 && <>, plus {perMonth(result.benefits)} in benefits once they start</>}.
             {result.shortfall > 0
               ? ` That is ${formatMoney(result.shortfall)} short of the ${formatMoney(result.fireTarget)} your spending needs — pay in for longer, or spend less.`
               : ' That clears the target.'}

@@ -766,8 +766,9 @@ the most neutral figure. The cautious 5% stays one tap away as extra margin:
 **Where:**
 - The free result says what it assumes and where it comes from. It switches to
   5% in one tap, and "Where does this come from?" opens the history.
-- Plan's assumptions card, the savings rate calculator and Coast FIRE show the
-  same history picker.
+- Plan's assumptions card and the savings rate calculator state growth in one
+  line and open the history picker behind Change (#156, #157). Coast FIRE shows
+  the picker under its return slider.
 - The dashboard's saved `fire_profile.growthRate` could not be changed before.
   Every profile saved the typed 0.07, so 0.07 is read as "never chosen" and
   shows today's default. The choice made on the free result carries into the
@@ -796,6 +797,38 @@ wiring. `test:fire-projection` checks the engine's default.
 5%, consider making it the default.
 **Source:** `lib/sp500-history.ts`, `lib/fire-number.ts`,
 `app/components/GrowthChoicePicker.tsx`, `app/components/RevealFlow.tsx`.
+
+### D-25 — September 26: Coast FIRE leads with the number and counts Social Security
+
+**Status:** Active. Authorised by the founder on 2026-09-26: "Go Coast FIRE",
+after Search Console showed the calculator at position 44 for about twenty
+Coast FIRE searches, including "with social security" and "for couples".
+**Decision:** The Coast FIRE calculator's first result is the Coast FIRE number
+itself (what you need invested today to stop paying in now) and how much of it
+you have. It was previously only implied by "Stop paying in at". The calculator
+takes Social Security or a pension, a year in today's money, with the age it
+starts. A "Two of us" option adds a partner's benefit. Its start age is entered
+in the user's age, so one set of ages drives the chart.
+**Model** (`lib/coast-fire.ts`): the target at retirement is the lasting share,
+(spending − all income) ÷ withdrawal rate, plus the cost of bridging each
+benefit until it starts: benefit × (1 − (1 + r)^−years) ÷ r at the same real
+return. The chart's drawdown subtracts each benefit from spending once it has
+started, so a pot of exactly the target spends the bridge share by the start
+age. Benefits default to zero, so a first visit still sees the classic number
+and the page's worked example.
+**Why:** People search for the number ("what is my coast fire number"), not
+for a stop age. Competing calculators mostly ignore benefits, although for
+someone retiring at 55 a $24,000 Social Security benefit from 67 changes the
+target more than any other input.
+**Alternatives:** Treating benefits as starting at retirement was rejected: it
+understates the target for early retirees, which is who uses Coast FIRE. So
+was separate ages for each partner: two age axes on one chart confuse more
+than they add.
+**Guardrails:** `test:coast-fire` checks the target against the drawdown the
+chart draws, the page's worked example, the edges, and the wiring.
+**Revisit:** when Search Console shows where the page settles, about four
+weeks after release.
+**Source:** `lib/coast-fire.ts`, `app/calculators/coast-fire/`.
 
 ## How to add or supersede a decision
 
