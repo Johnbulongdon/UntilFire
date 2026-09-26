@@ -5,16 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { rememberReturnTo } from "@/lib/auth-finish";
-import { PRO_ANNUAL_USD, PRO_MONTHLY_USD } from "@/lib/pricing";
+import { PRO_ANNUAL_USD, PRO_MONTHLY_USD, REFERRED_TRIAL_LABEL } from "@/lib/pricing";
 import {
   commissionCents, formatCents, REFERRAL_HOLD_DAYS, REFERRAL_MIN_PAYOUT_CENTS, REFERRAL_MONTHS,
-  REFERRAL_RATE_LABEL, type PayoutMethod,
+  REFERRAL_RATE_LABEL, REFERRAL_TAIL_RATE_LABEL, REFERRAL_TIER_CUSTOMERS, REFERRAL_TIER_RATE_LABEL, type PayoutMethod,
 } from "@/lib/referrals";
 import { Badge, Button, Card, Field, Input, SegmentedControl, Stat } from "@/components/ui";
 
 interface Me {
   partner: null | { code: string; status: "active" | "paused"; payout_method: PayoutMethod; payout_email: string };
-  stats?: { visits: number; signups: number; payingCustomers: number; earned: number; pending: number; payable: number; paid: number; readyToPay: boolean };
+  stats?: {
+    visits: number; signups: number; inTrial: number; inTrialWorthCents: number; payingCustomers: number;
+    earned: number; pending: number; payable: number; paid: number; readyToPay: boolean;
+  };
   payouts?: { amount_cents: number; method: string; paid_at: string }[];
 }
 
@@ -58,15 +61,16 @@ function Pitch({ onStart }: { onStart: () => void }) {
         <Badge tone="positive">For creators</Badge>
         <h1 className="uf-t-h1" style={{ margin: "var(--uf-s3) 0 var(--uf-s2)" }}>Earn {REFERRAL_RATE_LABEL} for a year</h1>
         <p className="uf-t-lead" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-          Share the free FIRE calculator. When a reader subscribes, you earn {REFERRAL_RATE_LABEL} of what they pay for {REFERRAL_MONTHS} months.
+          Share the free FIRE calculator. Your readers get Pro {REFERRED_TRIAL_LABEL}. When one subscribes, you earn {REFERRAL_RATE_LABEL} of what they pay for {REFERRAL_MONTHS} months.
         </p>
       </div>
       <Button variant="primary" size="lg" onClick={onStart} style={{ justifySelf: "start" }}>Get your link</Button>
       <Card style={{ display: "grid", gap: "var(--uf-s3)" }}>
         {[
           ["1", "Get your link", "untilfire.com/r/yourname, in a minute."],
-          ["2", "Readers try it free", "The calculator needs no signup. Pro starts with 30 days free."],
-          ["3", "Get paid monthly", `By PayPal or Wise, once ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)} is ready.`],
+          ["2", "Readers get a better deal", `The calculator is free with no signup, and Pro starts with ${REFERRED_TRIAL_LABEL}, twice the usual trial.`],
+          ["3", "Get paid monthly", `By PayPal or Wise. Your first payout goes out at any amount.`],
+          ["4", "Earn more as you grow", `${REFERRAL_TIER_RATE_LABEL} once ${REFERRAL_TIER_CUSTOMERS} readers pay, and ${REFERRAL_TAIL_RATE_LABEL} for as long as they stay after their first year.`],
         ].map(([n, title, line]) => (
           <div key={n} style={{ display: "flex", gap: "var(--uf-s3)", alignItems: "baseline" }}>
             <span className="uf-t-data" style={{ color: "var(--uf-teal)", fontWeight: 700 }}>{n}</span>
@@ -163,9 +167,20 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "var(--uf-s4)" }}>
         <Stat label="Visits" value={s.visits.toLocaleString()} />
         <Stat label="Signups" value={s.signups.toLocaleString()} />
+        <Stat label="In free trial" value={s.inTrial.toLocaleString()} />
         <Stat label="Paying" value={s.payingCustomers.toLocaleString()} />
         <Stat label="Earned" value={formatCents(s.earned)} tone="positive" />
       </div>
+      {s.inTrial > 0 && (
+        <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
+          {s.inTrial === 1 ? "1 reader is" : `${s.inTrial} readers are`} trying Pro. If they subscribe yearly, that&apos;s about <b>{formatCents(s.inTrialWorthCents)}</b> for you in their first year.
+        </p>
+      )}
+      <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
+        {s.payingCustomers >= REFERRAL_TIER_CUSTOMERS
+          ? `You're on ${REFERRAL_TIER_RATE_LABEL} for new payments.`
+          : `${s.payingCustomers} of ${REFERRAL_TIER_CUSTOMERS} paying readers to ${REFERRAL_TIER_RATE_LABEL}.`}
+      </p>
 
       <Card style={{ display: "grid", gap: "var(--uf-s2)" }}>
         <div className="uf-t-body" style={{ display: "flex", gap: "var(--uf-s5)", flexWrap: "wrap" }}>
@@ -176,7 +191,9 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
         <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
           {s.readyToPay
             ? `Goes out in this month's payout to your ${methodName(p.payout_method)}.`
-            : `Earnings are held ${REFERRAL_HOLD_DAYS} days for refunds, then paid monthly once ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)} is ready.`}
+            : s.paid > 0
+              ? `Earnings are held ${REFERRAL_HOLD_DAYS} days for refunds, then paid monthly once ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)} is ready.`
+              : `Earnings are held ${REFERRAL_HOLD_DAYS} days for refunds. Your first payout goes out at any amount.`}
         </p>
       </Card>
 
@@ -210,7 +227,7 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
         </p>
       )}
       <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-3)" }}>
-        {REFERRAL_RATE_LABEL} of each payment for a reader&apos;s first {REFERRAL_MONTHS} months of paying. Say it&apos;s an affiliate link. <Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
+        {REFERRAL_RATE_LABEL} of each payment in a reader&apos;s first {REFERRAL_MONTHS} months, {REFERRAL_TAIL_RATE_LABEL} after. Say it&apos;s an affiliate link. <Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
       </p>
     </div>
   );

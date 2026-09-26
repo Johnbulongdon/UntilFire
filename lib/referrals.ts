@@ -25,7 +25,19 @@ export const REFERRAL_COOKIE_DAYS = 60;
 export const REFERRAL_COOKIE = "uf_ref";
 /** An account older than this at its first dashboard visit was not referred by a new click. */
 export const REFERRAL_CLAIM_MAX_ACCOUNT_AGE_DAYS = 7;
-export const REFERRAL_TERMS_VERSION = "2026-09-26";
+export const REFERRAL_TERMS_VERSION = "2026-09-26b";
+
+/**
+ * Two steps up from the base 30% (D-27): 40% once a creator has brought 10
+ * paying customers, and 10% for as long as a customer keeps paying after
+ * their first year. At $9 a month the business still keeps $3.34 a month at
+ * 40%, and $6.04 at 10%.
+ */
+export const REFERRAL_TIER_RATE_BPS = 4000;
+export const REFERRAL_TIER_RATE_LABEL = "40%";
+export const REFERRAL_TIER_CUSTOMERS = 10;
+export const REFERRAL_TAIL_RATE_BPS = 1000;
+export const REFERRAL_TAIL_RATE_LABEL = "10%";
 
 export type PayoutMethod = "paypal" | "wise";
 export type CommissionStatus = "pending" | "payable" | "paid" | "reversed";
@@ -86,6 +98,27 @@ export interface CommissionRow {
   payable_at: string;
 }
 
+/**
+ * The rate for one payment. Inside the customer's first 12 months of paying:
+ * the base rate snapshotted at sign-up, or 40% from the creator's 10th paying
+ * customer on (counting the one paying now). After those 12 months: 10%, for
+ * as long as the customer pays.
+ */
+export function rateForPayment(opts: { baseRateBps: number; inFirstYear: boolean; payingCustomers: number }): number {
+  if (!opts.inFirstYear) return REFERRAL_TAIL_RATE_BPS;
+  return opts.payingCustomers >= REFERRAL_TIER_CUSTOMERS
+    ? Math.max(opts.baseRateBps, REFERRAL_TIER_RATE_BPS)
+    : opts.baseRateBps;
+}
+
+/**
+ * Whether a creator can be paid now: $20 ready, or any amount at all for
+ * their first payout, so the first real money arrives as soon as it clears.
+ */
+export function readyToPay(payableCents: number, hasBeenPaidBefore: boolean): boolean {
+  return payableCents > 0 && (payableCents >= REFERRAL_MIN_PAYOUT_CENTS || !hasBeenPaidBefore);
+}
+
 /** The numbers a creator's dashboard and the admin view both show. */
 export function summarise(rows: CommissionRow[], now: Date = new Date()) {
   const totals = { pending: 0, payable: 0, paid: 0, reversed: 0 };
@@ -99,7 +132,7 @@ export function summarise(rows: CommissionRow[], now: Date = new Date()) {
     ...totals,
     earned: totals.pending + totals.payable + totals.paid,
     payingCustomers: paying.size,
-    readyToPay: totals.payable >= REFERRAL_MIN_PAYOUT_CENTS,
+    readyToPay: readyToPay(totals.payable, totals.paid > 0),
   };
 }
 

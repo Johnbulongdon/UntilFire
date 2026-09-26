@@ -34,6 +34,8 @@ interface Props {
   subscription: { plan: "free" | "pro" } | null;
   onUpgradeClick: () => void;
   onManageBilling: () => void;
+  /** "60 days free" for an account a creator referred (D-27). */
+  trialLabel?: string;
 }
 
 export default function ProfileTab({
@@ -46,6 +48,7 @@ export default function ProfileTab({
   subscription,
   onUpgradeClick,
   onManageBilling,
+  trialLabel = TRIAL_LABEL,
 }: Props) {
   const [displayName, setDisplayName] = useState("");
 
@@ -422,13 +425,13 @@ export default function ProfileTab({
               onClick={onUpgradeClick}
               style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
             >
-              Try {TRIAL_LABEL}
+              Try {trialLabel}
             </button>
           )}
         </div>
         {subscription?.plan !== "pro" && (
           <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10, marginBottom: 0 }}>
-            {TRIAL_LABEL} — then {PRO_MONTHLY_LABEL}/mo, or {PRO_ANNUAL_LABEL}/yr. Unlimited bank connections and priority AI access.
+            {trialLabel} — then {PRO_MONTHLY_LABEL}/mo, or {PRO_ANNUAL_LABEL}/yr. Unlimited bank connections and priority AI access.
           </p>
         )}
       </div>

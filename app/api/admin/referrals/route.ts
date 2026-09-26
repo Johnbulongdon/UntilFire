@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin-auth";
-import { commissionStatus, REFERRAL_MIN_PAYOUT_CENTS, summarise } from "@/lib/referrals";
+import { commissionStatus, readyToPay, REFERRAL_MIN_PAYOUT_CENTS, summarise } from "@/lib/referrals";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +101,12 @@ export async function POST(req: NextRequest) {
       .eq("status", "pending");
     const due = (pending ?? []).filter((c) => commissionStatus(c, now) === "payable");
     const amount = due.reduce((sum, c) => sum + c.commission_cents, 0);
-    if (amount < REFERRAL_MIN_PAYOUT_CENTS) {
+    const { count: earlierPayouts } = await admin
+      .from("referral_payouts")
+      .select("id", { count: "exact", head: true })
+      .eq("partner_id", partner.id);
+    // A creator's first payout goes out at any amount; after that, from $20.
+    if (!readyToPay(amount, (earlierPayouts ?? 0) > 0)) {
       return NextResponse.json({ error: "Less than the $20 minimum is payable." }, { status: 409 });
     }
     // The amount the founder saw and sent. If another commission cleared its

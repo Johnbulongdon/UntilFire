@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs';
 import {
   normaliseCode, commissionCents, withinEarningWindow, payableAt, commissionStatus, summarise,
-  accountYoungEnoughToClaim, REFERRAL_MIN_PAYOUT_CENTS, formatCents,
+  accountYoungEnoughToClaim, REFERRAL_MIN_PAYOUT_CENTS, formatCents, rateForPayment, readyToPay,
 } from '../lib/referrals.ts';
 import { claimReferral, recordReferralCommission, reverseReferralCommission } from '../lib/referrals-server.ts';
 
@@ -43,6 +43,11 @@ check('uses the snapshotted rate', commissionCents(1000, 2000) === 200);
   check('summary: earned excludes reversed; paying counts people', s.earned === 1500 + 270 + 2370 && s.payable === 1500 && s.pending === 270 && s.paid === 2370 && s.reversed === 270 && s.payingCustomers === 2, JSON.stringify(s));
   check('pays out only from the minimum', s.readyToPay === (1500 >= REFERRAL_MIN_PAYOUT_CENTS));
 }
+check('rate: 30% in year one, 40% from the 10th paying customer, 10% after year one',
+  rateForPayment({ baseRateBps: 3000, inFirstYear: true, payingCustomers: 9 }) === 3000 &&
+  rateForPayment({ baseRateBps: 3000, inFirstYear: true, payingCustomers: 10 }) === 4000 &&
+  rateForPayment({ baseRateBps: 3000, inFirstYear: false, payingCustomers: 50 }) === 1000);
+check('first payout at any amount; later ones from $20', readyToPay(270, false) && !readyToPay(270, true) && readyToPay(2000, true) && !readyToPay(0, false));
 check('money reads as $23.70 and $20', formatCents(2370) === '$23.70' && formatCents(2000) === '$20' && formatCents(270) === '$2.70');
 check('only new accounts can be claimed', accountYoungEnoughToClaim(new Date(Date.now() - 2 * day).toISOString()) && !accountYoungEnoughToClaim(new Date(Date.now() - 30 * day).toISOString()));
 
@@ -105,8 +110,18 @@ function fakeDb(tables) {
   check('a $9 invoice earns $2.70', (await recordReferralCommission(db, inv('in_1', 900))) === 'recorded' && db.tables.referral_commissions[0].commission_cents === 270);
   check('a retried webhook records once', (await recordReferralCommission(db, inv('in_1', 900))) === 'duplicate' && db.tables.referral_commissions.length === 1);
   check('tax is not commissioned', (await recordReferralCommission(db, inv('in_tax', 1000, paidAt + 86400, [{ amount: 100 }]))) === 'recorded' && db.tables.referral_commissions[1].collected_cents === 900 && db.tables.referral_commissions[1].commission_cents === 270);
-  check('after 12 months of paying, nothing more', (await recordReferralCommission(db, inv('in_late', 900, paidAt + 400 * 86400))) === 'window-ended');
+  check('after 12 months of paying, 10% for as long as they pay', (await recordReferralCommission(db, inv('in_late', 900, paidAt + 400 * 86400))) === 'recorded' && db.tables.referral_commissions.at(-1).commission_cents === 90 && db.tables.referral_commissions.at(-1).rate_bps === 1000);
   check('an unreferred customer earns no one anything', (await recordReferralCommission(db, { ...inv('in_x', 900), customer: 'cus_unknown' })) === 'unknown-customer');
+
+  // The 40% tier: nine other paying customers, then a tenth pays.
+  for (let i = 0; i < 9; i++) {
+    db.tables.subscriptions.push({ user_id: `r${i}`, stripe_customer_id: `cus_r${i}` });
+    db.tables.referral_attributions.push({ referred_user_id: `r${i}`, partner_id: 'p1', rate_bps: 3000 });
+    await recordReferralCommission(db, { ...inv(`in_r${i}`, 900), customer: `cus_r${i}` });
+  }
+  const tenth = db.tables.referral_commissions.filter((c) => c.referred_user_id === 'r8').at(-1);
+  const ninth = db.tables.referral_commissions.filter((c) => c.referred_user_id === 'r7').at(-1);
+  check('the 10th paying customer earns 40%, the 9th 30%', tenth.rate_bps === 4000 && tenth.commission_cents === 360 && ninth.rate_bps === 3000, `${ninth.rate_bps} ${tenth.rate_bps}`);
 
   const stripe = { invoicePayments: { list: async ({ payment }) => ({ data: payment.payment_intent === 'pi_1' ? [{ invoice: 'in_1' }] : [] }) } };
   check('a refund reverses its unpaid commission', (await reverseReferralCommission(stripe, db, 'pi_1', 'refunded')) === 'reversed' && db.tables.referral_commissions[0].status === 'reversed');
@@ -130,6 +145,10 @@ const me = read('app/api/referrals/me/route.ts');
 check('a creator never sees who they referred', !/commissions:\s/.test(me) && !me.includes('referred_user_id:'));
 const auth = read('lib/auth-finish.ts');
 check('sign-in returns only to allowlisted pages', auth.includes("new Set(['/invite'])"));
+const checkout = read('app/api/stripe/checkout/route.ts');
+check('referred readers get the 60-day trial at checkout', checkout.includes('if (referred) trialDays = REFERRED_TRIAL_DAYS;') && checkout.includes('trial_period_days: trialDays'));
+check('the upgrade screen names the referred trial', read('app/dashboard/page.tsx').includes('trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}'));
+check('a creator sees in-trial counts, never ids', me.includes('inTrial,') && !me.includes('referredIds,'));
 check('the dashboard claims after first sign-in', read('app/dashboard/page.tsx').includes('fetch("/api/referrals/claim"'));
 
 const failed = checks.filter((c) => !c.ok);

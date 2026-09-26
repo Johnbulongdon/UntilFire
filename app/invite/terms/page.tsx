@@ -3,8 +3,10 @@ import Link from "next/link";
 import { siteUrl } from "@/lib/site";
 import {
   formatCents, REFERRAL_CLAIM_MAX_ACCOUNT_AGE_DAYS, REFERRAL_COOKIE_DAYS, REFERRAL_HOLD_DAYS, REFERRAL_MIN_PAYOUT_CENTS,
-  REFERRAL_MONTHS, REFERRAL_RATE_LABEL, REFERRAL_TERMS_VERSION,
+  REFERRAL_MONTHS, REFERRAL_RATE_LABEL, REFERRAL_TAIL_RATE_LABEL, REFERRAL_TERMS_VERSION, REFERRAL_TIER_CUSTOMERS,
+  REFERRAL_TIER_RATE_LABEL,
 } from "@/lib/referrals";
+import { REFERRED_TRIAL_LABEL } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Creator program terms | UntilFire",
@@ -20,10 +22,11 @@ export const metadata: Metadata = {
  */
 export default function InviteTermsPage() {
   const terms: [string, string][] = [
-    ["What you earn", `${REFERRAL_RATE_LABEL} of what each customer you refer pays UntilFire, excluding tax, for their first ${REFERRAL_MONTHS} months of paying. Nothing is earned during a free trial.`],
+    ["What you earn", `${REFERRAL_RATE_LABEL} of what each customer you refer pays UntilFire, excluding tax, for their first ${REFERRAL_MONTHS} months of paying, then ${REFERRAL_TAIL_RATE_LABEL} for as long as they keep paying. From your ${REFERRAL_TIER_CUSTOMERS}th paying customer on, every payment in a customer's first ${REFERRAL_MONTHS} months earns ${REFERRAL_TIER_RATE_LABEL}. Nothing is earned during a free trial.`],
+    ["What your readers get", `People who sign up through your link get Pro ${REFERRED_TRIAL_LABEL} instead of the usual trial. The calculator is always free.`],
     ["Who counts as yours", `Someone who opens your link and creates a new UntilFire account within ${REFERRAL_COOKIE_DAYS} days, on the same browser. Accounts older than ${REFERRAL_CLAIM_MAX_ACCOUNT_AGE_DAYS} days, your own account, and people who were already referred by someone else do not count.`],
     ["Refunds and chargebacks", `Earnings are held for ${REFERRAL_HOLD_DAYS} days. A payment that is refunded or disputed in that time earns nothing.`],
-    ["Payouts", `Monthly, by PayPal or Wise, once at least ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)} is ready. You are responsible for any fees your provider charges to receive money, and for tax on what you earn.`],
+    ["Payouts", `Monthly, by PayPal or Wise. Your first payout goes out at any amount; after that, once at least ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)} is ready. You are responsible for any fees your provider charges to receive money, and for tax on what you earn.`],
     ["Honest promotion", "Say clearly that your link is an affiliate link. Don't promise anyone results, returns or a retirement date, and don't present UntilFire as financial advice. No spam, paid search ads on the UntilFire name, fake reviews or self-referrals."],
     ["Changes and ending", "UntilFire can change these terms for the future or end the program with 30 days' notice. Earnings already made keep the terms they were made under. A creator who breaks these terms can be removed, and unpaid earnings from the breach are forfeited."],
   ];

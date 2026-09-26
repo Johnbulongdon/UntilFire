@@ -6,7 +6,7 @@ import AnimatedHero from "./AnimatedHero";
 import WorldGlobe from "./WorldGlobe";
 import Logo from "@/app/components/Logo";
 import { CITIES } from "@/lib/fire-data";
-import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
+import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { REAL_RETURN, yearsToTarget } from "@/lib/fire/strategies/traditional";
 
 
@@ -306,7 +306,7 @@ function World7() {
 }
 
 /* ── Pricing: editorial columns ──────────────────────────────────────── */
-function Pricing7({ onStart }: { onStart: () => void }) {
+function Pricing7({ onStart, referred = false }: { onStart: () => void; referred?: boolean }) {
   return (
     <section className="uf7-block uf7-block--alt" id="pricing" style={{ ["--uf7hue" as string]: "52deg" }}>
       <div className="uf7-blob uf7-glow-l" />
@@ -328,7 +328,8 @@ function Pricing7({ onStart }: { onStart: () => void }) {
           <div className="uf7-pcol uf7-rv">
             <div className="uf7-tier">Pro</div>
             <div className="uf7-amount">{PRO_MONTHLY_LABEL} <small>/mo after trial, or {PRO_ANNUAL_LABEL}/yr</small></div>
-            <span className="uf7-trial-note">{TRIAL_LABEL}</span>
+            {/* A creator's link doubles the trial (D-27); say so where the price is. */}
+            <span className="uf7-trial-note">{referred ? `${REFERRED_TRIAL_LABEL}, from your invite` : TRIAL_LABEL}</span>
             <ul>
               <li>Everything in Free</li>
               <li>Ranked next moves by time saved</li>
@@ -1358,7 +1359,7 @@ const CSS7 = `
 `;
 
 /* ── Page ────────────────────────────────────────────────────────────── */
-export default function LandingPage({ onStart, signedIn = false }: { onStart: () => void; signedIn?: boolean }) {
+export default function LandingPage({ onStart, signedIn = false, referred = false }: { onStart: () => void; signedIn?: boolean; referred?: boolean }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1410,7 +1411,7 @@ export default function LandingPage({ onStart, signedIn = false }: { onStart: ()
       <StartEarly7 />
       <AnySize7 />
       <World7 />
-      <Pricing7 onStart={onStart} />
+      <Pricing7 onStart={onStart} referred={referred} />
       <Quote7 />
       <Faq7 />
       <Closing7 onStart={onStart} />

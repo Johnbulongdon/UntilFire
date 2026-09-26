@@ -887,6 +887,20 @@ counts (`invoice.paid`); a free trial earns nothing. Earnings are held 30 days
 and reversed by a refund or dispute in that time. The founder pays by PayPal
 or Wise, monthly, once $20 is payable, and records the transfer id in
 `/admin` → Referrals.
+**Improvements, same day** (after the founder asked what successful
+referral programs do differently; "I like one, two, three, four, five"):
+- *Two-sided:* readers who sign up through a creator's link get Pro 60 days
+  free instead of 30 (`REFERRED_TRIAL_DAYS`), so the creator has something to
+  announce. It costs a trial account's running cost, not cash.
+- *Momentum before money:* the creator dashboard counts readers in their
+  free trial and what they would earn on the yearly plan, and a creator's
+  first payout goes out at any amount (the $20 minimum applies after).
+- *Growth steps:* 40% from a creator's 10th paying customer on, and 10% of
+  each payment after a customer's first year, for as long as they pay. At
+  $9 the business keeps $3.34 a month at 40% and $6.04 at 10%.
+The embeddable calculator (creator link built in) and "give a month, get a
+month" for users follow as separate PRs.
+
 **Why 30%:** at $9 a month the business keeps about $6.94 a month per
 customer (D-26). 30% is $2.70, leaving $4.24 in year one and the full $6.94
 after. At the old $3 price even 20% left a creator about $0.60 a month. A

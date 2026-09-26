@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import {
-  normaliseCode, REFERRAL_MONTHS, REFERRAL_RATE_BPS, REFERRAL_TERMS_VERSION, summarise, type PayoutMethod,
+  commissionCents, normaliseCode, REFERRAL_MONTHS, REFERRAL_RATE_BPS, REFERRAL_TERMS_VERSION, summarise, type PayoutMethod,
 } from "@/lib/referrals";
+import { PRO_ANNUAL_USD } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -36,18 +37,30 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
   if (!partner) return NextResponse.json({ partner: null });
 
-  const [visits, signups, commissions, payouts] = await Promise.all([
+  const [visits, attributions, commissions, payouts] = await Promise.all([
     admin.from("referral_visits").select("id", { count: "exact", head: true }).eq("partner_id", partner.id),
-    admin.from("referral_attributions").select("referred_user_id", { count: "exact", head: true }).eq("partner_id", partner.id),
+    admin.from("referral_attributions").select("referred_user_id").eq("partner_id", partner.id),
     admin.from("referral_commissions").select("referred_user_id, commission_cents, status, payable_at").eq("partner_id", partner.id),
     admin.from("referral_payouts").select("amount_cents, method, paid_at").eq("partner_id", partner.id).order("paid_at", { ascending: false }),
   ]);
+
+  // Momentum before money (D-27): readers on Pro who haven't paid yet are
+  // in their free trial. Counted, never named.
+  const referredIds = (attributions.data ?? []).map((a) => a.referred_user_id);
+  const paidIds = new Set((commissions.data ?? []).map((c) => c.referred_user_id));
+  const { data: onPro } = referredIds.length
+    ? await admin.from("subscriptions").select("user_id").in("user_id", referredIds).eq("plan", "pro")
+    : { data: [] as { user_id: string }[] };
+  const inTrial = (onPro ?? []).filter((s) => !paidIds.has(s.user_id)).length;
 
   return NextResponse.json({
     partner: { ...partner, id: undefined },
     stats: {
       visits: visits.count ?? 0,
-      signups: signups.count ?? 0,
+      signups: referredIds.length,
+      inTrial,
+      // If each one stays on the yearly plan, the lower of the two plans' first-year earnings.
+      inTrialWorthCents: inTrial * commissionCents(PRO_ANNUAL_USD * 100),
       ...summarise(commissions.data ?? []),
     },
     payouts: payouts.data ?? [],

@@ -78,11 +78,14 @@ export default function UpgradeModal({
   onClose,
   source = "dashboard_upgrade_modal",
   trialAvailable = null,
+  trialLabel = TRIAL_LABEL,
 }: {
   open: boolean;
   onClose: () => void;
   source?: string;
   trialAvailable?: boolean | null;
+  /** "60 days free" for an account a creator referred (D-27). */
+  trialLabel?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -229,7 +232,7 @@ export default function UpgradeModal({
           <div style={{ fontSize: 13, color: "var(--uf-ink-2)", marginTop: "var(--uf-s2)", lineHeight: 1.45 }}>
             {trialAvailable === true && (
               <>
-                {TRIAL_LABEL} — no charge today. We&apos;ll email you 3 days before the trial ends,
+                {trialLabel} — no charge today. We&apos;ll email you 3 days before the trial ends,
                 and you can cancel any time before then.
               </>
             )}
@@ -256,7 +259,7 @@ export default function UpgradeModal({
           {loading
             ? "Opening Stripe…"
             : trialAvailable === true
-              ? `Start ${TRIAL_LABEL}`
+              ? `Start ${trialLabel}`
               : "Continue to checkout"}
         </Button>
         <Button

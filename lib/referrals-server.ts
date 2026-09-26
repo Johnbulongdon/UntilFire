@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  accountYoungEnoughToClaim, commissionCents, payableAt, withinEarningWindow,
+  accountYoungEnoughToClaim, commissionCents, payableAt, rateForPayment, withinEarningWindow,
 } from "./referrals.ts";
 
 /**
@@ -77,16 +77,27 @@ export async function recordReferralCommission(admin: Admin, invoice: Stripe.Inv
     .order("earned_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (!withinEarningWindow(first ? new Date(first.earned_at) : null, paidAt)) return "window-ended";
+  const inFirstYear = withinEarningWindow(first ? new Date(first.earned_at) : null, paidAt);
+
+  // This creator's paying customers, counting this one (the 40% tier).
+  const { data: paying } = await admin
+    .from("referral_commissions")
+    .select("referred_user_id, status")
+    .eq("partner_id", attribution.partner_id);
+  const payingCustomers = new Set([
+    sub.user_id,
+    ...(paying ?? []).filter((c) => c.status !== "reversed").map((c) => c.referred_user_id),
+  ]).size;
+  const rateBps = rateForPayment({ baseRateBps: attribution.rate_bps, inFirstYear, payingCustomers });
 
   const { error } = await admin.from("referral_commissions").insert({
     partner_id: attribution.partner_id,
     referred_user_id: sub.user_id,
     stripe_invoice_id: invoice.id,
     collected_cents: collected,
-    rate_bps: attribution.rate_bps,
-    // The rate snapshotted at sign-up, so a later change never rewrites this.
-    commission_cents: commissionCents(collected, attribution.rate_bps),
+    rate_bps: rateBps,
+    // Stored with the row, so a later change to the program never rewrites it.
+    commission_cents: commissionCents(collected, rateBps),
     earned_at: paidAt.toISOString(),
     payable_at: payableAt(paidAt).toISOString(),
   });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { getStripe, priceIdFor } from "@/lib/stripe";
-import { TRIAL_DAYS } from "@/lib/pricing";
+import { REFERRED_TRIAL_DAYS, TRIAL_DAYS } from "@/lib/pricing";
 
 
 export async function POST(req: NextRequest) {
@@ -48,7 +48,17 @@ export async function POST(req: NextRequest) {
     const origin = req.headers.get("origin") || "https://www.untilfire.com";
 
     // First-time subscribers get the free trial; returning ones do not.
+    // Readers a creator referred get the longer one (D-27).
     const isFirstTimeSubscriber = !sub?.stripe_subscription_id;
+    let trialDays = TRIAL_DAYS;
+    if (isFirstTimeSubscriber) {
+      const { data: referred } = await supabaseAdmin
+        .from("referral_attributions")
+        .select("referred_user_id")
+        .eq("referred_user_id", user.id)
+        .maybeSingle();
+      if (referred) trialDays = REFERRED_TRIAL_DAYS;
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -59,11 +69,11 @@ export async function POST(req: NextRequest) {
       metadata: { supabase_user_id: user.id },
       allow_promotion_codes: true,
       ...(isFirstTimeSubscriber && {
-        subscription_data: { trial_period_days: TRIAL_DAYS },
+        subscription_data: { trial_period_days: trialDays },
       }),
     });
 
-    return NextResponse.json({ url: session.url, priceId, interval, trial: isFirstTimeSubscriber });
+    return NextResponse.json({ url: session.url, priceId, interval, trial: isFirstTimeSubscriber, trialDays: isFirstTimeSubscriber ? trialDays : 0 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Stripe error";
     console.error("[stripe/checkout]", err);

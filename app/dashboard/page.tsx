@@ -43,6 +43,7 @@ import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
+import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { Alert, Badge, Button, ICON_PATHS, Stat } from "@/components/ui";
@@ -5322,6 +5323,8 @@ export default function Dashboard() {
   const [categoriesKey, setCategoriesKey] = useState(0);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  // Set when a creator referred this account: its trial is 60 days, not 30 (D-27).
+  const [referredTrial, setReferredTrial] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [isDark, setIsDark] = useState(false);
@@ -5995,7 +5998,11 @@ export default function Dashboard() {
           trackDashboardFirstView({ hadCalculatorPrefill: hadPrefill, viaUpgrade: wasUpgradedRef.current });
           // A creator's /r/<code> link left a cookie; the server credits this
           // account to them if it is new (D-27). Fire and forget.
-          fetch("/api/referrals/claim", { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => {});
+          fetch("/api/referrals/claim", { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } })
+            .then((r) => r.json()).then((d) => { if (d?.referred) setReferredTrial(true); }).catch(() => {});
+        } else {
+          fetch("/api/referrals/claim", { headers: { Authorization: `Bearer ${session.access_token}` } })
+            .then((r) => r.json()).then((d) => { if (d?.referred) setReferredTrial(true); }).catch(() => {});
         }
       });
       // Load net worth snapshot history for the "actual progress" chart line.
@@ -6767,6 +6774,7 @@ export default function Dashboard() {
                 subscription={subscription}
                 onUpgradeClick={() => { setUpgradeSource("profile"); setUpgradeOpen(true); }}
                 onManageBilling={handleManageBilling}
+                trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}
               />
             )}
           </div>
@@ -6778,6 +6786,7 @@ export default function Dashboard() {
         onClose={() => setUpgradeOpen(false)}
         source={upgradeSource}
         trialAvailable={subscription ? !subscription.hadSubscription : null}
+        trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}
       />
     </>
   );
