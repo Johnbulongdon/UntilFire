@@ -77,6 +77,7 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   check('one answer: the recommendation is the default, the full record since 1928', RECOMMENDED_RETURN_PCT === DEFAULT_RETURN_PCT && DEFAULT_RETURN_PCT === since1928.realPct);
   check('the cautious 5% is extra margin: history beat it more often than the recommendation', CAUTIOUS_RETURN_PCT === 5 && H.cautious.beatShare > since1928.beatShare, `${H.cautious.beatShare} vs ${since1928.beatShare}`);
   const pickerSrc = read('app/components/GrowthChoicePicker.tsx');
+  check('the picker shows a row\'s details only when it is selected, and a dot meter for confidence', pickerSrc.includes('{on && (') && pickerSrc.includes('function Confidence'));
   check('the picker marks one choice, not a separate default and recommendation', pickerSrc.includes('>Recommended</Badge>') && !pickerSrc.includes('>Default</Badge>'));
   check('the worst 30 years is the lowest choice and every stretch beat it', H.worst.realPct === Math.min(...GROWTH_CHOICES.map((c) => c.realPct)) && H.worst.beatShare === 100);
   check('a higher rate is never beaten more often than a lower one', GROWTH_CHOICES.every((a) => GROWTH_CHOICES.every((b) => !(a.realPct > b.realPct) || a.beatShare <= b.beatShare)));
@@ -87,9 +88,9 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   check('only the cautious rate\'s before-inflation figure is an estimate', GROWTH_CHOICES.filter((c) => c.nominalEstimated).map((c) => c.id).join() === 'cautious');
   check('future dollars use the chosen stretch\'s inflation, else the long-run average', inflationFor(since1928.realPct) === since1928.inflationPct && inflationFor(6.123) === since1928.inflationPct);
   const picker = read('app/components/GrowthChoicePicker.tsx');
-  check('the picker switches between before and after inflation and explains the gap', picker.includes("'Before inflation'") && picker.includes("'After inflation'") && picker.includes('bought only'));
+  check('the picker switches between before and after inflation and explains the gap', picker.includes("'Before inflation'") && picker.includes("'After inflation'") && picker.includes('What an account shows') && picker.includes('What your money can buy'));
   const flow2 = read('app/components/RevealFlow.tsx');
-  check('the result switches between today\'s and future dollars and says the date is the same', flow2.includes('futureDollars') && flow2.includes('same date, same freedom') && read('app/HomeClient.tsx').includes('Math.pow(1 + inflationFor(returnPct) / 100, result.years)'));
+  check('the result switches between today\'s and future dollars and says the date is the same', flow2.includes('futureDollars') && flow2.includes('Same buying power, same date') && read('app/HomeClient.tsx').includes('Math.pow(1 + inflationFor(returnPct) / 100, result.years)'));
   const at7 = calcFIRE(2000, 50000, 30, 50000, 0.07).years, at5 = calcFIRE(2000, 50000, 30, 50000, 0.05).years;
   check('the cautious rate gives a later date (20.7 → 24.2 years at 7% and 5%)', at5 > at7 && Math.abs(at7 - 20.7) < 0.05 && Math.abs(at5 - 24.2) < 0.05, `${at7} ${at5}`);
   const home = read('app/HomeClient.tsx');
@@ -97,7 +98,7 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   check('free result: the choice carries into the dashboard', home.includes('realReturn: marketReturn') && read('app/dashboard/page.tsx').includes('prefill.realReturn'));
   check('free result: age rounds like the year', home.includes('planningAge + Math.floor(result.years)') && !home.includes('planningAge + Math.round(projection.years)'));
   const flow = read('app/components/RevealFlow.tsx');
-  check('free result names where its growth comes from and opens the history', flow.includes('full record since 1928, as we recommend') && flow.includes('for extra margin') && flow.includes('onReturnChange(') && flow.includes('Where does this come from?') && home.includes('growthPicker={<GrowthChoicePicker'));
+  check('free result states its growth in one line and opens the history to change it', flow.includes('growth</b> a year after inflation') && flow.includes('as we recommend') && flow.includes('"Change"') && home.includes('growthPicker={<GrowthChoicePicker'));
   const card = read('app/dashboard/FireAssumptionsCard.tsx');
   check('Plan assumptions: the history picker with the recommendation', card.includes('RETURN_RECOMMENDATION') && card.includes('<GrowthChoicePicker'));
   check('dashboard treats the old typed 0.07 as never chosen', read('app/dashboard/page.tsx').includes('fp.growthRate !== 0.07'));

@@ -108,7 +108,7 @@ export interface GrowthChoice {
   label: string
   /** Why this stretch is worth considering. */
   why: string
-  /** e.g. "1928–2025". */
+  /** e.g. "1928–2025"; empty where the choice is not a stretch of history. */
   span: string
   /** After inflation: what the freedom date uses. */
   realPct: number
@@ -133,12 +133,12 @@ export const GROWTH_CHOICES: GrowthChoice[] = [
     realPct: p.realPct, nominalPct: p.nominalPct, inflationPct: p.inflationPct, nominalEstimated: false, beatShare: p.beatShare,
   })),
   {
-    id: 'cautious', label: 'Cautious', why: 'Extra margin below the full record, if you would rather plan for a weaker 30 years.',
-    span: 'Extra margin', realPct: H.cautious.realPct, nominalPct: withInflation(H.cautious.realPct, LONG_RUN_INFLATION),
+    id: 'cautious', label: 'Cautious', why: 'Extra margin below the full record.',
+    span: '', realPct: H.cautious.realPct, nominalPct: withInflation(H.cautious.realPct, LONG_RUN_INFLATION),
     inflationPct: LONG_RUN_INFLATION, nominalEstimated: true, beatShare: H.cautious.beatShare,
   },
   {
-    id: 'worst30', label: 'Worst 30 years on record', why: 'Fine on paper, but high inflation ate most of it.',
+    id: 'worst30', label: 'Worst 30 years', why: 'Fine on paper; inflation ate most of it.',
     span: `${H.worst.from}–${H.worst.to}`, realPct: H.worst.realPct, nominalPct: H.worst.nominalPct,
     inflationPct: H.worst.inflationPct, nominalEstimated: false, beatShare: H.worst.beatShare,
   },

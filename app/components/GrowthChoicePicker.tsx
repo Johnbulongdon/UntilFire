@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Badge, SegmentedControl } from '@/components/ui'
 import {
-  GROWTH_CHOICES, RECOMMENDED_RETURN_PCT, SP500_THROUGH, SP500_WINDOWS,
+  GROWTH_CHOICES, RECOMMENDED_RETURN_PCT, SP500_THROUGH,
 } from '@/lib/fire-number'
 
 interface Props {
@@ -33,9 +33,6 @@ export default function GrowthChoicePicker({ value, onChange }: Props) {
 
   return (
     <div style={{ display: 'grid', gap: 'var(--uf-s3)' }}>
-      <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-2)' }}>
-        Pick the history you want to plan on: the S&amp;P 500 with dividends reinvested. Where it starts changes the answer.
-      </p>
       <SegmentedControl
         label="Show returns"
         size="sm"
@@ -43,27 +40,27 @@ export default function GrowthChoicePicker({ value, onChange }: Props) {
         onChange={setView}
         options={[{ value: 'after', label: 'After inflation' }, { value: 'before', label: 'Before inflation' }]}
       />
-      <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-2)', background: 'var(--uf-surface)', border: '1px solid var(--uf-border)', borderRadius: 'var(--uf-r-control)', padding: 'var(--uf-s3)' }}>
+      <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-2)' }}>
         {view === 'before'
-          ? <>This is what an account statement shows. But prices rose about {pct(full.inflationPct)} a year since 1928, so {pct(full.nominalPct)} on paper bought only {pct(full.realPct)} more each year.</>
-          : <>What your money can buy, after rising prices. {pct(full.nominalPct)} on paper since 1928 was {pct(full.realPct)} after {pct(full.inflationPct)} inflation. Your freedom date uses this, so every amount stays in today&apos;s dollars.</>}
+          ? <>What an account shows. Prices rose {pct(full.inflationPct)} a year, so {pct(full.nominalPct)} bought {pct(full.realPct)} more.</>
+          : <>What your money can buy. Your date uses this.</>}
       </p>
       <div role="radiogroup" aria-label="Growth to plan on" style={{ display: 'grid', gap: 'var(--uf-s2)' }}>
         {GROWTH_CHOICES.map((c) => {
           const on = c.id === selectedId
           const main = view === 'after' ? c.realPct : c.nominalPct
-          const other = view === 'after'
-            ? `${c.nominalEstimated ? '≈' : ''}${pct(c.nominalPct)} before inflation`
-            : `${pct(c.realPct)} after ${c.nominalEstimated ? '≈' : ''}${pct(c.inflationPct)} inflation`
+          const approx = c.nominalEstimated && view === 'before' ? '≈' : ''
+          const confidence = c.beatShare === 100 ? 'every' : c.beatShare === 0 ? 'none' : `${c.beatShare}%`
           return (
             <button
               key={c.id}
               type="button"
               role="radio"
               aria-checked={on}
+              aria-label={`${c.label}, ${approx}${pct(main)} a year ${view === 'after' ? 'after' : 'before'} inflation. ${confidence} of 30-year stretches since 1928 did at least this well.`}
               onClick={() => { setPicked(c.id); onChange(c.realPct) }}
               style={{
-                display: 'grid', gridTemplateColumns: '1fr auto', gap: '2px var(--uf-s3)', textAlign: 'left',
+                display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '4px var(--uf-s3)', textAlign: 'left',
                 padding: 'var(--uf-s3)', borderRadius: 'var(--uf-r-control)', cursor: 'pointer', font: 'inherit',
                 background: on ? 'var(--uf-green-50)' : 'var(--uf-card)',
                 border: on ? '2px solid var(--uf-green)' : '1px solid var(--uf-border)',
@@ -74,24 +71,33 @@ export default function GrowthChoicePicker({ value, onChange }: Props) {
                 <span className="uf-t-body" style={{ fontWeight: 700 }}>{c.label}</span>
                 {c.realPct === RECOMMENDED_RETURN_PCT && <Badge tone="positive">Recommended</Badge>}
               </span>
-              <span className="uf-t-data" style={{ fontWeight: 700, fontSize: 16 }}>
-                {c.nominalEstimated && view === 'before' ? '≈' : ''}{pct(main)}
-              </span>
-              <span className="uf-t-small" style={{ gridColumn: '1 / -1', color: 'var(--uf-ink-2)' }}>{c.why}</span>
-              <span className="uf-t-small" style={{ gridColumn: '1 / -1', color: 'var(--uf-ink-3)' }}>
-                {c.span} · {other} · {c.beatShare === 100
-                  ? 'every 30-year stretch since 1928 did at least this well'
-                  : c.beatShare === 0
-                    ? 'no 30-year stretch since 1928 did this well'
-                    : `${c.beatShare}% of 30-year stretches since 1928 did at least this well`}
-              </span>
+              <Confidence share={c.beatShare} />
+              <span className="uf-t-data" style={{ fontWeight: 700, fontSize: 16, minWidth: 52, textAlign: 'right' }}>{approx}{pct(main)}</span>
+              {on && (
+                <span className="uf-t-small" style={{ gridColumn: '1 / -1', color: 'var(--uf-ink-2)' }}>
+                  {c.why}{' '}
+                  {[c.span, view === 'after' ? `${c.nominalEstimated ? '≈' : ''}${pct(c.nominalPct)} before inflation` : `${pct(c.realPct)} after inflation`, `${confidence} of 30-year stretches did as well.`].filter(Boolean).join(' · ')}
+                </span>
+              )}
             </button>
           )
         })}
       </div>
       <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-3)' }}>
-        From Robert Shiller&apos;s S&amp;P 500 data and BLS inflation, through {SP500_THROUGH}, across {SP500_WINDOWS} thirty-year stretches. History is a guide, not a promise.
+        Dots: how often any 30 years since 1928 did as well. S&amp;P 500 (Shiller) and BLS data to {SP500_THROUGH}.
       </p>
     </div>
+  )
+}
+
+/** Five dots for how often history did at least this well: a glance, not a sentence. */
+function Confidence({ share }: { share: number }) {
+  const filled = Math.round(share / 20)
+  return (
+    <span aria-hidden="true" style={{ display: 'inline-flex', gap: 3 }}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} style={{ width: 7, height: 7, borderRadius: 999, background: i < filled ? 'var(--uf-ink-2)' : 'transparent', border: '1px solid var(--uf-ink-3)' }} />
+      ))}
+    </span>
   )
 }

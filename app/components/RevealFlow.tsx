@@ -28,7 +28,6 @@ export interface RevealFlowProps {
   ageWasAssumed: boolean;
   /** Growth after inflation the result uses, in percent (D-24). */
   returnPct: number;
-  onReturnChange: (pct: number) => void;
   /** The history behind the growth, opened from the freedom-age step. */
   growthPicker?: React.ReactNode;
   /** The freedom number as an account would show it in the freedom year. */
@@ -142,7 +141,7 @@ function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, f
 
 export default function RevealFlow(props: RevealFlowProps) {
   const {
-    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, onReturnChange, growthPicker, futureDollars, isAlreadyFire,
+    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, growthPicker, futureDollars, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
     expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, onAdjust, onShare, onStepViewed,
@@ -300,22 +299,11 @@ export default function RevealFlow(props: RevealFlowProps) {
               )}
               {!isAlreadyFire && (
                 <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", position: "relative", maxWidth: 440, ...anim("rf-up .7s 1.8s ease both") }}>
-                  {returnPct === DEFAULT_RETURN_PCT
-                    ? <>Assumes {returnPct}% growth a year after inflation: the S&amp;P 500&apos;s full record since 1928, as we recommend. </>
-                    : returnPct === CAUTIOUS_RETURN_PCT
-                      ? <>Using a cautious {returnPct}% growth a year after inflation, for extra margin. </>
-                      : <>Using {returnPct}% growth a year after inflation. </>}
-                  <button
-                    onClick={() => onReturnChange(returnPct === DEFAULT_RETURN_PCT ? CAUTIOUS_RETURN_PCT : DEFAULT_RETURN_PCT)}
-                    style={linkButton}
-                  >
-                    {returnPct === DEFAULT_RETURN_PCT ? `See it at a cautious ${CAUTIOUS_RETURN_PCT}%` : `Back to the recommended ${DEFAULT_RETURN_PCT}%`}
-                  </button>
+                  <b style={{ color: "var(--uf-ink)" }}>{returnPct}% growth</b> a year after inflation{returnPct === DEFAULT_RETURN_PCT ? ", as we recommend" : returnPct === CAUTIOUS_RETURN_PCT ? ", cautious" : ""}.{" "}
                   {growthPicker && (
                     <>
-                      {" · "}
                       <button onClick={() => setShowGrowth((v) => !v)} aria-expanded={showGrowth} style={linkButton}>
-                        {showGrowth ? "Hide the history" : "Where does this come from?"}
+                        {showGrowth ? "Done" : "Change"}
                       </button>
                       {showGrowth && <div style={{ marginTop: 12, textAlign: "left" }}>{growthPicker}</div>}
                     </>
@@ -371,7 +359,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                     {showFuture && futureDollars ? formatCompact(futureDollars.amount) : numText}
                   </div>
                   <div style={{ fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 600 }}>
-                    {showFuture && futureDollars ? `invested, in ${futureDollars.year} dollars` : "invested, in today's dollars"}
+                    {showFuture && futureDollars ? `in ${futureDollars.year} dollars` : "in today's dollars"}
                   </div>
                 </div>
               </div>
@@ -388,11 +376,11 @@ export default function RevealFlow(props: RevealFlowProps) {
                       );
                     })}
                   </div>
-                  <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
-                    {showFuture
-                      ? <>Roughly what your account would show in {futureDollars.year}, with prices rising about {futureDollars.inflationPct.toFixed(1)}% a year. It buys what {formatCompact(fireTarget)} buys today: same date, same freedom.</>
-                      : <>In today&apos;s dollars, so you can compare it with what things cost now. Your account will show a bigger number by then, because prices rise too.</>}
-                  </div>
+                  {showFuture && (
+                    <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+                      What your account may show, with {futureDollars.inflationPct.toFixed(1)}% inflation. Same buying power, same date.
+                    </div>
+                  )}
                 </div>
               )}
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--uf-ink)" }}>
@@ -426,18 +414,19 @@ export default function RevealFlow(props: RevealFlowProps) {
               </div>
               <div className="rf-s5-extra" style={subtle}>
                 {beatsUs
-                  ? <>That&apos;s about <b style={{ color: TEAL }}>{savingsMultiple.toFixed(1)}×</b> the ~{usBaselineRate}% average U.S. saver{savingsRatePct >= fireBenchmarkRate ? ", already past the 25% FIRE pace." : ", closing on the 25% FIRE pace."}</>
-                  : <>Your savings rate is a starting point. A useful goal should fit your income, essential costs, and priorities.</>}
+                  ? <><b style={{ color: TEAL }}>{savingsMultiple.toFixed(1)}×</b> the average saver.</>
+                  : <>A starting point, not a verdict.</>}
               </div>
               {netWorthComparison?.allAges && (
                 <button onClick={onAdjust} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
                   Add your age for a comparison with people your age →
                 </button>
               )}
-              <div style={{ fontSize: 11, color: "var(--uf-ink-2)", maxWidth: 460 }}>
+              <details style={{ fontSize: 11, color: "var(--uf-ink-2)", maxWidth: 460 }}>
+                <summary style={{ cursor: "pointer" }}>Sources</summary>
                 {netWorthComparison && <>Net worth: Federal Reserve Survey of Consumer Finances, {netWorthComparison.surveyYear} (the latest), by age of the household&apos;s reference person{netWorthComparison.adjustedThrough && <>, adjusted for inflation to {netWorthComparison.adjustedThrough} (BLS consumer price index)</>}. </>}
                 Savings: ~{usBaselineRate}% U.S. personal saving rate (BEA/FRED); 25% is a common FIRE savings target.
-              </div>
+              </details>
             </div>
           )}
 
@@ -454,7 +443,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                 </div>
               )}
               <div style={{ ...subtle, maxWidth: 460 }}>
-                A lower cost of living means a smaller target — pick a city to see how much sooner your date arrives.
+                Tap a city to compare.
               </div>
             </div>
           )}
@@ -545,10 +534,10 @@ function NetWorthStanding({ comparison, reduce }: { comparison: NetWorthComparis
       ? <>Your net worth is ahead of <span style={{ color: TEAL }}>{aheadOfPct}%</span> of {who}</>
       : <>Your net worth is at the start line</>;
   const note = aheadOfPct >= 50
-    ? "The line marks the median: half of these households have more, half have less."
+    ? "The line marks the median."
     : aheadOfPct >= 1
-      ? "Net worth tends to grow with the years you stay invested. Your freedom date shows how far that takes you."
-      : `Most ${who} have more saved today. Where you start isn't where you finish.`;
+      ? null
+      : "Where you start isn't where you finish.";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(20px, 3.8vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em", maxWidth: 520, lineHeight: 1.2 }}>
@@ -559,7 +548,7 @@ function NetWorthStanding({ comparison, reduce }: { comparison: NetWorthComparis
         label={aboveTop ? `Ahead of more than 99% of ${who}` : `Ahead of ${aheadOfPct}% of ${who}`}
         fillAnimation={reduce ? undefined : "rf-bar-x .8s .15s cubic-bezier(.2,.8,.2,1) both"}
       />
-      <div style={{ fontSize: 13, color: "var(--uf-ink-2)", lineHeight: 1.55, maxWidth: 440 }}>{note}</div>
+      {note && <div style={{ fontSize: 13, color: "var(--uf-ink-2)", lineHeight: 1.55, maxWidth: 440 }}>{note}</div>}
     </div>
   );
 }

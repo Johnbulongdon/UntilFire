@@ -29,7 +29,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
 });
 const props = {
   freedomAge: 52, freedomYear: 2048, yearsToFire: 22, planningAge: 30,
-  ageWasAssumed: false, returnPct: fireNumber.DEFAULT_RETURN_PCT, onReturnChange: () => {}, isAlreadyFire: false, fireTarget: 1200000, pctThere: 0,
+  ageWasAssumed: false, returnPct: fireNumber.DEFAULT_RETURN_PCT, isAlreadyFire: false, fireTarget: 1200000, pctThere: 0,
   savingsRatePct: 20, usBaselineRate: 5, fireBenchmarkRate: 25,
   expatHome: { name: 'Austin', lat: 30, lng: -97 }, expatBaseAge: 52, expatCities: [],
   formatCompact: (n) => `$${n}`, onAdjust: () => {}, onShare: () => {},
