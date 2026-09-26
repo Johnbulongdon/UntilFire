@@ -34,7 +34,7 @@ export default function PurchaseImpactPanel({
           What would this cost your freedom?
         </div>
         <div style={{ fontSize: 14, color: "var(--uf-text-2)", lineHeight: 1.6 }}>
-          Enter a purchase price to see its compound value at your freedom date and how many days it delays you.
+          Enter a price to see how many days it delays you.
         </div>
       </div>
 
@@ -44,7 +44,7 @@ export default function PurchaseImpactPanel({
           borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#f97316",
           fontWeight: 600, marginBottom: 16,
         }}>
-          Complete your FIRE profile (income, savings, expenses) to get personalised results.
+          Add income, savings and expenses for your own numbers.
         </div>
       )}
 

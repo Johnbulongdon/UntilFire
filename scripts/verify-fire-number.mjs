@@ -100,7 +100,7 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   const flow = read('app/components/RevealFlow.tsx');
   check('free result states its growth in one line and opens the history to change it', flow.includes('growth</b> a year after inflation') && flow.includes('as we recommend') && flow.includes('"Change"') && home.includes('growthPicker={<GrowthChoicePicker'));
   const card = read('app/dashboard/FireAssumptionsCard.tsx');
-  check('Plan assumptions: the history picker with the recommendation', card.includes('RETURN_RECOMMENDATION') && card.includes('<GrowthChoicePicker'));
+  check('Plan assumptions: growth in one line, the history one tap away', card.includes('<GrowthSetting') && !card.includes('<GrowthChoicePicker'));
   check('dashboard treats the old typed 0.07 as never chosen', read('app/dashboard/page.tsx').includes('fp.growthRate !== 0.07'));
   const dash = read('app/dashboard/page.tsx');
   check('dashboard wires the saved growth into the card and expat views', dash.includes('onGrowthRateChange={setGrowthRate}') && !/calcFIRE\([^)]*portfolioBalance\);/.test(dash));

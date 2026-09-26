@@ -654,7 +654,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       },
       {
         label: "Grow income 10%",
-        detail: "Raise, side income, or freelance — all goes straight to your FIRE date",
+        detail: "Extra income goes straight to your date",
         result: calcProjection({ annualIncome: income * 1.1 * 12, monthlyExpenses, k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
       },
     ]
@@ -1040,7 +1040,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     ? `Aim to add ${fmtMoney(goalContribution)} this month. Current invested balance is ${fmtMoney(investedBalance, true)}.`
     : investedBalance > 0
       ? `You have ${fmtMoney(investedBalance, true)} invested right now.`
-      : "Add your first investment account to start tracking this here.";
+      : "Add an investment account to track this.";
   const investingNote = "Using your current balances for now. Exact monthly contribution and return tracking comes next.";
   const consistencyMonths = (() => {
     const months: Array<{ key: string; date: Date; income: number; expenses: number }> = [];
@@ -1112,11 +1112,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         ? "On track this month"
         : "Needs a reset";
   const consistencyDetail = trackedMonths === 0
-    ? "Track a few months to see how steady your plan is here."
+    ? "Shows after a few tracked months."
     : `${onTrackMonths} of the last ${trackedMonths} tracked months were on plan.`;
   const consistencySupport = consistencyMonths[0]
     ? `${fmtMoney(Math.abs(consistencyMonths[0].savings))} ${consistencyMonths[0].savings >= 0 ? "saved" : "net short"} in ${consistencyMonths[0].date.toLocaleString("en-US", { month: "short" })}`
-    : "We’ll start tracking this once your monthly history fills in.";
+    : "Fills in as months pass.";
 
   // On-track score: not "how independent are you" (the freedom date already
   // answers that) but "how well are you keeping up the habits that get you
@@ -1717,7 +1717,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
               {emergencyFundPlan.coverageMonths.toFixed(1)} months
             </div>
             <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.55 }}>
-              Months of essential expenses covered. Excludes wants and work costs so job-loss planning stays realistic.
+              Months of essential expenses covered. Excludes wants and work costs.
             </div>
           </div>
           <div>
@@ -1771,9 +1771,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
               <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(fireTarget, true)}</div>
             </div>
           </div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
-            Your date moves most with your savings pace, spending, and invested growth.
-          </div>
         </div>
 
         <div id="uf-top-tasks-card" className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 24 }}>
@@ -1800,7 +1797,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
               {efMonthlyBase > 0 ? emergencyFundPlan.headline : "Top 3 tasks right now"}
             </div>
             <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>
-              {efMonthlyBase > 0 ? emergencyFundPlan.guidance : "Focus on the next few actions most likely to protect or improve your freedom date."}
+              {efMonthlyBase > 0 ? emergencyFundPlan.guidance : "The moves that shift your date most."}
             </div>
           </div>
           {topTasks.length > 0 ? (
@@ -1925,7 +1922,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           </div>
         ) : (
           <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
-            Set a goal to save toward and track it here.{" "}
+            Set a goal to save toward.{" "}
             <button onClick={() => onTabChange?.("goals")} style={{ background: "none", border: "none", color: "var(--uf-pos-ink)", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, fontSize: "inherit" }}>
               Add one →
             </button>
@@ -4915,8 +4912,8 @@ function TaxProfileCard({
       {!taxEnabled && (
         <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, fontFamily: "Manrope, sans-serif" }}>
           {taxInfo
-            ? `Jurisdiction detected: ${taxInfo.label}. Enable to see how taxes shift your FIRE number.`
-            : "Set your city in Profile so we can auto-detect your jurisdiction and tax rates."}
+            ? `${taxInfo.label} detected. Turn on to include taxes.`
+            : "Set your city in Plan to include taxes."}
         </div>
       )}
 
@@ -5049,10 +5046,10 @@ function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears }: {
         </>
       ) : (
         <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>
-          Not reached under these assumptions yet. Saving more, spending less or a different city moves it.
+          Not reached yet. Save more or spend less to bring it in.
         </div>
       )}
-      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 8 }}>Change any assumption below and this date moves.</div>
+      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 8 }}>Change anything below to move it.</div>
     </section>
   );
 }
@@ -5076,7 +5073,7 @@ function FireCalcMenuTab({
     {
       icon: "📈",
       title: "Advanced Investing Simulator",
-      desc: "Optional advanced tool: model DCA contributions with custom allocation and inflation assumptions.",
+      desc: "Model monthly investing with your own mix and inflation.",
       meta: "Advanced / optional",
       label: "Open Advanced →",
       onClick: onOpenInvestSim,
@@ -5137,8 +5134,8 @@ function FireCalcMenuTab({
             </div>
             <div style={{ fontSize: 14, color: "var(--uf-text-2)", lineHeight: 1.7 }}>
               {fireTypeResult
-                ? "Discover how your personality shapes your path to financial independence."
-                : "8 quick questions to discover your FIRE personality — how you naturally think about financial independence."}
+                ? "How you think about money shapes your path."
+                : "8 quick questions on how you think about money."}
             </div>
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em" }}>

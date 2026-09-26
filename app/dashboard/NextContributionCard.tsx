@@ -97,7 +97,7 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
           <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: 0, maxWidth: 560 }}>
             Your expected payments take your balance to{" "}
             <span style={{ ...mono, color: "var(--uf-neg-ink)" }}>{fmtUsd(low.balance)}</span> on {dayLabel(low.iso)}.
-            Your plan shows every line — if a payment is wrong or already paid, fixing it there changes this.
+            Fix a wrong or paid payment in your plan to change this.
           </p>
           <div>
             <Button variant="secondary" size="sm" onClick={onOpenPlan}>See how it&apos;s worked out</Button>

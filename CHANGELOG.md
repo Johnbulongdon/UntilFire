@@ -4,6 +4,22 @@ All notable changes to UntilFire are documented here.
 
 ## [Unreleased] - 2026-09-26
 
+### Fewer words on the dashboard Home and Plan
+- Plan's assumptions show growth in one line ("6.9% growth a year after
+  inflation, recommended. Change"), like the free result, with "At 6.9%, your
+  freedom date is …" beneath. The open history list and the long
+  recommendation box now sit behind Change.
+- Home and Plan helper lines are cut to one short line each (safety runway,
+  top tasks, consistency, next contribution, net worth comparison, purchase
+  impact, More tools, freedom date not reached). The line under Home's
+  progress card is gone.
+- The tax card no longer sends people to Profile to set their city; the city
+  lives in Plan.
+- Fixed text: Home 260 to 206 words, Plan assumptions 109 to 73 (plus the
+  recommendation box and the open list), freedom date 42 to 36, More tools
+  56 to 44, tax 72 to 66, next contribution 47 to 40, comparison 74 to 60,
+  purchase impact 63 to 52.
+
 ### Fewer words on the FIRE number and savings rate calculators
 - Each factor in the FIRE number calculator is now a title, its control, and
   "Recommended: 3.5% · Use". What the factor means, and why we recommend what

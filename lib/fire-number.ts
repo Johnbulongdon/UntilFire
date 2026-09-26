@@ -161,7 +161,3 @@ export const RECOMMENDED_RETURN_PCT = DEFAULT_RETURN_PCT
 export const CAUTIOUS_RETURN_PCT = H.cautious.realPct
 export const SP500_THROUGH = H.through
 export const SP500_WINDOWS = H.windows
-
-const byId = (id: string) => GROWTH_CHOICES.find((c) => c.id === id)!
-export const RETURN_RECOMMENDATION =
-  `${DEFAULT_RETURN_PCT}%, the S&P 500's full record since 1928, through the Depression, wars, inflation and crashes. It is the most neutral figure: ${byId('since1928').beatShare}% of 30-year stretches did at least this well. For extra margin, the cautious ${CAUTIOUS_RETURN_PCT}% was matched in ${byId('cautious').beatShare}%.`
