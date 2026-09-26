@@ -51,7 +51,7 @@ check(
   "the picker still supports typed fallback locations",
   /canUseTyped/.test(assumptions) &&
     /pickCity\(trimmed, 0\)/.test(assumptions) &&
-    /We&apos;ll save the city name even if it is not in our estimate list yet\./.test(assumptions),
+    /Not in our list\? We&apos;ll still save it\./.test(assumptions),
 );
 
 check(

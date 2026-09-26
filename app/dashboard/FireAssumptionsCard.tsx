@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
-import { Button } from "@/components/ui";
-import { RECOMMENDED_RETURN_PCT, RETURN_RECOMMENDATION } from "@/lib/fire-number";
-import GrowthChoicePicker from "@/app/components/GrowthChoicePicker";
+import GrowthSetting from "@/app/components/GrowthSetting";
 
 /**
  * The assumptions a freedom date is computed from: age, where freedom gets
@@ -146,7 +144,7 @@ export default function FireAssumptionsCard({
         <div>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 6px" }}>Your assumptions</h3>
           <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: 0 }}>
-            Every freedom date on the dashboard is calculated from these.
+            Every date here comes from these.
           </p>
         </div>
         {saved && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>Saved &#10003;</span>}
@@ -194,7 +192,7 @@ export default function FireAssumptionsCard({
               >
                 &#128205; Use &quot;{trimmed}&quot;
                 <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
-                  We&apos;ll save the city name even if it is not in our estimate list yet.
+                  Not in our list? We&apos;ll still save it.
                 </div>
               </div>
             )}
@@ -280,10 +278,7 @@ export default function FireAssumptionsCard({
       {/* Growth after inflation (D-24): the assumption that moves the date most. */}
       <div style={{ marginTop: 18 }}>
         <label style={labelStyle}>Growth after inflation</label>
-        <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: "0 0 8px" }}>
-          How much your investments grow each year, beyond prices rising. Higher brings the date closer; lower is surer.
-        </p>
-        <GrowthChoicePicker value={returnPct} onChange={(v) => { onGrowthRateChange(v / 100); flash(); }} />
+        <GrowthSetting value={returnPct} onChange={(v) => { onGrowthRateChange(v / 100); flash(); }} />
         {freedomDateLabel !== undefined && (
           <p aria-live="polite" style={{ margin: "10px 0 0", fontSize: 14, color: "var(--uf-ink)", fontWeight: 700 }}>
             {freedomDateLabel
@@ -291,14 +286,6 @@ export default function FireAssumptionsCard({
               : <>At {returnPct.toFixed(1)}%, your freedom date isn&apos;t reached yet.</>}
           </p>
         )}
-        <div style={{ marginTop: 10, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 12px", display: "grid", gap: 8, justifyItems: "start" }}>
-          <p style={{ fontSize: 13, color: "var(--uf-ink)", lineHeight: 1.6, margin: 0 }}>
-            <strong>Recommended: </strong>{RETURN_RECOMMENDATION}
-          </p>
-          {returnPct === RECOMMENDED_RETURN_PCT
-            ? <span style={{ fontSize: 13, color: "var(--uf-ink-3)" }}>&#10003; Using the recommendation</span>
-            : <Button variant="secondary" size="sm" onClick={() => { onGrowthRateChange(RECOMMENDED_RETURN_PCT / 100); flash(); }}>Use recommended</Button>}
-        </div>
       </div>
     </div>
   );

@@ -38,8 +38,7 @@ export default function CompareCard({ netWorthUsd, age, currency, onOpenAssumpti
       <div className="uf-card">
         {eyebrow}
         <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.55 }}>
-          This compares your net worth with US households, so it shows when your currency is US dollars.
-          Other countries aren&apos;t covered yet.
+          Compares with US households, so it needs US dollars. Other countries soon.
         </p>
       </div>
     );
@@ -63,7 +62,7 @@ export default function CompareCard({ netWorthUsd, age, currency, onOpenAssumpti
       />
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: "4px 12px", marginTop: 10, fontSize: 12, color: "var(--uf-ink-2)", lineHeight: 1.5 }}>
         <span>
-          {comparison.allAges ? "Add your age in your plan to compare with people your age." : `Using age ${age} from your plan.`}
+          {comparison.allAges ? "Add your age to compare with your peers." : `Using age ${age} from your plan.`}
           {onOpenAssumptions && (
             <>
               {" "}

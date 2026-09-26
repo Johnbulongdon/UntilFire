@@ -1115,6 +1115,7 @@ type Screen = "hero" | "city" | "income" | "savings" | "portfolio" | "reveal";
 export default function HomeClient() {
   const wizardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const [signedIn, setSignedIn] = useState(false);
   const [screen, setScreen] = useState<Screen>("hero");
 
   useEffect(() => {
@@ -1188,11 +1189,14 @@ export default function HomeClient() {
   // NEXT_PUBLIC_INTERNAL_USER_IDS needs no flag at all, because the whole
   // point is to test without remembering to do anything special first.
   useEffect(() => {
+    // Whoever stays on the page signed in gets a Dashboard button in the nav.
+    supabase.auth.getSession().then(({ data: { session } }) => setSignedIn(!!session));
     if (isInternalTestSession()) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && !isInternalUser(session.user.id)) router.push("/dashboard");
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSignedIn(!!session);
       if (event === "SIGNED_IN" && session && !isInternalUser(session.user.id)) {
         router.push("/dashboard");
       }
@@ -3203,7 +3207,7 @@ export default function HomeClient() {
       `}</style>
 
       {screen === "hero" ? (
-        <LandingPage onStart={() => setScreen("city")} />
+        <LandingPage onStart={() => setScreen("city")} signedIn={signedIn} />
       ) : (
       <>
       {/* The reveal is a full-screen takeover with its own top bar + progress,

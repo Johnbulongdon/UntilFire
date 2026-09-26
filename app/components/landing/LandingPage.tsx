@@ -32,7 +32,7 @@ const WORLD_SAVE_MONTHLY = 2000;
 const WORLD_CITY_KEYS = ["chiangmai", "mexicocity", "lisbon", "tokyo", "london", "sf"];
 
 /* ── Nav ─────────────────────────────────────────────────────────────── */
-function Nav7({ onStart }: { onStart: () => void }) {
+function Nav7({ onStart, signedIn }: { onStart: () => void; signedIn: boolean }) {
   return (
     <header className="uf7-nav">
       <Logo variant="auto" size={26} />
@@ -40,7 +40,10 @@ function Nav7({ onStart }: { onStart: () => void }) {
         <a href="#how">How it works</a>
         <a href="#pricing">Pricing</a>
       </nav>
-      <button className="uf7-nav-cta" onClick={onStart}>Get started</button>
+      {/* Signed in (e.g. an internal account the redirect skips): one tap back to the app. */}
+      {signedIn
+        ? <a className="uf7-nav-cta" href="/dashboard">Dashboard</a>
+        : <button className="uf7-nav-cta" onClick={onStart}>Get started</button>}
     </header>
   );
 }
@@ -1071,7 +1074,7 @@ const CSS7 = `
   .uf7-nav-links a { font-size: 14px; font-weight: 600; color: var(--uf-ink-2); text-decoration: none; }
   .uf7-nav-cta {
     padding: 9px 18px; border-radius: var(--uf-r-pill); border: none; cursor: pointer;
-    font-family: ${F}; font-size: 14px; font-weight: 700; color: var(--uf-ground); background: var(--uf-ink);
+    font-family: ${F}; font-size: 14px; font-weight: 700; color: var(--uf-ground); background: var(--uf-ink); text-decoration: none; display: inline-block;
   }
 
   .uf7-hero {
@@ -1355,7 +1358,7 @@ const CSS7 = `
 `;
 
 /* ── Page ────────────────────────────────────────────────────────────── */
-export default function LandingPage({ onStart }: { onStart: () => void }) {
+export default function LandingPage({ onStart, signedIn = false }: { onStart: () => void; signedIn?: boolean }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1400,7 +1403,7 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
   return (
     <div ref={rootRef} className="uf7-root" style={{ fontFamily: F }}>
       <div className="uf7-grain" aria-hidden />
-      <Nav7 onStart={onStart} />
+      <Nav7 onStart={onStart} signedIn={signedIn} />
       <AnimatedHero onStart={onStart}><YourDateLine7 /></AnimatedHero>
       <How7 />
       <DecadeShape7 />
