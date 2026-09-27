@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CITIES, STATE_TAX, isUS } from '@/lib/fire-data'
-import { STATE_NAMES, getStatePageSlug } from '@/lib/state-pages'
+import { statePages } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
 
 
@@ -27,22 +26,12 @@ export const metadata: Metadata = {
 }
 
 export default function BestStatesPage() {
-  const US_CITIES = CITIES.filter((c) => isUS(c.state))
-
-  // Calculate state scores based on cost + tax efficiency
-  const stateStats = new Map<string, { cities: typeof US_CITIES; stateName: string }>()
-  for (const city of US_CITIES) {
-    if (!stateStats.has(city.state)) {
-      stateStats.set(city.state, { cities: [], stateName: STATE_NAMES[city.state] || city.state })
-    }
-    stateStats.get(city.state)!.cities.push(city)
-  }
-
-  const scored = Array.from(stateStats.entries())
-    .map(([stateKey, { cities, stateName }]) => {
-      const avgCol = Math.round(cities.reduce((sum, c) => sum + c.col, 0) / cities.length)
-      const taxInfo = STATE_TAX[stateKey]
-      const taxRate = taxInfo?.rate ?? 0
+  // Use the same geographic grouping and city-sample baseline as the sourced
+  // reference so NYC cannot appear as a separate state in this ranking.
+  const scored = statePages
+    .map((state) => {
+      const avgCol = state.avgCityColAccross
+      const taxRate = state.taxRate
 
       // Score: lower cost + lower tax = higher score
       // Normalize: lower avg cost is better, lower tax rate is better
@@ -51,13 +40,12 @@ export default function BestStatesPage() {
       const overallScore = Math.round((costScore * 0.4 + taxScore * 0.6) * 100) / 100
 
       return {
-        stateKey,
-        stateName,
-        cities,
+        stateKey: state.stateKey,
+        stateName: state.stateName,
+        slug: state.slug,
         avgCol,
-        fireTarget: avgCol * 25,
+        fireTarget: state.fireTarget,
         taxRate,
-        taxLabel: taxInfo?.label ?? 'State taxes apply',
         costScore: Math.round(costScore),
         taxScore: Math.round(taxScore),
         overallScore,
@@ -123,7 +111,7 @@ export default function BestStatesPage() {
             {topStates.map((state, idx) => (
               <Link
                 key={state.stateKey}
-                href={`/fire-number/states/${getStatePageSlug(state.stateKey)}`}
+                href={`/fire-number/states/${state.slug}`}
                 className="state-card"
                 style={{
                   textDecoration: 'none',

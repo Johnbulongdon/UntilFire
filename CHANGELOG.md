@@ -8,6 +8,16 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-27
 
+### Sourced FIRE-by-state reference
+- `/fire-number/fire-by-state` now states exactly what its figures measure:
+  city-sample averages built from 2024 Census ACS rent data plus the documented
+  non-housing baseline. It shows the review date, sample size, city range,
+  calculation steps, limitations, official sources, FAQ and downloadable CSV.
+- New York City is grouped into New York for state comparisons instead of
+  appearing as a 52nd jurisdiction. Its distinct city tax key remains unchanged;
+  the best-states ranking uses the same grouping, and the obsolete
+  `/fire-number/states/newyorkcity` path redirects to New York.
+
 ### Embeddable calculator: sliders and a growth curve
 - `/embed/<code>` shows the freedom year first, then a curve of invested
   money rising to the dashed target line, then three sliders (take-home,

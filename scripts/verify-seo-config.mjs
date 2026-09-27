@@ -123,6 +123,7 @@ const requiredRedirectSources = [
   '/fire-number/states/ky',
   '/fire-number/states/sd',
   '/fire-number/states/wv',
+  '/fire-number/states/newyorkcity',
 ];
 
 // Every US state with cities needs a display name: the state page's slug and
@@ -142,6 +143,28 @@ for (const state of usCityStates) {
 for (const source of requiredRedirectSources) {
   assert.match(nextConfig, new RegExp(`source:\\s*['"]${source}['"]`), `Missing redirect for stale indexed URL ${source}`);
 }
+
+const stateReferenceSource = fs.readFileSync(path.join(repoRoot, 'app/fire-number/fire-by-state/page.tsx'), 'utf8');
+for (const required of [
+  'US_CITY_COST_DATA_UPDATED',
+  'City-sample averages, not statewide household averages',
+  'Census B25113 recent-mover rents',
+  'Census B25064 all-renter median',
+  "'Dataset'",
+  "'FAQPage'",
+  '/fire-number/fire-by-state/data.csv',
+]) {
+  assert.match(stateReferenceSource, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), `State reference missing ${required}`);
+}
+assert.match(statePagesSource, /stateKey === 'nyc' \? 'ny' : stateKey/, 'State reference must group the NYC tax key into New York');
+
+const bestStatesSource = fs.readFileSync(path.join(repoRoot, 'app/fire-number/best-states/page.tsx'), 'utf8');
+assert.match(bestStatesSource, /const scored = statePages/, 'Best-states ranking should use the same normalized state sample as the sourced reference');
+assert.doesNotMatch(bestStatesSource, /stateStats\.set\(city\.state/, 'Best-states ranking must not treat the NYC tax key as a separate state');
+
+const stateCsvSource = fs.readFileSync(path.join(repoRoot, 'app/fire-number/fire-by-state/data.csv/route.ts'), 'utf8');
+assert.match(stateCsvSource, /['"]Content-Type['"]:\s*['"]text\/csv/, 'State reference CSV should identify itself as text/csv');
+assert.match(stateCsvSource, /state\.avgCityColAccross/, 'State reference CSV should use the same state sample average as the visible page');
 
 // The FIRE Type quiz link sits in the hero CTA row, secondary to the start
 // button (D-13). It was lost in the landing redesign (274a215) and restored.
