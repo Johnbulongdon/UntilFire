@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { REFERRED_TRIAL_LABEL } from "@/lib/pricing";
 import { Button } from "@/components/ui";
+import SectionTitle from "./SectionTitle";
 
 /**
  * "Give a month, get a month" (D-27). The link is made when asked for, not
@@ -30,8 +31,8 @@ export default function GiveAMonthCard({ cardStyle }: { cardStyle: React.CSSProp
   return (
     <div style={{ ...cardStyle, display: "grid", gap: 10 }}>
       <div>
-        <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>Give a month, get a month</span>
-        <span style={{ fontSize: 13, color: "var(--uf-text-2)" }}>
+        <SectionTitle icon="gift" style={{ margin: "0 0 4px" }}>Give a month, get a month</SectionTitle>
+        <span style={{ display: "block", fontSize: 13, color: "var(--uf-text-2)", paddingLeft: 40 }}>
           Friends get Pro {REFERRED_TRIAL_LABEL}. When one subscribes, you get a month free.
         </span>
       </div>

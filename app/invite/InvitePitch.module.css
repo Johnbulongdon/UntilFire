@@ -1,0 +1,66 @@
+.pitch { display: grid; gap: var(--uf-s7); color: var(--uf-ink); }
+.pitch h2 { margin: 0 0 var(--uf-s4); }
+
+.hero { display: grid; gap: var(--uf-s4); justify-items: start; }
+.title { margin: 0; max-width: 760px; }
+
+.offer {
+  display: grid; grid-template-columns: repeat(3, 1fr); width: 100%;
+  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 18px; overflow: hidden;
+}
+.offer > div { display: grid; gap: var(--uf-s1); padding: var(--uf-s5); color: var(--uf-ink-2); }
+.offer > div + div { border-left: 1px solid var(--uf-border); }
+.big { font-size: 40px; font-weight: 700; line-height: 1; color: var(--uf-teal); }
+
+.ctaRow { display: flex; align-items: center; gap: var(--uf-s4); flex-wrap: wrap; }
+.ctaRow a { color: var(--uf-ink-2); }
+
+/* Three rising steps: the ladder is the point, so its height says it. */
+.ladder { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--uf-s3); align-items: end; }
+.step {
+  display: grid; gap: var(--uf-s1); align-content: end; padding: var(--uf-s4);
+  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 14px;
+}
+.step[data-step="0"] { min-height: 150px; }
+.step[data-step="1"] { min-height: 200px; background: var(--uf-teal-soft); border-color: var(--uf-teal-line); }
+.step[data-step="2"] { min-height: 120px; }
+.stepRate { font-size: 34px; font-weight: 700; color: var(--uf-teal); line-height: 1; }
+
+.estimate {
+  display: grid; gap: var(--uf-s3); padding: var(--uf-s5);
+  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 18px;
+}
+.estimate h2 { margin: 0; }
+.estimateNum { font-size: 44px; font-weight: 700; color: var(--uf-teal); }
+
+.kit { display: grid; grid-template-columns: 1fr 360px; gap: var(--uf-s6); align-items: start; }
+.kit p { margin: 0 0 var(--uf-s4); }
+.kitList { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--uf-s3); }
+.kitList li { display: flex; gap: var(--uf-s2); align-items: center; color: var(--uf-ink-2); }
+.kitList svg { color: var(--uf-green); }
+.frame { width: 100%; height: 520px; border: 1px solid var(--uf-border); border-radius: 14px; background: var(--uf-card); }
+
+.readers { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--uf-s3); }
+.readers > div {
+  display: grid; gap: var(--uf-s1); padding: var(--uf-s4); align-content: start;
+  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 14px; color: var(--uf-ink-2);
+}
+.readers svg { color: var(--uf-green); margin-bottom: var(--uf-s1); }
+.readers b { color: var(--uf-ink); }
+
+.qa { border-bottom: 1px solid var(--uf-border); padding: var(--uf-s4) 0; }
+.qa summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: var(--uf-s4); }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary::after { content: "+"; color: var(--uf-ink-3); font-weight: 400; }
+.qa[open] summary::after { content: "−"; }
+
+@media (max-width: 760px) {
+  .pitch { gap: var(--uf-s6); }
+  .title { font-size: 36px; }
+  .offer { grid-template-columns: 1fr; }
+  .offer > div + div { border-left: 0; border-top: 1px solid var(--uf-border); }
+  .big { font-size: 32px; }
+  .ladder, .readers { grid-template-columns: 1fr; }
+  .step[data-step] { min-height: 0; }
+  .kit { grid-template-columns: 1fr; }
+}

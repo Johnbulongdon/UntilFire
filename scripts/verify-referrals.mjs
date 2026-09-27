@@ -12,7 +12,7 @@ import {
   accountYoungEnoughToClaim, REFERRAL_MIN_PAYOUT_CENTS, formatCents, rateForPayment, readyToPay,
 } from '../lib/referrals.ts';
 import { claimReferral, recordReferralCommission, reverseReferralCommission, applyPendingCredits, friendLinkFor } from '../lib/referrals-server.ts';
-import { FRIEND_CREDIT_CENTS, friendCode } from '../lib/referrals.ts';
+import { FRIEND_CREDIT_CENTS, friendCode, firstYearEstimateCents } from '../lib/referrals.ts';
 import { PRO_MONTHLY_USD } from '../lib/pricing.ts';
 import { freedomPath, quickFreedom } from '../lib/quick-freedom.ts';
 import { yearsToTarget } from '../lib/fire/strategies/traditional.ts';
@@ -24,6 +24,7 @@ const day = 86_400_000;
 
 // ── Rules
 check('codes: lowercase, digits, single hyphens, 3–24', normaliseCode(' Jane-Saves ') === 'jane-saves' && normaliseCode('ab') === null && normaliseCode('a--b') === null && normaliseCode('-abc') === null && normaliseCode('x'.repeat(25)) === null && normaliseCode('a'.repeat(24)) === 'a'.repeat(24));
+check('invite estimate: 9 yearly readers at 30%, the 10th at 40%', firstYearEstimateCents(9, 7900) === 9 * 2370 && firstYearEstimateCents(10, 7900) === 9 * 2370 + 3160 && firstYearEstimateCents(0, 7900) === 0);
 check('codes: reserved words refused', normaliseCode('admin') === null && normaliseCode('untilfire') === null);
 check('codes: nothing that reads as UntilFire or its staff', ['untilfire-official', 'until-fire', 'official-deals', 'untilfire2', 'support-team', 'staffpicks', 'admin-jane', 'removed-abc'].every((c) => normaliseCode(c) === null) && normaliseCode('jane-saves') === 'jane-saves');
 check('30% of $9 is $2.70; of $79 is $23.70', commissionCents(900) === 270 && commissionCents(7900) === 2370);
@@ -218,7 +219,7 @@ check('only /embed/ can be framed; everything else stays DENY', mw.includes('pat
 check('no logo splash inside an embed', read('app/layout.tsx').includes("location.pathname.indexOf('/embed/')===0"));
 const embed = read('app/embed/[code]/EmbedCalculator.tsx');
 check('every link out of the embed goes through the creator link', embed.includes('`https://www.untilfire.com/r/${code}`') && !/href="https:\/\/www\.untilfire\.com\/(?!r\/)/.test(embed));
-const invite = read('app/invite/InviteClient.tsx');
+const invite = read('app/invite/CreatorArea.tsx');
 check('the snippet links back through /r/ in plain HTML', invite.includes('<a href="https://www.untilfire.com/r/${code}">'));
 
 const failed = checks.filter((c) => !c.ok);

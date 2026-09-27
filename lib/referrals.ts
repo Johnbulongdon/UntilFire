@@ -166,3 +166,16 @@ export function summarise(rows: CommissionRow[], now: Date = new Date()) {
 export function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2).replace(/\.00$/, "")}`;
 }
+
+/**
+ * The /invite estimate: what a creator earns in the first year from `readers`
+ * paying readers who each pay `collectedCents` in that year. Readers 1–9 earn
+ * the base rate, the 10th on the tier rate, as the program pays.
+ */
+export function firstYearEstimateCents(readers: number, collectedCents: number): number {
+  let total = 0;
+  for (let n = 1; n <= readers; n++) {
+    total += commissionCents(collectedCents, n >= REFERRAL_TIER_CUSTOMERS ? REFERRAL_TIER_RATE_BPS : REFERRAL_RATE_BPS);
+  }
+  return total;
+}
