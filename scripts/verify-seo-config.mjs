@@ -107,6 +107,7 @@ assert.match(sitemapSource, /siteUrl\(['"]\/fire-calculator['"]\)/, 'sitemap sho
 assert.match(sitemapSource, /CITIES,\s*isUS/, 'sitemap should import CITIES and isUS so generated city pages are discoverable');
 assert.match(sitemapSource, /isUS\(city\.state\)/, 'sitemap should include all indexable US city FIRE number pages');
 assert.match(sitemapSource, /curatedCitySlugs/, 'sitemap should de-duplicate curated city landing pages from generic city routes');
+assert.doesNotMatch(sitemapSource, /siteUrl\(['"]\/fire-number\/fire-by-state['"]\)/, 'fire-by-state must come from rankingRoutes only, not appear twice in the sitemap');
 assert.match(sitemapSource, /\/fire-number\/\$\{city\.key\}/, 'sitemap should generate /fire-number/{city} URLs for city keys');
 assert.doesNotMatch(sitemapSource, /lastModified:\s*new Date\(\s*\)/, 'sitemap must not claim every unchanged URL was modified at request time');
 assert.match(sitemapSource, /article\.updatedAt\s*\?\?\s*article\.publishedAt/, 'article sitemap dates should use article review/publication metadata');

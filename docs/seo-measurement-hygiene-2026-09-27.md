@@ -29,6 +29,8 @@ calculator completion and signup.
   parameterised share/result pages are noindex with route-level canonicals.
 - Sitemap `lastModified` is omitted when the repository has no truthful content
   date. Learning articles use their own `updatedAt` or `publishedAt` value.
+- `/fire-number/fire-by-state` is emitted once through the ranking-page set
+  instead of appearing in both the base and generated sitemap groups.
 
 ## What counts as a result
 

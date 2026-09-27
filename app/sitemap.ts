@@ -55,11 +55,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
-      url: siteUrl('/fire-number/fire-by-state'),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
       url: siteUrl('/fire-number/best-states'),
       changeFrequency: 'weekly',
       priority: 0.85,
