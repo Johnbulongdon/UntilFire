@@ -76,7 +76,19 @@ this one is simply switched off.
 ## Reading it
 
 Service-role only — RLS is on with no policies, the same shape as
-`plaid_items`. Query it from the Supabase SQL editor or an admin route:
+`plaid_items`. The normal view is `/admin` → **SEO**. It compares the latest
+settled 28 days with the preceding 28 days, uses impression-weighted position,
+separates branded from non-branded queries, and lists the top visible queries
+and pages. It also shows the last sync state so stale data cannot look current.
+
+The SEO view deliberately stops at search discovery. Search Console clicks are
+visits, not calculator completions or registrations. For activation, use the
+PostHog funnel filtered by the privacy-safe `landing_source` values
+`organic-google`, `organic-bing`, and the other `organic-*` sources. UntilFire
+stores only the search-engine hostname; it never stores a referrer's full URL
+or search terms.
+
+For ad hoc work, query it from the Supabase SQL editor or an admin route:
 
 ```sql
 -- Is anything ranking at all?

@@ -108,6 +108,23 @@ assert.match(sitemapSource, /CITIES,\s*isUS/, 'sitemap should import CITIES and 
 assert.match(sitemapSource, /isUS\(city\.state\)/, 'sitemap should include all indexable US city FIRE number pages');
 assert.match(sitemapSource, /curatedCitySlugs/, 'sitemap should de-duplicate curated city landing pages from generic city routes');
 assert.match(sitemapSource, /\/fire-number\/\$\{city\.key\}/, 'sitemap should generate /fire-number/{city} URLs for city keys');
+assert.doesNotMatch(sitemapSource, /lastModified:\s*new Date\(\s*\)/, 'sitemap must not claim every unchanged URL was modified at request time');
+assert.match(sitemapSource, /article\.updatedAt\s*\?\?\s*article\.publishedAt/, 'article sitemap dates should use article review/publication metadata');
+
+for (const route of ['login', 'admin', 'dashboard', 'transactions', 'auth', 'household', 'unsubscribe']) {
+  const layout = fs.readFileSync(path.join(repoRoot, `app/${route}/layout.tsx`), 'utf8');
+  assert.match(layout, /robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/, `${route} must be noindex`);
+  assert.match(layout, /canonical:\s*siteUrl\(/, `${route} must not inherit the homepage canonical`);
+}
+
+for (const routeFile of ['app/share/page.tsx', 'app/portfolio/result/page.tsx']) {
+  const routeSource = fs.readFileSync(path.join(repoRoot, routeFile), 'utf8');
+  assert.match(routeSource, /robots:\s*\{\s*index:\s*false,\s*follow:\s*true\s*\}/, `${routeFile} parameter variants must be noindex`);
+  assert.match(routeSource, /canonical:\s*siteUrl\(/, `${routeFile} must not inherit the homepage canonical`);
+}
+
+const rootLayoutSource = fs.readFileSync(path.join(repoRoot, 'app/layout.tsx'), 'utf8');
+assert.match(rootLayoutSource, /<AcquisitionCapture\s*\/>/, 'root layout should capture privacy-safe search/referral attribution on every entry route');
 
 const robotsSource = fs.readFileSync(path.join(repoRoot, 'app/robots.ts'), 'utf8');
 assert.match(robotsSource, /siteUrl\(['"]\/sitemap\.xml['"]\)/, 'robots sitemap should use canonical siteUrl helper');
