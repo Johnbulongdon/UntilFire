@@ -55,6 +55,11 @@ export const STATE_NAMES: Record<string, string> = {
   de_us: 'Delaware',
 }
 
+export function formatStateAbbreviation(stateKey: string): string {
+  if (stateKey === 'nyc') return 'NY'
+  return stateKey.replace(/_us$/, '').toUpperCase()
+}
+
 const STATE_SLUG_MAP: Record<string, string> = {
   california: 'ca',
   texas: 'tx',
