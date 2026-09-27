@@ -6,6 +6,8 @@ import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { REFERRAL_RATE_LABEL } from "@/lib/referrals";
 import GiveAMonthCard from "./GiveAMonthCard";
+import CreatorArea from "@/app/invite/CreatorArea";
+import SectionTitle from "./SectionTitle";
 import HouseholdSection from "./HouseholdSection";
 
 interface PlaidItem {
@@ -70,6 +72,14 @@ export default function ProfileTab({
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [creatorOpen, setCreatorOpen] = useState(false);
+
+  // /invite sends signed-in users here with ?creator=1: open the section and bring it into view.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("creator") !== "1") return;
+    setCreatorOpen(true);
+    requestAnimationFrame(() => document.getElementById("creator-program")?.scrollIntoView({ block: "start" }));
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -195,7 +205,7 @@ export default function ProfileTab({
     display: "block",
     fontSize: 13,
     fontWeight: 600,
-    color: "#374151",
+    color: "var(--uf-ink-2)",
     marginBottom: 6,
   };
 
@@ -205,7 +215,7 @@ export default function ProfileTab({
     border: "1px solid var(--uf-border)",
     borderRadius: 8,
     fontSize: 14,
-    color: "#1a1a2e",
+    color: "var(--uf-ink)",
     background: "var(--uf-card)",
     outline: "none",
     boxSizing: "border-box",
@@ -218,21 +228,21 @@ export default function ProfileTab({
     fontWeight: 600,
     border: "none",
     cursor: variant === "disabled" ? "not-allowed" : "pointer",
-    background: variant === "primary" ? "#059669" : variant === "danger" ? "#dc2626" : "#E2E8F0",
-    color: variant === "primary" || variant === "danger" ? "#fff" : "#9ca3af",
+    background: variant === "primary" ? "var(--uf-green)" : variant === "danger" ? "var(--uf-neg)" : "var(--uf-border)",
+    color: variant === "primary" || variant === "danger" ? "var(--uf-card)" : "var(--uf-ink-3)",
     opacity: variant === "disabled" ? 0.6 : 1,
     whiteSpace: "nowrap",
   });
 
   return (
     <div style={{ maxWidth: 600, padding: "32px 24px" }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: "#064E3B", marginBottom: 24, marginTop: 0 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--uf-ink)", marginBottom: 24, marginTop: 0 }}>
         Profile &amp; Settings
       </h2>
 
       {/* Account */}
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Account</h3>
+        <SectionTitle icon="profile">Account</SectionTitle>
         <label style={labelStyle}>Display name</label>
         <div style={{ display: "flex", gap: 10 }}>
           <input
@@ -250,7 +260,7 @@ export default function ProfileTab({
             {saving.name ? "Saving…" : saved.name ? "Saved ✓" : "Save"}
           </button>
         </div>
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, marginBottom: 0 }}>
+        <p style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 6, marginBottom: 0 }}>
           This is how your name appears in the dashboard greeting.
         </p>
       </div>
@@ -260,7 +270,7 @@ export default function ProfileTab({
 
       {/* Preferences */}
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Preferences</h3>
+        <SectionTitle icon="sliders">Preferences</SectionTitle>
         <label style={labelStyle}>Default currency</label>
         <div style={{ display: "flex", gap: 10 }}>
           <select
@@ -280,23 +290,23 @@ export default function ProfileTab({
             {saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save"}
           </button>
         </div>
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, marginBottom: 0 }}>
+        <p style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 6, marginBottom: 0 }}>
           Sets the dashboard display currency and pre-fills new transaction entries.
         </p>
 
         <div style={{ marginTop: 20 }}>
           <label style={labelStyle}>Preferred currencies</label>
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 10px" }}>
+          <p style={{ fontSize: 12, color: "var(--uf-ink-3)", margin: "0 0 10px" }}>
             Add currencies to filter dropdowns. Leave empty to show all.
           </p>
           {preferredCurrencies.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
               {preferredCurrencies.map(c => (
-                <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px 3px 8px", borderRadius: 20, background: "#F0FDF4", border: "1px solid #BBF7D0", fontSize: 12, fontWeight: 700, color: "#047857", fontFamily: "DM Mono, monospace" }}>
+                <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px 3px 8px", borderRadius: 20, background: "var(--uf-green-50)", border: "1px solid var(--uf-green-100)", fontSize: 12, fontWeight: 700, color: "var(--uf-green-700)", fontFamily: "DM Mono, monospace" }}>
                   {c}
                   <button
                     onClick={() => toggleCurrency(c)}
-                    style={{ background: "none", border: "none", padding: "0 0 0 2px", cursor: "pointer", color: "#6b7280", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
+                    style={{ background: "none", border: "none", padding: "0 0 0 2px", cursor: "pointer", color: "var(--uf-ink-2)", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
                     aria-label={`Remove ${c}`}
                   >×</button>
                 </span>
@@ -345,7 +355,7 @@ export default function ProfileTab({
           18 Sep 2026 (app-structure rule 2). */}
       <div style={cardStyle}>
         <div style={{ marginBottom: 14 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 6px" }}>FIRE type</h3>
+          <SectionTitle icon="target" style={{ margin: "0 0 6px" }}>FIRE type</SectionTitle>
           <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: 0 }}>
             Your age, target city, lifestyle and tax home now live with your plan,
             next to the freedom date they produce.
@@ -379,9 +389,9 @@ export default function ProfileTab({
               borderRadius: 8,
               fontSize: 14,
               fontWeight: 700,
-              border: "1px solid #BBF7D0",
-              background: "#F0FDF4",
-              color: "#047857",
+              border: "1px solid var(--uf-green-100)",
+              background: "var(--uf-green-50)",
+              color: "var(--uf-green-700)",
               cursor: "pointer",
               fontFamily: "inherit",
               flex: "1 1 180px",
@@ -397,18 +407,18 @@ export default function ProfileTab({
 
       {/* Subscription */}
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Subscription</h3>
+        <SectionTitle icon="card">Subscription</SectionTitle>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{
               display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-              background: subscription?.plan === "pro" ? "#f0fdf4" : "#f1f5f9",
-              color: subscription?.plan === "pro" ? "#059669" : "#64748b",
-              border: `1px solid ${subscription?.plan === "pro" ? "#bbf7d0" : "#e2e8f0"}`,
+              background: subscription?.plan === "pro" ? "var(--uf-green-50)" : "var(--uf-surface)",
+              color: subscription?.plan === "pro" ? "var(--uf-green)" : "var(--uf-ink-2)",
+              border: `1px solid ${subscription?.plan === "pro" ? "var(--uf-green-100)" : "var(--uf-border)"}`,
             }}>
               {subscription?.plan === "pro" ? "Pro" : "Free"}
             </span>
-            <span style={{ fontSize: 13, color: "#6b7280" }}>
+            <span style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>
               {subscription?.plan === "pro"
                 ? `UntilFire Pro — ${PRO_MONTHLY_LABEL}/month`
                 : "Free plan — limited features"}
@@ -417,21 +427,21 @@ export default function ProfileTab({
           {subscription?.plan === "pro" ? (
             <button
               onClick={onManageBilling}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid var(--uf-border)", background: "transparent", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+              style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-ink-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
             >
               Manage billing
             </button>
           ) : (
             <button
               onClick={onUpgradeClick}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+              style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "var(--uf-green)", color: "var(--uf-card)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
             >
               Try {trialLabel}
             </button>
           )}
         </div>
         {subscription?.plan !== "pro" && (
-          <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10, marginBottom: 0 }}>
+          <p style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 10, marginBottom: 0 }}>
             {trialLabel} — then {PRO_MONTHLY_LABEL}/mo, or {PRO_ANNUAL_LABEL}/yr. Unlimited bank connections and priority AI access.
           </p>
         )}
@@ -439,22 +449,36 @@ export default function ProfileTab({
 
       <GiveAMonthCard cardStyle={cardStyle} />
 
-      {/* Creator program (D-27): the way in for existing users who write or post. */}
-      <a href="/invite" style={{ ...cardStyle, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit" }}>
-        <span>
-          <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>Creator program</span>
-          <span style={{ fontSize: 13, color: "var(--uf-text-2)" }}>Share UntilFire and earn {REFERRAL_RATE_LABEL} of what your readers pay for a year.</span>
-        </span>
-        <span aria-hidden="true" style={{ color: "var(--uf-green)", fontWeight: 700 }}>→</span>
-      </a>
+      {/* Creator program (D-27): opens here, so using it never leaves the app. */}
+      <section id="creator-program" style={cardStyle}>
+        <button
+          type="button"
+          aria-expanded={creatorOpen}
+          aria-controls="creator-program-body"
+          onClick={() => setCreatorOpen((o) => !o)}
+          style={{ all: "unset", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, width: "100%" }}
+        >
+          <span>
+            <SectionTitle icon="megaphone" style={{ margin: "0 0 4px" }}>Creator program</SectionTitle>
+            <span style={{ display: "block", fontSize: 13, color: "var(--uf-ink-2)", paddingLeft: 40 }}>Share UntilFire and earn {REFERRAL_RATE_LABEL} of what your readers pay for a year.</span>
+          </span>
+          <span aria-hidden="true" style={{ color: "var(--uf-green)", fontWeight: 700, transform: creatorOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>→</span>
+        </button>
+        {creatorOpen && (
+          <div id="creator-program-body" style={{ marginTop: 16, display: "grid", gap: 12 }}>
+            <CreatorArea />
+            <a href="/invite" className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>How the program works</a>
+          </div>
+        )}
+      </section>
 
       {/* Connected Banks */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: 0 }}>Connected Banks</h3>
+          <SectionTitle icon="bank" style={{ margin: 0 }}>Connected banks</SectionTitle>
           <button
             onClick={() => onTabChange("assets")}
-            style={{ fontSize: 13, fontWeight: 600, color: "#047857", background: "none", border: "1px solid #D1FAE5", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
+            style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-green-700)", background: "none", border: "1px solid var(--uf-green-100)", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
           >
             Manage →
           </button>
@@ -462,7 +486,7 @@ export default function ProfileTab({
         {plaidItems.length === 0 ? (
           <div style={{ fontSize: 13, color: "var(--uf-text-3)" }}>
             No banks connected yet.{" "}
-            <button onClick={() => onTabChange("assets")} style={{ background: "none", border: "none", color: "#047857", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 13 }}>
+            <button onClick={() => onTabChange("assets")} style={{ background: "none", border: "none", color: "var(--uf-green-700)", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 13 }}>
               Connect one →
             </button>
           </div>
@@ -478,7 +502,7 @@ export default function ProfileTab({
                 <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)" }}>{item.institution_name}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--uf-text-3)" }}>
-                <span style={{ color: "#059669", fontWeight: 600 }}>{"●"} Connected</span>
+                <span style={{ color: "var(--uf-green)", fontWeight: 600 }}>{"●"} Connected</span>
                 <span>{fmtSynced(item.last_synced_at)}</span>
               </div>
             </div>
@@ -487,17 +511,17 @@ export default function ProfileTab({
       </div>
 
       {/* Danger zone */}
-      <div style={{ ...cardStyle, borderColor: "#fecaca", background: "var(--uf-card)" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#dc2626", margin: "0 0 8px" }}>Danger Zone</h3>
-        <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 16px" }}>
+      <div style={{ ...cardStyle, borderColor: "var(--uf-neg-bg)", background: "var(--uf-card)" }}>
+        <SectionTitle icon="warning" danger style={{ margin: "0 0 8px" }}>Danger zone</SectionTitle>
+        <p style={{ fontSize: 14, color: "var(--uf-ink-2)", margin: "0 0 16px" }}>
           Permanently deletes your account, all transactions, and FIRE data. This cannot be undone.
         </p>
-        <label style={{ ...labelStyle, color: "#6b7280" }}>
+        <label style={{ ...labelStyle, color: "var(--uf-ink-2)" }}>
           Type your email address to confirm: <strong>{userEmail}</strong>
         </label>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <input
-            style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "#fca5a5" : "#E2E8F0" }}
+            style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "var(--uf-neg)" : "var(--uf-border)" }}
             type="email"
             value={deleteConfirm}
             onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }}
@@ -512,7 +536,7 @@ export default function ProfileTab({
           </button>
         </div>
         {deleteError && (
-          <p style={{ fontSize: 13, color: "#dc2626", marginTop: 8, marginBottom: 0 }}>{deleteError}</p>
+          <p style={{ fontSize: 13, color: "var(--uf-neg)", marginTop: 8, marginBottom: 0 }}>{deleteError}</p>
         )}
       </div>
     </div>

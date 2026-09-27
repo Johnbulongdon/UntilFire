@@ -8,6 +8,16 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-27
 
+### Creator program in the dashboard; a pitch page that shows the deal
+- Profile → Creator program opens in place (join, link, stats, embed,
+  payouts) instead of sending you to a separate page. Signed-in visitors to
+  `/invite` land there, with a progress bar to the 40% tier.
+- `/invite` now shows the offer at a glance (30% · 12 months · 60 days for
+  readers), the 30% → 40% → 10% ladder, an earnings estimate slider, the
+  real calculator a creator can embed, what readers get, and a short FAQ.
+- Profile section titles have icons and use theme colours, so dark mode
+  reads properly.
+
 ### Creator program: no look-alike links, remove and hold
 - Codes can't contain "untilfire", "official", "support", "staff" or "admin".
 - `/admin` → Referrals can **Remove** a creator who breaks the terms (link

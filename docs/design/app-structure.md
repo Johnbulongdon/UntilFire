@@ -49,7 +49,8 @@ Plan                          long-term projections and scenarios
   ├ Citizenship
   └ Learn
 
-Profile                       account, household setup, FIRE personality/type
+Profile                       account, household setup, FIRE personality/type,
+                              give a month, creator program (opens in place)
                               lives in the user menu
 ```
 
@@ -110,6 +111,15 @@ group membership, rendering, and deep-link handling together:
 
 The `valid` array in the URL-parsing effect must also list any new tab, or it
 won't be deep-linkable. `goals` was missing from it for exactly this reason.
+
+## The creator program lives in Profile
+
+A signed-in user's creator program (join form, link, stats, embed, payouts)
+opens inside Profile, in `app/invite/CreatorArea.tsx`. `/invite` is the
+public pitch for creators without an account; a signed-in visitor there is
+sent to `/dashboard?tab=profile&creator=1`, which opens the section. A link
+out of the dashboard also meets its "leave site?" guard during a save, so
+features for signed-in users belong in the dashboard, not beside it.
 
 ## The public site header
 

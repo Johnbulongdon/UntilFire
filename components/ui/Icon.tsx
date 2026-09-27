@@ -20,7 +20,8 @@ import React from "react";
 export type IconName =
   | "home" | "money" | "plan" | "profile"
   | "critical" | "warning" | "info" | "positive"
-  | "calendar" | "target";
+  | "calendar" | "target"
+  | "sliders" | "card" | "gift" | "megaphone" | "bank" | "users";
 
 /** Path geometry only. Stroke, size and colour are applied by the component. */
 export const ICON_PATHS: Record<IconName, string> = {
@@ -37,6 +38,13 @@ export const ICON_PATHS: Record<IconName, string> = {
   // Public calculator groups (/calculators): "when" and "on track".
   calendar: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6"/>',
+  // Profile section headers.
+  sliders: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+  card: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',
+  gift: '<rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M3.5 13h17M12 9v11M12 9c-1.5-3.5-5.5-4-5.5-1.5S10 9 12 9zm0 0c1.5-3.5 5.5-4 5.5-1.5S14 9 12 9z"/>',
+  megaphone: '<path d="M4 10v4a1 1 0 0 0 1 1h2l6 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M17 9.5a3.5 3.5 0 0 1 0 5M8 15l1 4"/>',
+  bank: '<path d="M3 9.5 12 4l9 5.5H3z"/><path d="M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3.5 20h17"/>',
+  users: '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5.2a3.3 3.3 0 0 1 0 6.6M17.5 14.3c2.4.6 4 2.6 4 5.7"/>',
 };
 
 export interface IconProps extends Omit<React.SVGProps<SVGSVGElement>, "name"> {
