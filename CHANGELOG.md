@@ -6,6 +6,16 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-09-27
+
+### One header across the public site
+- Every public page now has the homepage's top bar: logo, How it works,
+  Calculators, Learn, Pricing, and Get started (Dashboard when signed in).
+  City and state pages, Learn, pricing and the invite page had none; the
+  calculators each had their own. On phones the links fold into a menu.
+- Get started from another page opens the homepage calculator with
+  `source=nav-<page>`, keeping the per-calculator attribution the old bars sent.
+
 ## 2026-09-26
 
 ### Creator referral program: 30% for 12 months

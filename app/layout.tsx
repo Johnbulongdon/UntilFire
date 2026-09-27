@@ -5,6 +5,7 @@ import { AuthProvider } from '../lib/auth-context'
 import { Toaster } from 'react-hot-toast'
 import { Analytics } from '@vercel/analytics/react'
 import LoadingSplash from './components/LoadingSplash'
+import SiteHeader from './components/SiteHeader'
 import {
   UNTILFIRE_ANCHOR_COPY,
   UNTILFIRE_ANCHOR_DESCRIPTION,
@@ -175,6 +176,7 @@ export default function RootLayout({
         />
         <LoadingSplash />
         <AuthProvider>
+          <SiteHeader />
           {children}
 
           <Toaster position="top-right" />

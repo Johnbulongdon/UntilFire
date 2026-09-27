@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import Logo from '@/app/components/Logo'
 import { calcPurchaseImpact, formatDelay, formatFV } from '@/lib/purchase-impact'
 
 const C = {
@@ -58,16 +57,6 @@ export default function PurchaseImpactCalculator() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
       {/* Nav */}
-      <nav style={{ borderBottom: `1px solid ${C.border}`, background: C.card }}>
-        <div style={{ maxWidth: 960, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Link href="/" style={{ textDecoration: 'none', color: C.accent }}>
-            <Logo variant="auto" size={24} />
-          </Link>
-          <Link href="/calculators" style={{ fontSize: 13, color: C.muted, textDecoration: 'none', fontWeight: 600 }}>
-            ← All calculators
-          </Link>
-        </div>
-      </nav>
 
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px 80px' }}>
         <header style={{ marginBottom: 36 }}>

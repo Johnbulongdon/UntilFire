@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Logo from '@/app/components/Logo'
-import Link from 'next/link'
 import { formatMoney } from "@/lib/money";
 
 const apyMoney = (n: number, decimals = 2) => formatMoney(n, { decimals });
@@ -71,26 +69,6 @@ export default function APYCalculator() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
-      <nav style={{
-        borderBottom: `1px solid ${C.border}`,
-        padding: '16px 24px',
-        background: 'var(--uf-card)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="auto" size={22} />
-        </Link>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>
-            ← All calculators
-          </Link>
-          <Link href="/?source=calculator-apy" style={{ color: 'var(--uf-green)', textDecoration: 'none', fontSize: 14, fontWeight: 600, border: '1px solid var(--uf-green)', padding: '6px 14px', borderRadius: 6 }}>
-            FIRE number →
-          </Link>
-        </div>
-      </nav>
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 36 }}>

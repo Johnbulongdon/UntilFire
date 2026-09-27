@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { peekCalculatorPrefill } from "@/lib/journey";
 import AnimatedHero from "./AnimatedHero";
 import WorldGlobe from "./WorldGlobe";
-import Logo from "@/app/components/Logo";
+import SiteHeader from "@/app/components/SiteHeader";
 import { CITIES } from "@/lib/fire-data";
 import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { REAL_RETURN, yearsToTarget } from "@/lib/fire/strategies/traditional";
@@ -30,23 +30,6 @@ function futureDate(monthsFromNow: number): Date {
 const WORLD_PORTFOLIO = 1000000;
 const WORLD_SAVE_MONTHLY = 2000;
 const WORLD_CITY_KEYS = ["chiangmai", "mexicocity", "lisbon", "tokyo", "london", "sf"];
-
-/* ── Nav ─────────────────────────────────────────────────────────────── */
-function Nav7({ onStart, signedIn }: { onStart: () => void; signedIn: boolean }) {
-  return (
-    <header className="uf7-nav">
-      <Logo variant="auto" size={26} />
-      <nav className="uf7-nav-links">
-        <a href="#how">How it works</a>
-        <a href="#pricing">Pricing</a>
-      </nav>
-      {/* Signed in (e.g. an internal account the redirect skips): one tap back to the app. */}
-      {signedIn
-        ? <a className="uf7-nav-cta" href="/dashboard">Dashboard</a>
-        : <button className="uf7-nav-cta" onClick={onStart}>Get started</button>}
-    </header>
-  );
-}
 
 function YourDateLine7() {
   const [retireYear, setRetireYear] = useState<number | null>(null);
@@ -1064,19 +1047,6 @@ const CSS7 = `
   .uf7-rv { opacity: 0; transform: translateY(26px); transition: opacity 0.75s ease, transform 0.75s cubic-bezier(0.22,1,0.36,1); }
   .uf7-rv.uf7-vis { opacity: 1; transform: none; }
 
-  .uf7-nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 28px;
-    background: var(--uf-topbar-glass); backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--uf-surface);
-  }
-  .uf7-nav-links { display: flex; gap: 26px; }
-  .uf7-nav-links a { font-size: 14px; font-weight: 600; color: var(--uf-ink-2); text-decoration: none; }
-  .uf7-nav-cta {
-    padding: 9px 18px; border-radius: var(--uf-r-pill); border: none; cursor: pointer;
-    font-family: ${F}; font-size: 14px; font-weight: 700; color: var(--uf-ground); background: var(--uf-ink); text-decoration: none; display: inline-block;
-  }
 
   .uf7-hero {
     position: relative; min-height: 100vh; overflow: hidden; text-align: center;
@@ -1305,7 +1275,6 @@ const CSS7 = `
   .uf7-close-b { width: 560px; height: 480px; bottom: -200px; right: -160px; background: radial-gradient(circle, rgba(79,70,229,0.28), transparent 62%); animation: uf7drift2 34s ease-in-out infinite; }
 
   @media (max-width: 760px) {
-    .uf7-nav-links { display: none; }
     .uf7-hero { padding: 130px 20px 210px; }
     .uf7-block { padding: 88px 20px; }
     .uf7-split { grid-template-columns: 1fr; gap: 36px; }
@@ -1404,7 +1373,7 @@ export default function LandingPage({ onStart, signedIn = false, referred = fals
   return (
     <div ref={rootRef} className="uf7-root" style={{ fontFamily: F }}>
       <div className="uf7-grain" aria-hidden />
-      <Nav7 onStart={onStart} signedIn={signedIn} />
+      <SiteHeader fixed onStart={onStart} signedIn={signedIn} />
       <AnimatedHero onStart={onStart}><YourDateLine7 /></AnimatedHero>
       <How7 />
       <DecadeShape7 />
