@@ -32,10 +32,11 @@ export async function GET(req: NextRequest) {
 
   const { data: partner } = await admin
     .from("referral_partners")
-    .select("id, code, status, payout_method, payout_email, rate_bps, months, created_at")
+    .select("id, code, status, kind, payout_method, payout_email, rate_bps, months, created_at")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (!partner) return NextResponse.json({ partner: null });
+  // A "give a month" link is not the creator program; they can still join it.
+  if (!partner || partner.kind !== "creator") return NextResponse.json({ partner: null });
 
   const [visits, attributions, commissions, payouts] = await Promise.all([
     admin.from("referral_visits").select("id", { count: "exact", head: true }).eq("partner_id", partner.id),
@@ -85,16 +86,27 @@ export async function POST(req: NextRequest) {
   }
   if (body?.acceptTerms !== true) return NextResponse.json({ error: "Please accept the program terms." }, { status: 400 });
 
-  const { error } = await admin.from("referral_partners").insert({
-    user_id: user.id,
+  const creator = {
     code,
+    kind: "creator",
     payout_method: body.payoutMethod,
     payout_email: email,
     rate_bps: REFERRAL_RATE_BPS,
     months: REFERRAL_MONTHS,
     terms_version: REFERRAL_TERMS_VERSION,
     terms_accepted_at: new Date().toISOString(),
-  });
+  };
+  // Someone with a "give a month" link becomes a creator on the same row, so
+  // friends they already invited count toward their creator numbers.
+  const { data: friendRow } = await admin
+    .from("referral_partners")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("kind", "friend")
+    .maybeSingle();
+  const { error } = friendRow
+    ? await admin.from("referral_partners").update(creator).eq("id", friendRow.id)
+    : await admin.from("referral_partners").insert({ user_id: user.id, ...creator });
   if (error) {
     // Unique violation: either the code is taken or this account already joined.
     const taken = error.code === "23505" && error.message.includes("code");

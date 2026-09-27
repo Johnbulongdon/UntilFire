@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { getStripe, priceIdFor } from "@/lib/stripe";
 import { REFERRED_TRIAL_DAYS, TRIAL_DAYS } from "@/lib/pricing";
+import { applyPendingCredits } from "@/lib/referrals-server";
 
 
 export async function POST(req: NextRequest) {
@@ -43,6 +44,14 @@ export async function POST(req: NextRequest) {
         metadata: { supabase_user_id: user.id },
       });
       customerId = customer.id;
+    }
+
+    // Free months earned by inviting friends before this person had a Stripe
+    // customer (D-27): credit them now, so the first bill is lower.
+    try {
+      await applyPendingCredits(stripe, supabaseAdmin, user.id, customerId);
+    } catch (err) {
+      console.error("[stripe/checkout] referral credit:", err);
     }
 
     const origin = req.headers.get("origin") || "https://www.untilfire.com";

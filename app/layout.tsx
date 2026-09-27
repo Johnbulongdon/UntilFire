@@ -72,7 +72,7 @@ export default function RootLayout({
             off internal navigations. See app/components/LoadingSplash.tsx. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var s=sessionStorage.getItem('uf_splash_seen')==='1';if(!r&&!s){document.documentElement.setAttribute('data-splash','1');sessionStorage.setItem('uf_splash_seen','1')}}catch(e){}})()`,
+            __html: `(function(){try{var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var s=sessionStorage.getItem('uf_splash_seen')==='1';var e=location.pathname.indexOf('/embed/')===0;if(!r&&!s&&!e){document.documentElement.setAttribute('data-splash','1');sessionStorage.setItem('uf_splash_seen','1')}}catch(e){}})()`,
           }}
         />
         <script

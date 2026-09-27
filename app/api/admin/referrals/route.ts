@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const { admin } = auth;
 
   const [partners, visits, attributions, commissions, payouts, users] = await Promise.all([
-    admin.from("referral_partners").select("*").order("created_at", { ascending: false }),
+    admin.from("referral_partners").select("*").eq("kind", "creator").order("created_at", { ascending: false }),
     admin.from("referral_visits").select("partner_id"),
     admin.from("referral_attributions").select("partner_id"),
     admin.from("referral_commissions").select("id, partner_id, referred_user_id, collected_cents, commission_cents, status, earned_at, payable_at, reversed_reason").order("earned_at", { ascending: false }),

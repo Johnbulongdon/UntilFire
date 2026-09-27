@@ -898,8 +898,27 @@ referral programs do differently; "I like one, two, three, four, five"):
 - *Growth steps:* 40% from a creator's 10th paying customer on, and 10% of
   each payment after a customer's first year, for as long as they pay. At
   $9 the business keeps $3.34 a month at 40% and $6.04 at 10%.
-The embeddable calculator (creator link built in) and "give a month, get a
-month" for users follow as separate PRs.
+**Embed and friends, the next day** (founder: "one, two, five, three, and
+four"; the leaderboard and contest are on hold):
+- *Embeddable calculator:* `/embed/<code>` is a three-input freedom-year
+  calculator for a creator's own post (`lib/quick-freedom.ts`, the same 25×
+  target and shared projection as the free result). Only `/embed/` may be
+  framed (`frame-ancestors *`); every other page keeps `X-Frame-Options:
+  DENY`. Every link out goes through `/r/<code>`, and the snippet on the
+  creator dashboard adds a plain link under the frame, which is what search
+  engines count. The embed sets no cookie; browsers block cookies in a
+  third-party frame, so attribution happens on the click through.
+- *Give a month, get a month:* any user can get a link from Profile. It is a
+  partner row of kind `friend` (no payout details) on the same `/r/` link,
+  claim and 60-day trial. The friend's first payment earns the sharer one
+  month ($9, `FRIEND_CREDIT_CENTS`) as a Stripe customer-balance credit,
+  once per friend (`referral_credits`, unique per referred user, idempotency
+  key per credit). A sharer without a Stripe customer yet gets it at their
+  checkout. Joining the creator program upgrades the same row, so friends
+  already invited count toward creator earnings.
+- *Streaks, leaderboards and contests:* the founder overrode the
+  no-engagement-mechanics rule for them, then put the creator leaderboard and
+  contest on hold. Nothing of either is built yet.
 
 **Why 30%:** at $9 a month the business keeps about $6.94 a month per
 customer (D-26). 30% is $2.70, leaving $4.24 in year one and the full $6.94

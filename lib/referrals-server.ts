@@ -1,7 +1,8 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  accountYoungEnoughToClaim, commissionCents, payableAt, rateForPayment, withinEarningWindow,
+  accountYoungEnoughToClaim, commissionCents, FRIEND_CREDIT_CENTS, friendCode, payableAt, rateForPayment,
+  withinEarningWindow,
 } from "./referrals.ts";
 
 /**
@@ -48,7 +49,7 @@ export async function claimReferral(admin: Admin, user: { id: string; created_at
  * trial's $0 invoice earns nothing. Keyed by invoice id, so a webhook Stripe
  * retries records once.
  */
-export async function recordReferralCommission(admin: Admin, invoice: Stripe.Invoice) {
+export async function recordReferralCommission(admin: Admin, invoice: Stripe.Invoice, stripe?: Stripe) {
   const customerId = idOf(invoice.customer as string | { id: string } | null);
   // Tax is collected for the government, not for us or the creator.
   const tax = (invoice.total_taxes ?? []).reduce((sum, t) => sum + (t.amount ?? 0), 0);
@@ -68,6 +69,16 @@ export async function recordReferralCommission(admin: Admin, invoice: Stripe.Inv
     .eq("referred_user_id", sub.user_id)
     .maybeSingle();
   if (!attribution) return "not-referred";
+
+  // A friend's link earns the person who shared it a free month, not cash.
+  const { data: partner } = await admin
+    .from("referral_partners")
+    .select("user_id, kind")
+    .eq("id", attribution.partner_id)
+    .maybeSingle();
+  if (partner?.kind === "friend") {
+    return recordFriendCredit(admin, { referrerUserId: partner.user_id, referredUserId: sub.user_id, invoiceId: invoice.id }, stripe);
+  }
 
   const paidAt = new Date(((invoice.status_transitions?.paid_at ?? invoice.created) || Date.now() / 1000) * 1000);
   const { data: first } = await admin
@@ -127,4 +138,84 @@ export async function reverseReferralCommission(stripe: Stripe, admin: Admin, pa
     .select("id");
   if (error) return `error: ${error.message}`;
   return data?.length ? "reversed" : "nothing-to-reverse";
+}
+
+/**
+ * "Give a month, get a month" (D-27): the friend's first payment earns the
+ * person who shared the link one month of Pro, as a Stripe account credit
+ * that comes off their next bill. Once per friend, whatever Stripe retries.
+ */
+export async function recordFriendCredit(
+  admin: Admin,
+  opts: { referrerUserId: string; referredUserId: string; invoiceId: string },
+  stripe?: Stripe,
+) {
+  const { data: credit, error } = await admin
+    .from("referral_credits")
+    .insert({
+      referrer_user_id: opts.referrerUserId,
+      referred_user_id: opts.referredUserId,
+      stripe_invoice_id: opts.invoiceId,
+      amount_cents: FRIEND_CREDIT_CENTS,
+    })
+    .select("id, amount_cents")
+    .single();
+  if (error) return error.code === "23505" ? "duplicate" : `error: ${error.message}`;
+
+  const { data: referrerSub } = await admin
+    .from("subscriptions")
+    .select("stripe_customer_id")
+    .eq("user_id", opts.referrerUserId)
+    .maybeSingle();
+  if (!stripe || !referrerSub?.stripe_customer_id) return "credit-pending";
+  return applyCredit(stripe, admin, credit, referrerSub.stripe_customer_id);
+}
+
+async function applyCredit(stripe: Stripe, admin: Admin, credit: { id: string; amount_cents: number }, customerId: string) {
+  const txn = await stripe.customers.createBalanceTransaction(
+    customerId,
+    { amount: -credit.amount_cents, currency: "usd", description: "UntilFire: a free month for inviting a friend" },
+    // A retry can never credit twice.
+    { idempotencyKey: `uf-referral-credit-${credit.id}` },
+  );
+  await admin
+    .from("referral_credits")
+    .update({ status: "applied", stripe_balance_transaction_id: txn.id, applied_at: new Date().toISOString() })
+    .eq("id", credit.id);
+  return "credit-applied";
+}
+
+/** At checkout: credits earned before this person had a Stripe customer. */
+export async function applyPendingCredits(stripe: Stripe, admin: Admin, userId: string, customerId: string) {
+  const { data: pending } = await admin
+    .from("referral_credits")
+    .select("id, amount_cents")
+    .eq("referrer_user_id", userId)
+    .eq("status", "pending");
+  for (const credit of pending ?? []) await applyCredit(stripe, admin, credit, customerId);
+  return (pending ?? []).length;
+}
+
+/** A user's own "give a month" link, created the first time they ask for it. */
+export async function friendLinkFor(admin: Admin, userId: string) {
+  const { data: existing } = await admin
+    .from("referral_partners")
+    .select("code, kind")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (existing) return existing;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = friendCode();
+    const { error } = await admin.from("referral_partners").insert({
+      user_id: userId,
+      code,
+      kind: "friend",
+      rate_bps: 0,
+      months: 0,
+    });
+    if (!error) return { code, kind: "friend" as const };
+    // The user joined in the meantime: return what they have.
+    if (error.message.includes("user_id")) return friendLinkFor(admin, userId);
+  }
+  return null;
 }

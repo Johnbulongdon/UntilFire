@@ -11,7 +11,11 @@ import {
   normaliseCode, commissionCents, withinEarningWindow, payableAt, commissionStatus, summarise,
   accountYoungEnoughToClaim, REFERRAL_MIN_PAYOUT_CENTS, formatCents, rateForPayment, readyToPay,
 } from '../lib/referrals.ts';
-import { claimReferral, recordReferralCommission, reverseReferralCommission } from '../lib/referrals-server.ts';
+import { claimReferral, recordReferralCommission, reverseReferralCommission, applyPendingCredits, friendLinkFor } from '../lib/referrals-server.ts';
+import { FRIEND_CREDIT_CENTS, friendCode } from '../lib/referrals.ts';
+import { PRO_MONTHLY_USD } from '../lib/pricing.ts';
+import { quickFreedom } from '../lib/quick-freedom.ts';
+import { yearsToTarget } from '../lib/fire/strategies/traditional.ts';
 
 const checks = [];
 const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
@@ -53,7 +57,8 @@ check('only new accounts can be claimed', accountYoungEnoughToClaim(new Date(Dat
 
 // ── Money paths against an in-memory Supabase
 function fakeDb(tables) {
-  const unique = { referral_attributions: 'referred_user_id', referral_commissions: 'stripe_invoice_id' };
+  const unique = { referral_attributions: 'referred_user_id', referral_commissions: 'stripe_invoice_id', referral_credits: 'referred_user_id', referral_partners: 'user_id' };
+  let nextId = 0;
   return {
     tables,
     from(name) {
@@ -65,8 +70,10 @@ function fakeDb(tables) {
           const key = unique[name];
           if (key && rows.some((r) => r[key] === payload[key])) return { data: null, error: { code: '23505', message: 'duplicate' } };
           // Column defaults the migration declares.
-          rows.push(name === 'referral_commissions' ? { status: 'pending', ...payload } : { ...payload });
-          return { data: [payload], error: null };
+          const defaults = { referral_commissions: { status: 'pending' }, referral_credits: { status: 'pending' }, referral_partners: { status: 'active', kind: 'creator' } };
+          const row = { id: `id${++nextId}`, ...(defaults[name] ?? {}), ...payload };
+          rows.push(row);
+          return { data: [row], error: null };
         }
         if (op === 'update') {
           const hit = rows.filter(match);
@@ -83,6 +90,7 @@ function fakeDb(tables) {
         order(k, o) { order = { k, asc: o?.ascending !== false }; return q; }, limit(n) { limit = n; return q; },
         insert(p) { op = 'insert'; payload = p; return q; }, update(p) { op = 'update'; payload = p; return q; },
         maybeSingle() { const r = run(); return Promise.resolve({ data: r.data?.[0] ?? null, error: r.error }); },
+        single() { return q.maybeSingle(); },
         then(res, rej) { return Promise.resolve(run()).then(res, rej); },
       };
       return q;
@@ -150,6 +158,50 @@ check('referred readers get the 60-day trial at checkout', checkout.includes('if
 check('the upgrade screen names the referred trial', read('app/dashboard/page.tsx').includes('trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}'));
 check('a creator sees in-trial counts, never ids', me.includes('inTrial,') && !me.includes('referredIds,'));
 check('the dashboard claims after first sign-in', read('app/dashboard/page.tsx').includes('fetch("/api/referrals/claim"'));
+
+// ── Give a month, get a month (item 4)
+check('a free month is the monthly price', FRIEND_CREDIT_CENTS === PRO_MONTHLY_USD * 100);
+{
+  let n = 0;
+  const codes = new Set(Array.from({ length: 200 }, () => friendCode(() => ((n = (n * 9301 + 49297) % 233280) / 233280))));
+  check('friend codes: f- and eight readable characters, and they pass the code rules', [...codes].every((c) => /^f-[a-hj-km-np-z2-9]{8}$/.test(c) && normaliseCode(c) === c) && codes.size > 150);
+}
+{
+  const credits = [];
+  const stripe = { customers: { createBalanceTransaction: async (customer, body, opts) => { credits.push({ customer, ...body, key: opts?.idempotencyKey }); return { id: `cbtxn_${credits.length}` }; } } };
+  const db = fakeDb({ referral_partners: [], subscriptions: [{ user_id: 'friend-a', stripe_customer_id: 'cus_a' }, { user_id: 'newbie', stripe_customer_id: 'cus_n' }] });
+  const link = await friendLinkFor(db, 'sharer');
+  check('a user gets a friend link on first ask, and the same one after', link?.kind === 'friend' && (await friendLinkFor(db, 'sharer'))?.code === link.code && db.tables.referral_partners.length === 1);
+  const fresh = new Date(Date.now() - 86400000).toISOString();
+  check('a new account can be claimed by a friend link', (await claimReferral(db, { id: 'newbie', created_at: fresh }, link.code)) === 'claimed');
+  const inv = { id: 'in_f1', customer: 'cus_n', amount_paid: 900, total_taxes: [], status_transitions: { paid_at: Math.floor(Date.now() / 1000) } };
+  check('the friend paying earns a credit, not cash; saved until the sharer has a customer', (await recordReferralCommission(db, inv, stripe)) === 'credit-pending' && !db.tables.referral_commissions?.length && credits.length === 0);
+  check('a retried webhook, or the friend paying again, earns nothing more', (await recordReferralCommission(db, { ...inv, id: 'in_f2' }, stripe)) === 'duplicate' && db.tables.referral_credits.length === 1);
+  check('at the sharer\'s checkout the saved month comes off: -$9, once', (await applyPendingCredits(stripe, db, 'sharer', 'cus_s')) === 1 && credits.length === 1 && credits[0].amount === -900 && credits[0].customer === 'cus_s' && credits[0].key.startsWith('uf-referral-credit-') && db.tables.referral_credits[0].status === 'applied');
+  check('nothing pending twice', (await applyPendingCredits(stripe, db, 'sharer', 'cus_s')) === 0 && credits.length === 1);
+}
+const meRoute = read('app/api/referrals/me/route.ts');
+check('a friend link is not the creator program, and joining upgrades it in place', meRoute.includes('partner.kind !== "creator"') && meRoute.includes('.update(creator).eq("id", friendRow.id)'));
+check('the admin creator list leaves friend links out', read('app/api/admin/referrals/route.ts').includes('.eq("kind", "creator")'));
+check('checkout applies saved free months', read('app/api/stripe/checkout/route.ts').includes('applyPendingCredits(stripe, supabaseAdmin, user.id, customerId)'));
+check('friend credits are private, like the rest', read('supabase/migrations/0044_friend_referrals.sql').includes('ALTER TABLE referral_credits ENABLE ROW LEVEL SECURITY;') && !/CREATE POLICY/i.test(read('supabase/migrations/0044_friend_referrals.sql')));
+
+// ── The embeddable calculator (item 3)
+{
+  const now = new Date('2026-09-27T00:00:00Z');
+  const r = quickFreedom({ monthlyIncome: 5000, monthlySpending: 3000, invested: 25000 }, now);
+  const years = yearsToTarget(25000, 24000, 900000);
+  check('embed: 25× spending, the shared projection, whole years to the year', r.target === 900000 && Math.abs(r.years - years) < 1e-9 && r.year === 2026 + Math.ceil(years) && Math.round(r.savingsRate * 100) === 40, JSON.stringify(r));
+  check('embed: spending above income never reaches it', quickFreedom({ monthlyIncome: 2000, monthlySpending: 3000, invested: 0 }, now).year === null);
+  check('embed: already there is year zero', quickFreedom({ monthlyIncome: 5000, monthlySpending: 1000, invested: 400000 }, now).years === 0);
+}
+const mw = read('middleware.ts');
+check('only /embed/ can be framed; everything else stays DENY', mw.includes('pathname.startsWith("/embed/")') && mw.includes('"frame-ancestors *"') && mw.includes('"X-Frame-Options", "DENY"'));
+check('no logo splash inside an embed', read('app/layout.tsx').includes("location.pathname.indexOf('/embed/')===0"));
+const embed = read('app/embed/[code]/EmbedCalculator.tsx');
+check('every link out of the embed goes through the creator link', embed.includes('`https://www.untilfire.com/r/${code}`') && !/href="https:\/\/www\.untilfire\.com\/(?!r\/)/.test(embed));
+const invite = read('app/invite/InviteClient.tsx');
+check('the snippet links back through /r/ in plain HTML', invite.includes('<a href="https://www.untilfire.com/r/${code}">'));
 
 const failed = checks.filter((c) => !c.ok);
 for (const c of checks) console.log(`${c.ok ? '✓' : '✗'} ${c.name}${c.ok || !c.detail ? '' : ` (${c.detail})`}`);
