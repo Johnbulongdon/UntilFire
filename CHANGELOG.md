@@ -8,6 +8,14 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-27
 
+### /invite, redesigned
+- A dark hero where the key visual is the one bright thing, so the eye
+  lands there first: a creator's post with the live calculator and a
+  "+$23.70 · a reader subscribed" toast. The details follow on light bands
+  (how you earn and the earnings estimate, four "what you get" tiles,
+  three FAQs), and a dark band closes. Shorter than before, with every
+  card in a row the same size.
+
 ### Creator program in the dashboard; a pitch page that shows the deal
 - Profile → Creator program is a short card: your link, Copy and More.
   More opens `/invite`, which for a signed-in user shows their own program
