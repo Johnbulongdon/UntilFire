@@ -50,7 +50,7 @@ Plan                          long-term projections and scenarios
   └ Learn
 
 Profile                       account, household setup, FIRE personality/type,
-                              give a month, creator program (opens in place)
+                              give a month, creator program card (→ /invite)
                               lives in the user menu
 ```
 
@@ -112,14 +112,15 @@ group membership, rendering, and deep-link handling together:
 The `valid` array in the URL-parsing effect must also list any new tab, or it
 won't be deep-linkable. `goals` was missing from it for exactly this reason.
 
-## The creator program lives in Profile
+## The creator program: a card in Profile, the program on /invite
 
-A signed-in user's creator program (join form, link, stats, embed, payouts)
-opens inside Profile, in `app/invite/CreatorArea.tsx`. `/invite` is the
-public pitch for creators without an account; a signed-in visitor there is
-sent to `/dashboard?tab=profile&creator=1`, which opens the section. A link
-out of the dashboard also meets its "leave site?" guard during a save, so
-features for signed-in users belong in the dashboard, not beside it.
+Profile keeps a short card (`app/dashboard/CreatorCard.tsx`): your link, Copy,
+and More, or one line and Learn more. The program itself lives on `/invite`:
+signed out, the pitch; signed in, your own program first (join form, or link,
+stats, progress to 40%, embed, payouts via `app/invite/CreatorArea.tsx`), then
+how it works. The founder asked for Profile not to carry the whole program.
+Links from the dashboard to it are client-side `Link`s: a full page load would
+meet the dashboard's "leave site?" guard while an autosave is running.
 
 ## The public site header
 
