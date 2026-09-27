@@ -12,14 +12,13 @@ import {
 } from "@/lib/referrals";
 import { Badge, Button, Icon, Slider } from "@/components/ui";
 import styles from "./InvitePitch.module.css";
-
-/** Where a signed-in user's creator program lives: Profile, section open. */
-export const CREATOR_DASHBOARD_PATH = "/dashboard?tab=profile&creator=1";
+import CreatorArea from "./CreatorArea";
 
 /**
- * The creator page (D-27): the public pitch. Signed-in visitors are sent to
- * Profile → Creator program in the dashboard, so the link a founder sends a
- * creator always works: pitch, sign up, then straight to getting a link.
+ * The creator page (D-27). Signed out: the pitch. Signed in: your own
+ * program first (the form to get a link, or your link, numbers and
+ * payouts), then how the program works. Profile keeps a small card that
+ * links here, so the dashboard isn't crowded with it.
  */
 export default function InviteClient() {
   const router = useRouter();
@@ -29,20 +28,24 @@ export default function InviteClient() {
     supabase.auth.getSession().then(({ data: { session } }) => setToken(session ? session.access_token : null));
   }, []);
 
-  // Signed in: the program lives in the dashboard, so the app never hands
-  // the user to a separate page (and its "leave site?" guard) to use it.
-  useEffect(() => {
-    if (token) router.replace(CREATOR_DASHBOARD_PATH);
-  }, [token, router]);
-
-  if (token !== null) return <p className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Loading…</p>;
-  return <Pitch onStart={() => { rememberReturnTo("/invite"); router.push("/login"); }} />;
+  if (token === undefined) return <p className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Loading…</p>;
+  if (token === null) return <Pitch onStart={() => { rememberReturnTo("/invite"); router.push("/login"); }} />;
+  return (
+    <div className={styles.pitch}>
+      <section className={styles.mine} aria-labelledby="mine">
+        <Link href="/dashboard?tab=profile" className="uf-t-small" style={{ color: "var(--uf-ink-3)", textDecoration: "none" }}>← Back to your dashboard</Link>
+        <h1 id="mine" className="uf-t-h1" style={{ margin: 0 }}>Your creator program</h1>
+        <CreatorArea />
+      </section>
+      <Pitch signedIn />
+    </div>
+  );
 }
 
 const perYear = PRO_ANNUAL_USD * 100;
 
 /** The public pitch: the offer, the ladder, what it could earn, the widget, readers, FAQ. */
-function Pitch({ onStart }: { onStart: () => void }) {
+function Pitch({ onStart, signedIn = false }: { onStart?: () => void; signedIn?: boolean }) {
   const [readers, setReaders] = useState(10);
   const estimate = firstYearEstimateCents(readers, perYear);
   const steps = [
@@ -58,19 +61,21 @@ function Pitch({ onStart }: { onStart: () => void }) {
   ];
   return (
     <div className={styles.pitch}>
-      <header className={styles.hero}>
-        <Badge tone="positive">For creators</Badge>
-        <h1 className={`uf-t-display ${styles.title}`}>Share a free calculator. Get paid when readers subscribe.</h1>
-        <div className={styles.offer} aria-label="The offer">
-          <div><span className={`uf-t-data ${styles.big}`}>{REFERRAL_RATE_LABEL}</span><span className="uf-t-small">of what they pay</span></div>
-          <div><span className={`uf-t-data ${styles.big}`}>{REFERRAL_MONTHS} mo</span><span className="uf-t-small">per reader</span></div>
-          <div><span className={`uf-t-data ${styles.big}`}>{REFERRED_TRIAL_LABEL.replace(" free", "")}</span><span className="uf-t-small">of Pro free for your readers</span></div>
-        </div>
-        <div className={styles.ctaRow}>
-          <Button variant="primary" size="lg" onClick={onStart}>Get your link</Button>
-          <Link href="/invite/terms" className="uf-t-small">Program terms</Link>
-        </div>
-      </header>
+      {!signedIn && (
+        <header className={styles.hero}>
+          <Badge tone="positive">For creators</Badge>
+          <h1 className={`uf-t-display ${styles.title}`}>Share a free calculator. Get paid when readers subscribe.</h1>
+          <div className={styles.offer} aria-label="The offer">
+            <div><span className={`uf-t-data ${styles.big}`}>{REFERRAL_RATE_LABEL}</span><span className="uf-t-small">of what they pay</span></div>
+            <div><span className={`uf-t-data ${styles.big}`}>{REFERRAL_MONTHS} mo</span><span className="uf-t-small">per reader</span></div>
+            <div><span className={`uf-t-data ${styles.big}`}>{REFERRED_TRIAL_LABEL.replace(" free", "")}</span><span className="uf-t-small">of Pro free for your readers</span></div>
+          </div>
+          <div className={styles.ctaRow}>
+            <Button variant="primary" size="lg" onClick={onStart}>Get your link</Button>
+            <Link href="/invite/terms" className="uf-t-small">Program terms</Link>
+          </div>
+        </header>
+      )}
 
       <section aria-labelledby="ladder">
         <h2 id="ladder" className="uf-t-h2">Earn more as you grow</h2>
@@ -129,9 +134,11 @@ function Pitch({ onStart }: { onStart: () => void }) {
         ))}
       </section>
 
-      <div className={styles.ctaRow}>
-        <Button variant="primary" size="lg" onClick={onStart}>Get your link</Button>
-      </div>
+      {!signedIn && (
+        <div className={styles.ctaRow}>
+          <Button variant="primary" size="lg" onClick={onStart}>Get your link</Button>
+        </div>
+      )}
     </div>
   );
 }

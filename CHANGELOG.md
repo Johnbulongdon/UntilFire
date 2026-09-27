@@ -9,9 +9,10 @@ under today's date, creating the heading if it is not there yet.
 ## 2026-09-27
 
 ### Creator program in the dashboard; a pitch page that shows the deal
-- Profile → Creator program opens in place (join, link, stats, embed,
-  payouts) instead of sending you to a separate page. Signed-in visitors to
-  `/invite` land there, with a progress bar to the 40% tier.
+- Profile → Creator program is a short card: your link, Copy and More.
+  More opens `/invite`, which for a signed-in user shows their own program
+  (join, link, stats, progress to the 40% tier, embed, payouts) above how it
+  works. The link stays inside the app, so no "leave site?" prompt.
 - `/invite` now shows the offer at a glance (30% · 12 months · 60 days for
   readers), the 30% → 40% → 10% ladder, an earnings estimate slider, the
   real calculator a creator can embed, what readers get, and a short FAQ.

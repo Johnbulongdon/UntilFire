@@ -64,3 +64,9 @@
   .step[data-step] { min-height: 0; }
   .kit { grid-template-columns: 1fr; }
 }
+
+/* Signed in: your own program, above how it works. */
+.mine {
+  display: grid; gap: var(--uf-s4); padding: var(--uf-s5);
+  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 18px;
+}

@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
-import { REFERRAL_RATE_LABEL } from "@/lib/referrals";
 import GiveAMonthCard from "./GiveAMonthCard";
-import CreatorArea from "@/app/invite/CreatorArea";
+import CreatorCard from "./CreatorCard";
 import SectionTitle from "./SectionTitle";
 import HouseholdSection from "./HouseholdSection";
 
@@ -72,14 +71,6 @@ export default function ProfileTab({
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [creatorOpen, setCreatorOpen] = useState(false);
-
-  // /invite sends signed-in users here with ?creator=1: open the section and bring it into view.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("creator") !== "1") return;
-    setCreatorOpen(true);
-    requestAnimationFrame(() => document.getElementById("creator-program")?.scrollIntoView({ block: "start" }));
-  }, []);
 
   useEffect(() => {
     async function load() {
@@ -449,28 +440,8 @@ export default function ProfileTab({
 
       <GiveAMonthCard cardStyle={cardStyle} />
 
-      {/* Creator program (D-27): opens here, so using it never leaves the app. */}
-      <section id="creator-program" style={cardStyle}>
-        <button
-          type="button"
-          aria-expanded={creatorOpen}
-          aria-controls="creator-program-body"
-          onClick={() => setCreatorOpen((o) => !o)}
-          style={{ all: "unset", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, width: "100%" }}
-        >
-          <span>
-            <SectionTitle icon="megaphone" style={{ margin: "0 0 4px" }}>Creator program</SectionTitle>
-            <span style={{ display: "block", fontSize: 13, color: "var(--uf-ink-2)", paddingLeft: 40 }}>Share UntilFire and earn {REFERRAL_RATE_LABEL} of what your readers pay for a year.</span>
-          </span>
-          <span aria-hidden="true" style={{ color: "var(--uf-green)", fontWeight: 700, transform: creatorOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>→</span>
-        </button>
-        {creatorOpen && (
-          <div id="creator-program-body" style={{ marginTop: 16, display: "grid", gap: 12 }}>
-            <CreatorArea />
-            <a href="/invite" className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>How the program works</a>
-          </div>
-        )}
-      </section>
+      {/* Creator program (D-27): a short card; the full program lives on /invite. */}
+      <CreatorCard cardStyle={cardStyle} />
 
       {/* Connected Banks */}
       <div style={cardStyle}>
