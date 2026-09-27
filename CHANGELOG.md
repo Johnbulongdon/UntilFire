@@ -8,6 +8,15 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-27
 
+### Embeddable calculator: sliders and a growth curve
+- `/embed/<code>` shows the freedom year first, then a curve of invested
+  money rising to the dashed target line, then three sliders (take-home,
+  spending, invested). The footer is one line: the reader's trial, "by
+  UntilFire" and an "estimate" note whose assumptions show on hover. Fits
+  the 520px snippet on phones and wide blog columns.
+- `freedomPath` in `lib/quick-freedom.ts` draws the curve from the same
+  growth and target as the year; test:referrals checks they end together.
+
 ### Calculators page, shorter and grouped
 - `/calculators` groups the nine calculators by the question they answer,
   one line each, instead of long cards. The internal "how these fit
@@ -22,6 +31,11 @@ under today's date, creating the heading if it is not there yet.
   The per-stage paragraphs, tool sidebars and city cards are gone, no
   article repeats, and the page uses the warm site style. All four stages
   stay in the HTML for search.
+- Calculator links say where they go: "Safe Withdrawal Calculator" (six
+  places, all opening the FIRE Number calculator, which sets the
+  withdrawal rate) is now "FIRE Number Calculator". Approaching FIRE
+  points to the full FIRE Calculator, so stages 3 and 4 no longer share
+  one link.
 
 ### One header across the public site
 - Every public page now has the homepage's top bar: logo, How it works,

@@ -14,7 +14,7 @@ import {
 import { claimReferral, recordReferralCommission, reverseReferralCommission, applyPendingCredits, friendLinkFor } from '../lib/referrals-server.ts';
 import { FRIEND_CREDIT_CENTS, friendCode } from '../lib/referrals.ts';
 import { PRO_MONTHLY_USD } from '../lib/pricing.ts';
-import { quickFreedom } from '../lib/quick-freedom.ts';
+import { freedomPath, quickFreedom } from '../lib/quick-freedom.ts';
 import { yearsToTarget } from '../lib/fire/strategies/traditional.ts';
 
 const checks = [];
@@ -194,6 +194,9 @@ check('friend credits are private, like the rest', read('supabase/migrations/004
   check('embed: 25× spending, the shared projection, whole years to the year', r.target === 900000 && Math.abs(r.years - years) < 1e-9 && r.year === 2026 + Math.ceil(years) && Math.round(r.savingsRate * 100) === 40, JSON.stringify(r));
   check('embed: spending above income never reaches it', quickFreedom({ monthlyIncome: 2000, monthlySpending: 3000, invested: 0 }, now).year === null);
   check('embed: already there is year zero', quickFreedom({ monthlyIncome: 5000, monthlySpending: 1000, invested: 400000 }, now).years === 0);
+  const path = freedomPath({ monthlyIncome: 5000, monthlySpending: 3000, invested: 25000 });
+  check('embed: the curve ends on the freedom year, at the target', path.length - 1 === Math.ceil(years) && path[path.length - 1] >= 900000 && path[path.length - 2] < 900000, path.length);
+  check('embed: a curve that never arrives stops at 65 years', freedomPath({ monthlyIncome: 2000, monthlySpending: 3000, invested: 0 }).length === 66);
 }
 const mw = read('middleware.ts');
 check('only /embed/ can be framed; everything else stays DENY', mw.includes('pathname.startsWith("/embed/")') && mw.includes('"frame-ancestors *"') && mw.includes('"X-Frame-Options", "DENY"'));
