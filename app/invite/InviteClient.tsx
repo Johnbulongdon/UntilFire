@@ -164,6 +164,8 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
         {p.status === "paused" && <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)", width: "100%" }}>Paused: this link isn&apos;t earning right now. Email hello@untilfire.com.</span>}
       </Card>
 
+      <EmbedSnippet code={p.code} />
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "var(--uf-s4)" }}>
         <Stat label="Visits" value={s.visits.toLocaleString()} />
         <Stat label="Signups" value={s.signups.toLocaleString()} />
@@ -230,5 +232,34 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
         {REFERRAL_RATE_LABEL} of each payment in a reader&apos;s first {REFERRAL_MONTHS} months, {REFERRAL_TAIL_RATE_LABEL} after. Say it&apos;s an affiliate link. <Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
       </p>
     </div>
+  );
+}
+
+/**
+ * The calculator for a creator's own post (D-27). The iframe is the tool;
+ * the plain link under it is what search engines count, and both go through
+ * the creator's /r/ link so readers who continue are credited to them.
+ */
+function EmbedSnippet({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const snippet =
+    `<iframe src="https://www.untilfire.com/embed/${code}" title="Freedom date calculator" width="100%" height="520" style="border:0;border-radius:12px" loading="lazy"></iframe>\n` +
+    `<p><a href="https://www.untilfire.com/r/${code}">Freedom date calculator by UntilFire</a></p>`;
+  return (
+    <Card style={{ display: "grid", gap: "var(--uf-s3)" }}>
+      <div>
+        <h2 className="uf-t-h3" style={{ margin: 0 }}>Put the calculator in your post</h2>
+        <p className="uf-t-small" style={{ margin: "var(--uf-s1) 0 0", color: "var(--uf-ink-2)" }}>
+          Readers get their freedom year right on your page. Anyone who continues is credited to you.
+        </p>
+      </div>
+      <pre className="uf-t-data" style={{ margin: 0, padding: "var(--uf-s3)", background: "var(--uf-surface)", borderRadius: 8, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{snippet}</pre>
+      <div style={{ display: "flex", gap: "var(--uf-s3)", alignItems: "center", flexWrap: "wrap" }}>
+        <Button variant="secondary" size="sm" onClick={() => { navigator.clipboard?.writeText(snippet).then(() => setCopied(true)).catch(() => {}); }}>
+          {copied ? "Copied ✓" : "Copy embed code"}
+        </Button>
+        <a href={`/embed/${code}`} target="_blank" rel="noopener" className="uf-t-small" style={{ color: "var(--uf-green)" }}>Preview</a>
+      </div>
+    </Card>
   );
 }

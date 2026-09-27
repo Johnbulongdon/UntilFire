@@ -19,6 +19,11 @@ under today's date, creating the heading if it is not there yet.
 - Profile links to the program. Sign-in can now return to `/invite`. D-27.
 - Readers who come through a creator's link get Pro 60 days free instead of
   30, and the landing page and upgrade screen say so.
+- Creators can put a freedom-year calculator in their own posts
+  (`/embed/<code>`, copy the code from `/invite`); readers who continue are
+  credited to them.
+- "Give a month, get a month" in Profile: friends get Pro 60 days free, and
+  when one subscribes the sharer gets a month free, taken off their next bill.
 - Creators see readers in their free trial and what they could earn, get
   their first payout at any amount, earn 40% from their 10th paying customer,
   and 10% for as long as a customer stays after their first year.

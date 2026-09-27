@@ -39,6 +39,22 @@ export const REFERRAL_TIER_CUSTOMERS = 10;
 export const REFERRAL_TAIL_RATE_BPS = 1000;
 export const REFERRAL_TAIL_RATE_LABEL = "10%";
 
+/**
+ * "Give a month, get a month" (D-27): the credit a user earns when a friend
+ * they invited first pays. One month of the monthly plan, $9, whichever plan
+ * the user is on. Kept here, not imported from pricing, so this module stays
+ * import-free; test:referrals checks the two agree.
+ */
+export const FRIEND_CREDIT_CENTS = 900;
+
+/** A friend link's code: "f-" and eight letters or digits, readable aloud. */
+export function friendCode(random: () => number = Math.random): string {
+  const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+  let out = "f-";
+  for (let i = 0; i < 8; i++) out += alphabet[Math.floor(random() * alphabet.length)];
+  return out;
+}
+
 export type PayoutMethod = "paypal" | "wise";
 export type CommissionStatus = "pending" | "payable" | "paid" | "reversed";
 

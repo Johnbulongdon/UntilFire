@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
 import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { REFERRAL_RATE_LABEL } from "@/lib/referrals";
+import GiveAMonthCard from "./GiveAMonthCard";
 import HouseholdSection from "./HouseholdSection";
 
 interface PlaidItem {
@@ -435,6 +436,8 @@ export default function ProfileTab({
           </p>
         )}
       </div>
+
+      <GiveAMonthCard cardStyle={cardStyle} />
 
       {/* Creator program (D-27): the way in for existing users who write or post. */}
       <a href="/invite" style={{ ...cardStyle, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit" }}>

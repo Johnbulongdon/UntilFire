@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
     // Creator referrals (D-27). Money collected earns the referring creator
     // their share; a refund or a dispute takes it back before it is paid.
     case "invoice.paid": {
-      const result = await recordReferralCommission(supabaseAdmin, event.data.object as Stripe.Invoice);
+      const result = await recordReferralCommission(supabaseAdmin, event.data.object as Stripe.Invoice, stripe);
       if (result.startsWith("error")) console.error("[webhook] referral commission:", result);
       break;
     }
