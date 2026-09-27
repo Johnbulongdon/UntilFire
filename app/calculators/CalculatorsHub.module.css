@@ -1,0 +1,41 @@
+.page { background: var(--uf-ground); min-height: 100vh; color: var(--uf-ink); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: var(--uf-s7) var(--uf-s5) var(--uf-s7); }
+
+.hero { display: grid; gap: var(--uf-s3); margin-bottom: var(--uf-s7); }
+
+.group { margin-bottom: var(--uf-s6); }
+.groupTitle { display: flex; align-items: center; gap: var(--uf-s3); margin: 0 0 var(--uf-s4); }
+.groupIcon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--uf-surface); color: var(--uf-green);
+}
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--uf-s3); }
+.card {
+  position: relative; display: grid; gap: var(--uf-s1);
+  padding: var(--uf-s4) var(--uf-s7) var(--uf-s4) var(--uf-s4);
+  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 14px;
+  color: var(--uf-ink); text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.card:hover { border-color: var(--uf-green); transform: translateY(-1px); }
+.card:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 2px; }
+.arrow { position: absolute; right: var(--uf-s4); top: 50%; transform: translateY(-50%); color: var(--uf-green); font-weight: 700; }
+
+.cities { margin: var(--uf-s6) 0; color: var(--uf-ink-2); }
+.cities a { color: var(--uf-green); font-weight: 700; text-decoration: none; }
+
+.faq { border-top: 1px solid var(--uf-border); padding-top: var(--uf-s6); }
+.qa { border-bottom: 1px solid var(--uf-border); padding: var(--uf-s4) 0; }
+.qa summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: var(--uf-s4); }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary::after { content: "+"; color: var(--uf-ink-3); font-weight: 400; }
+.qa[open] summary::after { content: "−"; }
+
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
+@media (max-width: 600px) {
+  .wrap { padding: var(--uf-s6) var(--uf-s4) var(--uf-s7); }
+  .hero { margin-bottom: var(--uf-s6); }
+  .title { font-size: 40px; }
+}
