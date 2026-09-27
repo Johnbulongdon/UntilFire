@@ -3207,7 +3207,7 @@ export default function HomeClient() {
       `}</style>
 
       {screen === "hero" ? (
-        <LandingPage onStart={() => setScreen("city")} signedIn={signedIn} />
+        <LandingPage onStart={() => setScreen("city")} signedIn={signedIn} referred={!!landingSource?.startsWith("ref-")} />
       ) : (
       <>
       {/* The reveal is a full-screen takeover with its own top bar + progress,

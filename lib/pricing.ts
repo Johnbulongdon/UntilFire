@@ -36,6 +36,13 @@ export const STRIPE_PRICE_IDS = {
 /** Stripe's trial_period_days, granted to first-time subscribers only. */
 export const TRIAL_DAYS = 30;
 export const TRIAL_LABEL = "30 days free";
+/**
+ * Readers who arrive through a creator's link get twice the trial (D-27): it
+ * gives the creator something to announce, and costs only the running cost
+ * of a trial account, not cash.
+ */
+export const REFERRED_TRIAL_DAYS = 60;
+export const REFERRED_TRIAL_LABEL = "60 days free";
 
 export type BillingInterval = "month" | "year";
 

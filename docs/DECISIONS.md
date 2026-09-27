@@ -873,6 +873,64 @@ the price from the subscription itself, so grandfathered subscribers see $3.
 monthly/annual split. If almost nobody converts, test $6 before assuming the
 product needs to be free.
 
+### D-27 — September 26: creators earn 30% of what their referrals pay for 12 months
+
+**Status:** Active. Authorised by the founder on 2026-09-26: "build the
+referral program at thirty percent for twelve months … the invite page to the
+dashboard … in my admin view … manual monthly PayPal or Wise payouts."
+Replaces the larger plan in Codex's #160 for now.
+**Decision:** A creator gets a link, `untilfire.com/r/<code>`, from
+`/invite`. A new account created within 60 days of a click is attributed to
+them for good. They earn 30% of each payment that customer makes, excluding
+tax, for the 12 months from the customer's first payment. Only collected money
+counts (`invoice.paid`); a free trial earns nothing. Earnings are held 30 days
+and reversed by a refund or dispute in that time. The founder pays by PayPal
+or Wise, monthly, once $20 is payable, and records the transfer id in
+`/admin` → Referrals.
+**Improvements, same day** (after the founder asked what successful
+referral programs do differently; "I like one, two, three, four, five"):
+- *Two-sided:* readers who sign up through a creator's link get Pro 60 days
+  free instead of 30 (`REFERRED_TRIAL_DAYS`), so the creator has something to
+  announce. It costs a trial account's running cost, not cash.
+- *Momentum before money:* the creator dashboard counts readers in their
+  free trial and what they would earn on the yearly plan, and a creator's
+  first payout goes out at any amount (the $20 minimum applies after).
+- *Growth steps:* 40% from a creator's 10th paying customer on, and 10% of
+  each payment after a customer's first year, for as long as they pay. At
+  $9 the business keeps $3.34 a month at 40% and $6.04 at 10%.
+The embeddable calculator (creator link built in) and "give a month, get a
+month" for users follow as separate PRs.
+
+**Why 30%:** at $9 a month the business keeps about $6.94 a month per
+customer (D-26). 30% is $2.70, leaving $4.24 in year one and the full $6.94
+after. At the old $3 price even 20% left a creator about $0.60 a month. A
+creator earns about $20–30 per paying customer in year one.
+**Why this size:** #160 proposed about ten tables, an application review
+queue, an outreach CRM and four PRs for five partners. This keeps what money
+needs to be right (collected-invoice commissions, idempotency by invoice id,
+refunds, integer cents, a snapshotted rate, an amount check on payout) and
+drops what can wait (applications, outreach tracking, statements, automated
+payouts). Anyone signed in can join; the founder can pause a creator.
+**Privacy:** five service-role-only tables (RLS on, no policies). A creator's
+dashboard shows counts and sums, never who they referred. Visits store only
+the creator and the time. `landing_source = ref-<code>` gives each creator's
+funnel in PostHog without new events.
+**Where:** rules and numbers in `lib/referrals.ts`; writes in
+`lib/referrals-server.ts`; `app/r/[code]`, `app/invite`, `/invite/terms`,
+`/api/referrals/{claim,me}`, `/api/admin/referrals`, the Stripe webhook's
+`invoice.paid`, `charge.refunded` and `charge.dispute.created` cases.
+**Release steps:** apply `0043_referrals.sql`, and add the three events to
+the Stripe webhook endpoint.
+**Limits:** attribution is per browser (a cookie); a click on a phone and a
+signup on a laptop is not attributed. A partial refund reverses the whole
+commission for that invoice. The terms page is plain-language and should be
+reviewed for the founder's jurisdiction before the first payout.
+**Guardrails:** `test:referrals` runs the rules and the claim, commission and
+reversal paths against an in-memory database, and checks RLS, the closed
+redirect and the admin checks.
+**Revisit:** after the first three paying referrals, or if a creator asks for
+self-serve statements.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,

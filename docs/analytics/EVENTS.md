@@ -73,6 +73,10 @@ Do not wire a new screen to `step_id=currency`.
 - `learn-fire-meaning` labels the link from the quick FIRE number box in the
   "What does FIRE mean?" article into the main calculator. It uses the same
   path and passes no amounts.
+- `ref-<code>` labels a visit through a creator's referral link
+  (`/r/<code>`, D-27). It uses the same path, so each creator's funnel is a
+  `landing_source` filter with no new events. The code is the creator's public
+  handle, not a person's identity, and nothing about the visitor is attached.
 
 ## Person properties
 
