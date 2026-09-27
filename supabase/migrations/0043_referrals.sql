@@ -86,4 +86,4 @@ ALTER TABLE referral_payouts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE referral_commissions ENABLE ROW LEVEL SECURITY;
 
 COMMENT ON TABLE referral_partners IS 'Creators in the referral program (D-27). Service-role only.';
-COMMENT ON TABLE referral_commissions IS 'One row per collected invoice from a referred customer inside their 12-month window. Integer cents. Service-role only.';
+COMMENT ON TABLE referral_commissions IS 'One row per collected invoice from a referred customer: 30% or 40% in their first 12 months of paying, 10% after. Integer cents. Service-role only.';
