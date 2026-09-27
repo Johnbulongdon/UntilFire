@@ -1,72 +1,106 @@
-.pitch { display: grid; gap: var(--uf-s7); color: var(--uf-ink); }
-.pitch h2 { margin: 0 0 var(--uf-s4); }
+/* /invite, design B ("night"): a dark hero whose only bright thing is the
+   key visual, so the eye lands there first; the details follow on light
+   bands, and a dark band closes. Content sits in .inner. */
+.inner { max-width: 1040px; margin: 0 auto; padding-left: var(--uf-s5); padding-right: var(--uf-s5); }
 
-.hero { display: grid; gap: var(--uf-s4); justify-items: start; }
-.title { margin: 0; max-width: 760px; }
+/* ── Hero ── */
+.heroBand {
+  position: relative; overflow: hidden; padding: var(--uf-s7) 0 calc(var(--uf-s7) + 8px); color: #F2F7F4;
+  background: radial-gradient(1200px 600px at 80% -10%, rgba(79, 70, 229, 0.35), transparent 60%), radial-gradient(900px 500px at 0% 0%, rgba(34, 211, 165, 0.30), transparent 60%), #0B1512;
+}
+.glowA, .glowB { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; opacity: 0.6; }
+.glowA { width: 720px; height: 560px; top: -220px; left: -200px; background: radial-gradient(circle at 40% 40%, rgba(34, 211, 165, 0.7), transparent 65%); animation: drift1 24s ease-in-out infinite; }
+.glowB { width: 680px; height: 560px; top: -120px; right: -240px; background: radial-gradient(circle at 55% 45%, rgba(79, 70, 229, 0.45), transparent 65%); animation: drift2 30s ease-in-out infinite; }
+/* A faint dot grid that fades out: texture without noise. */
+.dots {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1.2px); background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 60% at 30% 40%, #000 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 30% 40%, #000 20%, transparent 75%);
+}
+@keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(50px, 34px) scale(1.09); } }
+@keyframes drift2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-44px, -28px) scale(1.06); } }
+
+.heroWrap { position: relative; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: var(--uf-s6); align-items: center; }
+.hero { display: grid; gap: var(--uf-s4); justify-items: start; min-width: 0; }
+.title { margin: 0; font-size: 52px; color: #fff; }
 
 .offer {
   display: grid; grid-template-columns: repeat(3, 1fr); width: 100%;
-  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 18px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.06); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; overflow: hidden;
 }
-.offer > div { display: grid; gap: var(--uf-s1); padding: var(--uf-s5); color: var(--uf-ink-2); }
-.offer > div + div { border-left: 1px solid var(--uf-border); }
-.big { font-size: 40px; font-weight: 700; line-height: 1; color: var(--uf-teal); }
+.offer > div { display: grid; gap: 2px; padding: var(--uf-s4); color: rgba(242, 247, 244, 0.7); }
+.offer > div + div { border-left: 1px solid rgba(255, 255, 255, 0.12); }
+.big { font-size: 28px; font-weight: 700; line-height: 1.1; color: #5EE0C3; white-space: nowrap; }
 
 .ctaRow { display: flex; align-items: center; gap: var(--uf-s4); flex-wrap: wrap; }
-.ctaRow a { color: var(--uf-ink-2); }
+.ctaRow a { color: rgba(242, 247, 244, 0.7); }
 
-/* Three rising steps: the ladder is the point, so its height says it. */
-.ladder { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--uf-s3); align-items: end; }
-.step {
-  display: grid; gap: var(--uf-s1); align-content: end; padding: var(--uf-s4);
-  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 14px;
+/* Key visual: a creator's post with the live calculator, and a payout toast. */
+.visual { position: relative; padding: 0 0 var(--uf-s5) var(--uf-s5); }
+.browser {
+  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 14px; overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(94, 224, 195, 0.25); transform: rotate(1.2deg);
 }
-.step[data-step="0"] { min-height: 150px; }
-.step[data-step="1"] { min-height: 200px; background: var(--uf-teal-soft); border-color: var(--uf-teal-line); }
-.step[data-step="2"] { min-height: 120px; }
-.stepRate { font-size: 34px; font-weight: 700; color: var(--uf-teal); line-height: 1; }
-
-.estimate {
-  display: grid; gap: var(--uf-s3); padding: var(--uf-s5);
-  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 18px;
+.browserBar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: var(--uf-surface); border-bottom: 1px solid var(--uf-border); }
+.browserBar span { width: 9px; height: 9px; border-radius: 99px; background: var(--uf-border-2); }
+.browserBar em { font-style: normal; font-size: 11px; color: var(--uf-ink-3); margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.post { display: grid; gap: 7px; padding: 14px 14px 0; }
+.post b { font-family: var(--uf-font-display); font-size: 16px; color: var(--uf-ink); }
+.post i { display: block; height: 7px; border-radius: 99px; background: var(--uf-surface); }
+.embedScale { height: 364px; overflow: hidden; margin-top: 6px; }
+.embedScale iframe { width: calc(100% / 0.7); height: 520px; border: 0; transform: scale(0.7); transform-origin: 0 0; pointer-events: none; }
+.toast {
+  position: absolute; left: 0; bottom: 0; display: grid; gap: 1px; padding: 10px 14px;
+  background: var(--uf-card); border: 1px solid var(--uf-teal-line); border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(34, 27, 18, 0.18); color: var(--uf-ink-2);
+  animation: toastIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both;
 }
-.estimate h2 { margin: 0; }
-.estimateNum { font-size: 44px; font-weight: 700; color: var(--uf-teal); }
+.toastAmount { font-size: 20px; font-weight: 700; color: var(--uf-teal); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-.kit { display: grid; grid-template-columns: 1fr 360px; gap: var(--uf-s6); align-items: start; }
-.kit p { margin: 0 0 var(--uf-s4); }
-.kitList { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--uf-s3); }
-.kitList li { display: flex; gap: var(--uf-s2); align-items: center; color: var(--uf-ink-2); }
-.kitList svg { color: var(--uf-green); }
-.frame { width: 100%; height: 520px; border: 1px solid var(--uf-border); border-radius: 14px; background: var(--uf-card); }
+/* ── The money, on a light band under the dark hero ── */
+.earnBand { background: var(--uf-surface); padding: var(--uf-s7) 0; }
+.earn { display: grid; grid-template-columns: 1fr 1fr; gap: var(--uf-s4); }
+.panel { display: grid; gap: var(--uf-s3); align-content: start; padding: var(--uf-s5); background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 16px; }
+.panel h2 { margin: 0; }
+.ladder { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--uf-s3); }
+.ladder li { display: grid; grid-template-columns: 56px 1fr; grid-template-rows: auto auto; column-gap: var(--uf-s3); row-gap: 3px; align-items: center; color: var(--uf-ink-2); }
+.rate { grid-row: span 2; font-size: 24px; font-weight: 700; color: var(--uf-teal); }
+.bar { height: 8px; border-radius: 99px; background: var(--uf-surface); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #22D3A5, #5EE0C3); }
+.estimateNum { font-size: 40px; font-weight: 700; color: var(--uf-teal); }
 
-.readers { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--uf-s3); }
-.readers > div {
-  display: grid; gap: var(--uf-s1); padding: var(--uf-s4); align-content: start;
-  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 14px; color: var(--uf-ink-2);
-}
-.readers svg { color: var(--uf-green); margin-bottom: var(--uf-s1); }
-.readers b { color: var(--uf-ink); }
+/* ── What you get ── */
+.tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--uf-s3); }
+.tiles li { display: grid; gap: 4px; align-content: start; padding: var(--uf-s4); background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 14px; color: var(--uf-ink-2); }
+.tiles b { color: var(--uf-ink); margin-top: var(--uf-s2); }
+.chip { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: var(--uf-green-50); color: var(--uf-green); }
 
-.qa { border-bottom: 1px solid var(--uf-border); padding: var(--uf-s4) 0; }
+.qa { border-bottom: 1px solid var(--uf-border); padding: var(--uf-s3) 0; }
 .qa summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: var(--uf-s4); }
 .qa summary::-webkit-details-marker { display: none; }
 .qa summary::after { content: "+"; color: var(--uf-ink-3); font-weight: 400; }
 .qa[open] summary::after { content: "−"; }
 
-@media (max-width: 760px) {
-  .pitch { gap: var(--uf-s6); }
-  .title { font-size: 36px; }
-  .offer { grid-template-columns: 1fr; }
-  .offer > div + div { border-left: 0; border-top: 1px solid var(--uf-border); }
-  .big { font-size: 32px; }
-  .ladder, .readers { grid-template-columns: 1fr; }
-  .step[data-step] { min-height: 0; }
-  .kit { grid-template-columns: 1fr; }
-}
+/* ── Close ── */
+.closeBand { background: radial-gradient(800px 300px at 20% 100%, rgba(34, 211, 165, 0.35), transparent 60%), #0B1512; color: #fff; padding: var(--uf-s7) 0; }
+.close { display: flex; align-items: center; justify-content: space-between; gap: var(--uf-s5); flex-wrap: wrap; }
+.close h2 { color: #fff; max-width: 560px; }
 
 /* Signed in: your own program, above how it works. */
-.mine {
-  display: grid; gap: var(--uf-s4); padding: var(--uf-s5);
-  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 18px;
+.mine { display: grid; gap: var(--uf-s4); padding: var(--uf-s5); background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 16px; }
+
+@media (prefers-reduced-motion: reduce) { .glowA, .glowB, .toast { animation: none; } }
+@media (max-width: 860px) {
+  .inner { padding-left: var(--uf-s4); padding-right: var(--uf-s4); }
+  .heroBand { padding-top: var(--uf-s6); }
+  .title { font-size: 32px; }
+  .offer > div { padding: var(--uf-s3); }
+  .big { font-size: 22px; }
+  .heroWrap, .earn { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .visual { padding-left: var(--uf-s3); }
+  .browser { transform: none; }
 }

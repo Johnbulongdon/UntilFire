@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
-  formatCents, REFERRAL_HOLD_DAYS, REFERRAL_MIN_PAYOUT_CENTS, REFERRAL_MONTHS,
-  REFERRAL_RATE_LABEL, REFERRAL_TAIL_RATE_LABEL, REFERRAL_TIER_CUSTOMERS, REFERRAL_TIER_RATE_LABEL, type PayoutMethod,
+  formatCents, REFERRAL_HOLD_DAYS, REFERRAL_MIN_PAYOUT_CENTS,
+  REFERRAL_TIER_CUSTOMERS, REFERRAL_TIER_RATE_LABEL, type PayoutMethod,
 } from "@/lib/referrals";
 import { Button, Card, Field, Input, Progress, SegmentedControl, Stat } from "@/components/ui";
 
@@ -137,7 +137,7 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
       </div>
       {s.inTrial > 0 && (
         <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-          {s.inTrial === 1 ? "1 reader is" : `${s.inTrial} readers are`} trying Pro. If they subscribe yearly, that&apos;s about <b>{formatCents(s.inTrialWorthCents)}</b> for you in their first year.
+          {s.inTrial === 1 ? "1 reader" : `${s.inTrial} readers`} on a free trial: about <b>{formatCents(s.inTrialWorthCents)}</b> if they subscribe yearly.
         </p>
       )}
       <Progress
@@ -154,10 +154,10 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
         </div>
         <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
           {s.readyToPay
-            ? `Goes out in this month's payout to your ${methodName(p.payout_method)}.`
+            ? `In this month's payout to your ${methodName(p.payout_method)}.`
             : s.paid > 0
-              ? `Earnings are held ${REFERRAL_HOLD_DAYS} days for refunds, then paid monthly once ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)} is ready.`
-              : `Earnings are held ${REFERRAL_HOLD_DAYS} days for refunds. Your first payout goes out at any amount.`}
+              ? `${REFERRAL_HOLD_DAYS}-day refund hold, then paid monthly from ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)}.`
+              : `${REFERRAL_HOLD_DAYS}-day refund hold. First payout at any amount.`}
         </p>
       </Card>
 
@@ -191,7 +191,7 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
         </p>
       )}
       <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-3)" }}>
-        {REFERRAL_RATE_LABEL} of each payment in a reader&apos;s first {REFERRAL_MONTHS} months, {REFERRAL_TAIL_RATE_LABEL} after. Say it&apos;s an affiliate link. <Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
+        Say it&apos;s an affiliate link. <Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
       </p>
     </div>
   );
@@ -212,7 +212,7 @@ function EmbedSnippet({ code }: { code: string }) {
       <div>
         <h2 className="uf-t-h3" style={{ margin: 0 }}>Put the calculator in your post</h2>
         <p className="uf-t-small" style={{ margin: "var(--uf-s1) 0 0", color: "var(--uf-ink-2)" }}>
-          Readers get their freedom year right on your page. Anyone who continues is credited to you.
+          Readers get their freedom year on your page; anyone who continues is yours.
         </p>
       </div>
       <pre className="uf-t-data" style={{ margin: 0, padding: "var(--uf-s3)", background: "var(--uf-surface)", borderRadius: 8, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{snippet}</pre>
