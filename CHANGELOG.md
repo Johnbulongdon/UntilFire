@@ -8,6 +8,21 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-27
 
+### Calculators page, shorter and grouped
+- `/calculators` groups the nine calculators by the question they answer,
+  one line each, instead of long cards. The internal "how these fit
+  together" note and the city cards are gone (one link to FIRE number by
+  city instead); the FAQ is three collapsed questions. About a third of
+  the old length.
+
+### Learn page, one stage at a time
+- `/learn` opens with four stage buttons (Starting Out, Building Momentum,
+  Approaching FIRE, Living in FIRE). Each stage shows one line, three reads
+  by title and read time, one calculator and a link to the full stage page.
+  The per-stage paragraphs, tool sidebars and city cards are gone, no
+  article repeats, and the page uses the warm site style. All four stages
+  stay in the HTML for search.
+
 ### One header across the public site
 - Every public page now has the homepage's top bar: logo, How it works,
   Calculators, Learn, Pricing, and Get started (Dashboard when signed in).

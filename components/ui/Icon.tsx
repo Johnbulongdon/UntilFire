@@ -19,7 +19,8 @@ import React from "react";
 
 export type IconName =
   | "home" | "money" | "plan" | "profile"
-  | "critical" | "warning" | "info" | "positive";
+  | "critical" | "warning" | "info" | "positive"
+  | "calendar" | "target";
 
 /** Path geometry only. Stroke, size and colour are applied by the component. */
 export const ICON_PATHS: Record<IconName, string> = {
@@ -33,6 +34,9 @@ export const ICON_PATHS: Record<IconName, string> = {
   warning: '<circle cx="12" cy="12" r="9"/><path d="M12 7.2v5.5M12 16.3v.1"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 10.8v5.4M12 7.7v.1"/>',
   positive: '<path d="M4.2 12.6l4.8 4.8L19.8 6.6"/>',
+  // Public calculator groups (/calculators): "when" and "on track".
+  calendar: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6"/>',
 };
 
 export interface IconProps extends Omit<React.SVGProps<SVGSVGElement>, "name"> {
