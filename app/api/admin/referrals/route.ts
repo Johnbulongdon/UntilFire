@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin-auth";
-import { commissionStatus, readyToPay, REFERRAL_MIN_PAYOUT_CENTS, summarise } from "@/lib/referrals";
+import { commissionStatus, normaliseCode, readyToPay, REFERRAL_MIN_PAYOUT_CENTS, summarise } from "@/lib/referrals";
 
 export const dynamic = "force-dynamic";
 
@@ -14,13 +14,14 @@ export async function GET(req: NextRequest) {
   if ("error" in auth) return auth.error;
   const { admin } = auth;
 
-  const [partners, visits, attributions, commissions, payouts, users] = await Promise.all([
+  const [partners, visits, attributions, commissions, payouts, users, holds] = await Promise.all([
     admin.from("referral_partners").select("*").eq("kind", "creator").order("created_at", { ascending: false }),
     admin.from("referral_visits").select("partner_id"),
     admin.from("referral_attributions").select("partner_id"),
     admin.from("referral_commissions").select("id, partner_id, referred_user_id, collected_cents, commission_cents, status, earned_at, payable_at, reversed_reason").order("earned_at", { ascending: false }),
     admin.from("referral_payouts").select("partner_id, amount_cents, method, reference, paid_at").order("paid_at", { ascending: false }),
     admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    admin.from("referral_code_holds").select("code, email, note, created_at").order("created_at", { ascending: false }),
   ]);
   if (partners.error) return NextResponse.json({ error: partners.error.message }, { status: 500 });
 
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     minPayoutCents: REFERRAL_MIN_PAYOUT_CENTS,
+    holds: holds.data ?? [],
     partners: (partners.data ?? []).map((p) => {
       const rows = (commissions.data ?? []).filter((c) => c.partner_id === p.id);
       return {
@@ -62,6 +64,9 @@ export async function GET(req: NextRequest) {
  *     record a transfer already sent, covering every payable commission
  * { action: "status", partnerId, status }     pause or reactivate a creator
  * { action: "reverse", commissionId, reason } take back one unpaid commission
+ * { action: "remove", partnerId }             a creator who broke the terms
+ * { action: "hold", code, email, note }       keep a code for a pitched creator
+ * { action: "release", code }                 drop a hold
  */
 export async function POST(req: NextRequest) {
   const auth = await requireAdminUser(req);
@@ -71,7 +76,44 @@ export async function POST(req: NextRequest) {
 
   if (body?.action === "status") {
     if (body.status !== "active" && body.status !== "paused") return NextResponse.json({ error: "Bad status" }, { status: 400 });
-    const { error } = await admin.from("referral_partners").update({ status: body.status }).eq("id", String(body.partnerId));
+    // A removed creator stays removed.
+    const { error } = await admin.from("referral_partners").update({ status: body.status }).eq("id", String(body.partnerId)).neq("status", "removed");
+    return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true });
+  }
+
+  if (body?.action === "remove") {
+    // Impersonation or spam (the terms' "Honest promotion"): the link stops,
+    // the code is freed for its real owner, and unpaid earnings are forfeited.
+    const id = String(body.partnerId);
+    const { data: removed, error } = await admin
+      .from("referral_partners")
+      .update({ status: "removed", code: `removed-${id.slice(0, 8)}` })
+      .eq("id", id)
+      .neq("status", "removed")
+      .select("id");
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!removed?.length) return NextResponse.json({ error: "Already removed." }, { status: 409 });
+    await admin
+      .from("referral_commissions")
+      .update({ status: "reversed", reversed_at: new Date().toISOString(), reversed_reason: "creator removed for breaking the terms" })
+      .eq("partner_id", id)
+      .eq("status", "pending");
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body?.action === "hold") {
+    const code = normaliseCode(String(body.code ?? ""));
+    const email = String(body.email ?? "").trim().toLowerCase();
+    if (!code) return NextResponse.json({ error: "Not a usable code." }, { status: 400 });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Enter the email they will sign up with." }, { status: 400 });
+    const { data: taken } = await admin.from("referral_partners").select("id").eq("code", code).maybeSingle();
+    if (taken) return NextResponse.json({ error: "Someone already has that code. Remove them first if it isn't theirs." }, { status: 409 });
+    const { error } = await admin.from("referral_code_holds").upsert({ code, email, note: String(body.note ?? "").slice(0, 200) || null });
+    return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true, code });
+  }
+
+  if (body?.action === "release") {
+    const { error } = await admin.from("referral_code_holds").delete().eq("code", String(body.code));
     return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true });
   }
 

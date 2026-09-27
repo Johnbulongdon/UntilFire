@@ -73,9 +73,12 @@ export async function recordReferralCommission(admin: Admin, invoice: Stripe.Inv
   // A friend's link earns the person who shared it a free month, not cash.
   const { data: partner } = await admin
     .from("referral_partners")
-    .select("user_id, kind")
+    .select("user_id, kind, status")
     .eq("id", attribution.partner_id)
     .maybeSingle();
+  // Removed for breaking the terms: customers they brought earn them nothing
+  // more. (Paused is a temporary hold and keeps earning.)
+  if (partner?.status === "removed") return "partner-removed";
   if (partner?.kind === "friend") {
     return recordFriendCredit(admin, { referrerUserId: partner.user_id, referredUserId: sub.user_id, invoiceId: invoice.id }, stripe);
   }

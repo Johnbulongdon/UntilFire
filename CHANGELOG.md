@@ -8,6 +8,14 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-27
 
+### Creator program: no look-alike links, remove and hold
+- Codes can't contain "untilfire", "official", "support", "staff" or "admin".
+- `/admin` → Referrals can **Remove** a creator who breaks the terms (link
+  stops, code freed, unpaid earnings forfeited) and **Hold** a code for a
+  creator being pitched, which only their email can claim.
+- The terms add: don't pick a link that suggests you're UntilFire or someone
+  you're not. D-27 amended.
+
 ### Embeddable calculator: sliders and a growth curve
 - `/embed/<code>` shows the freedom year first, then a curve of invested
   money rising to the dashed target line, then three sliders (take-home,
