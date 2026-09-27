@@ -13,7 +13,7 @@ import {
 import { Badge, Button, Card, Field, Input, SegmentedControl, Stat } from "@/components/ui";
 
 interface Me {
-  partner: null | { code: string; status: "active" | "paused"; payout_method: PayoutMethod; payout_email: string };
+  partner: null | { code: string; status: "active" | "paused" | "removed"; payout_method: PayoutMethod; payout_email: string };
   stats?: {
     visits: number; signups: number; inTrial: number; inTrialWorthCents: number; payingCustomers: number;
     earned: number; pending: number; payable: number; paid: number; readyToPay: boolean;
@@ -162,6 +162,7 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
           {copied ? "Copied ✓" : "Copy link"}
         </Button>
         {p.status === "paused" && <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)", width: "100%" }}>Paused: this link isn&apos;t earning right now. Email hello@untilfire.com.</span>}
+        {p.status === "removed" && <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)", width: "100%" }}>Removed from the program under its terms. Email hello@untilfire.com.</span>}
       </Card>
 
       <EmbedSnippet code={p.code} />

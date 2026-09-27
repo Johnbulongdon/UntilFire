@@ -86,6 +86,12 @@ export async function POST(req: NextRequest) {
   }
   if (body?.acceptTerms !== true) return NextResponse.json({ error: "Please accept the program terms." }, { status: 400 });
 
+  // A code held for a creator being pitched: only their email can take it.
+  const { data: hold } = await admin.from("referral_code_holds").select("email").eq("code", code).maybeSingle();
+  if (hold && hold.email !== (user.email ?? "").toLowerCase()) {
+    return NextResponse.json({ error: "That link is taken. Try another." }, { status: 409 });
+  }
+
   const creator = {
     code,
     kind: "creator",
@@ -115,6 +121,7 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
+  if (hold) await admin.from("referral_code_holds").delete().eq("code", code);
   return NextResponse.json({ ok: true });
 }
 
