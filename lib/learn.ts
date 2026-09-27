@@ -660,7 +660,7 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
     primaryStage: 'living-in-fire',
     secondaryStages: ['approaching-fire'],
     relatedCalculators: [
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
     ],
   },
@@ -708,7 +708,7 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
     primaryStage: 'approaching-fire',
     secondaryStages: ['living-in-fire'],
     relatedCalculators: [
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/?source=learn-sequence-risk', label: 'Explore a FIRE estimate' },
     ],
   },
@@ -740,7 +740,7 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
     primaryStage: 'building-momentum',
     secondaryStages: ['approaching-fire'],
     relatedCalculators: [
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/dashboard', label: 'Test Your Allocation' },
     ],
   },
@@ -832,7 +832,7 @@ export const learnStages: LearnStage[] = [
       'what-is-the-4-percent-rule',
     ],
     calculatorLinks: [
-      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/fire-calculator', label: 'FIRE Calculator' },
       { href: '/dashboard', label: 'Open Dashboard Simulations' },
     ],
     nextActionLabel: 'Pressure-test your FIRE number',
@@ -852,7 +852,7 @@ export const learnStages: LearnStage[] = [
       'roth-ira-vs-401k-for-fire',
     ],
     calculatorLinks: [
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/dashboard', label: 'Open Dashboard Projections' },
     ],
     nextActionLabel: 'Review your withdrawal assumptions',

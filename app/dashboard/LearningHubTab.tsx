@@ -65,7 +65,7 @@ const TOPICS = [
     ],
     calcs: [
       { href: "/calculators/apy",          label: "APY Calculator" },
-      { href: "/calculators/4-percent-rule", label: "Safe Withdrawal Calculator" },
+      { href: "/calculators/4-percent-rule", label: "FIRE Number Calculator" },
     ],
   },
 ];
