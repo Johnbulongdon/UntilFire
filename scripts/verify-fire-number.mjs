@@ -64,7 +64,9 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
     check(`${file.split('/').pop()} uses the shared projection, not its own loop`, src.includes(needle) && !/monthlyReturn|GROWTH_MONTHLY|annualRate \/ 12/.test(src));
   }
   check('city pages use the shared return, not a typed 0.07', !read('app/fire-number/[slug]/page.tsx').includes('= 0.07'));
-  check('purchase impact logo follows the theme', read('app/calculators/purchase-impact/PurchaseImpactCalculator.tsx').includes('<Logo variant="auto"'));
+  // Calculators use the shared site header; its logo follows the theme.
+  check('site header logo follows the theme', read('app/components/SiteHeader.tsx').includes('<Logo variant="auto"'));
+  check('calculators keep no page bar of their own', !read('app/calculators/purchase-impact/PurchaseImpactCalculator.tsx').includes('<Logo'));
 }
 
 // ── Growth after inflation is a factor, grounded in S&P 500 history (D-24)

@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { learnArticles } from '@/lib/learn'
-import Logo from '@/app/components/Logo'
 
 const TOPIC_GROUPS = [
   {
@@ -65,14 +64,6 @@ export const metadata = {
 export default function TopicsPage() {
   return (
     <main style={{ background: '#F7F9FB', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
-      <nav style={{ borderBottom: '1px solid #E2E8F0', padding: '16px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="light" size={22} />
-        </Link>
-        <Link href="/learn" style={{ color: '#64748B', textDecoration: 'none', fontSize: 14 }}>Learning Hub</Link>
-        <Link href="/learn/articles" style={{ color: '#64748B', textDecoration: 'none', fontSize: 14 }}>Articles</Link>
-        <Link href="/calculators" style={{ color: '#64748B', textDecoration: 'none', fontSize: 14 }}>Calculators</Link>
-      </nav>
 
       <div style={{ maxWidth: 980, margin: '0 auto', padding: '64px 24px' }}>
         <p style={{ fontSize: 12, color: '#059669', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 12 }}>Learn</p>

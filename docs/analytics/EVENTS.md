@@ -73,6 +73,11 @@ Do not wire a new screen to `step_id=currency`.
 - `learn-fire-meaning` labels the link from the quick FIRE number box in the
   "What does FIRE mean?" article into the main calculator. It uses the same
   path and passes no amounts.
+- `nav-<page>` labels the shared site header's Get started link, from the
+  page it was clicked on (`nav-calculators-apy`, `nav-fire-number-austin-tx`,
+  `nav-learn`). It replaced the calculators' own page-bar links
+  (`calculator-apy`, `calculator-compound-interest`, `calculator-savings-rate`,
+  `calculator-coast-fire` in the bar); in-page links keep their labels.
 - `ref-<code>` labels a visit through a creator's referral link
   (`/r/<code>`, D-27). It uses the same path, so each creator's funnel is a
   `landing_source` filter with no new events. The code is the creator's public

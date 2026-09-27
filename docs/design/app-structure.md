@@ -111,6 +111,18 @@ group membership, rendering, and deep-link handling together:
 The `valid` array in the URL-parsing effect must also list any new tab, or it
 won't be deep-linkable. `goals` was missing from it for exactly this reason.
 
+## The public site header
+
+Every public page (landing, calculators, city and state pages, Learn,
+pricing, invite) shares one top bar, `app/components/SiteHeader.tsx`: logo,
+then How it works · Calculators · Learn · Pricing, then Get started, or
+Dashboard when signed in. The root layout renders it; `showsSiteHeader` keeps
+it off the app (dashboard, admin), sign-in, the creator embed and `/r/`.
+The landing page renders its own `fixed` copy over the hero, where Get
+started opens the calculator in place. Pages don't add a logo bar of their
+own. Off the landing it scrolls with the page, because calculator results
+cards and table heads already stick to the top.
+
 ## Deliberately decided
 
 - **Learn is not a top-level group.** There is already a full public `/learn`

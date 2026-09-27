@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ReferenceDot,
 } from 'recharts'
-import Logo from '@/app/components/Logo'
 import { Badge, Card, Money, SegmentedControl, Slider, Stat } from '@/components/ui'
 import { DEFAULT_RETURN_PCT } from '@/lib/fire-number'
 import GrowthChoicePicker from '@/app/components/GrowthChoicePicker'
@@ -195,33 +194,6 @@ export default function CoastFireCalculator() {
 
   return (
     <div style={{ background: 'var(--uf-ground)', minHeight: '100vh', color: 'var(--uf-ink)' }}>
-      <nav
-        style={{
-          borderBottom: '1px solid var(--uf-border)', padding: 'var(--uf-s4) var(--uf-s6)',
-          background: 'var(--uf-card)', display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', gap: 'var(--uf-s4)', flexWrap: 'wrap',
-        }}
-      >
-        <Link href="/" style={{ textDecoration: 'none' }}><Logo variant="auto" size={22} /></Link>
-        <div style={{ display: 'flex', gap: 'var(--uf-s4)', alignItems: 'center' }}>
-          <Link href="/calculators" className="uf-t-body" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>
-            ← All calculators
-          </Link>
-          {/* A link, not a Button: Button renders a <button>, and nesting one
-              inside an anchor is invalid markup screen readers announce twice. */}
-          <Link
-            href="/?source=calculator-coast-fire"
-            className="uf-t-body"
-            style={{
-              background: 'var(--uf-green)', color: 'var(--uf-card)',
-              padding: 'var(--uf-s2) var(--uf-s4)', borderRadius: 999,
-              fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap',
-            }}
-          >
-            Find your freedom date
-          </Link>
-        </div>
-      </nav>
 
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--uf-s7) var(--uf-s6)' }}>
         <header style={{ marginBottom: 'var(--uf-s6)', maxWidth: 680 }}>

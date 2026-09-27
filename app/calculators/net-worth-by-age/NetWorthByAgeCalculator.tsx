@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import Logo from '@/app/components/Logo'
 import PercentileTrack from '@/app/components/PercentileTrack'
 import { Badge, Card, Field, Input } from '@/components/ui'
 import { compareNetWorth, percentileToday } from '@/lib/net-worth-compare'
@@ -43,18 +42,6 @@ export default function NetWorthByAgeCalculator() {
 
   return (
     <div style={{ background: 'var(--uf-ground)', color: 'var(--uf-ink)' }}>
-      <nav
-        style={{
-          borderBottom: '1px solid var(--uf-border)', padding: 'var(--uf-s4) var(--uf-s6)',
-          background: 'var(--uf-card)', display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', gap: 'var(--uf-s4)', flexWrap: 'wrap',
-        }}
-      >
-        <Link href="/" style={{ textDecoration: 'none' }}><Logo variant="auto" size={22} /></Link>
-        <Link href="/calculators" className="uf-t-body" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>
-          ← All calculators
-        </Link>
-      </nav>
 
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--uf-s7) var(--uf-s6) var(--uf-s5)' }}>
         <header style={{ marginBottom: 'var(--uf-s6)', maxWidth: 680 }}>
