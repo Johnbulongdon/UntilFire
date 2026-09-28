@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { statePages } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
+import UsFireGuideLinks from '../UsFireGuideLinks'
 
 
 export const metadata: Metadata = {
@@ -194,6 +195,8 @@ export default function BestStatesPage() {
           </div>
         </section>
 
+        <UsFireGuideLinks current="/fire-number/best-states" />
+
         {/* Bottom CTA */}
         <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-card)', margin: '0 0 10px' }}>
@@ -255,3 +258,4 @@ export default function BestStatesPage() {
     </>
   )
 }
+
