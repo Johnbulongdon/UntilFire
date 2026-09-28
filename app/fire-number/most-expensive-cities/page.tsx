@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { getMostExpensiveCities } from '@/lib/ranking-pages'
 import { formatMoney } from "@/lib/money";
 import { cityPagePath } from "@/lib/city-pages";
+import UsFireGuideLinks from '../UsFireGuideLinks'
+import { formatStateAbbreviation } from '@/lib/state-pages'
 
 
 export const metadata: Metadata = {
@@ -125,7 +127,7 @@ export default function MostExpensiveCitiesPage() {
                         {city.name}
                       </Link>
                     </td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--uf-ink-2)' }}>{city.state.toUpperCase()}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--uf-ink-2)' }}>{formatStateAbbreviation(city.state)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-green-900)' }}>{formatMoney(city.col)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-neg)' }}>{formatMoney(city.col * 25)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--uf-ink-2)' }}>
@@ -137,6 +139,8 @@ export default function MostExpensiveCitiesPage() {
             </tbody>
           </table>
         </section>
+
+        <UsFireGuideLinks current="/fire-number/most-expensive-cities" />
 
         {/* Bottom CTA */}
         <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
