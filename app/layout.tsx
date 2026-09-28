@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import { Analytics } from '@vercel/analytics/react'
 import LoadingSplash from './components/LoadingSplash'
 import SiteHeader from './components/SiteHeader'
+import AcquisitionCapture from './components/AcquisitionCapture'
 import {
   UNTILFIRE_ANCHOR_COPY,
   UNTILFIRE_ANCHOR_DESCRIPTION,
@@ -176,6 +177,7 @@ export default function RootLayout({
         />
         <LoadingSplash />
         <AuthProvider>
+          <AcquisitionCapture />
           <SiteHeader />
           {children}
 

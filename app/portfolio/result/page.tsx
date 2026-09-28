@@ -8,6 +8,7 @@ import { fetchDailyPrices } from '@/lib/market/stooq'
 import { computeMetrics, encodeSeries, type PortfolioMetrics } from '@/lib/portfolio/metrics'
 import { buildLineChartPaths } from '@/lib/portfolio/linechart'
 import ShareButtons from './ShareButtons'
+import { siteUrl } from '@/lib/site'
 
 interface Props {
   searchParams: Promise<{ h?: string }>
@@ -25,7 +26,11 @@ const NOTE_COLORS: Record<string, string> = { good: TEAL, warn: '#fbbf24', bad: 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { h = '' } = await searchParams
   const holdings = decodeHoldings(h)
-  if (holdings.length === 0) return { title: 'Portfolio Check | UntilFire' }
+  if (holdings.length === 0) return {
+    title: 'Portfolio Check | UntilFire',
+    robots: { index: false, follow: true },
+    alternates: { canonical: siteUrl('/portfolio/result') },
+  }
   const verdict = analyzePortfolio(holdings)
   const ogUrl = `/api/portfolio/og?h=${encodeURIComponent(h)}`
   const title = `Portfolio grade ${verdict.grade}: ${verdict.headline} | UntilFire`
@@ -33,6 +38,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return {
     title,
     description,
+    robots: { index: false, follow: true },
+    alternates: { canonical: siteUrl('/portfolio/result') },
     openGraph: { title, description, images: [{ url: ogUrl, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', title, description, images: [ogUrl] },
   }
