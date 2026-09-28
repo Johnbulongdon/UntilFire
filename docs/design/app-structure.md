@@ -116,9 +116,12 @@ won't be deep-linkable. `goals` was missing from it for exactly this reason.
 
 Profile keeps a short card (`app/dashboard/CreatorCard.tsx`): your link, Copy,
 and More, or one line and Learn more. The program itself lives on `/invite`:
-signed out, the pitch; signed in, your own program first (join form, or link,
-stats, progress to 40%, embed, payouts via `app/invite/CreatorArea.tsx`), then
-how it works. The founder asked for Profile not to carry the whole program.
+signed out, the pitch; signed in, your own program first (via
+`app/invite/CreatorArea.tsx`), then how it works. Both use the same dark hero
+whose one bright card is the most important thing: the pitch's calculator, the
+join form, or your earnings and progress to 40%. Stats, embed and payouts
+follow on the light page. The founder wants the signed-in page to look as good
+as the pitch. The founder asked for Profile not to carry the whole program.
 Links from the dashboard to it are client-side `Link`s: a full page load would
 meet the dashboard's "leave site?" guard while an autosave is running.
 

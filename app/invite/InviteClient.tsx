@@ -16,8 +16,8 @@ import CreatorArea from "./CreatorArea";
 
 /**
  * The creator page (D-27). Signed out: the pitch. Signed in: your own
- * program first (the form to get a link, or your link, numbers and
- * payouts), then how the program works. Profile keeps a small card that
+ * program first, in the same dark hero (the form to get a link, or your
+ * link and earnings), then how the program works. Profile keeps a small card that
  * links here, so the dashboard isn't crowded with it.
  */
 export default function InviteClient() {
@@ -32,13 +32,7 @@ export default function InviteClient() {
   if (token === null) return <Pitch onStart={() => { rememberReturnTo("/invite"); router.push("/login"); }} />;
   return (
     <div>
-      <div className={styles.inner} style={{ paddingTop: "var(--uf-s6)", paddingBottom: "var(--uf-s6)" }}>
-        <section className={styles.mine} aria-labelledby="mine">
-          <Link href="/dashboard?tab=profile" className="uf-t-small" style={{ color: "var(--uf-ink-3)", textDecoration: "none" }}>← Back to your dashboard</Link>
-          <h1 id="mine" className="uf-t-h1" style={{ margin: 0 }}>Your creator program</h1>
-          <CreatorArea />
-        </section>
-      </div>
+      <CreatorArea />
       <Pitch signedIn />
     </div>
   );

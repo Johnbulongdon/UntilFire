@@ -5,9 +5,10 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   formatCents, REFERRAL_HOLD_DAYS, REFERRAL_MIN_PAYOUT_CENTS,
-  REFERRAL_TIER_CUSTOMERS, REFERRAL_TIER_RATE_LABEL, type PayoutMethod,
+  REFERRAL_RATE_LABEL, REFERRAL_TIER_CUSTOMERS, REFERRAL_TIER_RATE_LABEL, type PayoutMethod,
 } from "@/lib/referrals";
-import { Button, Card, Field, Input, Progress, SegmentedControl, Stat } from "@/components/ui";
+import { Badge, Button, Card, Field, Input, Progress, SegmentedControl, Stat } from "@/components/ui";
+import styles from "./InvitePitch.module.css";
 
 interface Me {
   partner: null | { code: string; status: "active" | "paused" | "removed"; payout_method: PayoutMethod; payout_email: string };
@@ -22,10 +23,10 @@ const METHODS = [{ value: "paypal", label: "PayPal" }, { value: "wise", label: "
 const methodName = (m: string) => (m === "wise" ? "Wise" : "PayPal");
 
 /**
- * A signed-in user's side of the creator program (D-27): the form to get a
- * link, then their numbers. Lives in the dashboard (Profile → Creator
- * program), so a user never leaves the app for it; /invite is the public
- * pitch for creators who don't have an account yet.
+ * A signed-in user's side of the creator program (D-27), in the same dark
+ * hero as the public pitch: the one bright card is what matters most (the
+ * form to get a link, or what you've earned and your progress to 40%), and
+ * the rest (numbers, the embed, payouts) follows on the light page.
  */
 export default function CreatorArea() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -43,9 +44,29 @@ export default function CreatorArea() {
     });
   }, [load]);
 
-  if (!token || !me) return <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-3)" }}>{token === null ? "Sign in to join." : "Loading…"}</p>;
+  if (!token || !me) return <Hero title="Your creator program"><p className={`uf-t-small ${styles.onDark}`} style={{ margin: 0 }}>{token === null ? "Sign in to join." : "Loading…"}</p></Hero>;
   if (!me.partner) return <JoinForm token={token} onJoined={() => load(token)} />;
   return <CreatorDashboard me={me} token={token} onSaved={() => load(token)} />;
+}
+
+/** The dark band: title and what sits under it on the left, the bright card on the right. */
+function Hero({ title, children, card }: { title: string; children?: React.ReactNode; card?: React.ReactNode }) {
+  return (
+    <header className={styles.heroBand}>
+      <div className={styles.glowA} aria-hidden="true" />
+      <div className={styles.glowB} aria-hidden="true" />
+      <div className={styles.dots} aria-hidden="true" />
+      <div className={`${styles.inner} ${styles.heroWrap}`}>
+        <div className={styles.hero}>
+          <Link href="/dashboard?tab=profile" className={`uf-t-small ${styles.onDark}`} style={{ textDecoration: "none" }}>← Back to your dashboard</Link>
+          <Badge tone="positive">Creator program</Badge>
+          <h1 className={`uf-t-display ${styles.title}`}>{title}</h1>
+          {children}
+        </div>
+        {card && <div className={styles.kvCard}>{card}</div>}
+      </div>
+    </header>
+  );
 }
 
 function JoinForm({ token, onJoined }: { token: string; onJoined: () => void }) {
@@ -70,9 +91,9 @@ function JoinForm({ token, onJoined }: { token: string; onJoined: () => void }) 
     setError((await res.json().catch(() => ({}))).error ?? "Something went wrong. Try again.");
   }
 
-  return (
-    <form onSubmit={submit} style={{ display: "grid", gap: "var(--uf-s5)" }}>
-      <p className="uf-t-body" style={{ margin: 0, color: "var(--uf-ink-2)" }}>Pick your link and where to be paid. Takes a minute.</p>
+  const form = (
+    <form onSubmit={submit} style={{ display: "grid", gap: "var(--uf-s4)" }}>
+      <h2 className="uf-t-h3" style={{ margin: 0 }}>Get your link</h2>
       <Field label="Your link" htmlFor="ref-code" hint="Letters, numbers and hyphens. It can't change later.">
         <div style={{ display: "flex", alignItems: "center", gap: "var(--uf-s2)" }}>
           <span className="uf-t-data" style={{ color: "var(--uf-ink-3)", whiteSpace: "nowrap" }}>untilfire.com/r/</span>
@@ -90,6 +111,11 @@ function JoinForm({ token, onJoined }: { token: string; onJoined: () => void }) 
       {error && <p role="alert" className="uf-t-small" style={{ margin: 0, color: "var(--uf-neg-ink)" }}>{error}</p>}
       <Button type="submit" variant="primary" disabled={busy || !accept} style={{ justifySelf: "start" }}>{busy ? "Creating…" : "Create my link"}</Button>
     </form>
+  );
+  return (
+    <Hero title={`Earn ${REFERRAL_RATE_LABEL} for sharing a free calculator`} card={form}>
+      <p className={`uf-t-body ${styles.onDark}`} style={{ margin: 0 }}>Pick your link and where to be paid. Takes a minute.</p>
+    </Hero>
   );
 }
 
@@ -115,51 +141,60 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
     onSaved();
   }
 
-  return (
-    <div style={{ display: "grid", gap: "var(--uf-s5)" }}>
-      <Card style={{ display: "flex", gap: "var(--uf-s3)", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
-        <span className="uf-t-data" style={{ fontSize: 17, fontWeight: 700, wordBreak: "break-all" }}>{link}</span>
-        <Button variant="primary" size="sm" onClick={() => { navigator.clipboard?.writeText(`https://www.${link}`).then(() => setCopied(true)).catch(() => {}); }}>
-          {copied ? "Copied ✓" : "Copy link"}
-        </Button>
-        {p.status === "paused" && <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)", width: "100%" }}>Paused: this link isn&apos;t earning right now. Email hello@untilfire.com.</span>}
-        {p.status === "removed" && <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)", width: "100%" }}>Removed from the program under its terms. Email hello@untilfire.com.</span>}
-      </Card>
-
-      <EmbedSnippet code={p.code} />
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "var(--uf-s4)" }}>
-        <Stat label="Visits" value={s.visits.toLocaleString()} />
-        <Stat label="Signups" value={s.signups.toLocaleString()} />
-        <Stat label="In free trial" value={s.inTrial.toLocaleString()} />
-        <Stat label="Paying" value={s.payingCustomers.toLocaleString()} />
-        <Stat label="Earned" value={formatCents(s.earned)} tone="positive" />
+  const earnings = (
+    <div style={{ display: "grid", gap: "var(--uf-s3)" }}>
+      {p.status === "paused" && <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)" }}>Paused: this link isn&apos;t earning right now. Email hello@untilfire.com.</span>}
+      {p.status === "removed" && <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)" }}>Removed from the program under its terms. Email hello@untilfire.com.</span>}
+      <div>
+        <div className="uf-t-label" style={{ color: "var(--uf-ink-3)" }}>Earned so far</div>
+        <div className={`uf-t-data ${styles.estimateNum}`}>{formatCents(s.earned)}</div>
+        {s.inTrial > 0 && (
+          <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
+            {s.inTrial === 1 ? "1 reader" : `${s.inTrial} readers`} on a free trial: about <b>{formatCents(s.inTrialWorthCents)}</b> more if they subscribe yearly.
+          </p>
+        )}
       </div>
-      {s.inTrial > 0 && (
-        <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-          {s.inTrial === 1 ? "1 reader" : `${s.inTrial} readers`} on a free trial: about <b>{formatCents(s.inTrialWorthCents)}</b> if they subscribe yearly.
-        </p>
-      )}
       <Progress
         value={s.payingCustomers / REFERRAL_TIER_CUSTOMERS}
         label={s.payingCustomers >= REFERRAL_TIER_CUSTOMERS ? `You're on ${REFERRAL_TIER_RATE_LABEL} for new payments` : `${REFERRAL_TIER_CUSTOMERS - s.payingCustomers} more paying readers to ${REFERRAL_TIER_RATE_LABEL}`}
         caption={`${Math.min(s.payingCustomers, REFERRAL_TIER_CUSTOMERS)} of ${REFERRAL_TIER_CUSTOMERS}`}
       />
+      <div className="uf-t-small" style={{ display: "flex", gap: "var(--uf-s4)", flexWrap: "wrap", color: "var(--uf-ink-2)" }}>
+        <span>On hold <b className="uf-t-data">{formatCents(s.pending)}</b></span>
+        <span>Ready <b className="uf-t-data">{formatCents(s.payable)}</b></span>
+        <span>Paid <b className="uf-t-data">{formatCents(s.paid)}</b></span>
+      </div>
+      <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-3)" }}>
+        {s.readyToPay
+          ? `In this month's payout to your ${methodName(p.payout_method)}.`
+          : s.paid > 0
+            ? `${REFERRAL_HOLD_DAYS}-day refund hold, then paid monthly from ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)}.`
+            : `${REFERRAL_HOLD_DAYS}-day refund hold. First payout at any amount.`}
+      </p>
+    </div>
+  );
 
-      <Card style={{ display: "grid", gap: "var(--uf-s2)" }}>
-        <div className="uf-t-body" style={{ display: "flex", gap: "var(--uf-s5)", flexWrap: "wrap" }}>
-          <span>On hold <b className="uf-t-data">{formatCents(s.pending)}</b></span>
-          <span>Ready <b className="uf-t-data">{formatCents(s.payable)}</b></span>
-          <span>Paid <b className="uf-t-data">{formatCents(s.paid)}</b></span>
+  return (
+    <>
+      <Hero title="Your creator program" card={earnings}>
+        <div className={styles.linkPill}>
+          <span className="uf-t-data">{link}</span>
+          <Button variant="primary" size="sm" onClick={() => { navigator.clipboard?.writeText(`https://www.${link}`).then(() => setCopied(true)).catch(() => {}); }}>
+            {copied ? "Copied ✓" : "Copy link"}
+          </Button>
         </div>
-        <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-          {s.readyToPay
-            ? `In this month's payout to your ${methodName(p.payout_method)}.`
-            : s.paid > 0
-              ? `${REFERRAL_HOLD_DAYS}-day refund hold, then paid monthly from ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)}.`
-              : `${REFERRAL_HOLD_DAYS}-day refund hold. First payout at any amount.`}
-        </p>
-      </Card>
+        <p className={`uf-t-small ${styles.onDark}`} style={{ margin: 0 }}>Share it anywhere. Say it&apos;s an affiliate link.</p>
+      </Hero>
+
+      <div className={styles.inner} style={{ display: "grid", gap: "var(--uf-s5)", paddingTop: "var(--uf-s7)", paddingBottom: "var(--uf-s7)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "var(--uf-s4)" }}>
+        <Stat label="Visits" value={s.visits.toLocaleString()} />
+        <Stat label="Signups" value={s.signups.toLocaleString()} />
+        <Stat label="In free trial" value={s.inTrial.toLocaleString()} />
+        <Stat label="Paying" value={s.payingCustomers.toLocaleString()} />
+      </div>
+
+      <EmbedSnippet code={p.code} />
 
       {(me.payouts ?? []).length > 0 && (
         <div style={{ display: "grid", gap: "var(--uf-s1)" }}>
@@ -188,12 +223,11 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
         <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
           Paid to {methodName(p.payout_method)} {p.payout_email}.{" "}
           <button type="button" onClick={() => setEditing(true)} style={{ background: "none", border: "none", padding: 0, color: "var(--uf-green)", font: "inherit", fontWeight: 700, cursor: "pointer" }}>Change</button>
+          {" · "}<Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
         </p>
       )}
-      <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-3)" }}>
-        Say it&apos;s an affiliate link. <Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
-      </p>
-    </div>
+      </div>
+    </>
   );
 }
 
