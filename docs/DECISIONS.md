@@ -949,6 +949,38 @@ reversal paths against an in-memory database, and checks RLS, the closed
 redirect and the admin checks.
 **Revisit:** after the first three paying referrals, or if a creator asks for
 self-serve statements.
+**Amended September 27 (impersonation):** a code can't contain "untilfire",
+"until-fire", "official", "support", "staff" or "admin", so no link reads as
+ours. The founder can **remove** a creator who breaks the terms: the link
+stops, the code is renamed `removed-…` so its real owner can take it, unpaid
+commissions are reversed and their existing customers earn nothing more
+(pausing stays a temporary hold that keeps earning). For outreach the founder
+can **hold** a code for a pitched creator; only an account with that email can
+join with it. Squatting famous creators' names in advance was rejected: too
+many to guess, and manual monthly payouts already put every creator in front
+of the founder before money moves. Terms version `2026-09-27`; migration
+`0045_referral_removal_and_holds.sql`.
+
+### D-28 — September 27: judge SEO in settled 28-day windows and carry organic source into activation
+
+**Status:** Active.
+**Decision:** The admin SEO view compares the latest 28 complete Search Console
+days available with the preceding 28 days. It reports clicks, impressions, CTR
+and impression-weighted position, with branded queries separate from generic
+queries. Search-engine attribution is captured as a coarse `organic-<engine>`
+landing source and carried into the existing calculator/signup funnel. Full
+referrer URLs and search terms are never stored.
+**Why:** Rankings, search clicks and activated users answer three different
+questions. Before this change Search Console data existed but was hard to read,
+and organic arrivals without an internal `?source=` label looked direct in the
+funnel. That made later SEO work impossible to judge by users rather than page
+counts.
+**Crawl hygiene:** sitemap modification dates must be truthful. Omit the field
+when no content date exists; learning articles use their recorded review or
+publication date. Private utility routes use noindex and their own canonical.
+**Revisit:** after one complete post-deployment 28-day window plus reporting
+lag. If clicks rise without calculator completions, improve the landing path;
+if impressions stay flat, prioritize authority and demand rather than snippets.
 
 ## How to add or supersede a decision
 

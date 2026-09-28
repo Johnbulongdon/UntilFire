@@ -49,7 +49,8 @@ Plan                          long-term projections and scenarios
   ├ Citizenship
   └ Learn
 
-Profile                       account, household setup, FIRE personality/type
+Profile                       account, household setup, FIRE personality/type,
+                              give a month, creator program card (→ /invite)
                               lives in the user menu
 ```
 
@@ -110,6 +111,16 @@ group membership, rendering, and deep-link handling together:
 
 The `valid` array in the URL-parsing effect must also list any new tab, or it
 won't be deep-linkable. `goals` was missing from it for exactly this reason.
+
+## The creator program: a card in Profile, the program on /invite
+
+Profile keeps a short card (`app/dashboard/CreatorCard.tsx`): your link, Copy,
+and More, or one line and Learn more. The program itself lives on `/invite`:
+signed out, the pitch; signed in, your own program first (join form, or link,
+stats, progress to 40%, embed, payouts via `app/invite/CreatorArea.tsx`), then
+how it works. The founder asked for Profile not to carry the whole program.
+Links from the dashboard to it are client-side `Link`s: a full page load would
+meet the dashboard's "leave site?" guard while an autosave is running.
 
 ## The public site header
 

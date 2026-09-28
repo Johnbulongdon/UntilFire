@@ -12,7 +12,7 @@ import {
   accountYoungEnoughToClaim, REFERRAL_MIN_PAYOUT_CENTS, formatCents, rateForPayment, readyToPay,
 } from '../lib/referrals.ts';
 import { claimReferral, recordReferralCommission, reverseReferralCommission, applyPendingCredits, friendLinkFor } from '../lib/referrals-server.ts';
-import { FRIEND_CREDIT_CENTS, friendCode } from '../lib/referrals.ts';
+import { FRIEND_CREDIT_CENTS, friendCode, firstYearEstimateCents } from '../lib/referrals.ts';
 import { PRO_MONTHLY_USD } from '../lib/pricing.ts';
 import { freedomPath, quickFreedom } from '../lib/quick-freedom.ts';
 import { yearsToTarget } from '../lib/fire/strategies/traditional.ts';
@@ -24,7 +24,9 @@ const day = 86_400_000;
 
 // ── Rules
 check('codes: lowercase, digits, single hyphens, 3–24', normaliseCode(' Jane-Saves ') === 'jane-saves' && normaliseCode('ab') === null && normaliseCode('a--b') === null && normaliseCode('-abc') === null && normaliseCode('x'.repeat(25)) === null && normaliseCode('a'.repeat(24)) === 'a'.repeat(24));
+check('invite estimate: 9 yearly readers at 30%, the 10th at 40%', firstYearEstimateCents(9, 7900) === 9 * 2370 && firstYearEstimateCents(10, 7900) === 9 * 2370 + 3160 && firstYearEstimateCents(0, 7900) === 0);
 check('codes: reserved words refused', normaliseCode('admin') === null && normaliseCode('untilfire') === null);
+check('codes: nothing that reads as UntilFire or its staff', ['untilfire-official', 'until-fire', 'official-deals', 'untilfire2', 'support-team', 'staffpicks', 'admin-jane', 'removed-abc'].every((c) => normaliseCode(c) === null) && normaliseCode('jane-saves') === 'jane-saves');
 check('30% of $9 is $2.70; of $79 is $23.70', commissionCents(900) === 270 && commissionCents(7900) === 2370);
 check('rounds down, never up', commissionCents(899) === 269 && commissionCents(0) === 0 && commissionCents(-100) === 0);
 check('uses the snapshotted rate', commissionCents(1000, 2000) === 200);
@@ -131,6 +133,12 @@ function fakeDb(tables) {
   const ninth = db.tables.referral_commissions.filter((c) => c.referred_user_id === 'r7').at(-1);
   check('the 10th paying customer earns 40%, the 9th 30%', tenth.rate_bps === 4000 && tenth.commission_cents === 360 && ninth.rate_bps === 3000, `${ninth.rate_bps} ${tenth.rate_bps}`);
 
+  // Removed for breaking the terms: an existing customer paying earns nothing more.
+  db.tables.referral_partners.push({ id: 'p3', user_id: 'faker', code: 'removed-p3', status: 'removed', kind: 'creator', rate_bps: 3000, months: 12 });
+  db.tables.subscriptions.push({ user_id: 'fooled', stripe_customer_id: 'cus_fooled' });
+  db.tables.referral_attributions.push({ referred_user_id: 'fooled', partner_id: 'p3', rate_bps: 3000 });
+  check('a removed creator earns nothing more', (await recordReferralCommission(db, { ...inv('in_fooled', 900), customer: 'cus_fooled' })) === 'partner-removed');
+
   const stripe = { invoicePayments: { list: async ({ payment }) => ({ data: payment.payment_intent === 'pi_1' ? [{ invoice: 'in_1' }] : [] }) } };
   check('a refund reverses its unpaid commission', (await reverseReferralCommission(stripe, db, 'pi_1', 'refunded')) === 'reversed' && db.tables.referral_commissions[0].status === 'reversed');
   check('a refund with no matching invoice changes nothing', (await reverseReferralCommission(stripe, db, 'pi_none', 'refunded')) === 'no-invoice');
@@ -199,11 +207,19 @@ check('friend credits are private, like the rest', read('supabase/migrations/004
   check('embed: a curve that never arrives stops at 65 years', freedomPath({ monthlyIncome: 2000, monthlySpending: 3000, invested: 0 }).length === 66);
 }
 const mw = read('middleware.ts');
+{
+  const joinRoute = read('app/api/referrals/me/route.ts');
+  check('a held code only goes to the email it is held for, then frees itself', joinRoute.includes('from("referral_code_holds")') && joinRoute.includes('hold.email !== (user.email ?? "").toLowerCase()') && joinRoute.includes('if (hold) await admin.from("referral_code_holds").delete()'));
+  const founderRoute = read('app/api/admin/referrals/route.ts');
+  check('removing a creator frees the code and forfeits unpaid earnings', founderRoute.includes('code: `removed-${id.slice(0, 8)}`') && founderRoute.includes('creator removed for breaking the terms') && founderRoute.includes('.neq("status", "removed")'));
+  const holdsSql = read('supabase/migrations/0045_referral_removal_and_holds.sql');
+  check('code holds are service-role only', holdsSql.includes('ALTER TABLE referral_code_holds ENABLE ROW LEVEL SECURITY;') && !/CREATE POLICY/i.test(holdsSql));
+}
 check('only /embed/ can be framed; everything else stays DENY', mw.includes('pathname.startsWith("/embed/")') && mw.includes('"frame-ancestors *"') && mw.includes('"X-Frame-Options", "DENY"'));
 check('no logo splash inside an embed', read('app/layout.tsx').includes("location.pathname.indexOf('/embed/')===0"));
 const embed = read('app/embed/[code]/EmbedCalculator.tsx');
 check('every link out of the embed goes through the creator link', embed.includes('`https://www.untilfire.com/r/${code}`') && !/href="https:\/\/www\.untilfire\.com\/(?!r\/)/.test(embed));
-const invite = read('app/invite/InviteClient.tsx');
+const invite = read('app/invite/CreatorArea.tsx');
 check('the snippet links back through /r/ in plain HTML', invite.includes('<a href="https://www.untilfire.com/r/${code}">'));
 
 const failed = checks.filter((c) => !c.ok);

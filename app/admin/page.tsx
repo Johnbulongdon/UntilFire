@@ -9,8 +9,9 @@ import SupportTab from "./SupportTab";
 import RetentionTab from "./RetentionTab";
 import CitiesTab from "./CitiesTab";
 import ReferralsTab from "./ReferralsTab";
+import SeoTab from "./SeoTab";
 
-type AdminTab = "overview" | "users" | "retention" | "emails" | "cities" | "referrals" | "support";
+type AdminTab = "overview" | "users" | "retention" | "seo" | "emails" | "cities" | "referrals" | "support";
 
 export default function AdminPage() {
   const [status, setStatus] = useState<"checking" | "denied" | "ok">("checking");
@@ -48,11 +49,12 @@ export default function AdminPage() {
         <h1 style={{ fontSize: 24, fontWeight: 800, color: "#19181E", margin: "0 0 4px" }}>UntilFire Admin</h1>
         <p style={{ color: "#64748B", fontSize: 14, margin: "0 0 24px" }}>Operations, users, and email &mdash; internal only.</p>
 
-        <nav style={{ display: "flex", gap: 6, marginBottom: 24, borderBottom: "1px solid #E2E8F0" }}>
+        <nav style={{ display: "flex", gap: 6, marginBottom: 24, borderBottom: "1px solid #E2E8F0", flexWrap: "wrap" }}>
           {([
             { key: "overview" as const, label: "Overview" },
             { key: "users" as const, label: "Users" },
             { key: "retention" as const, label: "Retention" },
+            { key: "seo" as const, label: "SEO" },
             { key: "emails" as const, label: "Emails" },
             { key: "cities" as const, label: "Cities" },
             { key: "referrals" as const, label: "Referrals" },
@@ -81,6 +83,7 @@ export default function AdminPage() {
         {token && tab === "overview" && <OverviewTab token={token} />}
         {token && tab === "users" && <UsersTab token={token} />}
         {token && tab === "retention" && <RetentionTab token={token} />}
+        {token && tab === "seo" && <SeoTab token={token} />}
         {token && tab === "emails" && <EmailsTab token={token} />}
         {token && tab === "cities" && <CitiesTab token={token} />}
         {token && tab === "referrals" && <ReferralsTab token={token} />}

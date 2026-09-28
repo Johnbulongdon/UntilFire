@@ -77,6 +77,10 @@ export function getRegion(slug: string): RegionData | null {
   return REGION_BY_SLUG[slug] ?? null
 }
 
+export function getRegionForState(stateKey: string): RegionData | null {
+  return REGION_DEFINITIONS.find((region) => region.stateKeys.includes(stateKey)) ?? null
+}
+
 export interface RegionCity {
   key: string
   name: string

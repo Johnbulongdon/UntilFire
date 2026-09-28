@@ -15,10 +15,8 @@ export const metadata: Metadata = {
 
 export default function InvitePage() {
   return (
-    <main style={{ minHeight: "100vh", background: "var(--uf-ground)", padding: "var(--uf-s6) var(--uf-s4) var(--uf-s7)" }}>
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <InviteClient />
-      </div>
+    <main style={{ minHeight: "100vh", background: "var(--uf-ground)", overflow: "hidden" }}>
+      <InviteClient />
     </main>
   );
 }

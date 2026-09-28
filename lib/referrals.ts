@@ -25,7 +25,7 @@ export const REFERRAL_COOKIE_DAYS = 60;
 export const REFERRAL_COOKIE = "uf_ref";
 /** An account older than this at its first dashboard visit was not referred by a new click. */
 export const REFERRAL_CLAIM_MAX_ACCOUNT_AGE_DAYS = 7;
-export const REFERRAL_TERMS_VERSION = "2026-09-26b";
+export const REFERRAL_TERMS_VERSION = "2026-09-27";
 
 /**
  * Two steps up from the base 30% (D-27): 40% once a creator has brought 10
@@ -50,9 +50,12 @@ export const FRIEND_CREDIT_CENTS = 900;
 /** A friend link's code: "f-" and eight letters or digits, readable aloud. */
 export function friendCode(random: () => number = Math.random): string {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
-  let out = "f-";
-  for (let i = 0; i < 8; i++) out += alphabet[Math.floor(random() * alphabet.length)];
-  return out;
+  for (;;) {
+    let out = "f-";
+    for (let i = 0; i < 8; i++) out += alphabet[Math.floor(random() * alphabet.length)];
+    // Rarely, eight random letters spell "staff"; that code would be refused.
+    if (normaliseCode(out)) return out;
+  }
 }
 
 export type PayoutMethod = "paypal" | "wise";
@@ -63,11 +66,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** Words a creator code can't be, so /r/<code> never looks like ours. */
 const RESERVED = new Set(["admin", "api", "untilfire", "support", "help", "pricing", "dashboard", "login", "invite", "terms", "team", "official"]);
 
+/**
+ * Anywhere in a code, not just the whole of it: "untilfire-official" or
+ * "support-team" would read as us. "removed-" is the prefix a removed
+ * creator's code is renamed to.
+ */
+const LOOKS_OFFICIAL = /until-?fire|official|support|staff|admin|^removed-/;
+
 /** Lowercase letters, digits and single hyphens, 3–24 characters. */
 export function normaliseCode(raw: string): string | null {
   const code = raw.trim().toLowerCase();
   if (!/^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){2,23}$/.test(code)) return null;
-  if (RESERVED.has(code)) return null;
+  if (RESERVED.has(code) || LOOKS_OFFICIAL.test(code)) return null;
   return code;
 }
 
@@ -155,4 +165,17 @@ export function summarise(rows: CommissionRow[], now: Date = new Date()) {
 /** "$23.70", and "$20" rather than "$20.00" for whole dollars. */
 export function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2).replace(/\.00$/, "")}`;
+}
+
+/**
+ * The /invite estimate: what a creator earns in the first year from `readers`
+ * paying readers who each pay `collectedCents` in that year. Readers 1–9 earn
+ * the base rate, the 10th on the tier rate, as the program pays.
+ */
+export function firstYearEstimateCents(readers: number, collectedCents: number): number {
+  let total = 0;
+  for (let n = 1; n <= readers; n++) {
+    total += commissionCents(collectedCents, n >= REFERRAL_TIER_CUSTOMERS ? REFERRAL_TIER_RATE_BPS : REFERRAL_RATE_BPS);
+  }
+  return total;
 }
