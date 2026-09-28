@@ -41,6 +41,13 @@ const nextConfig = {
         destination: '/fire-number/austin-tx',
         permanent: true,
       },
+      {
+        // NYC keeps a separate tax key in city calculations, but the state
+        // reference correctly groups it into New York.
+        source: '/fire-number/states/newyorkcity',
+        destination: '/fire-number/states/newyork',
+        permanent: true,
+      },
       // These states had no display name (Hawaii's was filed under the wrong
       // code), so their state pages were published at their state codes.
       {
