@@ -64,6 +64,11 @@ export function stateReferenceKey(stateKey: string): string {
   return stateKey === 'nyc' ? 'ny' : stateKey
 }
 
+export function formatStateAbbreviation(stateKey: string): string {
+  if (stateKey === 'nyc') return 'NY'
+  return stateKey.replace(/_us$/, '').toUpperCase()
+}
+
 const STATE_SLUG_MAP: Record<string, string> = {
   california: 'ca',
   texas: 'tx',
@@ -196,3 +201,4 @@ export const statePages: StatePage[] = Array.from(allStates)
 export function getStatePage(slug: string): StatePage | null {
   return statePages.find((p) => p.slug === slug) || null
 }
+
