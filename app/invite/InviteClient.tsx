@@ -1,265 +1,190 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { rememberReturnTo } from "@/lib/auth-finish";
-import { PRO_ANNUAL_USD, PRO_MONTHLY_USD, REFERRED_TRIAL_LABEL } from "@/lib/pricing";
+import { PRO_ANNUAL_USD, REFERRED_TRIAL_LABEL } from "@/lib/pricing";
 import {
-  commissionCents, formatCents, REFERRAL_HOLD_DAYS, REFERRAL_MIN_PAYOUT_CENTS, REFERRAL_MONTHS,
-  REFERRAL_RATE_LABEL, REFERRAL_TAIL_RATE_LABEL, REFERRAL_TIER_CUSTOMERS, REFERRAL_TIER_RATE_LABEL, type PayoutMethod,
+  firstYearEstimateCents, formatCents, REFERRAL_HOLD_DAYS, REFERRAL_MIN_PAYOUT_CENTS, REFERRAL_MONTHS,
+  REFERRAL_RATE_LABEL, REFERRAL_TAIL_RATE_LABEL, REFERRAL_TIER_CUSTOMERS, REFERRAL_TIER_RATE_LABEL,
 } from "@/lib/referrals";
-import { Badge, Button, Card, Field, Input, SegmentedControl, Stat } from "@/components/ui";
-
-interface Me {
-  partner: null | { code: string; status: "active" | "paused"; payout_method: PayoutMethod; payout_email: string };
-  stats?: {
-    visits: number; signups: number; inTrial: number; inTrialWorthCents: number; payingCustomers: number;
-    earned: number; pending: number; payable: number; paid: number; readyToPay: boolean;
-  };
-  payouts?: { amount_cents: number; method: string; paid_at: string }[];
-}
-
-const METHODS = [{ value: "paypal", label: "PayPal" }, { value: "wise", label: "Wise" }] as const;
-const methodName = (m: string) => (m === "wise" ? "Wise" : "PayPal");
+import { Badge, Button, Icon, Slider } from "@/components/ui";
+import styles from "./InvitePitch.module.css";
+import CreatorArea from "./CreatorArea";
 
 /**
- * The creator page (D-27): the pitch when signed out, a short form to get a
- * link, then the creator's own numbers. Three states, one URL, so the link a
- * founder sends a creator always works.
+ * The creator page (D-27). Signed out: the pitch. Signed in: your own
+ * program first (the form to get a link, or your link, numbers and
+ * payouts), then how the program works. Profile keeps a small card that
+ * links here, so the dashboard isn't crowded with it.
  */
 export default function InviteClient() {
   const router = useRouter();
   const [token, setToken] = useState<string | null | undefined>(undefined);
-  const [me, setMe] = useState<Me | null>(null);
-
-  const load = useCallback(async (t: string) => {
-    const res = await fetch("/api/referrals/me", { headers: { Authorization: `Bearer ${t}` } });
-    setMe(res.ok ? await res.json() : { partner: null });
-  }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setToken(session?.access_token ?? null);
-      if (session) load(session.access_token);
-    });
-  }, [load]);
+    supabase.auth.getSession().then(({ data: { session } }) => setToken(session ? session.access_token : null));
+  }, []);
 
-  if (token === undefined || (token && !me)) return <p className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Loading…</p>;
-  if (!token) return <Pitch onStart={() => { rememberReturnTo("/invite"); router.push("/login"); }} />;
-  if (!me?.partner) return <JoinForm token={token} onJoined={() => load(token)} />;
-  return <CreatorDashboard me={me} token={token} onSaved={() => load(token)} />;
-}
-
-function Pitch({ onStart }: { onStart: () => void }) {
-  const annual = formatCents(commissionCents(PRO_ANNUAL_USD * 100));
-  const monthly = formatCents(commissionCents(PRO_MONTHLY_USD * 100));
+  if (token === undefined) return <p className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Loading…</p>;
+  if (token === null) return <Pitch onStart={() => { rememberReturnTo("/invite"); router.push("/login"); }} />;
   return (
-    <div style={{ display: "grid", gap: "var(--uf-s5)" }}>
-      <div>
-        <Badge tone="positive">For creators</Badge>
-        <h1 className="uf-t-h1" style={{ margin: "var(--uf-s3) 0 var(--uf-s2)" }}>Earn {REFERRAL_RATE_LABEL} for a year</h1>
-        <p className="uf-t-lead" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-          Share the free FIRE calculator. Your readers get Pro {REFERRED_TRIAL_LABEL}. When one subscribes, you earn {REFERRAL_RATE_LABEL} of what they pay for {REFERRAL_MONTHS} months.
-        </p>
+    <div>
+      <div className={styles.inner} style={{ paddingTop: "var(--uf-s6)", paddingBottom: "var(--uf-s6)" }}>
+        <section className={styles.mine} aria-labelledby="mine">
+          <Link href="/dashboard?tab=profile" className="uf-t-small" style={{ color: "var(--uf-ink-3)", textDecoration: "none" }}>← Back to your dashboard</Link>
+          <h1 id="mine" className="uf-t-h1" style={{ margin: 0 }}>Your creator program</h1>
+          <CreatorArea />
+        </section>
       </div>
-      <Button variant="primary" size="lg" onClick={onStart} style={{ justifySelf: "start" }}>Get your link</Button>
-      <Card style={{ display: "grid", gap: "var(--uf-s3)" }}>
-        {[
-          ["1", "Get your link", "untilfire.com/r/yourname, in a minute."],
-          ["2", "Readers get a better deal", `The calculator is free with no signup, and Pro starts with ${REFERRED_TRIAL_LABEL}, twice the usual trial.`],
-          ["3", "Get paid monthly", `By PayPal or Wise. Your first payout goes out at any amount.`],
-          ["4", "Earn more as you grow", `${REFERRAL_TIER_RATE_LABEL} once ${REFERRAL_TIER_CUSTOMERS} readers pay, and ${REFERRAL_TAIL_RATE_LABEL} for as long as they stay after their first year.`],
-        ].map(([n, title, line]) => (
-          <div key={n} style={{ display: "flex", gap: "var(--uf-s3)", alignItems: "baseline" }}>
-            <span className="uf-t-data" style={{ color: "var(--uf-teal)", fontWeight: 700 }}>{n}</span>
-            <span className="uf-t-body"><b>{title}.</b> <span style={{ color: "var(--uf-ink-2)" }}>{line}</span></span>
-          </div>
-        ))}
-      </Card>
-      <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-        A reader on the yearly plan earns you {annual}. On monthly, {monthly} a month for up to a year.{" "}
-        <Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
-      </p>
+      <Pitch signedIn />
     </div>
   );
 }
 
-function JoinForm({ token, onJoined }: { token: string; onJoined: () => void }) {
-  const [code, setCode] = useState("");
-  const [method, setMethod] = useState<PayoutMethod>("paypal");
-  const [email, setEmail] = useState("");
-  const [accept, setAccept] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+const perYear = PRO_ANNUAL_USD * 100;
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    const res = await fetch("/api/referrals/me", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ code, payoutMethod: method, payoutEmail: email, acceptTerms: accept }),
-    });
-    setBusy(false);
-    if (res.ok) return onJoined();
-    setError((await res.json().catch(() => ({}))).error ?? "Something went wrong. Try again.");
-  }
+const LADDER = [
+  { rate: REFERRAL_RATE_LABEL, pct: 30, when: `Readers 1–${REFERRAL_TIER_CUSTOMERS - 1}` },
+  { rate: REFERRAL_TIER_RATE_LABEL, pct: 40, when: `From reader ${REFERRAL_TIER_CUSTOMERS}` },
+  { rate: REFERRAL_TAIL_RATE_LABEL, pct: 10, when: "After year one, for life" },
+];
 
+const FAQ: [string, string][] = [
+  ["When do I get paid?", `Monthly by PayPal or Wise, after a ${REFERRAL_HOLD_DAYS}-day refund hold. First payout at any amount, then from ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)}.`],
+  ["Who counts as my reader?", "Anyone who opens your link and signs up within 60 days, on the same browser."],
+  ["Do I disclose it?", "Yes, say it's an affiliate link. Don't promise returns or a retirement date."],
+];
+
+/**
+ * The public pitch (design B): a dark hero where the key visual is the one
+ * bright thing, then how you earn, what you get and FAQ on light bands, and
+ * a dark closing call to action. Signed in, the hero and the closing band drop out.
+ */
+function Pitch({ onStart, signedIn = false }: { onStart?: () => void; signedIn?: boolean }) {
+  const [readers, setReaders] = useState(10);
   return (
-    <form onSubmit={submit} style={{ display: "grid", gap: "var(--uf-s5)" }}>
-      <h1 className="uf-t-h1" style={{ margin: 0 }}>Get your link</h1>
-      <Field label="Your link" htmlFor="ref-code" hint="Letters, numbers and hyphens. It can't change later.">
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--uf-s2)" }}>
-          <span className="uf-t-data" style={{ color: "var(--uf-ink-3)", whiteSpace: "nowrap" }}>untilfire.com/r/</span>
-          <Input id="ref-code" value={code} onChange={(e) => setCode(e.target.value.toLowerCase())} placeholder="jane-saves" autoComplete="off" required style={{ minWidth: 0, flex: 1 }} />
-        </div>
-      </Field>
-      <SegmentedControl label="Get paid by" options={METHODS} value={method} onChange={setMethod} />
-      <Field label={`${methodName(method)} email`} htmlFor="ref-email">
-        <Input id="ref-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
-      </Field>
-      <label className="uf-t-small" style={{ display: "flex", gap: "var(--uf-s2)", alignItems: "flex-start", color: "var(--uf-ink-2)" }}>
-        <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} style={{ marginTop: 3 }} />
-        <span>I accept the <Link href="/invite/terms" style={{ color: "var(--uf-green)" }} target="_blank">terms</Link>, and I&apos;ll tell readers it&apos;s an affiliate link.</span>
-      </label>
-      {error && <p role="alert" className="uf-t-small" style={{ margin: 0, color: "var(--uf-neg-ink)" }}>{error}</p>}
-      <Button type="submit" variant="primary" disabled={busy || !accept} style={{ justifySelf: "start" }}>{busy ? "Creating…" : "Create my link"}</Button>
-    </form>
-  );
-}
-
-function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSaved: () => void }) {
-  const p = me.partner!;
-  const s = me.stats!;
-  const link = `untilfire.com/r/${p.code}`;
-  const [copied, setCopied] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [method, setMethod] = useState<PayoutMethod>(p.payout_method);
-  const [email, setEmail] = useState(p.payout_email);
-  const [error, setError] = useState<string | null>(null);
-
-  async function save() {
-    setError(null);
-    const res = await fetch("/api/referrals/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ payoutMethod: method, payoutEmail: email }),
-    });
-    if (!res.ok) return setError((await res.json().catch(() => ({}))).error ?? "Couldn't save.");
-    setEditing(false);
-    onSaved();
-  }
-
-  return (
-    <div style={{ display: "grid", gap: "var(--uf-s5)" }}>
-      <h1 className="uf-t-h1" style={{ margin: 0 }}>Your creator link</h1>
-      <Card style={{ display: "flex", gap: "var(--uf-s3)", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
-        <span className="uf-t-data" style={{ fontSize: 17, fontWeight: 700, wordBreak: "break-all" }}>{link}</span>
-        <Button variant="primary" size="sm" onClick={() => { navigator.clipboard?.writeText(`https://www.${link}`).then(() => setCopied(true)).catch(() => {}); }}>
-          {copied ? "Copied ✓" : "Copy link"}
-        </Button>
-        {p.status === "paused" && <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)", width: "100%" }}>Paused: this link isn&apos;t earning right now. Email hello@untilfire.com.</span>}
-      </Card>
-
-      <EmbedSnippet code={p.code} />
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "var(--uf-s4)" }}>
-        <Stat label="Visits" value={s.visits.toLocaleString()} />
-        <Stat label="Signups" value={s.signups.toLocaleString()} />
-        <Stat label="In free trial" value={s.inTrial.toLocaleString()} />
-        <Stat label="Paying" value={s.payingCustomers.toLocaleString()} />
-        <Stat label="Earned" value={formatCents(s.earned)} tone="positive" />
-      </div>
-      {s.inTrial > 0 && (
-        <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-          {s.inTrial === 1 ? "1 reader is" : `${s.inTrial} readers are`} trying Pro. If they subscribe yearly, that&apos;s about <b>{formatCents(s.inTrialWorthCents)}</b> for you in their first year.
-        </p>
-      )}
-      <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-        {s.payingCustomers >= REFERRAL_TIER_CUSTOMERS
-          ? `You're on ${REFERRAL_TIER_RATE_LABEL} for new payments.`
-          : `${s.payingCustomers} of ${REFERRAL_TIER_CUSTOMERS} paying readers to ${REFERRAL_TIER_RATE_LABEL}.`}
-      </p>
-
-      <Card style={{ display: "grid", gap: "var(--uf-s2)" }}>
-        <div className="uf-t-body" style={{ display: "flex", gap: "var(--uf-s5)", flexWrap: "wrap" }}>
-          <span>On hold <b className="uf-t-data">{formatCents(s.pending)}</b></span>
-          <span>Ready <b className="uf-t-data">{formatCents(s.payable)}</b></span>
-          <span>Paid <b className="uf-t-data">{formatCents(s.paid)}</b></span>
-        </div>
-        <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-          {s.readyToPay
-            ? `Goes out in this month's payout to your ${methodName(p.payout_method)}.`
-            : s.paid > 0
-              ? `Earnings are held ${REFERRAL_HOLD_DAYS} days for refunds, then paid monthly once ${formatCents(REFERRAL_MIN_PAYOUT_CENTS)} is ready.`
-              : `Earnings are held ${REFERRAL_HOLD_DAYS} days for refunds. Your first payout goes out at any amount.`}
-        </p>
-      </Card>
-
-      {(me.payouts ?? []).length > 0 && (
-        <div style={{ display: "grid", gap: "var(--uf-s1)" }}>
-          <span className="uf-t-label" style={{ color: "var(--uf-ink-3)" }}>Payouts</span>
-          {me.payouts!.map((x) => (
-            <span key={x.paid_at} className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
-              <span className="uf-t-data">{formatCents(x.amount_cents)}</span> by {methodName(x.method)} · {new Date(x.paid_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-            </span>
-          ))}
-        </div>
+    <div>
+      {!signedIn && (
+        <header className={styles.heroBand}>
+          <div className={styles.glowA} aria-hidden="true" />
+          <div className={styles.glowB} aria-hidden="true" />
+          <div className={styles.dots} aria-hidden="true" />
+          <div className={`${styles.inner} ${styles.heroWrap}`}>
+            <div className={styles.hero}>
+              <Badge tone="positive">For creators</Badge>
+              <h1 className={`uf-t-display ${styles.title}`}>Earn {REFERRAL_RATE_LABEL} for sharing a free calculator</h1>
+              <div className={styles.offer} aria-label="The offer">
+                <div><span className={`uf-t-data ${styles.big}`}>{REFERRAL_RATE_LABEL}</span><span className="uf-t-small">of what readers pay</span></div>
+                <div><span className={`uf-t-data ${styles.big}`}>{REFERRAL_MONTHS} mo</span><span className="uf-t-small">per reader</span></div>
+                <div><span className={`uf-t-data ${styles.big}`}>{REFERRED_TRIAL_LABEL.replace(" free", "")}</span><span className="uf-t-small">free Pro for them</span></div>
+              </div>
+              <div className={styles.ctaRow}>
+                <Button variant="primary" size="lg" onClick={onStart}>Get your link</Button>
+                <Link href="/invite/terms" className="uf-t-small">Terms</Link>
+              </div>
+            </div>
+            <KeyVisual />
+          </div>
+        </header>
       )}
 
-      {editing ? (
-        <div style={{ display: "grid", gap: "var(--uf-s3)" }}>
-          <SegmentedControl label="Get paid by" options={METHODS} value={method} onChange={setMethod} size="sm" />
-          <Field label={`${methodName(method)} email`} htmlFor="ref-email-edit">
-            <Input id="ref-email-edit" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </Field>
-          {error && <p role="alert" className="uf-t-small" style={{ margin: 0, color: "var(--uf-neg-ink)" }}>{error}</p>}
-          <div style={{ display: "flex", gap: "var(--uf-s2)" }}>
-            <Button variant="primary" size="sm" onClick={save}>Save</Button>
-            <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+      <section className={styles.earnBand} aria-label="How you earn">
+        <div className={`${styles.inner} ${styles.earn}`}>
+          <div className={styles.panel}>
+            <h2 className="uf-t-h3">How you earn</h2>
+            <ol className={styles.ladder}>
+              {LADDER.map((l) => (
+                <li key={l.rate}>
+                  <span className={`uf-t-data ${styles.rate}`}>{l.rate}</span>
+                  <span className={styles.bar}><i style={{ width: `${(l.pct / 40) * 100}%` }} /></span>
+                  <span className="uf-t-small">{l.when}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className={styles.panel}>
+            <h2 className="uf-t-h3">What it could add up to</h2>
+            <Slider label="Readers who subscribe" value={readers} min={1} max={100} onChange={setReaders} format={(n) => `${n}`} exact={false} />
+            <div aria-live="polite">
+              <span className={`uf-t-data ${styles.estimateNum}`}>≈ {formatCents(firstYearEstimateCents(readers, perYear))}</span>
+              <span className="uf-t-small"> first year</span>
+            </div>
+            <p className="uf-t-small" style={{ margin: 0, opacity: 0.7 }}>Estimate: yearly plan (${PRO_ANNUAL_USD}), kept for a year.</p>
           </div>
         </div>
-      ) : (
-        <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
-          Paid to {methodName(p.payout_method)} {p.payout_email}.{" "}
-          <button type="button" onClick={() => setEditing(true)} style={{ background: "none", border: "none", padding: 0, color: "var(--uf-green)", font: "inherit", fontWeight: 700, cursor: "pointer" }}>Change</button>
-        </p>
+      </section>
+
+      {!signedIn && (
+        <section className={styles.inner} aria-labelledby="kit" style={{ paddingTop: "var(--uf-s7)" }}>
+          <h2 id="kit" className="uf-t-h2" style={{ margin: "0 0 var(--uf-s4)" }}>What you get</h2>
+          <ul className={styles.tiles}>
+            {([
+              ["target", "Your own link", "untilfire.com/r/you"],
+              ["calendar", "The calculator", "Paste it into any post"],
+              ["money", "Live numbers", "Visits, signups, earnings"],
+              ["card", "Monthly payouts", "PayPal or Wise"],
+            ] as const).map(([icon, title, line]) => (
+              <li key={title}>
+                <span className={styles.chip}><Icon name={icon} size={20} /></span>
+                <b>{title}</b>
+                <span className="uf-t-small">{line}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-      <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-3)" }}>
-        {REFERRAL_RATE_LABEL} of each payment in a reader&apos;s first {REFERRAL_MONTHS} months, {REFERRAL_TAIL_RATE_LABEL} after. Say it&apos;s an affiliate link. <Link href="/invite/terms" style={{ color: "var(--uf-green)" }}>Terms</Link>
-      </p>
+
+      <section className={styles.inner} aria-labelledby="faq" style={{ paddingTop: "var(--uf-s7)", paddingBottom: "var(--uf-s7)" }}>
+        <h2 id="faq" className="uf-t-h3" style={{ margin: "0 0 var(--uf-s2)" }}>Questions</h2>
+        {FAQ.map(([q, a]) => (
+          <details key={q} className={styles.qa}>
+            <summary className="uf-t-body" style={{ fontWeight: 700 }}>{q}</summary>
+            <p className="uf-t-small" style={{ margin: "var(--uf-s2) 0 0", color: "var(--uf-ink-2)" }}>{a}</p>
+          </details>
+        ))}
+      </section>
+
+      {!signedIn && (
+        <section className={styles.closeBand}>
+          <div className={`${styles.inner} ${styles.close}`}>
+            <h2 className="uf-t-h2" style={{ margin: 0 }}>Your readers want a date. Give them one.</h2>
+            <Button variant="secondary" size="lg" onClick={onStart}>Get your link</Button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
 
 /**
- * The calculator for a creator's own post (D-27). The iframe is the tool;
- * the plain link under it is what search engines count, and both go through
- * the creator's /r/ link so readers who continue are credited to them.
+ * The key visual: a creator's post with the real calculator in it, and the
+ * moment a reader subscribes. The whole program in one picture. The widget
+ * is the live embed, scaled down, so it always shows the current calculator.
  */
-function EmbedSnippet({ code }: { code: string }) {
-  const [copied, setCopied] = useState(false);
-  const snippet =
-    `<iframe src="https://www.untilfire.com/embed/${code}" title="Freedom date calculator" width="100%" height="520" style="border:0;border-radius:12px" loading="lazy"></iframe>\n` +
-    `<p><a href="https://www.untilfire.com/r/${code}">Freedom date calculator by UntilFire</a></p>`;
+function KeyVisual() {
+  const earned = formatCents(Math.floor((perYear * 3000) / 10_000));
   return (
-    <Card style={{ display: "grid", gap: "var(--uf-s3)" }}>
-      <div>
-        <h2 className="uf-t-h3" style={{ margin: 0 }}>Put the calculator in your post</h2>
-        <p className="uf-t-small" style={{ margin: "var(--uf-s1) 0 0", color: "var(--uf-ink-2)" }}>
-          Readers get their freedom year right on your page. Anyone who continues is credited to you.
-        </p>
+    <div className={styles.visual} aria-hidden="true">
+      <div className={styles.browser}>
+        <div className={styles.browserBar}>
+          <span /><span /><span />
+          <em className="uf-t-data">janesaves.com/when-can-i-quit</em>
+        </div>
+        <div className={styles.post}>
+          <b>How I figured out when I can quit</b>
+          <i style={{ width: "92%" }} /><i style={{ width: "74%" }} />
+          <div className={styles.embedScale}>
+            <iframe src="/embed/your-name" title="" tabIndex={-1} loading="lazy" />
+          </div>
+        </div>
       </div>
-      <pre className="uf-t-data" style={{ margin: 0, padding: "var(--uf-s3)", background: "var(--uf-surface)", borderRadius: 8, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{snippet}</pre>
-      <div style={{ display: "flex", gap: "var(--uf-s3)", alignItems: "center", flexWrap: "wrap" }}>
-        <Button variant="secondary" size="sm" onClick={() => { navigator.clipboard?.writeText(snippet).then(() => setCopied(true)).catch(() => {}); }}>
-          {copied ? "Copied ✓" : "Copy embed code"}
-        </Button>
-        <a href={`/embed/${code}`} target="_blank" rel="noopener" className="uf-t-small" style={{ color: "var(--uf-green)" }}>Preview</a>
+      <div className={styles.toast}>
+        <span className={`uf-t-data ${styles.toastAmount}`}>+{earned}</span>
+        <span className="uf-t-small">A reader subscribed</span>
       </div>
-    </Card>
+    </div>
   );
 }

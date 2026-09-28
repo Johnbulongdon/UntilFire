@@ -15,7 +15,7 @@ interface Commission {
 interface Partner {
   id: string;
   code: string;
-  status: "active" | "paused";
+  status: "active" | "paused" | "removed";
   accountEmail: string;
   payoutMethod: "paypal" | "wise";
   payoutEmail: string;
@@ -48,6 +48,8 @@ export default function ReferralsTab({ token }: { token: string }) {
   const [refs, setRefs] = useState<Record<string, string>>({});
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [holds, setHolds] = useState<{ code: string; email: string; note: string | null }[]>([]);
+  const [hold, setHold] = useState({ code: "", email: "", note: "" });
 
   function load() {
     fetch("/api/admin/referrals", { headers: { Authorization: `Bearer ${token}` } })
@@ -56,6 +58,7 @@ export default function ReferralsTab({ token }: { token: string }) {
         if (d.error) return setError(d.error);
         setPartners(d.partners);
         setMinPayout(d.minPayoutCents);
+        setHolds(d.holds ?? []);
       })
       .catch(() => setError("Failed to load"));
   }
@@ -73,6 +76,7 @@ export default function ReferralsTab({ token }: { token: string }) {
     setBusy(false);
     if (!res.ok) setError(d.error ?? "Failed");
     load();
+    return res.ok;
   }
 
   if (error && !partners) return <p style={{ color: "var(--uf-neg-ink)" }}>{error}</p>;
@@ -91,16 +95,46 @@ export default function ReferralsTab({ token }: { token: string }) {
       {error && <p style={{ color: "var(--uf-neg-ink)", margin: 0 }}>{error}</p>}
       {partners.length === 0 && <p style={small}>No creators yet. Share untilfire.com/invite with them.</p>}
 
+      <div style={{ ...card, display: "grid", gap: 10 }}>
+        <div style={{ fontWeight: 800 }}>Held for creators you&apos;re pitching</div>
+        <div style={small}>Only an account with this email can join with the code. It frees itself when they join.</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {(["code", "email", "note"] as const).map((f) => (
+            <input key={f} aria-label={`Hold ${f}`} placeholder={f === "code" ? "jane-saves" : f === "email" ? "their@email.com" : "Note (optional)"}
+              value={hold[f]} onChange={(e) => setHold({ ...hold, [f]: e.target.value })}
+              style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid var(--uf-border-2)", fontSize: 13, fontFamily: "inherit" }} />
+          ))}
+          <button style={button} disabled={busy || !hold.code.trim() || !hold.email.trim()}
+            onClick={async () => { if (await act({ action: "hold", ...hold })) setHold({ code: "", email: "", note: "" }); }}>
+            Hold
+          </button>
+        </div>
+        {holds.map((h) => (
+          <div key={h.code} style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", fontSize: 13 }}>
+            <b>untilfire.com/r/{h.code}</b><span style={small}>for {h.email}{h.note ? ` · ${h.note}` : ""}</span>
+            <button style={button} disabled={busy} onClick={() => act({ action: "release", code: h.code })}>Release</button>
+          </div>
+        ))}
+      </div>
+
       {partners.map((p) => (
         <div key={p.id} style={{ ...card, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontWeight: 800 }}>untilfire.com/r/{p.code} {p.status === "paused" && <span style={{ ...small, fontWeight: 700 }}>· paused</span>}</div>
+              <div style={{ fontWeight: 800 }}>untilfire.com/r/{p.code} {p.status !== "active" && <span style={{ ...small, fontWeight: 700 }}>· {p.status}</span>}</div>
               <div style={small}>{p.accountEmail} · pays to {p.payoutMethod === "paypal" ? "PayPal" : "Wise"} {p.payoutEmail}</div>
             </div>
-            <button style={button} disabled={busy} onClick={() => act({ action: "status", partnerId: p.id, status: p.status === "active" ? "paused" : "active" })}>
-              {p.status === "active" ? "Pause" : "Reactivate"}
-            </button>
+            {p.status !== "removed" && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={button} disabled={busy} onClick={() => act({ action: "status", partnerId: p.id, status: p.status === "active" ? "paused" : "active" })}>
+                  {p.status === "active" ? "Pause" : "Reactivate"}
+                </button>
+                <button style={{ ...button, color: "var(--uf-neg-ink)" }} disabled={busy}
+                  onClick={() => window.confirm(`Remove ${p.code}? Their link stops, the code is freed, and unpaid earnings are forfeited. This can't be undone.`) && act({ action: "remove", partnerId: p.id })}>
+                  Remove
+                </button>
+              </div>
+            )}
           </div>
 
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: 13 }}>

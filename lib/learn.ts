@@ -35,6 +35,8 @@ export type LearnStage = {
   id: LearnStageId
   label: string
   shortLabel: string
+  /** One line for the /learn stage picker; description is the stage page's. */
+  tagline: string
   description: string
   whatMattersNow: string
   articleSlugs: string[]
@@ -658,7 +660,7 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
     primaryStage: 'living-in-fire',
     secondaryStages: ['approaching-fire'],
     relatedCalculators: [
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/calculators/coast-fire', label: 'Coast FIRE Calculator' },
     ],
   },
@@ -706,7 +708,7 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
     primaryStage: 'approaching-fire',
     secondaryStages: ['living-in-fire'],
     relatedCalculators: [
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/?source=learn-sequence-risk', label: 'Explore a FIRE estimate' },
     ],
   },
@@ -738,7 +740,7 @@ const articleMetaBySlug: Record<string, LearnArticleMeta> = {
     primaryStage: 'building-momentum',
     secondaryStages: ['approaching-fire'],
     relatedCalculators: [
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/dashboard', label: 'Test Your Allocation' },
     ],
   },
@@ -773,6 +775,7 @@ export const learnStages: LearnStage[] = [
     id: 'starting-out',
     label: 'Starting Out',
     shortLabel: 'Start here',
+    tagline: 'What FIRE is and why your savings rate matters most.',
     description: 'Learn the core ideas first: what FIRE is, why savings rate matters, and how compounding and simple rules of thumb shape the journey.',
     whatMattersNow: 'Get the foundations right before you optimize. Learn the language, understand your savings rate, and run your first calculator with confidence.',
     articleSlugs: [
@@ -793,6 +796,7 @@ export const learnStages: LearnStage[] = [
     id: 'building-momentum',
     label: 'Building Momentum',
     shortLabel: 'Build momentum',
+    tagline: 'How to invest your savings and keep more of it.',
     description: 'You understand the basics. Now learn how to invest: index funds, asset allocation, diversification, and tax efficiency. Then focus on account strategy and tradeoffs that move your FIRE date.',
     whatMattersNow: 'Invest your savings wisely using low-cost index funds. Master your allocation, rebalance annually, and reduce taxes. Combine this with account strategy (401k, Roth) to improve the machine.',
     articleSlugs: [
@@ -818,6 +822,7 @@ export const learnStages: LearnStage[] = [
     id: 'approaching-fire',
     label: 'Approaching FIRE',
     shortLabel: 'Pressure-test',
+    tagline: 'Size your target and stress-test the plan.',
     description: 'As FIRE gets closer, the important work shifts to target sizing, assumption pressure-testing, and protecting the plan from fragile assumptions.',
     whatMattersNow: 'Dial in the target. Stress-test spending, withdrawal assumptions, and downside risk before you trust the retirement date.',
     articleSlugs: [
@@ -827,7 +832,7 @@ export const learnStages: LearnStage[] = [
       'what-is-the-4-percent-rule',
     ],
     calculatorLinks: [
-      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
+      { href: '/fire-calculator', label: 'FIRE Calculator' },
       { href: '/dashboard', label: 'Open Dashboard Simulations' },
     ],
     nextActionLabel: 'Pressure-test your FIRE number',
@@ -837,6 +842,7 @@ export const learnStages: LearnStage[] = [
     id: 'living-in-fire',
     label: 'Living in FIRE',
     shortLabel: 'Stay resilient',
+    tagline: 'Make the money last once work is optional.',
     description: 'Once work is optional, the focus shifts to withdrawal discipline, account sequencing, flexible spending, and making the plan hold up through real life.',
     whatMattersNow: 'Protect the portfolio. Withdrawal strategy, tax-aware access, and sequence risk now matter more than pure accumulation speed.',
     articleSlugs: [
@@ -846,7 +852,7 @@ export const learnStages: LearnStage[] = [
       'roth-ira-vs-401k-for-fire',
     ],
     calculatorLinks: [
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
       { href: '/dashboard', label: 'Open Dashboard Projections' },
     ],
     nextActionLabel: 'Review your withdrawal assumptions',
