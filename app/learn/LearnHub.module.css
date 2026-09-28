@@ -1,0 +1,41 @@
+.page { background: var(--uf-ground); min-height: 100vh; color: var(--uf-ink); }
+.wrap { max-width: 880px; margin: 0 auto; padding: var(--uf-s7) var(--uf-s5); }
+.hero { display: grid; gap: var(--uf-s3); margin-bottom: var(--uf-s6); }
+
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--uf-s2); margin-bottom: var(--uf-s5); }
+.tab {
+  display: flex; align-items: center; gap: var(--uf-s2);
+  padding: var(--uf-s3) var(--uf-s4); border-radius: 12px; cursor: pointer; text-align: left;
+  font: inherit; font-size: 14px; font-weight: 700;
+  background: var(--uf-card); color: var(--uf-ink-2); border: 1px solid var(--uf-border);
+}
+.tab[aria-selected="true"] { background: var(--uf-ink); color: var(--uf-ground); border-color: var(--uf-ink); }
+.tab:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 2px; }
+.tabN { font-size: 12px; opacity: 0.7; }
+
+.panel { display: grid; gap: var(--uf-s4); }
+.reads { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--uf-s2); }
+.read {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--uf-s4);
+  padding: var(--uf-s4); border-radius: 14px; text-decoration: none; color: var(--uf-ink);
+  background: var(--uf-card); border: 1px solid var(--uf-border);
+  transition: border-color 0.15s ease;
+}
+.read:hover { border-color: var(--uf-green); }
+.read:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 2px; }
+.panelLinks { display: flex; flex-wrap: wrap; gap: var(--uf-s5); }
+.panelLinks a, .more a { color: var(--uf-green); font-weight: 700; text-decoration: none; font-size: 14px; }
+
+.more {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--uf-s5);
+  margin-top: var(--uf-s7); padding-top: var(--uf-s5); border-top: 1px solid var(--uf-border);
+  color: var(--uf-ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) { .read { transition: none; } }
+@media (max-width: 700px) {
+  .wrap { padding: var(--uf-s6) var(--uf-s4); }
+  .title { font-size: 40px; }
+  .tabs { grid-template-columns: 1fr 1fr; }
+  .read { align-items: flex-start; flex-direction: column; gap: var(--uf-s1); }
+}

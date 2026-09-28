@@ -1,72 +1,59 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { cityLandingPages } from '@/lib/city-pages'
+import { Icon, type IconName } from '@/components/ui'
+import styles from './CalculatorsHub.module.css'
 
-const CALCULATORS = [
+/**
+ * The calculators hub: a signpost, not an article. Calculators are grouped
+ * by the question a visitor arrives with, one line each. The calculator
+ * pages themselves carry the explanations and rank on their own.
+ */
+const GROUPS: { title: string; icon: IconName; items: { href: string; name: string; line: string }[] }[] = [
   {
-    href: '/fire-calculator',
-    name: 'FIRE Calculator',
-    description: 'Find your FIRE date, FIRE number, Coast FIRE milestone, savings rate, and monthly moves in one planning flow.',
-    keyword: 'FIRE calculator',
-    accent: 'var(--uf-green-900)',
+    title: 'When can I retire?',
+    icon: 'calendar',
+    items: [
+      { href: '/fire-calculator', name: 'FIRE Calculator', line: 'Your freedom date and next move.' },
+      { href: '/calculators/4-percent-rule', name: 'FIRE Number', line: 'How much you need invested.' },
+      { href: '/calculators/coast-fire', name: 'Coast FIRE', line: 'When you can stop saving.' },
+      { href: '/calculators/expat-fire', name: 'Expat FIRE', line: 'Where your money goes furthest.' },
+    ],
   },
   {
-    href: '/calculators/purchase-impact',
-    name: 'Purchase Impact Calculator',
-    description: 'See the compound value of any purchase at your freedom date and exactly how many days it delays your financial independence.',
-    keyword: 'purchase opportunity cost calculator',
-    accent: 'var(--uf-warn)',
+    title: 'Am I on track?',
+    icon: 'target',
+    items: [
+      { href: '/calculators/savings-rate', name: 'Savings Rate', line: 'What your savings rate buys you.' },
+      { href: '/calculators/net-worth-by-age', name: 'Net Worth by Age', line: 'How you compare with your age.' },
+    ],
   },
   {
-    href: '/calculators/4-percent-rule',
-    name: 'FIRE Number Calculator',
-    description: 'Estimate how much you need invested to retire using the 4% rule and adjustable withdrawal rates.',
-    keyword: 'FIRE number calculator',
-    accent: 'var(--uf-green)',
+    title: 'How will my money grow?',
+    icon: 'money',
+    items: [
+      { href: '/calculators/compound-interest', name: 'Compound Interest', line: 'Growth from monthly investing.' },
+      { href: '/calculators/apy', name: 'APY', line: 'Your real yearly yield.' },
+      { href: '/calculators/purchase-impact', name: 'Purchase Impact', line: 'What a purchase costs your date.' },
+    ],
+  },
+]
+
+const FAQ = [
+  {
+    q: 'Which calculator should I use first?',
+    a: 'The FIRE Calculator. It gives your freedom date in about a minute. The others answer one narrower question each.',
   },
   {
-    href: '/calculators/coast-fire',
-    name: 'Coast FIRE Calculator',
-    description: 'Find the amount you need invested today so compound growth can carry you to retirement later.',
-    keyword: 'coast FIRE calculator',
-    accent: 'var(--uf-chart-2)',
+    q: 'How is Coast FIRE different from regular FIRE?',
+    a: 'Regular FIRE means you have enough to stop working now. Coast FIRE means what you already have will grow to that amount by retirement, so you only need to cover today’s spending.',
   },
   {
-    href: '/calculators/savings-rate',
-    name: 'Savings Rate Calculator',
-    description: 'Calculate your savings rate and see how the percentage you keep changes your FIRE timeline.',
-    keyword: 'savings rate calculator',
-    accent: '#0EA5E9',
+    q: 'Are these calculators accurate for my situation?',
+    a: 'They are estimates from standard assumptions: long-run market growth after inflation and the 4% rule. Your taxes, healthcare and returns will differ, so use them to see what moves your date, not as a promise.',
   },
-  {
-    href: '/calculators/net-worth-by-age',
-    name: 'Net Worth by Age Calculator',
-    description: 'Compare your net worth with US households your age, from Federal Reserve data adjusted to today’s dollars.',
-    keyword: 'net worth by age calculator',
-    accent: 'var(--uf-teal)',
-  },
-  {
-    href: '/calculators/compound-interest',
-    name: 'Compound Interest Calculator',
-    description: 'Project investment growth over time with monthly contributions and compounding.',
-    keyword: 'compound interest calculator',
-    accent: 'var(--uf-green-700)',
-  },
-  {
-    href: '/calculators/apy',
-    name: 'APY Calculator',
-    description: 'Convert APR to APY and see how compounding frequency changes your real annual yield.',
-    keyword: 'APY calculator',
-    accent: 'var(--uf-teal)',
-  },
-  {
-    href: '/calculators/expat-fire',
-    name: 'Expat FIRE Calculator',
-    description: 'Spin the globe to find cities where your savings unlocks early retirement. 392 cities, color-coded by FIRE readiness.',
-    keyword: 'expat FIRE calculator',
-    accent: 'var(--uf-teal)',
-  },
-] as const
+]
+
+const ALL = GROUPS.flatMap((g) => g.items)
 
 export const metadata: Metadata = {
   title: 'Financial Calculators for FIRE Planning | UntilFire',
@@ -94,171 +81,43 @@ export const metadata: Metadata = {
 export default function CalculatorsHubPage() {
   return (
     <>
-      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
-        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '56px 24px 88px' }}>
-          <header style={{ marginBottom: 40 }}>
-            <p style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 12px' }}>
-              Calculators
-            </p>
-            <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.04em', color: 'var(--uf-ink)', margin: '0 0 16px' }}>
-              Free FIRE calculators that answer the questions people actually search for.
-            </h1>
-            <p style={{ maxWidth: 760, fontSize: 17, lineHeight: 1.8, color: 'var(--uf-ink-2)', margin: 0 }}>
-              Start with one specific question like your FIRE number, Coast FIRE target, savings rate, or APY. Then move into the full UntilFire calculator when you want your retirement date adjusted for your city, income, and spending.
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 24 }}>
-              <Link
-                href="/?source=calculators-hub"
-                style={{ textDecoration: 'none', background: 'linear-gradient(135deg, var(--uf-green), var(--uf-green-900))', color: 'var(--uf-card)', padding: '12px 18px', borderRadius: 10, fontWeight: 700, fontSize: 14 }}
-              >
-                Calculate full FIRE date
-              </Link>
-              <Link
-                href="/learn"
-                style={{ textDecoration: 'none', background: 'var(--uf-card)', color: 'var(--uf-ink)', padding: '12px 18px', borderRadius: 10, border: '1px solid var(--uf-border)', fontWeight: 700, fontSize: 14 }}
-              >
-                Read FIRE guides
-              </Link>
-            </div>
+      <main className={styles.page}>
+        <div className={styles.wrap}>
+          <header className={styles.hero}>
+            <h1 className={`uf-t-display ${styles.title}`} style={{ margin: 0 }}>FIRE calculators</h1>
+            <p className="uf-t-lead" style={{ margin: 0, color: 'var(--uf-ink-2)' }}>Free. No sign-up. Pick your question.</p>
           </header>
 
-          <section
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: 18,
-              marginBottom: 44,
-            }}
-          >
-            {CALCULATORS.map((calculator) => (
-              <Link
-                key={calculator.href}
-                href={calculator.href}
-                style={{
-                  textDecoration: 'none',
-                  background: 'var(--uf-card)',
-                  border: '1px solid var(--uf-border)',
-                  borderRadius: 16,
-                  padding: '22px 20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                  minHeight: 228,
-                }}
-              >
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    background: `${calculator.accent}14`,
-                    border: `1px solid ${calculator.accent}33`,
-                    color: calculator.accent,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800,
-                    fontSize: 13,
-                  }}
-                >
-                  UF
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: calculator.accent }}>
-                  {calculator.keyword}
-                </div>
-                <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.2, letterSpacing: '-0.02em', color: 'var(--uf-ink)' }}>
-                  {calculator.name}
-                </h2>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: 'var(--uf-ink-2)', flexGrow: 1 }}>
-                  {calculator.description}
-                </p>
-                <div style={{ fontSize: 13, fontWeight: 700, color: calculator.accent }}>
-                  Open calculator
-                </div>
-              </Link>
-            ))}
-          </section>
-
-          <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '28px 24px' }}>
-            <h2 style={{ margin: '0 0 12px', fontSize: 24, color: 'var(--uf-ink)', letterSpacing: '-0.02em' }}>
-              How these calculators fit together
-            </h2>
-            <p style={{ margin: '0 0 12px', fontSize: 15, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>
-              The calculator pages are designed for high-intent search queries. Someone looking for an APY calculator has a different immediate question than someone looking for a FIRE number calculator. The goal is to answer both well, then connect them back to the full planning journey.
-            </p>
-            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.8, color: 'var(--uf-ink-2)' }}>
-              If you are just starting, begin with the <Link href="/fire-calculator" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>FIRE Calculator</Link> for the full freedom-date view, then use the <Link href="/calculators/4-percent-rule" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>FIRE Number Calculator</Link> to pressure-test withdrawal rates. If you are comparing milestones, use the <Link href="/calculators/coast-fire" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>Coast FIRE Calculator</Link>. If you want to understand the concepts before you model them, the <Link href="/learn" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>Learning Hub</Link> explains the assumptions behind the math.
-            </p>
-          </section>
-
-          <section style={{ marginTop: 24, background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '28px 24px' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 18 }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: 'var(--uf-green)', marginBottom: 8 }}>
-                  City intent pages
-                </div>
-                <h2 style={{ margin: 0, fontSize: 24, color: 'var(--uf-ink)', letterSpacing: '-0.02em' }}>
-                  Compare FIRE math in the cities people actually search for.
-                </h2>
+          {GROUPS.map((group) => (
+            <section key={group.title} className={styles.group} aria-labelledby={`g-${group.icon}`}>
+              <h2 id={`g-${group.icon}`} className={`uf-t-h2 ${styles.groupTitle}`}>
+                <span className={styles.groupIcon}><Icon name={group.icon} size={20} /></span>
+                {group.title}
+              </h2>
+              <div className={styles.grid}>
+                {group.items.map((c) => (
+                  <Link key={c.href} href={c.href} className={styles.card}>
+                    <span className="uf-t-h3">{c.name}</span>
+                    <span className="uf-t-small" style={{ color: 'var(--uf-ink-2)' }}>{c.line}</span>
+                    <span className={styles.arrow} aria-hidden>→</span>
+                  </Link>
+                ))}
               </div>
-              <Link href="/learn/topics" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
-                See topic clusters
-              </Link>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
-              {cityLandingPages.map((page) => (
-                <Link
-                  key={page.slug}
-                  href={`/fire-number/${page.slug}`}
-                  style={{
-                    textDecoration: 'none',
-                    background: 'var(--uf-surface)',
-                    border: '1px solid var(--uf-border)',
-                    borderRadius: 16,
-                    padding: '18px 16px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 10,
-                  }}
-                >
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--uf-ink-2)' }}>
-                    {page.keyword}
-                  </div>
-                  <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--uf-ink)', letterSpacing: '-0.02em' }}>
-                    {page.city.name}
-                  </div>
-                  <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--uf-ink-2)' }}>
-                    Baseline spending ${Math.round(page.city.col).toLocaleString()} / year
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
+            </section>
+          ))}
 
-          <section style={{ marginTop: 24, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 18, padding: "28px 24px" }}>
-            <h2 style={{ margin: "0 0 18px", fontSize: 24, color: "var(--uf-ink)", letterSpacing: "-0.02em" }}>Calculator tools FAQ</h2>
-            <div style={{ display: "grid", gap: 16 }}>
-              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Which calculator should I use first?</h3>
-                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>Start with the full FIRE calculator if you want a complete retirement date and plan. Use the individual calculators for specific questions: FIRE number calculator for a target, coast FIRE for a milestone, savings rate for understanding your lever, compound interest for growth, and APY for savings account comparisons.</p>
-              </article>
-              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>What does the FIRE number calculator show?</h3>
-                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>It shows how much you need invested based on your annual spending and a withdrawal rate (3%, 4%, or 5%). The default 4% rule suggests multiplying spending by 25. Adjust the withdrawal rate to pressure-test your assumptions for a longer or earlier retirement.</p>
-              </article>
-              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>How is Coast FIRE different from regular FIRE?</h3>
-                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>Coast FIRE is the point where your existing portfolio, untouched, will grow to your full FIRE number by age 65. Regular FIRE means having enough to retire immediately. Coast FIRE is useful when you want work to feel optional sooner but don&apos;t need to stop earning entirely.</p>
-              </article>
-              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Can I compare multiple cities at once?</h3>
-                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>Use the FIRE number calculator for a baseline target, then visit the city pages in the calculators hub to see how the same target translates across different locations. Each city page shows the FIRE number, Coast FIRE number, and monthly savings timeline for that city&apos;s cost of living.</p>
-              </article>
-              <article style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 16 }}>
-                <h3 style={{ margin: "0 0 8px", color: "var(--uf-ink)", fontSize: 18 }}>Are these calculators accurate for my situation?</h3>
-                <p style={{ margin: 0, color: "var(--uf-ink-2)", fontSize: 15, lineHeight: 1.75 }}>These tools give you a starting estimate based on standard assumptions. Your actual FIRE date depends on your specific income, spending, taxes, healthcare, Social Security, market returns, and flexibility. Use them to understand the levers, then refine with the full FIRE calculator or a financial adviser for major decisions.</p>
-              </article>
-            </div>
+          <p className={`uf-t-body ${styles.cities}`}>
+            Planning around a place? <Link href="/fire-number">FIRE number by city →</Link>
+          </p>
+
+          <section className={styles.faq} aria-labelledby="faq">
+            <h2 id="faq" className="uf-t-h2" style={{ margin: '0 0 var(--uf-s3)' }}>Questions</h2>
+            {FAQ.map((f) => (
+              <details key={f.q} className={styles.qa}>
+                <summary className="uf-t-h3">{f.q}</summary>
+                <p className="uf-t-body" style={{ margin: 'var(--uf-s2) 0 0', color: 'var(--uf-ink-2)' }}>{f.a}</p>
+              </details>
+            ))}
           </section>
         </div>
       </main>
@@ -273,11 +132,11 @@ export default function CalculatorsHubPage() {
             description:
               'A hub of free FIRE planning calculators including FIRE number, Coast FIRE, savings rate, compound interest, and APY.',
             url: 'https://www.untilfire.com/calculators',
-            hasPart: CALCULATORS.map((calculator, index) => ({
+            hasPart: ALL.map((c, index) => ({
               '@type': 'ListItem',
               position: index + 1,
-              url: `https://www.untilfire.com${calculator.href}`,
-              name: calculator.name,
+              url: `https://www.untilfire.com${c.href}`,
+              name: `${c.name}${c.name.endsWith('Calculator') ? '' : ' Calculator'}`,
             })),
           }),
         }}
@@ -288,33 +147,11 @@ export default function CalculatorsHubPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
-            mainEntity: [
-              {
-                '@type': 'Question',
-                name: 'Which calculator should I use first?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Start with the full FIRE calculator if you want a complete retirement date and plan. Use the individual calculators for specific questions: FIRE number calculator for a target, coast FIRE for a milestone, savings rate for understanding your lever, compound interest for growth, and APY for savings account comparisons.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'What does the FIRE number calculator show?',
-                acceptedAnswer: { '@type': 'Answer', text: 'It shows how much you need invested based on your annual spending and a withdrawal rate (3%, 4%, or 5%). The default 4% rule suggests multiplying spending by 25. Adjust the withdrawal rate to pressure-test your assumptions for a longer or earlier retirement.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'How is Coast FIRE different from regular FIRE?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Coast FIRE is the point where your existing portfolio, untouched, will grow to your full FIRE number by age 65. Regular FIRE means having enough to retire immediately. Coast FIRE is useful when you want work to feel optional sooner but don\'t need to stop earning entirely.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'Can I compare multiple cities at once?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Use the FIRE number calculator for a baseline target, then visit the city pages in the calculators hub to see how the same target translates across different locations. Each city page shows the FIRE number, Coast FIRE number, and monthly savings timeline for that city\'s cost of living.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'Are these calculators accurate for my situation?',
-                acceptedAnswer: { '@type': 'Answer', text: 'These tools give you a starting estimate based on standard assumptions. Your actual FIRE date depends on your specific income, spending, taxes, healthcare, Social Security, market returns, and flexibility. Use them to understand the levers, then refine with the full FIRE calculator or a financial adviser for major decisions.' },
-              },
-            ],
+            mainEntity: FAQ.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
           }),
         }}
       />

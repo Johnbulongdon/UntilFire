@@ -40,7 +40,7 @@ const TOPIC_GROUPS = [
     ],
     calculatorLinks: [
       { href: '/calculators/apy', label: 'APY Calculator' },
-      { href: '/calculators/4-percent-rule', label: 'Safe Withdrawal Calculator' },
+      { href: '/calculators/4-percent-rule', label: 'FIRE Number Calculator' },
     ],
   },
 ] as const

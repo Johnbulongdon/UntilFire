@@ -8,6 +8,62 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-27
 
+### /invite, redesigned
+- A dark hero where the key visual is the one bright thing, so the eye
+  lands there first: a creator's post with the live calculator and a
+  "+$23.70 · a reader subscribed" toast. The details follow on light bands
+  (how you earn and the earnings estimate, four "what you get" tiles,
+  three FAQs), and a dark band closes. Shorter than before, with every
+  card in a row the same size.
+
+### Creator program in the dashboard; a pitch page that shows the deal
+- Profile → Creator program is a short card: your link, Copy and More.
+  More opens `/invite`, which for a signed-in user shows their own program
+  (join, link, stats, progress to the 40% tier, embed, payouts) above how it
+  works. The link stays inside the app, so no "leave site?" prompt.
+- `/invite` now shows the offer at a glance (30% · 12 months · 60 days for
+  readers), the 30% → 40% → 10% ladder, an earnings estimate slider, the
+  real calculator a creator can embed, what readers get, and a short FAQ.
+- Profile section titles have icons and use theme colours, so dark mode
+  reads properly.
+
+### Creator program: no look-alike links, remove and hold
+- Codes can't contain "untilfire", "official", "support", "staff" or "admin".
+- `/admin` → Referrals can **Remove** a creator who breaks the terms (link
+  stops, code freed, unpaid earnings forfeited) and **Hold** a code for a
+  creator being pitched, which only their email can claim.
+- The terms add: don't pick a link that suggests you're UntilFire or someone
+  you're not. D-27 amended.
+
+### Embeddable calculator: sliders and a growth curve
+- `/embed/<code>` shows the freedom year first, then a curve of invested
+  money rising to the dashed target line, then three sliders (take-home,
+  spending, invested). The footer is one line: the reader's trial, "by
+  UntilFire" and an "estimate" note whose assumptions show on hover. Fits
+  the 520px snippet on phones and wide blog columns.
+- `freedomPath` in `lib/quick-freedom.ts` draws the curve from the same
+  growth and target as the year; test:referrals checks they end together.
+
+### Calculators page, shorter and grouped
+- `/calculators` groups the nine calculators by the question they answer,
+  one line each, instead of long cards. The internal "how these fit
+  together" note and the city cards are gone (one link to FIRE number by
+  city instead); the FAQ is three collapsed questions. About a third of
+  the old length.
+
+### Learn page, one stage at a time
+- `/learn` opens with four stage buttons (Starting Out, Building Momentum,
+  Approaching FIRE, Living in FIRE). Each stage shows one line, three reads
+  by title and read time, one calculator and a link to the full stage page.
+  The per-stage paragraphs, tool sidebars and city cards are gone, no
+  article repeats, and the page uses the warm site style. All four stages
+  stay in the HTML for search.
+- Calculator links say where they go: "Safe Withdrawal Calculator" (six
+  places, all opening the FIRE Number calculator, which sets the
+  withdrawal rate) is now "FIRE Number Calculator". Approaching FIRE
+  points to the full FIRE Calculator, so stages 3 and 4 no longer share
+  one link.
+
 ### One header across the public site
 - Every public page now has the homepage's top bar: logo, How it works,
   Calculators, Learn, Pricing, and Get started (Dashboard when signed in).

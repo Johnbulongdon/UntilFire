@@ -21,3 +21,21 @@ export function quickFreedom(input: { monthlyIncome: number; monthlySpending: nu
     year: years === null ? null : now.getFullYear() + Math.ceil(years),
   }
 }
+
+/**
+ * The embed's growth curve: invested money at the start of each year, grown
+ * at the same rate and saving as quickFreedom, until it reaches the target
+ * (at most 65 years). The last point is the year the chart ends on.
+ */
+export function freedomPath(input: { monthlyIncome: number; monthlySpending: number; invested: number }): number[] {
+  const spending = Math.max(0, input.monthlySpending || 0)
+  const target = spending * 12 * 25
+  const saving = Math.max(0, (input.monthlyIncome || 0) - spending) * 12
+  let balance = Math.max(0, input.invested || 0)
+  const points = [balance]
+  while (balance < target && points.length <= 65) {
+    balance = balance * (1 + REAL_RETURN) + saving
+    points.push(balance)
+  }
+  return points
+}

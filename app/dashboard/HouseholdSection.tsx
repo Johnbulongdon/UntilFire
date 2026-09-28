@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Badge, Button, Input } from "@/components/ui";
+import SectionTitle from "./SectionTitle";
 
 /**
  * Household, in Profile.
@@ -38,13 +39,6 @@ const cardStyle: React.CSSProperties = {
   border: "1px solid var(--uf-border)",
   padding: 20,
   marginBottom: 20,
-};
-
-const headingStyle: React.CSSProperties = {
-  fontSize: 15,
-  fontWeight: 700,
-  color: "var(--uf-green-900)",
-  margin: "0 0 16px",
 };
 
 const noteStyle: React.CSSProperties = {
@@ -109,7 +103,7 @@ export default function HouseholdSection() {
   if (!view) {
     return (
       <div style={cardStyle}>
-        <h3 style={headingStyle}>Household</h3>
+        <SectionTitle icon="users">Household</SectionTitle>
         <p style={{ ...noteStyle, marginTop: 0 }}>Loading…</p>
       </div>
     );
@@ -119,7 +113,7 @@ export default function HouseholdSection() {
 
   return (
     <div style={cardStyle}>
-      <h3 style={headingStyle}>Household</h3>
+      <SectionTitle icon="users">Household</SectionTitle>
 
       {error && (
         <p style={{ fontSize: 13, color: "var(--uf-neg)", margin: "0 0 14px", lineHeight: 1.5 }}>{error}</p>
