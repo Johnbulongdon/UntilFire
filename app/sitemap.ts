@@ -12,19 +12,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseRoutes: MetadataRoute.Sitemap = [
     {
       url: siteUrl(),
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 1,
     },
     {
       url: siteUrl('/fire-calculator'),
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.95,
     },
     {
       url: siteUrl('/calculators'),
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
     },
@@ -34,61 +31,46 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // says and wastes the crawl budget the request was meant to save.
     {
       url: siteUrl('/calculators/savings-rate'),
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: siteUrl('/calculators/coast-fire'),
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: siteUrl('/calculators/net-worth-by-age'),
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: siteUrl('/calculators/4-percent-rule'),
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: siteUrl('/fire-number'),
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: siteUrl('/fire-number/fire-by-state'),
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: siteUrl('/fire-number/best-states'),
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.85,
     },
     {
       url: siteUrl('/learn'),
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
       url: siteUrl('/learn/articles'),
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
       url: siteUrl('/learn/topics'),
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
     },
@@ -96,14 +78,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const articleRoutes: MetadataRoute.Sitemap = learnArticles.map((article) => ({
     url: siteUrl(`/learn/${article.slug}`),
-    lastModified: new Date('2026-06-04'),
+    // Article metadata already records the truthful publication/review date.
+    // Do not replace it with the sitemap request time: that makes unchanged
+    // content look newly edited every time Google fetches this file.
+    lastModified: new Date(article.updatedAt ?? article.publishedAt),
     changeFrequency: 'monthly' as const,
     priority: 0.65,
   }))
 
   const stageRoutes: MetadataRoute.Sitemap = learnStages.map((stage) => ({
     url: siteUrl(`/learn/stages/${stage.id}`),
-    lastModified: new Date(),
     changeFrequency: 'weekly',
     priority: 0.65,
   }))
@@ -113,7 +97,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const curatedCityRoutes: MetadataRoute.Sitemap = cityLandingPages.map((page) => ({
     url: siteUrl(`/fire-number/${page.slug}`),
-    lastModified: new Date('2026-06-04'),
     changeFrequency: 'weekly',
     priority: 0.75,
   }))
@@ -122,35 +105,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter((city) => isUS(city.state) && !curatedCitySlugs.has(city.key) && !curatedCityKeys.has(city.key))
     .map((city) => ({
       url: siteUrl(`/fire-number/${city.key}`),
-      lastModified: new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.65,
     }))
 
   const countryRoutes: MetadataRoute.Sitemap = countryPages.map((page) => ({
     url: siteUrl(`/fire-number/countries/${page.slug}`),
-    lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
 
   const stateRoutes: MetadataRoute.Sitemap = statePages.map((page) => ({
     url: siteUrl(`/fire-number/states/${page.slug}`),
-    lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }))
 
   const rankingRoutes: MetadataRoute.Sitemap = rankingPagesList.map((page) => ({
     url: siteUrl(`/fire-number/${page.slug}`),
-    lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
 
   const regionRoutes: MetadataRoute.Sitemap = regionSlugs.map((slug) => ({
     url: siteUrl(`/fire-number/regions/${slug}`),
-    lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))

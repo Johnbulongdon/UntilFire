@@ -75,6 +75,9 @@ export const JOB_EXPECTED_INTERVAL_HOURS: Record<string, number> = {
   [JOBS.CENSUS_SYNC]: 24 * 365,
   // Connected banks refresh daily, so a day missed is worth noticing.
   [JOBS.PLAID_SYNC]: 24,
+  // Search performance should refresh daily; stale data makes a 28-day SEO
+  // comparison look current when the collection job has actually stopped.
+  [JOBS.GSC_SYNC]: 24,
 };
 
 /**
