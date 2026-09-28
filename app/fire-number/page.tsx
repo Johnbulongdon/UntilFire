@@ -4,6 +4,7 @@ import { CITIES, STATE_TAX, isUS } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
 import { countriesByCost } from "@/lib/country-pages";
 import { cityPagePath } from "@/lib/city-pages";
+import { STATE_NAMES } from "@/lib/state-pages";
 
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
@@ -22,18 +23,6 @@ export const metadata: Metadata = {
     description: `Compare ${US_CITIES.length} US city FIRE baselines and see how local costs change your retirement target.`,
     type: "website",
   },
-};
-
-const STATE_NAMES: Record<string, string> = {
-  ca: "California", ny: "New York", nyc: "New York", tx: "Texas", fl: "Florida",
-  wa: "Washington", or: "Oregon", co: "Colorado", il: "Illinois", ma: "Massachusetts",
-  ga: "Georgia", nc: "North Carolina", az: "Arizona", nv: "Nevada", tn: "Tennessee",
-  mi: "Michigan", pa: "Pennsylvania", oh: "Ohio", mn: "Minnesota", ut: "Utah",
-  in_us: "Indiana", mo: "Missouri", wi: "Wisconsin", ne: "Nebraska", dc: "Washington D.C.",
-  md: "Maryland", ct: "Connecticut", ri: "Rhode Island", va: "Virginia", la: "Louisiana",
-  id: "Idaho", nm: "New Mexico", sc: "South Carolina", al: "Alabama", ar_us: "Arkansas",
-  ia: "Iowa", nd: "North Dakota", ok: "Oklahoma", ks: "Kansas", vt: "Vermont",
-  me: "Maine", nj: "New Jersey", nh: "New Hampshire", sd: "South Dakota", ms: "Mississippi",
 };
 
 const byState = US_CITIES.reduce<Record<string, typeof US_CITIES>>((acc, city) => {

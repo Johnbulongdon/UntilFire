@@ -55,6 +55,20 @@ export const STATE_NAMES: Record<string, string> = {
   de_us: 'Delaware',
 }
 
+/**
+ * City tax keys are sometimes more specific than the state geography used by
+ * the SEO reference. New York City has its own tax key, but it is still part
+ * of New York when we aggregate and publish state comparisons.
+ */
+export function stateReferenceKey(stateKey: string): string {
+  return stateKey === 'nyc' ? 'ny' : stateKey
+}
+
+export function formatStateAbbreviation(stateKey: string): string {
+  if (stateKey === 'nyc') return 'NY'
+  return stateKey.replace(/_us$/, '').toUpperCase()
+}
+
 const STATE_SLUG_MAP: Record<string, string> = {
   california: 'ca',
   texas: 'tx',
@@ -123,7 +137,7 @@ export function getStatePageSlug(stateKey: string): string {
 }
 
 export function getCitiesForState(stateKey: string): typeof CITIES {
-  return CITIES.filter((c) => isUS(stateKey) && c.state === stateKey)
+  return CITIES.filter((city) => isUS(city.state) && stateReferenceKey(city.state) === stateKey)
 }
 
 export interface StatePage {
@@ -133,7 +147,11 @@ export interface StatePage {
   cities: typeof CITIES
   fireTarget: number
   avgCityColAccross: number
+  cheapestCity: (typeof CITIES)[number]
+  mostExpensiveCity: (typeof CITIES)[number]
   noIncomeTax: boolean
+  taxRate: number
+  taxLabel: string
   title: string
   description: string
   canonicalUrl: string
@@ -143,7 +161,7 @@ export interface StatePage {
 }
 
 // Generate all state pages
-const allStates = new Set(CITIES.filter((c) => isUS(c.state)).map((c) => c.state))
+const allStates = new Set(CITIES.filter((c) => isUS(c.state)).map((c) => stateReferenceKey(c.state)))
 
 export const statePages: StatePage[] = Array.from(allStates)
   .map((stateKey) => {
@@ -152,6 +170,7 @@ export const statePages: StatePage[] = Array.from(allStates)
 
     const slug = getStatePageSlug(stateKey)
     const stateName = STATE_NAMES[stateKey] || stateKey
+    const citiesByCost = [...cities].sort((a, b) => a.col - b.col)
     const avgCol = Math.round(cities.reduce((sum, c) => sum + c.col, 0) / cities.length)
     const fireTarget = avgCol * 25
     const taxInfo = STATE_TAX[stateKey]
@@ -162,10 +181,14 @@ export const statePages: StatePage[] = Array.from(allStates)
       stateKey,
       slug,
       stateName,
-      cities: cities.sort((a, b) => b.col - a.col),
+      cities: [...citiesByCost].reverse(),
       fireTarget,
       avgCityColAccross: avgCol,
+      cheapestCity: citiesByCost[0],
+      mostExpensiveCity: citiesByCost[citiesByCost.length - 1],
       noIncomeTax,
+      taxRate: taxInfo?.rate ?? 0,
+      taxLabel: taxInfo?.label ?? 'State taxes apply',
       cityCountLabel,
       title: `FIRE Number in ${stateName}: ${cities.length === 1 ? '1 City' : `${cities.length} Cities`} & Tax Guide | UntilFire`,
       description: `Compare FIRE baselines across ${cityCountLabel} in ${stateName}. Local cost of living, state tax context (${noIncomeTax ? 'no income tax' : taxInfo?.label || 'state taxes apply'}), and retirement target for each city.`,
@@ -178,3 +201,4 @@ export const statePages: StatePage[] = Array.from(allStates)
 export function getStatePage(slug: string): StatePage | null {
   return statePages.find((p) => p.slug === slug) || null
 }
+

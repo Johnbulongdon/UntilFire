@@ -107,7 +107,25 @@ assert.match(sitemapSource, /siteUrl\(['"]\/fire-calculator['"]\)/, 'sitemap sho
 assert.match(sitemapSource, /CITIES,\s*isUS/, 'sitemap should import CITIES and isUS so generated city pages are discoverable');
 assert.match(sitemapSource, /isUS\(city\.state\)/, 'sitemap should include all indexable US city FIRE number pages');
 assert.match(sitemapSource, /curatedCitySlugs/, 'sitemap should de-duplicate curated city landing pages from generic city routes');
+assert.doesNotMatch(sitemapSource, /siteUrl\(['"]\/fire-number\/fire-by-state['"]\)/, 'fire-by-state must come from rankingRoutes only, not appear twice in the sitemap');
 assert.match(sitemapSource, /\/fire-number\/\$\{city\.key\}/, 'sitemap should generate /fire-number/{city} URLs for city keys');
+assert.doesNotMatch(sitemapSource, /lastModified:\s*new Date\(\s*\)/, 'sitemap must not claim every unchanged URL was modified at request time');
+assert.match(sitemapSource, /article\.updatedAt\s*\?\?\s*article\.publishedAt/, 'article sitemap dates should use article review/publication metadata');
+
+for (const route of ['login', 'admin', 'dashboard', 'transactions', 'auth', 'household', 'unsubscribe']) {
+  const layout = fs.readFileSync(path.join(repoRoot, `app/${route}/layout.tsx`), 'utf8');
+  assert.match(layout, /robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/, `${route} must be noindex`);
+  assert.match(layout, /canonical:\s*siteUrl\(/, `${route} must not inherit the homepage canonical`);
+}
+
+for (const routeFile of ['app/share/page.tsx', 'app/portfolio/result/page.tsx']) {
+  const routeSource = fs.readFileSync(path.join(repoRoot, routeFile), 'utf8');
+  assert.match(routeSource, /robots:\s*\{\s*index:\s*false,\s*follow:\s*true\s*\}/, `${routeFile} parameter variants must be noindex`);
+  assert.match(routeSource, /canonical:\s*siteUrl\(/, `${routeFile} must not inherit the homepage canonical`);
+}
+
+const rootLayoutSource = fs.readFileSync(path.join(repoRoot, 'app/layout.tsx'), 'utf8');
+assert.match(rootLayoutSource, /<AcquisitionCapture\s*\/>/, 'root layout should capture privacy-safe search/referral attribution on every entry route');
 
 const robotsSource = fs.readFileSync(path.join(repoRoot, 'app/robots.ts'), 'utf8');
 assert.match(robotsSource, /siteUrl\(['"]\/sitemap\.xml['"]\)/, 'robots sitemap should use canonical siteUrl helper');
@@ -123,6 +141,7 @@ const requiredRedirectSources = [
   '/fire-number/states/ky',
   '/fire-number/states/sd',
   '/fire-number/states/wv',
+  '/fire-number/states/newyorkcity',
 ];
 
 // Every US state with cities needs a display name: the state page's slug and
@@ -143,9 +162,32 @@ for (const source of requiredRedirectSources) {
   assert.match(nextConfig, new RegExp(`source:\\s*['"]${source}['"]`), `Missing redirect for stale indexed URL ${source}`);
 }
 
+const stateReferenceSource = fs.readFileSync(path.join(repoRoot, 'app/fire-number/fire-by-state/page.tsx'), 'utf8');
+for (const required of [
+  'US_CITY_COST_DATA_UPDATED',
+  'City-sample averages, not statewide household averages',
+  'Census B25113 recent-mover rents',
+  'Census B25064 all-renter median',
+  "'Dataset'",
+  "'FAQPage'",
+  '/fire-number/fire-by-state/data.csv',
+]) {
+  assert.match(stateReferenceSource, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), `State reference missing ${required}`);
+}
+assert.match(statePagesSource, /stateKey === 'nyc' \? 'ny' : stateKey/, 'State reference must group the NYC tax key into New York');
+
+const bestStatesSource = fs.readFileSync(path.join(repoRoot, 'app/fire-number/best-states/page.tsx'), 'utf8');
+assert.match(bestStatesSource, /const scored = statePages/, 'Best-states ranking should use the same normalized state sample as the sourced reference');
+assert.doesNotMatch(bestStatesSource, /stateStats\.set\(city\.state/, 'Best-states ranking must not treat the NYC tax key as a separate state');
+
+const stateCsvSource = fs.readFileSync(path.join(repoRoot, 'app/fire-number/fire-by-state/data.csv/route.ts'), 'utf8');
+assert.match(stateCsvSource, /['"]Content-Type['"]:\s*['"]text\/csv/, 'State reference CSV should identify itself as text/csv');
+assert.match(stateCsvSource, /state\.avgCityColAccross/, 'State reference CSV should use the same state sample average as the visible page');
+
 // The FIRE Type quiz link sits in the hero CTA row, secondary to the start
 // button (D-13). It was lost in the landing redesign (274a215) and restored.
 assert.match(heroCtaRow, /fire-type\?source=homepage-secondary/i, 'Homepage hero should offer the FIRE Type personality test next to the primary CTA');
 assert.ok(heroCtaRow.indexOf('onClick={onStart}') < heroCtaRow.indexOf('fire-type?source=homepage-secondary'), 'The freedom-date start button comes first; the quiz is the secondary action');
 
 console.log('SEO config checks passed');
+

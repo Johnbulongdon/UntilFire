@@ -35,6 +35,7 @@ const calculators = [
   { href: "/calculators/4-percent-rule", label: "4% Rule / FIRE Number Calculator", desc: "How much you need to retire, using the 25× rule." },
   { href: "/calculators/coast-fire", label: "Coast FIRE Calculator", desc: "See if your investments can coast to FIRE on their own." },
   { href: "/calculators/savings-rate", label: "Savings Rate Calculator", desc: "Turn your savings rate into a retirement timeline." },
+  { href: "/calculators/net-worth-by-age", label: "Net Worth by Age Calculator", desc: "Compare your net worth with US households in your age group." },
   { href: "/calculators/compound-interest", label: "Compound Interest Calculator", desc: "Watch how contributions and growth compound over time." },
   { href: "/calculators/apy", label: "APY Calculator", desc: "Compare real returns across savings and investment rates." },
 ];
@@ -79,9 +80,9 @@ export default function Home() {
       >
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "56px 24px 72px" }}>
           <p style={seoHeading}>Finance your freedom</p>
-          <h1 style={{ fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif", fontSize: "clamp(32px, 4.6vw, 46px)", fontWeight: 400, lineHeight: 1.12, letterSpacing: "-0.02em", color: "var(--uf-ink)", margin: "0 0 16px" }}>
+          <h2 style={{ fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif", fontSize: "clamp(32px, 4.6vw, 46px)", fontWeight: 400, lineHeight: 1.12, letterSpacing: "-0.02em", color: "var(--uf-ink)", margin: "0 0 16px" }}>
             FIRE Calculator — Find Your Freedom Date and FIRE Number
-          </h1>
+          </h2>
           <p style={{ fontSize: 18, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 16px", maxWidth: 720 }}>
             UntilFire is a free FIRE calculator and personal finance planner for anyone chasing financial
             independence and early retirement. Enter your income, spending, and savings, and we&apos;ll show your{" "}

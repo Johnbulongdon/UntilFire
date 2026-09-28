@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getStatePage, statePages } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
 import { cityPagePath } from "@/lib/city-pages";
+import { getRegionForState } from '@/lib/regions'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -54,6 +55,8 @@ export default async function StateFireNumberPage({ params }: Props) {
     notFound()
   }
 
+  const region = getRegionForState(page.stateKey)
+
   return (
     <>
       <style>{`
@@ -88,6 +91,7 @@ export default async function StateFireNumberPage({ params }: Props) {
           </h1>
           <p style={{ fontSize: 17, color: 'var(--uf-ink-2)', margin: '0 0 32px', lineHeight: 1.65, maxWidth: 700 }}>
             Explore FIRE baselines across {page.cityCountLabel} in {page.stateName}. {page.noIncomeTax ? `No state income tax means more savings turn into invested capital.` : `State taxes affect your take-home, so we show local tax context for each city.`} Find your target and compare retirement timelines.
+            {region && <> Compare {page.stateName} with the broader <Link href={`/fire-number/regions/${region.slug}`} style={{ color: 'var(--uf-green)', fontWeight: 700 }}>{region.name} FIRE guide</Link>.</>}
           </p>
 
           {/* Key stats */}

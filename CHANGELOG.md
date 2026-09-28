@@ -8,6 +8,16 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-09-27
 
+### Sourced FIRE-by-state reference
+- `/fire-number/fire-by-state` now states exactly what its figures measure:
+  city-sample averages built from 2024 Census ACS rent data plus the documented
+  non-housing baseline. It shows the review date, sample size, city range,
+  calculation steps, limitations, official sources, FAQ and downloadable CSV.
+- New York City is grouped into New York for state comparisons instead of
+  appearing as a 52nd jurisdiction. Its distinct city tax key remains unchanged;
+  the best-states ranking uses the same grouping, and the obsolete
+  `/fire-number/states/newyorkcity` path redirects to New York.
+
 ### /invite, redesigned
 - A dark hero where the key visual is the one bright thing, so the eye
   lands there first: a creator's post with the live calculator and a
@@ -624,3 +634,4 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - SEO: OG image, JSON-LD, canonical URLs, sitemap, robots.txt
 - Supabase + Google OAuth auth flow
 - Stripe integration with Pro paywall (later opened to all users)
+

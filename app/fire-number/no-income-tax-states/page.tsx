@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getNoIncomeTaxStates, getStateStats } from '@/lib/ranking-pages'
 import { STATE_NAMES } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
+import UsFireGuideLinks from '../UsFireGuideLinks'
 
 
 export const metadata: Metadata = {
@@ -169,6 +170,8 @@ export default function NoIncomeTaxStatesPage() {
             </div>
           ))}
         </section>
+
+        <UsFireGuideLinks current="/fire-number/no-income-tax-states" />
 
         {/* Bottom CTA */}
         <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>

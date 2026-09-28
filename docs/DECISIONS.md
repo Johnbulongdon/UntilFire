@@ -961,6 +961,27 @@ many to guess, and manual monthly payouts already put every creator in front
 of the founder before money moves. Terms version `2026-09-27`; migration
 `0045_referral_removal_and_holds.sql`.
 
+### D-28 — September 27: judge SEO in settled 28-day windows and carry organic source into activation
+
+**Status:** Active.
+**Decision:** The admin SEO view compares the latest 28 complete Search Console
+days available with the preceding 28 days. It reports clicks, impressions, CTR
+and impression-weighted position, with branded queries separate from generic
+queries. Search-engine attribution is captured as a coarse `organic-<engine>`
+landing source and carried into the existing calculator/signup funnel. Full
+referrer URLs and search terms are never stored.
+**Why:** Rankings, search clicks and activated users answer three different
+questions. Before this change Search Console data existed but was hard to read,
+and organic arrivals without an internal `?source=` label looked direct in the
+funnel. That made later SEO work impossible to judge by users rather than page
+counts.
+**Crawl hygiene:** sitemap modification dates must be truthful. Omit the field
+when no content date exists; learning articles use their recorded review or
+publication date. Private utility routes use noindex and their own canonical.
+**Revisit:** after one complete post-deployment 28-day window plus reporting
+lag. If clicks rise without calculator completions, improve the landing path;
+if impressions stay flat, prioritize authority and demand rather than snippets.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,
