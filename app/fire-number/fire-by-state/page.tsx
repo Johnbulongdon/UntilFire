@@ -5,6 +5,7 @@ import { statePages } from '@/lib/state-pages'
 import { formatMoney } from '@/lib/money'
 import { cityPagePath } from '@/lib/city-pages'
 import { siteUrl } from '@/lib/site'
+import UsFireGuideLinks from '../UsFireGuideLinks'
 
 const CENSUS_RECENT_MOVER_SOURCE = 'https://api.census.gov/data/2024/acs/acs5/groups/B25113.html'
 const CENSUS_ALL_RENTER_SOURCE = 'https://api.census.gov/data/2024/acs/acs5/groups/B25064.html'
@@ -177,6 +178,8 @@ export default function FireByStatePage() {
           </div>
         </section>
 
+        <UsFireGuideLinks current="/fire-number/fire-by-state" />
+
         <section className="state-reference-card" style={{ padding: 'var(--uf-s6)', textAlign: 'center' }}>
           <h2 className="uf-t-h2" style={{ color: 'var(--uf-ink)', margin: '0 0 var(--uf-s2)' }}>Replace the sample with your spending</h2>
           <p className="uf-t-body" style={{ color: 'var(--uf-ink-2)', margin: '0 auto var(--uf-s5)', maxWidth: 620 }}>
@@ -212,3 +215,4 @@ export default function FireByStatePage() {
     </>
   )
 }
+
