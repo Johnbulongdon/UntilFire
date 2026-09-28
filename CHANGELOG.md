@@ -18,6 +18,33 @@ under today's date, creating the heading if it is not there yet.
   the best-states ranking uses the same grouping, and the obsolete
   `/fire-number/states/newyorkcity` path redirects to New York.
 
+### /invite, redesigned
+- A dark hero where the key visual is the one bright thing, so the eye
+  lands there first: a creator's post with the live calculator and a
+  "+$23.70 · a reader subscribed" toast. The details follow on light bands
+  (how you earn and the earnings estimate, four "what you get" tiles,
+  three FAQs), and a dark band closes. Shorter than before, with every
+  card in a row the same size.
+
+### Creator program in the dashboard; a pitch page that shows the deal
+- Profile → Creator program is a short card: your link, Copy and More.
+  More opens `/invite`, which for a signed-in user shows their own program
+  (join, link, stats, progress to the 40% tier, embed, payouts) above how it
+  works. The link stays inside the app, so no "leave site?" prompt.
+- `/invite` now shows the offer at a glance (30% · 12 months · 60 days for
+  readers), the 30% → 40% → 10% ladder, an earnings estimate slider, the
+  real calculator a creator can embed, what readers get, and a short FAQ.
+- Profile section titles have icons and use theme colours, so dark mode
+  reads properly.
+
+### Creator program: no look-alike links, remove and hold
+- Codes can't contain "untilfire", "official", "support", "staff" or "admin".
+- `/admin` → Referrals can **Remove** a creator who breaks the terms (link
+  stops, code freed, unpaid earnings forfeited) and **Hold** a code for a
+  creator being pitched, which only their email can claim.
+- The terms add: don't pick a link that suggests you're UntilFire or someone
+  you're not. D-27 amended.
+
 ### Embeddable calculator: sliders and a growth curve
 - `/embed/<code>` shows the freedom year first, then a curve of invested
   money rising to the dashed target line, then three sliders (take-home,
@@ -607,3 +634,4 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - SEO: OG image, JSON-LD, canonical URLs, sitemap, robots.txt
 - Supabase + Google OAuth auth flow
 - Stripe integration with Pro paywall (later opened to all users)
+
