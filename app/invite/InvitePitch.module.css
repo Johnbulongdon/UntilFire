@@ -89,8 +89,19 @@
 .close { display: flex; align-items: center; justify-content: space-between; gap: var(--uf-s5); flex-wrap: wrap; }
 .close h2 { color: #fff; max-width: 560px; }
 
-/* Signed in: your own program, above how it works. */
-.mine { display: grid; gap: var(--uf-s4); padding: var(--uf-s5); background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 16px; }
+/* Signed in: the same hero, with your link on the left and the bright card
+   (the join form, or your earnings) as the key visual. */
+.onDark { color: rgba(242, 247, 244, 0.7); }
+.kvCard {
+  display: grid; gap: var(--uf-s3); padding: var(--uf-s5); background: var(--uf-card); color: var(--uf-ink);
+  border: 1px solid var(--uf-border); border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(94, 224, 195, 0.25);
+}
+.linkPill {
+  display: flex; align-items: center; gap: var(--uf-s3); width: 100%; padding: 8px 8px 8px 18px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
+}
+.linkPill > span { flex: 1; min-width: 0; color: #fff; font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
 
 @media (prefers-reduced-motion: reduce) { .glowA, .glowB, .toast { animation: none; } }
 @media (max-width: 860px) {
