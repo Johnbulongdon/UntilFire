@@ -52,6 +52,7 @@
     "test:acquisition-source": "node --experimental-strip-types --no-warnings scripts/verify-acquisition-source.ts",
     "test:seo-report": "node --experimental-strip-types --no-warnings scripts/verify-seo-report.ts",
     "test:account-currency": "node --experimental-strip-types --no-warnings scripts/verify-account-currency.mjs",
+    "test:free-to-spend": "TZ=Asia/Shanghai node --experimental-strip-types --no-warnings scripts/verify-free-to-spend.mjs && TZ=America/Los_Angeles node --experimental-strip-types --no-warnings scripts/verify-free-to-spend.mjs",
     "test:cashflow-forecast": "TZ=Asia/Shanghai node --experimental-strip-types --no-warnings scripts/verify-cashflow-forecast.mjs && TZ=America/Los_Angeles node --experimental-strip-types --no-warnings scripts/verify-cashflow-forecast.mjs",
     "test:contribution-schedule": "node --experimental-strip-types --no-warnings scripts/verify-contribution-schedule.mjs",
     "test:contribution-ladder": "node --experimental-strip-types --no-warnings scripts/verify-contribution-ladder.mjs",
