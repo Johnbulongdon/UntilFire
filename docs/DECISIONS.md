@@ -982,6 +982,29 @@ publication date. Private utility routes use noindex and their own canonical.
 lag. If clicks rise without calculator completions, improve the landing path;
 if impressions stay flat, prioritize authority and demand rather than snippets.
 
+### D-29 — October 2: Free to spend is the lower of cash after bills and budget left, until payday
+
+**Status:** Active.
+**Decision:** Money → Cashflow → Budget opens with "Free to spend until
+payday": checking balance less every bill in Upcoming due before the next
+paycheck (overdue ones included, any due on payday excluded), against what is
+left in the flexible budget (categories without a repeating bill). The lower
+side is shown, with the reason and a per-day figure. Payday is the next date of
+a repeating paycheck in Upcoming (weekly, every two weeks or monthly; the
+sooner of two), else the month end, labelled. Checking counts by default, other
+deposit accounts only when switched on (saved in
+`profiles.free_to_spend_accounts`). Credit cards never count as cash: their
+payment is a bill in Upcoming, and the live balance is context only. Money
+shows the runway (the balance stepping down as bills leave); Home will show the
+one-sentence version.
+**Why:** The founder wants UntilFire to cover day-to-day budgeting as well as
+the long-term plan. The common question ("how much of my balance is actually
+mine before rent?") is answered by neither the balance nor the budget alone.
+**Not:** streaks, reminders or notifications; it is checked when needed.
+Plaid Liabilities (statement amounts and due dates) is not enabled.
+**Revisit:** if people ask for exact card due dates, or if paychecks are often
+missing from Upcoming so the month-end fallback is common.
+
 ## How to add or supersede a decision
 
 Use a stable D-number, date, status, decision, rationale, alternatives/trade-offs,
