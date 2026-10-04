@@ -156,6 +156,9 @@ cards and table heads already stick to the top.
 - **How you compare sits on Home** (D-19). It interprets two things Home
   already has, the net worth it shows and the age set in Plan → Freedom Date,
   so it adds no input; its "Change" link goes to that Plan setting.
+- **Free to spend lives in Money, with a sentence on Home** (D-29). Money →
+  Cashflow → Budget holds the runway, the bills behind it and which accounts
+  count; Home's "Free to spend" card only reads that result and links to it.
 
 ## Known gap — not fixed by this structure
 

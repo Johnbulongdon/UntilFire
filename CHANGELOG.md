@@ -15,6 +15,10 @@ under today's date, creating the heading if it is not there yet.
   stepping down as each bill leaves; weekly, two-weekly and monthly pay all
   work. Choose which accounts count; credit card balances are shown, and their
   payments count from Upcoming.
+- Home has a new "Free to spend" card that says it in one sentence ("Of the
+  $2,400 in your account, $412 is yours to spend before Thursday"), with a
+  bar of where the balance goes and what is left in each budget category.
+  It can be moved or hidden like any Home card.
 
 ## 2026-09-27
 
