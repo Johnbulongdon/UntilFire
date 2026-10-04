@@ -15,6 +15,7 @@ The old Obsidian vault is historical evidence, not a second instruction source.
 | What exists and what remains? | [ROADMAP.md](ROADMAP.md), checked against code and tests |
 | What changed in the implementation? | [CHANGELOG.md](../CHANGELOG.md) |
 | Where does a feature belong? | [App structure](design/app-structure.md) |
+| How should web motion carry into a future app? | [Motion and mobile decision](design/motion-and-mobile.md) |
 | What visual rules apply? | [Design system](design/design-system.md) |
 | Where are feature contracts and code entry points? | [Feature map](features.md) |
 | What launch evidence and conditions matter? | [Launch context](planning/launch-context.md) |
