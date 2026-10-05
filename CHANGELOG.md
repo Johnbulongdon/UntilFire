@@ -6,6 +6,28 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-05
+
+### Monthly update emails take a banner
+- The admin email editor has two new optional fields for monthly updates: a
+  banner image shown full width at the top (linked to the button's page), and
+  the inbox preview line. With a banner, the repeated "Monthly update" label
+  is dropped. September's banner is `public/email/september/banner.png`.
+
+## 2026-10-02
+
+### Free to spend until payday
+- Money → Cashflow → Budget now opens with how much is free to spend until
+  your next paycheck: your checking balance less the bills due before payday,
+  or what is left in your budget if that is lower. A runway shows the balance
+  stepping down as each bill leaves; weekly, two-weekly and monthly pay all
+  work. Choose which accounts count; credit card balances are shown, and their
+  payments count from Upcoming.
+- Home has a new "Free to spend" card that says it in one sentence ("Of the
+  $2,400 in your account, $412 is yours to spend before Thursday"), with a
+  bar of where the balance goes and what is left in each budget category.
+  It can be moved or hidden like any Home card.
+
 ## 2026-09-27
 
 ### Sourced FIRE-by-state reference

@@ -55,6 +55,7 @@ export const CARDS: CardDef[] = [
   { id: "hero",      label: "Progress chart",    hint: "Your portfolio against your FIRE target over time.", defaultVisible: true, defaultSpan: "full" },
   { id: "ontrack",   label: "On-track score",    hint: "Whether your recent months keep your freedom date where it is.", defaultVisible: true, defaultSpan: "full" },
   { id: "yourmonth", label: "Your month",        hint: "Last month's result and this month's next move.",  defaultVisible: true, defaultSpan: "full" },
+  { id: "free",      label: "Free to spend",     hint: "How much of your balance is yours until payday, after bills.", defaultVisible: true, defaultSpan: "full" },
   { id: "contribution", label: "This month's contribution", hint: "Where this month's money goes, from the plan you set in Plan → Contributions.", defaultVisible: true, defaultSpan: "full" },
   { id: "freedom",   label: "Freedom date",      hint: "When work becomes optional, and the one move that brings it closer.", defaultVisible: true, defaultSpan: "full" },
   { id: "compare",   label: "How you compare",   hint: "Your net worth against US households your age, from the Federal Reserve's survey.", defaultVisible: true, defaultSpan: "full" },

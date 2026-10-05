@@ -21,6 +21,9 @@ import NextContributionCard from "./NextContributionCard";
 import { measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
+import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
+import FreeToSpendRunway from "./FreeToSpendRunway";
+import FreeToSpendHome from "./FreeToSpendHome";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
 import { fetchAllPages } from "@/lib/supabase-pages";
@@ -531,7 +534,7 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -556,6 +559,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   taxEnabled?: boolean;
   retirementTaxRate?: number;
   rothPct?: number;
+  /** Free to spend until payday (D-29); read-only here, explained in Money. */
+  freeResult?: FreeToSpend | null;
+  onOpenFreeToSpend?: () => void;
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
   onFreedomDateChange?: (date: Date | null) => void;
@@ -1687,6 +1693,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       )}
 
       </DashSlot>
+      <DashSlot id="free" layout={layout} editing={editing} dragging={draggingId === "free"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      {freeResult && <FreeToSpendHome result={freeResult} fmt={(n) => fmtMoney(n)} onOpen={onOpenFreeToSpend} />}
+      </DashSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
       <DashSlot id="contribution" layout={layout} editing={editing} dragging={draggingId === "contribution"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       {contributionFacts && (
@@ -2153,7 +2162,7 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining = 0, committedByCat = {}, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2161,6 +2170,11 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   committedRemaining?: number;
   /** The same, split by category, so each dial can show what is still promised. */
   committedByCat?: Record<string, number>;
+  /** Free to spend until payday, cash against budget (D-29). */
+  freeResult?: FreeToSpend | null;
+  spendAccounts?: SpendAccount[];
+  spendToggles?: Record<string, boolean>;
+  onSpendToggle?: (id: string, on: boolean) => void;
   displayCurrency: string; displayRates: Record<string, number>;
   recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[] }[];
   freedomDateMonthYearLabel?: string | null;
@@ -2179,12 +2193,6 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
 
   const totalExp = activeCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
 
-  // "Left this month" on its own overstates what is actually spendable, because
-  // some of it is already promised to bills. Free = left − committed, and can
-  // go negative, which is the single most useful thing this page can tell you.
-  const spentSoFar = activeCats.reduce((s, c) => s + (actuals[c.key] || 0), 0);
-  const leftThisMonth = totalExp - spentSoFar;
-  const freeToSpend = leftThisMonth - committedRemaining;
   const savings  = income - totalExp;
   const rate     = income > 0 ? (savings / income) * 100 : 0;
   const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
@@ -2395,28 +2403,11 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
 
   return (
     <div className="uf-budget-grid">
-      {/* The answer this tab exists to give, before any of the detail.
-          "Left this month" alone overstates what is spendable, because part of
-          it is already promised to bills that have not gone out yet — which is
-          why paying one used to feel like it changed nothing here. */}
-      <div className="uf-card" style={{ padding: "16px 18px", gridColumn: "1 / -1" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
-          Free to spend
-        </div>
-        <div style={{
-          fontSize: 28, fontWeight: 500, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
-          color: freeToSpend < 0 ? "var(--uf-neg)" : "var(--uf-text)",
-        }}>
-          {freeToSpend < 0 ? "−" : ""}{fmtMoney(Math.abs(freeToSpend))}
-        </div>
-        <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 6, lineHeight: 1.6 }}>
-          {fmtMoney(leftThisMonth)} left in your budget
-          {committedRemaining > 0
-            ? <> &mdash; {fmtMoney(committedRemaining)} of it already committed to bills in Upcoming.</>
-            : <> this month.</>}
-          {freeToSpend < 0 && committedRemaining > 0 && " Your committed bills alone are over what is left."}
-        </div>
-      </div>
+      {/* The answer this tab exists to give, before any of the detail: what is
+          free to spend until payday, with the bills before it set aside (D-29). */}
+      {freeResult && (
+        <FreeToSpendRunway result={freeResult} fmt={fmtMoney} allAccounts={spendAccounts} toggles={spendToggles} onToggle={(id, on) => onSpendToggle?.(id, on)} />
+      )}
 
       <div className="uf-card" style={{ padding: "6px 18px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)" }}>
@@ -5732,6 +5723,28 @@ export default function Dashboard() {
     return m;
   }, [thisMonthBills, rates]);
 
+  /* Free to spend until payday (D-29): checking balance less bills before the
+     next paycheck, against what is left in the flexible budget. Categories
+     with a repeating bill in Upcoming are fixed, not flexible: their money is
+     already counted on the cash side as bills. */
+  const [spendToggles, setSpendToggles] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("profiles").select("free_to_spend_accounts").eq("user_id", userId).single()
+      .then(({ data }) => { if (data?.free_to_spend_accounts) setSpendToggles(data.free_to_spend_accounts as Record<string, boolean>); });
+  }, [userId]);
+  const setSpendToggle = useCallback((id: string, on: boolean) => {
+    setSpendToggles((prev) => {
+      const next = { ...prev, [id]: on };
+      if (userId) void supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId);
+      return next;
+    });
+  }, [userId]);
+  const spendAccounts: SpendAccount[] = useMemo(() => plaidAccounts.map((a) => ({
+    id: a.id, name: a.name || a.official_name || "Account", type: a.type, subtype: a.subtype,
+    balanceUSD: a.type === "credit" ? (a.balance_current ?? 0) : (a.balance_available ?? a.balance_current ?? 0),
+  })), [plaidAccounts]);
+
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
     rawActuals
@@ -5739,6 +5752,14 @@ export default function Dashboard() {
       .forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(netAmt(e), e.currency, rates); });
     return agg;
   }, [rawActuals, rates]);
+  const freeResult: FreeToSpend | null = useMemo(() => {
+    const fixed = new Set(contributionItems.filter((i) => i.type === "expense" && i.recurrence !== "none" && i.category).map((i) => i.category as string));
+    const labels = Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c.key, c.label]));
+    const budget = Object.entries(expenses)
+      .filter(([k, v]) => !k.startsWith("_") && typeof v === "number" && v > 0 && !fixed.has(k))
+      .map(([k, v]) => ({ key: k, label: labels[k] ?? k, budget: v, left: v - (actuals[k] || 0) - (committedByCat[k] || 0) }));
+    return freeToSpend({ today: new Date(), accounts: spendAccounts, toggles: spendToggles, expected: contributionItems, budget });
+  }, [contributionItems, expenses, actuals, committedByCat, spendAccounts, spendToggles]);
   const actualIncome = useMemo(
     () => rawActuals
       .filter(e => e.transaction_type === "income")
@@ -6555,6 +6576,8 @@ export default function Dashboard() {
             {tab === "overview" && (
               <DashTab
                 contributionFacts={contributionFacts}
+                freeResult={freeResult}
+                onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
                 userId={userId}
                 income={effectiveIncome} expenses={effectiveExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
@@ -6617,7 +6640,7 @@ export default function Dashboard() {
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
                 )}
               </div>
             )}

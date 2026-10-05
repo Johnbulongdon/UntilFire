@@ -58,6 +58,9 @@ export async function POST(req: NextRequest) {
   const fixItems = parseUpdateItems(body?.fixItems);
   const ctaLabel = typeof body?.ctaLabel === "string" ? body.ctaLabel.trim() : "";
   const ctaHref = typeof body?.ctaHref === "string" ? body.ctaHref.trim() : "";
+  const heroImage = typeof body?.heroImage === "string" ? body.heroImage.trim() : "";
+  const heroAlt = typeof body?.heroAlt === "string" ? body.heroAlt.trim() : "";
+  const preheader = typeof body?.preheader === "string" ? body.preheader.trim() : "";
 
   if (!subject) {
     return NextResponse.json({ error: "subject is required" }, { status: 400 });
@@ -119,6 +122,9 @@ export async function POST(req: NextRequest) {
             fixItems,
             ctaLabel: ctaLabel || undefined,
             ctaHref: ctaHref || undefined,
+            heroImage: heroImage || undefined,
+            heroAlt: heroAlt || undefined,
+            preheader: preheader || undefined,
             unsubscribeUrl,
             // profiles.display_name is empty for every user on record; the
             // name OAuth gives us lives in auth metadata instead. Reading the

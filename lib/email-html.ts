@@ -100,9 +100,13 @@ function heroCard(eyebrow: string, headline: string, subtext: string, greeting =
   const hello = greeting
     ? `<p style="margin:0 0 10px;font-size:15px;font-weight:700;color:${INK_2};font-family:${BODY}">${greeting}</p>`
     : "";
+  // No eyebrow when a banner above already names the email.
+  const label = eyebrow
+    ? `<p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${TEAL};font-family:${BODY}">${eyebrow}</p>`
+    : "";
   return `
   <tr><td style="background:${CARD};border:1px solid ${BORDER};border-radius:20px;padding:40px 36px 36px">
-    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${TEAL};font-family:${BODY}">${eyebrow}</p>${hello}
+    ${label}${hello}
     <h1 style="margin:0 0 14px;font-size:34px;font-weight:700;color:${INK};letter-spacing:-0.8px;line-height:1.15;font-family:${DISPLAY}">${headline}</h1>
     <p style="margin:0;font-size:15px;color:${INK_2};line-height:1.7;font-family:${BODY}">${subtext}</p>
   </td></tr>`;
@@ -644,6 +648,9 @@ export function buildMonthlyUpdateEmail({
   ctaHref,
   unsubscribeUrl,
   recipientName,
+  heroImage,
+  heroAlt,
+  preheader,
 }: {
   monthLabel: string;
   intro: string;
@@ -653,10 +660,25 @@ export function buildMonthlyUpdateEmail({
   ctaHref?: string;
   unsubscribeUrl: string;
   recipientName?: string | null;
+  /** The month's key visual: absolute https, exported 1120px wide. Optional. */
+  heroImage?: string;
+  /** What the image shows, for the many clients that block images by default. */
+  heroAlt?: string;
+  /** The inbox preview line. Defaults to the heading. */
+  preheader?: string;
 }): string {
   const heading = `What's new in ${monthLabel}`;
   const name = firstNameFor(recipientName);
-  const hero = heroCard("Monthly Update", heading, intro, `Hi ${name || "there"},`);
+  const hero = heroCard(safeImageUrl(heroImage) ? "" : "Monthly Update", heading, intro, `Hi ${name || "there"},`);
+  // The key visual leads, full width above the hero, linked to the button's
+  // destination so a tap on the picture goes where the button does.
+  const kvSrc = safeImageUrl(heroImage);
+  const kvLink = safeLinkUrl(ctaHref);
+  const kvImg = kvSrc
+    ? `<img src="${kvSrc}" alt="${escapeAttr(heroAlt || heading)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:20px" />`
+    : "";
+  const kv = kvImg ? `
+  <tr><td style="padding:0 0 16px">${kvLink ? `<a href="${kvLink}" style="display:block">${kvImg}</a>` : kvImg}</td></tr>` : "";
 
   const itemList = (items: UpdateItem[]) => `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
@@ -680,7 +702,7 @@ export function buildMonthlyUpdateEmail({
 
   const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
 
-  return base(heading, hero + newSection + fixSection + cta + ask + footer);
+  return base(escapeAttr(preheader?.trim() || heading), kv + hero + newSection + fixSection + cta + ask + footer);
 }
 
 // ─── Household invitation ────────────────────────────────────────────────────

@@ -100,6 +100,9 @@ export default function EmailsTab({ token }: { token: string }) {
   const [fixItems, setFixItems] = useState<UpdateItem[]>([]);
   const [ctaLabel, setCtaLabel] = useState("");
   const [ctaHref, setCtaHref] = useState("");
+  const [heroImage, setHeroImage] = useState("");
+  const [heroAlt, setHeroAlt] = useState("");
+  const [preheader, setPreheader] = useState("");
 
   // Drafts / templates
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -145,6 +148,9 @@ export default function EmailsTab({ token }: { token: string }) {
     setFixItems([]);
     setCtaLabel("");
     setCtaHref("");
+    setHeroImage("");
+    setHeroAlt("");
+    setPreheader("");
     setResult(null);
   }
 
@@ -163,6 +169,9 @@ export default function EmailsTab({ token }: { token: string }) {
       setFixItems(Array.isArray(c.fixItems) ? (c.fixItems as UpdateItem[]) : []);
       setCtaLabel(typeof c.ctaLabel === "string" ? c.ctaLabel : "");
       setCtaHref(typeof c.ctaHref === "string" ? c.ctaHref : "");
+      setHeroImage(typeof c.heroImage === "string" ? c.heroImage : "");
+      setHeroAlt(typeof c.heroAlt === "string" ? c.heroAlt : "");
+      setPreheader(typeof c.preheader === "string" ? c.preheader : "");
       setHeading("");
       setBody("");
     } else {
@@ -191,6 +200,9 @@ export default function EmailsTab({ token }: { token: string }) {
           fixItems,
           ctaLabel: ctaLabel || undefined,
           ctaHref: ctaHref || undefined,
+          heroImage: heroImage || undefined,
+          heroAlt: heroAlt || undefined,
+          preheader: preheader || undefined,
           unsubscribeUrl: "#",
           recipientName: "Alex Rivera",
         })
@@ -204,7 +216,7 @@ export default function EmailsTab({ token }: { token: string }) {
 
   function currentContent(): Record<string, unknown> {
     if (template === "monthly_update") {
-      return { monthLabel, intro, newItems, fixItems, ctaLabel, ctaHref };
+      return { monthLabel, intro, newItems, fixItems, ctaLabel, ctaHref, heroImage, heroAlt, preheader };
     }
     return { heading, body, ctaLabel, ctaHref };
   }
@@ -261,7 +273,7 @@ export default function EmailsTab({ token }: { token: string }) {
     const bodyHtml = paragraphsToHtml(body);
     const payload =
       template === "monthly_update"
-        ? { template, subject, segment, monthLabel, intro, newItems, fixItems, ctaLabel, ctaHref }
+        ? { template, subject, segment, monthLabel, intro, newItems, fixItems, ctaLabel, ctaHref, heroImage, heroAlt, preheader }
         : { template, subject, segment, heading, bodyHtml, ctaLabel, ctaHref };
     try {
       const res = await fetch("/api/admin/emails/send", {
@@ -393,6 +405,17 @@ export default function EmailsTab({ token }: { token: string }) {
             <Field label="Month label">
               <input value={monthLabel} onChange={(e) => setMonthLabel(e.target.value)} style={inputStyle} placeholder="e.g. August 2026" />
             </Field>
+            <Field label="Inbox preview line (optional)">
+              <input value={preheader} onChange={(e) => setPreheader(e.target.value)} style={inputStyle} placeholder="Shown after the subject in the inbox. Defaults to the heading." />
+            </Field>
+            <Field label="Key visual (optional)">
+              <input value={heroImage} onChange={(e) => setHeroImage(e.target.value)} style={inputStyle} placeholder="https://www.untilfire.com/email/... (1120px wide, shown full width at the top)" />
+            </Field>
+            {heroImage && (
+              <Field label="Key visual description">
+                <input value={heroAlt} onChange={(e) => setHeroAlt(e.target.value)} style={inputStyle} placeholder="What it shows, for readers with images off" />
+              </Field>
+            )}
             <Field label="Intro">
               <textarea
                 value={intro}
