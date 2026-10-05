@@ -6,6 +6,14 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-05
+
+### Monthly update emails take a banner
+- The admin email editor has two new optional fields for monthly updates: a
+  banner image shown full width at the top (linked to the button's page), and
+  the inbox preview line. With a banner, the repeated "Monthly update" label
+  is dropped. September's banner is `public/email/september/banner.png`.
+
 ## 2026-10-02
 
 ### Free to spend until payday
