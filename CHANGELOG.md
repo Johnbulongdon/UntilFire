@@ -60,6 +60,14 @@ under today's date, creating the heading if it is not there yet.
   with how far over or under budget that lands), drawn as a dotted line,
   and has faint gridlines with amounts. Ranges longer than a month open on
   bars, which read better than a long running line.
+- The forecast and the budget line now use the bills you listed in
+  Upcoming: each bill counts on its own due date, and everything else runs
+  at your usual everyday rate. Before, a rent paid on the 1st was counted
+  again from past months that paid it on the 28th.
+- While a month is running, saved reads "On track to save", comparing a
+  full month's income with the forecast, instead of a partial month.
+- Once everything is filed, the review bar shows how your expenses split
+  between needs and wants.
 
 ### Reviewing suggested classifications learns from your history
 - Suggestions now come from how you filed the same merchant before: category,

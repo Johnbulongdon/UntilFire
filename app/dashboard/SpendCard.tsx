@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, InfoTip } from "@/components/ui";
 import { trackTxViewChanged } from "@/lib/analytics";
 import { type DateRange, monthOf, netAmount, type RangeTx, usualForRange, usualToDay } from "@/lib/spend-range";
+import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath } from "@/lib/spend-forecast";
 import { BarsView, CalendarView, calendarAllowed, type Daily, LineView } from "./SpendCharts";
 
 type Tx = RangeTx & { id: string };
@@ -21,7 +22,7 @@ const ICONS: Record<View, string> = { line: "M3 17l5-5 4 3 8-9", bars: "M5 20V10
  * against usual. Explanations sit in InfoTips; the card itself is numbers,
  * marks and labels.
  */
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0 }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [] }: {
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
@@ -33,6 +34,8 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   budgets?: Record<string, number>; periodLabel: string;
   /** Monthly income from the Budget tab, USD; stands in for months with no income recorded. */
   expectedIncome?: number;
+  /** Upcoming expense bills (USD, next due date), which date the forecast and budget line. */
+  bills?: Bill[];
 }) {
   const [picking, setPicking] = useState<string | null>(null);
   const [mode, setMode] = useState<"spent" | "earned">("spent");
@@ -54,7 +57,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
 
   const entries = useMemo(() => transactions
     .filter((t) => t.transaction_type === (mode === "spent" ? "expense" : "income"))
-    .map((t) => ({ date: t.date.slice(0, 10), category: t.category, usd: toUSD(mode === "spent" ? netAmount(t) : t.amount, t.currency) })),
+    .map((t) => ({ date: t.date.slice(0, 10), category: t.category, description: t.description ?? "", usd: toUSD(mode === "spent" ? netAmount(t) : t.amount, t.currency) })),
   [transactions, mode, toUSD]);
   const inRange = (d: string) => d >= range.start && d <= range.end && d <= today;
   const picked = useMemo(() => new Set(selectedCategories), [selectedCategories]);
@@ -73,21 +76,29 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   }, [focus, today]);
   const total = [...daily.values()].reduce((a, b) => a + b, 0);
 
-  // Income vs expenses over the same range, for the saved line. A month with
-  // no income recorded (or only a stray refund) uses the expected income from
-  // the Budget tab, prorated for the month in progress, so one untracked
-  // payday doesn't send the savings rate to -900%.
+  // The period is still running when today falls inside it.
+  const days = useMemo(() => daysOfMonths(range.months), [range]);
+  const running = today >= range.start && today < range.end;
+  const elapsed = Math.max(1, days.filter((d) => d <= today).length);
+  const thisMonth = monthOf(today);
+
+  // Income vs expenses, for the saved line. Expenses for a running period
+  // are the forecast to its end, so "on track to save" compares like with
+  // like: a whole month's income against a whole month's expenses. A month
+  // with no income recorded (or only a stray refund) uses the expected income
+  // from the Budget tab.
   const sum = (type: "expense" | "income") => transactions.filter((t) => t.transaction_type === type && inRange(t.date.slice(0, 10)))
     .reduce((s, t) => s + toUSD(type === "expense" ? netAmount(t) : t.amount, t.currency), 0);
-  const spent = sum("expense");
+  const allExpenses = useMemo(() => transactions.filter((t) => t.transaction_type === "expense")
+    .map((t) => ({ date: t.date.slice(0, 10), category: t.category, description: t.description ?? "", usd: toUSD(netAmount(t), t.currency) })), [transactions, toUSD]);
+  const spentSoFar = sum("expense");
+  const allRate = useMemo(() => everydayRate(allExpenses, bills, thisMonth), [allExpenses, bills, thisMonth]);
+  const spent = running ? forecastPath(days, today, spentSoFar, bills, allRate ?? spentSoFar / elapsed).at(-1)! : spentSoFar;
   let earned = 0, filled = 0;
   for (const m of range.months) {
-    if (m > monthOf(today)) continue;
+    if (m > thisMonth) continue;
     const actual = transactions.filter((t) => t.transaction_type === "income" && t.date.startsWith(m)).reduce((s, t) => s + toUSD(t.amount, t.currency), 0);
-    if (expectedIncome > 0 && actual < expectedIncome * 0.25) {
-      const share = m === monthOf(today) ? Number(today.slice(8, 10)) / Number(new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).getDate()) : 1;
-      earned += expectedIncome * share; filled++;
-    } else earned += actual;
+    if (expectedIncome > 0 && actual < expectedIncome * 0.25) { earned += expectedIncome; filled++; } else earned += actual;
   }
   const saved = earned - spent;
   const rawRate = earned > 0 ? Math.round((saved / earned) * 100) : null;
@@ -102,6 +113,12 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
     const total = keys.reduce((s, k) => s + Math.max(0, budgets[k] ?? 0), 0);
     return total > 0 ? total : null;
   }, [budgets, mode, picked]);
+
+  // The chart's own forecast and budget line, for what is on screen.
+  const focusBills = useMemo(() => picked.size ? bills.filter((b) => b.category && picked.has(b.category)) : bills, [bills, picked]);
+  const focusRate = useMemo(() => everydayRate(focus, focusBills, thisMonth), [focus, focusBills, thisMonth]);
+  const forecastLine = mode === "spent" && running ? forecastPath(days, today, total, focusBills, focusRate ?? total / elapsed) : null;
+  const budgetLine = budgetMonth ? budgetPath(range.months, budgetMonth, focusBills) : null;
 
   const rows = useMemo(() => {
     const out = cats.map((c) => {
@@ -135,8 +152,8 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
                 ? <>Income <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(earned)}{filled > 0 ? "*" : ""}</b></>
                 : <>Expenses <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
               {earned > 0 && <>
-                · Saved <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
-                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{filled > 0 ? ` *${filled === 1 ? "One month" : `${filled} months`} had no income recorded, so your expected income from the Budget tab stands in.` : ""}</InfoTip>
+                · {running ? "On track to save" : "Saved"} <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
+                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{running ? " While the month is running, expenses are the forecast to its end." : ""}{filled > 0 ? ` *${filled === 1 ? "One month" : `${filled} months`} had no income recorded, so your expected income from the Budget tab stands in.` : ""}</InfoTip>
               </>}
             </span>
           </div>
@@ -160,7 +177,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             </div>
           </div>
         </div>
-        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} periodLabel={periodLabel} fmt={fmt} />}
+        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} forecast={forecastLine} periodLabel={periodLabel} fmt={fmt} />}
         {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} valueLabel={mode === "spent" ? "Expenses" : "Income"} />}
         {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} />}
       </div>

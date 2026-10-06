@@ -7,7 +7,7 @@ Sources and both vault branch snapshots are recorded in
 
 ## Active decisions
 
-### D-31 — October 7: city guides answer first, then offer a personal plan
+### D-32 — October 7: city guides answer first, then offer a personal plan
 
 **Status:** Active product direction approved by the user; implementation is
 prepared for integration, not evidence of live production.
@@ -1299,3 +1299,13 @@ which read as the person's current pace) and "Budget". The budget line is
 the monthly budget shaped by past months' spread, falling back to an even
 line; category bars draw the budget as a track behind the spent bar. Gaps
 to each reference sit as chips above the chart, not as labels inside it.
+
+**Addendum (forecast):** shaping the forecast and budget line from past
+months double-counted rent whose day moved (past months on the 28th, this
+month on the 1st). Both now come from Upcoming (`lib/spend-forecast.ts`):
+the forecast is spent so far, plus listed bills still due, plus everyday
+(non-bill) spending at the median daily rate of past months; the budget
+line places monthly bills on their day and spreads the rest evenly. Past
+months stays as recorded history. A running month's saved compares a full
+month's expected income with the forecast ("On track to save"). With
+everything filed, the review bar shows the needs/wants split.
