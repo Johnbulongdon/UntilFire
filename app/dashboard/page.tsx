@@ -5736,7 +5736,8 @@ export default function Dashboard() {
   const setSpendToggle = useCallback((id: string, on: boolean) => {
     setSpendToggles((prev) => {
       const next = { ...prev, [id]: on };
-      if (userId) void supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId);
+      if (userId) supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId)
+        .then(({ error }) => { if (error) console.error("[free-to-spend] saving account toggles", error); });
       return next;
     });
   }, [userId]);

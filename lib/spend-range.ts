@@ -50,7 +50,8 @@ export function addMonths(ym: string, n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export type RangePreset = 1 | 3 | 6 | 12 | "ytd";
+/** A count of whole months (1, 3, 6, 12 or a custom span), or January to date. */
+export type RangePreset = number | "ytd";
 export type DateRange = { start: string; end: string; months: string[] }; // inclusive dates
 
 /** A range of whole months ending with `endMonth`; "ytd" runs January to `endMonth`. */

@@ -4,8 +4,11 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import CsvImportModal from "./CsvImportModal";
-import PlaidConnect from "./PlaidConnect";
-import { PieChart, Pie, Cell, Tooltip as ChartTooltip, ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, Line } from "recharts";
+import PlaidConnect, { type BankStatus } from "./PlaidConnect";
+import SpendRangePill from "./SpendRangePill";
+import SpendCard, { type CatDisplay } from "./SpendCard";
+import ReviewPill from "./ReviewPill";
+import { rangeFor, type RangePreset } from "@/lib/spend-range";
 import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 
@@ -1306,115 +1309,6 @@ function TransactionList({
 }
 
 // ─── Monthly Summary ──────────────────────────────────────────────────────────
-function MonthlySummary({
-  transactions,
-  viewMonth,
-  onSelectMonth,
-  rates,
-  formatAmount,
-  aiNudge,
-}: {
-  transactions: Transaction[];
-  viewMonth: string;
-  onSelectMonth: (month: string) => void;
-  rates: Record<string, number>;
-  formatAmount: (value: number) => string;
-  aiNudge?: { untaggedCount: number; onClassify: () => void; isClassifying: boolean } | null;
-}) {
-  const [chartOpen, setChartOpen] = useState(false);
-
-  // MOM chart data — last 12 months with data
-  const momData = useMemo(() => {
-    const months = [...new Set(transactions.map((t) => t.date.slice(0, 7)))]
-      .filter(Boolean).sort().slice(-12);
-    return months.map((month) => {
-      const txns = transactions.filter((t) => t.date.startsWith(month));
-      const income = txns.filter((t) => t.transaction_type === "income")
-        .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-      const expense = txns.filter((t) => t.transaction_type === "expense")
-        .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
-      const [y, mo] = month.split("-").map(Number);
-      return {
-        month,
-        label: new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
-        income: Math.round(income),
-        expense: Math.round(expense),
-        net: Math.round(income - expense),
-      };
-    });
-  }, [transactions, rates]);
-
-  const showTrend = momData.length >= 2;
-  const showNudge = !!aiNudge && aiNudge.untaggedCount > 0;
-  if (!showTrend && !showNudge) return null;
-
-  return (
-    <div style={{ marginBottom: 20 }}>
-      {/* Overview: trend (collapsed by default) + AI Need/Want nudge, one card instead of several — headline numbers already live in the sticky bar above */}
-      <div className="uf-card" style={{ overflow: "hidden" }}>
-        {showTrend && (
-          <button
-            onClick={() => setChartOpen((v) => !v)}
-            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "transparent", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}
-          >
-            <span>📈 Monthly cashflow trend</span>
-            <span style={{ transform: chartOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s", color: "var(--uf-text-3)" }}>▾</span>
-          </button>
-        )}
-        {showTrend && chartOpen && (
-          <div style={{ padding: "0 20px 12px" }}>
-            <ResponsiveContainer width="100%" height={130}>
-              <ComposedChart data={momData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onClick={(e: any) => { if (e?.activePayload?.[0]) onSelectMonth(e.activePayload[0].payload.month); }}>
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--uf-text-3)", fontFamily: "inherit" }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <ChartTooltip
-                  formatter={(v, name) => [formatAmount(Number(v ?? 0)), name === "income" ? "Income" : name === "expense" ? "Spent" : "Net"] as [string, string]}
-                  contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
-                  cursor={{ fill: "rgba(100,116,139,0.07)" }}
-                />
-                <Bar dataKey="income" fill="#059669" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
-                <Bar dataKey="expense" fill="#f97316" fillOpacity={0.7} radius={[3, 3, 0, 0]} maxBarSize={32} style={{ cursor: "pointer" }} />
-                <Line dataKey="net" type="monotone" stroke="#22d3a5" strokeWidth={2}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  dot={(props: any) => (
-                    <circle key={props.payload.month} cx={props.cx} cy={props.cy} r={props.payload.month === viewMonth ? 5 : 3}
-                      fill={props.payload.month === viewMonth ? "#22d3a5" : "var(--uf-card)"}
-                      stroke="#22d3a5" strokeWidth={2} />
-                  )} />
-              </ComposedChart>
-            </ResponsiveContainer>
-            <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-              {[{ color: "#059669", opacity: 0.7, label: "Income" }, { color: "#f97316", opacity: 0.7, label: "Spent" }, { color: "#22d3a5", opacity: 1, label: "Net", line: true }].map(({ color, opacity, label, line }) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--uf-text-3)" }}>
-                  {line
-                    ? <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2" /><circle cx="8" cy="4" r="2.5" fill="white" stroke={color} strokeWidth="2" /></svg>
-                    : <span style={{ width: 10, height: 10, borderRadius: 2, background: color, opacity, display: "inline-block" }} />}
-                  {label}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {showNudge && aiNudge && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderTop: showTrend ? "1px solid var(--uf-border)" : "none" }}>
-            <span style={{ fontSize: 12, color: "var(--uf-text-2)" }}>{aiNudge.untaggedCount} expense{aiNudge.untaggedCount !== 1 ? "s" : ""} not tagged Need/Want</span>
-            <button
-              onClick={aiNudge.onClassify}
-              disabled={aiNudge.isClassifying}
-              style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 700, cursor: aiNudge.isClassifying ? "not-allowed" : "pointer", opacity: aiNudge.isClassifying ? 0.6 : 1 }}
-            >
-              {aiNudge.isClassifying ? "Classifying…" : "✦ AI classify all"}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({
   toast,
   onUndo,
@@ -1695,7 +1589,25 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>([]);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const [viewMonth, setViewMonth] = useState(currentMonth);
+  // The range on screen (D-30): a count of months ending with rangeEnd, remembered per browser.
+  const [rangePreset, setRangePreset] = useState<RangePreset>(1);
+  const [rangeEnd, setRangeEnd] = useState(currentMonth);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("uf.tx.range");
+      if (saved) setRangePreset(saved === "ytd" ? "ytd" : Math.max(1, Number(saved)) || 1);
+    } catch { /* storage unavailable */ }
+  }, []);
+  const setRange = useCallback((preset: RangePreset, end: string) => {
+    setRangePreset(preset); setRangeEnd(end);
+    try { localStorage.setItem("uf.tx.range", String(preset)); } catch { /* storage unavailable */ }
+  }, []);
+  const range = useMemo(() => rangeFor(rangePreset, rangeEnd), [rangePreset, rangeEnd]);
+  const viewMonth = rangeEnd;
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [bankStatus, setBankStatus] = useState<BankStatus | null>(null);
+  const [banksOpen, setBanksOpen] = useState(false);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesFallback, setRatesFallback] = useState(false);
 
@@ -1790,56 +1702,32 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     });
   }, []);
 
-  const monthTxns = useMemo(
-    () => transactions.filter((t) => t.date.startsWith(viewMonth)),
-    [transactions, viewMonth]
-  );
-
-  const [stickyY, stickyM] = viewMonth.split("-").map(Number);
-  const monthLabel = new Date(stickyY, stickyM - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-
-  const incomeTotal = useMemo(
-    () => monthTxns.filter(t => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0),
-    [monthTxns, rates]
-  );
-  const expenseTotal = useMemo(
-    () => monthTxns.filter(t => t.transaction_type === "expense").reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
-    [monthTxns, rates]
-  );
-  const stickyNet = incomeTotal - expenseTotal;
-  const savingsRate = incomeTotal > 0 ? Math.round((stickyNet / incomeTotal) * 100) : null;
-
-  const byCat = useMemo(() => {
-    return allExpenseCats
-      .map((cat) => {
-        const base = { color: cat.color, emoji: cat.emoji ?? "📦" };
-        const { color, emoji } = resolveDisplay(base, catCustomizations, cat.key);
-        return {
-          ...cat,
-          color,
-          emoji,
-          total: monthTxns.filter((t) => t.transaction_type === "expense" && t.category === cat.key).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
-        };
-      })
-      .filter((c) => c.total > 0)
-      .sort((a, b) => b.total - a.total);
-  }, [monthTxns, allExpenseCats, catCustomizations, rates]);
-
-  const workTotal = useMemo(
-    () => monthTxns.filter((t) => t.transaction_type === "expense" && t.tags?.includes("work")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
-    [monthTxns, rates]
-  );
+  const inRange = useCallback((t: { date: string }) => {
+    const d = t.date.slice(0, 10);
+    return d >= range.start && d <= range.end;
+  }, [range]);
+  const monthTxns = useMemo(() => transactions.filter(inRange), [transactions, inRange]);
+  // The list follows what the summary has picked: a category, or a day in the calendar.
+  const listTxns = useMemo(() => monthTxns.filter((t) =>
+    (!selectedCategory || t.category === selectedCategory) && (!selectedDay || t.date.startsWith(selectedDay))),
+  [monthTxns, selectedCategory, selectedDay]);
+  const today = `${currentMonth}-${String(now.getDate()).padStart(2, "0")}`;
+  const usd = useCallback((amount: number, currency: string) => toUSD(amount, currency, rates), [rates]);
+  const catDisplay = useCallback((cats: { key: string; label: string; color: string; emoji?: string }[]): CatDisplay[] =>
+    cats.map((c) => ({ key: c.key, label: c.label, ...resolveDisplay({ color: c.color, emoji: c.emoji ?? "📦" }, catCustomizations, c.key) })),
+  [catCustomizations]);
+  const expenseCatDisplay = useMemo(() => catDisplay(allExpenseCats), [catDisplay, allExpenseCats]);
+  const incomeCatDisplay = useMemo(() => catDisplay(INCOME_CATEGORIES), [catDisplay]);
+  const reviewCounts = useMemo(() => {
+    const expenses = monthTxns.filter((t) => t.transaction_type === "expense");
+    const done = expenses.filter((t) => t.category && t.category !== "other" && t.tags?.some((g) => g === "need" || g === "want")).length;
+    return { filed: done, need: expenses.length - done };
+  }, [monthTxns]);
 
   const isMixedCurrency = useMemo(
     () => new Set(monthTxns.map((t) => t.currency).filter(Boolean)).size > 1,
     [monthTxns]
   );
-
-  const untaggedCount = useMemo(() => {
-    if (!isPro) return 0;
-    const expenseTxns = monthTxns.filter((t) => t.transaction_type === "expense");
-    return expenseTxns.filter((t) => !t.tags?.includes("need") && !t.tags?.includes("want")).length;
-  }, [isPro, monthTxns]);
 
   const existingTags = useMemo(
     () => [...new Set(transactions.flatMap((t) => t.tags || []))].sort(),
@@ -1876,9 +1764,9 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     setIsClassifying(true);
     try {
       const toReview = transactions.filter(
-        (t) => t.transaction_type === "expense" && t.date.startsWith(viewMonth)
+        (t) => t.transaction_type === "expense" && inRange(t)
       );
-      if (!toReview.length) { showToast("No expenses to classify this month"); return; }
+      if (!toReview.length) { showToast("No expenses to review here"); return; }
 
       // Apply saved rules first — only for transactions not already correctly tagged
       const ruleMap = new Map(
@@ -1906,7 +1794,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       // the category and sub-category as well as need/want, in any language.
       // A transaction already filed and tagged, with nothing new to suggest,
       // is not put back in front of them.
-      const memory = buildMerchantMemory(transactions.filter((t) => !t.date.startsWith(viewMonth) || t.tags?.some((g) => g === "need" || g === "want")));
+      const memory = buildMerchantMemory(transactions.filter((t) => !inRange(t) || t.tags?.some((g) => g === "need" || g === "want")));
       const unfiled = (t: Transaction) => !t.category || t.category === "other";
       const tagged = (t: Transaction) => !!t.tags?.some((g) => g === "need" || g === "want");
       const reviews: ReviewItem[] = [];
@@ -1923,9 +1811,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         reviews.push(item);
         if (!h?.classification && !was) forAi.push(tx);
       }
-      if (!forAi.length) {
+      // History-based filing is free; asking the model about new merchants is Pro.
+      if (!forAi.length || !isPro) {
         if (reviews.length) setPendingClassifications(reviews);
-        else showToast("Everything this month is already filed");
+        else showToast("Everything here is already filed");
         return;
       }
 
@@ -1951,7 +1840,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     } finally {
       setIsClassifying(false);
     }
-  }, [transactions, isClassifying, showToast, viewMonth, classificationRules, applyClassifications]);
+  }, [transactions, isClassifying, showToast, inRange, isPro, classificationRules, applyClassifications]);
 
 
   const handleSave = useCallback(async (keepOpen: boolean) => {
@@ -1996,7 +1885,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       setTransactions((prev) => [data, ...prev]);
       setJustAddedId(data.id);
       setTimeout(() => setJustAddedId(null), 1600);
-      if (viewMonth !== data.date.slice(0, 7)) setViewMonth(data.date.slice(0, 7));
+      if (!inRange(data)) setRangeEnd(data.date.slice(0, 7));
       showToast(`Added — ${data.description || txMoney(data.amount, data.currency)}`, data.id);
       if (!keepOpen) {
         setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
@@ -2005,7 +1894,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       }
       if (drawerOpen && !keepOpen) setDrawerOpen(false);
     }
-  }, [defaultCurrency, draft, drawerOpen, viewMonth, showToast]);
+  }, [defaultCurrency, draft, drawerOpen, inRange, showToast]);
 
   const handleEdit = useCallback((tx: Transaction) => {
     setEditingId(tx.id);
@@ -2082,19 +1971,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     setToast(null);
   }, [showToast, toast, transactions]);
 
-  const handlePrevMonth = () => {
-    const [py, pm] = viewMonth.split("-").map(Number);
-    const d = new Date(py, pm - 2, 1);
-    setViewMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-  };
-
-  const handleNextMonth = () => {
-    const [py, pm] = viewMonth.split("-").map(Number);
-    const d = new Date(py, pm, 1);
-    const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    if (next <= currentMonth) setViewMonth(next);
-  };
-
   if (loading) {
     return <div style={{ textAlign: "center", padding: "60px 0", color: "var(--uf-text-3)" }}>Loading transactions…</div>;
   }
@@ -2111,88 +1987,45 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         }
       `}</style>
 
-      <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick} />
-
-      {/* Sticky summary bar */}
+      {/* Top bar: one date control, and the import action */}
       <div style={{
-        position: "sticky", top: 0, zIndex: 10,
-        background: "var(--uf-card)", borderBottom: "1px solid var(--uf-border)",
-        padding: "10px 20px", marginBottom: 16, display: "flex",
-        alignItems: "center", gap: 12, flexWrap: "wrap",
+        position: "sticky", top: 0, zIndex: 10, background: "var(--uf-bg)",
+        padding: "8px 0", marginBottom: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
       }}>
-        {/* Month navigation */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button onClick={handlePrevMonth} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-2)", padding: "4px 6px", borderRadius: 6 }}>‹</button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", minWidth: 110, textAlign: "center" }}>{monthLabel}</span>
-          <button onClick={handleNextMonth} disabled={viewMonth >= currentMonth} style={{ background: "none", border: "none", cursor: viewMonth >= currentMonth ? "not-allowed" : "pointer", color: viewMonth >= currentMonth ? "var(--uf-text-3)" : "var(--uf-text-2)", padding: "4px 6px", borderRadius: 6 }}>›</button>
-        </div>
-        {/* KPI strip */}
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-          {[
-            { label: "Income", value: incomeTotal, color: "#059669" },
-            { label: "Spent", value: expenseTotal, color: "var(--uf-text)" },
-            { label: "Saved", value: stickyNet, color: stickyNet >= 0 ? "#047857" : "#DC2626" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>{label}</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color, fontVariantNumeric: "tabular-nums" }}>{fmtDisplay(value)}</div>
-            </div>
-          ))}
-          {savingsRate !== null && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>Rate</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: savingsRate >= 20 ? "#047857" : savingsRate >= 0 ? "var(--uf-text)" : "#DC2626", fontVariantNumeric: "tabular-nums" }}>{savingsRate}%</div>
-            </div>
-          )}
-          {byCat.length > 0 && (
-            <>
-              <div style={{ width: 1, alignSelf: "stretch", background: "var(--uf-border)" }} />
-              <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }} title="Spending by category">
-                <ResponsiveContainer width={32} height={32}>
-                  <PieChart>
-                    <Pie data={byCat} cx="50%" cy="50%" innerRadius={8} outerRadius={15} paddingAngle={2} dataKey="total">
-                      {byCat.map((cat) => <Cell key={cat.key} fill={cat.color} />)}
-                    </Pie>
-                    <ChartTooltip
-                      formatter={(v) => [fmtDisplay(Number(v ?? 0)), ""]}
-                      contentStyle={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, fontFamily: "inherit", fontSize: 12 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </>
-          )}
-          {workTotal > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>💼 Work</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#6366f1", fontVariantNumeric: "tabular-nums" }}>{fmtDisplay(workTotal)}</div>
-            </div>
-          )}
-        </div>
-        {/* Rates note + Import CSV */}
+        <SpendRangePill preset={rangePreset} endMonth={rangeEnd} currentMonth={currentMonth}
+          onChange={(p, end) => { setRange(p, end); setSelectedDay(null); }} />
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           {isMixedCurrency && (
-            <span style={{ fontSize: 11, color: ratesFallback ? "#D97706" : "var(--uf-text-3)" }}>
-              {ratesFallback ? "⚠ estimated rates" : "live rates"}
+            <span className="uf-t-small" style={{ color: ratesFallback ? "var(--uf-warn-ink)" : "var(--uf-ink-3)" }}>
+              {ratesFallback ? "estimated rates" : "live rates"}
             </span>
           )}
-          <button onClick={() => setShowImport(true)} style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-            <span>↑</span> Import CSV
+          <button onClick={() => setShowImport(true)} className="uf-t-small" style={{ padding: "6px 12px", borderRadius: 999, border: "1px solid var(--uf-border)", background: "var(--uf-card)", color: "var(--uf-ink-2)", fontWeight: 600, cursor: "pointer" }}>
+            ↑ Import CSV
           </button>
         </div>
       </div>
 
-      <MonthlySummary
-        transactions={transactions}
-        viewMonth={viewMonth}
-        onSelectMonth={setViewMonth}
-        rates={rates}
-        formatAmount={fmtDisplay}
-        aiNudge={isPro && untaggedCount > 0 ? { untaggedCount, onClassify: handleAiClassify, isClassifying } : null}
-      />
+      <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
+        <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying} onReview={handleAiClassify}
+          bank={bankStatus} banksOpen={banksOpen} onToggleBanks={() => setBanksOpen((v) => !v)} />
+        <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick}
+          collapsed={!banksOpen} onStatus={setBankStatus} />
+        <SpendCard transactions={transactions} range={range} today={today} toUSD={usd} fmt={fmtDisplay}
+          expenseCats={expenseCatDisplay} incomeCats={incomeCatDisplay}
+          selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory}
+          selectedDay={selectedDay} onSelectDay={setSelectedDay}
+          onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }} />
+        {(selectedCategory || selectedDay) && (
+          <button type="button" onClick={() => { setSelectedCategory(null); setSelectedDay(null); }} className="uf-t-small"
+            style={{ justifySelf: "start", border: "none", background: "var(--uf-surface-2)", borderRadius: 999, padding: "6px 12px", cursor: "pointer", color: "var(--uf-ink-2)", fontWeight: 600 }}>
+            {[selectedCategory && expenseCatDisplay.concat(incomeCatDisplay).find((c) => c.key === selectedCategory)?.label, selectedDay].filter(Boolean).join(" · ")} ✕
+          </button>
+        )}
+      </div>
 
       <TransactionList
-        transactions={monthTxns}
+        transactions={listTxns}
         editingId={editingId}
         justAddedId={justAddedId}
         onEdit={handleEdit}
