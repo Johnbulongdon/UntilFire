@@ -54,8 +54,15 @@ under today's date, creating the heading if it is not there yet.
   again from past months that paid it on the 28th.
 - While a month is running, saved reads "On track to save", comparing a
   full month's income with the forecast, instead of a partial month.
-- Once everything is filed, the review bar shows how your expenses split
-  between needs and wants.
+- Once everything is filed, the review bar shows this month's expenses and
+  what is free to spend until payday (the same figure as Home).
+- Regular payments found in your history (rent paid through the same card
+  every month, subscriptions) count as bills even when they are not listed
+  in Upcoming, so they are no longer forecast twice.
+- The budget line steps up on the date of every Upcoming payment, whatever
+  its repeat (weekly, monthly, yearly or one-off, paid ones included), in
+  past months as well as this one, instead of only monthly ones. A bill in
+  Upcoming and the same payment found in your history count once.
 
 ### Reviewing suggested classifications learns from your history
 - Suggestions now come from how you filed the same merchant before: category,

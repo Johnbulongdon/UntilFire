@@ -1289,4 +1289,8 @@ the forecast is spent so far, plus listed bills still due, plus everyday
 line places monthly bills on their day and spreads the rest evenly. Past
 months stays as recorded history. A running month's saved compares a full
 month's expected income with the forecast ("On track to save"). With
-everything filed, the review bar shows the needs/wants split.
+everything filed, the review bar shows Free to spend (D-29) beside the
+month's expenses; a needs/wants split read as noise early in a month. Bills
+are Upcoming plus monthly, quarterly and annual payments detected in the
+history (lib/recurring-detect), so rent the founder never listed in Upcoming
+was still forecast once, not twice.
