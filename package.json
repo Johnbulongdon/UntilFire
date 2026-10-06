@@ -17,6 +17,7 @@
     "test:city-coverage": "node scripts/verify-city-coverage.mjs",
     "test:household-rls": "node scripts/verify-household-rls-safety.mjs",
     "test:merchant-memory": "node --experimental-strip-types --no-warnings scripts/verify-merchant-memory.ts",
+    "test:spend-range": "node --experimental-strip-types --no-warnings scripts/verify-spend-range.ts",
     "test:dashboard-layout": "node --experimental-strip-types --no-warnings scripts/verify-dashboard-layout.ts",
     "test:plaid-pfc": "node --experimental-strip-types --no-warnings scripts/verify-plaid-pfc.ts",
     "test:transaction-time": "node --experimental-strip-types --no-warnings scripts/verify-transaction-time.ts",

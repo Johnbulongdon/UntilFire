@@ -136,6 +136,12 @@ Use relevant skills/workflows only when available and applicable.
   compliance. Check labeled inputs and associated errors, keyboard access,
   visible focus, appropriate touch targets, reduced motion, and meaning beyond
   color. Verify light and dark themes; tokens alone do not guarantee either.
+- **Show, don't tell:** people scan rather than read, in the app and in emails.
+  When a card, page or email explains numbers, a comparison or progress, lead
+  with a graphic (chart, bar, meter, calendar, image) and keep words to labels
+  and one short line. Before building, research how strong products show the
+  same thing and pick the form by the data's job (pace over time, against usual,
+  part of a whole, progress). A card that is mostly sentences needs a reason.
 - **Visual QA:** use latest pushed main as the code baseline and the live product
   or user screenshots as visual evidence. Call out visible drift before
   implementing or pushing. Build and serve the affected app using available
