@@ -16,17 +16,37 @@
  * "Everyday" is spending that is not one of the listed bills, so a bill is
  * never in both the dated part and the daily rate.
  */
-import { sameMerchant } from "./recurring-detect.ts";
+import { addRecurrence, isoDay } from "./cashflow-forecast.ts";
+import { type Recurrence, sameMerchant } from "./recurring-detect.ts";
 import { addMonths, daysInMonth, median, monthOf } from "./spend-range.ts";
 
 export type Bill = {
   description: string | null;
   category: string | null;
-  /** Monthly-equivalent amount, USD. */
+  /** One payment, USD. */
   usd: number;
-  due: string; // YYYY-MM-DD, the next date it is due
-  monthly: boolean; // repeats on the same day each month
+  due: string; // YYYY-MM-DD: the next date it is due, or the one date of a one-off
+  recurrence: Recurrence; // "none" for a one-off
 };
+
+/**
+ * Every date a bill falls on between `from` and `to` (inclusive): stepping
+ * back and forward from its due date by its recurrence, so a monthly rent
+ * whose next due date is Nov 1 also lands on Sep 1 and Oct 1. A one-off is
+ * just its own date.
+ */
+export function occurrences(b: Bill, from: string, to: string): string[] {
+  const [y, m, d] = b.due.split("-").map(Number);
+  const anchor = new Date(y, m - 1, d);
+  if (b.recurrence === "none") return b.due >= from && b.due <= to ? [b.due] : [];
+  const out: string[] = [];
+  for (let n = -60; n <= 60; n++) {
+    const iso = isoDay(addRecurrence(anchor, b.recurrence, n));
+    if (iso > to) break;
+    if (iso >= from) out.push(iso);
+  }
+  return out;
+}
 export type DayAmount = { date: string; usd: number; category: string; description: string };
 
 /** Whether a transaction is one of the listed bills: same merchant, or the bill's category when it has no name. */
@@ -56,21 +76,24 @@ export const daysOfMonths = (months: string[]) =>
   months.flatMap((m) => Array.from({ length: daysInMonth(m) }, (_, i) => `${m}-${String(i + 1).padStart(2, "0")}`));
 
 /**
- * Cumulative budget through each day: monthly bills step up on their day,
- * the rest of the monthly budget accrues evenly. Bills beyond the budget are
- * capped at it, so the line never ends above the budget.
+ * Cumulative budget through each day: every bill steps up on the date it
+ * falls in that month (whatever its recurrence, one-offs included), and the
+ * rest of the monthly budget accrues evenly. Bills beyond the budget are
+ * scaled to it, so the line never ends above the budget.
  */
 export function budgetPath(months: string[], budgetMonth: number, bills: Bill[]): number[] {
   const out: number[] = [];
   let run = 0;
   for (const m of months) {
-    const n = daysInMonth(m);
-    const dated = bills.filter((b) => b.monthly);
-    const billTotal = Math.min(budgetMonth, dated.reduce((s, b) => s + b.usd, 0));
-    const scale = billTotal > 0 ? billTotal / dated.reduce((s, b) => s + b.usd, 0) : 0;
+    const n = daysInMonth(m), first = `${m}-01`, last = `${m}-${String(n).padStart(2, "0")}`;
+    const hits = bills.flatMap((b) => occurrences(b, first, last).map((date) => ({ date, usd: b.usd })));
+    const raw = hits.reduce((s, h) => s + h.usd, 0);
+    const billTotal = Math.min(budgetMonth, raw);
+    const scale = raw > 0 ? billTotal / raw : 0;
     const everyday = (budgetMonth - billTotal) / n;
     for (let d = 1; d <= n; d++) {
-      run += everyday + dated.filter((b) => Math.min(Number(b.due.slice(8, 10)), n) === d).reduce((s, b) => s + b.usd * scale, 0);
+      const iso = `${m}-${String(d).padStart(2, "0")}`;
+      run += everyday + hits.filter((h) => h.date === iso).reduce((s, h) => s + h.usd * scale, 0);
       out.push(run);
     }
   }
@@ -83,12 +106,26 @@ export function budgetPath(months: string[], budgetMonth: number, bills: Bill[])
  * Returns values for days after today only (NaN before), for drawing.
  */
 export function forecastPath(days: string[], today: string, spentSoFar: number, bills: Bill[], rate: number): number[] {
-  const due = bills.filter((b) => b.due > today && b.due <= days[days.length - 1]);
+  const end = days[days.length - 1];
+  const due = bills.flatMap((b) => occurrences(b, today, end).filter((d) => d > today).map((date) => ({ date, usd: b.usd })));
   let run = spentSoFar;
   return days.map((d) => {
     if (d < today) return NaN;
     if (d === today) return spentSoFar;
-    run += rate + due.filter((b) => b.due === d).reduce((s, b) => s + b.usd, 0);
+    run += rate + due.filter((h) => h.date === d).reduce((s, h) => s + h.usd, 0);
     return run;
   });
+}
+
+/**
+ * Bills from Upcoming plus repeating payments spotted in the history, without
+ * counting one twice: a spotted payment is dropped when a listed one has the
+ * same merchant, or the same category and an amount within 10% (Upcoming
+ * says "Rent", the bank says "BILT PAYMENT").
+ */
+export function mergeBills(listed: Bill[], spotted: Bill[]): Bill[] {
+  const dup = (s: Bill) => listed.some((b) =>
+    (b.description && s.description && sameMerchant(b.description, s.description))
+    || (!!b.category && b.category === s.category && Math.abs(b.usd - s.usd) <= 0.1 * Math.max(b.usd, s.usd)));
+  return [...listed, ...spotted.filter((s) => !dup(s))];
 }

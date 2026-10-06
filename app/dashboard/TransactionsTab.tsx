@@ -11,7 +11,9 @@ import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
 import { findFlags, type FlagKind, isSystemTag, okTag } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
-import type { Bill } from "@/lib/spend-forecast";
+import { type Bill, mergeBills } from "@/lib/spend-forecast";
+import type { FreeToSpend } from "@/lib/free-to-spend";
+import { detectRecurring, type Recurrence } from "@/lib/recurring-detect";
 import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 
@@ -1577,7 +1579,7 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, upcoming }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend }: {
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
@@ -1588,8 +1590,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   budgets?: Record<string, number>;
   /** Monthly income from the Budget tab, USD. */
   expectedIncome?: number;
-  /** Open Upcoming payments; expense ones date the forecast and budget line. */
-  upcoming?: { amount: number; currency: string | null; transaction_type: string; due_date: string; category: string | null; description?: string | null; recurrence?: string | null }[];
+  /** Free to spend until payday (D-29), as on Home. */
+  freeToSpend?: FreeToSpend | null;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1735,18 +1737,44 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const catDisplay = useCallback((cats: { key: string; label: string; color: string; emoji?: string }[]): CatDisplay[] =>
     cats.map((c) => ({ key: c.key, label: c.label, ...resolveDisplay({ color: c.color, emoji: c.emoji ?? "📦" }, catCustomizations, c.key) })),
   [catCustomizations]);
-  const bills = useMemo<Bill[]>(() => (upcoming ?? [])
-    .filter((r) => r.transaction_type === "expense" && r.due_date)
-    .map((r) => ({ description: r.description ?? null, category: r.category, usd: usd(Number(r.amount) || 0, r.currency ?? "USD"), due: r.due_date.slice(0, 10), monthly: r.recurrence === "monthly" })),
-  [upcoming, usd]);
+  // Bills for the forecast and budget line: everything in Upcoming, paid
+  // one-offs included (a past month needs the bills it actually had), plus
+  // monthly, quarterly and annual payments spotted in the history and not
+  // listed (rent paid through "BILT PAYMENT" every month is a bill whether
+  // or not anyone added it). Each lands on its own date in lib/spend-forecast.
+  const [expected, setExpected] = useState<{ amount: number; currency: string | null; transaction_type: string; due_date: string; category: string | null; description: string | null; recurrence: string | null }[]>([]);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("expected_payments").select("amount, currency, transaction_type, due_date, category, description, recurrence")
+        .eq("user_id", session.user.id)
+        .then(({ data }) => { if (data) setExpected(data); });
+    });
+  }, [refreshKey]);
+  const bills = useMemo<Bill[]>(() => {
+    const listed: Bill[] = expected
+      .filter((r) => r.transaction_type === "expense" && r.due_date)
+      .map((r) => ({ description: r.description, category: r.category, usd: usd(Number(r.amount) || 0, r.currency ?? "USD"), due: r.due_date.slice(0, 10),
+        recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence }));
+    const raw = transactions.filter((t) => t.transaction_type !== "transfer").map((t) => ({
+      id: t.id, date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount, currency: t.currency,
+      description: t.description ?? "", category: t.category, transaction_type: t.transaction_type as "expense" | "income",
+    }));
+    const spotted: Bill[] = detectRecurring(raw, rates).expenses
+      .filter((d) => d.frequency === "monthly" || d.frequency === "quarterly" || d.frequency === "annual")
+      .map((d) => ({ description: d.description, category: d.category, usd: d.avgAmountUSD, due: d.nextDueDate, recurrence: d.frequency as Recurrence }));
+    return mergeBills(listed, spotted);
+  }, [expected, usd, transactions, rates]);
   const expenseCatDisplay = useMemo(() => catDisplay(allExpenseCats), [catDisplay, allExpenseCats]);
   const incomeCatDisplay = useMemo(() => catDisplay(INCOME_CATEGORIES), [catDisplay]);
+  const spentThisMonth = useMemo(() => transactions
+    .filter((t) => t.transaction_type === "expense" && t.date.startsWith(currentMonth))
+    .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0), [transactions, currentMonth, rates]);
   const reviewCounts = useMemo(() => {
     const expenses = monthTxns.filter((t) => t.transaction_type === "expense");
     const done = expenses.filter((t) => t.category && t.category !== "other" && t.tags?.some((g) => g === "need" || g === "want")).length;
-    const tagged = (g: string) => expenses.filter((t) => t.tags?.includes(g)).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
-    return { filed: done, need: expenses.length - done, needs: tagged("need"), wants: tagged("want") };
-  }, [monthTxns, rates]);
+    return { filed: done, need: expenses.length - done };
+  }, [monthTxns]);
 
   const existingTags = useMemo(
     () => [...new Set(transactions.flatMap((t) => t.tags || []))].filter((t) => !isSystemTag(t)).sort(),
@@ -2039,7 +2067,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
       <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
         <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying}
-          needsUSD={reviewCounts.needs} wantsUSD={reviewCounts.wants} fmt={fmtDisplay}
+          fmt={fmtDisplay} spentThisMonth={spentThisMonth}
+          free={freeToSpend && range.months.includes(currentMonth) ? { amount: freeToSpend.free, untilIso: freeToSpend.payday.iso } : null}
           onReview={() => { trackTxReviewOpened({ needCount: reviewCounts.need, months: range.months.length }); handleAiClassify(); }}
           bank={bankStatus} banksOpen={banksOpen} onToggleBanks={() => setBanksOpen((v) => !v)} />
         <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick}
