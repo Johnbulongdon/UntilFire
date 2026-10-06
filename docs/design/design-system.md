@@ -141,6 +141,12 @@ to a label or emoji; charts show the top six categories and fold the rest.
    (articles, city guides, the text below a calculator) may run long for search.
    The founder set this on 2026-09-26 after comparing the site with Duolingo
    and Liftoff. Before, result steps ran 38–130 words and the growth list 248.
+8. **Fixed money words.** Money coming in is **Income**, money going out is
+   **Expenses**, the difference is **Saved** (and its share of income the
+   savings rate), and the two kinds of expense are **Needs** and **Wants**.
+   Not Earned, Spent, In, Out or Money in/out, in any label, chip, key,
+   tooltip or email. The founder set this on 2026-10-06 after the
+   Transactions page said Spent/Earned in one place and In/Out in another.
 
 ## Interaction and verification
 
