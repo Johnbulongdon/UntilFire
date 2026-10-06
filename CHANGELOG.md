@@ -26,6 +26,11 @@ under today's date, creating the heading if it is not there yet.
   shows what the rows on screen add up to.
 - Categories move to eight colours that stay distinguishable for colour-blind
   readers and in dark mode; tap a category's dot to change it.
+- After first use: the line and bar charts have a key, the review button
+  reads "to review", info tips are no longer clipped inside the review bar,
+  flagged rows show the amount in its original currency, the exchange-rate
+  label is gone, and a duplicate now means the same day (or a bank and an
+  import overlapping), not the same coffee two days running.
 
 ### Reviewing suggested classifications learns from your history
 - Suggestions now come from how you filed the same merchant before: category,

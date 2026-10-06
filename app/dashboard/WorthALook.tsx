@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { InfoTip } from "@/components/ui";
+import { formatMoney } from "@/lib/money";
 import { FLAG_ORDER, type FlagKind } from "@/lib/transaction-flags";
 
 type Row = { id: string; date: string; description: string; amount: number; currency: string };
@@ -30,8 +31,8 @@ const COPY: Record<FlagKind, { label: string; tip: string; yes: string; no: stri
  * appear when something is there. Opening one lists those rows with a
  * one-tap answer; nothing is changed without the person choosing.
  */
-export default function WorthALook({ flags, rows, fmt, toUSD, onYes, onNo }: {
-  flags: Map<string, FlagKind>; rows: Row[]; fmt: (usd: number) => string;
+export default function WorthALook({ flags, rows, fmt, toUSD, displayCurrency, onYes, onNo }: {
+  flags: Map<string, FlagKind>; rows: Row[]; fmt: (usd: number) => string; displayCurrency: string;
   toUSD: (amount: number, currency: string) => number;
   onYes: (row: Row, kind: FlagKind) => void; onNo: (row: Row, kind: FlagKind) => void;
 }) {
@@ -64,7 +65,11 @@ export default function WorthALook({ flags, rows, fmt, toUSD, onYes, onNo }: {
             <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 16px", borderTop: i ? "1px solid var(--uf-border)" : "none" }}>
               <span className="uf-t-small" style={{ ...mono, color: "var(--uf-ink-3)", width: 48 }}>{r.date.slice(5, 10)}</span>
               <span style={{ flex: 1, minWidth: 120, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</span>
-              <span style={{ ...mono, fontWeight: 600 }}>{fmt(toUSD(r.amount, r.currency))}</span>
+              {/* The amount as it was charged, so the row is recognisable; converted alongside when it differs. */}
+              <span style={{ ...mono, fontWeight: 600, textAlign: "right" }}>
+                {formatMoney(r.amount, { currency: r.currency, decimals: 2 })}
+                {r.currency !== displayCurrency && <span style={{ fontWeight: 400, color: "var(--uf-ink-3)" }}> · {fmt(toUSD(r.amount, r.currency))}</span>}
+              </span>
               <span style={{ display: "flex", gap: 6 }}>
                 {COPY[open].yes && <button type="button" style={btn(true)} onClick={() => onYes(r, open)}>{COPY[open].yes}</button>}
                 <button type="button" style={btn(false)} onClick={() => onNo(r, open)}>{COPY[open].no}</button>

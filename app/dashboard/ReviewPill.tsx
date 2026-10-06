@@ -32,7 +32,7 @@ export default function ReviewPill({ filed, need, busy, onReview, bank, banksOpe
             <button type="button" onClick={onReview} disabled={busy} aria-label={`Review ${need} transactions`} style={{
               flex: filed ? `0 0 max(${(need / total) * 100}%, 140px)` : 1, border: "none", cursor: busy ? "wait" : "pointer", background: "var(--uf-green)", color: "#fff",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8, font: "inherit", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
-              <b style={{ ...mono, fontSize: 16 }}>{need}</b>{busy ? "checking…" : <>need you <span aria-hidden>→</span></>}
+              <b style={{ ...mono, fontSize: 16 }}>{need}</b>{busy ? "checking…" : <>to review <span aria-hidden>→</span></>}
             </button>
           )}
         </div>
