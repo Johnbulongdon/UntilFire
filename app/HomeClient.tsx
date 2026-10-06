@@ -1016,8 +1016,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const router = useRouter();
   const planningAge = currentAge ?? 30;
   const ageWasAssumed = currentAge == null;
-  // Growth after inflation: 7% by default (D-07), with a one-tap switch to
-  // the cautious 5% we recommend (D-24). Every figure on the result follows it.
+  // Keep the sourced default after inflation (D-24); onboarding omits the
+  // assumptions editor under D-30. Every figure on the result follows it.
   const returnPct = DEFAULT_RETURN_PCT;
   const marketReturn = returnPct / 100;
 
