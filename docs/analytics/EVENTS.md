@@ -413,6 +413,35 @@ UntilFire creating action versus just curiosity.
 - **Note**: uses `send_instantly` — `onSave` navigates immediately after,
   same reasoning as `trackSignupCompleted`.
 
+## Transactions page
+
+Added 2026-10-06 with D-31 to see whether the multi-month view and its
+tools get used. Counts and enums only; no amounts, merchants or dates.
+
+### `funnel_tx_range_changed`
+
+- **Where**: `app/dashboard/TransactionsTab.tsx`, the date pill's `onChange`
+  (a preset, a custom span or the arrows).
+- **Properties**: `range_preset` (`1`, `3`, `6`, `12`, `ytd` or `custom`),
+  `range_months`.
+
+### `funnel_tx_view_changed`
+
+- **Where**: `app/dashboard/SpendCard.tsx`, the Line/Bars/Calendar switch.
+- **Properties**: `view` (`line`, `bars`, `cal`), `range_months`.
+
+### `funnel_tx_review_opened`
+
+- **Where**: `app/dashboard/TransactionsTab.tsx`, the review bar's green part.
+- **Properties**: `need_count`, `range_months`.
+
+### `funnel_tx_flag_resolved`
+
+- **Where**: `app/dashboard/TransactionsTab.tsx`, `resolveFlag`, when a
+  "Worth a look" row is answered.
+- **Properties**: `flag` (`card_payment`, `duplicate`, `large`), `confirmed`
+  (true for "It's a card payment" / "Delete this one", false for the dismissals).
+
 ## Adding a new event
 
 1. Add the event name to `FunnelEvents` in `lib/analytics-events.ts`.

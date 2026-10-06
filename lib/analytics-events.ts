@@ -49,6 +49,12 @@ export const FunnelEvents = {
   NEXT_MOVE_OPENED: 'funnel_next_move_opened',
   SCENARIO_TESTED: 'funnel_scenario_tested',
   SCENARIO_ACCEPTED: 'funnel_scenario_accepted',
+  // Transactions page (D-31): whether longer ranges, the chart views, the
+  // review and the "Worth a look" flags get used. Counts and enums only.
+  TX_RANGE_CHANGED: 'funnel_tx_range_changed',
+  TX_VIEW_CHANGED: 'funnel_tx_view_changed',
+  TX_REVIEW_OPENED: 'funnel_tx_review_opened',
+  TX_FLAG_RESOLVED: 'funnel_tx_flag_resolved',
 } as const;
 
 export type FunnelEventName =
@@ -239,4 +245,21 @@ export function withVersion<P extends Record<string, unknown>>(
   props: P,
 ): P & BaseFunnelProperties {
   return { ...props, funnel_event_version: FUNNEL_EVENT_VERSION };
+}
+
+export interface TxRangeChangedProperties extends BaseFunnelProperties {
+  range_preset: string; // "1" | "3" | "6" | "12" | "ytd" | "custom"
+  range_months: number;
+}
+export interface TxViewChangedProperties extends BaseFunnelProperties {
+  view: 'line' | 'bars' | 'cal';
+  range_months: number;
+}
+export interface TxReviewOpenedProperties extends BaseFunnelProperties {
+  need_count: number;
+  range_months: number;
+}
+export interface TxFlagResolvedProperties extends BaseFunnelProperties {
+  flag: 'card_payment' | 'duplicate' | 'large';
+  confirmed: boolean;
 }

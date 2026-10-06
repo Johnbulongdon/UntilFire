@@ -34,7 +34,7 @@ export const INCOME_CATEGORIES: CategoryDef[] = [
 export const ALL_CATEGORIES: CategoryDef[] = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 
 /**
- * Category colours (D-30). Eight hues checked for colour-blind separation
+ * Category colours (D-31). Eight hues checked for colour-blind separation
  * and contrast on both the cream and the warm-dark card, plus a neutral for
  * "Other". There are more categories than colours that can be told apart,
  * so the most common ones get their own hue, rarer ones share, and charts

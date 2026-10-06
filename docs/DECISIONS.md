@@ -1232,3 +1232,42 @@ Apple/Android component; portable interaction rules can inform a future app.
 Browser-native animation is a bounded implementation choice, not a new dependency
 or a mandate to animate every website element. Preset values are experiment
 anchors, not population-income claims. Completion improvement remains unmeasured.
+
+### D-31 — October 6: Transactions shows any range as graphics, and asks before correcting the numbers
+
+**Status:** Active. Built in four batches on one PR after mocks the founder reviewed.
+
+**Decision:** Transactions reads one range at a time instead of one month: a
+single date pill (`‹ Jul – Sep 2026 ▾ ›`) with This month, last 3, 6 or 12
+months, This year and a custom span; the arrows step by the range's own
+length. Above the list:
+
+- a review bar (filed / need you), whose green part starts the review;
+  bank sync collapses to one line under it;
+- a summary card with Spent/Earned, saved and savings rate, three views that
+  keep their meaning at every range (Line = running total against usual pace,
+  Bars = each day/week/month against usual, Calendar = days shaded by money
+  out, up to 6 months on a phone and 12 on desktop), and category bars with
+  a usual tick that filter the list;
+- "Worth a look" flags for card payments, possible duplicates and
+  unusually large rows, each resolved by the person in one tap.
+
+Usual is the median of past months to the same day, absent below three
+months (`lib/spend-range.ts`). Categories use eight hues checked for
+colour-blind separation and contrast on both themes; custom colours map to
+the nearest. Explanations sit behind `InfoTip`, not in sentences on the page.
+
+**Why:** The founder found the month-by-month view frustrating ("every month
+everything changes") and the old top of the page (a Connected banks card and
+a collapsed trend) not informative. Competitors studied (Monarch, Copilot,
+Lunch Money, YNAB, Rocket Money) converge on a review queue plus a ledger
+whose summary follows the filters; their common failures are categories that
+are wrong without explanation, reviewing everything, and paid-back or
+pending money inflating totals. Graphics over sentences follows the founder's
+standing direction (AGENTS.md, "Show, don't tell").
+
+**Boundary:** Card payments are flagged, never excluded silently; linked
+banks already drop them at import. Linking a paying account to a card, so
+both sides match automatically, is future work. History-based review is
+free; asking the model about new merchants stays Pro. Range and view are
+remembered per browser only.

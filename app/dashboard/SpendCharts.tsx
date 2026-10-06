@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { bucketFor, daysInMonth, type DateRange } from "@/lib/spend-range";
 
 /**
- * The three views of a range on Transactions (D-30): Line is the running
+ * The three views of a range on Transactions (D-31): Line is the running
  * total against the usual pace, Bars is each day/week/month against the
  * usual level, Calendar is each day shaded by how much went out. The same
  * meaning at every range; only the bar size changes (lib/spend-range).

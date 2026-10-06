@@ -110,6 +110,13 @@ import { Button, Card, Field, Input, Badge, Stat } from "@/components/ui";
   Pass `numeric` on anything holding a figure.
 - **Badge** — `positive | negative | warning | freedom | muted`.
 - **Stat** — label, figure, delta. The shape you render on nearly every screen.
+- **InfoTip** — a small "i" that shows an explanation on hover, focus or tap.
+  Where a sentence would explain a number, put it here instead (rule 7).
+
+Category colours are `COLOR_PALETTE` in `lib/categories.ts`: eight hues
+checked for colour-blind separation and contrast on the cream and warm-dark
+cards, plus a neutral for Other (D-31). They mark identity only, always next
+to a label or emoji; charts show the top six categories and fold the rest.
 
 ## Rules for new code
 

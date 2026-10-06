@@ -6,7 +6,7 @@ import { type BankStatus, fmtSynced } from "./PlaidConnect";
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
 /**
- * One bar for the cleanup work (D-30): what is filed, and what still needs
+ * One bar for the cleanup work (D-31): what is filed, and what still needs
  * the person. The green part is the button. Bank sync is a line under it,
  * which opens the full bank list when tapped.
  */

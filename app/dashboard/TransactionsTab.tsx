@@ -8,6 +8,8 @@ import PlaidConnect, { type BankStatus } from "./PlaidConnect";
 import SpendRangePill from "./SpendRangePill";
 import SpendCard, { type CatDisplay } from "./SpendCard";
 import ReviewPill from "./ReviewPill";
+import WorthALook from "./WorthALook";
+import { findFlags, type FlagKind, isSystemTag, okTag } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
 import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
@@ -22,6 +24,7 @@ import {
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
+import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
@@ -1132,7 +1135,7 @@ function TransactionList({
                     const txTags = tx.tags || [];
                     const needOrWant = txTags.includes("need") ? "need" : txTags.includes("want") ? "want" : null;
                     const isWorkCost = txTags.includes("work");
-                    const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work").slice(0, 2);
+                    const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work" && !isSystemTag(t)).slice(0, 2);
                     // Null for most rows — only Plaid, an import that carried
                     // one, or a hand-typed time produces a time to show.
                     const txTime = formatTime(tx.occurred_at);
@@ -1589,7 +1592,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>([]);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  // The range on screen (D-30): a count of months ending with rangeEnd, remembered per browser.
+  // The range on screen (D-31): a count of months ending with rangeEnd, remembered per browser.
   const [rangePreset, setRangePreset] = useState<RangePreset>(1);
   const [rangeEnd, setRangeEnd] = useState(currentMonth);
   useEffect(() => {
@@ -1737,7 +1740,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   );
 
   const existingTags = useMemo(
-    () => [...new Set(transactions.flatMap((t) => t.tags || []))].sort(),
+    () => [...new Set(transactions.flatMap((t) => t.tags || []))].filter((t) => !isSystemTag(t)).sort(),
     [transactions]
   );
 
@@ -1929,6 +1932,22 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     if (drawerOpen) setDrawerOpen(false);
   }, [defaultCurrency, drawerOpen]);
 
+  // "Worth a look" (D-31): rows that may be making the numbers wrong.
+  const flags = useMemo(() => findFlags(monthTxns, transactions, usd), [monthTxns, transactions, usd]);
+  const resolveFlag = useCallback(async (row: { id: string }, kind: FlagKind, confirmed: boolean) => {
+    const tx = transactions.find((t) => t.id === row.id);
+    if (!tx) return;
+    trackTxFlagResolved({ flag: kind, confirmed });
+    if (confirmed && kind === "duplicate") { await handleDeleteRef.current?.(tx); return; }
+    const patch = confirmed && kind === "card_payment"
+      ? { transaction_type: "transfer" as const }
+      : { tags: [...(tx.tags || []).filter((g) => g !== okTag(kind)), okTag(kind)] };
+    const { error } = await supabase.from("expenses").update(patch).eq("id", tx.id);
+    if (error) { showToast("Couldn't save that — try again", undefined, undefined, true); return; }
+    setTransactions((prev) => prev.map((t) => (t.id === tx.id ? { ...t, ...patch } : t)));
+  }, [transactions, showToast]);
+  const handleDeleteRef = useRef<((tx: Transaction) => Promise<void>) | null>(null);
+
   const handleCategoryChange = useCallback(async (tx: Transaction, category: string) => {
     const { error } = await supabase.from("expenses").update({ category }).eq("id", tx.id);
     if (!error) setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, category } : t));
@@ -1945,6 +1964,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     if (editingId === tx.id) { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); }
     showToast(`Deleted "${tx.description}"`, "undo:" + tx.id, tx);
   }, [defaultCurrency, editingId, showToast]);
+  useEffect(() => { handleDeleteRef.current = handleDelete; }, [handleDelete]);
 
   const handleUndo = useCallback(() => {
     if (!toast) return;
@@ -2000,7 +2020,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         padding: "8px 0", marginBottom: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
       }}>
         <SpendRangePill preset={rangePreset} endMonth={rangeEnd} currentMonth={currentMonth}
-          onChange={(p, end) => { setRange(p, end); setSelectedDay(null); }} />
+          onChange={(p, end) => { setRange(p, end); setSelectedDay(null); trackTxRangeChanged({ preset: p, months: rangeFor(p, end).months.length }); }} />
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           {isMixedCurrency && (
             <span className="uf-t-small" style={{ color: ratesFallback ? "var(--uf-warn-ink)" : "var(--uf-ink-3)" }}>
@@ -2014,7 +2034,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       </div>
 
       <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
-        <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying} onReview={handleAiClassify}
+        <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying}
+          onReview={() => { trackTxReviewOpened({ needCount: reviewCounts.need, months: range.months.length }); handleAiClassify(); }}
           bank={bankStatus} banksOpen={banksOpen} onToggleBanks={() => setBanksOpen((v) => !v)} />
         <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick}
           collapsed={!banksOpen} onStatus={setBankStatus} />
@@ -2024,6 +2045,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor} />
+        <WorthALook flags={flags} rows={monthTxns} fmt={fmtDisplay} toUSD={usd}
+          onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
         {(selectedCategory || selectedDay) && (
           <button type="button" onClick={() => { setSelectedCategory(null); setSelectedDay(null); }} className="uf-t-small"
             style={{ justifySelf: "start", border: "none", background: "var(--uf-surface-2)", borderRadius: 999, padding: "6px 12px", cursor: "pointer", color: "var(--uf-ink-2)", fontWeight: 600 }}>

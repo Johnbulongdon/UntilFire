@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, InfoTip } from "@/components/ui";
+import { trackTxViewChanged } from "@/lib/analytics";
 import { type DateRange, monthOf, netAmount, type RangeTx, usualForRange, usualToDay } from "@/lib/spend-range";
 import { BarsView, CalendarView, calendarAllowed, type Daily, LineView } from "./SpendCharts";
 
@@ -16,7 +17,7 @@ const write = (k: string, v: string) => { try { localStorage.setItem(k, v); } ca
 const ICONS: Record<View, string> = { line: "M3 17l5-5 4 3 8-9", bars: "M5 20V10M12 20V4M19 20v-7", cal: "M4 6h16v14H4zM4 10h16M9 3v4M15 3v4" };
 
 /**
- * The summary above the transaction list (D-30): what went out (or came in)
+ * The summary above the transaction list (D-31): what went out (or came in)
  * over the chosen range, drawn three ways, and the categories that moved
  * against usual. Explanations sit in InfoTips; the card itself is numbers,
  * marks and labels.
@@ -41,7 +42,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   }, []);
   const calOk = calendarAllowed(range.months.length, phone);
   const shown: View = view === "cal" && !calOk ? "bars" : view;
-  const pick = (v: View) => { setView(v); write("uf.tx.view", v); };
+  const pick = (v: View) => { setView(v); write("uf.tx.view", v); trackTxViewChanged({ view: v, months: range.months.length }); };
 
   const entries = useMemo(() => transactions
     .filter((t) => t.transaction_type === (mode === "spent" ? "expense" : "income"))
