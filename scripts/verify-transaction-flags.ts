@@ -19,12 +19,17 @@ ok("a card bill payment is flagged; a dismissed one is not", () => {
   assert.equal(f.get(a.id), "card_payment");
   assert.equal(f.has(b.id), false);
 });
-ok("the later of two matching rows within two days is a possible duplicate", () => {
-  const a = tx("Whole Foods #123", 86.2, "2026-09-15"), b = tx("WHOLE FOODS #998", 86.2, "2026-09-16"), c = tx("Whole Foods", 86.2, "2026-09-25");
-  const f = findFlags([a, b, c], [], usd);
+ok("the second of two matching rows on the same day is a possible duplicate", () => {
+  const a = tx("Whole Foods #123", 86.2, "2026-09-15"), b = tx("WHOLE FOODS #998", 86.2, "2026-09-15");
+  const f = findFlags([a, b], [], usd);
   assert.equal(f.has(a.id), false);
   assert.equal(f.get(b.id), "duplicate");
-  assert.equal(f.has(c.id), false, "nine days later is a new purchase");
+});
+ok("a day apart counts only when a bank and an import overlap", () => {
+  const bank = { ...tx("Uber", 18, "2026-09-15"), source: "plaid" }, csv = { ...tx("UBER", 18, "2026-09-16"), source: "csv" };
+  assert.equal(findFlags([bank, csv], [], usd).get(csv.id), "duplicate");
+  const coffee1 = tx("Blue Bottle", 6.5, "2026-09-15"), coffee2 = tx("Blue Bottle", 6.5, "2026-09-16");
+  assert.equal(findFlags([coffee1, coffee2], [], usd).size, 0, "the same coffee two days running is not a duplicate");
 });
 ok("different amounts are not duplicates", () => {
   assert.equal(findFlags([tx("Uber", 18), tx("Uber", 22)], [], usd).size, 0);

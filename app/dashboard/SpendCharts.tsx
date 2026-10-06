@@ -21,6 +21,18 @@ export function daysOf(range: DateRange, today: string): string[] {
 }
 const monthShort = (ym: string) => { const [y, m] = ym.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "short" }); };
 
+/** The key under a chart: each mark drawn as it appears, with a one-word name. */
+function ChartKey({ items }: { items: { mark: "line" | "dash" | "bar" | "barSoft"; label: string }[] }) {
+  const swatch = (m: string) => m === "line" ? <i style={{ width: 16, height: 0, borderTop: "2.5px solid var(--uf-chart-1)" }} />
+    : m === "dash" ? <i style={{ width: 16, height: 0, borderTop: "2px dashed var(--uf-ink-3)" }} />
+    : <i style={{ width: 10, height: 10, borderRadius: 2, background: m === "bar" ? "var(--uf-chart-1)" : "color-mix(in oklab, var(--uf-chart-1) 28%, var(--uf-card))" }} />;
+  return (
+    <div className="uf-t-small" style={{ display: "flex", gap: 14, flexWrap: "wrap", color: "var(--uf-ink-3)", marginTop: 6 }}>
+      {items.map((it) => <span key={it.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{swatch(it.mark)}{it.label}</span>)}
+    </div>
+  );
+}
+
 /** Running total against usual pace. `usualByDay[d]` is the usual spend through day d of a month. */
 export function LineView({ range, today, daily, usualByDay, usualMonth, fmt }: {
   range: DateRange; today: string; daily: Daily; usualByDay: number[] | null; usualMonth: number | null; fmt: (n: number) => string;
@@ -44,6 +56,7 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, fmt }: {
   const ticks = range.months.length === 1 ? [0, 9, 19, all.length - 1] : range.months.map((m) => all.indexOf(`${m}-01`));
 
   return (
+    <div>
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }} role="img"
       aria-label={`Running total ${fmt(mine.at(-1) ?? 0)}${gap != null ? `, ${fmt(Math.abs(gap))} ${gap >= 0 ? "above" : "below"} your usual pace` : ""}`}>
       {usual && <path d={path(usual)} fill="none" stroke="var(--uf-ink-3)" strokeWidth={2} strokeDasharray="4 4" />}
@@ -62,6 +75,8 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, fmt }: {
         </text>
       ))}
     </svg>
+    <ChartKey items={[{ mark: "line", label: "So far" }, ...(usual ? [{ mark: "dash" as const, label: "Usual pace" }] : [])]} />
+    </div>
   );
 }
 
@@ -93,6 +108,7 @@ export function BarsView({ range, today, daily, usualMonth, fmt }: {
   const every = Math.ceil(bars.length / 8);
 
   return (
+    <div>
     <div role="img" aria-label={`${bars.length} ${size}s${level != null ? `, usual ${fmt(level)} per ${size}` : ""}`}
       style={{ position: "relative", height: 170, display: "flex", alignItems: "flex-end", gap: bars.length > 20 ? 2 : 6 }}>
       {level != null && (
@@ -102,12 +118,14 @@ export function BarsView({ range, today, daily, usualMonth, fmt }: {
         </>
       )}
       {bars.map((b, i) => (
-        <div key={b.key} title={`${b.label}: ${fmt(b.v)}`} style={{ flex: 1, minWidth: 0, display: "grid", gap: 4, justifyItems: "center" }}>
+        <div key={b.key} title={`${b.label}: ${fmt(b.v)}`} style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 4, justifyItems: "center" }}>
           <i style={{ width: "100%", maxWidth: 44, height: Math.max(b.v > 0 ? 2 : 0, (b.v / max) * 140), borderRadius: "4px 4px 0 0",
             background: b.now ? "var(--uf-chart-1)" : "color-mix(in oklab, var(--uf-chart-1) 28%, var(--uf-card))" }} />
           <span style={{ ...mono, fontSize: 10, height: 12, color: b.now ? "var(--uf-ink)" : "var(--uf-ink-3)", whiteSpace: "nowrap" }}>{i % every === 0 ? b.label : ""}</span>
         </div>
       ))}
+    </div>
+    <ChartKey items={[{ mark: "bar", label: "Now" }, { mark: "barSoft", label: "Earlier" }, ...(level != null ? [{ mark: "dash" as const, label: `Usual ${size}` }] : [])]} />
     </div>
   );
 }

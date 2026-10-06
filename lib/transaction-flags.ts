@@ -4,8 +4,10 @@
  *
  *   card_payment — reads like paying a credit card bill, which is moving
  *                  money, not spending it (lib/spend-range looksLikeCardPayment).
- *   duplicate    — same merchant, amount and currency within two days of
- *                  another; imports overlap and pending rows re-post.
+ *   duplicate    — same merchant, amount and currency on the same day, or
+ *                  within two days when the rows came from different
+ *                  sources (a bank and a CSV overlapping). Buying the same
+ *                  coffee two days running is not a duplicate.
  *   large        — far above what this merchant usually costs, or, for a
  *                  new merchant, among the person's largest expenses.
  *
@@ -16,7 +18,7 @@ import { merchantKey } from "./merchant-memory.ts";
 import { looksLikeCardPayment, median, netAmount, type RangeTx } from "./spend-range.ts";
 
 export type FlagKind = "card_payment" | "duplicate" | "large";
-export type FlagTx = RangeTx & { id: string; tags?: string[] | null };
+export type FlagTx = RangeTx & { id: string; tags?: string[] | null; source?: string | null };
 
 export const FLAG_ORDER: FlagKind[] = ["card_payment", "duplicate", "large"];
 export const okTag = (k: FlagKind) => `ok:${k}`;
@@ -47,7 +49,9 @@ export function findFlags(inView: FlagTx[], history: FlagTx[], toUSD: (amount: n
     const sorted = [...group].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     for (let i = 1; i < sorted.length; i++) {
       const t = sorted[i];
-      if (dayNumber(t.date) - dayNumber(sorted[i - 1].date) <= 2 && !ok(t, "duplicate") && !out.has(t.id)) out.set(t.id, "duplicate");
+      const prev = sorted[i - 1], gap = dayNumber(t.date) - dayNumber(prev.date);
+      const twin = gap === 0 || (gap <= 2 && (t.source ?? "manual") !== (prev.source ?? "manual"));
+      if (twin && !ok(t, "duplicate") && !out.has(t.id)) out.set(t.id, "duplicate");
     }
   }
 

@@ -83,6 +83,7 @@ type Transaction = {
   transaction_type: "expense" | "income" | "transfer";
   sub_category: string | null;
   source_file?: string | null;
+  source?: string | null;
   // Optional: most rows have no time. date stays authoritative for grouping.
   occurred_at?: string | null;
 };
@@ -1612,7 +1613,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [bankStatus, setBankStatus] = useState<BankStatus | null>(null);
   const [banksOpen, setBanksOpen] = useState(false);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
-  const [ratesFallback, setRatesFallback] = useState(false);
+  const [, setRatesFallback] = useState(false);
 
   // Custom categories / sub-categories (persisted in localStorage)
   const [catCustomizations, setCatCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
@@ -1733,11 +1734,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     const done = expenses.filter((t) => t.category && t.category !== "other" && t.tags?.some((g) => g === "need" || g === "want")).length;
     return { filed: done, need: expenses.length - done };
   }, [monthTxns]);
-
-  const isMixedCurrency = useMemo(
-    () => new Set(monthTxns.map((t) => t.currency).filter(Boolean)).size > 1,
-    [monthTxns]
-  );
 
   const existingTags = useMemo(
     () => [...new Set(transactions.flatMap((t) => t.tags || []))].filter((t) => !isSystemTag(t)).sort(),
@@ -2022,11 +2018,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         <SpendRangePill preset={rangePreset} endMonth={rangeEnd} currentMonth={currentMonth}
           onChange={(p, end) => { setRange(p, end); setSelectedDay(null); trackTxRangeChanged({ preset: p, months: rangeFor(p, end).months.length }); }} />
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-          {isMixedCurrency && (
-            <span className="uf-t-small" style={{ color: ratesFallback ? "var(--uf-warn-ink)" : "var(--uf-ink-3)" }}>
-              {ratesFallback ? "estimated rates" : "live rates"}
-            </span>
-          )}
           <button onClick={() => setShowImport(true)} className="uf-t-small" style={{ padding: "6px 12px", borderRadius: 999, border: "1px solid var(--uf-border)", background: "var(--uf-card)", color: "var(--uf-ink-2)", fontWeight: 600, cursor: "pointer" }}>
             ↑ Import CSV
           </button>
@@ -2045,7 +2036,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor} />
-        <WorthALook flags={flags} rows={monthTxns} fmt={fmtDisplay} toUSD={usd}
+        <WorthALook flags={flags} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
         {(selectedCategory || selectedDay) && (
           <button type="button" onClick={() => { setSelectedCategory(null); setSelectedDay(null); }} className="uf-t-small"
