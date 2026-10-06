@@ -44,6 +44,11 @@ function isClient(): boolean {
   return typeof window !== 'undefined';
 }
 
+/** Public city keys only; no visitor's finances or precise location. */
+export function trackCityPlanStarted(cityKey: string, citySlug: string) {
+  capture(FunnelEvents.CITY_PLAN_STARTED, withVersion({ city_key: cityKey, city_slug: citySlug, source: `fire-number-${citySlug}`, placement: 'city_guide' }));
+}
+
 /**
  * Whose activity is the founder's own, and whose is a real visitor.
  *

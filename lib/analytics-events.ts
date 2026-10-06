@@ -16,6 +16,7 @@ export const PRO_PLAN_ANALYTICS = {
 
 export const FunnelEvents = {
   LANDING_VIEWED: 'funnel_landing_viewed',
+  CITY_PLAN_STARTED: 'funnel_city_plan_started',
   CALCULATOR_STEP_VIEWED: 'funnel_calculator_step_viewed',
   CALCULATOR_REVEALED: 'funnel_calculator_revealed',
   // The reveal's own CTA, which is not the same moment as SIGNUP_STARTED:

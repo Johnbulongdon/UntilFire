@@ -6,6 +6,18 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-07 — prepared for review
+
+### Answer-first city guides with geographic comparisons
+- Apply the approved Austin layout to all 230 existing city guides: one FIRE
+  estimate, a clear personal-plan action, coordinate-backed map comparisons,
+  and expandable sources and scenarios. Preserve metadata and canonical links.
+- Keep map labels distinct on phones and provide text comparison links when
+  tiles fail. Do not invent neighbors or neighborhood-level precision.
+- Carry the chosen city into existing onboarding and record the plan-link
+  event; signup remains optional until the save-plan step.
+- This entry describes the reviewed implementation, not verified production.
+
 ## 2026-10-06
 
 ### Transactions shows any time range, with graphics instead of text

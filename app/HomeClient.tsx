@@ -1216,6 +1216,12 @@ export default function HomeClient() {
     }
     if (urlParams?.get("start") === "onboarding") {
       setScreen("city");
+      const cityFromLink = CITIES.find(c => c.key === urlParams.get("city"));
+      if (cityFromLink) {
+        setCityState({ name: cityFromLink.name, col: cityFromLink.col, stateKey: cityFromLink.state, isCustom: false });
+        setCurrency(stateToCurrency(cityFromLink.state));
+        setScreen("income");
+      }
     }
   }, []);
 
@@ -3274,6 +3280,7 @@ export default function HomeClient() {
         {(screen === "city" || visited.includes("city")) && (
           <div data-onboarding-step="city" hidden={screen !== "city"} inert={screen !== "city"}>
           <CityScreen
+            initialCity={cityState}
             onNext={c => { setCityState(c); setCurrency(stateToCurrency(c.stateKey)); setScreen("income"); }}
             onBack={() => setScreen("hero")}
             onSkip={() => {
