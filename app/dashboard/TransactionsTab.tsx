@@ -976,27 +976,20 @@ function TransactionList({
     });
   }, [transactions, search, filter, tagFilter, allCategories]);
 
-  // The record's own health check: this month's net, and how much of it is
-  // still uncategorised — because Categories and Budget are both built on
-  // these rows, and an uncategorised one quietly breaks them both.
-  const thisMonth = new Date().toISOString().slice(0, 7);
-  const monthNetLabel = useMemo(() => {
-    const rows = transactions.filter((t) => t.date.startsWith(thisMonth));
-    if (rows.length === 0) return "";
-    let inUSD = 0, outUSD = 0;
-    for (const t of rows) {
-      const usd = toUSD(t.transaction_type === "expense" ? netAmt(t) : t.amount, t.currency, rates);
-      if (t.transaction_type === "income") inUSD += usd;
-      else if (t.transaction_type === "expense") outUSD += usd;
+  // What the rows on screen add up to, so a filter (a tag, a search, the
+  // work chip) answers "how much was that" without leaving the list. The
+  // range's own totals and the review count live in the summary above.
+  const shownSpent = useMemo(() => filtered
+    .filter((t) => t.transaction_type === "expense")
+    .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0), [filtered, rates]);
+  const monthSpent = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const t of filtered) if (t.transaction_type === "expense") {
+      const m = t.date.slice(0, 7);
+      out[m] = (out[m] ?? 0) + toUSD(netAmt(t), t.currency, rates);
     }
-    const net = inUSD - outUSD;
-    return `${formatAmount(inUSD)} in · ${formatAmount(outUSD)} out · ${net < 0 ? "−" : "+"}${formatAmount(Math.abs(net))} net`;
-  }, [transactions, thisMonth, rates, formatAmount]);
-
-  const uncategorisedCount = useMemo(
-    () => transactions.filter((t) => t.date.startsWith(thisMonth) && !t.category).length,
-    [transactions, thisMonth],
-  );
+    return out;
+  }, [filtered, rates]);
 
   const groups = useMemo(() => {
     const byDate: Record<string, Transaction[]> = {};
@@ -1014,15 +1007,9 @@ function TransactionList({
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", letterSpacing: "-0.2px" }}>Transactions</span>
           <span style={{ fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600, marginLeft: 8 }}>{filtered.length}</span>
-          {/* This tab is the record, so the answer it owes is whether the
-              record is right: what this month came to, and what still needs
-              a category before any of the other tabs can be trusted. */}
-          <span style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 600, marginLeft: 12 }}>
-            {monthNetLabel}
-          </span>
-          {uncategorisedCount > 0 && (
-            <span style={{ fontSize: 12, color: "#D97706", fontWeight: 700, marginLeft: 10 }}>
-              {uncategorisedCount} uncategorised
+          {shownSpent > 0 && (
+            <span style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 600, marginLeft: 12, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
+              −{formatAmount(shownSpent)}
             </span>
           )}
         </div>
@@ -1103,16 +1090,29 @@ function TransactionList({
               </>
             ) : (
               <>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No transactions this month</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No transactions in this range</div>
                 <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Add them manually or import from your bank&apos;s CSV export.</div>
               </>
             )}
           </div>
         ) : (
-          groups.map(([date, txns]) => {
+          groups.map(([date, txns], gi) => {
+            const month = date.slice(0, 7);
+            const newMonth = Object.keys(monthSpent).length > 1 && (gi === 0 || groups[gi - 1][0].slice(0, 7) !== month);
             const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.transaction_type === "expense" ? netAmt(t) : t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : t.transaction_type === "expense" ? -usd : 0); }, 0);
             return (
               <div key={date}>
+                {newMonth && (
+                  <div style={{ position: "sticky", top: 0, zIndex: 2, padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                    background: "var(--uf-surface-2)", borderTop: gi ? "1px solid var(--uf-border)" : "none" }}>
+                    <span className="uf-t-label" style={{ color: "var(--uf-ink-2)" }}>
+                      {new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                    </span>
+                    {monthSpent[month] > 0 && (
+                      <span className="uf-t-small" style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--uf-ink-2)" }}>−{formatAmount(monthSpent[month])}</span>
+                    )}
+                  </div>
+                )}
                 <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-3)" }}>
                   <span>{dayLabel(date, todayYmd)}</span>
                   <span style={{ color: "var(--uf-text-2)", fontVariantNumeric: "tabular-nums" }}>
@@ -1612,7 +1612,14 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [ratesFallback, setRatesFallback] = useState(false);
 
   // Custom categories / sub-categories (persisted in localStorage)
-  const [catCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
+  const [catCustomizations, setCatCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
+  const handleCategoryColor = useCallback((key: string, color: string) => {
+    setCatCustomizations((prev) => {
+      const next = { ...prev, [key]: { ...prev[key], color } };
+      try { saveCatCustomizations(next); } catch { /* storage unavailable */ }
+      return next;
+    });
+  }, []);
 
   const { customCats, setCustomCats, customSubCats, setCustomSubCats } = useCustomCategories();
 
@@ -2015,7 +2022,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           expenseCats={expenseCatDisplay} incomeCats={incomeCatDisplay}
           selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory}
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
-          onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }} />
+          onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
+          palette={COLOR_PALETTE} onColor={handleCategoryColor} />
         {(selectedCategory || selectedDay) && (
           <button type="button" onClick={() => { setSelectedCategory(null); setSelectedDay(null); }} className="uf-t-small"
             style={{ justifySelf: "start", border: "none", background: "var(--uf-surface-2)", borderRadius: 999, padding: "6px 12px", cursor: "pointer", color: "var(--uf-ink-2)", fontWeight: 600 }}>

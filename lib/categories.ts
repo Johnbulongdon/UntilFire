@@ -7,36 +7,57 @@ export type CategoryDef = {
 };
 
 export const EXPENSE_CATEGORIES: CategoryDef[] = [
-  { key: "food",          label: "Food",          code: "FD", color: "#f97316", emoji: "🍔" },
-  { key: "transport",     label: "Transport",     code: "TR", color: "#22d3a5", emoji: "🚗" },
-  { key: "housing",       label: "Housing",       code: "HO", color: "#818cf8", emoji: "🏠" },
-  { key: "utilities",     label: "Utilities",     code: "UT", color: "#38bdf8", emoji: "💡" },
-  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#ef4444", emoji: "🏥" },
-  { key: "shopping",      label: "Shopping",      code: "SH", color: "#ec4899", emoji: "🛍️" },
-  { key: "entertainment", label: "Entertain",     code: "EN", color: "#fbbf24", emoji: "🎬" },
-  { key: "travel",        label: "Travel",        code: "TV", color: "#0ea5e9", emoji: "✈️" },
-  { key: "education",     label: "Education",     code: "ED", color: "#84cc16", emoji: "🎓" },
-  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#a78bfa", emoji: "📱" },
-  { key: "personal_care", label: "Personal Care", code: "PC", color: "#f472b6", emoji: "💆" },
-  { key: "pets",          label: "Pets",          code: "PT", color: "#d97706", emoji: "🐾" },
-  { key: "work",          label: "Work",          code: "WK", color: "#6366f1", emoji: "💼" },
-  { key: "other",         label: "Other",         code: "OT", color: "#6b7280", emoji: "📦" },
+  { key: "food",          label: "Food",          code: "FD", color: "#eb6834", emoji: "🍔" },
+  { key: "transport",     label: "Transport",     code: "TR", color: "#1baf7a", emoji: "🚗" },
+  { key: "housing",       label: "Housing",       code: "HO", color: "#2a78d6", emoji: "🏠" },
+  { key: "utilities",     label: "Utilities",     code: "UT", color: "#eda100", emoji: "💡" },
+  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#e34948", emoji: "🏥" },
+  { key: "shopping",      label: "Shopping",      code: "SH", color: "#e87ba4", emoji: "🛍️" },
+  { key: "entertainment", label: "Entertain",     code: "EN", color: "#008300", emoji: "🎬" },
+  { key: "travel",        label: "Travel",        code: "TV", color: "#6b5bd2", emoji: "✈️" },
+  { key: "education",     label: "Education",     code: "ED", color: "#eda100", emoji: "🎓" },
+  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#6b5bd2", emoji: "📱" },
+  { key: "personal_care", label: "Personal Care", code: "PC", color: "#e87ba4", emoji: "💆" },
+  { key: "pets",          label: "Pets",          code: "PT", color: "#eb6834", emoji: "🐾" },
+  { key: "work",          label: "Work",          code: "WK", color: "#2a78d6", emoji: "💼" },
+  { key: "other",         label: "Other",         code: "OT", color: "#8a7c68", emoji: "📦" },
 ];
 
 export const INCOME_CATEGORIES: CategoryDef[] = [
-  { key: "salary",       label: "Salary",     code: "SA", color: "#22d3a5", emoji: "💵" },
-  { key: "freelance",    label: "Freelance",  code: "FR", color: "#34d399", emoji: "💻" },
-  { key: "investment",   label: "Investment", code: "IV", color: "#818cf8", emoji: "📈" },
-  { key: "gift",         label: "Gift",       code: "GF", color: "#a78bfa", emoji: "🎁" },
-  { key: "other_income", label: "Other",      code: "OI", color: "#6b7280", emoji: "📦" },
+  { key: "salary",       label: "Salary",     code: "SA", color: "#1baf7a", emoji: "💵" },
+  { key: "freelance",    label: "Freelance",  code: "FR", color: "#008300", emoji: "💻" },
+  { key: "investment",   label: "Investment", code: "IV", color: "#2a78d6", emoji: "📈" },
+  { key: "gift",         label: "Gift",       code: "GF", color: "#e87ba4", emoji: "🎁" },
+  { key: "other_income", label: "Other",      code: "OI", color: "#8a7c68", emoji: "📦" },
 ];
 
 export const ALL_CATEGORIES: CategoryDef[] = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 
+/**
+ * Category colours (D-30). Eight hues checked for colour-blind separation
+ * and contrast on both the cream and the warm-dark card, plus a neutral for
+ * "Other". There are more categories than colours that can be told apart,
+ * so the most common ones get their own hue, rarer ones share, and charts
+ * show the top six with the rest folded into Other. Labels and emoji carry
+ * identity too, so colour is never the only cue.
+ */
 export const COLOR_PALETTE = [
-  "#f43f5e", "#f97316", "#eab308", "#84cc16", "#14b8a6",
-  "#0ea5e9", "#8b5cf6", "#ec4899", "#a855f7", "#6b7280",
+  "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6b5bd2", "#e34948", "#8a7c68",
 ];
+
+/** The palette colour closest to any hex, so older custom colours land on the new set. */
+export function nearestPaletteColor(hex: string): string {
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  if (!/^#[0-9a-f]{6}$/i.test(hex) || COLOR_PALETTE.includes(hex.toLowerCase())) return hex.toLowerCase();
+  const [r, g, b] = rgb(hex);
+  let best = COLOR_PALETTE[0], d = Infinity;
+  for (const c of COLOR_PALETTE) {
+    const [r2, g2, b2] = rgb(c);
+    const dist = (r - r2) ** 2 * 0.3 + (g - g2) ** 2 * 0.59 + (b - b2) ** 2 * 0.11;
+    if (dist < d) { d = dist; best = c; }
+  }
+  return best;
+}
 
 export const EMOJI_PALETTE = [
   // Food & Drink
@@ -82,5 +103,5 @@ export function resolveDisplay(
   key: string,
 ): { color: string; emoji: string } {
   const c = customs[key] ?? {};
-  return { color: c.color ?? base.color, emoji: c.emoji ?? base.emoji };
+  return { color: nearestPaletteColor(c.color ?? base.color), emoji: c.emoji ?? base.emoji };
 }

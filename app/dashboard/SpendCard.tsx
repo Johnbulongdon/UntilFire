@@ -21,13 +21,15 @@ const ICONS: Record<View, string> = { line: "M3 17l5-5 4 3 8-9", bars: "M5 20V10
  * against usual. Explanations sit in InfoTips; the card itself is numbers,
  * marks and labels.
  */
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategory, onSelectCategory, selectedDay, onSelectDay, onZoomMonth }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategory, onSelectCategory, selectedDay, onSelectDay, onZoomMonth, palette, onColor }: {
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
   selectedCategory: string | null; onSelectCategory: (k: string | null) => void;
   selectedDay: string | null; onSelectDay: (d: string | null) => void; onZoomMonth: (m: string) => void;
+  palette: string[]; onColor: (key: string, color: string) => void;
 }) {
+  const [picking, setPicking] = useState<string | null>(null);
   const [mode, setMode] = useState<"spent" | "earned">("spent");
   const [view, setView] = useState<View>("line");
   const [hideBills, setHideBills] = useState(false);
@@ -97,8 +99,10 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             <span style={{ ...mono, fontSize: 28, fontWeight: 600 }}>{fmt(total)}</span>
             <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", display: "inline-flex", alignItems: "center", gap: 2 }}>
               {mode === "spent" ? <>Earned <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(earned)}</b></> : <>Spent <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
-              · Saved <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
-              <InfoTip label="About saved">Earned minus spent over this range. The percentage is your savings rate, the number that moves your freedom date most.</InfoTip>
+              {earned > 0 && <>
+                · Saved <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
+                <InfoTip label="About saved">Earned minus spent over this range. The percentage is your savings rate, the number that moves your freedom date most.</InfoTip>
+              </>}
             </span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -140,18 +144,40 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
         {rows.map((r) => {
           const d = r.usual == null ? null : r.now - r.usual, near = d != null && Math.abs(d) <= Math.max(10, (r.usual ?? 0) * 0.08), on = selectedCategory === r.key;
           return (
-            <button key={r.key} type="button" aria-pressed={on} onClick={() => onSelectCategory(on ? null : r.key)} style={{
-              display: "grid", gridTemplateColumns: "minmax(0, 110px) 1fr 72px", alignItems: "center", gap: 10, padding: "7px 8px", border: "none", borderRadius: 8, cursor: "pointer",
-              font: "inherit", textAlign: "left", color: "var(--uf-ink)", background: on ? "var(--uf-surface-2)" : "transparent", opacity: selectedCategory && !on ? 0.45 : 1, transition: "opacity 200ms" }}>
-              <span className="uf-t-small" style={{ fontWeight: on || (d != null && d > 0 && !near) ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.emoji} {r.label}</span>
-              <span style={{ position: "relative", height: 16 }}>
-                <i style={{ position: "absolute", inset: "3px auto 3px 0", width: `${(r.now / max) * 100}%`, borderRadius: 4, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
-                {r.usual != null && <i title={`Usual ${fmt(r.usual)}`} style={{ position: "absolute", top: -1, bottom: -1, left: `calc(${(r.usual / max) * 100}% - 1.5px)`, width: 3, borderRadius: 2, background: "var(--uf-ink)", boxShadow: "0 0 0 1.5px var(--uf-card)" }} />}
-              </span>
-              <span className="uf-t-small" style={{ ...mono, textAlign: "right", color: d != null && d > 0 && !near ? "var(--uf-ink)" : "var(--uf-ink-3)", fontWeight: d != null && d > 0 && !near ? 700 : 400 }}>
-                {d == null ? fmt(r.now) : near ? "≈ usual" : `${d > 0 ? "▲" : "▼"} ${fmt(Math.abs(d))}`}
-              </span>
-            </button>
+            <div key={r.key} style={{ display: "grid", gap: 6 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "24px 1fr", alignItems: "center" }}>
+                <button type="button" aria-label={`Colour for ${r.label}`} aria-expanded={picking === r.key} onClick={() => setPicking(picking === r.key ? null : r.key)}
+                  style={{ width: 24, height: 24, display: "grid", placeItems: "center", border: "none", background: "none", padding: 0, cursor: "pointer" }}>
+                  <i style={{ width: 12, height: 12, borderRadius: 999, background: r.color, boxShadow: "0 0 0 2px var(--uf-card), 0 0 0 3px var(--uf-border-2)" }} />
+                </button>
+                <button type="button" aria-pressed={on} onClick={() => onSelectCategory(on ? null : r.key)} style={{
+                  display: "grid", gridTemplateColumns: "minmax(0, 104px) 1fr 72px", alignItems: "center", gap: 10, padding: "7px 8px", border: "none", borderRadius: 8, cursor: "pointer",
+                  font: "inherit", textAlign: "left", color: "var(--uf-ink)", background: on ? "var(--uf-surface-2)" : "transparent", opacity: selectedCategory && !on ? 0.45 : 1, transition: "opacity 200ms" }}>
+                  <span className="uf-t-small" style={{ fontWeight: on || (d != null && d > 0 && !near) ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.emoji} {r.label}</span>
+                  <span style={{ position: "relative", height: 16 }}>
+                    <i style={{ position: "absolute", inset: "3px auto 3px 0", width: `${(r.now / max) * 100}%`, borderRadius: 4, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
+                    {r.usual != null && <i title={`Usual ${fmt(r.usual)}`} style={{ position: "absolute", top: -1, bottom: -1, left: `calc(${(r.usual / max) * 100}% - 1.5px)`, width: 3, borderRadius: 2, background: "var(--uf-ink)", boxShadow: "0 0 0 1.5px var(--uf-card)" }} />}
+                  </span>
+                  <span className="uf-t-small" style={{ ...mono, textAlign: "right", color: d != null && d > 0 && !near ? "var(--uf-ink)" : "var(--uf-ink-3)", fontWeight: d != null && d > 0 && !near ? 700 : 400 }}>
+                    {d == null ? fmt(r.now) : near ? "≈ usual" : `${d > 0 ? "▲" : "▼"} ${fmt(Math.abs(d))}`}
+                  </span>
+                </button>
+              </div>
+              {picking === r.key && (
+                <div role="radiogroup" aria-label={`Colour for ${r.label}`} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "0 0 4px 28px", padding: "8px 10px", borderRadius: 10, background: "var(--uf-surface-2)" }}>
+                  {palette.map((c) => {
+                    const taken = rows.some((o) => o.key !== r.key && o.color === c);
+                    return (
+                      <button key={c} type="button" role="radio" aria-checked={r.color === c} aria-label={taken ? `${c}, used by another category` : c}
+                        onClick={() => { onColor(r.key, c); setPicking(null); }}
+                        style={{ width: 26, height: 26, borderRadius: 999, padding: 0, cursor: "pointer", background: c, opacity: taken && r.color !== c ? 0.35 : 1,
+                          border: r.color === c ? "3px solid var(--uf-ink)" : "2px solid var(--uf-card)" }} />
+                    );
+                  })}
+                  <InfoTip label="About colours">Faded colours are already used by a category shown here. Picking one is fine; it just makes the two harder to tell apart.</InfoTip>
+                </div>
+              )}
+            </div>
           );
         })}
         {rows.length > 0 && (
