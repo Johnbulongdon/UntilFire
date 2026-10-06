@@ -1045,7 +1045,7 @@ function TransactionList({
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
-              {f === "all" ? "All" : f === "expense" ? "Out" : f === "income" ? "In" : "Transfer"}
+              {f === "all" ? "All" : f === "expense" ? "Expenses" : f === "income" ? "Income" : "Transfers"}
             </button>
           ))}
         </div>
@@ -1576,7 +1576,7 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome }: {
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
@@ -1585,6 +1585,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   onUpgradeClick?: () => void;
   /** Monthly budget per category, USD, from the Budget tab. */
   budgets?: Record<string, number>;
+  /** Monthly income from the Budget tab, USD. */
+  expectedIncome?: number;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1610,7 +1612,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, []);
   const range = useMemo(() => rangeFor(rangePreset, rangeEnd), [rangePreset, rangeEnd]);
   const viewMonth = rangeEnd;
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const toggleCategory = useCallback((k: string) => setSelectedCategories((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]), []);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [bankStatus, setBankStatus] = useState<BankStatus | null>(null);
   const [banksOpen, setBanksOpen] = useState(false);
@@ -1722,8 +1725,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const monthTxns = useMemo(() => transactions.filter(inRange), [transactions, inRange]);
   // The list follows what the summary has picked: a category, or a day in the calendar.
   const listTxns = useMemo(() => monthTxns.filter((t) =>
-    (!selectedCategory || t.category === selectedCategory) && (!selectedDay || t.date.startsWith(selectedDay))),
-  [monthTxns, selectedCategory, selectedDay]);
+    (!selectedCategories.length || selectedCategories.includes(t.category)) && (!selectedDay || t.date.startsWith(selectedDay))),
+  [monthTxns, selectedCategories, selectedDay]);
   const today = `${currentMonth}-${String(now.getDate()).padStart(2, "0")}`;
   const usd = useCallback((amount: number, currency: string) => toUSD(amount, currency, rates), [rates]);
   const catDisplay = useCallback((cats: { key: string; label: string; color: string; emoji?: string }[]): CatDisplay[] =>
@@ -2034,19 +2037,14 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           collapsed={!banksOpen} onStatus={setBankStatus} />
         <SpendCard transactions={transactions} range={range} today={today} toUSD={usd} fmt={fmtDisplay}
           expenseCats={expenseCatDisplay} incomeCats={incomeCatDisplay}
-          selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory}
+          selectedCategories={selectedCategories} onToggleCategory={toggleCategory}
+          onClearFilters={() => { setSelectedCategories([]); setSelectedDay(null); }}
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor}
-          budgets={budgets} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
+          budgets={budgets} expectedIncome={expectedIncome} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
         <WorthALook flags={flags} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
-        {(selectedCategory || selectedDay) && (
-          <button type="button" onClick={() => { setSelectedCategory(null); setSelectedDay(null); }} className="uf-t-small"
-            style={{ justifySelf: "start", border: "none", background: "var(--uf-surface-2)", borderRadius: 999, padding: "6px 12px", cursor: "pointer", color: "var(--uf-ink-2)", fontWeight: 600 }}>
-            {[selectedCategory && expenseCatDisplay.concat(incomeCatDisplay).find((c) => c.key === selectedCategory)?.label, selectedDay].filter(Boolean).join(" · ")} ✕
-          </button>
-        )}
       </div>
 
       <TransactionList

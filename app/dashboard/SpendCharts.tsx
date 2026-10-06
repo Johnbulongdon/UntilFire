@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { bucketFor, daysInMonth, type DateRange } from "@/lib/spend-range";
 
 /**
@@ -22,8 +22,9 @@ export function daysOf(range: DateRange, today: string): string[] {
 const monthShort = (ym: string) => { const [y, m] = ym.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "short" }); };
 
 /** The key under a chart: each mark drawn as it appears, with a one-word name. */
-function ChartKey({ items }: { items: { mark: "line" | "dash" | "thin" | "bar" | "barSoft"; label: string }[] }) {
+function ChartKey({ items }: { items: { mark: "line" | "dot" | "dash" | "thin" | "bar" | "barSoft"; label: string }[] }) {
   const swatch = (m: string) => m === "line" ? <i style={{ width: 16, height: 0, borderTop: "2.5px solid var(--uf-chart-1)" }} />
+    : m === "dot" ? <i style={{ width: 16, height: 0, borderTop: "2.5px dotted var(--uf-chart-1)" }} />
     : m === "thin" ? <i style={{ width: 16, height: 0, borderTop: "1.5px solid var(--uf-ink-2)" }} />
     : m === "dash" ? <i style={{ width: 16, height: 0, borderTop: "2px dashed var(--uf-ink-3)" }} />
     : <i style={{ width: 10, height: 10, borderRadius: 2, background: m === "bar" ? "var(--uf-chart-1)" : "color-mix(in oklab, var(--uf-chart-1) 28%, var(--uf-card))" }} />;
@@ -44,6 +45,7 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetMo
   budgetMonth: number | null; periodLabel: string; fmt: (n: number) => string;
 }) {
   const W = 360, H = 170, P = 6, base = H - 18;
+  const [hover, setHover] = useState<number | null>(null);
   const all = useMemo(() => {
     const days: string[] = [];
     for (const m of range.months) for (let d = 1; d <= daysInMonth(m); d++) days.push(`${m}-${String(d).padStart(2, "0")}`);
@@ -65,53 +67,103 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetMo
         return (m + Math.min(1, share)) * budgetMonth;
       })
     : null;
-  const max = Math.max(1, mine.at(-1) ?? 0, usual?.at(-1) ?? 0, budgetTotal ?? 0) * 1.08;
+  // Forecast: from today to the end of the range, the rest goes the way past
+  // months went (rent, then the steady part), or at today's average pace
+  // when there is no history. Only while the range is still running.
+  const end0 = mine.length - 1;
+  const forecast = end0 >= 0 && end0 < all.length - 1
+    ? all.map((_, i) => i < end0 ? NaN : usual ? mine[end0] + (usual[i] - usual[end0]) : (mine[end0] / (end0 + 1)) * (i + 1))
+    : null;
+  const projected = forecast ? forecast[all.length - 1] : null;
+  const max = Math.max(1, mine.at(-1) ?? 0, usual?.at(-1) ?? 0, budgetTotal ?? 0, projected ?? 0) * 1.08;
+  // Two or three faint gridlines on round amounts, so the scale is readable at a glance.
+  const step = (() => { const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map((k) => k * mag).find((v) => v >= raw) ?? raw; })();
+  const grid = [1, 2, 3, 4].map((k) => k * step).filter((v) => v < max * 0.95);
+  const short = (v: number) => v >= 1000 ? `${fmt(v / 1000).replace(/\.0+$/, "")}k` : fmt(v);
   const x = (i: number) => P + (i / Math.max(1, all.length - 1)) * (W - 2 * P);
   const y = (v: number) => base - (v / max) * (base - 12);
   const path = (a: number[]) => a.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
   const end = mine.length - 1, gap = usual && end >= 0 ? mine[end] - usual[end] : null;
   const ticks = range.months.length === 1 ? [0, 9, 19, all.length - 1] : range.months.map((m) => all.indexOf(`${m}-01`));
 
-  // Where today stands against each reference, said once above the chart
-  // rather than as labels inside it, where they collide when the lines are close.
+  // One line above the chart: where the period is heading, and against budget.
   const budgetNow = budgetPath && end >= 0 ? mine[end] - budgetPath[end] : null;
+  const vsBudget = projected != null && budgetTotal != null ? projected - budgetTotal : budgetNow;
   const chip = (text: React.ReactNode, strong: boolean) => (
     <span className="uf-t-small" style={{ ...mono, padding: "3px 8px", borderRadius: 999, background: "var(--uf-surface-2)", color: strong ? "var(--uf-ink)" : "var(--uf-ink-2)", fontWeight: strong ? 700 : 500 }}>{text}</span>
   );
+  // Hover (or touch) anywhere on the chart to read the exact numbers for that day.
+  const pick = (e: React.PointerEvent<SVGSVGElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const i = Math.round((((e.clientX - r.left) / r.width) * W - P) / (W - 2 * P) * (all.length - 1));
+    setHover(Math.max(0, Math.min(all.length - 1, i)));
+  };
+  const day = (iso: string) => { const [yy, mm, dd] = iso.split("-").map(Number); return new Date(yy, mm - 1, dd).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
   return (
-    <div>
-    {(gap != null || budgetNow != null) && (
+    <div style={{ position: "relative" }}>
+    {(projected != null || vsBudget != null || gap != null) && (
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-        {gap != null && Math.abs(gap) >= 1 && chip(<>{gap >= 0 ? "▲" : "▼"} {fmt(Math.abs(gap))} vs past months</>, false)}
-        {budgetNow != null && chip(budgetNow > 0 ? <>{fmt(budgetNow)} over budget pace</> : <>{fmt(-budgetNow)} under budget pace</>, budgetNow > 0)}
+        {projected != null
+          ? chip(<>On track for {fmt(projected)}</>, true)
+          : gap != null && Math.abs(gap) >= 1 && chip(<>{gap >= 0 ? "▲" : "▼"} {fmt(Math.abs(gap))} vs past months</>, false)}
+        {vsBudget != null && Math.abs(vsBudget) >= 1 && chip(vsBudget > 0 ? <>{fmt(vsBudget)} over budget</> : <>{fmt(-vsBudget)} under budget</>, vsBudget > 0)}
       </div>
     )}
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }} role="img"
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", overflow: "visible", touchAction: "pan-y", cursor: "crosshair" }} role="img"
+      onPointerMove={pick} onPointerDown={pick} onPointerLeave={() => setHover(null)}
       aria-label={`${periodLabel}: ${fmt(mine.at(-1) ?? 0)}${gap != null ? `, ${fmt(Math.abs(gap))} ${gap >= 0 ? "more" : "less"} than past months by this day` : ""}${budgetTotal ? `, budget ${fmt(budgetTotal)}` : ""}`}>
       {budgetTotal != null && (
         <>
           {budgetPath && <path d={path(budgetPath)} fill="none" stroke="var(--uf-ink-2)" strokeWidth={1.5} strokeLinejoin="round" />}
         </>
       )}
+      {grid.map((v) => (
+        <g key={v}>
+          <line x1={P} x2={W - P} y1={y(v)} y2={y(v)} stroke="var(--uf-border)" strokeWidth={1} />
+          <text x={P} y={y(v) - 3} style={{ ...mono, fontSize: 10, fill: "var(--uf-ink-3)" }}>{short(v)}</text>
+        </g>
+      ))}
       {usual && <path d={path(usual)} fill="none" stroke="var(--uf-ink-3)" strokeWidth={2} strokeDasharray="4 4" />}
+      {forecast && <path d={forecast.map((v, i) => Number.isNaN(v) ? "" : `${i === end0 ? "M" : "L"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2} strokeDasharray="1 4" strokeLinecap="round" />}
       {end >= 0 && <path d={`${path(mine)} L${x(end)} ${base} L${x(0)} ${base} Z`} fill="color-mix(in oklab, var(--uf-chart-1) 14%, transparent)" />}
       {end >= 0 && <path d={path(mine)} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2.5} strokeLinejoin="round" />}
       {end >= 0 && <circle cx={x(end)} cy={y(mine[end])} r={5} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
       <line x1={P} x2={W - P} y1={base} y2={base} stroke="var(--uf-border)" />
+      {hover != null && (
+        <>
+          <line x1={x(hover)} x2={x(hover)} y1={8} y2={base} stroke="var(--uf-ink-3)" strokeWidth={1} />
+          {hover <= end && <circle cx={x(hover)} cy={y(mine[hover])} r={4} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
+          {usual && <circle cx={x(hover)} cy={y(usual[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-ink-3)" strokeWidth={1.5} />}
+          {budgetPath && <circle cx={x(hover)} cy={y(budgetPath[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-ink-2)" strokeWidth={1.5} />}
+        </>
+      )}
       {ticks.map((i) => i >= 0 && (
         <text key={i} x={x(i)} y={H - 4} textAnchor={i === 0 ? "start" : i === all.length - 1 ? "end" : "middle"} style={{ ...mono, fontSize: 11, fill: "var(--uf-ink-3)" }}>
           {range.months.length === 1 ? Number(all[i].slice(8, 10)) : monthShort(all[i].slice(0, 7))}
         </text>
       ))}
     </svg>
-    <ChartKey items={[{ mark: "line", label: periodLabel }, ...(usual ? [{ mark: "dash" as const, label: "Past months" }] : []), ...(budgetTotal ? [{ mark: "thin" as const, label: "Budget" }] : [])]} />
+    {hover != null && (
+      <div role="status" className="uf-t-small" style={{ position: "absolute", top: 34, left: `${(x(hover) / W) * 100}%`, transform: `translateX(${hover > all.length / 2 ? "calc(-100% - 10px)" : "10px"})`,
+        pointerEvents: "none", zIndex: 5, minWidth: 150, padding: "8px 10px", borderRadius: 8, background: "var(--uf-ink)", color: "var(--uf-card)", boxShadow: "var(--uf-e2)", display: "grid", gap: 3 }}>
+        <b>{day(all[hover])}</b>
+        {[
+          hover <= end ? [periodLabel, mine[hover]] : forecast ? ["Forecast", forecast[hover]] : null,
+          usual ? ["Past months", usual[hover]] : null,
+          budgetPath ? ["Budget", budgetPath[hover]] : null,
+        ].filter((r): r is [string, number] => !!r).map(([l, v]) => (
+          <span key={l} style={{ display: "flex", justifyContent: "space-between", gap: 12, whiteSpace: "nowrap" }}><span style={{ opacity: 0.75 }}>{l}</span><span style={mono}>{fmt(v)}</span></span>
+        ))}
+      </div>
+    )}
+    <ChartKey items={[{ mark: "line", label: periodLabel }, ...(forecast ? [{ mark: "dot" as const, label: "Forecast" }] : []), ...(usual ? [{ mark: "dash" as const, label: "Past months" }] : []), ...(budgetTotal ? [{ mark: "thin" as const, label: "Budget" }] : [])]} />
     </div>
   );
 }
 
 /** One bar per day, week or month; the dashed level is the usual for that bar size. */
-export function BarsView({ range, today, daily, usualMonth, budgetMonth, fmt }: {
-  range: DateRange; today: string; daily: Daily; usualMonth: number | null; budgetMonth: number | null; fmt: (n: number) => string;
+export function BarsView({ range, today, daily, usualMonth, budgetMonth, fmt, valueLabel }: {
+  range: DateRange; today: string; daily: Daily; usualMonth: number | null; budgetMonth: number | null; fmt: (n: number) => string; valueLabel: string;
 }) {
   const size = bucketFor(range.months.length);
   const bars = useMemo(() => {
@@ -138,9 +190,21 @@ export function BarsView({ range, today, daily, usualMonth, budgetMonth, fmt }: 
   // When the two reference lines are close, only the budget is labelled, so the labels never collide.
   const labelUsual = level != null && !(plan != null && Math.abs(level - plan) / Math.max(level, plan) < 0.08);
   const every = Math.ceil(bars.length / 8);
+  const [hover, setHover] = useState<number | null>(null);
+  const hb = hover != null ? bars[hover] : null;
 
   return (
-    <div>
+    <div style={{ position: "relative" }}>
+    {hb && (
+      <div role="status" className="uf-t-small" style={{ position: "absolute", top: 0, left: `${((hover! + 0.5) / bars.length) * 100}%`, transform: `translateX(${hover! > bars.length / 2 ? "calc(-100% - 8px)" : "8px"})`,
+        pointerEvents: "none", zIndex: 5, minWidth: 140, padding: "8px 10px", borderRadius: 8, background: "var(--uf-ink)", color: "var(--uf-card)", boxShadow: "var(--uf-e2)", display: "grid", gap: 3 }}>
+        <b>{size === "week" ? `Week of ${hb.label}` : size === "day" ? `${monthShort(hb.key.slice(0, 7))} ${hb.label}` : hb.label}</b>
+        {([[valueLabel, hb.v], level != null ? ["Past months", level] : null, plan != null ? ["Budget", plan] : null] as ([string, number] | null)[])
+          .filter((r): r is [string, number] => !!r).map(([l, v]) => (
+            <span key={l} style={{ display: "flex", justifyContent: "space-between", gap: 12, whiteSpace: "nowrap" }}><span style={{ opacity: 0.75 }}>{l}</span><span style={mono}>{fmt(v)}</span></span>
+          ))}
+      </div>
+    )}
     <div role="img" aria-label={`${bars.length} ${size}s${level != null ? `, usual ${fmt(level)} per ${size}` : ""}`}
       style={{ position: "relative", height: 170, display: "flex", alignItems: "flex-end", gap: bars.length > 20 ? 2 : 6 }}>
       {level != null && (
@@ -156,8 +220,9 @@ export function BarsView({ range, today, daily, usualMonth, budgetMonth, fmt }: 
         </>
       )}
       {bars.map((b, i) => (
-        <div key={b.key} title={`${b.label}: ${fmt(b.v)}`} style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 4, justifyItems: "center" }}>
-          <i style={{ width: "100%", maxWidth: 44, height: Math.max(b.v > 0 ? 2 : 0, (b.v / max) * 140), borderRadius: "4px 4px 0 0",
+        <div key={b.key} onPointerEnter={() => setHover(i)} onPointerDown={() => setHover(i)} onPointerLeave={() => setHover(null)}
+          style={{ flex: 1, minWidth: 0, cursor: "crosshair", alignSelf: "stretch", alignContent: "end", display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 4, justifyItems: "center" }}>
+          <i style={{ width: "100%", maxWidth: 44, height: Math.max(b.v > 0 ? 2 : 0, (b.v / max) * 140), borderRadius: "4px 4px 0 0", outline: hover === i ? "2px solid var(--uf-ink)" : "none",
             background: b.now ? "var(--uf-chart-1)" : "color-mix(in oklab, var(--uf-chart-1) 28%, var(--uf-card))" }} />
           <span style={{ ...mono, fontSize: 10, height: 12, color: b.now ? "var(--uf-ink)" : "var(--uf-ink-3)", whiteSpace: "nowrap" }}>{i % every === 0 ? b.label : ""}</span>
         </div>
