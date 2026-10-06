@@ -10,7 +10,6 @@ type Tx = RangeTx & { id: string };
 export type CatDisplay = { key: string; label: string; emoji: string; color: string };
 type View = "line" | "bars" | "cal";
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
-const BILLS = new Set(["housing", "utilities", "subscriptions"]);
 const read = (k: string, fallback: string) => { try { return localStorage.getItem(k) ?? fallback; } catch { return fallback; } };
 const write = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
 
@@ -22,37 +21,44 @@ const ICONS: Record<View, string> = { line: "M3 17l5-5 4 3 8-9", bars: "M5 20V10
  * against usual. Explanations sit in InfoTips; the card itself is numbers,
  * marks and labels.
  */
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategory, onSelectCategory, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0 }: {
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
-  selectedCategory: string | null; onSelectCategory: (k: string | null) => void;
+  /** Categories picked on the bars; empty means all. Tapping a bar adds or removes it. */
+  selectedCategories: string[]; onToggleCategory: (k: string) => void; onClearFilters: () => void;
   selectedDay: string | null; onSelectDay: (d: string | null) => void; onZoomMonth: (m: string) => void;
   palette: string[]; onColor: (key: string, color: string) => void;
   /** Monthly budget per category, USD (the Budget tab). Zero or missing means no budget. */
   budgets?: Record<string, number>; periodLabel: string;
+  /** Monthly income from the Budget tab, USD; stands in for months with no income recorded. */
+  expectedIncome?: number;
 }) {
   const [picking, setPicking] = useState<string | null>(null);
   const [mode, setMode] = useState<"spent" | "earned">("spent");
   const [view, setView] = useState<View>("line");
-  const [hideBills, setHideBills] = useState(false);
   const [phone, setPhone] = useState(false);
-  useEffect(() => { setView(read("uf.tx.view", "line") as View); }, []);
+  // One remembered choice for a single month (Line by default) and one for
+  // longer ranges (Bars by default): a running line over a year is a long
+  // ramp that hides each month, so longer ranges open on bars.
+  const long = range.months.length > 1;
+  const viewKey = long ? "uf.tx.view.long" : "uf.tx.view";
+  useEffect(() => { setView(read(viewKey, long ? "bars" : "line") as View); }, [viewKey, long]);
   useEffect(() => {
     const q = matchMedia("(max-width: 600px)"); const set = () => setPhone(q.matches);
     set(); q.addEventListener("change", set); return () => q.removeEventListener("change", set);
   }, []);
   const calOk = calendarAllowed(range.months.length, phone);
   const shown: View = view === "cal" && !calOk ? "bars" : view;
-  const pick = (v: View) => { setView(v); write("uf.tx.view", v); trackTxViewChanged({ view: v, months: range.months.length }); };
+  const pick = (v: View) => { setView(v); write(viewKey, v); trackTxViewChanged({ view: v, months: range.months.length }); };
 
   const entries = useMemo(() => transactions
     .filter((t) => t.transaction_type === (mode === "spent" ? "expense" : "income"))
     .map((t) => ({ date: t.date.slice(0, 10), category: t.category, usd: toUSD(mode === "spent" ? netAmount(t) : t.amount, t.currency) })),
   [transactions, mode, toUSD]);
   const inRange = (d: string) => d >= range.start && d <= range.end && d <= today;
-  const focus = useMemo(() => entries.filter((e) => (!selectedCategory || e.category === selectedCategory)
-    && !(hideBills && mode === "spent" && BILLS.has(e.category))), [entries, selectedCategory, hideBills, mode]);
+  const picked = useMemo(() => new Set(selectedCategories), [selectedCategories]);
+  const focus = useMemo(() => entries.filter((e) => !picked.size || picked.has(e.category)), [entries, picked]);
 
   const daily = useMemo(() => {
     const m: Daily = new Map();
@@ -67,21 +73,35 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   }, [focus, today]);
   const total = [...daily.values()].reduce((a, b) => a + b, 0);
 
-  // Earned vs spent over the same range, for the saved line.
+  // Income vs expenses over the same range, for the saved line. A month with
+  // no income recorded (or only a stray refund) uses the expected income from
+  // the Budget tab, prorated for the month in progress, so one untracked
+  // payday doesn't send the savings rate to -900%.
   const sum = (type: "expense" | "income") => transactions.filter((t) => t.transaction_type === type && inRange(t.date.slice(0, 10)))
     .reduce((s, t) => s + toUSD(type === "expense" ? netAmount(t) : t.amount, t.currency), 0);
-  const earned = sum("income"), spent = sum("expense"), saved = earned - spent;
-  const rate = earned > 0 ? Math.round((saved / earned) * 100) : null;
+  const spent = sum("expense");
+  let earned = 0, filled = 0;
+  for (const m of range.months) {
+    if (m > monthOf(today)) continue;
+    const actual = transactions.filter((t) => t.transaction_type === "income" && t.date.startsWith(m)).reduce((s, t) => s + toUSD(t.amount, t.currency), 0);
+    if (expectedIncome > 0 && actual < expectedIncome * 0.25) {
+      const share = m === monthOf(today) ? Number(today.slice(8, 10)) / Number(new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).getDate()) : 1;
+      earned += expectedIncome * share; filled++;
+    } else earned += actual;
+  }
+  const saved = earned - spent;
+  const rawRate = earned > 0 ? Math.round((saved / earned) * 100) : null;
+  const rate = rawRate != null && rawRate >= -100 && rawRate <= 100 ? rawRate : null;
 
   const cats = mode === "spent" ? expenseCats : incomeCats;
   // Monthly budget for what is on screen: one category when one is picked,
   // otherwise every budgeted category (less bills when they are hidden).
   const budgetMonth = useMemo(() => {
     if (mode !== "spent") return null;
-    const keys = selectedCategory ? [selectedCategory] : Object.keys(budgets).filter((k) => !(hideBills && BILLS.has(k)));
+    const keys = picked.size ? [...picked] : Object.keys(budgets);
     const total = keys.reduce((s, k) => s + Math.max(0, budgets[k] ?? 0), 0);
     return total > 0 ? total : null;
-  }, [budgets, mode, selectedCategory, hideBills]);
+  }, [budgets, mode, picked]);
 
   const rows = useMemo(() => {
     const out = cats.map((c) => {
@@ -104,31 +124,23 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
           <div style={{ display: "grid", gap: 4 }}>
             <div role="radiogroup" aria-label="Show money" style={{ display: "inline-flex", justifySelf: "start", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3 }}>
               {(["spent", "earned"] as const).map((m) => (
-                <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => { setMode(m); onSelectCategory(null); }} style={seg(mode === m)}>
-                  {m === "spent" ? "Spent" : "Earned"}
+                <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => { setMode(m); onClearFilters(); }} style={seg(mode === m)}>
+                  {m === "spent" ? "Expenses" : "Income"}
                 </button>
               ))}
             </div>
             <span style={{ ...mono, fontSize: 28, fontWeight: 600 }}>{fmt(total)}</span>
             <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", display: "inline-flex", alignItems: "center", gap: 2 }}>
-              {mode === "spent" ? <>Earned <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(earned)}</b></> : <>Spent <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
+              {mode === "spent"
+                ? <>Income <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(earned)}{filled > 0 ? "*" : ""}</b></>
+                : <>Expenses <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
               {earned > 0 && <>
                 · Saved <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
-                <InfoTip label="About saved">Earned minus spent over this range. The percentage is your savings rate, the number that moves your freedom date most.</InfoTip>
+                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{filled > 0 ? ` *${filled === 1 ? "One month" : `${filled} months`} had no income recorded, so your expected income from the Budget tab stands in.` : ""}</InfoTip>
               </>}
             </span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {mode === "spent" && (
-              <label className="uf-t-small" style={{ display: "inline-flex", gap: 6, alignItems: "center", color: "var(--uf-ink-2)" }}>
-                <button type="button" role="switch" aria-checked={hideBills} aria-label="Hide bills" onClick={() => setHideBills(!hideBills)}
-                  style={{ position: "relative", width: 36, height: 20, borderRadius: 999, border: "none", cursor: "pointer", background: hideBills ? "var(--uf-green)" : "var(--uf-border-2)" }}>
-                  <i style={{ position: "absolute", top: 2, left: 2, width: 16, height: 16, borderRadius: 999, background: "#fff", transform: `translateX(${hideBills ? 16 : 0}px)`, transition: "transform 260ms var(--uf-ease-spring)" }} />
-                </button>
-                Bills
-                <InfoTip label="About hiding bills">Hides housing, utilities and subscriptions so the chart shows everyday spending.</InfoTip>
-              </label>
-            )}
             <div role="radiogroup" aria-label="Chart" style={{ position: "relative", display: "flex", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3 }}>
               <span aria-hidden className="uf-switch-handle" style={{ position: "absolute", top: 3, left: 3, width: 36, height: 30, borderRadius: 999, background: "var(--uf-ink)",
                 transform: `translateX(${(["line", "bars", "cal"] as View[]).indexOf(shown) * 36}px)` }} />
@@ -149,13 +161,13 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
           </div>
         </div>
         {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} periodLabel={periodLabel} fmt={fmt} />}
-        {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} />}
+        {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} valueLabel={mode === "spent" ? "Expenses" : "Income"} />}
         {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} />}
       </div>
 
       <div style={{ display: "grid", gap: 2, alignContent: "start" }}>
         {rows.map((r) => {
-          const d = r.usual == null ? null : r.now - r.usual, near = d != null && Math.abs(d) <= Math.max(10, (r.usual ?? 0) * 0.08), on = selectedCategory === r.key;
+          const d = r.usual == null ? null : r.now - r.usual, near = d != null && Math.abs(d) <= Math.max(10, (r.usual ?? 0) * 0.08), on = picked.has(r.key);
           const over = r.budget != null && r.now > r.budget;
           const strong = r.budget != null ? over : d != null && d > 0 && !near;
           return (
@@ -165,9 +177,9 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
                   style={{ width: 24, height: 24, display: "grid", placeItems: "center", border: "none", background: "none", padding: 0, cursor: "pointer" }}>
                   <i style={{ width: 12, height: 12, borderRadius: 999, background: r.color, boxShadow: "0 0 0 2px var(--uf-card), 0 0 0 3px var(--uf-border-2)" }} />
                 </button>
-                <button type="button" aria-pressed={on} onClick={() => onSelectCategory(on ? null : r.key)} style={{
+                <button type="button" aria-pressed={on} onClick={() => onToggleCategory(r.key)} style={{
                   display: "grid", gridTemplateColumns: "minmax(0, 104px) 1fr 84px", alignItems: "center", gap: 10, padding: "7px 8px", border: "none", borderRadius: 8, cursor: "pointer",
-                  font: "inherit", textAlign: "left", color: "var(--uf-ink)", background: on ? "var(--uf-surface-2)" : "transparent", opacity: selectedCategory && !on ? 0.45 : 1, transition: "opacity 200ms" }}>
+                  font: "inherit", textAlign: "left", color: "var(--uf-ink)", background: on ? "var(--uf-surface-2)" : "transparent", opacity: picked.size && !on ? 0.45 : 1, transition: "opacity 200ms" }}>
                   <span className="uf-t-small" style={{ fontWeight: on || strong ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.emoji} {r.label}</span>
                   <span style={{ position: "relative", height: 18 }}>
                     {r.budget != null && <i title={`Budget ${fmt(r.budget)}`} style={{ position: "absolute", inset: "1px auto 1px 0", width: `${(r.budget / max) * 100}%`, borderRadius: 5,
@@ -199,9 +211,15 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             </div>
           );
         })}
+        {(picked.size > 0 || selectedDay) && (
+          <button type="button" onClick={onClearFilters} className="uf-t-small" style={{ justifySelf: "start", display: "inline-flex", gap: 6, alignItems: "center",
+            margin: "4px 0 4px 32px", border: "none", borderRadius: 999, padding: "6px 12px", cursor: "pointer", fontWeight: 600, background: "var(--uf-ink)", color: "var(--uf-card)" }}>
+            {[...rows.filter((r) => picked.has(r.key)).map((r) => r.label), selectedDay].filter(Boolean).join(" + ")} · Clear <span aria-hidden>✕</span>
+          </button>
+        )}
         {rows.length > 0 && (
-          <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", paddingLeft: 8, display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, background: "var(--uf-ink-3)" }} />Spent
+          <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", paddingLeft: 8, display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+            <i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, background: "var(--uf-ink-3)" }} />{mode === "spent" ? "Expenses" : "Income"}
             {rows.some((r) => r.budget != null) && <><i style={{ display: "inline-block", width: 16, height: 10, borderRadius: 3, marginLeft: 8, background: "var(--uf-surface-2)", boxShadow: "inset 0 0 0 1.5px var(--uf-border-2)" }} />Budget</>}
             <i style={{ display: "inline-block", width: 3, height: 11, marginLeft: 8, background: "var(--uf-ink)" }} />Past months
             <InfoTip label="About past months">Where a typical month of yours stood by this day: the middle of your previous months, so one unusual month doesn&apos;t skew it. It appears once you have 3 months of history. Budget comes from your Budget tab.</InfoTip>

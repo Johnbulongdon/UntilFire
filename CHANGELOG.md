@@ -18,8 +18,8 @@ under today's date, creating the heading if it is not there yet.
 - A summary card shows spent or earned, what you saved and your savings rate,
   drawn as a running total against your usual pace, as bars, or as a calendar
   shaded by how much went out each day (up to 6 months on a phone). Category
-  bars mark your usual and filter the list; a Bills switch hides rent,
-  utilities and subscriptions.
+  bars mark your usual and filter the list; tap several to combine them,
+  and Clear appears while a filter is on.
 - "Worth a look" flags rows that may be wrong: card bill payments, possible
   duplicates and unusually large charges, each answered in one tap.
 - The list covers the whole range with a total per month, and its header
@@ -37,6 +37,17 @@ under today's date, creating the heading if it is not there yet.
   category bar has a budget track with what is left or over. "Usual" is
   now called "Past months", and how far you are from each is shown above
   the chart instead of inside it.
+- Hover over (or tap) the line or bars to read the exact amounts for that
+  day, week or month, against past months and your budget.
+- Months with no income recorded use the expected income from your Budget
+  tab, so the savings rate no longer swings to extreme numbers; the income
+  figure is starred when it does.
+- One set of words everywhere: Income, Expenses, Saved, Needs and Wants
+  (the list filters said In/Out, the card said Spent/Earned).
+- The line chart forecasts the rest of the period ("On track for $3,511",
+  with how far over or under budget that lands), drawn as a dotted line,
+  and has faint gridlines with amounts. Ranges longer than a month open on
+  bars, which read better than a long running line.
 
 ### Reviewing suggested classifications learns from your history
 - Suggestions now come from how you filed the same merchant before: category,
