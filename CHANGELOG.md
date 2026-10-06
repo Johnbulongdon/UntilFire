@@ -13,6 +13,10 @@ under today's date, creating the heading if it is not there yet.
   banner image shown full width at the top (linked to the button's page), and
   the inbox preview line. With a banner, the repeated "Monthly update" label
   is dropped. September's banner is `public/email/september/banner.png`.
+- Update items can carry an icon from the app's own set (PNG chips in
+  `public/email/icons/`, since Gmail and Outlook drop SVG), chosen per item in
+  the editor; the section headings get one too. September adds screenshots of
+  the Next Contribution card, the household card and the Coast FIRE result.
 
 ## 2026-10-02
 
