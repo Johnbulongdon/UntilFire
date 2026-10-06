@@ -36,13 +36,15 @@ function ChartKey({ items }: { items: { mark: "line" | "dot" | "dash" | "thin" |
 }
 
 /**
- * Running total for the period against two references: past months (what a
- * typical month looked like by each day) and the budget (an even straight
- * line to the planned total). `usualByDay[d]` is past months' spend through day d.
+ * Running total for the period against past months (how a typical month went
+ * by each day) and the budget, with the forecast to the end of the period.
+ * The budget line and forecast are built from Upcoming bills in
+ * lib/spend-forecast; this only draws them. `usualByDay[d]` is past months'
+ * spend through day d.
  */
-export function LineView({ range, today, daily, usualByDay, usualMonth, budgetMonth, periodLabel, fmt }: {
+export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLine, forecast, periodLabel, fmt }: {
   range: DateRange; today: string; daily: Daily; usualByDay: number[] | null; usualMonth: number | null;
-  budgetMonth: number | null; periodLabel: string; fmt: (n: number) => string;
+  budgetLine: number[] | null; forecast: number[] | null; periodLabel: string; fmt: (n: number) => string;
 }) {
   const W = 360, H = 170, P = 6, base = H - 18;
   const [hover, setHover] = useState<number | null>(null);
@@ -56,24 +58,9 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetMo
   const usual = usualByDay && usualMonth != null
     ? all.map((d) => range.months.indexOf(d.slice(0, 7)) * usualMonth + usualByDay[Number(d.slice(8, 10))])
     : null;
-  const budgetTotal = budgetMonth ? budgetMonth * range.months.length : null;
-  // The budget spread the way past months were spread (rent early, the rest
-  // through the month), so a bill on the 1st does not read as overspending.
-  // Without past months to shape it, an even straight line.
-  const budgetPath = budgetMonth
-    ? all.map((d, i) => {
-        const m = range.months.indexOf(d.slice(0, 7)), day = Number(d.slice(8, 10));
-        const share = usualByDay && usualMonth ? usualByDay[day] / usualMonth : day / daysInMonth(d.slice(0, 7));
-        return (m + Math.min(1, share)) * budgetMonth;
-      })
-    : null;
-  // Forecast: from today to the end of the range, the rest goes the way past
-  // months went (rent, then the steady part), or at today's average pace
-  // when there is no history. Only while the range is still running.
+  const budgetPath = budgetLine;
+  const budgetTotal = budgetLine ? budgetLine[budgetLine.length - 1] : null;
   const end0 = mine.length - 1;
-  const forecast = end0 >= 0 && end0 < all.length - 1
-    ? all.map((_, i) => i < end0 ? NaN : usual ? mine[end0] + (usual[i] - usual[end0]) : (mine[end0] / (end0 + 1)) * (i + 1))
-    : null;
   const projected = forecast ? forecast[all.length - 1] : null;
   const max = Math.max(1, mine.at(-1) ?? 0, usual?.at(-1) ?? 0, budgetTotal ?? 0, projected ?? 0) * 1.08;
   // Two or three faint gridlines on round amounts, so the scale is readable at a glance.
