@@ -726,6 +726,10 @@ quick box. `test:fire-number` pins the worked examples published on the page.
 
 ### D-24 — September 26: growth after inflation is chosen from S&P 500 history, 6.9% recommended
 
+**October 6 scope update (D-30):** Keep this methodology and recommendation,
+but omit growth editing from the initial onboarding and its reveal. The result
+still states its real-return basis; other assumption editors remain unchanged.
+
 **Status:** Active. Authorised by the founder on 2026-09-26: "Make the return an
 adjustable factor with a recommendation", then "tell the user how we got this
 number … are you more comfortable using S&P since the start, which is lower, or
@@ -1200,3 +1204,31 @@ Last updated: April 2026
 - Shared colors and page shells make it easier to extend dashboard, calculators, and learning content consistently
 
 **Trade-off**: Some legacy inline styles still remain in route files, but future work should move toward shared tokens and reusable shells instead of introducing another page-specific palette.
+
+### D-30 — October 6: onboarding uses direct choices and meaningful feedback
+
+**Status:** Active direction, approved after interactive preview review. This
+record describes the reviewed implementation; it does not certify deployment.
+
+**Decision:** Offer exact tap choices for income, savings/spending and net worth,
+with optional precise entry. On narrow coarse-pointer screens (up to 600px), use
+an optional centred age wheel; fine-pointer computers retain the native dropdown,
+even at a narrow width. Both controls share the same age, with no preselected age.
+Preserve drafts on Back and convert retained money when currency changes.
+
+Motion confirms actions: short press feedback, bounded selection springs,
+coordinated step entry and progress, derived-number settling, and year cubes
+flipping in place. Avoid lateral wobble. Inputs and calculations update immediately;
+respect reduced motion and expose final numbers to assistive technology.
+
+**Why:** The founder found growth choices overwhelming and keyboard-first inputs
+unnecessarily demanding. Premium motion should explain a selection or a result,
+not decorate the page or delay completing it. Growth editing is removed from
+onboarding and its initial reveal, refining D-24's placement rather than changing
+its sourced default. The result still explains its assumed growth after inflation.
+
+**Boundary:** Build mobile web first. This browser implementation is not a native
+Apple/Android component; portable interaction rules can inform a future app.
+Browser-native animation is a bounded implementation choice, not a new dependency
+or a mandate to animate every website element. Preset values are experiment
+anchors, not population-income claims. Completion improvement remains unmeasured.

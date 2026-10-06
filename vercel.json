@@ -16,7 +16,8 @@
   "git": {
     "deploymentEnabled": {
       "main": true,
-      "claude/*": false
+      "claude/*": false,
+      "codex/onboarding-motion": false
     }
   }
 }

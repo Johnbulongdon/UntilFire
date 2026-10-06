@@ -11,11 +11,12 @@ const require = createRequire(import.meta.url);
 const loadTs = (path, deps = {}) => {
   const mod = { exports: {} };
   vm.runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports: mod.exports, module: mod, require: (id) => deps[id] ?? require(id) });
   return mod.exports;
 };
 const fireNumber = loadTs('lib/fire-number.ts', { './sp500-history.ts': loadTs('lib/sp500-history.ts') });
+const yearCubes = loadTs('components/ui/YearCubes.tsx');
 // Exercise the real final-step component/callback without the video or animation.
 const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.tsx', 'utf8'), {
@@ -25,7 +26,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
   require: (id) => id === 'react' ? {
     ...React, useEffect: () => {}, useMemo: (fn) => fn(), useRef: (value) => ({ current: value }),
     useState: (value) => [value === 1 ? 7 : typeof value === 'function' ? value() : value, () => {}],
-  } : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/lib/fire-number' ? fireNumber : require(id),
+  } : id === '@/components/ui/YearCubes' ? yearCubes : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/lib/fire-number' ? fireNumber : require(id),
 });
 const props = {
   freedomAge: 52, freedomYear: 2048, yearsToFire: 22, planningAge: 30,
