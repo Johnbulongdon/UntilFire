@@ -34,6 +34,10 @@ import {
   type NextMoveOpenedProperties,
   type ScenarioTestedProperties,
   type ScenarioAcceptedProperties,
+  type TxRangeChangedProperties,
+  type TxViewChangedProperties,
+  type TxReviewOpenedProperties,
+  type TxFlagResolvedProperties,
 } from './analytics-events';
 
 function isClient(): boolean {
@@ -351,4 +355,24 @@ export function trackScenarioAccepted(input: { scenarioIndex: number; scenarioLa
   // queued events would otherwise be dropped on page unload, same reasoning
   // as trackSignupCompleted above.
   capture(FunnelEvents.SCENARIO_ACCEPTED, props, { sendInstantly: true });
+}
+
+// Transactions page (D-31). Counts and enums only: no amounts, no merchants.
+const PRESETS = new Set(['1', '3', '6', '12', 'ytd']);
+export function trackTxRangeChanged(input: { preset: number | 'ytd'; months: number }) {
+  const preset = String(input.preset);
+  const props: TxRangeChangedProperties = withVersion({ range_preset: PRESETS.has(preset) ? preset : 'custom', range_months: input.months });
+  capture(FunnelEvents.TX_RANGE_CHANGED, props);
+}
+export function trackTxViewChanged(input: { view: 'line' | 'bars' | 'cal'; months: number }) {
+  const props: TxViewChangedProperties = withVersion({ view: input.view, range_months: input.months });
+  capture(FunnelEvents.TX_VIEW_CHANGED, props);
+}
+export function trackTxReviewOpened(input: { needCount: number; months: number }) {
+  const props: TxReviewOpenedProperties = withVersion({ need_count: input.needCount, range_months: input.months });
+  capture(FunnelEvents.TX_REVIEW_OPENED, props);
+}
+export function trackTxFlagResolved(input: { flag: 'card_payment' | 'duplicate' | 'large'; confirmed: boolean }) {
+  const props: TxFlagResolvedProperties = withVersion({ flag: input.flag, confirmed: input.confirmed });
+  capture(FunnelEvents.TX_FLAG_RESOLVED, props);
 }

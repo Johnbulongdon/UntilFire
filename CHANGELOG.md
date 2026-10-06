@@ -8,6 +8,25 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-06
 
+### Transactions shows any time range, with graphics instead of text
+- One date control replaces the month arrows: this month, the last 3, 6 or 12
+  months, this year, or a custom span. The arrows step by the range's length,
+  and the page remembers the choice.
+- A review bar shows how much is filed and how much still needs you; its
+  green part starts the review, which is now free when it comes from your own
+  history. Connected banks fold into one "synced" line that opens the list.
+- A summary card shows spent or earned, what you saved and your savings rate,
+  drawn as a running total against your usual pace, as bars, or as a calendar
+  shaded by how much went out each day (up to 6 months on a phone). Category
+  bars mark your usual and filter the list; a Bills switch hides rent,
+  utilities and subscriptions.
+- "Worth a look" flags rows that may be wrong: card bill payments, possible
+  duplicates and unusually large charges, each answered in one tap.
+- The list covers the whole range with a total per month, and its header
+  shows what the rows on screen add up to.
+- Categories move to eight colours that stay distinguishable for colour-blind
+  readers and in dark mode; tap a category's dot to change it.
+
 ### Reviewing suggested classifications learns from your history
 - Suggestions now come from how you filed the same merchant before: category,
   sub-category and need/want, shown as "from your history (N×)". Reference

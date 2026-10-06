@@ -32,7 +32,7 @@ Home                          synthesis · customisable layout
 
 Money                         actual finances and operational planning
   ├ Cashflow
-  │   ├ Transactions
+  │   ├ Transactions (date range, review bar, summary card, Worth a look, list)
   │   ├ Upcoming (expected payments, with recurring detection suggestions)
   │   ├ Categories
   │   └ Budget

@@ -16,9 +16,14 @@ type PlaidItem = {
 
 type SyncResult = { added: number; modified: number; removed: number };
 
+export type BankStatus = { loaded: boolean; banks: number; lastSynced: string | null };
+
 type Props = {
   onTransactionsImported?: () => void;
   onUpgradeClick?: () => void;
+  /** Hide the connected-banks list; the caller shows a one-line status and can expand it. */
+  collapsed?: boolean;
+  onStatus?: (status: BankStatus) => void;
 };
 
 async function getSession() {
@@ -28,7 +33,7 @@ async function getSession() {
   return session;
 }
 
-function fmtSynced(ts: string | null): string {
+export function fmtSynced(ts: string | null): string {
   if (!ts) return "never synced";
   const diff = Date.now() - new Date(ts).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -39,7 +44,7 @@ function fmtSynced(ts: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }: Props) {
+export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, collapsed = false, onStatus }: Props) {
   const [items, setItems] = useState<PlaidItem[]>([]);
   const [itemsLoaded, setItemsLoaded] = useState(false);
   const [isProUser, setIsProUser] = useState<boolean | null>(null);
@@ -71,6 +76,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
       setItemsLoaded(true);
     })();
   }, []);
+
+  useEffect(() => {
+    const latest = items.map((i) => i.last_synced_at).filter(Boolean).sort().at(-1) ?? null;
+    onStatus?.({ loaded: itemsLoaded, banks: items.length, lastSynced: latest });
+  }, [items, itemsLoaded, onStatus]);
 
   const handleConnectClick = async () => {
     if (items.length === 0) {
@@ -249,7 +259,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
   const showEmptyStateCard = itemsLoaded && items.length === 0;
 
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div style={{ marginBottom: collapsed && items.length > 0 ? 0 : 24 }}>
       <style>{`
         @keyframes plaid-spin { to { transform: rotate(360deg); } }
         @keyframes plaid-slide-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
@@ -498,7 +508,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
         </div>
       )}
 
-      {items.length > 0 && (
+      {items.length > 0 && !collapsed && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {importing && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", fontSize: 13, fontWeight: 600 }}>
