@@ -6,6 +6,20 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-06
+
+### Reviewing suggested classifications learns from your history
+- Suggestions now come from how you filed the same merchant before: category,
+  sub-category and need/want, shown as "from your history (N×)". Reference
+  numbers in descriptions are ignored, and Chinese merchant names match. The AI
+  is only asked for need/want where history has no answer.
+- What you approve is remembered automatically, because the approved
+  transaction becomes next month's evidence. The unreliable "always classify"
+  checkbox is replaced by "Apply to all N from this merchant".
+- The review window keeps a fixed height as rows are approved or skipped. The
+  category picker opens inline instead of being clipped, and sub-categories can
+  be chosen. Rows that are already filed and tagged are no longer shown again.
+
 ## 2026-10-05
 
 ### Monthly update emails take a banner

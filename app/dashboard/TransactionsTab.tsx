@@ -18,6 +18,7 @@ import {
 } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
+import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
@@ -1495,219 +1496,178 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
 }
 
 // ─── AI Review Modal ──────────────────────────────────────────────────────────
+type ReviewItem = {
+  tx: Transaction;
+  suggestion: "need" | "want";
+  wasTag?: "need" | "want";
+  /** Suggested filing, from the person's own history for this merchant. */
+  category?: string;
+  sub_category?: string | null;
+  source?: "history" | "ai";
+  seen?: number;
+};
+type Filing = { category: string; sub_category: string | null };
+
+/**
+ * One list to work through. Fixed height, so it does not shrink under the
+ * cursor as rows are approved; the category picker opens inside the row, so
+ * it is never clipped by the scrolling list; and choosing a category offers
+ * its sub-categories in the same place.
+ */
 function AiReviewModal({
   pending,
   onApprove,
-  onApproveAllSameName,
   onApproveAll,
   onSkip,
   onClose,
-  onSaveRule,
   allExpenseCats,
+  allSubCats,
 }: {
-  pending: { tx: Transaction; suggestion: "need" | "want"; wasTag?: "need" | "want" }[];
-  onApprove: (tx: Transaction, suggestion: "need" | "want", category?: string) => void;
-  onApproveAllSameName: (description: string, suggestion: "need" | "want", category?: string) => void;
-  onApproveAll: (resolved: { tx: Transaction; suggestion: "need" | "want"; category?: string }[]) => void;
+  pending: ReviewItem[];
+  onApprove: (items: { tx: Transaction; suggestion: "need" | "want"; filing?: Filing }[]) => void;
+  onApproveAll: (resolved: { tx: Transaction; suggestion: "need" | "want"; filing?: Filing }[]) => void;
   onSkip: (txId: string) => void;
   onClose: () => void;
-  onSaveRule: (category: string, sub_category: string, classification: "need" | "want") => void;
   allExpenseCats: CustomCategory[];
+  allSubCats: Record<string, string[]>;
 }) {
   const [overrides, setOverrides] = useState<Record<string, "need" | "want">>({});
-  const [catOverrides, setCatOverrides] = useState<Record<string, string>>({});
-  const [catPickerTxId, setCatPickerTxId] = useState<string | null>(null);
-  const [saveRuleIds, setSaveRuleIds] = useState<Set<string>>(new Set());
+  const [filings, setFilings] = useState<Record<string, Filing>>({});
+  const [pickerTxId, setPickerTxId] = useState<string | null>(null);
+  const [pickerCat, setPickerCat] = useState<string | null>(null);
+  const [sameMerchant, setSameMerchant] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    if (!catPickerTxId) return;
-    const handler = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement).closest("[data-review-cat-picker]")) setCatPickerTxId(null);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [catPickerTxId]);
-  const sameNameCounts = useMemo(() => {
-    const counts = new Map<string, number>();
+  const byMerchant = useMemo(() => {
+    const m = new Map<string, string[]>();
     for (const { tx } of pending) {
-      const key = tx.description.toLowerCase();
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+      const k = merchantKey(tx.description) || tx.description.toLowerCase();
+      m.set(k, [...(m.get(k) ?? []), tx.id]);
     }
-    return counts;
+    return m;
   }, [pending]);
   if (!pending.length) return null;
 
-  const effectiveSuggestion = (tx: Transaction, suggestion: "need" | "want") =>
-    overrides[tx.id] ?? suggestion;
+  const filingOf = (item: ReviewItem): Filing | undefined =>
+    filings[item.tx.id] ?? (item.category ? { category: item.category, sub_category: item.sub_category ?? null } : undefined);
+  const needOf = (item: ReviewItem) => overrides[item.tx.id] ?? item.suggestion;
+  const labelOf = (key: string) => [...allExpenseCats, ...INCOME_CATEGORIES].find((c) => c.key === key)?.label ?? key;
+  const resolve = (item: ReviewItem) => ({ tx: item.tx, suggestion: needOf(item), filing: filingOf(item) });
 
-  const toggle = (tx: Transaction, current: "need" | "want") =>
-    setOverrides((prev) => ({ ...prev, [tx.id]: current === "need" ? "want" : "need" }));
+  const approve = (item: ReviewItem) => {
+    const key = merchantKey(item.tx.description) || item.tx.description.toLowerCase();
+    const ids = byMerchant.get(key) ?? [item.tx.id];
+    const all = ids.length > 1 && (sameMerchant[item.tx.id] ?? true);
+    const base = resolve(item);
+    onApprove(all
+      ? pending.filter((p) => ids.includes(p.tx.id)).map((p) => ({ tx: p.tx, suggestion: base.suggestion, filing: base.filing }))
+      : [base]);
+  };
 
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,8,14,0.7)", zIndex: 50 }} />
-      <div style={{
+      <div role="dialog" aria-label="Review suggestions" style={{
         position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
         background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14,
-        zIndex: 51, width: "min(560px, 95vw)", maxHeight: "80vh", display: "flex", flexDirection: "column",
+        zIndex: 51, width: "min(600px, 95vw)", height: "min(82vh, 720px)", display: "flex", flexDirection: "column",
         boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
       }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--uf-border)", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 20px", borderBottom: "1px solid var(--uf-border)", flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>Review AI classifications</div>
-            <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 2 }}>{pending.length} suggestion{pending.length !== 1 ? "s" : ""} — tap the badge to change, then approve</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>Review suggestions</div>
+            <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 2 }}>
+              {pending.length} left · what you approve is remembered for that merchant next time
+            </div>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button
-              onClick={() => onApproveAll(pending.map(({ tx, suggestion }) => ({ tx, suggestion: overrides[tx.id] ?? suggestion, category: catOverrides[tx.id] })))}
-              style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-            >
+            <button onClick={() => onApproveAll(pending.map(resolve))}
+              style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               Approve all
             </button>
-            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 18, color: "var(--uf-text-3)", cursor: "pointer", padding: "4px 8px" }}>✕</button>
+            <button onClick={onClose} aria-label="Close" style={{ background: "none", border: "none", fontSize: 18, color: "var(--uf-text-3)", cursor: "pointer", padding: "4px 8px" }}>✕</button>
           </div>
         </div>
 
-        {/* Rows */}
         <div style={{ overflowY: "auto", flex: 1 }}>
-          {pending.map(({ tx, suggestion, wasTag }) => {
-            const effective = effectiveSuggestion(tx, suggestion);
-            const changed = effective !== suggestion;
-            const sameNameCount = sameNameCounts.get(tx.description.toLowerCase()) ?? 1;
+          {pending.map((item) => {
+            const { tx } = item;
+            const need = needOf(item);
+            const filing = filingOf(item);
+            const key = merchantKey(tx.description) || tx.description.toLowerCase();
+            const count = byMerchant.get(key)?.length ?? 1;
+            const open = pickerTxId === tx.id;
+            const cats = tx.transaction_type === "income" ? INCOME_CATEGORIES : allExpenseCats;
+            const shownCat = filing?.category ?? tx.category;
+            const shownSub = filing ? filing.sub_category : tx.sub_category;
             return (
-              <div key={tx.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", padding: "12px 20px", borderTop: "1px solid var(--uf-border)" }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
-                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 3 }}>
-                    <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date}</span>
-                    <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
-                    <span style={{ fontSize: 11, color: "var(--uf-text-2)", fontWeight: 600 }}>
-                      {tx.currency} {netAmt(tx).toFixed(2)}{tx.refund_amount > 0 ? ` (↩ ${tx.refund_amount.toFixed(2)} refunded)` : ""}
-                    </span>
-                    <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>·</span>
-                    {/* Clickable category badge */}
-                    <span style={{ position: "relative", display: "inline-block" }} data-review-cat-picker>
-                      <button
-                        data-review-cat-picker
-                        onClick={() => setCatPickerTxId(catPickerTxId === tx.id ? null : tx.id)}
-                        title="Change category"
-                        style={{
-                          fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px",
-                          background: catOverrides[tx.id] ? "rgba(34,211,165,0.15)" : "rgba(100,116,139,0.1)",
-                          color: catOverrides[tx.id] ? "#22d3a5" : "var(--uf-text-2)",
-                          border: catOverrides[tx.id] ? "1px solid rgba(34,211,165,0.35)" : "1px solid transparent",
-                          cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 3,
-                        }}
-                      >
-                        {catOverrides[tx.id]
-                          ? (ALL_CATEGORIES.find(c => c.key === catOverrides[tx.id])?.label ?? catOverrides[tx.id])
-                          : (tx.sub_category ? `${tx.category} / ${tx.sub_category}` : tx.category)}
-                        <span style={{ fontSize: 9, opacity: 0.6 }}>✏</span>
+              <div key={tx.id} style={{ padding: "12px 20px", borderTop: "1px solid var(--uf-border)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                      <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date} · {tx.currency} {netAmt(tx).toFixed(2)}</span>
+                      <button onClick={() => { setPickerTxId(open ? null : tx.id); setPickerCat(shownCat || null); }} aria-expanded={open}
+                        style={{ fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px", cursor: "pointer",
+                          background: filings[tx.id] ? "var(--uf-green-50)" : "var(--uf-surface)", color: "var(--uf-text-2)",
+                          border: `1px solid ${filings[tx.id] ? "var(--uf-green)" : "var(--uf-border)"}` }}>
+                        {labelOf(shownCat)}{shownSub ? ` › ${shownSub}` : ""} ✏
                       </button>
-                      {catPickerTxId === tx.id && (
-                        <div
-                          data-review-cat-picker
-                          style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 300, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", width: 232, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}
-                        >
-                          <div style={{ gridColumn: "1/-1", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
-                            Change category
-                          </div>
-                          {(tx.transaction_type === "income" ? INCOME_CATEGORIES : allExpenseCats).map((c) => {
-                            const activeCat = catOverrides[tx.id] ?? tx.category;
-                            const isCurrent = activeCat === c.key;
-                            const baseC = { color: c.color, emoji: (c as {emoji?: string}).emoji || "📦" };
-                            const { color: cColor, emoji: cEmoji } = resolveDisplay(baseC, {}, c.key);
-                            return (
-                              <button
-                                key={c.key}
-                                data-review-cat-picker
-                                onClick={(e) => { e.stopPropagation(); setCatOverrides(prev => ({ ...prev, [tx.id]: c.key })); setCatPickerTxId(null); }}
-                                style={{ background: isCurrent ? "#ECFDF5" : "transparent", border: `1px solid ${isCurrent ? "#047857" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer" }}
-                                title={c.label}
-                              >
-                                <div style={{ width: 26, height: 26, borderRadius: "50%", background: cColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{cEmoji}</div>
-                                <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                      <button onClick={() => setOverrides((o) => ({ ...o, [tx.id]: need === "need" ? "want" : "need" }))} title="Switch need / want"
+                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "2px 8px", cursor: "pointer", border: "1px solid transparent",
+                          background: need === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)", color: need === "need" ? "#0E9C86" : "#c2410c" }}>
+                        {need} ⇄
+                      </button>
+                      {item.source === "history" && (
+                        <span style={{ fontSize: 10, color: "var(--uf-text-3)" }}>from your history{item.seen && item.seen > 1 ? ` (${item.seen}×)` : ""}</span>
                       )}
-                    </span>
-                    {wasTag && (
-                      <span style={{ fontSize: 10, color: "var(--uf-text-3)", fontStyle: "italic" }}>
-                        was: {wasTag}
-                      </span>
-                    )}
-                    {/* Clickable toggle pill */}
-                    <button
-                      onClick={() => toggle(tx, effective)}
-                      title="Click to switch between need / want"
-                      style={{
-                        fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "2px 8px",
-                        background: effective === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)",
-                        color: effective === "need" ? "#22d3a5" : "#f97316",
-                        border: changed
-                          ? `1px solid ${effective === "need" ? "#22d3a5" : "#f97316"}`
-                          : "1px solid transparent",
-                        cursor: "pointer", display: "flex", alignItems: "center", gap: 3,
-                      }}
-                    >
-                      {effective === "need" ? "need" : "want"}
-                      <span style={{ fontSize: 9, opacity: 0.7 }}>⇄</span>
-                    </button>
-                  </div>
-                  {tx.notes && (
-                    <div style={{ fontSize: 11, color: "var(--uf-text-3)", marginTop: 2, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {tx.notes}
                     </div>
-                  )}
-                  {changed && tx.sub_category && (
-                    <label style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, cursor: "pointer" }}>
-                      <input
-                        type="checkbox"
-                        checked={saveRuleIds.has(tx.id)}
-                        onChange={(e) => setSaveRuleIds((prev) => {
-                          const next = new Set(prev);
-                          e.target.checked ? next.add(tx.id) : next.delete(tx.id);
-                          return next;
-                        })}
-                        style={{ accentColor: "#22d3a5", width: 12, height: 12 }}
-                      />
-                      <span style={{ fontSize: 10, color: "var(--uf-text-3)" }}>
-                        Always classify <strong style={{ color: "var(--uf-text-2)" }}>{tx.sub_category}</strong> as <strong style={{ color: effective === "need" ? "#22d3a5" : "#f97316" }}>{effective}</strong>
-                      </span>
-                    </label>
-                  )}
+                    {tx.notes && <div style={{ fontSize: 11, color: "var(--uf-text-3)", marginTop: 3, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.notes}</div>}
+                    {count > 1 && (
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11, color: "var(--uf-text-2)", cursor: "pointer" }}>
+                        <input type="checkbox" checked={sameMerchant[tx.id] ?? true} onChange={(e) => setSameMerchant((m) => ({ ...m, [tx.id]: e.target.checked }))} />
+                        Apply to all {count} from this merchant
+                      </label>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => approve(item)}
+                      style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Approve</button>
+                    <button onClick={() => onSkip(tx.id)}
+                      style={{ background: "none", color: "var(--uf-text-3)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "6px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Skip</button>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <button
-                    onClick={() => {
-                      if (saveRuleIds.has(tx.id) && tx.sub_category) {
-                        onSaveRule(tx.category, tx.sub_category, effective);
-                      }
-                      onApprove(tx, effective, catOverrides[tx.id]);
-                    }}
-                    style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-                  >
-                    Approve
-                  </button>
-                  {sameNameCount > 1 && (
-                    <button
-                      onClick={() => onApproveAllSameName(tx.description, effective, catOverrides[tx.id])}
-                      style={{ background: "var(--uf-surface-2)", color: "var(--uf-text)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-                      title={`Approve all ${sameNameCount} "${tx.description}" as ${effective}`}
-                    >
-                      Approve all ({sameNameCount})
-                    </button>
-                  )}
-                  <button
-                    onClick={() => onSkip(tx.id)}
-                    style={{ background: "none", color: "var(--uf-text-3)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}
-                  >
-                    Skip
-                  </button>
-                </div>
+
+                {open && (
+                  <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: "var(--uf-surface)", display: "grid", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(86px, 1fr))", gap: 6 }}>
+                      {cats.map((c) => {
+                        const { color, emoji } = resolveDisplay({ color: c.color, emoji: (c as { emoji?: string }).emoji || "📦" }, {}, c.key);
+                        const active = (pickerCat ?? shownCat) === c.key;
+                        return (
+                          <button key={c.key} onClick={() => {
+                            setPickerCat(c.key);
+                            if (!(allSubCats[c.key]?.length)) { setFilings((f) => ({ ...f, [tx.id]: { category: c.key, sub_category: null } })); setPickerTxId(null); }
+                          }}
+                            style={{ background: active ? "var(--uf-green-50)" : "var(--uf-card)", border: `1px solid ${active ? "var(--uf-green)" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer" }}>
+                            <span style={{ width: 24, height: 24, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>{emoji}</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--uf-text-2)" }}>{c.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {pickerCat && (allSubCats[pickerCat]?.length ?? 0) > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {[null, ...allSubCats[pickerCat]].map((sc) => (
+                          <button key={sc ?? "-"} onClick={() => { setFilings((f) => ({ ...f, [tx.id]: { category: pickerCat, sub_category: sc } })); setPickerTxId(null); }}
+                            style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "4px 10px", cursor: "pointer", background: "var(--uf-card)", color: "var(--uf-text-2)",
+                              border: `1px solid ${pickerCat === shownCat && (sc ?? null) === (shownSub ?? null) ? "var(--uf-green)" : "var(--uf-border)"}` }}>
+                            {sc ?? `${labelOf(pickerCat)} (no sub-category)`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1731,7 +1691,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [refreshKey, setRefreshKey] = useState(0);
   const [showImport, setShowImport] = useState(false);
   const [isClassifying, setIsClassifying] = useState(false);
-  const [pendingClassifications, setPendingClassifications] = useState<{ tx: Transaction; suggestion: "need" | "want"; wasTag?: "need" | "want" }[]>([]);
+  const [pendingClassifications, setPendingClassifications] = useState<ReviewItem[]>([]);
   const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>([]);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -1892,21 +1852,22 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
   }, []);
 
-  const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want"; category?: string }[]) => {
-    const updates = toApply.map(({ tx, suggestion, category }) => ({
+  const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want"; filing?: { category: string; sub_category: string | null } }[]) => {
+    const updates = toApply.map(({ tx, suggestion, filing }) => ({
       id: tx.id,
       tags: [...(tx.tags || []).filter((t) => t !== "need" && t !== "want"), suggestion],
-      category: category ?? tx.category,
+      category: filing?.category ?? tx.category,
+      sub_category: filing ? filing.sub_category : (tx.sub_category ?? null),
     }));
     for (let i = 0; i < updates.length; i += 20) {
       await Promise.all(
-        updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags, category: u.category }).eq("id", u.id))
+        updates.slice(i, i + 20).map((u) => supabase.from("expenses").update({ tags: u.tags, category: u.category, sub_category: u.sub_category }).eq("id", u.id))
       );
     }
     const updateMap = new Map(updates.map((u) => [u.id, u]));
     setTransactions((prev) => prev.map((t) => {
       const u = updateMap.get(t.id);
-      return u ? { ...t, tags: u.tags, category: u.category } : t;
+      return u ? { ...t, tags: u.tags, category: u.category, sub_category: u.sub_category } : t;
     }));
   }, []);
 
@@ -1940,10 +1901,36 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         await applyClassifications(ruleMatched);
         showToast(`${ruleMatched.length} transaction${ruleMatched.length !== 1 ? "s" : ""} auto-classified by rules`);
       }
-      if (!needsAi.length) return;
+
+      // The person's own history for each merchant comes first: it covers
+      // the category and sub-category as well as need/want, in any language.
+      // A transaction already filed and tagged, with nothing new to suggest,
+      // is not put back in front of them.
+      const memory = buildMerchantMemory(transactions.filter((t) => !t.date.startsWith(viewMonth) || t.tags?.some((g) => g === "need" || g === "want")));
+      const unfiled = (t: Transaction) => !t.category || t.category === "other";
+      const tagged = (t: Transaction) => !!t.tags?.some((g) => g === "need" || g === "want");
+      const reviews: ReviewItem[] = [];
+      const forAi: Transaction[] = [];
+      for (const tx of needsAi) {
+        const h = suggestFromHistory(tx, memory);
+        const fileIt = !!h?.category && (unfiled(tx) || (h.category === tx.category && !tx.sub_category && !!h.sub_category));
+        if (!fileIt && tagged(tx) && !unfiled(tx)) continue;
+        const was = (tx.tags?.includes("need") ? "need" : tx.tags?.includes("want") ? "want" : undefined) as "need" | "want" | undefined;
+        const item: ReviewItem = {
+          tx, suggestion: h?.classification ?? was ?? "want", wasTag: was,
+          ...(fileIt ? { category: h!.category!, sub_category: h!.sub_category, source: "history" as const, seen: h!.seen } : {}),
+        };
+        reviews.push(item);
+        if (!h?.classification && !was) forAi.push(tx);
+      }
+      if (!forAi.length) {
+        if (reviews.length) setPendingClassifications(reviews);
+        else showToast("Everything this month is already filed");
+        return;
+      }
 
       const items = [...new Map(
-        needsAi.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
+        forAi.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
       ).values()];
 
       const res = await fetch("/api/classify-needs-wants", {
@@ -1955,12 +1942,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       const { results } = await res.json() as { results: { description: string; needOrWant: string }[] };
       const classMap = new Map(results.map((r) => [r.description.toLowerCase(), r.needOrWant]));
 
-      const pending = needsAi.map((tx) => ({
-        tx,
-        suggestion: (classMap.get(tx.description.toLowerCase()) === "need" ? "need" : "want") as "need" | "want",
-        wasTag: (tx.tags?.includes("need") ? "need" : tx.tags?.includes("want") ? "want" : undefined) as "need" | "want" | undefined,
-      }));
-      setPendingClassifications(pending);
+      const aiIds = new Set(forAi.map((t) => t.id));
+      setPendingClassifications(reviews.map((r) => aiIds.has(r.tx.id)
+        ? { ...r, suggestion: (classMap.get(r.tx.description.toLowerCase()) === "need" ? "need" : "want") as "need" | "want" }
+        : r));
     } catch {
       showToast("Classification failed — try again", undefined, undefined, true);
     } finally {
@@ -1968,21 +1953,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     }
   }, [transactions, isClassifying, showToast, viewMonth, classificationRules, applyClassifications]);
 
-  const handleSaveRule = useCallback(async (category: string, sub_category: string, classification: "need" | "want") => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { data } = await supabase.from("classification_rules").upsert(
-      { user_id: session.user.id, category, sub_category, classification },
-      { onConflict: "user_id,category,sub_category" }
-    ).select("id, category, sub_category, classification").single();
-    if (data) {
-      setClassificationRules((prev) => {
-        const filtered = prev.filter((r) => !(r.category === category && r.sub_category === sub_category));
-        return [...filtered, data as ClassificationRule];
-      });
-      showToast(`Rule saved: ${sub_category} → ${classification}`);
-    }
-  }, [showToast]);
 
   const handleSave = useCallback(async (keepOpen: boolean) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -2261,24 +2231,20 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       {pendingClassifications.length > 0 && (
         <AiReviewModal
           pending={pendingClassifications}
-          onApprove={async (tx, suggestion, category) => {
-            await applyClassifications([{ tx, suggestion, category }]);
-            setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== tx.id));
-          }}
-          onApproveAllSameName={async (description, suggestion, category) => {
-            const matches = pendingClassifications.filter((p) => p.tx.description.toLowerCase() === description.toLowerCase());
-            await applyClassifications(matches.map((m) => ({ tx: m.tx, suggestion, category })));
-            setPendingClassifications((prev) => prev.filter((p) => p.tx.description.toLowerCase() !== description.toLowerCase()));
+          onApprove={async (items) => {
+            await applyClassifications(items);
+            const ids = new Set(items.map((i) => i.tx.id));
+            setPendingClassifications((prev) => prev.filter((p) => !ids.has(p.tx.id)));
           }}
           onApproveAll={async (resolved) => {
             await applyClassifications(resolved);
-            showToast(`${resolved.length} expense${resolved.length !== 1 ? "s" : ""} classified`);
+            showToast(`${resolved.length} expense${resolved.length !== 1 ? "s" : ""} filed`);
             setPendingClassifications([]);
           }}
           onSkip={(txId) => setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== txId))}
           onClose={() => setPendingClassifications([])}
-          onSaveRule={handleSaveRule}
           allExpenseCats={allExpenseCats}
+          allSubCats={allSubCats}
         />
       )}
 
