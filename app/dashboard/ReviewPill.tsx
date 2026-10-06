@@ -10,15 +10,31 @@ const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVaria
  * the person. The green part is the button. Bank sync is a line under it,
  * which opens the full bank list when tapped.
  */
-export default function ReviewPill({ filed, need, busy, onReview, bank, banksOpen, onToggleBanks }: {
+export default function ReviewPill({ filed, need, busy, onReview, bank, banksOpen, onToggleBanks, needsUSD = 0, wantsUSD = 0, fmt }: {
   filed: number; need: number; busy: boolean; onReview: () => void;
   bank: BankStatus | null; banksOpen: boolean; onToggleBanks: () => void;
+  /** Needs and wants over the range; shown in place of the review bar once everything is filed. */
+  needsUSD?: number; wantsUSD?: number; fmt: (usd: number) => string;
 }) {
   const total = filed + need;
+  // Everything filed: the bar turns into what the filing was for, the split
+  // between needs and wants, which no other card on the page shows.
+  const split = need === 0 && needsUSD + wantsUSD > 0;
   if (total === 0 && !bank?.banks) return null;
   return (
     <div style={{ display: "grid", gap: 4 }}>
-      {total > 0 && (
+      {split && (
+        <div role="img" aria-label={`Needs ${fmt(needsUSD)}, wants ${fmt(wantsUSD)}`} style={{ display: "flex", height: 44, borderRadius: 999, overflow: "hidden", gap: 3 }}>
+          {[{ k: "Needs", v: needsUSD, bg: "var(--uf-ink)", fg: "var(--uf-card)" }, { k: "Wants", v: wantsUSD, bg: "var(--uf-surface-2)", fg: "var(--uf-ink)" }].filter((p) => p.v > 0).map((p) => (
+            <div key={p.k} style={{ flex: `${p.v} 1 0`, minWidth: 120, background: p.bg, color: p.fg, display: "flex", alignItems: "center", gap: 8, padding: "0 16px", whiteSpace: "nowrap" }}>
+              <span className="uf-t-small" style={{ fontWeight: 600 }}>{p.k}</span>
+              <b style={{ ...mono, fontSize: 15 }}>{fmt(p.v)}</b>
+              <span className="uf-t-small" style={{ ...mono, opacity: 0.7 }}>{Math.round((p.v / (needsUSD + wantsUSD)) * 100)}%</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {total > 0 && !split && (
         <div style={{ display: "flex", height: 44, borderRadius: 999, overflow: "hidden", gap: need && filed ? 3 : 0 }}>
           {filed > 0 && (
             <div style={{ flex: filed, minWidth: 0, background: "var(--uf-surface-2)", color: "var(--uf-ink-2)", display: "flex", alignItems: "center", gap: 6, padding: "0 16px" }}>
