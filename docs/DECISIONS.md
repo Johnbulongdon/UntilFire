@@ -1271,3 +1271,12 @@ banks already drop them at import. Linking a paying account to a card, so
 both sides match automatically, is future work. History-based review is
 free; asking the model about new merchants stays Pro. Range and view are
 remembered per browser only.
+
+**Addendum (same day):** the founder asked to compare against the budget as
+well as the past, with all three on screen rather than a switch. The
+references are named for where they come from: the period itself ("This
+month" or "Jul – Sep 2026"), "Past months" (renamed from "usual pace",
+which read as the person's current pace) and "Budget". The budget line is
+the monthly budget shaped by past months' spread, falling back to an even
+line; category bars draw the budget as a track behind the spent bar. Gaps
+to each reference sit as chips above the chart, not as labels inside it.

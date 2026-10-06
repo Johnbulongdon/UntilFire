@@ -31,6 +31,12 @@ under today's date, creating the heading if it is not there yet.
   flagged rows show the amount in its original currency, the exchange-rate
   label is gone, and a duplicate now means the same day (or a bank and an
   import overlapping), not the same coffee two days running.
+- Your budget now sits beside your past months: the line chart has a thin
+  budget line (spread the way your months usually are, so rent on the 1st
+  does not read as overspending), bars show a budget level, and each
+  category bar has a budget track with what is left or over. "Usual" is
+  now called "Past months", and how far you are from each is shown above
+  the chart instead of inside it.
 
 ### Reviewing suggested classifications learns from your history
 - Suggestions now come from how you filed the same merchant before: category,
