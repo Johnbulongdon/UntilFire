@@ -8,6 +8,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import {
   buildAdminAnnouncementEmail,
   buildMonthlyUpdateEmail,
+  EMAIL_ICONS,
   type UpdateItem,
 } from "@/lib/email-html";
 
@@ -737,7 +738,7 @@ function ItemListEditor({
   items: UpdateItem[];
   onChange: (items: UpdateItem[]) => void;
 }) {
-  function update(i: number, field: "title" | "desc" | "image", value: string) {
+  function update(i: number, field: "title" | "desc" | "image" | "icon", value: string) {
     const next = items.slice();
     next[i] = { ...next[i], [field]: value };
     onChange(next);
@@ -763,6 +764,10 @@ function ItemListEditor({
               placeholder="Screenshot URL (optional) — https://www.untilfire.com/email/..."
               style={inputStyle}
             />
+            <select value={it.icon || ""} onChange={(e) => update(i, "icon", e.target.value)} style={inputStyle} aria-label="Icon">
+              <option value="">No icon (bullet)</option>
+              {EMAIL_ICONS.map((n) => <option key={n} value={n}>Icon: {n}</option>)}
+            </select>
           </div>
           <button onClick={() => remove(i)} style={smallBtn}>Remove</button>
         </div>

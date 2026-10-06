@@ -121,8 +121,23 @@ function sectionCard(content: string): string {
   </td></tr>`;
 }
 
-function sectionLabel(text: string): string {
-  return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:${GREEN};text-transform:uppercase;letter-spacing:1.5px;font-family:${BODY}">${text}</p>`;
+/**
+ * Icons an update item can carry: the app's own icon set, exported as 64px
+ * PNG chips under /email/icons. PNG because Gmail and Outlook drop SVG.
+ */
+export const EMAIL_ICONS = [
+  "target", "users", "sliders", "gift", "card", "bank", "plan", "megaphone",
+  "positive", "calendar", "money", "home", "profile", "info",
+] as const;
+const iconUrl = (name?: string) =>
+  name && (EMAIL_ICONS as readonly string[]).includes(name) ? `${SITE}/email/icons/${name}.png` : "";
+
+function sectionLabel(text: string, icon?: string): string {
+  const src = iconUrl(icon);
+  const img = src
+    ? `<img src="${src}" alt="" width="20" height="20" style="display:inline-block;width:20px;height:20px;vertical-align:middle;margin-right:8px;border:0" />`
+    : "";
+  return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:${GREEN};text-transform:uppercase;letter-spacing:1.5px;font-family:${BODY}">${img}<span style="vertical-align:middle">${text}</span></p>`;
 }
 
 const escapeAttr = (s: string) =>
@@ -151,8 +166,9 @@ function safeImageUrl(raw?: string): string {
   return url.replace(/&/g, "&amp;");
 }
 
-function bulletRow(title: string, desc: string, last = false, image?: string): string {
+function bulletRow(title: string, desc: string, last = false, image?: string, icon?: string): string {
   const src = safeImageUrl(image);
+  const ico = iconUrl(icon);
   // 560px shell − 28px card padding × 2 − 24px bullet gutter = 480px usable.
   // Export the asset at 960px so it stays sharp on retina; alt carries the
   // title because most clients block images by default and the reader should
@@ -162,8 +178,10 @@ function bulletRow(title: string, desc: string, last = false, image?: string): s
     : "";
   return `
   <tr>
-    <td style="vertical-align:top;padding-bottom:${last ? "0" : "18px"};width:10px">
-      <div style="width:6px;height:6px;border-radius:50%;background:${TEAL};margin-top:7px"></div>
+    <td style="vertical-align:top;padding-bottom:${last ? "0" : "18px"};width:${ico ? "32px" : "10px"}">
+      ${ico
+        ? `<img src="${ico}" alt="" width="32" height="32" style="display:block;width:32px;height:32px;border:0" />`
+        : `<div style="width:6px;height:6px;border-radius:50%;background:${TEAL};margin-top:7px"></div>`}
     </td>
     <td style="vertical-align:top;padding-left:14px;padding-bottom:${last ? "0" : "18px"}">
       <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:${INK};line-height:1.4;font-family:${BODY}">${title}</p>
@@ -616,6 +634,8 @@ export interface UpdateItem {
   desc: string;
   /** Absolute https URL to a screenshot. Optional — most items are text only. */
   image?: string;
+  /** One of EMAIL_ICONS, shown in place of the bullet. Optional. */
+  icon?: string;
 }
 
 /**
@@ -682,15 +702,15 @@ export function buildMonthlyUpdateEmail({
 
   const itemList = (items: UpdateItem[]) => `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-      ${items.map((it, i) => bulletRow(it.title, it.desc, i === items.length - 1, it.image)).join("")}
+      ${items.map((it, i) => bulletRow(it.title, it.desc, i === items.length - 1, it.image, it.icon)).join("")}
     </table>`;
 
   const newSection = newItems.length
-    ? sectionCard(`${sectionLabel("New this month")}${itemList(newItems)}`)
+    ? sectionCard(`${sectionLabel("New this month", newItems.some((it) => it.icon) ? "megaphone" : undefined)}${itemList(newItems)}`)
     : "";
 
   const fixSection = fixItems.length
-    ? sectionCard(`${sectionLabel("Fixed & improved")}${itemList(fixItems)}`)
+    ? sectionCard(`${sectionLabel("Fixed & improved", fixItems.some((it) => it.icon) ? "positive" : undefined)}${itemList(fixItems)}`)
     : "";
 
   const cta = ctaHref && ctaLabel ? ctaBlock(ctaHref, ctaLabel) : "";
