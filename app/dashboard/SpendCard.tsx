@@ -22,13 +22,15 @@ const ICONS: Record<View, string> = { line: "M3 17l5-5 4 3 8-9", bars: "M5 20V10
  * against usual. Explanations sit in InfoTips; the card itself is numbers,
  * marks and labels.
  */
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategory, onSelectCategory, selectedDay, onSelectDay, onZoomMonth, palette, onColor }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategory, onSelectCategory, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel }: {
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
   selectedCategory: string | null; onSelectCategory: (k: string | null) => void;
   selectedDay: string | null; onSelectDay: (d: string | null) => void; onZoomMonth: (m: string) => void;
   palette: string[]; onColor: (key: string, color: string) => void;
+  /** Monthly budget per category, USD (the Budget tab). Zero or missing means no budget. */
+  budgets?: Record<string, number>; periodLabel: string;
 }) {
   const [picking, setPicking] = useState<string | null>(null);
   const [mode, setMode] = useState<"spent" | "earned">("spent");
@@ -72,15 +74,25 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   const rate = earned > 0 ? Math.round((saved / earned) * 100) : null;
 
   const cats = mode === "spent" ? expenseCats : incomeCats;
+  // Monthly budget for what is on screen: one category when one is picked,
+  // otherwise every budgeted category (less bills when they are hidden).
+  const budgetMonth = useMemo(() => {
+    if (mode !== "spent") return null;
+    const keys = selectedCategory ? [selectedCategory] : Object.keys(budgets).filter((k) => !(hideBills && BILLS.has(k)));
+    const total = keys.reduce((s, k) => s + Math.max(0, budgets[k] ?? 0), 0);
+    return total > 0 ? total : null;
+  }, [budgets, mode, selectedCategory, hideBills]);
+
   const rows = useMemo(() => {
     const out = cats.map((c) => {
       const mine = entries.filter((e) => e.category === c.key);
       const now = mine.filter((e) => inRange(e.date)).reduce((s, e) => s + e.usd, 0);
-      return { ...c, now, usual: usualForRange(mine, range, today) };
-    }).filter((r) => r.now > 0 || (r.usual ?? 0) > 0).sort((a, b) => b.now - a.now);
+      const b = mode === "spent" ? budgets[c.key] ?? 0 : 0;
+      return { ...c, now, usual: usualForRange(mine, range, today), budget: b > 0 ? b * range.months.length : null };
+    }).filter((r) => r.now > 0 || (r.usual ?? 0) > 0 || (r.budget ?? 0) > 0).sort((a, b) => b.now - a.now);
     return out.slice(0, 6);
-  }, [cats, entries, range, today]); // eslint-disable-line react-hooks/exhaustive-deps
-  const max = Math.max(1, ...rows.map((r) => Math.max(r.now, r.usual ?? 0)));
+  }, [cats, entries, range, today, budgets, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  const max = Math.max(1, ...rows.map((r) => Math.max(r.now, r.usual ?? 0, r.budget ?? 0)));
 
   const seg = (on: boolean): React.CSSProperties => ({ border: "none", borderRadius: 999, padding: "5px 12px", cursor: "pointer", font: "inherit", fontSize: 13, fontWeight: 700,
     background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: on ? "var(--uf-e1)" : "none" });
@@ -136,14 +148,16 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             </div>
           </div>
         </div>
-        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} fmt={fmt} />}
-        {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} fmt={fmt} />}
+        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} periodLabel={periodLabel} fmt={fmt} />}
+        {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} />}
         {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} />}
       </div>
 
       <div style={{ display: "grid", gap: 2, alignContent: "start" }}>
         {rows.map((r) => {
           const d = r.usual == null ? null : r.now - r.usual, near = d != null && Math.abs(d) <= Math.max(10, (r.usual ?? 0) * 0.08), on = selectedCategory === r.key;
+          const over = r.budget != null && r.now > r.budget;
+          const strong = r.budget != null ? over : d != null && d > 0 && !near;
           return (
             <div key={r.key} style={{ display: "grid", gap: 6 }}>
               <div style={{ display: "grid", gridTemplateColumns: "24px 1fr", alignItems: "center" }}>
@@ -152,15 +166,19 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
                   <i style={{ width: 12, height: 12, borderRadius: 999, background: r.color, boxShadow: "0 0 0 2px var(--uf-card), 0 0 0 3px var(--uf-border-2)" }} />
                 </button>
                 <button type="button" aria-pressed={on} onClick={() => onSelectCategory(on ? null : r.key)} style={{
-                  display: "grid", gridTemplateColumns: "minmax(0, 104px) 1fr 72px", alignItems: "center", gap: 10, padding: "7px 8px", border: "none", borderRadius: 8, cursor: "pointer",
+                  display: "grid", gridTemplateColumns: "minmax(0, 104px) 1fr 84px", alignItems: "center", gap: 10, padding: "7px 8px", border: "none", borderRadius: 8, cursor: "pointer",
                   font: "inherit", textAlign: "left", color: "var(--uf-ink)", background: on ? "var(--uf-surface-2)" : "transparent", opacity: selectedCategory && !on ? 0.45 : 1, transition: "opacity 200ms" }}>
-                  <span className="uf-t-small" style={{ fontWeight: on || (d != null && d > 0 && !near) ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.emoji} {r.label}</span>
-                  <span style={{ position: "relative", height: 16 }}>
-                    <i style={{ position: "absolute", inset: "3px auto 3px 0", width: `${(r.now / max) * 100}%`, borderRadius: 4, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
-                    {r.usual != null && <i title={`Usual ${fmt(r.usual)}`} style={{ position: "absolute", top: -1, bottom: -1, left: `calc(${(r.usual / max) * 100}% - 1.5px)`, width: 3, borderRadius: 2, background: "var(--uf-ink)", boxShadow: "0 0 0 1.5px var(--uf-card)" }} />}
+                  <span className="uf-t-small" style={{ fontWeight: on || strong ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.emoji} {r.label}</span>
+                  <span style={{ position: "relative", height: 18 }}>
+                    {r.budget != null && <i title={`Budget ${fmt(r.budget)}`} style={{ position: "absolute", inset: "1px auto 1px 0", width: `${(r.budget / max) * 100}%`, borderRadius: 5,
+                      background: `color-mix(in oklab, ${r.color} 30%, var(--uf-card))`, boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${r.color} 60%, var(--uf-card))` }} />}
+                    <i style={{ position: "absolute", inset: "4px auto 4px 0", width: `${(r.now / max) * 100}%`, borderRadius: 4, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
+                    {r.usual != null && <i title={`Past months ${fmt(r.usual)}`} style={{ position: "absolute", top: -1, bottom: -1, left: `calc(${(r.usual / max) * 100}% - 1.5px)`, width: 3, borderRadius: 2, background: "var(--uf-ink)", boxShadow: "0 0 0 1.5px var(--uf-card)" }} />}
                   </span>
-                  <span className="uf-t-small" style={{ ...mono, textAlign: "right", color: d != null && d > 0 && !near ? "var(--uf-ink)" : "var(--uf-ink-3)", fontWeight: d != null && d > 0 && !near ? 700 : 400 }}>
-                    {d == null ? fmt(r.now) : near ? "≈ usual" : `${d > 0 ? "▲" : "▼"} ${fmt(Math.abs(d))}`}
+                  <span className="uf-t-small" style={{ ...mono, textAlign: "right", color: strong ? "var(--uf-ink)" : "var(--uf-ink-3)", fontWeight: strong ? 700 : 400 }}>
+                    {r.budget != null
+                      ? over ? `${fmt(r.now - r.budget)} over` : `${fmt(r.budget - r.now)} left`
+                      : d == null ? fmt(r.now) : near ? "≈ past" : `${d > 0 ? "▲" : "▼"} ${fmt(Math.abs(d))}`}
                   </span>
                 </button>
               </div>
@@ -183,8 +201,10 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
         })}
         {rows.length > 0 && (
           <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", paddingLeft: 8, display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <i style={{ display: "inline-block", width: 3, height: 11, background: "var(--uf-ink)" }} />usual
-            <InfoTip label="About usual">The middle of your past months up to the same day, so one unusual month doesn&apos;t skew it. It appears once you have 3 months of history.</InfoTip>
+            <i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, background: "var(--uf-ink-3)" }} />Spent
+            {rows.some((r) => r.budget != null) && <><i style={{ display: "inline-block", width: 16, height: 10, borderRadius: 3, marginLeft: 8, background: "var(--uf-surface-2)", boxShadow: "inset 0 0 0 1.5px var(--uf-border-2)" }} />Budget</>}
+            <i style={{ display: "inline-block", width: 3, height: 11, marginLeft: 8, background: "var(--uf-ink)" }} />Past months
+            <InfoTip label="About past months">Where a typical month of yours stood by this day: the middle of your previous months, so one unusual month doesn&apos;t skew it. It appears once you have 3 months of history. Budget comes from your Budget tab.</InfoTip>
           </span>
         )}
       </div>

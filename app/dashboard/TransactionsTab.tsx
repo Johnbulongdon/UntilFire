@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import CsvImportModal from "./CsvImportModal";
 import PlaidConnect, { type BankStatus } from "./PlaidConnect";
-import SpendRangePill from "./SpendRangePill";
+import SpendRangePill, { rangeLabel } from "./SpendRangePill";
 import SpendCard, { type CatDisplay } from "./SpendCard";
 import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
@@ -1576,13 +1576,15 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets }: {
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
   preferredCurrencies?: string[];
   isPro?: boolean;
   onUpgradeClick?: () => void;
+  /** Monthly budget per category, USD, from the Budget tab. */
+  budgets?: Record<string, number>;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2035,7 +2037,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory}
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
-          palette={COLOR_PALETTE} onColor={handleCategoryColor} />
+          palette={COLOR_PALETTE} onColor={handleCategoryColor}
+          budgets={budgets} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
         <WorthALook flags={flags} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
         {(selectedCategory || selectedDay) && (
