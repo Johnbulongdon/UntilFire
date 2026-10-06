@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import './onboarding-motion.css'
 import Script from 'next/script'
 import { AuthProvider } from '../lib/auth-context'
 import { Toaster } from 'react-hot-toast'

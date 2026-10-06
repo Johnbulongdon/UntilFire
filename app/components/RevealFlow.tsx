@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import YearCubes from "@/components/ui/YearCubes";
 import Logo from "@/app/components/Logo";
 import PercentileTrack from "@/app/components/PercentileTrack";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
@@ -149,7 +150,7 @@ export default function RevealFlow(props: RevealFlowProps) {
 
   const prefersReducedMotion = useReducedMotion();
   // The reveal is an automatic presentation; Replay is optional.
-  const [playMotion, setPlayMotion] = useState(true);
+  const [playMotion, setPlayMotion] = useState(false);
   const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
   const [showGrowth, setShowGrowth] = useState(false);
@@ -323,14 +324,7 @@ export default function RevealFlow(props: RevealFlowProps) {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, textAlign: "center" }}>
               <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em", ...anim("rf-up .5s ease both") }}>Here&apos;s your life, in years</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 7, width: "min(520px, 82vw)" }}>
-                {dots.map((c, i) => (
-                  <div key={i} style={{
-                    width: "100%", aspectRatio: "1", borderRadius: 3, background: c,
-                    opacity: reduce ? 1 : 0,
-                    animation: reduce ? undefined : "rf-dot .34s ease both",
-                    animationDelay: reduce ? undefined : `${Math.min(i * 13, 1250)}ms`,
-                  }} />
-                ))}
+                <YearCubes colors={dots} reduce={reduce} />
               </div>
               <div style={{ display: "flex", gap: 22, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
                 <Legend color="var(--uf-border-2)" label={`Lived (${lived})`} />
