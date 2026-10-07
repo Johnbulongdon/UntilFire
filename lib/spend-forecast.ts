@@ -82,16 +82,34 @@ export function isBill(t: Pick<DayAmount, "description" | "category">, bills: Bi
  * Usual everyday spending per day: the median, over past complete months,
  * of non-bill spending divided by that month's days. Null with fewer than
  * two months, where a single month is too thin to call usual.
+ *
+ * A payment is a bill when its name matches one, or, for each date a bill
+ * falls on in that month, the payment in the bill's category closest to its
+ * amount (within 10%). Names alone missed rent paid to a person ("陈玲" for
+ * "John Rent") or through a card ("BILT PAYMENT" for "Sirui Rent"), so past
+ * rent sat in the daily rate and the forecast counted it twice (D-31).
  */
 export function everydayRate(spend: DayAmount[], bills: Bill[], currentMonth: string, lookback = 6): number | null {
   const first = addMonths(currentMonth, -lookback);
-  const byMonth = new Map<string, number>();
+  const byMonth = new Map<string, DayAmount[]>();
   for (const s of spend) {
     const m = monthOf(s.date);
-    if (m >= currentMonth || m < first) continue;
-    byMonth.set(m, (byMonth.get(m) ?? 0) + (isBill(s, bills) ? 0 : s.usd));
+    if (m < currentMonth && m >= first) byMonth.set(m, [...(byMonth.get(m) ?? []), s]);
   }
-  const rates = [...byMonth].map(([m, total]) => total / daysInMonth(m));
+  const rates = [...byMonth].map(([m, rows]) => {
+    const billed = new Set(rows.filter((r) => isBill(r, bills)));
+    for (const b of bills) {
+      const cat = billCategory(b);
+      if (!cat || rows.some((r) => namesMatch(b, r.description ?? ""))) continue;
+      const due = occurrences(b, `${m}-01`, `${m}-${String(daysInMonth(m)).padStart(2, "0")}`).length;
+      for (let i = 0; i < due; i++) {
+        const near = rows.filter((r) => !billed.has(r) && r.category === cat && Math.abs(r.usd - b.usd) <= 0.1 * Math.max(r.usd, b.usd))
+          .sort((x, y) => Math.abs(x.usd - b.usd) - Math.abs(y.usd - b.usd))[0];
+        if (near) billed.add(near);
+      }
+    }
+    return rows.reduce((sum, r) => sum + (billed.has(r) ? 0 : r.usd), 0) / daysInMonth(m);
+  });
   return rates.length >= 2 ? median(rates) : null;
 }
 

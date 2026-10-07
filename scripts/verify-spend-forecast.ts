@@ -117,4 +117,16 @@ ok("a linked bill settles itself when its payment arrives", () => {
   assert.deepEqual(markPaid({ due: "2026-10-01", recurrence: "none" }, "now"), { completed_at: "now" }, "a one-off is completed");
 });
 
+ok("rent paid under another name leaves the everyday rate: the founder's two rents", () => {
+  const sirui: Bill = { id: "a", description: "Sirui Rent", category: null, usd: 1500, due: "2026-10-01", recurrence: "monthly" };
+  const john: Bill = { id: "b", description: "John Rent", category: null, usd: 432, due: "2026-10-07", recurrence: "monthly" };
+  const spend = [
+    tx("2026-08-16", 425, "陈玲(陈玲)", "housing"), tx("2026-08-10", 600, "Groceries"), tx("2026-08-20", 60, "IKEA lamp", "housing"),
+    tx("2026-09-01", 1380, "BILT PAYMENT", "housing"), tx("2026-09-08", 425, "陈玲(陈玲)", "housing"), tx("2026-09-10", 600, "Groceries"),
+  ];
+  const r = everydayRate(spend, [sirui, john], "2026-10")!;
+  const want = ((600 + 60) / 31 + 600 / 30) / 2;
+  assert.ok(Math.abs(r - want) < 0.01, `rate ${r.toFixed(2)} should be ${want.toFixed(2)}: both rents out, the lamp in`);
+});
+
 console.log(`Spend forecast ok: ${n} checks.`);
