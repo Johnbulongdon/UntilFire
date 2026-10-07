@@ -21,7 +21,7 @@ Bootstrap SQL: `supabase-setup.sql` (run once on a fresh Supabase project).
 | `subscriptions` | `service_role` (Stripe webhook) | `lib/supabase.ts` `getSubscription/isPro`, `app/api/stripe/{portal,checkout}/route.ts` | Authenticated users have SELECT-only RLS; writes use service role from the webhook. |
 | `waitlist` | `anon` (public form) | n/a — no client reads | INSERT-only policy, unique on `email`. |
 
-Tables that are NOT in the live app and NOT in the bootstrap SQL: `user_plans`, `stash_history`. Components that reference them (`CalculatorForm`, `PlanList`, `LogStashForm`, `QuickAddButton`, `ProjectionChart`) are orphaned in `/components` and not imported by any active route as of this document.
+Tables that are NOT in the live app and NOT in the bootstrap SQL: `user_plans`, `stash_history`. The orphaned components that referenced them were deleted on 2026-10-07 (D-38).
 
 ## Environment variables
 

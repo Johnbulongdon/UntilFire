@@ -436,7 +436,7 @@ function ProjectRow({
 
       {open && (
         <div style={{ background: "var(--uf-surface)", borderTop: "1px solid var(--uf-border)", padding: "12px 20px 16px 36px" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 10 }}>By Category</div>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 10 }}>By category</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {catBreakdown.map((cat) => (
               <div key={cat.key}>
@@ -782,7 +782,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
       <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", marginBottom: 24 }}>
         <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--uf-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)" }}>All Categories</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)" }}>All categories</span>
             <span style={{ fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600 }}>{primaryGroups.length}</span>
           </div>
           <button

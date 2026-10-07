@@ -238,8 +238,8 @@ export default function RevealFlow(props: RevealFlowProps) {
         {reduce && <p style={subtle}>Animations are off because your device requests reduced motion.</p>}
         <div style={eyebrow}>YOUR STARTING POINT</div>
         <h1 style={{ fontSize: "clamp(28px, 6vw, 42px)", lineHeight: 1.15, margin: 0 }}>Not reached under these assumptions</h1>
-        <p style={subtle}>Your current inputs do not reach your freedom number within our 65-year projection. This is a snapshot of today, not a verdict on your future.</p>
-        <div style={{ fontSize: 28, fontWeight: 800 }}>Freedom number: {formatCompact(fireTarget)}</div>
+        <p style={subtle}>Your current inputs do not reach your FIRE number within our 65-year projection. This is a snapshot of today, not a verdict on your future.</p>
+        <div style={{ fontSize: 28, fontWeight: 800 }}>FIRE number: {formatCompact(fireTarget)}</div>
         <p style={subtle}>Save your starting point, then choose a goal that fits your situation.</p>
         <button onClick={() => onSave("unreachable")} style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>Save my starting point →</button>
         <button onClick={onAdjust} style={{ background: "none", border: "none", color: "var(--uf-ink)", textDecoration: "underline", padding: 12, cursor: "pointer" }}>Adjust inputs</button>

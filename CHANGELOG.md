@@ -8,6 +8,15 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Copy and labels
+- The welcome tour describes the app as it is today.
+- Home's "what if" moves show amounts in your currency, and the consistency
+  card counts months on plan instead of a streak.
+- Money words are consistent: Income, Expenses, Saved, Needs, Wants.
+- One name per thing (FIRE number, Upcoming payment, Debts), and labels in
+  sentence case.
+- Removed eight unused old components that still used the old wording.
+
 ### Free calculator and the rest of the app agree
 - The free result's "retire abroad" ages are right for visitors outside the
   US: their figures are converted to dollars before comparing with city costs.
