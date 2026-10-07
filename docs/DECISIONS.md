@@ -1314,3 +1314,15 @@ recognises a past bill payment by category and amount (within 10%, one per
 date the bill falls on), not only by name: the founder's rent paid to
 "陈玲" and through "BILT PAYMENT" stayed in the daily rate, so the forecast
 added John Rent on its date and again inside the rate (about $430).
+
+**Addendum (repeating bills, October 7):** a repeating bill is never
+completed; legacy rows completed before "Mark paid" rolled dates were
+reopened at their next due date (migration 0048), and the form, list and
+forecast treat completion as one-off only. A bill can be linked from
+Upcoming by picking the past payment that was it ("Link payment", the last
+120 days' expenses, same category and closest amount first). Once linked,
+a payment under that name settles the due date whose period it falls in
+(periods back to back, starting 10 days before each monthly date) when it is
+within 5 days of the date or 15% of the amount, catching up several periods
+at once (`paymentFor`, `settleBill`). The forecast only adds a bill's dates
+from its stored due date on, since earlier ones are paid.

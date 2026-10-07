@@ -19,6 +19,12 @@ under today's date, creating the heading if it is not there yet.
 - The forecast no longer counts rent twice when you pay it under another
   name (a person, or a card like BILT): past payments that match a bill's
   category and amount are kept out of your everyday spending rate.
+- Repeating bills no longer end up under Completed: paying one moves it to
+  its next date, and ones completed before now are back in Upcoming.
+- "Link payment" on an Upcoming bill lets you pick the past expense that was
+  that bill. Later payments with the same name and a similar amount or date
+  mark it paid, even when paid early or late, and the forecast stops
+  adding a bill you have already paid this month.
 - The budget line shows bills at their real size. If bills add up to more
   than your budget, a chip says by how much instead of shrinking them.
 

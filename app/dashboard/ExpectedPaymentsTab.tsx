@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
@@ -10,7 +10,7 @@ import ExpectedMonth from "./ExpectedMonth";
 import type { AccountFacts } from "@/lib/contribution-ladder";
 import { parseIsoDate } from "@/lib/contribution-schedule";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SUB_CATEGORIES } from "@/lib/categories";
-import { guessBillCategory } from "@/lib/spend-forecast";
+import { guessBillCategory, settleBill } from "@/lib/spend-forecast";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import {
   detectRecurring, toRecurrence, sameMerchant,
@@ -133,17 +133,26 @@ function DueBadge({ daysUntilDue }: { daysUntilDue: number }) {
   );
 }
 
+/** A past expense offered when linking a bill to how the bank names it. */
+type LinkOption = { description: string; date: string; label: string };
+
+/** A repeating bill is never finished; only a one-off can be completed. */
+const isDone = (p: ExpectedPayment) => !!p.completed_at && p.recurrence === "none";
+
 function PaymentCard({
-  item, catLabel, onToggle, onEdit, onDelete,
+  item, catLabel, linkOptions, onLink, onToggle, onEdit, onDelete,
 }: {
   item: ExpectedPayment;
   catLabel: (key: string) => string;
+  linkOptions: LinkOption[];
+  onLink: (merchant: string | null) => void;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const isIncome = item.transaction_type === "income";
-  const isCompleted = !!item.completed_at;
+  const isCompleted = isDone(item);
+  const [linking, setLinking] = useState(false);
 
   return (
     <div style={{
@@ -169,10 +178,16 @@ function PaymentCard({
               {catLabel(item.category)}{item.sub_category ? ` · ${item.sub_category}` : ""}
             </span>
           )}
-          {item.match_merchant && (
-            <span title="Payments with this name are this bill" style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
+          {item.match_merchant ? (
+            <span title="Payments with this name are this bill" style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 4px 2px 9px", fontSize: 11, fontWeight: 700 }}>
               ↔ {item.match_merchant}
+              <button type="button" aria-label="Unlink" onClick={() => onLink(null)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 11, padding: "0 4px" }}>✕</button>
             </span>
+          ) : !isIncome && linkOptions.length > 0 && (
+            <button type="button" onClick={() => setLinking((v) => !v)} aria-expanded={linking}
+              style={{ background: "none", border: "1px dashed var(--uf-border)", color: "var(--uf-text-2)", borderRadius: 999, padding: "1px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+              🔗 Link payment
+            </button>
           )}
           {item.recurrence !== "none" && (
             <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
@@ -187,6 +202,20 @@ function PaymentCard({
             <DueBadge daysUntilDue={daysUntil(item.due_date)} />
           )}
         </div>
+        {/* Pick the past payment that was this bill; from then on, payments
+            with that name and a similar amount or date settle it. */}
+        {linking && !item.match_merchant && (
+          <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)" }}>Which payment was this bill?</div>
+            {linkOptions.map((o) => (
+              <button key={`${o.description}|${o.date}`} type="button" onClick={() => { onLink(o.description); setLinking(false); }}
+                style={{ display: "flex", justifyContent: "space-between", gap: 12, textAlign: "left", border: "1px solid var(--uf-border)", borderRadius: 8, background: "var(--uf-card)", padding: "6px 10px", cursor: "pointer", fontSize: 12, color: "var(--uf-text)" }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.description}</span>
+                <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--uf-text-2)", whiteSpace: "nowrap" }}>{o.date.slice(5)} · {o.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
@@ -265,6 +294,7 @@ export default function ExpectedPaymentsTab({
   const needsCategory = formType === "expense" && !formCategory;
   const [saving, setSaving] = useState(false);
   const [suggestions, setSuggestions] = useState<DetectedItem[]>([]);
+  const [history, setHistory] = useState<RawTx[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
   useEffect(() => {
@@ -297,6 +327,7 @@ export default function ExpectedPaymentsTab({
         .order("id")
         .range(from, to));
       if (cancelled || !txns) return;
+      setHistory(txns as RawTx[]);
       const found = detectRecurring(txns as RawTx[], displayRates);
       setSuggestions([...found.expenses, ...found.income].slice(0, 8));
       try {
@@ -342,6 +373,8 @@ export default function ExpectedPaymentsTab({
       transaction_type: formType,
       due_date: formDueDate,
       recurrence: formRecurrence,
+      // A repeating bill is never finished, so switching to repeat reopens it.
+      ...(formRecurrence !== "none" ? { completed_at: null } : {}),
       category: formCategory || null,
       sub_category: formSubCategory || null,
     };
@@ -360,7 +393,7 @@ export default function ExpectedPaymentsTab({
     // A one-off that is paid is finished. A repeat that is paid is not — it is
     // due again next period, and burying it in a completed pile is how rent
     // disappears from a list whose whole job is telling you rent is coming.
-    if (item.recurrence !== "none" && !item.completed_at) {
+    if (item.recurrence !== "none") {
       // Calendar months in local time, via the same helper the contribution
       // forecast uses. The previous version added a fixed 30 days and wrote
       // the result with toISOString(), which converts to UTC: in UTC+8 a bill
@@ -373,7 +406,7 @@ export default function ExpectedPaymentsTab({
         ? isoDay(addRecurrence(current, item.recurrence as Recurrence))
         : item.due_date;
       const { data } = await supabase
-        .from("expected_payments").update({ due_date }).eq("id", item.id).select().single();
+        .from("expected_payments").update({ due_date, completed_at: null }).eq("id", item.id).select().single();
       if (data) {
         setPayments(prev => prev.map(p => p.id === item.id ? (data as ExpectedPayment) : p)
                                 .sort((a, b) => a.due_date.localeCompare(b.due_date)));
@@ -410,6 +443,42 @@ export default function ExpectedPaymentsTab({
     try { localStorage.setItem("uf_expected_dismissed", JSON.stringify(next)); } catch {}
   }
 
+  // Past expenses, in USD, for linking a bill and for settling it once linked.
+  const pastExpenses = useMemo(() => history
+    .filter((t) => t.transaction_type === "expense")
+    .map((t) => ({ id: t.id, date: t.date.slice(0, 10), usd: toUSD(Number(t.amount) || 0, t.currency, displayRates), description: t.description ?? "", category: t.category })),
+  [history, displayRates]);
+
+  /** The last 120 days' expenses most like this bill: same category first, then closest in amount, one per name. */
+  function linkOptionsFor(item: ExpectedPayment): LinkOption[] {
+    if (item.transaction_type !== "expense") return [];
+    const usd = toUSD(item.amount, item.currency, displayRates), cat = item.category || guessBillCategory(item.description);
+    const since = isoDay(new Date(Date.now() - 120 * 86_400_000));
+    const seen = new Set<string>();
+    return pastExpenses
+      .filter((t) => t.date >= since && t.description && Math.abs(t.usd - usd) <= 0.5 * Math.max(t.usd, usd))
+      .sort((a, b) => Number(b.category === cat) - Number(a.category === cat) || Math.abs(a.usd - usd) - Math.abs(b.usd - usd))
+      .filter((t) => { const k = t.description.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
+      .slice(0, 6)
+      .map((t) => ({ description: t.description, date: t.date, label: formatAmount(t.usd) }));
+  }
+
+  /** Link (or unlink) the bank's name for a bill, then settle any due dates it has already paid. */
+  async function linkPayment(item: ExpectedPayment, merchant: string | null) {
+    const { data } = await supabase.from("expected_payments").update({ match_merchant: merchant }).eq("id", item.id).select().single();
+    if (!data) return;
+    let row = data as ExpectedPayment;
+    const patch = merchant && settleBill({
+      id: row.id, description: row.description, category: row.category, merchant, usd: toUSD(row.amount, row.currency, displayRates),
+      due: row.due_date.slice(0, 10), recurrence: row.recurrence, completed: isDone(row),
+    }, pastExpenses, new Date().toISOString());
+    if (patch) {
+      const { data: settled } = await supabase.from("expected_payments").update(patch).eq("id", row.id).eq("due_date", row.due_date).select().single();
+      if (settled) row = settled as ExpectedPayment;
+    }
+    setPayments((prev) => prev.map((p) => (p.id === row.id ? row : p)).sort((a, b) => a.due_date.localeCompare(b.due_date)));
+  }
+
   async function deletePayment(id: string) {
     await supabase.from("expected_payments").delete().eq("id", id);
     setPayments(prev => prev.filter(p => p.id !== id));
@@ -424,8 +493,8 @@ export default function ExpectedPaymentsTab({
          !payments.some(p => sameMerchant(p.description, x.description)),
   );
 
-  const pending = payments.filter(p => !p.completed_at);
-  const completed = payments.filter(p => p.completed_at).sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
+  const pending = payments.filter(p => !isDone(p));
+  const completed = payments.filter(isDone).sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
   const overdue = pending.filter(p => daysUntil(p.due_date) < 0).sort((a, b) => a.due_date.localeCompare(b.due_date));
   const upcoming = pending.filter(p => daysUntil(p.due_date) >= 0).sort((a, b) => a.due_date.localeCompare(b.due_date));
 
@@ -491,7 +560,7 @@ export default function ExpectedPaymentsTab({
           dueDate: p.due_date,
           recurrence: p.recurrence,
           category: p.category,
-          completed: !!p.completed_at,
+          completed: isDone(p),
         }))}
         budgetMonthlySpending={budgetMonthlySpending}
         lastMonthSpending={lastMonthSpending}
@@ -671,7 +740,7 @@ export default function ExpectedPaymentsTab({
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#DC2626" }}>Overdue ({overdue.length})</div>
           {overdue.map(item => (
-            <PaymentCard key={item.id} item={item} catLabel={catLabel} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
+            <PaymentCard key={item.id} item={item} catLabel={catLabel} linkOptions={linkOptionsFor(item)} onLink={(m) => linkPayment(item, m)} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
           ))}
         </div>
       )}
@@ -685,7 +754,7 @@ export default function ExpectedPaymentsTab({
           </div>
         ) : (
           upcoming.map(item => (
-            <PaymentCard key={item.id} item={item} catLabel={catLabel} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
+            <PaymentCard key={item.id} item={item} catLabel={catLabel} linkOptions={linkOptionsFor(item)} onLink={(m) => linkPayment(item, m)} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
           ))
         )}
       </div>
@@ -700,7 +769,7 @@ export default function ExpectedPaymentsTab({
             {showCompleted ? "▾" : "▸"} Completed ({completed.length})
           </button>
           {showCompleted && completed.map(item => (
-            <PaymentCard key={item.id} item={item} catLabel={catLabel} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
+            <PaymentCard key={item.id} item={item} catLabel={catLabel} linkOptions={linkOptionsFor(item)} onLink={(m) => linkPayment(item, m)} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
           ))}
         </div>
       )}
