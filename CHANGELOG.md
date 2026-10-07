@@ -8,6 +8,14 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Expat FIRE uses your numbers everywhere
+- The globe's colours and hover card use your own target and growth, not a
+  fixed 25x and 5%.
+- If your city is not in the list, comparisons use your own spending
+  instead of New York or a made-up $60,000.
+- City costs include your lifestyle, so each card adds up, and money shows
+  in your display currency.
+
 ### Money's numbers agree
 - Net worth counts each debt once, everywhere: a linked loan or mortgage
   replaces what you typed, and credit card balances are included.

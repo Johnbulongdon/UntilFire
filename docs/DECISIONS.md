@@ -1467,3 +1467,25 @@ hands them to the tools around the date:
     totals use the same rule.
 - **Upcoming and Insights FIRE-target lines** use the freedom date's multiple
   (withdrawal rate and tax gross-up), not a fixed 25×.
+
+### D-36 — October 7: Expat FIRE shows the person's numbers, globe included
+
+**Status:** Active. From a math audit of Expat FIRE the founder asked for.
+
+**Decision:**
+- **The globe uses the dashboard's numbers.** Its dot colours, ready
+  rings and hover card ("X yrs sooner") had their own fixed 25× target and
+  5% growth. On the dashboard it now takes the freedom date's multiple and
+  the chosen growth. The public calculator keeps its defaults.
+- **No invented city.** An unlisted profile city used to mean New York for
+  the globe and $60,000 a year in the detail view. "Here" is now the
+  person's own yearly spending, labelled "Your spending".
+- **Costs at your lifestyle.** The detail card's annual cost and "Moving
+  saves $X/mo" include the lifestyle multiple, so cost × the multiple is the
+  FIRE number on the same card.
+- **Display currency.** The globe, timeline and detail view format money in
+  the display currency instead of always dollars.
+
+**Not modelled:** each country's own tax on retirement income (the home tax
+setting applies everywhere), and healthcare, visas or travel beyond the
+city cost averages.
