@@ -171,7 +171,7 @@ function PaymentCard({
             color: isIncome ? "#059669" : "#DC2626",
             borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700,
           }}>
-            {isIncome ? "Incoming" : "Outgoing"}
+            {isIncome ? "Income" : "Expense"}
           </span>
           {item.category && (
             <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
@@ -548,7 +548,7 @@ export default function ExpectedPaymentsTab({
             fontWeight: 700, fontSize: 14, cursor: "pointer", flexShrink: 0,
           }}
         >
-          {showForm ? "✕ Cancel" : "+ Add expected payment"}
+          {showForm ? "✕ Cancel" : "+ Add upcoming payment"}
         </button>
       </div>
 
@@ -640,7 +640,7 @@ export default function ExpectedPaymentsTab({
       {showForm && (
         <div style={{ background: "var(--uf-card)", border: "1.5px solid var(--uf-border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ fontWeight: 800, fontSize: 15, color: "var(--uf-text)" }}>
-            {editingId ? "Edit expected payment" : "Add expected payment"}
+            {editingId ? "Edit upcoming payment" : "Add upcoming payment"}
           </div>
 
           <div>
@@ -689,7 +689,7 @@ export default function ExpectedPaymentsTab({
                       color: formType === t ? "#fff" : "#64748B",
                     }}
                   >
-                    {t === "income" ? "Incoming" : "Outgoing"}
+                    {t === "income" ? "Income" : "Expense"}
                   </button>
                 ))}
               </div>
@@ -752,7 +752,7 @@ export default function ExpectedPaymentsTab({
         <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text-2)" }}>Upcoming ({upcoming.length})</div>
         {upcoming.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--uf-text-3)", fontSize: 13, background: "var(--uf-card)", border: "1px dashed var(--uf-border)", borderRadius: 12 }}>
-            No expected payments yet. Add one to track a payment coming in or a bill due.
+            Nothing upcoming yet. Add income you expect or a bill that is due.
           </div>
         ) : (
           upcoming.map(item => (

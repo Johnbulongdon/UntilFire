@@ -198,7 +198,7 @@ export default function MonthInsight({
         )}
       </div>
       <p style={{ fontSize: 13, color: "var(--uf-ink-3)", margin: "0 0 var(--uf-s5)" }}>
-        {month === thisMonth ? "Month in progress — not yet comparable." : "Spent this month"}
+        {month === thisMonth ? "Month in progress — not yet comparable." : "Expenses this month"}
         {excluded.size > 0 ? ", excluding what you switched off below." : "."}
       </p>
 

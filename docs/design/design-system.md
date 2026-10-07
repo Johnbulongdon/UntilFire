@@ -147,6 +147,16 @@ to a label or emoji; charts show the top six categories and fold the rest.
    Not Earned, Spent, In, Out or Money in/out, in any label, chip, key,
    tooltip or email. The founder set this on 2026-10-06 after the
    Transactions page said Spent/Earned in one place and In/Out in another.
+   Headings and labels for money going out say Expenses; "spending" stays
+   for prose and onboarding questions ("What do you spend a month?").
+9. **Sentence case and one name per thing.** Labels, headings and buttons are
+   sentence case ("Total debts", not "Total Debts"). Menu names (Net Worth,
+   Expat FIRE, Freedom Date) and badge names are names and keep theirs. A
+   thing has one name everywhere: the FIRE number (not target or freedom
+   number), Upcoming payments (not expected payments), Debts (not
+   liabilities). Amounts in copy use the display currency, never a typed "$".
+10. **Counts, not streaks.** Progress over months is a count ("4 of 6 months
+   on plan"), never a run to protect (CLAUDE.md: no streaks).
 
 ## Interaction and verification
 

@@ -312,9 +312,9 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
         ) : (
           <>
             {[
-              { label: "Avg Monthly Income",   value: fmtDisplay(avgIncome),           color: "#62FAE3" },
-              { label: "Avg Monthly Expenses", value: fmtDisplay(avgExpenses),         color: "#FCA5A5" },
-              { label: "Avg Savings Rate",     value: avgRate.toFixed(0) + "%", color: rateColor(avgRate) },
+              { label: "Average monthly income",   value: fmtDisplay(avgIncome),           color: "#62FAE3" },
+              { label: "Average monthly expenses", value: fmtDisplay(avgExpenses),         color: "#FCA5A5" },
+              { label: "Average savings rate",     value: avgRate.toFixed(0) + "%", color: rateColor(avgRate) },
             ].map(kpi => (
               <div key={kpi.label} className="uf-report-kpi-card">
                 <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>

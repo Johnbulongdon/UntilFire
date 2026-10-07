@@ -1511,3 +1511,32 @@ for.
 - **Tests match D-30.** Two `fire-number` checks still expected a growth
   picker in onboarding, which D-30 removed. They now check the sourced
   default, and the whole test suite passes.
+
+### D-38 — October 7: Copy and labels follow the rules
+
+**Status:** Active. From a copy audit the founder asked for.
+
+**Decision:**
+- **Tour:** rewritten for the current menus (Home, Money, Plan, Profile).
+  It named old tabs, promised a Monte Carlo feature that does not exist, and
+  placed assumptions in Profile.
+- **Home:**
+  - The "what if" moves show amounts in the display currency. The garbled
+    "from spending to" line is fixed.
+  - The consistency card counts months on plan ("4 of 6 months on plan")
+    instead of a "3-month run" streak.
+- **Money words (design-system rule 8):**
+  - Upcoming says Income/Expense, not Incoming/Outgoing.
+  - Insights says "Expenses this month", and the Budget key says "expenses".
+  - Home's heading is "This month's expenses".
+- **One name per thing:**
+  - FIRE number, not FIRE target or freedom number.
+  - Upcoming payment, not expected payment.
+  - Total debts, not liabilities.
+- **Sentence case** for about 30 labels, headings and buttons.
+- **Design system:** rule 8 is extended; new rules 9 (sentence case, one
+  name, no typed "$") and 10 (counts, not streaks).
+- The eight orphaned components in `components/` were deleted. Nothing
+  imported them, they used the dropped `user_plans` and `stash_history`
+  tables, and they still carried the old wording. Only `components/ui/`
+  remains.

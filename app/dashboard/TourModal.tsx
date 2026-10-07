@@ -1,12 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
 
+// Names match the menus (docs/design/app-structure.md), and only features that exist.
 const TOUR_SLIDES = [
-  { tabKey: null,              emoji: "🔥", title: "Welcome to UntilFire",  description: "Let's take a 30-second look at what you can do. Use the arrows or click any dot to jump around." },
-  { tabKey: "overview",        emoji: "🏠", title: "Home",                  description: "Your financial snapshot — net worth, FIRE progress bar, recent transactions, and a personalised setup checklist to get you started." },
-  { tabKey: "cashflow",        emoji: "💳", title: "Money",                 description: "Everything about your cash flow: income, expenses, and budgets on the Cashflow tab; all your accounts and net worth on Assets; debts on Liabilities; and spending trends on Reports." },
-  { tabKey: "fire-calculator", emoji: "📅", title: "Freedom",               description: "Your freedom date lives here. Run your FIRE calculation, stress-test with Monte Carlo, set your goals and FIRE style, and explore the Learning Hub for guides on the 4% rule, withdrawal strategies, and more." },
-  { tabKey: "profile",         emoji: "⚙️", title: "Profile",               description: "Connect bank accounts via Plaid, switch currencies, manage your Pro subscription, and configure your FIRE assumptions." },
+  { tabKey: null,              emoji: "🔥", title: "Welcome to UntilFire",  description: "A 30-second look around. Use the arrows or tap a dot to jump." },
+  { tabKey: "overview",        emoji: "🏠", title: "Home",                  description: "Your freedom date, progress toward your FIRE number, and the one move that helps most right now." },
+  { tabKey: "cashflow",        emoji: "💳", title: "Money",                 description: "Transactions, Upcoming payments, categories and budgets; Net Worth, Debts and Insights for the bigger picture." },
+  { tabKey: "fire-calculator", emoji: "📅", title: "Plan",                  description: "Your freedom date and the assumptions behind it, plus Goals, Contributions, Expat FIRE, Citizenship and Learn." },
+  { tabKey: "profile",         emoji: "⚙️", title: "Profile",               description: "Your account, currency, Pro subscription, household and FIRE type." },
 ]
 
 export default function TourModal({ onClose }: { onClose: () => void }) {
