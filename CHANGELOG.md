@@ -6,6 +6,17 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-07
+
+### Upcoming bills match their payments
+- Upcoming bills take a category and sub-category like a transaction; the
+  category is guessed from the name ("Rent" is Housing) until you pick one.
+- When a payment looks like one of your Upcoming bills, Worth a look asks
+  once ("Upcoming bill? → Rent"). Say yes and it is linked by name from then
+  on, so the bill is counted once in the forecast and budget line.
+- The budget line shows bills at their real size. If bills add up to more
+  than your budget, a chip says by how much instead of shrinking them.
+
 ## 2026-10-06
 
 ### Transactions shows any time range, with graphics instead of text

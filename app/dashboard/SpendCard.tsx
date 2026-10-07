@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, InfoTip } from "@/components/ui";
 import { trackTxViewChanged } from "@/lib/analytics";
 import { type DateRange, monthOf, netAmount, type RangeTx, usualForRange, usualToDay } from "@/lib/spend-range";
-import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath } from "@/lib/spend-forecast";
+import { type Bill, billsOverBudget, budgetPath, daysOfMonths, everydayRate, forecastPath } from "@/lib/spend-forecast";
 import { BarsView, CalendarView, calendarAllowed, type Daily, LineView } from "./SpendCharts";
 
 type Tx = RangeTx & { id: string };
@@ -119,6 +119,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   const focusRate = useMemo(() => everydayRate(focus, focusBills, thisMonth), [focus, focusBills, thisMonth]);
   const forecastLine = mode === "spent" && running ? forecastPath(days, today, total, focusBills, focusRate ?? total / elapsed) : null;
   const budgetLine = budgetMonth ? budgetPath(range.months, budgetMonth, focusBills) : null;
+  const billsOver = budgetMonth ? billsOverBudget(range.months, budgetMonth, focusBills) : 0;
 
   const rows = useMemo(() => {
     const out = cats.map((c) => {
@@ -177,7 +178,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             </div>
           </div>
         </div>
-        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} forecast={forecastLine} periodLabel={periodLabel} fmt={fmt} />}
+        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} billsOver={billsOver} forecast={forecastLine} periodLabel={periodLabel} fmt={fmt} />}
         {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} valueLabel={mode === "spent" ? "Expenses" : "Income"} />}
         {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} />}
       </div>

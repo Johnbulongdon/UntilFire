@@ -1294,3 +1294,17 @@ month's expenses; a needs/wants split read as noise early in a month. Bills
 are Upcoming plus monthly, quarterly and annual payments detected in the
 history (lib/recurring-detect), so rent the founder never listed in Upcoming
 was still forecast once, not twice.
+
+**Addendum (linking bills, October 7):** the founder's $1,500 "Rent" in
+Upcoming had no category (the form never asked), so it did not merge with the
+bank's "BILT PAYMENT" ($1,380, housing): rent was counted twice, and because
+the budget line scaled bills to fit the budget, rent day showed $1,113.
+Bills are now drawn at full size and a "Bills exceed budget by $X" chip says
+when they don't fit. Upcoming asks for a category (guessed from the name)
+and an optional sub-category, the same lists as transactions; rows without
+one get the guess. A payment in the bill's category within 10% of its amount
+and 5 days of its date is asked about once in Worth a look ("Upcoming bill?
+→ Rent"); yes stores the bank's name on the bill (`match_merchant`,
+migration 0047), after which it matches by name. Matching on name alone was
+rejected because nobody types the bank's name when listing rent. Linking does
+not yet mark the bill paid.

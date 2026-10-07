@@ -9,6 +9,9 @@ import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
 import ExpectedMonth from "./ExpectedMonth";
 import type { AccountFacts } from "@/lib/contribution-ladder";
 import { parseIsoDate } from "@/lib/contribution-schedule";
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SUB_CATEGORIES } from "@/lib/categories";
+import { guessBillCategory } from "@/lib/spend-forecast";
+import { useCustomCategories } from "@/lib/useCustomCategories";
 import {
   detectRecurring, toRecurrence, sameMerchant,
   recurrenceToMonthly, RECURRENCE_LABEL,
@@ -33,10 +36,13 @@ type ExpectedPayment = {
   completed_at: string | null;
   recurrence: Recurrence;
   category: string | null;
+  sub_category: string | null;
+  /** The bank's name for this bill, set when the person confirms a payment is it (Transactions, Worth a look). */
+  match_merchant: string | null;
 };
 
 const SELECT_COLUMNS =
-  "id, description, amount, currency, transaction_type, due_date, completed_at, recurrence, category";
+  "id, description, amount, currency, transaction_type, due_date, completed_at, recurrence, category, sub_category, match_merchant";
 
 function todayStr(): string {
   return new Date().toISOString().split("T")[0];
@@ -128,9 +134,10 @@ function DueBadge({ daysUntilDue }: { daysUntilDue: number }) {
 }
 
 function PaymentCard({
-  item, onToggle, onEdit, onDelete,
+  item, catLabel, onToggle, onEdit, onDelete,
 }: {
   item: ExpectedPayment;
+  catLabel: (key: string) => string;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -159,7 +166,12 @@ function PaymentCard({
           </span>
           {item.category && (
             <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
-              {item.category}
+              {catLabel(item.category)}{item.sub_category ? ` · ${item.sub_category}` : ""}
+            </span>
+          )}
+          {item.match_merchant && (
+            <span title="Payments with this name are this bill" style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
+              ↔ {item.match_merchant}
             </span>
           )}
           {item.recurrence !== "none" && (
@@ -241,6 +253,16 @@ export default function ExpectedPaymentsTab({
   const [formType, setFormType] = useState<TransactionType>("income");
   const [formDueDate, setFormDueDate] = useState(todayStr());
   const [formRecurrence, setFormRecurrence] = useState<Recurrence>("none");
+  // Category and sub-category, as on a transaction, so the bill can be matched
+  // to its payment when it arrives. Guessed from the name until picked.
+  const [formCategory, setFormCategory] = useState("");
+  const [formSubCategory, setFormSubCategory] = useState("");
+  const [catPicked, setCatPicked] = useState(false);
+  const { customCats, customSubCats } = useCustomCategories();
+  const catOptions = formType === "income" ? INCOME_CATEGORIES : [...EXPENSE_CATEGORIES, ...customCats];
+  const subOptions = formType === "expense" && formCategory ? [...(SUB_CATEGORIES[formCategory] ?? []), ...(customSubCats[formCategory] ?? [])] : [];
+  const catLabel = (key: string) => [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES, ...customCats].find((c) => c.key === key)?.label ?? key;
+  const needsCategory = formType === "expense" && !formCategory;
   const [saving, setSaving] = useState(false);
   const [suggestions, setSuggestions] = useState<DetectedItem[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
@@ -289,6 +311,7 @@ export default function ExpectedPaymentsTab({
     setEditingId(null);
     setFormDesc(""); setFormAmount(""); setFormCurrency(defaultCurrency);
     setFormType("income"); setFormDueDate(todayStr()); setFormRecurrence("none");
+    setFormCategory(""); setFormSubCategory(""); setCatPicked(false);
     setShowForm(true);
   }
 
@@ -297,6 +320,8 @@ export default function ExpectedPaymentsTab({
     setFormDesc(item.description); setFormAmount(String(item.amount));
     setFormCurrency(item.currency); setFormType(item.transaction_type);
     setFormDueDate(item.due_date); setFormRecurrence(item.recurrence ?? "none");
+    setFormCategory(item.category ?? (item.transaction_type === "expense" ? guessBillCategory(item.description) ?? "" : ""));
+    setFormSubCategory(item.sub_category ?? ""); setCatPicked(!!item.category);
     setShowForm(true);
   }
 
@@ -307,7 +332,7 @@ export default function ExpectedPaymentsTab({
 
   async function saveForm() {
     const amount = parseFloat(formAmount);
-    if (!formDesc.trim() || !amount || !formDueDate) return;
+    if (!formDesc.trim() || !amount || !formDueDate || needsCategory) return;
     setSaving(true);
     const payload = {
       user_id: userId,
@@ -317,6 +342,8 @@ export default function ExpectedPaymentsTab({
       transaction_type: formType,
       due_date: formDueDate,
       recurrence: formRecurrence,
+      category: formCategory || null,
+      sub_category: formSubCategory || null,
     };
     if (editingId) {
       const { data } = await supabase.from("expected_payments").update(payload).eq("id", editingId).select().single();
@@ -547,7 +574,10 @@ export default function ExpectedPaymentsTab({
 
           <div>
             <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>DESCRIPTION</label>
-            <input type="text" value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="e.g. Client invoice, Tax refund, Car repair" style={inputStyle} />
+            <input type="text" value={formDesc} onChange={e => {
+              setFormDesc(e.target.value);
+              if (!catPicked && formType === "expense") { setFormCategory(guessBillCategory(e.target.value) ?? ""); setFormSubCategory(""); }
+            }} placeholder="e.g. Client invoice, Tax refund, Car repair" style={inputStyle} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
@@ -578,7 +608,10 @@ export default function ExpectedPaymentsTab({
                 {(["income", "expense"] as const).map(t => (
                   <button
                     key={t}
-                    onClick={() => setFormType(t)}
+                    onClick={() => {
+                      setFormType(t); setFormSubCategory(""); setCatPicked(false);
+                      setFormCategory(t === "expense" ? guessBillCategory(formDesc) ?? "" : "");
+                    }}
                     style={{
                       flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
                       background: formType === t ? (t === "income" ? "#059669" : "#DC2626") : "#fff",
@@ -589,6 +622,23 @@ export default function ExpectedPaymentsTab({
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>CATEGORY</label>
+              <select value={formCategory} onChange={e => { setFormCategory(e.target.value); setFormSubCategory(""); setCatPicked(true); }} style={selectStyle}>
+                <option value="">{formType === "expense" ? "Pick one" : "None"}</option>
+                {catOptions.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>SUB-CATEGORY</label>
+              <select value={formSubCategory} onChange={e => setFormSubCategory(e.target.value)} disabled={!subOptions.length} style={selectStyle}>
+                <option value="">Optional</option>
+                {subOptions.map(sc => <option key={sc} value={sc}>{sc}</option>)}
+              </select>
             </div>
           </div>
 
@@ -603,12 +653,12 @@ export default function ExpectedPaymentsTab({
 
           <button
             onClick={saveForm}
-            disabled={saving || !formDesc.trim() || !formAmount || !formDueDate}
+            disabled={saving || !formDesc.trim() || !formAmount || !formDueDate || needsCategory}
             style={{
-              background: (!formDesc.trim() || !formAmount || !formDueDate) ? "#E2E8F0" : "linear-gradient(135deg, #059669, #064E3B)",
-              color: (!formDesc.trim() || !formAmount || !formDueDate) ? "#94A3B8" : "#fff",
+              background: (!formDesc.trim() || !formAmount || !formDueDate || needsCategory) ? "#E2E8F0" : "linear-gradient(135deg, #059669, #064E3B)",
+              color: (!formDesc.trim() || !formAmount || !formDueDate || needsCategory) ? "#94A3B8" : "#fff",
               border: "none", borderRadius: 10, padding: "12px 0",
-              fontWeight: 700, fontSize: 14, cursor: (!formDesc.trim() || !formAmount || !formDueDate) ? "default" : "pointer",
+              fontWeight: 700, fontSize: 14, cursor: (!formDesc.trim() || !formAmount || !formDueDate || needsCategory) ? "default" : "pointer",
             }}
           >
             {editingId ? "Save changes" : "Add payment"}
@@ -621,7 +671,7 @@ export default function ExpectedPaymentsTab({
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#DC2626" }}>Overdue ({overdue.length})</div>
           {overdue.map(item => (
-            <PaymentCard key={item.id} item={item} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
+            <PaymentCard key={item.id} item={item} catLabel={catLabel} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
           ))}
         </div>
       )}
@@ -635,7 +685,7 @@ export default function ExpectedPaymentsTab({
           </div>
         ) : (
           upcoming.map(item => (
-            <PaymentCard key={item.id} item={item} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
+            <PaymentCard key={item.id} item={item} catLabel={catLabel} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
           ))
         )}
       </div>
@@ -650,7 +700,7 @@ export default function ExpectedPaymentsTab({
             {showCompleted ? "▾" : "▸"} Completed ({completed.length})
           </button>
           {showCompleted && completed.map(item => (
-            <PaymentCard key={item.id} item={item} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
+            <PaymentCard key={item.id} item={item} catLabel={catLabel} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
           ))}
         </div>
       )}

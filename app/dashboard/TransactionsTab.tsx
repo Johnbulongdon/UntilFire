@@ -11,7 +11,7 @@ import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
 import { findFlags, type FlagKind, isSystemTag, okTag } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
-import { type Bill, mergeBills } from "@/lib/spend-forecast";
+import { type Bill, guessBillCategory, mergeBills, unlinkedBillPayments } from "@/lib/spend-forecast";
 import type { FreeToSpend } from "@/lib/free-to-spend";
 import { detectRecurring, type Recurrence } from "@/lib/recurring-detect";
 import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
@@ -21,29 +21,13 @@ import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 const txMoney = (n: number, currency = "USD") => formatMoney(n, { currency, decimals: 2 });
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES as ALL_CATEGORIES_BASE,
-  COLOR_PALETTE, EMOJI_PALETTE,
+  COLOR_PALETTE, EMOJI_PALETTE, SUB_CATEGORIES,
   loadCatCustomizations, saveCatCustomizations, CatCustomizations, resolveDisplay,
 } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
-
-const SUB_CATEGORIES: Record<string, string[]> = {
-  food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
-  transport:     ["Gas & Fuel", "Parking", "Public Transit", "Ride Share", "Insurance", "Maintenance", "Other"],
-  housing:       ["Rent/Mortgage", "Insurance", "Maintenance", "Furnishing", "Property Tax", "HOA", "Other"],
-  utilities:     ["Phone", "Internet", "Electricity", "Water & Gas", "TV/Cable", "Other"],
-  healthcare:    ["Doctor/GP", "Pharmacy", "Dental", "Vision", "Mental Health", "Insurance", "Other"],
-  shopping:      ["Clothing", "Electronics", "Home Goods", "Sports & Outdoors", "Gifts", "Other"],
-  entertainment: ["Movies & Shows", "Events & Concerts", "Sports", "Games", "Hobbies", "Other"],
-  travel:        ["Flights", "Hotels", "Activities", "Transport", "Food & Drink", "Other"],
-  education:     ["Tuition", "Books & Materials", "Courses", "Other"],
-  subscriptions: ["Streaming", "Software & Apps", "Memberships", "News & Media", "Other"],
-  personal_care: ["Haircut & Salon", "Skincare & Beauty", "Wellness", "Other"],
-  pets:          ["Food & Supplies", "Vet", "Grooming", "Other"],
-  work:          ["Equipment", "Software", "Travel", "Training", "Meals", "Other"],
-};
 
 type CustomCategory = { key: string; label: string; code: string; color: string; emoji?: string };
 
@@ -1742,20 +1726,25 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   // monthly, quarterly and annual payments spotted in the history and not
   // listed (rent paid through "BILT PAYMENT" every month is a bill whether
   // or not anyone added it). Each lands on its own date in lib/spend-forecast.
-  const [expected, setExpected] = useState<{ amount: number; currency: string | null; transaction_type: string; due_date: string; category: string | null; description: string | null; recurrence: string | null }[]>([]);
+  const [expected, setExpected] = useState<{ id: string; amount: number; currency: string | null; transaction_type: string; due_date: string; category: string | null; description: string | null; recurrence: string | null; match_merchant: string | null }[]>([]);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
-      supabase.from("expected_payments").select("amount, currency, transaction_type, due_date, category, description, recurrence")
+      supabase.from("expected_payments").select("id, amount, currency, transaction_type, due_date, category, description, recurrence, match_merchant")
         .eq("user_id", session.user.id)
         .then(({ data }) => { if (data) setExpected(data); });
     });
   }, [refreshKey]);
+  // A listed bill without a category gets one guessed from its name ("Rent"
+  // is housing), so it can still be matched to the bank's payment.
+  const listedBills = useMemo<Bill[]>(() => expected
+    .filter((r) => r.transaction_type === "expense" && r.due_date)
+    .map((r) => ({ id: r.id, description: r.description, category: r.category || guessBillCategory(r.description), merchant: r.match_merchant,
+      usd: usd(Number(r.amount) || 0, r.currency ?? "USD"), due: r.due_date.slice(0, 10),
+      recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence })),
+  [expected, usd]);
   const bills = useMemo<Bill[]>(() => {
-    const listed: Bill[] = expected
-      .filter((r) => r.transaction_type === "expense" && r.due_date)
-      .map((r) => ({ description: r.description, category: r.category, usd: usd(Number(r.amount) || 0, r.currency ?? "USD"), due: r.due_date.slice(0, 10),
-        recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence }));
+    const listed = listedBills;
     const raw = transactions.filter((t) => t.transaction_type !== "transfer").map((t) => ({
       id: t.id, date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount, currency: t.currency,
       description: t.description ?? "", category: t.category, transaction_type: t.transaction_type as "expense" | "income",
@@ -1764,7 +1753,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       .filter((d) => d.frequency === "monthly" || d.frequency === "quarterly" || d.frequency === "annual")
       .map((d) => ({ description: d.description, category: d.category, usd: d.avgAmountUSD, due: d.nextDueDate, recurrence: d.frequency as Recurrence }));
     return mergeBills(listed, spotted);
-  }, [expected, usd, transactions, rates]);
+  }, [listedBills, transactions, rates]);
   const expenseCatDisplay = useMemo(() => catDisplay(allExpenseCats), [catDisplay, allExpenseCats]);
   const incomeCatDisplay = useMemo(() => catDisplay(INCOME_CATEGORIES), [catDisplay]);
   const spentThisMonth = useMemo(() => transactions
@@ -1970,19 +1959,39 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, [defaultCurrency, drawerOpen]);
 
   // "Worth a look" (D-31): rows that may be making the numbers wrong.
-  const flags = useMemo(() => findFlags(monthTxns, transactions, usd), [monthTxns, transactions, usd]);
+  // Plus payments that look like an Upcoming bill not yet linked to it: asked once, then matched by name.
+  const billAsks = useMemo(() => unlinkedBillPayments(
+    monthTxns.filter((t) => t.transaction_type === "expense")
+      .map((t) => ({ id: t.id, date: t.date.slice(0, 10), usd: usd(netAmt(t), t.currency), description: t.description ?? "", category: t.category })),
+    listedBills, (t) => !!transactions.find((x) => x.id === t.id)?.tags?.includes(okTag("bill"))),
+  [monthTxns, listedBills, transactions, usd]);
+  const flags = useMemo(() => {
+    const f = findFlags(monthTxns, transactions, usd);
+    billAsks.forEach((_, id) => { if (!f.has(id)) f.set(id, "bill"); });
+    return f;
+  }, [monthTxns, transactions, usd, billAsks]);
+  const billNotes = useMemo(() => new Map([...billAsks].map(([id, b]) => [id, b.description ?? ""])), [billAsks]);
   const resolveFlag = useCallback(async (row: { id: string }, kind: FlagKind, confirmed: boolean) => {
     const tx = transactions.find((t) => t.id === row.id);
     if (!tx) return;
     trackTxFlagResolved({ flag: kind, confirmed });
     if (confirmed && kind === "duplicate") { await handleDeleteRef.current?.(tx); return; }
+    // "Yes, link it": the Upcoming bill remembers the bank's name for it, so
+    // the two count as one bill and the question is not asked again.
+    const bill = kind === "bill" ? billAsks.get(tx.id) : undefined;
+    if (confirmed && bill?.id) {
+      const { error } = await supabase.from("expected_payments").update({ match_merchant: tx.description }).eq("id", bill.id);
+      if (error) { showToast("Couldn't save that — try again", undefined, undefined, true); return; }
+      setExpected((prev) => prev.map((r) => (r.id === bill.id ? { ...r, match_merchant: tx.description } : r)));
+      return;
+    }
     const patch = confirmed && kind === "card_payment"
       ? { transaction_type: "transfer" as const }
       : { tags: [...(tx.tags || []).filter((g) => g !== okTag(kind)), okTag(kind)] };
     const { error } = await supabase.from("expenses").update(patch).eq("id", tx.id);
     if (error) { showToast("Couldn't save that — try again", undefined, undefined, true); return; }
     setTransactions((prev) => prev.map((t) => (t.id === tx.id ? { ...t, ...patch } : t)));
-  }, [transactions, showToast]);
+  }, [transactions, showToast, billAsks]);
   const handleDeleteRef = useRef<((tx: Transaction) => Promise<void>) | null>(null);
 
   const handleCategoryChange = useCallback(async (tx: Transaction, category: string) => {
@@ -2081,7 +2090,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor}
           budgets={budgets} expectedIncome={expectedIncome} bills={bills} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
-        <WorthALook flags={flags} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
+        <WorthALook flags={flags} notes={billNotes} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
       </div>
 
