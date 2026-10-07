@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
 import GrowthSetting from "@/app/components/GrowthSetting";
+import { MoneyList, MoneyRow } from "./MoneyCards";
 
 /**
  * The assumptions a freedom date is computed from: age, where freedom gets
@@ -42,6 +43,8 @@ interface Props {
   onGrowthRateChange: (rate: number) => void;
   /** The freedom date at these assumptions, shown under the growth picker so a choice visibly moves it. */
   freedomDateLabel?: string | null;
+  /** Tax in retirement, as one more row; its editor is the tax card (D-42). */
+  taxRow?: { on: boolean; summary: string; editor: React.ReactNode };
 }
 
 const LIFESTYLE_TIERS = [
@@ -50,18 +53,12 @@ const LIFESTYLE_TIERS = [
   { label: "Lavish", multiplier: 1.5, icon: "\u{1F48E}" },
 ];
 
-const cardStyle: React.CSSProperties = {
-  background: "var(--uf-card)",
-  borderRadius: 12,
-  border: "1px solid var(--uf-border)",
-  padding: "24px 28px",
-};
 
 const labelStyle: React.CSSProperties = {
   display: "block",
   fontSize: 13,
   fontWeight: 600,
-  color: "#374151",
+  color: "var(--uf-ink-2)",
   marginBottom: 6,
 };
 
@@ -71,7 +68,7 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid var(--uf-border)",
   borderRadius: 8,
   fontSize: 14,
-  color: "#1a1a2e",
+  color: "var(--uf-ink)",
   background: "var(--uf-card)",
   outline: "none",
   boxSizing: "border-box",
@@ -106,8 +103,12 @@ export default function FireAssumptionsCard({
   growthRate,
   onGrowthRateChange,
   freedomDateLabel,
+  taxRow,
 }: Props) {
   const [saved, setSaved] = useState(false);
+  // One editor open at a time, under its row (D-42).
+  const [open, setOpen] = useState<null | "age" | "city" | "lifestyle" | "taxhome" | "growth" | "tax">(null);
+  const toggle = (k: NonNullable<typeof open>) => setOpen((o) => (o === k ? null : k));
   const [citySearch, setCitySearch] = useState(retirementCityName);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [taxSearch, setTaxSearch] = useState("");
@@ -122,7 +123,6 @@ export default function FireAssumptionsCard({
 
   const selectedLifestyle = LIFESTYLE_TIERS.find((t) => t.multiplier === lifestyleMultiplier) ?? LIFESTYLE_TIERS[1];
   const targetAnnualSpend = retirementCityCol > 0 ? retirementCityCol * lifestyleMultiplier : 0;
-  const targetFireNumber = targetAnnualSpend * 25;
   const showMoney = (n: number) => formatMoney(n, { currency: displayCurrency });
   const returnPct = Math.round(growthRate * 1000) / 10;
 
@@ -138,155 +138,129 @@ export default function FireAssumptionsCard({
     flash();
   }
 
-  return (
-    <div style={cardStyle}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
-        <div>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 6px" }}>Your assumptions</h3>
-          <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: 0 }}>
-            Every date here comes from these.
-          </p>
-        </div>
-        {saved && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>Saved &#10003;</span>}
-      </div>
-
-      <label style={labelStyle}>Current age</label>
-      <input
-        type="number"
-        min={18}
-        max={100}
-        value={fireAge || ""}
-        onChange={(e) => { onFireAgeChange(Number(e.target.value)); flash(); }}
-        style={{ ...inputStyle, maxWidth: 140, marginBottom: 16 }}
-        placeholder="30"
-      />
-
-      <label style={labelStyle}>Retirement target city</label>
-      <div style={{ position: "relative", marginBottom: 12 }}>
-        <input
-          style={inputStyle}
-          value={citySearch}
-          onChange={(e) => { setCitySearch(e.target.value); setShowCityDropdown(true); }}
-          onFocus={() => setShowCityDropdown(true)}
-          placeholder="Where should freedom be priced?"
-        />
-        {showCityDropdown && trimmed.length >= 2 && (matches.length > 0 || canUseTyped) && (
-          <div style={dropdownStyle}>
-            {matches.map((c) => (
-              <div
-                key={c.key}
-                onMouseDown={() => pickCity(c.name, c.col)}
-                style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-              >
-                {c.flag} {c.name}
-              </div>
-            ))}
-            {canUseTyped && (
-              <div
-                onMouseDown={() => pickCity(trimmed, 0)}
-                style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, color: "#047857", fontWeight: 700 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-              >
-                &#128205; Use &quot;{trimmed}&quot;
-                <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
-                  Not in our list? We&apos;ll still save it.
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <label style={labelStyle}>Lifestyle target</label>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
-        {LIFESTYLE_TIERS.map((tier) => (
-          <button
-            key={tier.label}
-            onClick={() => { onLifestyleChange(tier.multiplier); flash(); }}
-            style={{
-              padding: "10px 8px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
-              border: lifestyleMultiplier === tier.multiplier ? "1.5px solid #059669" : "1px solid #E2E8F0",
-              background: lifestyleMultiplier === tier.multiplier ? "#F0FDF4" : "#fff",
-              color: lifestyleMultiplier === tier.multiplier ? "#047857" : "#374151",
-              fontWeight: 700,
-            }}
-          >
-            <span style={{ display: "block", fontSize: 18 }}>{tier.icon}</span>
-            <span style={{ fontSize: 12 }}>{tier.label}</span>
-          </button>
-        ))}
-      </div>
-
-      <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
-        <div style={{ fontSize: 12, color: "var(--uf-text-2)", marginBottom: 4 }}>Current target</div>
-        <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)" }}>
-          {retirementCityName ? `${retirementCityName} · ${selectedLifestyle.label}` : "Choose a city to price your freedom date"}
-        </div>
-        {targetFireNumber > 0 && (
-          <div style={{ fontSize: 12, color: "var(--uf-text-2)", marginTop: 4 }}>
-            Rough target: {showMoney(targetAnnualSpend)}/yr &times; 25 = {showMoney(targetFireNumber)}
-          </div>
-        )}
-      </div>
-
-      <label style={labelStyle}>Tax home</label>
-      {taxKey && STATE_TAX[taxKey] && !taxSearch && (
-        <p style={{ fontSize: 12, color: "var(--uf-text-2)", margin: "0 0 8px", lineHeight: 1.5 }}>
-          {STATE_TAX[taxKey].label}
+  const growthEditor = (
+    <div>
+      <GrowthSetting value={returnPct} onChange={(v) => { onGrowthRateChange(v / 100); flash(); }} />
+      {freedomDateLabel !== undefined && (
+        <p aria-live="polite" style={{ margin: "10px 0 0", fontSize: 14, color: "var(--uf-ink)", fontWeight: 700 }}>
+          {freedomDateLabel
+            ? <>At {returnPct.toFixed(1)}%, your freedom date is {freedomDateLabel}.</>
+            : <>At {returnPct.toFixed(1)}%, your freedom date isn&apos;t reached yet.</>}
         </p>
       )}
-      <div style={{ position: "relative" }}>
-        <input
-          style={inputStyle}
-          value={taxSearch}
-          onChange={(e) => { setTaxSearch(e.target.value); setShowTaxDropdown(true); }}
-          onFocus={() => setShowTaxDropdown(true)}
-          onBlur={() => setTimeout(() => setShowTaxDropdown(false), 150)}
-          placeholder={taxKey && STATE_TAX[taxKey] ? `Change: ${STATE_TAX[taxKey].label}` : "Search city or state to set tax home…"}
-        />
-        {showTaxDropdown && taxSearch.trim().length >= 2 && (() => {
-          const taxMatches = CITIES.filter((c) =>
-            c.name.toLowerCase().includes(taxSearch.trim().toLowerCase()) && c.state && STATE_TAX[c.state]
-          ).slice(0, 8);
-          if (!taxMatches.length) return null;
-          const seen = new Set<string>();
-          const unique = taxMatches.filter((c) => { if (seen.has(c.state)) return false; seen.add(c.state); return true; });
-          return (
-            <div style={dropdownStyle}>
-              {unique.map((c) => (
-                <div
-                  key={c.state}
-                  onMouseDown={() => { onTaxKeyChange(c.state); setTaxSearch(""); setShowTaxDropdown(false); flash(); }}
-                  style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-                >
-                  {c.flag} {c.name}
-                  <span style={{ fontSize: 12, color: "var(--uf-text-2)", marginLeft: 6 }}>
-                    &middot; {STATE_TAX[c.state]?.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          );
-        })()}
-      </div>
+    </div>
+  );
 
-      {/* Growth after inflation (D-24): the assumption that moves the date most. */}
-      <div style={{ marginTop: 18 }}>
-        <label style={labelStyle}>Growth after inflation</label>
-        <GrowthSetting value={returnPct} onChange={(v) => { onGrowthRateChange(v / 100); flash(); }} />
-        {freedomDateLabel !== undefined && (
-          <p aria-live="polite" style={{ margin: "10px 0 0", fontSize: 14, color: "var(--uf-ink)", fontWeight: 700 }}>
-            {freedomDateLabel
-              ? <>At {returnPct.toFixed(1)}%, your freedom date is {freedomDateLabel}.</>
-              : <>At {returnPct.toFixed(1)}%, your freedom date isn&apos;t reached yet.</>}
-          </p>
-        )}
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
+        <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>Your assumptions · every date here comes from these</span>
+        {saved && <span className="uf-t-small" style={{ color: "var(--uf-pos-ink)", fontWeight: 700 }}>Saved ✓</span>}
       </div>
+      <MoneyList>
+        <MoneyRow dot="var(--uf-ink-3)" icon="🎂" name="Age" meta="Turns the date into an age" value={fireAge ? `${fireAge} ›` : "Add ›"} onClick={() => toggle("age")}
+          after={open === "age" && (
+            <input type="number" min={18} max={100} aria-label="Current age" value={fireAge || ""} placeholder="30"
+              onChange={(e) => { onFireAgeChange(Number(e.target.value)); flash(); }} style={{ ...inputStyle, maxWidth: 140 }} />
+          )} />
+        <MoneyRow dot="#2a78d6" icon="🌍" name="Retire in" meta={retirementCityCol > 0 ? `Prices your FIRE number at about ${showMoney(targetAnnualSpend)} a year` : "Skip it and your own spending sets the target"}
+          value={retirementCityName ? `${retirementCityName} ›` : "Choose ›"} onClick={() => toggle("city")}
+          after={open === "city" && (
+            <div>
+              <label style={labelStyle}>Retirement target city</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  style={inputStyle}
+                  value={citySearch}
+                  onChange={(e) => { setCitySearch(e.target.value); setShowCityDropdown(true); }}
+                  onFocus={() => setShowCityDropdown(true)}
+                  placeholder="Where should freedom be priced?"
+                />
+                {showCityDropdown && trimmed.length >= 2 && (matches.length > 0 || canUseTyped) && (
+                  <div style={dropdownStyle}>
+                    {matches.map((c) => (
+                      <div key={c.key} onMouseDown={() => pickCity(c.name, c.col)}
+                        style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
+                        {c.flag} {c.name}
+                      </div>
+                    ))}
+                    {canUseTyped && (
+                      <div onMouseDown={() => pickCity(trimmed, 0)}
+                        style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, color: "var(--uf-pos-ink)", fontWeight: 700 }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
+                        &#128205; Use &quot;{trimmed}&quot;
+                        <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
+                          Not in our list? We&apos;ll still save it.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )} />
+        <MoneyRow dot="#eda100" icon={selectedLifestyle.icon} name="Lifestyle" meta="Spending in retirement, against today's" value={`${selectedLifestyle.label} ›`} onClick={() => toggle("lifestyle")}
+          after={open === "lifestyle" && (
+            <div role="radiogroup" aria-label="Lifestyle" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {LIFESTYLE_TIERS.map((tier) => {
+                const on = lifestyleMultiplier === tier.multiplier;
+                return (
+                  <button key={tier.label} type="button" role="radio" aria-checked={on} onClick={() => { onLifestyleChange(tier.multiplier); flash(); }}
+                    style={{ border: "none", borderRadius: 999, padding: "6px 14px", font: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                      background: on ? "var(--uf-ink)" : "var(--uf-surface-2)", color: on ? "var(--uf-card)" : "var(--uf-ink-2)" }}>
+                    {tier.icon} {tier.label} · {Math.round(tier.multiplier * 100)}%
+                  </button>
+                );
+              })}
+            </div>
+          )} />
+        <MoneyRow dot="#e34948" icon="🏛️" name="Tax home" meta="Where income tax is worked out" value={taxKey && STATE_TAX[taxKey] ? `${STATE_TAX[taxKey].label} ›` : "Choose ›"} onClick={() => toggle("taxhome")}
+          after={open === "taxhome" && (
+            <div style={{ position: "relative" }}>
+              <input
+                style={inputStyle}
+                aria-label="Tax home"
+                value={taxSearch}
+                onChange={(e) => { setTaxSearch(e.target.value); setShowTaxDropdown(true); }}
+                onFocus={() => setShowTaxDropdown(true)}
+                onBlur={() => setTimeout(() => setShowTaxDropdown(false), 150)}
+                placeholder={taxKey && STATE_TAX[taxKey] ? `Change: ${STATE_TAX[taxKey].label}` : "Search city or state to set tax home…"}
+              />
+              {showTaxDropdown && taxSearch.trim().length >= 2 && (() => {
+                const taxMatches = CITIES.filter((c) =>
+                  c.name.toLowerCase().includes(taxSearch.trim().toLowerCase()) && c.state && STATE_TAX[c.state]
+                ).slice(0, 8);
+                if (!taxMatches.length) return null;
+                const seen = new Set<string>();
+                const unique = taxMatches.filter((c) => { if (seen.has(c.state)) return false; seen.add(c.state); return true; });
+                return (
+                  <div style={dropdownStyle}>
+                    {unique.map((c) => (
+                      <div key={c.state}
+                        onMouseDown={() => { onTaxKeyChange(c.state); setTaxSearch(""); setShowTaxDropdown(false); flash(); }}
+                        style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
+                        {c.flag} {c.name}
+                        <span style={{ fontSize: 12, color: "var(--uf-text-2)", marginLeft: 6 }}>&middot; {STATE_TAX[c.state]?.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )} />
+        {/* Growth after inflation (D-24): the assumption that moves the date most. */}
+        <MoneyRow dot="#008300" icon="📊" name="Growth after inflation" meta="The assumption that moves the date most" value={`${returnPct.toFixed(1)}% ›`} onClick={() => toggle("growth")}
+          after={open === "growth" && growthEditor} />
+        {taxRow && (
+          <MoneyRow dot="var(--uf-ink-3)" icon="🧾" name="Tax in retirement" meta={taxRow.summary} value={taxRow.on ? "On ›" : "Off ›"} onClick={() => toggle("tax")}
+            after={open === "tax" && taxRow.editor} />
+        )}
+      </MoneyList>
     </div>
   );
 }

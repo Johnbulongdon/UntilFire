@@ -1653,3 +1653,32 @@ YNAB) and an audit the founder asked to have fixed in full.
   worth account cards, Categories and Insights use system tokens, and the
   dark Insights cards became normal cards; the sidebar no longer repeats
   Cashflow's sub-pages, which the pills now show.
+
+### D-42 — October 7: Plan in the calm style
+
+**Status:** Active. From a Plan mock the founder approved ("build all").
+
+**Decision:**
+- **Freedom date** leads with the date in Fraunces and a bar to the FIRE
+  number. Under it, **what moves it most**: the same three moves as Home
+  (save $500 more, spend 10% less, earn 10% more), worked out from Plan's own
+  inputs so their dates match the one above, as rows with years sooner and
+  the month each lands.
+- **Assumptions are rows**, each opening its own editor: age, retire in,
+  lifestyle, tax home, growth, and tax in retirement (the tax card, which was
+  a separate card, opens from its row). The lifestyle hint no longer shows a
+  "×25" FIRE number, which disagreed with the freedom date's own multiple.
+- **Before you buy** is one sentence: "A $3,000 purchase today moves your
+  freedom date 1 month later", with what it would have grown to under it.
+  The dark two-box result is gone.
+- **Goals:** saved toward every goal, one bar split by goal, and what a month
+  keeps the dated ones on time; then a row per goal with its date and monthly
+  amount. Delete asks first. Goals already stored a target date, so no new
+  field.
+- **Contributions** leads with the next amount, your mix now against your
+  target as two bars, and the steps as numbered rows; the inputs follow as
+  before.
+- **Rows** show word values ("Lisbon ›") in the body font and amounts in DM
+  Mono.
+
+**Not changed:** Expat FIRE, Citizenship and Learn.
