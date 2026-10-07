@@ -11,6 +11,7 @@ import { FALLBACK_RATES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { EXPENSE_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import MonthInsight from "./MonthInsight";
+import { useCustomCategories } from "@/lib/useCustomCategories";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
   if (!currency || currency === "USD") return amount;
@@ -85,10 +86,13 @@ function ChartTooltip({ active, payload, label, displayCurrency, displayRates }:
 }
 
 // ─── Root Component ───────────────────────────────────────────────────────────
-export default function ReportsTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES }: {
+export default function ReportsTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES, targetMultiple }: {
   displayCurrency?: string;
   displayRates?: Record<string, number>;
+  /** FIRE target per dollar of a year's spending, as the freedom date uses it. */
+  targetMultiple?: number;
 }) {
+  const { customCats } = useCustomCategories();
   const [transactions, setTransactions] = useState<RawTx[]>([]);
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
@@ -137,9 +141,11 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
     [months, transactions, rates]
   );
 
+  // Averages are over finished months: this month, a week or so in, counted
+  // as a whole month and pulled every average down (D-35). The chart still shows it.
   const activeMths = useMemo(() =>
-    monthlySummaries.filter(m => m.income > 0 || m.expenses > 0),
-    [monthlySummaries]
+    monthlySummaries.filter(m => m.month !== months[months.length - 1] && (m.income > 0 || m.expenses > 0)),
+    [monthlySummaries, months]
   );
 
   const { avgIncome, avgExpenses, avgRate } = useMemo(() => {
@@ -157,20 +163,24 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
     const periodTxns = transactions.filter(
       t => t.date >= months[0] && t.transaction_type === "expense"
     );
-    return EXPENSE_CATEGORIES.map(cat => {
-      const { color, emoji } = resolveDisplay({ color: cat.color, emoji: cat.emoji }, catCustomizations, cat.key);
+    // Every category, custom ones included, so the slices add up to the
+    // expenses total; a category no longer defined counts under Other.
+    const cats = [...EXPENSE_CATEGORIES, ...customCats.filter((c) => !EXPENSE_CATEGORIES.some((e) => e.key === c.key))];
+    const known = new Set(cats.map((c) => c.key));
+    return cats.map(cat => {
+      const { color, emoji } = resolveDisplay({ color: cat.color, emoji: cat.emoji ?? "📦" }, catCustomizations, cat.key);
       return {
         ...cat,
         color,
         emoji,
         total: periodTxns
-          .filter(t => t.category === cat.key)
+          .filter(t => t.category === cat.key || (cat.key === "other" && !known.has(t.category)))
           .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0),
       };
     })
       .filter(c => c.total > 0)
       .sort((a, b) => b.total - a.total);
-  }, [months, transactions, rates, catCustomizations]);
+  }, [months, transactions, rates, catCustomizations, customCats]);
 
   const grandTotal = catTotals.reduce((s, c) => s + c.total, 0);
 
@@ -286,6 +296,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
           is the question people arrive with, and the trend only makes sense
           once the outlier months are explained. */}
       <MonthInsight
+        targetMultiple={targetMultiple}
         transactions={transactions}
         rates={rates}
         displayCurrency={displayCurrency}

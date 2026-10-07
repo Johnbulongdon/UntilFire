@@ -8,6 +8,18 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Money's numbers agree
+- Net worth counts each debt once, everywhere: a linked loan or mortgage
+  replaces what you typed, and credit card balances are included.
+- The Net Worth page's progress matches Home's.
+- Insights averages only finished months, and its categories include your
+  custom ones.
+- Budget's savings rate is after your mortgage payment, and a category is
+  "over" when spending plus bills still due passes its budget, the same as
+  Transactions.
+- "Committed every month" and Insights' FIRE-target line use your own
+  withdrawal rate and tax setting.
+
 ### Contributions math
 - Paid weekly: each purchase is your week's money, not a quarter of it, and
   the employer match and loan overpayment take a week's share, not a
