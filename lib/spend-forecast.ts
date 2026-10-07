@@ -49,7 +49,8 @@ const BILL_WORDS: [string, RegExp][] = [
 export function guessBillCategory(description: string | null): string | null {
   return BILL_WORDS.find(([, re]) => re.test(description ?? ""))?.[0] ?? null;
 }
-const billCategory = (b: Bill) => b.category || guessBillCategory(b.description);
+/** A bill's category, or the one its name suggests; null when neither says. */
+export const billCategory = (b: Pick<Bill, "category" | "description">) => b.category || guessBillCategory(b.description);
 const namesMatch = (b: Bill, name: string) =>
   (!!b.description && sameMerchant(b.description, name)) || (!!b.merchant && sameMerchant(b.merchant, name));
 
@@ -79,38 +80,73 @@ export function isBill(t: Pick<DayAmount, "description" | "category">, bills: Bi
 }
 
 /**
- * Usual everyday spending per day: the median, over past complete months,
- * of non-bill spending divided by that month's days. Null with fewer than
- * two months, where a single month is too thin to call usual.
- *
- * A payment is a bill when its name matches one, or, for each date a bill
- * falls on in that month, the payment in the bill's category closest to its
- * amount (within 10%). Names alone missed rent paid to a person ("陈玲" for
- * "John Rent") or through a card ("BILT PAYMENT" for "Sirui Rent"), so past
- * rent sat in the daily rate and the forecast counted it twice (D-31).
+ * What a month's spending came to without its bills. A payment is a bill
+ * when its name matches one, or, for each date a bill falls on in that
+ * month, the payment in the bill's category closest to its amount (within
+ * 10%). Names alone missed rent paid to a person ("陈玲" for "John Rent") or
+ * through a card ("BILT PAYMENT" for "Sirui Rent"), so past rent sat in the
+ * daily rate and the forecast counted it twice (D-31).
  */
-export function everydayRate(spend: DayAmount[], bills: Bill[], currentMonth: string, lookback = 6): number | null {
+export function nonBillTotal(rows: DayAmount[], bills: Bill[], month: string): number {
+  const billed = new Set(rows.filter((r) => isBill(r, bills)));
+  for (const b of bills) {
+    const cat = billCategory(b);
+    if (!cat || rows.some((r) => namesMatch(b, r.description ?? ""))) continue;
+    const due = occurrences(b, `${month}-01`, `${month}-${String(daysInMonth(month)).padStart(2, "0")}`).length;
+    for (let i = 0; i < due; i++) {
+      const near = rows.filter((r) => !billed.has(r) && r.category === cat && Math.abs(r.usd - b.usd) <= 0.1 * Math.max(r.usd, b.usd))
+        .sort((x, y) => Math.abs(x.usd - b.usd) - Math.abs(y.usd - b.usd))[0];
+      if (near) billed.add(near);
+    }
+  }
+  return rows.reduce((sum, r) => sum + (billed.has(r) ? 0 : r.usd), 0);
+}
+
+/** How many past months "usual" looks at, and how many it needs; the Past months line uses the same (D-31). */
+export const USUAL_LOOKBACK = 6;
+const MIN_MONTHS = 3;
+
+/**
+ * Usual everyday spending per day: the median, over the last six complete
+ * months, of non-bill spending divided by that month's days. Null with
+ * fewer than three months, the same rule as the Past months line.
+ */
+export function everydayRate(spend: DayAmount[], bills: Bill[], currentMonth: string, lookback = USUAL_LOOKBACK): number | null {
   const first = addMonths(currentMonth, -lookback);
   const byMonth = new Map<string, DayAmount[]>();
   for (const s of spend) {
     const m = monthOf(s.date);
     if (m < currentMonth && m >= first) byMonth.set(m, [...(byMonth.get(m) ?? []), s]);
   }
-  const rates = [...byMonth].map(([m, rows]) => {
-    const billed = new Set(rows.filter((r) => isBill(r, bills)));
-    for (const b of bills) {
-      const cat = billCategory(b);
-      if (!cat || rows.some((r) => namesMatch(b, r.description ?? ""))) continue;
-      const due = occurrences(b, `${m}-01`, `${m}-${String(daysInMonth(m)).padStart(2, "0")}`).length;
-      for (let i = 0; i < due; i++) {
-        const near = rows.filter((r) => !billed.has(r) && r.category === cat && Math.abs(r.usd - b.usd) <= 0.1 * Math.max(r.usd, b.usd))
-          .sort((x, y) => Math.abs(x.usd - b.usd) - Math.abs(y.usd - b.usd))[0];
-        if (near) billed.add(near);
-      }
-    }
-    return rows.reduce((sum, r) => sum + (billed.has(r) ? 0 : r.usd), 0) / daysInMonth(m);
-  });
-  return rates.length >= 2 ? median(rates) : null;
+  const rates = [...byMonth].map(([m, rows]) => nonBillTotal(rows, bills, m) / daysInMonth(m));
+  return rates.length >= MIN_MONTHS ? median(rates) : null;
+}
+
+/**
+ * The daily rate when there is no usual yet: this month's spending so far
+ * without its bills, per day elapsed. Including them projected a new user's
+ * rent across every remaining day ($1,500 on the 2nd became $23,000).
+ */
+export function rateSoFar(spend: DayAmount[], bills: Bill[], today: string, elapsed: number): number {
+  const m = monthOf(today);
+  return nonBillTotal(spend.filter((s) => monthOf(s.date) === m && s.date <= today), bills, m) / Math.max(1, elapsed);
+}
+
+/**
+ * Listed bills still owed this month, per category (their own or guessed):
+ * every date from the bill's stored due date (earlier ones are paid; an
+ * overdue one is still owed) to the end of the month. "Left" on a category
+ * subtracts these, the same as Free to spend does.
+ */
+export function dueByCategory(bills: Bill[], monthEnd: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const b of bills) {
+    const cat = billCategory(b);
+    if (!b.id || !cat) continue;
+    const n = occurrences(b, b.due, monthEnd).length;
+    if (n) out[cat] = (out[cat] ?? 0) + n * b.usd;
+  }
+  return out;
 }
 
 /** Every day of the months, in order. */

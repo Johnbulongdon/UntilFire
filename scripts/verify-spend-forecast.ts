@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, billsOverBudget, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
+import { type Bill, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -25,13 +25,23 @@ ok("a bill still due this month steps up on its date", () => {
   assert.equal(f[19], 1530, "the 20th, the bill");
 });
 ok("everyday rate leaves the listed bills out", () => {
-  const spend = ["2026-08", "2026-09"].flatMap((m) => [tx(`${m}-28`, 1380, "RENT PAYMENT", "housing"), tx(`${m}-10`, 620)]);
+  const spend = ["2026-07", "2026-08", "2026-09"].flatMap((m) => [tx(`${m}-28`, 1380, "RENT PAYMENT", "housing"), tx(`${m}-10`, 620)]);
   const r = everydayRate(spend, [rent], "2026-10")!;
-  assert.ok(Math.abs(r - 620 / 30.5) < 0.6, `rate ${r} should be about $20 a day, rent excluded`);
+  assert.ok(Math.abs(r - 620 / 31) < 0.6, `rate ${r} should be about $20 a day, rent excluded`);
   assert.equal(isBill(tx("2026-09-28", 1380, "Rent payment Sept", "other"), [rent]), true);
 });
-ok("one past month is not enough for a usual rate", () => {
-  assert.equal(everydayRate([tx("2026-09-10", 300)], [], "2026-10"), null);
+ok("fewer than three past months is not enough for a usual rate, the same as Past months", () => {
+  assert.equal(everydayRate([tx("2026-08-10", 300), tx("2026-09-10", 300)], [], "2026-10"), null);
+});
+ok("without a usual rate, the fallback leaves this month's rent out", () => {
+  const sirui: Bill = { id: "a", description: "Sirui Rent", category: null, usd: 1500, due: "2026-11-01", recurrence: "monthly" };
+  const r = rateSoFar([tx("2026-10-02", 1500, "BILT PAYMENT", "housing"), tx("2026-10-03", 40)], [sirui], "2026-10-04", 4);
+  assert.equal(r, 10, "$40 of everyday spending over 4 days, not $1,540");
+});
+ok("bills still owed this month count against their category, paid ones do not", () => {
+  const john: Bill = { id: "b", description: "John Rent", category: null, usd: 432, due: "2026-10-07", recurrence: "monthly" };
+  const sirui: Bill = { id: "a", description: "Sirui Rent", category: null, usd: 1500, due: "2026-11-01", recurrence: "monthly" };
+  assert.deepEqual(dueByCategory([john, sirui], "2026-10-31"), { housing: 432 });
 });
 ok("the budget path puts rent on its day and spreads the rest evenly", () => {
   const p = budgetPath(["2026-10"], 2930, [rent]);
@@ -130,11 +140,12 @@ ok("rent paid under another name leaves the everyday rate: the founder's two ren
   const sirui: Bill = { id: "a", description: "Sirui Rent", category: null, usd: 1500, due: "2026-10-01", recurrence: "monthly" };
   const john: Bill = { id: "b", description: "John Rent", category: null, usd: 432, due: "2026-10-07", recurrence: "monthly" };
   const spend = [
+    tx("2026-07-16", 425, "陈玲(陈玲)", "housing"), tx("2026-07-10", 600, "Groceries"),
     tx("2026-08-16", 425, "陈玲(陈玲)", "housing"), tx("2026-08-10", 600, "Groceries"), tx("2026-08-20", 60, "IKEA lamp", "housing"),
     tx("2026-09-01", 1380, "BILT PAYMENT", "housing"), tx("2026-09-08", 425, "陈玲(陈玲)", "housing"), tx("2026-09-10", 600, "Groceries"),
   ];
   const r = everydayRate(spend, [sirui, john], "2026-10")!;
-  const want = ((600 + 60) / 31 + 600 / 30) / 2;
+  const want = 600 / 30; // the middle of July 600/31, August 660/31 (lamp in, rent out), September 600/30
   assert.ok(Math.abs(r - want) < 0.01, `rate ${r.toFixed(2)} should be ${want.toFixed(2)}: both rents out, the lamp in`);
 });
 

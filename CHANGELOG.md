@@ -25,6 +25,19 @@ under today's date, creating the heading if it is not there yet.
   that bill. Later payments with the same name and a similar amount or date
   mark it paid, even when paid early or late, and the forecast stops
   adding a bill you have already paid this month.
+
+### The numbers agree with each other
+- "On track to save" counts this month's expected income until all of it
+  has arrived, instead of one paycheck against a whole month of expenses.
+- A new account's forecast no longer spreads rent across every day left.
+- Past months and the forecast both use your last six months.
+- Over or under budget compares only budgeted categories; spending without
+  a budget shows separately. "Bills exceed budget" now shows when it applies.
+- A category's "left" subtracts bills still due this month, the same as
+  Free to spend, and shows them as a striped "Still due" segment.
+- Bills without a category are treated the same everywhere ("Rent" counts
+  as Housing in Free to spend too), and rent you have linked and paid stops
+  reducing Free to spend.
 - The budget line shows bills at their real size. If bills add up to more
   than your budget, a chip says by how much instead of shrinking them.
 
