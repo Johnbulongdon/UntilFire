@@ -8,6 +8,17 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Home's math matches your freedom date
+- Debt is paid out of your savings instead of on top of investing all of
+  them, so freedom dates for people with debt are no longer too early.
+- "What if" moves and the spending warning use the same model as the
+  freedom date, tax settings included.
+- A connected account replaces the balance you typed for the same kind of
+  money instead of adding to it, everywhere on Home and Net Worth.
+- This month on Home is forecast like Transactions: rent on its day no
+  longer reads as overspending, and "left" subtracts bills still due.
+- The consistency streak only judges finished months.
+
 ### Upcoming bills match their payments
 - Upcoming bills take a category and sub-category like a transaction; the
   category is guessed from the name ("Rent" is Housing) until you pick one.

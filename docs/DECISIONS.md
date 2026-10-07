@@ -1348,3 +1348,39 @@ card, Free to spend and the Budget tab.
   totals, instead of "other".
 - Linked bills also settle where the dashboard loads Upcoming, so Free to
   spend stops counting rent that is already paid.
+
+### D-32 — October 7: Home's math matches the freedom date and Transactions
+
+**Status:** Active. From a math audit of Home the founder asked for.
+
+**Decision:**
+- **Debt comes out of savings.** The projection pays debt from savings
+  (up to 30% of them) and invests only what is left. It used to invest all
+  savings and pay debt from the same money again, which brought the freedom
+  date forward for anyone with debt.
+- **One set of inputs.** Home's "what if" moves, the spending warning, the
+  city-average and contribution-gap tasks all start from the freedom date's
+  own inputs (`projectionInputs`) and change one thing. They left the tax
+  settings out, so every move looked better by that difference.
+- **Connected replaces manual** (the founder's call). A connected account
+  replaces the typed balance of the same kind (`effectiveBalances`):
+  retirement accounts replace 401(k) and Roth, other investment accounts
+  replace taxable, and bank accounts replace cash. The freedom date, progress,
+  net worth, the money-mix ring and the Net Worth tab all use it. Adding both
+  counted a linked 401(k) twice for anyone who had typed its balance first.
+  Rejected: keeping the sum, which needed people to zero their typed
+  balances by hand after linking.
+- **This month reads like Transactions (D-31).**
+  - The plan to date puts Upcoming bills on their days.
+  - The month's forecast is spent so far, plus bills still due, plus
+    everyday spending at the usual rate. Spent-so-far ÷ share of the month
+    spread rent across every day.
+  - "Reduce spending by" is the forecast overrun.
+  - "Left" subtracts bills still due.
+- **Only finished months are judged** in the consistency streak, after
+  refunds. This month's savings so far against a whole month's goal read
+  "needs a reset" whenever rent went out.
+
+**Not changed:** cash still grows at the market return in the projection,
+and the status pill still reads the planned savings rate. The founder can
+revisit either.
