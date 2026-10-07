@@ -103,9 +103,12 @@ export function planContribution(
   targets: Target[],
   holdings: Holding[],
   budget: number,
-  opts: { frequency?: Frequency; normaliseToBudget?: boolean } = {},
+  opts: { frequency?: Frequency; normaliseToBudget?: boolean; budgetFrequency?: Frequency } = {},
 ): ContributionPlan {
-  const { frequency = "monthly", normaliseToBudget = true } = opts;
+  /* `budgetFrequency` is how often the budget arrives. A week's money bought
+     weekly is one purchase, not a month's money split four ways: dividing a
+     weekly budget by the weeks in a month made each purchase 4.3x too small. */
+  const { frequency = "monthly", normaliseToBudget = true, budgetFrequency = "monthly" } = opts;
   const valueOf = new Map(holdings.map((h) => [h.symbol, h.value]));
   const total = targets.reduce((sum, t) => sum + (valueOf.get(t.symbol) ?? 0), 0);
 
@@ -128,7 +131,7 @@ export function planContribution(
 
   const rawTotal = raw.reduce((sum, a) => sum + a.adjusted, 0);
   const scale = normaliseToBudget && rawTotal > 0 ? budget / rawTotal : 1;
-  const periods = PERIODS_PER_MONTH[frequency];
+  const periods = PERIODS_PER_MONTH[frequency] / PERIODS_PER_MONTH[budgetFrequency];
 
   const assets: AssetPlan[] = raw.map((a) => ({
     ...a,

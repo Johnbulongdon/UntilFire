@@ -8,6 +8,20 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Contributions math
+- Paid weekly: each purchase is your week's money, not a quarter of it, and
+  the employer match and loan overpayment take a week's share, not a
+  month's every week.
+- Debt counts as expensive when its rate beats your expected return before
+  inflation (9.6% by default), so a cheap loan no longer jumps ahead of
+  investing.
+- Home's safety runway uses the emergency fund you set on Contributions, so
+  the two agree.
+- Home states the plan's monthly investing as an assumption. What to put in
+  this month is the Next contribution card's.
+- Contributions offers the debts from Liabilities and your connected loan and
+  card accounts, so you don't have to type them twice.
+
 ### Plan's tools agree with your freedom date
 - "What would this cost your freedom?" uses your real balances (connected
   accounts included), your savings after mortgage and debt, and the same

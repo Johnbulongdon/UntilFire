@@ -35,13 +35,12 @@ const mono: React.CSSProperties = {
 const fmtUsd = (n: number) =>
   `${n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`;
 
-export default function NextContributionCard({ facts, onOpenPlan }: NextContributionCardProps) {
+/* The same two stores the Contributions page reads, resolved the same way:
+   whichever copy was written later wins. Home only reads — it never writes
+   back, so a stale account copy is corrected the next time the page itself
+   is opened rather than from here. Home's safety runway reads it too. */
+export function useContributionPlan(): StoredPlan | null {
   const [plan, setPlan] = useState<StoredPlan | null>(null);
-
-  /* The same two stores the Contributions page reads, resolved the same way:
-     whichever copy was written later wins. Home only reads — it never writes
-     back, so a stale account copy is corrected the next time the page itself
-     is opened rather than from here. */
   useEffect(() => {
     let cancelled = false;
     const local = readLocalPlan();
@@ -54,6 +53,11 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
     })();
     return () => { cancelled = true; };
   }, []);
+  return plan;
+}
+
+export default function NextContributionCard({ facts, onOpenPlan }: NextContributionCardProps) {
+  const plan = useContributionPlan();
 
   /* No plan means nothing to report, and Home stays quiet rather than
      becoming a set-up prompt. But nothing safe to contribute is not the same
