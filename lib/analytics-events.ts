@@ -260,6 +260,6 @@ export interface TxReviewOpenedProperties extends BaseFunnelProperties {
   range_months: number;
 }
 export interface TxFlagResolvedProperties extends BaseFunnelProperties {
-  flag: 'card_payment' | 'duplicate' | 'large';
+  flag: 'card_payment' | 'duplicate' | 'large' | 'bill';
   confirmed: boolean;
 }

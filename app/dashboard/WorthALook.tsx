@@ -9,6 +9,11 @@ type Row = { id: string; date: string; description: string; amount: number; curr
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
 const COPY: Record<FlagKind, { label: string; tip: string; yes: string; no: string }> = {
+  bill: {
+    label: "Upcoming bill?",
+    tip: "Close in amount, category and date to a bill in Upcoming. Linking them means the bill counts once, and next time it is matched by name.",
+    yes: "Yes, link it", no: "Not this bill",
+  },
   card_payment: {
     label: "Card payment",
     tip: "Paying a credit card bill moves money; the purchases on the card were the spending. Counting both doubles it.",
@@ -31,8 +36,10 @@ const COPY: Record<FlagKind, { label: string; tip: string; yes: string; no: stri
  * appear when something is there. Opening one lists those rows with a
  * one-tap answer; nothing is changed without the person choosing.
  */
-export default function WorthALook({ flags, rows, fmt, toUSD, displayCurrency, onYes, onNo }: {
-  flags: Map<string, FlagKind>; rows: Row[]; fmt: (usd: number) => string; displayCurrency: string;
+export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurrency, onYes, onNo }: {
+  flags: Map<string, FlagKind>;
+  /** A word under a row's name, e.g. "→ Rent" for the bill it may be. */
+  notes?: Map<string, string>; rows: Row[]; fmt: (usd: number) => string; displayCurrency: string;
   toUSD: (amount: number, currency: string) => number;
   onYes: (row: Row, kind: FlagKind) => void; onNo: (row: Row, kind: FlagKind) => void;
 }) {
@@ -64,7 +71,9 @@ export default function WorthALook({ flags, rows, fmt, toUSD, displayCurrency, o
           {listed.map((r, i) => (
             <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 16px", borderTop: i ? "1px solid var(--uf-border)" : "none" }}>
               <span className="uf-t-small" style={{ ...mono, color: "var(--uf-ink-3)", width: 48 }}>{r.date.slice(5, 10)}</span>
-              <span style={{ flex: 1, minWidth: 120, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</span>
+              <span style={{ flex: 1, minWidth: 120, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {r.description}{notes?.get(r.id) && <span className="uf-t-small" style={{ fontWeight: 400, color: "var(--uf-ink-3)" }}> → {notes.get(r.id)}</span>}
+              </span>
               {/* The amount as it was charged, so the row is recognisable; converted alongside when it differs. */}
               <span style={{ ...mono, fontWeight: 600, textAlign: "right" }}>
                 {formatMoney(r.amount, { currency: r.currency, decimals: 2 })}

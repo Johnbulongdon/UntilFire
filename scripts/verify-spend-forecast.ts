@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, isBill, mergeBills, occurrences } from "../lib/spend-forecast.ts";
+import { type Bill, billsOverBudget, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, mergeBills, occurrences, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -38,9 +38,12 @@ ok("the budget path puts rent on its day and spreads the rest evenly", () => {
   assert.equal(Math.round(p[0]), 1380 + 50, "day 1: rent plus one day of the remaining $1,550 over 31 days");
   assert.equal(Math.round(p[30]), 2930, "ends at the budget");
 });
-ok("bills larger than the budget are capped so the line ends at the budget", () => {
+ok("bills larger than the budget are drawn at full size, and the overrun is reported", () => {
   const p = budgetPath(["2026-10"], 1000, [rent]);
-  assert.equal(Math.round(p[30]), 1000);
+  assert.equal(Math.round(p[0]), 1380, "rent on its day, not shrunk to fit");
+  assert.equal(Math.round(p[30]), 1380, "no everyday budget left");
+  assert.equal(billsOverBudget(["2026-10"], 1000, [rent]), 380);
+  assert.equal(billsOverBudget(["2026-10"], 2930, [rent]), 0);
 });
 
 ok("rent nobody listed in Upcoming is spotted in history, so it is not in the everyday rate", () => {
@@ -77,6 +80,30 @@ ok("weekly, one-off and annual bills land on their own dates", () => {
 ok("listed rent and the bank's BILT PAYMENT are one bill, not two", () => {
   const bilt: Bill = { description: "BILT PAYMENT", category: "housing", usd: 1380, due: "2026-11-02", recurrence: "monthly" };
   assert.equal(mergeBills([rent], [bilt]).length, 1);
+});
+
+ok("the founder's October: $1,500 Rent listed without a category, BILT PAYMENT $1,380 spotted", () => {
+  const listed: Bill = { id: "e1", description: "Rent", category: null, usd: 1500, due: "2026-10-01", recurrence: "monthly" };
+  const bilt: Bill = { description: "BILT PAYMENT", category: "housing", usd: 1380, due: "2026-10-30", recurrence: "monthly" };
+  const bills = mergeBills([listed], [bilt]);
+  assert.equal(bills.length, 1, "one rent, not two");
+  const p = budgetPath(["2026-10"], 2255, bills);
+  assert.equal(Math.round(p[1]), 1500 + Math.round(2 * 755 / 31), "Oct 2 holds the full $1,500 rent, not $1,113");
+});
+ok("a bill's category is guessed from its name when it has none", () => {
+  assert.equal(guessBillCategory("Rent"), "housing");
+  assert.equal(guessBillCategory("China Mobile"), "utilities");
+  assert.equal(guessBillCategory("Birthday dinner"), null);
+});
+ok("a payment that looks like a listed bill is asked about once, then linked by name", () => {
+  const listed: Bill = { id: "e1", description: "Rent", category: "housing", usd: 1500, due: "2026-11-01", recurrence: "monthly" };
+  const t = { id: "t1", date: "2026-10-02", usd: 1380, description: "BILT PAYMENT", category: "housing" };
+  const far = { ...t, id: "t2", date: "2026-10-15" }, other = { ...t, id: "t3", category: "food" };
+  const asks = unlinkedBillPayments([t, far, other], [listed], () => false);
+  assert.deepEqual([...asks.keys()], ["t1"], "only the one near rent day, in housing, close in amount");
+  assert.equal(unlinkedBillPayments([t], [{ ...listed, merchant: "BILT PAYMENT" }], () => false).size, 0, "linked: no question");
+  assert.equal(unlinkedBillPayments([t], [listed], () => true).size, 0, "said no: no question");
+  assert.equal(isBill(t, [{ ...listed, merchant: "BILT PAYMENT" }]), true, "linked payments leave the everyday rate");
 });
 
 console.log(`Spend forecast ok: ${n} checks.`);
