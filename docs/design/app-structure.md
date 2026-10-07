@@ -159,6 +159,9 @@ cards and table heads already stick to the top.
 - **Free to spend lives in Money, with a sentence on Home** (D-29). Money →
   Cashflow → Budget holds the runway, the bills behind it and which accounts
   count; Home's "Free to spend" card only reads that result and links to it.
+- **Home leads with three cards and one row** (D-39): the freedom date, this
+  month's contribution, this month's spending, then net worth, safety runway and
+  months on plan. The other cards are hidden by default and restored from Edit.
 
 ## Known gap — not fixed by this structure
 

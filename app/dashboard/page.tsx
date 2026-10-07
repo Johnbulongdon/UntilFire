@@ -6,8 +6,8 @@ const GeoArbitrageGlobe = dynamic(() => import("@/app/components/GeoArbitrageGlo
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
-  XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine, ReferenceDot,
+  XAxis, YAxis, Tooltip,
+  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
   ComposedChart, Area,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
@@ -25,6 +25,7 @@ import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-
 import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, rateSoFar, settleBill } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
+import { FreedomCard, MonthCard, GlanceRow, type MonthCategory } from "./HomeCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
 import { fetchAllPages } from "@/lib/supabase-pages";
@@ -48,7 +49,7 @@ import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } fro
 import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
-import { EXPENSE_CATEGORIES } from "@/lib/categories";
+import { EXPENSE_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { Alert, Badge, Button, ICON_PATHS, Stat } from "@/components/ui";
 
@@ -636,7 +637,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   onFreedomDateChange?: (date: Date | null) => void;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
-  const [showBreakdown, setShowBreakdown] = useState(true);
 
   // Home's arrangement. Loaded once per user; saved on every change rather
   // than behind a Save button, because there is nothing to lose by saving and
@@ -751,29 +751,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   }, [income, monthlyExpenses, fireYear, baseInputs, displayCurrency, displayRates]);
 
   const investable  = balances.k401 + balances.rothIRA + balances.taxable + balances.cash;
-  const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
 
-  const milestones = useMemo(() => {
-    if (fireTarget <= 0) return [] as Array<{ key: string; label: string; value: number; achieved: boolean }>;
-    const fixed = [
-      { key: "start", label: "Journey Started", value: 1 },
-      { key: "10k",   label: "First $10k",       value: 10_000 },
-      { key: "100k",  label: "Six Figures",       value: 100_000 },
-    ];
-    const pct = [
-      { key: "quarter",  label: "Foundation Built", value: fireTarget * 0.25 },
-      { key: "half",     label: "Halfway Free",      value: fireTarget * 0.5  },
-      { key: "approach", label: "On the Approach",   value: fireTarget * 0.75 },
-      { key: "fi",       label: "Work is Optional",  value: fireTarget        },
-    ].filter(m => m.value > 100_000);
-    // Include $1M "2 Comma Club" unless it overlaps closely with a %-based milestone
-    const oneMil = { key: "1m", label: "2 Comma Club", value: 1_000_000 };
-    const tooClose = pct.some(m => Math.abs(m.value - 1_000_000) / 1_000_000 < 0.12);
-    return [...fixed, ...(!tooClose ? [oneMil] : []), ...pct]
-      .sort((a, b) => a.value - b.value)
-      .map(m => ({ ...m, achieved: investable >= m.value }));
-  }, [investable, fireTarget]);
   // Memoized so its reference is stable across renders. Downstream memos depend
   // on it (chartData, exactFreedomDate); a fresh array every render made
   // exactFreedomDate recompute a new Date() each render, which the freedom-date
@@ -1009,29 +988,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
   }, [chartData, chartPeriod]);
 
-  // Milestone bubble markers — first point in periodData where portfolio value crosses each milestone
-  const milestoneDots = useMemo(() => {
-    if (!periodData.length || !milestones.length) return [] as Array<{ shortLabel: string; chartValue: number; label: string; achieved: boolean }>;
-    return milestones
-      .filter(m => m.key !== "start")
-      .flatMap(m => {
-        for (let i = 0; i < periodData.length; i++) {
-          const entry = periodData[i];
-          const val = entry.actual ?? entry.projected ?? 0;
-          if (val >= m.value) {
-            return [{ shortLabel: entry.shortLabel, chartValue: val, label: m.label, achieved: m.achieved }];
-          }
-        }
-        return [];
-      });
-  }, [periodData, milestones]);
-
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
 
-  // Status pill
-  const statusLabel = savingsRate >= 50 ? "Ahead of schedule" : savingsRate >= 25 ? "On track" : income > 0 ? "Needs attention" : "No data yet";
-  const statusColor = savingsRate >= 50 ? "var(--uf-pos)" : savingsRate >= 25 ? "var(--uf-green-700)" : income > 0 ? "var(--uf-warn)" : "var(--uf-ink-3)";
 
   const bestMove = nextMoveScenarios?.[0] ?? null;
   const actualOrPlannedIncome = hasActuals ? actualIncome : income;
@@ -1049,6 +1008,16 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const spendRows = useMemo(() => recentTransactions.filter((t) => t.transaction_type === "expense")
     .map((t) => ({ date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates), description: t.description ?? "", category: t.category ?? "other" })),
   [recentTransactions, displayCurrency, displayRates]);
+  const monthCategories: MonthCategory[] = useMemo(() => {
+    const byCat = new Map<string, number>();
+    for (const r of spendRows) if (r.date.startsWith(monthKey)) byCat.set(r.category, (byCat.get(r.category) ?? 0) + r.usd);
+    const customs = loadCatCustomizations();
+    return [...byCat].filter(([, usd]) => usd > 0).map(([key, usd]) => {
+      const def = EXPENSE_CATEGORIES.find((c) => c.key === key);
+      const { color } = resolveDisplay({ color: def?.color ?? "#8a7c68", emoji: def?.emoji ?? "📦" }, customs, key);
+      return { key, label: def?.label ?? key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()), color, usd };
+    }).sort((a, b) => b.usd - a.usd);
+  }, [spendRows, monthKey]);
   const expectedSpendToDate = monthlyExpenses > 0 ? budgetPath([monthKey], monthlyExpenses, bills)[now.getDate() - 1] ?? 0 : 0;
   const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const elapsedFraction = monthlyExpenses > 0 ? Math.min(1, expectedSpendToDate / monthlyExpenses) : 0; // share of the plan due by today
@@ -1097,13 +1066,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // Debts by the same rule as everywhere (effectiveDebts), cards included: they are owed.
   const debtsNow = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
   const currentNetWorth = investable - debtsNow.otherDebt - debtsNow.mortgage - debtsNow.cards;
-  const growthSummary = retireYear
-    ? statusLabel === "Ahead of schedule"
-      ? `At this pace, you’re tracking a little ahead of ${retireYear}.`
-      : statusLabel === "On track"
-        ? `Your current path still points to ${retireYear}.`
-        : `Your current path needs a nudge to protect ${retireYear}.`
-    : "Finish your setup to see your projected freedom date.";
   const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-ink-3)";
   const spendingBarColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-green-700)";
   const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
@@ -1431,16 +1393,13 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <DashSlot id="greeting" layout={layout} editing={editing} dragging={draggingId === "greeting"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>
+          <div className="uf-t-h2" style={{ margin: 0 }}>
             {timeOfDay ? `Good ${timeOfDay}` : "Hello"}{firstName ? `, ${firstName}` : ""}
           </div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 3, fontFamily: "Manrope, sans-serif" }}>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 2 }}>
             {formattedDate ? `${formattedDate}${cityName ? ` · ${cityName}` : ""}` : "\u00A0"}
           </div>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 99, background: `${statusColor}18`, color: statusColor, fontFamily: "Manrope, sans-serif", border: `1px solid ${statusColor}35` }}>
-          {statusLabel}
-        </span>
       </div>
 
       </DashSlot>
@@ -1465,189 +1424,41 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           idea as the free-calculator reveal — so it forces the `.dark` token
           scope rather than following the ambient theme. ─────────────────── */}
       <DashSlot id="hero" layout={layout} editing={editing} dragging={draggingId === "hero"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
-      <div className="uf-card dark" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(180deg, var(--uf-green-50) 0%, var(--uf-ground) 100%)", borderColor: "transparent" }}>
-        <div style={{ padding: "22px 22px 0", position: "relative" }}>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top right, rgba(53,201,174,0.14), transparent 38%)", pointerEvents: "none" }} />
-          <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-green-900)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
-                Your progress
-              </div>
-              <div style={{ fontSize: 15, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
-                Recent history and projected path to freedom.
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {(["5Y", "15Y", "All"] as const).map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setChartPeriod(period)}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: 999,
-                    border: chartPeriod === period ? "1px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.14)",
-                    background: chartPeriod === period ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.06)",
-                    color: "#fff",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    fontFamily: "Manrope, sans-serif",
-                  }}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="uf-progress-metrics" style={{ display: "grid", gridTemplateColumns: holdingsUnrealizedGain !== null ? "repeat(4, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14, position: "relative" }}>
-            {[
-              { label: "Net worth", value: fmtMoney(currentNetWorth, true), tone: "#fff" },
-              { label: "This month", value: hasActuals ? fmtMoney(actualOrPlannedSavings, true) : fmtMoney(goalContribution, true), tone: actualOrPlannedSavings >= 0 ? "var(--uf-teal)" : "var(--uf-neg)" },
-              ...(holdingsUnrealizedGain !== null ? [{ label: "Investment gains", value: fmtMoney(holdingsUnrealizedGain, true), tone: "var(--uf-teal)" }] : []),
-              { label: "Status", value: statusLabel, tone: "var(--uf-green-900)" },
-            ].map((item) => (
-              <div key={item.label} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 14, padding: "12px 14px" }}>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.58)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>{item.label}</div>
-                <div style={{ fontSize: item.label === "Status" ? 16 : 22, fontWeight: 800, color: item.tone, fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.1 }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-        <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both", padding: "0 10px" }}>
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={periodData} margin={{ top: 4, right: 14, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--uf-teal)" stopOpacity={0.48} />
-                  <stop offset="55%" stopColor="var(--uf-teal)" stopOpacity={0.10} />
-                  <stop offset="100%" stopColor="var(--uf-teal)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="contribGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--uf-green)" stopOpacity={0.65} />
-                  <stop offset="100%" stopColor="var(--uf-green)" stopOpacity={0.15} />
-                </linearGradient>
-                <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--uf-teal)" stopOpacity={0.45} />
-                  <stop offset="100%" stopColor="var(--uf-teal)" stopOpacity={0.05} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" vertical={false} />
-              <XAxis
-                dataKey="shortLabel"
-                tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 11, fontFamily: "Manrope" }}
-                axisLine={false}
-                tickLine={false}
-                interval="preserveStartEnd"
-                minTickGap={18}
-              />
-              <YAxis
-                tickFormatter={(value) => fmtMoney(value, true)}
-                tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 10, fontFamily: "Manrope" }}
-                axisLine={false}
-                tickLine={false}
-                width={58}
-              />
-              <Tooltip
-                animationDuration={150}
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const entry = payload[0]?.payload as any;
-                  const actual = entry?.actual as number | undefined;
-                  const projected = entry?.projected as number | undefined;
-                  const contrib = entry?.Contributions as number | undefined;
-                  const gains = entry?.["Market Growth"] as number | undefined;
-                  return (
-                    <div style={{ background: "var(--uf-card)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12, padding: "10px 12px", fontSize: 12, fontFamily: "Manrope, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
-                      <div style={{ fontWeight: 800, marginBottom: 6, color: "var(--uf-ink)" }}>{entry?.label ?? ""}</div>
-                      {actual !== undefined && actual !== null && <div style={{ color: "rgba(255,255,255,0.86)", marginBottom: 4 }}>{entry?.phase === "today" ? "Current" : "History"}: {fmtMoney(actual, true)}</div>}
-                      {projected !== undefined && projected !== null && !showBreakdown && <div style={{ color: "var(--uf-teal)", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
-                      {showBreakdown && contrib !== undefined && <div style={{ color: "var(--uf-green-700)", marginBottom: 2 }}>Contributions: {fmtMoney(contrib, true)}</div>}
-                      {showBreakdown && gains !== undefined && <div style={{ color: "var(--uf-teal)", marginBottom: 4 }}>Market returns: {fmtMoney(gains, true)}</div>}
-                      <div style={{ color: "rgba(255,255,255,0.6)" }}>Target: {fmtMoney(fireTarget, true)}</div>
-                    </div>
-                  );
-                }}
-              />
-              <ReferenceLine y={fireTarget} stroke="rgba(167,243,208,0.95)" strokeDasharray="5 4" strokeWidth={1.3} />
-              <ReferenceLine x={periodData.find((entry) => entry.phase === "today")?.shortLabel} stroke="rgba(255,255,255,0.26)" strokeDasharray="4 4" strokeWidth={1.2} />
-              {milestoneDots.map((dot) => (
-                <ReferenceDot
-                  key={dot.label}
-                  x={dot.shortLabel}
-                  y={dot.chartValue}
-                  r={0}
-                  shape={({ cx, cy }: { cx?: number; cy?: number }) => {
-                    const x = cx ?? 0;
-                    const y = cy ?? 0;
-                    const w = Math.max(dot.label.length * 5.8 + 12, 40);
-                    return (
-                      <g>
-                        <rect x={x - w / 2} y={y - 30} width={w} height={16} rx={4} fill="rgba(8,8,14,0.82)" stroke="rgba(53,201,174,0.55)" strokeWidth={0.8} />
-                        <text x={x} y={y - 18} textAnchor="middle" fill="var(--uf-teal)" fontSize={9} fontWeight={700} fontFamily="Manrope, sans-serif">{dot.label}</text>
-                        <line x1={x} y1={y - 14} x2={x} y2={y - 5} stroke="rgba(53,201,174,0.65)" strokeWidth={1} />
-                        <circle cx={x} cy={y} r={4} fill={dot.achieved ? "rgba(53,201,174,0.25)" : "var(--uf-teal)"} stroke="var(--uf-teal)" strokeWidth={1.5} />
-                      </g>
-                    );
-                  }}
-                />
-              ))}
-              <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.88)" strokeWidth={2} connectNulls={false} dot={false} activeDot={{ r: 5, fill: "#fff" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
-              {!showBreakdown && (
-                <Area type="monotone" dataKey="projected" stroke="var(--uf-teal)" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
-              )}
-              {showBreakdown && (
-                <>
-                  <Area type="monotone" dataKey="Contributions" stroke="var(--uf-green)" strokeWidth={1.5} fill="url(#contribGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
-                  <Area type="monotone" dataKey="Market Growth" stroke="var(--uf-teal)" strokeWidth={1.5} fill="url(#growthGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
-                </>
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div style={{ padding: "0 22px 22px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            {/* Static items */}
-            {[
-              { color: "rgba(255,255,255,0.88)", label: "History", dashed: false },
-              { color: "rgba(167,243,208,0.95)", label: "FIRE number", dashed: true },
-            ].map(({ color, label, dashed }) => (
-              <span key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "rgba(255,255,255,0.72)", fontFamily: "Manrope, sans-serif" }}>
-                <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke={color} strokeWidth="2" strokeDasharray={dashed ? "4 3" : undefined} /></svg>
-                {label}
-              </span>
-            ))}
-            {/* Projection / Breakdown toggle */}
-            <button
-              onClick={() => setShowBreakdown(v => !v)}
-              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "Manrope, sans-serif", background: "none", border: "none", cursor: "pointer", padding: "2px 0", color: showBreakdown ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.72)", textDecoration: "none" }}
-              title="Toggle contributions vs market returns breakdown"
-            >
-              {showBreakdown ? (
-                <>
-                  <span style={{ display: "flex", gap: 2 }}>
-                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "var(--uf-green)", opacity: 0.8, display: "inline-block" }} />
-                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "var(--uf-teal)", opacity: 0.6, display: "inline-block" }} />
-                  </span>
-                  <span>Contributions · Returns</span>
-                </>
-              ) : (
-                <>
-                  <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="var(--uf-teal)" strokeWidth="2" /></svg>
-                  Projection
-                </>
-              )}
-            </button>
-          </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", maxWidth: 300 }}>
-            {growthSummary}
-          </div>
-        </div>
-      </div>
+      <FreedomCard
+        dateLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : retireYear ? String(retireYear) : null}
+        yearsAway={fireYear}
+        age={fireAge > 0 && fireYear ? fireAge + fireYear : null}
+        invested={investable}
+        target={fireTarget}
+        fmt={fmtMoney}
+        period={chartPeriod}
+        onPeriod={setChartPeriod}
+      >
+        <ResponsiveContainer width="100%" height={180}>
+          <ComposedChart data={periodData} margin={{ top: 16, right: 18, bottom: 0, left: 18 }}>
+            <XAxis dataKey="shortLabel" tick={{ fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} axisLine={{ stroke: "var(--uf-border)" }} tickLine={false} interval="preserveStartEnd" minTickGap={40} />
+            <YAxis hide domain={[0, "auto"]} />
+            <Tooltip
+              animationDuration={150}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const entry = payload[0]?.payload as { label?: string; actual?: number | null; projected?: number | null; phase?: string } | undefined;
+                const value = entry?.actual ?? entry?.projected;
+                if (value == null) return null;
+                return (
+                  <div className="uf-t-small" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "8px 10px", boxShadow: "var(--uf-e2)" }}>
+                    <div style={{ color: "var(--uf-ink-2)" }}>{entry?.label ?? ""}{entry?.actual == null ? " · projected" : ""}</div>
+                    <b style={{ fontFamily: "var(--uf-font-mono)", color: "var(--uf-ink)" }}>{fmtMoney(value, true)}</b>
+                  </div>
+                );
+              }}
+            />
+            <ReferenceLine y={fireTarget} stroke="var(--uf-ink-3)" strokeDasharray="4 5" label={{ value: "FIRE number", position: "insideTopLeft", fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} />
+            <Area type="monotone" dataKey="actual" stroke="var(--uf-teal)" strokeWidth={2.5} fill="var(--uf-teal)" fillOpacity={0.1} connectNulls={false} dot={false} activeDot={{ r: 4, fill: "var(--uf-teal)" }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="projected" stroke="var(--uf-teal)" strokeWidth={2} strokeDasharray="1 5" strokeLinecap="round" dot={false} activeDot={{ r: 4, fill: "var(--uf-teal)" }} isAnimationActive={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </FreedomCard>
 
       </DashSlot>
       {/* ── On-track score: not how independent you are (the freedom date
@@ -1740,6 +1551,28 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
       )}
 
+      </DashSlot>
+      <DashSlot id="month" layout={layout} editing={editing} dragging={draggingId === "month"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+        <MonthCard
+          spent={hasActuals ? actualExpenses : monthCategories.reduce((sum, c) => sum + c.usd, 0)}
+          budget={monthlyExpenses}
+          categories={monthCategories}
+          free={freeResult ? freeResult.free : null}
+          freeUntil={freeResult ? new Date(`${freeResult.payday.iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null}
+          fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.("cashflow")}
+        />
+      </DashSlot>
+      <DashSlot id="glance" layout={layout} editing={editing} dragging={draggingId === "glance"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+        <GlanceRow
+          netWorth={currentNetWorth}
+          runway={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, floor: EMERGENCY_FUND_FLOOR_MONTHS, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
+          onPlan={trackedMonths > 0 ? [...consistencyMonths].reverse().map((m) => m.onTrack) : null}
+          fmt={(n) => fmtMoney(n)}
+          onNetWorth={() => onTabChange?.("assets")}
+          onRunway={() => onTabChange?.("assets")}
+          onMonths={() => onTabChange?.("reports")}
+        />
       </DashSlot>
       <DashSlot id="freedom" layout={layout} editing={editing} dragging={draggingId === "freedom"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       {efMonthlyBase > 0 && (
