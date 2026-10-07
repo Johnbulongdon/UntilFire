@@ -14,6 +14,8 @@ under today's date, creating the heading if it is not there yet.
 - When a payment looks like one of your Upcoming bills, Worth a look asks
   once ("Upcoming bill? → Rent"). Say yes and it is linked by name from then
   on, so the bill is counted once in the forecast and budget line.
+- Once linked, the bill marks itself paid when its payment arrives: a
+  repeating bill moves to its next date, a one-off is completed.
 - The budget line shows bills at their real size. If bills add up to more
   than your budget, a chip says by how much instead of shrinking them.
 

@@ -188,3 +188,25 @@ const shiftDay = (iso: string, n: number) => {
   const [y, m, d] = iso.split("-").map(Number);
   return isoDay(new Date(y, m - 1, d + n));
 };
+
+/**
+ * Linked bills whose current due date has been paid: a payment under the
+ * bank's confirmed name within 5 days of it. Marking these paid by hand was
+ * the last step after linking; the person already told us whose payment it
+ * is, so the bill settles itself (D-31). `completed` bills are skipped.
+ */
+export function paidBills(txs: BillTx[], listed: (Bill & { completed?: boolean })[]): { bill: Bill; tx: BillTx }[] {
+  return listed.flatMap((b) => {
+    if (!b.id || !b.merchant || b.completed) return [];
+    const from = shiftDay(b.due, -5), to = shiftDay(b.due, 5);
+    const tx = txs.find((t) => t.date >= from && t.date <= to && sameMerchant(b.merchant!, t.description));
+    return tx ? [{ bill: b, tx }] : [];
+  });
+}
+
+/** The Upcoming update that marks a bill's current due date paid: a repeat moves to its next date, a one-off is completed. */
+export function markPaid(b: Pick<Bill, "due" | "recurrence">, nowIso: string): { due_date: string } | { completed_at: string } {
+  if (b.recurrence === "none") return { completed_at: nowIso };
+  const [y, m, d] = b.due.split("-").map(Number);
+  return { due_date: isoDay(addRecurrence(new Date(y, m - 1, d), b.recurrence)) };
+}

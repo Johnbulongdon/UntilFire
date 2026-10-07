@@ -11,7 +11,7 @@ import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
 import { findFlags, type FlagKind, isSystemTag, okTag } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
-import { type Bill, guessBillCategory, mergeBills, unlinkedBillPayments } from "@/lib/spend-forecast";
+import { type Bill, guessBillCategory, markPaid, mergeBills, paidBills, unlinkedBillPayments } from "@/lib/spend-forecast";
 import type { FreeToSpend } from "@/lib/free-to-spend";
 import { detectRecurring, type Recurrence } from "@/lib/recurring-detect";
 import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
@@ -1726,21 +1726,21 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   // monthly, quarterly and annual payments spotted in the history and not
   // listed (rent paid through "BILT PAYMENT" every month is a bill whether
   // or not anyone added it). Each lands on its own date in lib/spend-forecast.
-  const [expected, setExpected] = useState<{ id: string; amount: number; currency: string | null; transaction_type: string; due_date: string; category: string | null; description: string | null; recurrence: string | null; match_merchant: string | null }[]>([]);
+  const [expected, setExpected] = useState<{ id: string; amount: number; currency: string | null; transaction_type: string; due_date: string; category: string | null; description: string | null; recurrence: string | null; match_merchant: string | null; completed_at: string | null }[]>([]);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
-      supabase.from("expected_payments").select("id, amount, currency, transaction_type, due_date, category, description, recurrence, match_merchant")
+      supabase.from("expected_payments").select("id, amount, currency, transaction_type, due_date, category, description, recurrence, match_merchant, completed_at")
         .eq("user_id", session.user.id)
         .then(({ data }) => { if (data) setExpected(data); });
     });
   }, [refreshKey]);
   // A listed bill without a category gets one guessed from its name ("Rent"
   // is housing), so it can still be matched to the bank's payment.
-  const listedBills = useMemo<Bill[]>(() => expected
+  const listedBills = useMemo<(Bill & { completed: boolean })[]>(() => expected
     .filter((r) => r.transaction_type === "expense" && r.due_date)
     .map((r) => ({ id: r.id, description: r.description, category: r.category || guessBillCategory(r.description), merchant: r.match_merchant,
-      usd: usd(Number(r.amount) || 0, r.currency ?? "USD"), due: r.due_date.slice(0, 10),
+      usd: usd(Number(r.amount) || 0, r.currency ?? "USD"), due: r.due_date.slice(0, 10), completed: !!r.completed_at,
       recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence })),
   [expected, usd]);
   const bills = useMemo<Bill[]>(() => {
@@ -1970,6 +1970,25 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     billAsks.forEach((_, id) => { if (!f.has(id)) f.set(id, "bill"); });
     return f;
   }, [monthTxns, transactions, usd, billAsks]);
+  // A linked bill whose payment has arrived is marked paid on its own: a
+  // repeat moves to its next date, a one-off is completed. The update is
+  // conditional on the due date it read, so two open tabs cannot roll it twice.
+  const settling = useRef(new Set<string>());
+  useEffect(() => {
+    const txs = transactions.filter((t) => t.transaction_type === "expense")
+      .map((t) => ({ id: t.id, date: t.date.slice(0, 10), usd: usd(netAmt(t), t.currency), description: t.description ?? "", category: t.category }));
+    for (const { bill } of paidBills(txs, listedBills)) {
+      const key = `${bill.id}|${bill.due}`;
+      if (settling.current.has(key)) continue;
+      settling.current.add(key);
+      const patch = markPaid(bill, new Date().toISOString());
+      supabase.from("expected_payments").update(patch).eq("id", bill.id!).eq("due_date", bill.due).select("id").then(({ data, error }) => {
+        if (error || !data?.length) return;
+        setExpected((prev) => prev.map((r) => (r.id === bill.id ? { ...r, ...patch } : r)));
+        showToast(`${bill.description ?? "Bill"} marked paid`);
+      });
+    }
+  }, [transactions, listedBills, usd, showToast]);
   const billNotes = useMemo(() => new Map([...billAsks].map(([id, b]) => [id, b.description ?? ""])), [billAsks]);
   const resolveFlag = useCallback(async (row: { id: string }, kind: FlagKind, confirmed: boolean) => {
     const tx = transactions.find((t) => t.id === row.id);

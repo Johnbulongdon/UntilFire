@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, billsOverBudget, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, mergeBills, occurrences, unlinkedBillPayments } from "../lib/spend-forecast.ts";
+import { type Bill, billsOverBudget, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, paidBills, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -104,6 +104,17 @@ ok("a payment that looks like a listed bill is asked about once, then linked by 
   assert.equal(unlinkedBillPayments([t], [{ ...listed, merchant: "BILT PAYMENT" }], () => false).size, 0, "linked: no question");
   assert.equal(unlinkedBillPayments([t], [listed], () => true).size, 0, "said no: no question");
   assert.equal(isBill(t, [{ ...listed, merchant: "BILT PAYMENT" }]), true, "linked payments leave the everyday rate");
+});
+
+ok("a linked bill settles itself when its payment arrives", () => {
+  const rent: Bill = { id: "e1", description: "Rent", category: "housing", usd: 1500, due: "2026-10-01", recurrence: "monthly", merchant: "BILT PAYMENT" };
+  const t = { id: "t1", date: "2026-10-02", usd: 1380, description: "BILT PAYMENT", category: "housing" };
+  assert.deepEqual(paidBills([t], [rent]).map((p) => p.tx.id), ["t1"]);
+  assert.deepEqual(markPaid(rent, "x"), { due_date: "2026-11-01" }, "a monthly bill moves to next month");
+  assert.equal(paidBills([t], [{ ...rent, due: "2026-11-01" }]).length, 0, "once moved, the same payment does not settle it again");
+  assert.equal(paidBills([t], [{ ...rent, merchant: null }]).length, 0, "not linked: left to the person");
+  assert.equal(paidBills([{ ...t, date: "2026-10-20" }], [rent]).length, 0, "too far from the due date");
+  assert.deepEqual(markPaid({ due: "2026-10-01", recurrence: "none" }, "now"), { completed_at: "now" }, "a one-off is completed");
 });
 
 console.log(`Spend forecast ok: ${n} checks.`);
