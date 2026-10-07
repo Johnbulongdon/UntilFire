@@ -3772,7 +3772,9 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, efOverride = null, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false }: {
+  /** An emergency fund amount set by hand on Contributions, which counts here too (D-37). */
+  efOverride?: number | null;
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -3890,7 +3892,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
     cashAccounts: toCashAccounts(bankAssets),
     manualCashSavings: cashSavings,
   });
-  const emergencyFundBalance = efMeasured.balance;
+  const emergencyFundBalance = efOverride ?? efMeasured.balance;
   const efIds = new Set(efMeasured.accounts.map((a) => a.id));
   // Toggle from what is ticked on screen, not from the stored list: after a
   // relink the stored ids match nothing and the savings default is showing.
@@ -5789,6 +5791,12 @@ export default function Dashboard() {
       .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
       .reduce((sum, [, v]) => sum + (v as number), 0),
   }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending, plaidAccounts, totalDebt, mortgageBalance]);
+  // The emergency fund as Contributions defines it (D-34): its needs basis and
+  // any amount set by hand. The Assets tab reads it too (D-37), so "months
+  // covered" is one number on Home, Contributions and Assets.
+  const sharedPlan = useContributionPlan();
+  const sharedEf = useMemo(() => emergencyFundFromPlan(sharedPlan, contributionFacts), [sharedPlan, contributionFacts]);
+  const efNeedsBase = sharedEf.monthlyNeeds > 0 ? sharedEf.monthlyNeeds : emergencyFundMonthlyBase;
   // Already-committed outgoings still ahead of us this month, in USD.
   // Overdue rows count too: an unpaid bill is still owed.
   //
@@ -6804,7 +6812,8 @@ export default function Dashboard() {
                   plaidAccounts={plaidAccounts}
                   onRefreshAccounts={refreshPlaidAccounts}
                   onUpgradeClick={() => { setUpgradeSource("plaid_limit"); setUpgradeOpen(true); }}
-                  emergencyFundMonthlyBase={emergencyFundMonthlyBase}
+                  emergencyFundMonthlyBase={efNeedsBase}
+                  efOverride={sharedPlan?.ladder?.efOverride ?? null}
                   plaidHoldings={plaidHoldings}
                   plaidSecurities={plaidSecurities}
                   holdingsNeedsReconnect={holdingsNeedsReconnect}

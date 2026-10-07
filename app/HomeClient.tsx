@@ -1061,12 +1061,17 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   const homeCoords = CITY_COORDS[currentCityKey] ?? { lat: 30.27, lng: -97.74 };
   const expatHome = { name: city.name.split(",")[0] || city.name, lat: homeCoords.lat, lng: homeCoords.lng };
   const EXPAT_KEYS = ["lisbon", "mexicocity", "chiangmai", "medellin", "bali", "porto", "valencia", "budapest", "bangkok", "kualalumpur"];
+  // City costs are in US dollars; the visitor's figures are in their own
+  // currency. Convert before comparing: HK$15,000 a month was being read as
+  // $15,000, which made every abroad age far too early (D-37).
+  const toUsd = (n: number) => n / (FALLBACK_RATES[currency] ?? 1);
+  const spendingUsd = toUsd(city.col), savingsUsd = toUsd(savings), portfolioUsd = toUsd(portfolioBalance);
   const expatCities: ExpatCity[] = EXPAT_KEYS
     .map((k): ExpatCity | null => {
       const c = CITIES.find((x) => x.key === k);
       const co = CITY_COORDS[k];
-      if (!c || !co || c.col >= city.col || freedomAge === null) return null;
-      const projection = calcFIRE(savings, c.col, planningAge, portfolioBalance, marketReturn);
+      if (!c || !co || c.col >= spendingUsd || freedomAge === null) return null;
+      const projection = calcFIRE(savingsUsd, c.col, planningAge, portfolioUsd, marketReturn);
       if (projection.years === null) return null;
       const age = planningAge + Math.floor(projection.years);
       return { key: k, name: c.name.split(",")[0], country: (c.name.split(", ")[1] ?? "").trim(), lat: co.lat, lng: co.lng, age, delta: freedomAge - age };
