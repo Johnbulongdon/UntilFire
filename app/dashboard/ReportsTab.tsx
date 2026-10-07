@@ -61,9 +61,9 @@ function lastNMonths(n: number): string[] {
 }
 
 function rateColor(rate: number): string {
-  if (rate >= 30) return "#62FAE3";
-  if (rate >= 10) return "#fbbf24";
-  return "#FCA5A5";
+  if (rate >= 30) return "var(--uf-teal)";
+  if (rate >= 10) return "var(--uf-warn-ink)";
+  return "var(--uf-neg-ink)";
 }
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
@@ -223,9 +223,9 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
   const periodBtnStyle = (p: 3 | 6 | 12): React.CSSProperties => ({
     padding: "6px 14px", borderRadius: 8, fontWeight: 700, fontSize: 13,
     cursor: "pointer", fontFamily: "inherit", border: "1.5px solid",
-    borderColor: period === p ? "#059669" : "#E2E8F0",
-    background: period === p ? "#059669" : "#fff",
-    color: period === p ? "#fff" : "#64748B",
+    borderColor: period === p ? "var(--uf-green)" : "var(--uf-border)",
+    background: period === p ? "var(--uf-green)" : "var(--uf-card)",
+    color: period === p ? "var(--uf-card)" : "var(--uf-ink-2)",
   });
 
   return (
@@ -236,7 +236,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
         .uf-report-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
         .uf-report-periods { display: flex; gap: 6px; }
         .uf-report-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-        .uf-report-kpi-card { min-width: 0; background: #003527; border-radius: 16px; padding: 20px 24px; }
+        .uf-report-kpi-card { min-width: 0; background: var(--uf-card); border-radius: 16px; padding: 20px 24px; box-shadow: var(--uf-e1); }
         .uf-report-card { background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 16px; padding: 24px; max-width: 100%; overflow: hidden; }
         .uf-report-chart { width: 100%; min-width: 0; }
         .uf-report-category-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; }
@@ -284,7 +284,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
             ))}
           </div>
           {ratesFallback && (
-            <div style={{ fontSize: 11, color: "#D97706", fontWeight: 600 }}>
+            <div style={{ fontSize: 11, color: "var(--uf-warn-ink)", fontWeight: 600 }}>
               ⚠ Estimated rates — live fetch failed
             </div>
           )}
@@ -306,24 +306,24 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       {/* ── KPI row ──────────────────────────────────────────────────────── */}
       <div className="uf-report-kpi-grid">
         {activeMths.length === 0 ? (
-          <div style={{ gridColumn: "1 / -1", background: "#003527", borderRadius: 16, padding: "24px", textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
+          <div className="uf-t-small" style={{ gridColumn: "1 / -1", background: "var(--uf-card)", borderRadius: 16, padding: "24px", textAlign: "center", color: "var(--uf-ink-3)" }}>
             No transactions in this period — try a wider range or add some in Cashflow.
           </div>
         ) : (
           <>
             {[
-              { label: "Average monthly income",   value: fmtDisplay(avgIncome),           color: "#62FAE3" },
-              { label: "Average monthly expenses", value: fmtDisplay(avgExpenses),         color: "#FCA5A5" },
+              { label: "Average monthly income",   value: fmtDisplay(avgIncome),           color: "var(--uf-ink)" },
+              { label: "Average monthly expenses", value: fmtDisplay(avgExpenses),         color: "var(--uf-ink)" },
               { label: "Average savings rate",     value: avgRate.toFixed(0) + "%", color: rateColor(avgRate) },
             ].map(kpi => (
               <div key={kpi.label} className="uf-report-kpi-card">
-                <div style={{ fontSize: 10, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 6 }}>
+                <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>
                   {kpi.label}
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: kpi.color, fontFamily: "Manrope, sans-serif", letterSpacing: "-1px" }}>
+                <div style={{ fontSize: 28, fontWeight: 600, color: kpi.color, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
                   {kpi.value}
                 </div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>
+                <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 4 }}>
                   avg over {activeMths.length} month{activeMths.length !== 1 ? "s" : ""}
                 </div>
               </div>
@@ -341,10 +341,10 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barCategoryGap="30%">
             <CartesianGrid strokeDasharray="3 3" stroke="var(--uf-border)" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--uf-ink-3)" }} axisLine={false} tickLine={false} />
             <YAxis
               tickFormatter={v => formatUSDInCurrency(v, displayCurrency, displayRates, { compact: true })}
-              tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false}
+              tick={{ fontSize: 11, fill: "var(--uf-ink-3)" }} axisLine={false} tickLine={false}
               width={45}
             />
               <Tooltip content={<ChartTooltip displayCurrency={displayCurrency} displayRates={displayRates} />} />
@@ -352,8 +352,8 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
               wrapperStyle={{ fontSize: 12, fontWeight: 700, paddingTop: 12 }}
               formatter={(value) => <span style={{ color: "var(--uf-text-2)" }}>{value}</span>}
             />
-            <Bar dataKey="income"   name="Income"   fill="#059669" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expenses" name="Expenses" fill="#FCA5A5" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="income"   name="Income"   fill="var(--uf-pos)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="expenses" name="Expenses" fill="var(--uf-ink-3)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
         </div>
@@ -435,16 +435,16 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
               <span style={{ fontWeight: 600, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", fontSize: 13 }}>
                 {row.label}
               </span>
-              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : "#059669" }}>
+              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : "var(--uf-pos-ink)" }}>
                 {empty ? "—" : fmtDisplay(row.income)}
               </span>
-              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : "#19181E" }}>
+              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : "var(--uf-ink)" }}>
                 {empty ? "—" : fmtDisplay(row.expenses)}
               </span>
-              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : row.net >= 0 ? "#059669" : "#DC2626" }}>
+              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : row.net >= 0 ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)" }}>
                 {empty ? "—" : (row.net >= 0 ? "+" : "") + fmtDisplay(row.net)}
               </span>
-              <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "#CBD5E1" : rateColor(row.savingsRate) }}>
+              <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : rateColor(row.savingsRate) }}>
                 {empty || row.income === 0 ? "—" : Math.max(-999, Math.min(999, row.savingsRate)).toFixed(0) + "%"}
               </span>
             </div>

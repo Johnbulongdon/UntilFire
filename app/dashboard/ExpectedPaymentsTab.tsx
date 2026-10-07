@@ -7,6 +7,8 @@ import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
 import ExpectedMonth from "./ExpectedMonth";
+import { Button, InfoTip } from "@/components/ui";
+import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, Fig } from "./MoneyCards";
 import type { AccountFacts } from "@/lib/contribution-ladder";
 import { parseIsoDate } from "@/lib/contribution-schedule";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SUB_CATEGORIES } from "@/lib/categories";
@@ -111,26 +113,11 @@ async function rescueLocalRecurring(userId: string): Promise<void> {
   }
 }
 
-function DueBadge({ daysUntilDue }: { daysUntilDue: number }) {
-  let bg: string, color: string, label: string;
-  if (daysUntilDue < 0) {
-    bg = "rgba(220,38,38,0.10)"; color = "#DC2626";
-    label = `Overdue by ${Math.abs(daysUntilDue)}d`;
-  } else if (daysUntilDue <= 3) {
-    bg = "rgba(220,38,38,0.08)"; color = "#DC2626";
-    label = daysUntilDue === 0 ? "Due today" : `Due in ${daysUntilDue}d`;
-  } else if (daysUntilDue <= 7) {
-    bg = "rgba(245,158,11,0.10)"; color = "#D97706";
-    label = `Due in ${daysUntilDue}d`;
-  } else {
-    bg = "rgba(5,150,105,0.08)"; color = "#059669";
-    label = `Due in ${daysUntilDue}d`;
-  }
-  return (
-    <span style={{ background: bg, color, borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>
-      {label}
-    </span>
-  );
+/** When it is due, in words; overdue reads in red. */
+function dueText(days: number): string {
+  if (days < 0) return `${Math.abs(days)}d overdue`;
+  if (days === 0) return "due today";
+  return `in ${days}d`;
 }
 
 /** A past expense offered when linking a bill to how the bank names it. */
@@ -139,11 +126,16 @@ type LinkOption = { description: string; date: string; label: string };
 /** A repeating bill is never finished; only a one-off can be completed. */
 const isDone = (p: ExpectedPayment) => !!p.completed_at && p.recurrence === "none";
 
-function PaymentCard({
-  item, catLabel, linkOptions, onLink, onToggle, onEdit, onDelete,
+const shortDay = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+/** One upcoming payment as a calm row; tapping it opens what can be done to it. */
+function PaymentRow({
+  item, catLabel, color, emoji, linkOptions, onLink, onToggle, onEdit, onDelete,
 }: {
   item: ExpectedPayment;
   catLabel: (key: string) => string;
+  color: string;
+  emoji?: string;
   linkOptions: LinkOption[];
   onLink: (merchant: string | null) => void;
   onToggle: () => void;
@@ -152,108 +144,63 @@ function PaymentCard({
 }) {
   const isIncome = item.transaction_type === "income";
   const isCompleted = isDone(item);
+  const [open, setOpen] = useState(false);
   const [linking, setLinking] = useState(false);
+  // Delete sits next to Mark paid, so it asks once before it goes.
+  const [confirming, setConfirming] = useState(false);
+  const days = daysUntil(item.due_date);
+  const meta = [
+    isCompleted ? `${isIncome ? "Received" : "Paid"} ${shortDay(item.completed_at!)}` : `${shortDay(item.due_date)} · ${dueText(days)}`,
+    item.recurrence !== "none" ? RECURRENCE_LABEL[item.recurrence] : null,
+    item.category ? `${catLabel(item.category)}${item.sub_category ? ` · ${item.sub_category}` : ""}` : null,
+    item.match_merchant ? `↔ ${item.match_merchant}` : null,
+  ].filter(Boolean).join(" · ");
+  const amount = `${isIncome ? "+" : "−"}${item.currency !== "USD" ? `${item.currency} ` : "$"}${item.amount.toLocaleString()}`;
 
   return (
-    <div style={{
-      background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12,
-      padding: "14px 18px", display: "grid",
-      gridTemplateColumns: "1fr auto", gap: 14, alignItems: "center",
-      opacity: isCompleted ? 0.6 : 1,
-    }}>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginBottom: 5, textDecoration: isCompleted ? "line-through" : "none" }}>
-          {item.description}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span style={{
-            background: isIncome ? "rgba(5,150,105,0.1)" : "rgba(220,38,38,0.08)",
-            color: isIncome ? "#059669" : "#DC2626",
-            borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700,
-          }}>
-            {isIncome ? "Income" : "Expense"}
-          </span>
-          {item.category && (
-            <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
-              {catLabel(item.category)}{item.sub_category ? ` · ${item.sub_category}` : ""}
-            </span>
-          )}
-          {item.match_merchant ? (
-            <span title="Payments with this name are this bill" style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 4px 2px 9px", fontSize: 11, fontWeight: 700 }}>
-              ↔ {item.match_merchant}
-              <button type="button" aria-label="Unlink" onClick={() => onLink(null)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 11, padding: "0 4px" }}>✕</button>
-            </span>
-          ) : !isIncome && linkOptions.length > 0 && (
-            <button type="button" onClick={() => setLinking((v) => !v)} aria-expanded={linking}
-              style={{ background: "none", border: "1px dashed var(--uf-border)", color: "var(--uf-text-2)", borderRadius: 999, padding: "1px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-              🔗 Link payment
-            </button>
-          )}
-          {item.recurrence !== "none" && (
-            <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
-              {RECURRENCE_LABEL[item.recurrence]}
-            </span>
-          )}
-          {isCompleted ? (
-            <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-3)", borderRadius: 999, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
-              {isIncome ? "Received" : "Paid"} {new Date(item.completed_at!).toLocaleDateString()}
-            </span>
-          ) : (
-            <DueBadge daysUntilDue={daysUntil(item.due_date)} />
-          )}
-        </div>
-        {/* Pick the past payment that was this bill; from then on, payments
-            with that name and a similar amount or date settle it. */}
-        {linking && !item.match_merchant && (
-          <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)" }}>Which payment was this bill?</div>
-            {linkOptions.map((o) => (
-              <button key={`${o.description}|${o.date}`} type="button" onClick={() => { onLink(o.description); setLinking(false); }}
-                style={{ display: "flex", justifyContent: "space-between", gap: 12, textAlign: "left", border: "1px solid var(--uf-border)", borderRadius: 8, background: "var(--uf-card)", padding: "6px 10px", cursor: "pointer", fontSize: 12, color: "var(--uf-text)" }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.description}</span>
-                <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--uf-text-2)", whiteSpace: "nowrap" }}>{o.date.slice(5)} · {o.label}</span>
-              </button>
-            ))}
+    <MoneyRow
+      dot={color}
+      icon={isIncome ? "💵" : emoji}
+      name={<span style={{ textDecoration: isCompleted ? "line-through" : "none" }}>{isCompleted ? "✓ " : ""}{item.description}</span>}
+      meta={<span style={{ color: !isCompleted && days < 0 ? "var(--uf-neg-ink)" : undefined }}>{meta}</span>}
+      value={amount}
+      valueTone={isCompleted ? "var(--uf-ink-3)" : isIncome ? "var(--uf-pos-ink)" : undefined}
+      onClick={() => { setOpen((v) => !v); setLinking(false); setConfirming(false); }}
+      after={open && (
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <Button variant={isCompleted ? "secondary" : "primary"} size="sm" onClick={onToggle}>
+              {isCompleted ? "Mark pending" : isIncome ? "Mark received" : "Mark paid"}
+            </Button>
+            {item.match_merchant
+              ? <Button variant="secondary" size="sm" onClick={() => onLink(null)}>Unlink {item.match_merchant}</Button>
+              : !isIncome && linkOptions.length > 0 && <Button variant="secondary" size="sm" aria-expanded={linking} onClick={() => setLinking((v) => !v)}>Link payment</Button>}
+            <Button variant="ghost" size="sm" onClick={onEdit}>Edit</Button>
+            {confirming
+              ? <>
+                  <Button variant="danger" size="sm" onClick={onDelete}>Delete {item.description}</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>Keep it</Button>
+                </>
+              : <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>Delete</Button>}
           </div>
-        )}
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-        <div style={{
-          fontSize: 16, fontWeight: 800, fontFamily: "Manrope, sans-serif",
-          color: isCompleted ? "#94A3B8" : (isIncome ? "#059669" : "#19181E"),
-        }}>
-          {isIncome ? "+" : "−"}{item.currency !== "USD" ? `${item.currency} ` : "$"}{item.amount.toLocaleString()}
+          {/* Pick the past payment that was this bill; from then on, payments
+              with that name and a similar amount or date settle it. */}
+          {linking && !item.match_merchant && (
+            <div style={{ display: "grid", gap: 4 }}>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Which payment was this bill?</span>
+              {linkOptions.map((o) => (
+                <button key={`${o.description}|${o.date}`} type="button" onClick={() => { onLink(o.description); setLinking(false); }}
+                  className="uf-t-small"
+                  style={{ display: "flex", justifyContent: "space-between", gap: 12, textAlign: "left", border: "1px solid var(--uf-border)", borderRadius: 8, background: "var(--uf-card)", padding: "6px 10px", cursor: "pointer", color: "var(--uf-ink)" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.description}</span>
+                  <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--uf-ink-2)", whiteSpace: "nowrap" }}>{o.date.slice(5)} · {o.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <button
-            onClick={onToggle}
-            style={{
-              background: isCompleted ? "rgba(100,116,139,0.08)" : "rgba(5,150,105,0.08)",
-              color: isCompleted ? "var(--uf-text-2)" : "#059669",
-              border: "none", borderRadius: 8, padding: "4px 10px",
-              fontSize: 11, fontWeight: 700, cursor: "pointer",
-            }}
-          >
-            {isCompleted ? "Mark pending" : (isIncome ? "Mark received" : "Mark paid")}
-          </button>
-          <button
-            onClick={onEdit}
-            style={{ background: "rgba(100,116,139,0.08)", color: "var(--uf-text-2)", border: "none", borderRadius: 8, padding: "4px 8px", fontSize: 13, cursor: "pointer", lineHeight: 1 }}
-            title="Edit"
-          >
-            ✏️
-          </button>
-          <button
-            onClick={onDelete}
-            style={{ background: "rgba(220,38,38,0.06)", color: "#DC2626", border: "none", borderRadius: 8, padding: "4px 8px", fontSize: 13, cursor: "pointer", lineHeight: 1 }}
-            title="Delete"
-          >
-            🗑️
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    />
   );
 }
 
@@ -518,6 +465,19 @@ export default function ExpectedPaymentsTab({
     outline: "none", background: "var(--uf-card)", boxSizing: "border-box",
   };
   const selectStyle: React.CSSProperties = { ...inputStyle, cursor: "pointer" };
+  const labelStyle: React.CSSProperties = { display: "block", marginBottom: 6, color: "var(--uf-ink-2)", fontWeight: 600 };
+  // A bill wears its category's colour, as on Transactions; income is teal.
+  const colorFor = (p: ExpectedPayment) => p.transaction_type === "income"
+    ? "var(--uf-teal)"
+    : [...EXPENSE_CATEGORIES, ...customCats].find((c) => c.key === p.category)?.color ?? "var(--uf-ink-3)";
+  const emojiFor = (p: ExpectedPayment) => [...EXPENSE_CATEGORIES, ...customCats].find((c) => c.key === p.category)?.emoji;
+  const rowProps = (item: ExpectedPayment) => ({
+    item, catLabel, color: colorFor(item), emoji: emojiFor(item), linkOptions: linkOptionsFor(item),
+    onLink: (m: string | null) => linkPayment(item, m), onToggle: () => toggleCompleted(item),
+    onEdit: () => openEditForm(item), onDelete: () => deletePayment(item.id),
+  });
+  // The next 30 days as a strip: each pending payment a mark on its day.
+  const soon = pending.filter((p) => { const d = daysUntil(p.due_date); return d >= 0 && d <= 30; });
 
   if (loading) {
     return (
@@ -529,45 +489,39 @@ export default function ExpectedPaymentsTab({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", fontFamily: "Fraunces, Georgia, serif" }}>
-            Upcoming
-          </h2>
-          <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
-            Money you expect in or out &mdash; a one-off, or a bill that repeats. Nothing is here unless you put it here.
-          </p>
-        </div>
-        <button
-          onClick={showForm ? closeForm : openAddForm}
-          style={{
-            background: showForm ? "#F1F5F9" : "linear-gradient(135deg, #059669, #064E3B)",
-            color: showForm ? "#64748B" : "#fff",
-            border: "none", borderRadius: 10, padding: "10px 18px",
-            fontWeight: 700, fontSize: 14, cursor: "pointer", flexShrink: 0,
-          }}
-        >
-          {showForm ? "✕ Cancel" : "+ Add upcoming payment"}
-        </button>
-      </div>
-
-      {/* The month first, in date order: the dated half of the budget, which
-          is what the contribution forecast is built from. */}
-      <ExpectedMonth
-        items={payments.map((p) => ({
-          description: p.description,
-          amountUSD: toUSD(p.amount, p.currency, displayRates),
-          type: p.transaction_type,
-          dueDate: p.due_date,
-          recurrence: p.recurrence,
-          category: p.category,
-          completed: isDone(p),
-        }))}
-        budgetMonthlySpending={budgetMonthlySpending}
-        lastMonthSpending={lastMonthSpending}
-        formatAmount={formatAmount}
-      />
+      {/* The calm headline (D-40): what is still to go out, what is still to
+          come in, and the next 30 days as marks on a strip. */}
+      <MoneyHead
+        label="Still to go out"
+        value={pending.length > 0 ? `−${formatAmount(totalOutgoingUSD)}` : formatAmount(0)}
+        sub={totalIncomingUSD > 0 ? <><Fig tone="var(--uf-pos-ink)">+{formatAmount(totalIncomingUSD)}</Fig> still to come in</> : "Money you expect in or out, one-off or repeating."}
+        aside={<Button variant={showForm ? "secondary" : "primary"} size="sm" onClick={showForm ? closeForm : openAddForm}>{showForm ? "Cancel" : "Add upcoming payment"}</Button>}
+      >
+        {soon.length > 0 && (
+          <div style={{ display: "grid", gap: 6 }}>
+            <div role="img" aria-label={`Next 30 days: ${soon.map((p) => `${p.description} ${shortDay(p.due_date)}`).join(", ")}`}
+              style={{ position: "relative", height: 18, borderRadius: 9, background: "var(--uf-surface-2)" }}>
+              {soon.map((p) => (
+                <i key={p.id} title={`${p.description} · ${shortDay(p.due_date)}`}
+                  style={{ position: "absolute", top: 4, width: 10, height: 10, borderRadius: 999, background: colorFor(p), boxShadow: "0 0 0 2px var(--uf-card)",
+                    left: `calc(${(daysUntil(p.due_date) / 30) * 100}% - ${(daysUntil(p.due_date) / 30) * 10}px)` }} />
+              ))}
+            </div>
+            <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", color: "var(--uf-ink-3)", fontFamily: "var(--uf-font-mono)" }}>
+              <span>Today</span><span>{shortDay(isoDay(new Date(Date.now() + 30 * 86_400_000)))}</span>
+            </div>
+          </div>
+        )}
+        {committedMonthlyUSD > 0 && (
+          <MoneyKey items={[
+            <span key="c" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Fig>{formatAmount(committedMonthlyUSD)}</Fig> committed every month
+              <InfoTip label="About committed">Your repeating bills, levelled to a monthly figure. That is {formatAmount(committedShareOfTarget)} of your FIRE number at {Math.round(targetMultiple * 10) / 10}× a year&apos;s spending.</InfoTip>
+            </span>,
+            <span key="n"><Fig>{soon.length}</Fig> in the next 30 days</span>,
+          ]} />
+        )}
+      </MoneyHead>
 
       {/* Spotted in transaction history. A guess until accepted — it never
           joins the list on its own, which is the whole reason the list can be
@@ -590,61 +544,23 @@ export default function ExpectedPaymentsTab({
                   {RECURRENCE_LABEL[toRecurrence(sug.frequency) as Recurrence]} &middot; seen {sug.occurrences}&times;
                   {sug.category ? ` · ${sug.category}` : ""}
                 </span>
-                <button onClick={() => acceptSuggestion(sug)} style={{ background: "rgba(5,150,105,0.08)", color: "#059669", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  Add
-                </button>
-                <button onClick={() => dismissSuggestion(sug.key)} style={{ background: "transparent", color: "var(--uf-text-3)", border: "none", padding: "5px 6px", fontSize: 12, cursor: "pointer" }}>
-                  Not this
-                </button>
+                <Button variant="primary" size="sm" onClick={() => acceptSuggestion(sug)}>Add</Button>
+                <Button variant="ghost" size="sm" onClick={() => dismissSuggestion(sug.key)}>Not this</Button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Summary */}
-      {pending.length > 0 && (
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "14px 18px", flex: "1 1 200px" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", marginBottom: 4 }}>Still to come in</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>+{formatAmount(totalIncomingUSD)}</div>
-          </div>
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "14px 18px", flex: "1 1 200px" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", marginBottom: 4 }}>Still to go out</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#DC2626", fontFamily: "Manrope, sans-serif" }}>−{formatAmount(totalOutgoingUSD)}</div>
-          </div>
-        </div>
-      )}
-
-      {/* The answer this page exists to give. The two figures below it are a
-          running balance that moves as things get paid; this one does not,
-          because a commitment is still a commitment after you have paid this
-          month's instalment. Kept separate so they stop being read as the
-          same kind of number. */}
-      {committedMonthlyUSD > 0 && (
-        <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "16px 18px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", marginBottom: 4 }}>
-            Committed every month
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 500, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--uf-text)" }}>
-            {formatAmount(committedMonthlyUSD)}
-          </div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 6, lineHeight: 1.6 }}>
-            Your repeating bills, levelled to a monthly figure &mdash; {formatAmount(committedShareOfTarget)} of your
-            FIRE target at {Math.round(targetMultiple * 10) / 10}&times; annual spending.
-          </div>
-        </div>
-      )}
-
       {/* Add / Edit form */}
       {showForm && (
-        <div style={{ background: "var(--uf-card)", border: "1.5px solid var(--uf-border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontWeight: 800, fontSize: 15, color: "var(--uf-text)" }}>
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="uf-t-h3" style={{ margin: 0 }}>
             {editingId ? "Edit upcoming payment" : "Add upcoming payment"}
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>DESCRIPTION</label>
+            <label className="uf-t-small" style={labelStyle}>Description</label>
             <input type="text" value={formDesc} onChange={e => {
               setFormDesc(e.target.value);
               if (!catPicked && formType === "expense") { setFormCategory(guessBillCategory(e.target.value) ?? ""); setFormSubCategory(""); }
@@ -653,11 +569,11 @@ export default function ExpectedPaymentsTab({
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>AMOUNT</label>
+              <label className="uf-t-small" style={labelStyle}>Amount</label>
               <input type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0" min="0" step="any" style={inputStyle} />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>CURRENCY</label>
+              <label className="uf-t-small" style={labelStyle}>Currency</label>
               <select value={formCurrency} onChange={e => setFormCurrency(e.target.value)} style={selectStyle}>
                 {(preferredCurrencies.length > 0 ? preferredCurrencies : [...SUPPORTED_CURRENCIES]).map(c => (
                   <option key={c} value={c}>{c}</option>
@@ -668,44 +584,26 @@ export default function ExpectedPaymentsTab({
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>
-                {formRecurrence === "none" ? "DUE DATE" : "NEXT DUE"}
-              </label>
+              <label className="uf-t-small" style={labelStyle}>{formRecurrence === "none" ? "Due date" : "Next due"}</label>
               <input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} style={inputStyle} />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>TYPE</label>
-              <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1.5px solid var(--uf-border)" }}>
-                {(["income", "expense"] as const).map(t => (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setFormType(t); setFormSubCategory(""); setCatPicked(false);
-                      setFormCategory(t === "expense" ? guessBillCategory(formDesc) ?? "" : "");
-                    }}
-                    style={{
-                      flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
-                      background: formType === t ? (t === "income" ? "#059669" : "#DC2626") : "#fff",
-                      color: formType === t ? "#fff" : "#64748B",
-                    }}
-                  >
-                    {t === "income" ? "Income" : "Expense"}
-                  </button>
-                ))}
-              </div>
+              <label className="uf-t-small" style={labelStyle}>Type</label>
+              <PillTabs label="Type" value={formType} options={[{ key: "income", label: "Income" }, { key: "expense", label: "Expense" }]}
+                onChange={(t) => { setFormType(t); setFormSubCategory(""); setCatPicked(false); setFormCategory(t === "expense" ? guessBillCategory(formDesc) ?? "" : ""); }} />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>CATEGORY</label>
+              <label className="uf-t-small" style={labelStyle}>Category</label>
               <select value={formCategory} onChange={e => { setFormCategory(e.target.value); setFormSubCategory(""); setCatPicked(true); }} style={selectStyle}>
                 <option value="">{formType === "expense" ? "Pick one" : "None"}</option>
                 {catOptions.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>SUB-CATEGORY</label>
+              <label className="uf-t-small" style={labelStyle}>Sub-category</label>
               <select value={formSubCategory} onChange={e => setFormSubCategory(e.target.value)} disabled={!subOptions.length} style={selectStyle}>
                 <option value="">Optional</option>
                 {subOptions.map(sc => <option key={sc} value={sc}>{sc}</option>)}
@@ -714,7 +612,7 @@ export default function ExpectedPaymentsTab({
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>REPEATS</label>
+            <label className="uf-t-small" style={labelStyle}>Repeats</label>
             <select value={formRecurrence} onChange={e => setFormRecurrence(e.target.value as Recurrence)} style={selectStyle}>
               {(Object.keys(RECURRENCE_LABEL) as Recurrence[]).map(k => (
                 <option key={k} value={k}>{RECURRENCE_LABEL[k]}</option>
@@ -722,58 +620,55 @@ export default function ExpectedPaymentsTab({
             </select>
           </div>
 
-          <button
-            onClick={saveForm}
-            disabled={saving || !formDesc.trim() || !formAmount || !formDueDate || needsCategory}
-            style={{
-              background: (!formDesc.trim() || !formAmount || !formDueDate || needsCategory) ? "#E2E8F0" : "linear-gradient(135deg, #059669, #064E3B)",
-              color: (!formDesc.trim() || !formAmount || !formDueDate || needsCategory) ? "#94A3B8" : "#fff",
-              border: "none", borderRadius: 10, padding: "12px 0",
-              fontWeight: 700, fontSize: 14, cursor: (!formDesc.trim() || !formAmount || !formDueDate || needsCategory) ? "default" : "pointer",
-            }}
-          >
+          <Button variant="primary" onClick={saveForm} disabled={saving || !formDesc.trim() || !formAmount || !formDueDate || needsCategory}>
             {editingId ? "Save changes" : "Add payment"}
-          </button>
+          </Button>
         </div>
       )}
 
-      {/* Overdue */}
       {overdue.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#DC2626" }}>Overdue ({overdue.length})</div>
-          {overdue.map(item => (
-            <PaymentCard key={item.id} item={item} catLabel={catLabel} linkOptions={linkOptionsFor(item)} onLink={(m) => linkPayment(item, m)} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
-          ))}
-        </div>
+        <section style={{ display: "grid", gap: 8 }}>
+          <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)", fontWeight: 700 }}>Overdue · {overdue.length}</span>
+          <MoneyList>{overdue.map(item => <PaymentRow key={item.id} {...rowProps(item)} />)}</MoneyList>
+        </section>
       )}
 
-      {/* Upcoming */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text-2)" }}>Upcoming ({upcoming.length})</div>
+      <section style={{ display: "grid", gap: 8 }}>
+        <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>Upcoming · {upcoming.length}</span>
         {upcoming.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--uf-text-3)", fontSize: 13, background: "var(--uf-card)", border: "1px dashed var(--uf-border)", borderRadius: 12 }}>
+          <div className="uf-t-small" style={{ textAlign: "center", padding: "32px 24px", color: "var(--uf-ink-3)", background: "var(--uf-card)", border: "1px dashed var(--uf-border)", borderRadius: 12 }}>
             Nothing upcoming yet. Add income you expect or a bill that is due.
           </div>
         ) : (
-          upcoming.map(item => (
-            <PaymentCard key={item.id} item={item} catLabel={catLabel} linkOptions={linkOptionsFor(item)} onLink={(m) => linkPayment(item, m)} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
-          ))
+          <MoneyList>{upcoming.map(item => <PaymentRow key={item.id} {...rowProps(item)} />)}</MoneyList>
         )}
-      </div>
+      </section>
 
-      {/* Completed (collapsible) */}
+      {/* The month in date order: the dated half of the budget, which is what
+          the contribution forecast is built from. */}
+      <ExpectedMonth
+        items={payments.map((p) => ({
+          description: p.description,
+          amountUSD: toUSD(p.amount, p.currency, displayRates),
+          type: p.transaction_type,
+          dueDate: p.due_date,
+          recurrence: p.recurrence,
+          category: p.category,
+          completed: isDone(p),
+        }))}
+        budgetMonthlySpending={budgetMonthlySpending}
+        lastMonthSpending={lastMonthSpending}
+        formatAmount={formatAmount}
+      />
+
       {completed.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <button
-            onClick={() => setShowCompleted(v => !v)}
-            style={{ background: "none", border: "none", padding: 0, textAlign: "left", fontSize: 13, fontWeight: 700, color: "var(--uf-text-2)", cursor: "pointer" }}
-          >
-            {showCompleted ? "▾" : "▸"} Completed ({completed.length})
+        <section style={{ display: "grid", gap: 8 }}>
+          <button type="button" onClick={() => setShowCompleted(v => !v)} aria-expanded={showCompleted} className="uf-t-small"
+            style={{ background: "none", border: "none", padding: 0, textAlign: "left", fontWeight: 700, color: "var(--uf-ink-3)", cursor: "pointer" }}>
+            {showCompleted ? "▾" : "▸"} Completed · {completed.length}
           </button>
-          {showCompleted && completed.map(item => (
-            <PaymentCard key={item.id} item={item} catLabel={catLabel} linkOptions={linkOptionsFor(item)} onLink={(m) => linkPayment(item, m)} onToggle={() => toggleCompleted(item)} onEdit={() => openEditForm(item)} onDelete={() => deletePayment(item.id)} />
-          ))}
-        </div>
+          {showCompleted && <MoneyList>{completed.map(item => <PaymentRow key={item.id} {...rowProps(item)} />)}</MoneyList>}
+        </section>
       )}
     </div>
   );
