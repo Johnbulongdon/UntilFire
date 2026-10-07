@@ -1384,3 +1384,28 @@ card, Free to spend and the Budget tab.
 **Not changed:** cash still grows at the market return in the projection,
 and the status pill still reads the planned savings rate. The founder can
 revisit either.
+
+### D-33 — October 7: Plan's tools use the freedom date's numbers
+
+**Status:** Active. From a math audit of Plan the founder asked for.
+
+**Decision:** Plan computes the freedom date's facts once (`planFacts`) and
+hands them to the tools around the date:
+- **Shared facts:**
+  - the target;
+  - balances, with connected accounts replacing typed ones (D-32);
+  - the savings actually invested in year one, after mortgage and debt;
+  - growth, withdrawal rate and the tax gross-up;
+  - the "use my history" budget when it is on.
+- **Purchase impact** ("What would this cost your freedom?") used typed
+  balances only, current budget × 25 and savings before the mortgage.
+- **The Tax Profile card** worked its "+$X for taxes" on current budget × 25.
+  It now uses the retirement target (retirement city, minus work costs).
+- **Expat FIRE** added typed and connected balances, ignored the mortgage,
+  debt, withdrawal rate and taxes, and grew the timeline at the default
+  rate while each city's years used the chosen one. A city's target is now
+  its cost × lifestyle × tax gross-up ÷ withdrawal rate, so the person's
+  retirement city matches their freedom date.
+
+**Kept separate:** goal savings are not subtracted from FIRE savings
+(the founder's call).
