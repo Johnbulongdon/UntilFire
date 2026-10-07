@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, InfoTip } from "@/components/ui";
 import { trackTxViewChanged } from "@/lib/analytics";
 import { type DateRange, monthOf, netAmount, type RangeTx, usualForRange, usualToDay } from "@/lib/spend-range";
-import { type Bill, billsOverBudget, budgetPath, daysOfMonths, everydayRate, forecastPath } from "@/lib/spend-forecast";
+import { type Bill, billCategory, billsOverBudget, budgetPath, daysOfMonths, dueByCategory, everydayRate, forecastPath, rateSoFar } from "@/lib/spend-forecast";
 import { BarsView, CalendarView, calendarAllowed, type Daily, LineView } from "./SpendCharts";
 
 type Tx = RangeTx & { id: string };
@@ -79,58 +79,73 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   // The period is still running when today falls inside it.
   const days = useMemo(() => daysOfMonths(range.months), [range]);
   const running = today >= range.start && today < range.end;
-  const elapsed = Math.max(1, days.filter((d) => d <= today).length);
   const thisMonth = monthOf(today);
+  const dayOfMonth = Number(today.slice(8, 10));
 
   // Income vs expenses, for the saved line. Expenses for a running period
   // are the forecast to its end, so "on track to save" compares like with
   // like: a whole month's income against a whole month's expenses. A month
   // with no income recorded (or only a stray refund) uses the expected income
-  // from the Budget tab.
+  // from the Budget tab, and so does the running month until all of it has
+  // arrived: one paycheck of two is not a month's income (D-31).
   const sum = (type: "expense" | "income") => transactions.filter((t) => t.transaction_type === type && inRange(t.date.slice(0, 10)))
     .reduce((s, t) => s + toUSD(type === "expense" ? netAmount(t) : t.amount, t.currency), 0);
   const allExpenses = useMemo(() => transactions.filter((t) => t.transaction_type === "expense")
     .map((t) => ({ date: t.date.slice(0, 10), category: t.category, description: t.description ?? "", usd: toUSD(netAmount(t), t.currency) })), [transactions, toUSD]);
   const spentSoFar = sum("expense");
   const allRate = useMemo(() => everydayRate(allExpenses, bills, thisMonth), [allExpenses, bills, thisMonth]);
-  const spent = running ? forecastPath(days, today, spentSoFar, bills, allRate ?? spentSoFar / elapsed).at(-1)! : spentSoFar;
+  const spent = running ? forecastPath(days, today, spentSoFar, bills, allRate ?? rateSoFar(allExpenses, bills, today, dayOfMonth)).at(-1)! : spentSoFar;
   let earned = 0, filled = 0;
   for (const m of range.months) {
     if (m > thisMonth) continue;
     const actual = transactions.filter((t) => t.transaction_type === "income" && t.date.startsWith(m)).reduce((s, t) => s + toUSD(t.amount, t.currency), 0);
-    if (expectedIncome > 0 && actual < expectedIncome * 0.25) { earned += expectedIncome; filled++; } else earned += actual;
+    const short = actual < expectedIncome * (m === thisMonth && running ? 1 : 0.25);
+    if (expectedIncome > 0 && short) { earned += expectedIncome; filled++; } else earned += actual;
   }
   const saved = earned - spent;
   const rawRate = earned > 0 ? Math.round((saved / earned) * 100) : null;
   const rate = rawRate != null && rawRate >= -100 && rawRate <= 100 ? rawRate : null;
 
   const cats = mode === "spent" ? expenseCats : incomeCats;
-  // Monthly budget for what is on screen: one category when one is picked,
-  // otherwise every budgeted category (less bills when they are hidden).
+  // Budget compares like with like (D-31): the budgeted categories (or the
+  // ones picked) against their budget, bills included only when they belong
+  // to one. Spending in categories with no budget is shown on its own.
+  const budgetKeys = useMemo(() => new Set(picked.size ? [...picked] : Object.keys(budgets).filter((k) => (budgets[k] ?? 0) > 0)), [budgets, picked]);
   const budgetMonth = useMemo(() => {
     if (mode !== "spent") return null;
-    const keys = picked.size ? [...picked] : Object.keys(budgets);
-    const total = keys.reduce((s, k) => s + Math.max(0, budgets[k] ?? 0), 0);
+    const total = [...budgetKeys].reduce((s, k) => s + Math.max(0, budgets[k] ?? 0), 0);
     return total > 0 ? total : null;
-  }, [budgets, mode, picked]);
+  }, [budgets, mode, budgetKeys]);
 
   // The chart's own forecast and budget line, for what is on screen.
-  const focusBills = useMemo(() => picked.size ? bills.filter((b) => b.category && picked.has(b.category)) : bills, [bills, picked]);
+  const focusBills = useMemo(() => picked.size ? bills.filter((b) => picked.has(billCategory(b) ?? "")) : bills, [bills, picked]);
   const focusRate = useMemo(() => everydayRate(focus, focusBills, thisMonth), [focus, focusBills, thisMonth]);
-  const forecastLine = mode === "spent" && running ? forecastPath(days, today, total, focusBills, focusRate ?? total / elapsed) : null;
-  const budgetLine = budgetMonth ? budgetPath(range.months, budgetMonth, focusBills) : null;
-  const billsOver = budgetMonth ? billsOverBudget(range.months, budgetMonth, focusBills) : 0;
+  const forecastLine = mode === "spent" && running ? forecastPath(days, today, total, focusBills, focusRate ?? rateSoFar(focus, focusBills, today, dayOfMonth)) : null;
+  const budgetBills = useMemo(() => bills.filter((b) => budgetKeys.has(billCategory(b) ?? "")), [bills, budgetKeys]);
+  const budgetLine = budgetMonth ? budgetPath(range.months, budgetMonth, budgetBills) : null;
+  const billsOver = budgetMonth ? billsOverBudget(range.months, budgetMonth, budgetBills) : 0;
+  const budgeted = useMemo(() => focus.filter((e) => budgetKeys.has(e.category)), [focus, budgetKeys]);
+  const budgetedSoFar = budgeted.filter((e) => inRange(e.date)).reduce((s, e) => s + e.usd, 0);
+  const budgetedRate = useMemo(() => everydayRate(budgeted, budgetBills, thisMonth), [budgeted, budgetBills, thisMonth]);
+  const vsBudget = budgetMonth == null ? null
+    : (running ? forecastPath(days, today, budgetedSoFar, budgetBills, budgetedRate ?? rateSoFar(budgeted, budgetBills, today, dayOfMonth)).at(-1)! : budgetedSoFar)
+      - budgetMonth * range.months.length;
+  const unbudgeted = budgetMonth == null || picked.size ? 0 : total - budgetedSoFar;
+  // Bills still owed this month, per category, so "left" matches Free to spend.
+  const due = useMemo(() => running && range.months.includes(thisMonth)
+    ? dueByCategory(bills, `${thisMonth}-${String(new Date(Number(thisMonth.slice(0, 4)), Number(thisMonth.slice(5, 7)), 0).getDate()).padStart(2, "0")}`) : {},
+  [bills, running, range, thisMonth]);
 
   const rows = useMemo(() => {
     const out = cats.map((c) => {
       const mine = entries.filter((e) => e.category === c.key);
       const now = mine.filter((e) => inRange(e.date)).reduce((s, e) => s + e.usd, 0);
       const b = mode === "spent" ? budgets[c.key] ?? 0 : 0;
-      return { ...c, now, usual: usualForRange(mine, range, today), budget: b > 0 ? b * range.months.length : null };
+      return { ...c, now, due: b > 0 ? due[c.key] ?? 0 : 0, usual: usualForRange(mine, range, today), budget: b > 0 ? b * range.months.length : null };
     }).filter((r) => r.now > 0 || (r.usual ?? 0) > 0 || (r.budget ?? 0) > 0).sort((a, b) => b.now - a.now);
     return out.slice(0, 6);
-  }, [cats, entries, range, today, budgets, mode]); // eslint-disable-line react-hooks/exhaustive-deps
-  const max = Math.max(1, ...rows.map((r) => Math.max(r.now, r.usual ?? 0, r.budget ?? 0)));
+  }, [cats, entries, range, today, budgets, mode, due]); // eslint-disable-line react-hooks/exhaustive-deps
+  const max = Math.max(1, ...rows.map((r) => Math.max(r.now + r.due, r.usual ?? 0, r.budget ?? 0)));
 
   const seg = (on: boolean): React.CSSProperties => ({ border: "none", borderRadius: 999, padding: "5px 12px", cursor: "pointer", font: "inherit", fontSize: 13, fontWeight: 700,
     background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: on ? "var(--uf-e1)" : "none" });
@@ -151,10 +166,10 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", display: "inline-flex", alignItems: "center", gap: 2 }}>
               {mode === "spent"
                 ? <>Income <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(earned)}{filled > 0 ? "*" : ""}</b></>
-                : <>Expenses <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
+                : <>{running ? "Expenses on track for" : "Expenses"} <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
               {earned > 0 && <>
                 · {running ? "On track to save" : "Saved"} <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
-                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{running ? " While the month is running, expenses are the forecast to its end." : ""}{filled > 0 ? ` *${filled === 1 ? "One month" : `${filled} months`} had no income recorded, so your expected income from the Budget tab stands in.` : ""}</InfoTip>
+                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{running ? " While the month is running, expenses are the forecast to its end." : ""}{filled > 0 ? ` *Where income hasn't arrived yet, your expected income from the Budget tab stands in.` : ""}</InfoTip>
               </>}
             </span>
           </div>
@@ -178,7 +193,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             </div>
           </div>
         </div>
-        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} billsOver={billsOver} forecast={forecastLine} periodLabel={periodLabel} fmt={fmt} />}
+        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} billsOver={billsOver} vsBudget={vsBudget} unbudgeted={unbudgeted} forecast={forecastLine} periodLabel={periodLabel} fmt={fmt} />}
         {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} valueLabel={mode === "spent" ? "Expenses" : "Income"} />}
         {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} />}
       </div>
@@ -186,7 +201,8 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
       <div style={{ display: "grid", gap: 2, alignContent: "start" }}>
         {rows.map((r) => {
           const d = r.usual == null ? null : r.now - r.usual, near = d != null && Math.abs(d) <= Math.max(10, (r.usual ?? 0) * 0.08), on = picked.has(r.key);
-          const over = r.budget != null && r.now > r.budget;
+          // "Left" also takes off bills still due this month in the category.
+          const used = r.now + r.due, over = r.budget != null && used > r.budget;
           const strong = r.budget != null ? over : d != null && d > 0 && !near;
           return (
             <div key={r.key} style={{ display: "grid", gap: 6 }}>
@@ -203,11 +219,13 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
                     {r.budget != null && <i title={`Budget ${fmt(r.budget)}`} style={{ position: "absolute", inset: "1px auto 1px 0", width: `${(r.budget / max) * 100}%`, borderRadius: 5,
                       background: `color-mix(in oklab, ${r.color} 30%, var(--uf-card))`, boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${r.color} 60%, var(--uf-card))` }} />}
                     <i style={{ position: "absolute", inset: "4px auto 4px 0", width: `${(r.now / max) * 100}%`, borderRadius: 4, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
+                    {r.due > 0 && <i title={`Still due ${fmt(r.due)}`} style={{ position: "absolute", top: 4, bottom: 4, left: `${(r.now / max) * 100}%`, width: `${(r.due / max) * 100}%`, borderRadius: 4,
+                      background: `repeating-linear-gradient(135deg, ${r.color} 0 3px, transparent 3px 6px)`, boxShadow: `inset 0 0 0 1px ${r.color}` }} />}
                     {r.usual != null && <i title={`Past months ${fmt(r.usual)}`} style={{ position: "absolute", top: -1, bottom: -1, left: `calc(${(r.usual / max) * 100}% - 1.5px)`, width: 3, borderRadius: 2, background: "var(--uf-ink)", boxShadow: "0 0 0 1.5px var(--uf-card)" }} />}
                   </span>
                   <span className="uf-t-small" style={{ ...mono, textAlign: "right", color: strong ? "var(--uf-ink)" : "var(--uf-ink-3)", fontWeight: strong ? 700 : 400 }}>
                     {r.budget != null
-                      ? over ? `${fmt(r.now - r.budget)} over` : `${fmt(r.budget - r.now)} left`
+                      ? over ? `${fmt(used - r.budget)} over` : `${fmt(r.budget - used)} left`
                       : d == null ? fmt(r.now) : near ? "≈ past" : `${d > 0 ? "▲" : "▼"} ${fmt(Math.abs(d))}`}
                   </span>
                 </button>
@@ -238,9 +256,10 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
         {rows.length > 0 && (
           <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", paddingLeft: 8, display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
             <i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, background: "var(--uf-ink-3)" }} />{mode === "spent" ? "Expenses" : "Income"}
+            {rows.some((r) => r.due > 0) && <><i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, marginLeft: 8, background: "repeating-linear-gradient(135deg, var(--uf-ink-3) 0 3px, transparent 3px 6px)", boxShadow: "inset 0 0 0 1px var(--uf-ink-3)" }} />Still due</>}
             {rows.some((r) => r.budget != null) && <><i style={{ display: "inline-block", width: 16, height: 10, borderRadius: 3, marginLeft: 8, background: "var(--uf-surface-2)", boxShadow: "inset 0 0 0 1.5px var(--uf-border-2)" }} />Budget</>}
             <i style={{ display: "inline-block", width: 3, height: 11, marginLeft: 8, background: "var(--uf-ink)" }} />Past months
-            <InfoTip label="About past months">Where a typical month of yours stood by this day: the middle of your previous months, so one unusual month doesn&apos;t skew it. It appears once you have 3 months of history. Budget comes from your Budget tab.</InfoTip>
+            <InfoTip label="About past months">Where a typical month of yours stood by this day: the middle of your previous months, so one unusual month doesn&apos;t skew it. It appears once you have 3 months of history. Budget comes from your Budget tab; what is left takes off bills in Upcoming still due this month.</InfoTip>
           </span>
         )}
       </div>

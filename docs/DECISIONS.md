@@ -1326,3 +1326,25 @@ a payment under that name settles the due date whose period it falls in
 within 5 days of the date or 15% of the amount, catching up several periods
 at once (`paymentFor`, `settleBill`). The forecast only adds a bill's dates
 from its stored due date on, since earlier ones are paid.
+
+**Addendum (math audit, October 7):** one set of definitions across the
+card, Free to spend and the Budget tab.
+- Saved: the running month's income is the expected income until all of it
+  has arrived, so a full month of forecast expenses is not set against one
+  paycheck.
+- With no usual yet, the forecast's daily rate leaves this month's bills
+  out (`rateSoFar`); including them spread a new user's rent across every
+  remaining day.
+- A typical month means the last six complete months, at least three, for
+  both the Past months line and the everyday rate (`USUAL_LOOKBACK`).
+- Over or under budget compares the budgeted categories (and their bills)
+  with their budget; spending in categories without one shows as its own
+  "+$X not budgeted" chip. The "Bills exceed budget" chip from the linking
+  addendum had not rendered (an edit that silently did not apply); it does now.
+- A category's "left" takes off bills in Upcoming still due this month,
+  drawn as a striped "Still due" segment, matching Free to spend.
+- Uncategorised bills take the category their name suggests everywhere,
+  including Free to spend's fixed categories and the Budget tab's committed
+  totals, instead of "other".
+- Linked bills also settle where the dashboard loads Upcoming, so Free to
+  spend stops counting rent that is already paid.

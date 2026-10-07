@@ -22,6 +22,7 @@ import { measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-lad
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
+import { guessBillCategory, settleBill } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
@@ -5544,7 +5545,7 @@ export default function Dashboard() {
   }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
-  type CommittedRow = { amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
+  type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
   const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string; description?: string }[]>([]);
@@ -5709,6 +5710,29 @@ export default function Dashboard() {
     const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
     return committedRows.filter((r) => r.transaction_type === "expense" && r.due_date <= end);
   }, [committedRows]);
+  // Linked bills settle here as well as on Transactions, so Home, the Budget
+  // tab and Free to spend never count rent that is already paid as still owed
+  // (D-31). Conditional on the due date read, so it cannot roll twice.
+  const settledRef = useRef(new Set<string>());
+  useEffect(() => {
+    if (!committedRows.length || !recentTransactions.length) return;
+    const txs = recentTransactions.filter((t) => t.transaction_type === "expense")
+      .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency, rates), description: t.description ?? "", category: t.category ?? null }));
+    for (const r of committedRows) {
+      if (!r.id || !r.match_merchant || r.transaction_type !== "expense") continue;
+      const recurrence = (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence;
+      const patch = settleBill({ id: r.id, description: r.description ?? null, category: r.category, merchant: r.match_merchant,
+        usd: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), due: r.due_date.slice(0, 10), recurrence }, txs, new Date().toISOString());
+      const key = `${r.id}|${r.due_date}`;
+      if (!patch || settledRef.current.has(key)) continue;
+      settledRef.current.add(key);
+      supabase.from("expected_payments").update(patch).eq("id", r.id).eq("due_date", r.due_date).select("id").then(({ data, error }) => {
+        if (error || !data?.length) return;
+        setCommittedRows((prev) => "completed_at" in patch ? prev.filter((x) => x.id !== r.id) : prev.map((x) => (x.id === r.id ? { ...x, ...patch } : x)));
+      });
+    }
+  }, [committedRows, recentTransactions, rates]);
+
   const committedRemainingUSD = useMemo(
     () => thisMonthBills.reduce((sum, r) => sum + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), 0),
     [thisMonthBills, rates],
@@ -5717,7 +5741,9 @@ export default function Dashboard() {
   const committedByCat = useMemo(() => {
     const m: Record<string, number> = {};
     for (const r of thisMonthBills) {
-      const k = r.category || "other";
+      // Uncategorised bills take the category their name suggests ("Rent" is
+      // housing), the same guess Transactions makes, not "other" (D-31).
+      const k = r.category || guessBillCategory(r.description ?? null) || "other";
       m[k] = (m[k] || 0) + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates);
     }
     return m;
@@ -5754,7 +5780,8 @@ export default function Dashboard() {
     return agg;
   }, [rawActuals, rates]);
   const freeResult: FreeToSpend | null = useMemo(() => {
-    const fixed = new Set(contributionItems.filter((i) => i.type === "expense" && i.recurrence !== "none" && i.category).map((i) => i.category as string));
+    const fixed = new Set(contributionItems.filter((i) => i.type === "expense" && i.recurrence !== "none")
+      .map((i) => i.category || guessBillCategory(i.description)).filter((c): c is string => !!c));
     const labels = Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c.key, c.label]));
     const budget = Object.entries(expenses)
       .filter(([k, v]) => !k.startsWith("_") && typeof v === "number" && v > 0 && !fixed.has(k))
@@ -5900,7 +5927,7 @@ export default function Dashboard() {
       // is misleading without them: money earmarked for rent is not money you
       // can spend, and until now the two tabs never spoke to each other.
       supabase.from("expected_payments")
-        .select("amount, currency, transaction_type, due_date, completed_at, category, description, recurrence")
+        .select("id, amount, currency, transaction_type, due_date, completed_at, category, description, recurrence, match_merchant")
         .eq("user_id", session.user.id)
         .is("completed_at", null)
         // Both directions. The contribution forecast needs income — payday
@@ -5946,6 +5973,7 @@ export default function Dashboard() {
               transaction_type: tx.transaction_type ?? "expense",
               tags: tx.tags || [],
               category: tx.category ?? "other",
+              description: tx.description ?? "",
             })));
           }
         });
