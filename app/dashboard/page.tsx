@@ -287,6 +287,8 @@ const fmt = (
   rates: Record<string, number>,
   compact = false,
 ) => formatUSDInCurrency(n, currency, rates, { compact });
+/** The same, under a name components that define their own `fmt` can still reach. */
+const fmtCurrency = fmt;
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>) => {
   if (!currency || currency === "USD") return amount;
@@ -5733,6 +5735,7 @@ export default function Dashboard() {
       monthlySavings: Math.max(0, planFreedom.firstYearInvested / 12),
       fireTarget: planFreedom.fireTarget,
       retirementMonthly,
+      currentMonthly: inputs.monthlyExpenses,
       // FIRE target per dollar of a year's retirement spending: 1 / withdrawal rate, with the tax gross-up.
       targetPerDollar: retirementMonthly > 0 ? planFreedom.fireTarget / (retirementMonthly * 12) : 1 / withdrawalRate,
     };
@@ -6902,6 +6905,10 @@ export default function Dashboard() {
                 portfolioBalance={planFacts.invested}
                 monthlySavings={planFacts.monthlySavings}
                 targetMultiple={lifestyleMultiplier * planFacts.targetPerDollar}
+                lifestyle={lifestyleMultiplier}
+                yourAnnualSpending={planFacts.currentMonthly * 12}
+                displayCurrency={defaultCurrency}
+                displayRates={rates}
                 age={fireAge}
                 cityName={cityName}
                 isDark={isDark}
@@ -6949,10 +6956,20 @@ function ExpatFireDashTab({
   onEditAssumptions,
   growthRate,
   targetMultiple = 25,
+  lifestyle = 1,
+  yourAnnualSpending = 0,
+  displayCurrency = "USD",
+  displayRates = FALLBACK_RATES,
 }: {
   growthRate: number;
   /** FIRE target per dollar of a city's yearly cost: lifestyle × tax gross-up ÷ withdrawal rate, as the freedom date uses. */
   targetMultiple?: number;
+  /** The lifestyle multiple inside targetMultiple, so costs can be shown at it (D-36). */
+  lifestyle?: number;
+  /** Your own yearly spending, for "your city" when it is not in the city list. */
+  yourAnnualSpending?: number;
+  displayCurrency?: string;
+  displayRates?: Record<string, number>;
   portfolioBalance: number;
   monthlySavings: number;
   age: number;
@@ -6995,8 +7012,9 @@ function ExpatFireDashTab({
       };
 
   const currentCityKey = useMemo(() => {
+    // No match means your own spending stands for "here", not New York (D-36).
     const match = CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
-    return match?.key ?? "nyc";
+    return match?.key ?? "";
   }, [cityName]);
 
   // ── Freedom timeline: fast-forward the projected portfolio and watch cities unlock ──
@@ -7054,18 +7072,22 @@ function ExpatFireDashTab({
     setSelectedCityKey(key);
   }
 
-  const fmt = (n: number) => formatMoney(n, { style: "compact" });
+  const fmt = (n: number) => fmtCurrency(n, displayCurrency, displayRates, true);
 
   if (selectedCityKey) {
     return (
       <ExpatCityDetail
         growthRate={growthRate}
         targetMultiple={targetMultiple}
+        lifestyle={lifestyle}
+        yourAnnualSpending={yourAnnualSpending}
+        displayCurrency={displayCurrency}
+        displayRates={displayRates}
         cityKey={selectedCityKey}
         portfolioBalance={portfolioBalance}
         monthlySavings={monthlySavings}
         age={age}
-        currentCityName={cityName || "Your city"}
+        currentCityName={currentCityKey ? (cityName || "Your city") : "Your spending"}
         currentCityKey={currentCityKey}
         isDark={isDark}
         onBack={() => setSelectedCityKey(null)}
@@ -7083,6 +7105,11 @@ function ExpatFireDashTab({
         currentAge={age}
         currentCityKey={currentCityKey}
         onCitySelect={handleCitySelect}
+        targetMultiple={targetMultiple}
+        growthRate={growthRate}
+        lifestyle={lifestyle}
+        formatAmount={(usd) => fmtCurrency(usd, displayCurrency, displayRates, true)}
+        baseTarget={currentCityKey ? undefined : yourAnnualSpending * targetMultiple / (lifestyle || 1)}
       />
 
       {/* Title overlay — top left */}
@@ -7260,9 +7287,17 @@ function ExpatCityDetail({
   onBack,
   growthRate,
   targetMultiple = 25,
+  lifestyle = 1,
+  yourAnnualSpending = 0,
+  displayCurrency = "USD",
+  displayRates = FALLBACK_RATES,
 }: {
   growthRate: number;
   targetMultiple?: number;
+  lifestyle?: number;
+  yourAnnualSpending?: number;
+  displayCurrency?: string;
+  displayRates?: Record<string, number>;
   cityKey: string;
   portfolioBalance: number;
   monthlySavings: number;
@@ -7292,24 +7327,28 @@ function ExpatCityDetail({
     );
   }
 
-  const currentCol = currentCity?.col ?? 60000;
-  const targetCol = targetCity.col;
+  // Costs at your lifestyle, so cost × your multiple is the FIRE number on the
+  // same card (D-36). A city not in the list uses your own spending rather
+  // than an invented $60,000.
+  const perDollar = targetMultiple / (lifestyle || 1);
+  const currentCol = currentCity ? currentCity.col * lifestyle : yourAnnualSpending;
+  const targetCol = targetCity.col * lifestyle;
 
   // Targets as the freedom date sets them (calcFIRE takes 25× what it is given).
-  const currentFire = calcFIRE(monthlySavings, currentCol * targetMultiple * 0.04, age || undefined, portfolioBalance, growthRate);
-  const targetFire = calcFIRE(monthlySavings, targetCol * targetMultiple * 0.04, age || undefined, portfolioBalance, growthRate);
+  const currentFire = calcFIRE(monthlySavings, currentCol * perDollar * 0.04, age || undefined, portfolioBalance, growthRate);
+  const targetFire = calcFIRE(monthlySavings, targetCol * perDollar * 0.04, age || undefined, portfolioBalance, growthRate);
 
   const currentYears = currentFire.years;
   const targetYears = targetFire.years;
   const yearDiff = currentYears !== null && targetYears !== null ? Math.abs(currentYears - targetYears) : null;
-  const isFireNow = portfolioBalance >= targetCol * targetMultiple;
+  const isFireNow = portfolioBalance >= targetCol * perDollar;
   const monthlyDiff = Math.round((currentCol - targetCol) / 12);
 
-  const fmtUSD = (n: number) => formatMoney(n, { style: "compact" });
+  const fmtUSD = (n: number) => fmtCurrency(n, displayCurrency, displayRates, true);
 
   function readinessBadge() {
-    if (portfolioBalance >= targetCol * targetMultiple) return { label: "FIRE ready", color: "#003527", bg: "#A7F3D0" };
-    if (portfolioBalance >= targetCol * targetMultiple / 2) return { label: "Barista FIRE", color: "#78350F", bg: "#FEF3C7" };
+    if (portfolioBalance >= targetCol * perDollar) return { label: "FIRE ready", color: "#003527", bg: "#A7F3D0" };
+    if (portfolioBalance >= targetCol * perDollar / 2) return { label: "Barista FIRE", color: "#78350F", bg: "#FEF3C7" };
     return { label: "Not yet", color: "#991B1B", bg: "#FEE2E2" };
   }
 
@@ -7456,8 +7495,8 @@ function ExpatCityDetail({
             </div>
             <div style={{ fontSize: 22, fontWeight: 800, color: monthlyDiff >= 0 ? "#059669" : "#ef4444" }}>
               {monthlyDiff >= 0
-                ? `Moving saves $${Math.abs(monthlyDiff).toLocaleString()}/mo`
-                : `Moving costs $${Math.abs(monthlyDiff).toLocaleString()}/mo more`}
+                ? `Moving saves ${fmtCurrency(Math.abs(monthlyDiff), displayCurrency, displayRates)}/mo`
+                : `Moving costs ${fmtCurrency(Math.abs(monthlyDiff), displayCurrency, displayRates)}/mo more`}
             </div>
           </div>
           <div style={{ fontSize: 28 }}>{targetCity.flag}</div>

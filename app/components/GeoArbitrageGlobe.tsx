@@ -20,6 +20,18 @@ interface GeoArbitrageGlobeProps {
   currentCityKey: string;
   onCitySelect: (cityKey: string) => void;
   fillContainer?: boolean;
+  /** FIRE target per dollar of a city's yearly cost. The dashboard passes the
+   *  freedom date's (lifestyle × tax gross-up ÷ withdrawal rate); the public
+   *  calculator keeps 25×. */
+  targetMultiple?: number;
+  /** Growth for the hover card's years, the person's own choice on the dashboard. */
+  growthRate?: number;
+  /** Lifestyle multiple shown on the hover card's cost of living, so it matches the target. */
+  lifestyle?: number;
+  /** Money in the person's display currency (USD amounts in). Defaults to dollars. */
+  formatAmount?: (usd: number) => string;
+  /** The FIRE target "here" when the person's city is not on the globe: their own spending's. */
+  baseTarget?: number;
 }
 
 interface PlottedCity {
@@ -88,9 +100,9 @@ const HALO_DOTS: { angle: number; rf: number; alpha: number; r: number }[] = (()
 // Readiness colour
 // ---------------------------------------------------------------------------
 
-function dotColor(col: number, portfolioBalance: number): string {
-  if (portfolioBalance >= col * 25) return '#22d3a5'; // FIRE ready
-  if (portfolioBalance >= col * 12.5) return '#fbbf24'; // Barista FIRE
+function dotColor(col: number, portfolioBalance: number, multiple = 25): string {
+  if (portfolioBalance >= col * multiple) return '#22d3a5'; // FIRE ready
+  if (portfolioBalance >= col * multiple / 2) return '#fbbf24'; // Barista FIRE
   return '#f87171'; // Not yet
 }
 
@@ -100,11 +112,11 @@ function dotColor(col: number, portfolioBalance: number): string {
 // rate cancels out — both cities use the same assumption.
 const FIRE_GROWTH = 0.05;
 const FIRE_CAP_YEARS = 60;
-function yearsToFire(target: number, portfolio: number, annualContribution: number): number {
+function yearsToFire(target: number, portfolio: number, annualContribution: number, growth = FIRE_GROWTH): number {
   if (portfolio >= target) return 0;
   let bal = portfolio;
   for (let y = 1; y <= FIRE_CAP_YEARS; y++) {
-    bal = bal * (1 + FIRE_GROWTH) + annualContribution;
+    bal = bal * (1 + growth) + annualContribution;
     if (bal >= target) return y;
   }
   return FIRE_CAP_YEARS;
@@ -209,6 +221,11 @@ export default function GeoArbitrageGlobe({
   currentCityKey,
   onCitySelect,
   fillContainer = false,
+  targetMultiple = 25,
+  growthRate = FIRE_GROWTH,
+  lifestyle = 1,
+  formatAmount = (usd: number) => `$${Math.round(usd).toLocaleString()}`,
+  baseTarget,
 }: GeoArbitrageGlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -365,8 +382,8 @@ export default function GeoArbitrageGlobe({
       const px = p[0];
       const py = p[1];
       const markerPulse = (Math.sin(markerTime * 2.35 + cityItem.lng * 0.03 + cityItem.lat * 0.05) + 1) / 2;
-      const isReady = portfolioBalance >= cityItem.col * 25;
-      const isBarista = !isReady && portfolioBalance >= cityItem.col * 12.5;
+      const isReady = portfolioBalance >= cityItem.col * targetMultiple;
+      const isBarista = !isReady && portfolioBalance >= cityItem.col * targetMultiple / 2;
 
       if (cityItem.key === currentCityKey) {
         ctx.beginPath();
@@ -389,11 +406,11 @@ export default function GeoArbitrageGlobe({
         }
         ctx.beginPath();
         ctx.arc(px, py, 3.1 + markerPulse * 0.25, 0, Math.PI * 2);
-        ctx.fillStyle = dotColor(cityItem.col, portfolioBalance);
+        ctx.fillStyle = dotColor(cityItem.col, portfolioBalance, targetMultiple);
         ctx.fill();
       }
     }
-  }, [projection, portfolioBalance, currentCityKey, hiddenKeys, isDark, fillContainer]);
+  }, [projection, portfolioBalance, currentCityKey, hiddenKeys, isDark, fillContainer, targetMultiple]);
 
   // ---------------------------------------------------------------------------
   // Animation loop
@@ -621,16 +638,17 @@ export default function GeoArbitrageGlobe({
   let popupEl: React.ReactNode = null;
   if (hover) {
     const c = hover.city;
-    const ready = portfolioBalance >= c.col * 25;
-    const barista = !ready && portfolioBalance >= c.col * 12.5;
+    const ready = portfolioBalance >= c.col * targetMultiple;
+    const barista = !ready && portfolioBalance >= c.col * targetMultiple / 2;
     const statusLabel = ready ? 'FIRE ready now' : barista ? 'Barista FIRE' : 'Not yet';
     const statusColor = ready ? '#22d3a5' : barista ? '#fbbf24' : '#f87171';
 
     // Timing vs the user's current city: negative = reach FIRE sooner here.
     const annualContribution = Math.max(0, monthlySavings) * 12;
     const baseCity = ALL_CITIES.find((x) => x.key === currentCityKey);
-    const cityYears = yearsToFire(c.col * 25, portfolioBalance, annualContribution);
-    const baseYears = baseCity ? yearsToFire(baseCity.col * 25, portfolioBalance, annualContribution) : cityYears;
+    const cityYears = yearsToFire(c.col * targetMultiple, portfolioBalance, annualContribution, growthRate);
+    const baseYears = baseCity ? yearsToFire(baseCity.col * targetMultiple, portfolioBalance, annualContribution, growthRate)
+      : baseTarget != null ? yearsToFire(baseTarget, portfolioBalance, annualContribution, growthRate) : cityYears;
     const delta = cityYears - baseYears;
     let deltaText: string;
     let deltaColor: string;
@@ -680,7 +698,7 @@ export default function GeoArbitrageGlobe({
           </div>
         )}
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 8 }}>
-          Cost of living ~${Math.round(c.col).toLocaleString()}/yr
+          Cost of living ~{formatAmount(c.col * lifestyle)}/yr
         </div>
         <div style={{ fontSize: 10.5, color: '#22d3a5', fontWeight: 700, marginTop: 9, letterSpacing: '0.02em' }}>
           Click for full comparison →
