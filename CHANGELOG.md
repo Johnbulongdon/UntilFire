@@ -16,6 +16,9 @@ under today's date, creating the heading if it is not there yet.
   on, so the bill is counted once in the forecast and budget line.
 - Once linked, the bill marks itself paid when its payment arrives: a
   repeating bill moves to its next date, a one-off is completed.
+- The forecast no longer counts rent twice when you pay it under another
+  name (a person, or a card like BILT): past payments that match a bill's
+  category and amount are kept out of your everyday spending rate.
 - The budget line shows bills at their real size. If bills add up to more
   than your budget, a chip says by how much instead of shrinking them.
 

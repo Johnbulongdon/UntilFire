@@ -1309,4 +1309,8 @@ migration 0047), after which it matches by name. Matching on name alone was
 rejected because nobody types the bank's name when listing rent. A linked
 bill then settles itself: a payment under that name within 5 days of its due
 date moves a repeat to its next date or completes a one-off, as "Mark paid"
-does, with a toast saying so (`paidBills`, `markPaid`).
+does, with a toast saying so (`paidBills`, `markPaid`). The everyday rate also
+recognises a past bill payment by category and amount (within 10%, one per
+date the bill falls on), not only by name: the founder's rent paid to
+"陈玲" and through "BILT PAYMENT" stayed in the daily rate, so the forecast
+added John Rent on its date and again inside the rate (about $430).
