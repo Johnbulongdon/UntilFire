@@ -25,12 +25,12 @@ const pick = (name) => {
   assert.ok(text, `${name} exists in ${file}`);
   return text;
 };
-const code = ['calcProjection', 'freedomProjection', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
-  + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate;';
+const code = ['calcProjection', 'freedomProjection', 'projectionInputs', 'effectiveBalances', 'isRetirementInvestmentAccount', 'isBrokerageInvestmentAccount', 'normalizePlaidSubtype', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
+  + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
   { exports, Math, Date, Object, React, REAL_RETURN: 0.069 });
-const { freedomProjection, calcProjection, PlanFreedomDate } = exports;
+const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances } = exports;
 
 // A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked bank account.
 const base = {
@@ -45,6 +45,19 @@ const at = (growthRate) => freedomProjection({ ...base, growthRate });
 const home = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 10000, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04, targetMonthlyExpenses: undefined, taxEnabled: false, retirementTaxRate: 0, rothPct: 0 });
 assert.equal(at(0.069).fireYear, home.fireYear, 'Plan and Home get the same freedom year');
 assert.equal(at(0.069).fireTarget, home.fireTarget, 'and the same target');
+
+// Debt is paid out of savings, not on top of investing all of them (D-32).
+// $36k a year saved, $20k of debt: $10.8k goes to the debt, $25.2k is invested.
+const withDebt = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 10000, totalDebt: 20000, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04 });
+assert.equal(withDebt.data[1]['Contributions'], 70000 + 36000 - 10800, 'year one invests savings less the debt payment');
+assert.ok(withDebt.data[10]['Investable'] < home.data[10]['Investable'] - 20000, 'paying the debt leaves less invested ten years on');
+
+// A connected account replaces the typed balance of the same kind (D-32).
+const typedAndLinked = effectiveBalances({ k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 5000,
+  plaidAccounts: [{ type: 'investment', subtype: '401k', balance_current: 52000 }, { type: 'depository', balance_current: 8000 }, { type: 'credit', balance_current: 900 }] });
+assert.deepEqual({ ...typedAndLinked }, { k401: 52000, rothIRA: 0, taxable: 10000, cashSavings: 8000 }, 'linked 401(k) replaces 401(k) and Roth; bank replaces cash; taxable stays typed');
+const both = freedomProjection({ ...base, plaidAccounts: [{ type: 'investment', subtype: 'brokerage', balance_current: 10000 }, { type: 'depository', balance_current: 10000 }], growthRate: 0.069 });
+assert.equal(both.fireYear, home.fireYear, 'a linked brokerage account holding the typed $10k is not counted twice');
 
 // The growth choice moves the date, in the right direction.
 const d5 = at(0.05).exactDate, d69 = at(0.069).exactDate, d81 = at(0.081).exactDate;

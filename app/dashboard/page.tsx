@@ -22,7 +22,7 @@ import { measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-lad
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
-import { guessBillCategory, settleBill } from "@/lib/spend-forecast";
+import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, rateSoFar, settleBill } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
@@ -297,10 +297,11 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>) 
 const netAmt = (t: { amount: number; refund_amount?: number | null }) =>
   Math.max(0, t.amount - (t.refund_amount || 0));
 
-const normalizePlaidSubtype = (subtype: string | null | undefined) =>
-  (subtype ?? "").toLowerCase().replace(/[_-]/g, " ").trim();
+function normalizePlaidSubtype(subtype: string | null | undefined) {
+  return (subtype ?? "").toLowerCase().replace(/[_-]/g, " ").trim();
+}
 
-const isRetirementInvestmentAccount = (account: PlaidAccount) => {
+function isRetirementInvestmentAccount(account: Pick<PlaidAccount, "type" | "subtype">) {
   if (account.type !== "investment") return false;
   const subtype = normalizePlaidSubtype(account.subtype);
   return [
@@ -316,11 +317,35 @@ const isRetirementInvestmentAccount = (account: PlaidAccount) => {
     "simple",
     "keogh",
   ].some((token) => subtype.includes(token));
-};
+}
 
-const isBrokerageInvestmentAccount = (account: PlaidAccount) => (
-  account.type === "investment" && !isRetirementInvestmentAccount(account)
-);
+function isBrokerageInvestmentAccount(account: Pick<PlaidAccount, "type" | "subtype">) {
+  return account.type === "investment" && !isRetirementInvestmentAccount(account);
+}
+
+/**
+ * The balances everything on Home and Plan starts from (D-32): a connected
+ * account replaces what was typed in for the same kind of money, rather than
+ * adding to it. Retirement accounts replace the 401(k) and Roth figures,
+ * other investment accounts replace taxable, bank accounts replace cash.
+ * Adding both counted a linked 401(k) twice for anyone who had typed its
+ * balance in first, and the money-mix ring already used this rule.
+ */
+function effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }: {
+  k401: number; rothIRA: number; taxable: number; cashSavings: number;
+  plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
+}) {
+  const sum = (keep: (a: Pick<PlaidAccount, "type" | "subtype">) => boolean) =>
+    plaidAccounts.filter(keep).reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const retirement = sum(isRetirementInvestmentAccount), brokerage = sum(isBrokerageInvestmentAccount);
+  const cash = sum((a) => a.type === "depository");
+  return {
+    k401: retirement > 0 ? retirement : k401,
+    rothIRA: retirement > 0 ? 0 : rothIRA,
+    taxable: brokerage > 0 ? brokerage : taxable,
+    cashSavings: cash > 0 ? cash : cashSavings,
+  };
+}
 
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
@@ -348,9 +373,6 @@ function calcProjection({
     : 1;
   const fireTarget     = targetAnnualExpenses * taxGrossup / withdrawalRate;
 
-  const k401Contrib    = Math.min(Math.max(annualSavings * 0.4, 0), 23000);
-  const rothContrib    = Math.min(Math.max(annualSavings * 0.2, 0), 7000);
-  const taxableContrib = Math.max(annualSavings - k401Contrib - rothContrib, 0);
 
   const data: Record<string, number>[] = [];
   let cur401k    = k401;
@@ -384,16 +406,24 @@ function calcProjection({
       "Contributions": Math.round(contributed),
       "Market Growth": Math.round(Math.max(investable - contributed, 0)),
     });
-    totalContributed += Math.max(annualSavings, 0);
+    // Debt is paid out of savings first (up to 30% of them), and only what
+    // is left is invested. Paying it from savings that were also invested in
+    // full spent the same money twice and brought the date forward (D-32).
+    let debtPayment = 0;
+    if (curDebt > 0) {
+      const interest = curDebt * 0.05;
+      debtPayment = Math.min(curDebt + interest, Math.max(annualSavings * 0.3, 0));
+      curDebt = Math.max(0, curDebt + interest - debtPayment);
+    }
+    const toInvest       = Math.max(annualSavings - debtPayment, 0);
+    const k401Contrib    = Math.min(toInvest * 0.4, 23000);
+    const rothContrib    = Math.min(toInvest * 0.2, 7000);
+    const taxableContrib = toInvest - k401Contrib - rothContrib;
+    totalContributed += toInvest;
     cur401k    = cur401k    * (1 + growthRate) + k401Contrib;
     curRoth    = curRoth    * (1 + growthRate) + rothContrib;
     curTaxable = curTaxable * (1 + growthRate) + taxableContrib;
     curCash    = curCash    * (1 + growthRate);
-    if (curDebt > 0) {
-      const interest = curDebt * 0.05;
-      const payment  = Math.min(curDebt + interest, Math.max(annualSavings * 0.3, 0));
-      curDebt = Math.max(0, curDebt + interest - payment);
-    }
     if (curMort > 0) {
       const mInt = curMort * 0.065;
       const prin = Math.max(0, annualMortgage - mInt);
@@ -406,20 +436,33 @@ function calcProjection({
 /**
  * The freedom date exactly as Home shows it, for anywhere else that needs it
  * (Plan shows it beside the assumptions that move it). One function, so the
- * two screens cannot drift: same expenses, target spending, cash including
- * linked accounts, tax settings and growth.
+ * two screens cannot drift: same expenses, target spending, balances
+ * (connected accounts replacing typed ones), tax settings and growth.
  */
-function freedomProjection({
-  income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
-  growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-  taxEnabled, retirementTaxRate, rothPct,
-}: {
+function freedomProjection(args: FreedomArgs) {
+  const result = calcProjection(projectionInputs(args));
+  return { ...result, exactDate: exactFreedomDateFrom(result.data, result.fireYear, result.fireTarget) };
+}
+
+type FreedomArgs = {
   income: number; expenses: Record<string, number>; k401: number; rothIRA: number; taxable: number;
   cashSavings: number; totalDebt: number; mortgageBalance: number; mortgageMonthly: number;
   growthRate: number; withdrawalRate: number; plaidAccounts: PlaidAccount[];
   retirementCityCol: number; lifestyleMultiplier: number; monthlyWorkCosts?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
-}) {
+};
+
+/**
+ * What the freedom date is projected from. Home's "what if" moves and its
+ * spending warnings start from these too and change one thing, so a move's
+ * years are the move's alone: they used to leave the tax settings out, and
+ * every move looked better by the difference (D-32).
+ */
+function projectionInputs({
+  income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
+  growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
+  taxEnabled, retirementTaxRate, rothPct,
+}: FreedomArgs) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
@@ -428,16 +471,13 @@ function freedomProjection({
   const targetMonthlyExpenses = retirementCityCol > 0
     ? (retirementCityCol * lifestyleMultiplier) / 12
     : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
-  const plaidAssets = plaidAccounts
-    .filter(a => a.type === "depository" || a.type === "investment")
-    .reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const result = calcProjection({
+  return {
     annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, cashSavings: cashSavings + plaidAssets, totalDebt, mortgageBalance, mortgageMonthly,
+    ...effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }),
+    totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
     taxEnabled, retirementTaxRate, rothPct,
-  });
-  return { ...result, exactDate: exactFreedomDateFrom(result.data, result.fireYear, result.fireTarget) };
+  };
 }
 
 /**
@@ -535,7 +575,7 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -547,7 +587,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   retirementCityCol?: number; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
-  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[] }[];
+  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[]; description?: string; category?: string }[];
+  /** Upcoming expense bills (USD), which date this month's forecast and plan line, as on Transactions. */
+  bills?: Bill[];
   /** What the contribution ladder reads: balances, measured needs, the
    *  growth assumption. Home reports the ladder; it never edits it. */
   contributionFacts?: AccountFacts;
@@ -635,12 +677,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     ? (retirementCityCol * lifestyleMultiplier) / 12
     : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
 
-  const plaidAssets = plaidAccounts
-    .filter(a => a.type === "depository" || a.type === "investment")
-    .reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const totalCash = cashSavings + plaidAssets;
-
-  // Shared with Plan's freedom date (freedomProjection), so the two can't disagree.
+  // Shared with Plan's freedom date (freedomProjection), so the two can't
+  // disagree; the moves and warnings below start from the same inputs.
+  const baseInputs = useMemo(() => projectionInputs({
+    income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
+    growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
+    taxEnabled, retirementTaxRate, rothPct,
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct]);
+  const balances = { k401: baseInputs.k401, rothIRA: baseInputs.rothIRA, taxable: baseInputs.taxable, cash: baseInputs.cashSavings };
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => freedomProjection({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
@@ -653,17 +697,17 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       {
         label: "Save $500/mo more",
         detail: "Redirect $500/month from spending to investments",
-        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: Math.max(0, monthlyExpenses - 500), k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        result: calcProjection({ ...baseInputs, monthlyExpenses: Math.max(0, monthlyExpenses - 500) }),
       },
       {
         label: "Cut expenses 10%",
         detail: `Reduce monthly spending from spending to ${Math.round(monthlyExpenses * 0.9).toLocaleString()}`,
-        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: monthlyExpenses * 0.9, k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        result: calcProjection({ ...baseInputs, monthlyExpenses: monthlyExpenses * 0.9 }),
       },
       {
         label: "Grow income 10%",
         detail: "Extra income goes straight to your date",
-        result: calcProjection({ annualIncome: income * 1.1 * 12, monthlyExpenses, k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        result: calcProjection({ ...baseInputs, annualIncome: income * 1.1 * 12 }),
       },
     ]
       .map(s => ({
@@ -673,9 +717,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         newRetireYear: s.result.fireYear !== null ? new Date().getFullYear() + s.result.fireYear : null,
       }))
       .sort((a, b) => b.deltaYears - a.deltaYears);
-  }, [income, monthlyExpenses, fireYear, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+  }, [income, monthlyExpenses, fireYear, baseInputs]);
 
-  const investable  = k401 + rothIRA + taxable + totalCash;
+  const investable  = balances.k401 + balances.rothIRA + balances.taxable + balances.cash;
   const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
 
@@ -963,11 +1007,28 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const actualOrPlannedExpenses = hasActuals ? actualExpenses : monthlyExpenses;
   const actualOrPlannedSavings = actualOrPlannedIncome - actualOrPlannedExpenses;
   const goalContribution = Math.max(annualSavings / 12, 0);
+  // This month the way Transactions reads it (D-31, D-32): the plan to date
+  // puts each bill on its day and spreads the rest of the budget evenly, and
+  // the month's forecast is spent so far, plus bills still due, plus everyday
+  // spending at the usual rate. Dividing spent-so-far by the share of the
+  // month gone spread rent across every day: $1,380 on the 2nd became $21,000.
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const todayIso = `${monthKey}-${String(now.getDate()).padStart(2, "0")}`;
+  const monthEndIso = `${monthKey}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
+  const spendRows = useMemo(() => recentTransactions.filter((t) => t.transaction_type === "expense")
+    .map((t) => ({ date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates), description: t.description ?? "", category: t.category ?? "other" })),
+  [recentTransactions, displayCurrency, displayRates]);
+  const expectedSpendToDate = monthlyExpenses > 0 ? budgetPath([monthKey], monthlyExpenses, bills)[now.getDate() - 1] ?? 0 : 0;
   const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const elapsedFraction = Math.min(1, Math.max(now.getDate() / monthDays, 0.05));
-  const expectedSpendToDate = monthlyExpenses * elapsedFraction;
+  const elapsedFraction = monthlyExpenses > 0 ? Math.min(1, expectedSpendToDate / monthlyExpenses) : 0; // share of the plan due by today
   const spendingDeltaToDate = hasActuals ? actualExpenses - expectedSpendToDate : 0;
-  const projectedMonthSpend = hasActuals && elapsedFraction > 0 ? actualExpenses / elapsedFraction : monthlyExpenses;
+  const projectedMonthSpend = useMemo(() => {
+    if (!hasActuals) return monthlyExpenses;
+    const rate = everydayRate(spendRows, bills, monthKey) ?? rateSoFar(spendRows, bills, todayIso, Number(todayIso.slice(8, 10)));
+    return forecastPath(daysOfMonths([monthKey]), todayIso, actualExpenses, bills, rate).at(-1) ?? actualExpenses;
+  }, [hasActuals, monthlyExpenses, spendRows, bills, monthKey, todayIso, actualExpenses]);
+  // Bills in Upcoming still owed this month (from each one's stored due date), so "left" matches Transactions and Free to spend.
+  const billsDueThisMonth = bills.filter((b) => b.id).reduce((s, b) => s + occurrences(b, b.due, monthEndIso).length * b.usd, 0);
   const projectedSpendStatus = hasActuals
     ? spendingDeltaToDate > monthlyExpenses * 0.05
       ? "Running above plan"
@@ -977,21 +1038,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     : "Add transactions to compare against plan";
   const overspendProjection = useMemo(() => {
     if (!hasActuals || income <= 0 || fireYear === null) return null;
-    return calcProjection({
-      annualIncome: income * 12,
-      monthlyExpenses: Math.max(projectedMonthSpend, 0),
-      k401,
-      rothIRA,
-      taxable,
-      cashSavings: totalCash,
-      totalDebt,
-      mortgageBalance,
-      mortgageMonthly,
-      growthRate,
-      withdrawalRate,
-      targetMonthlyExpenses,
-    });
-  }, [hasActuals, income, fireYear, projectedMonthSpend, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+    return calcProjection({ ...baseInputs, monthlyExpenses: Math.max(projectedMonthSpend, 0) });
+  }, [hasActuals, income, fireYear, projectedMonthSpend, baseInputs]);
   const spendingImpactYears = overspendProjection && fireYear !== null && overspendProjection.fireYear !== null
     ? overspendProjection.fireYear - fireYear
     : 0;
@@ -1001,18 +1049,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       ? `Could bring freedom forward about ${Math.abs(spendingImpactYears) >= 1.5 ? `${Math.abs(spendingImpactYears).toFixed(1)} years` : `${Math.round(Math.abs(spendingImpactYears) * 12)} months`}`
       : "No meaningful change to your freedom date yet";
   const manualRetirementTotal = k401 + rothIRA;
-  const connectedRetirementTotal = plaidAccounts
-    .filter(isRetirementInvestmentAccount)
-    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
-  const connectedBrokerageTotal = plaidAccounts
-    .filter(isBrokerageInvestmentAccount)
-    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
-  const connectedCashTotal = plaidAccounts
-    .filter((account) => account.type === "depository")
-    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
-  const retirementAccounts = connectedRetirementTotal > 0 ? connectedRetirementTotal : manualRetirementTotal;
-  const brokerageAssets = connectedBrokerageTotal > 0 ? connectedBrokerageTotal : taxable;
-  const displayCashAssets = connectedCashTotal > 0 ? connectedCashTotal : cashSavings;
+  // The same balances as the freedom date (effectiveBalances), so the ring and the hero agree.
+  const retirementAccounts = balances.k401 + balances.rothIRA;
+  const brokerageAssets = balances.taxable;
+  const displayCashAssets = balances.cash;
   const positiveMoneyTotal = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0) + Math.max(displayCashAssets, 0);
   const retirementPct = positiveMoneyTotal > 0 ? (Math.max(retirementAccounts, 0) / positiveMoneyTotal) * 100 : 0;
   const brokeragePct = positiveMoneyTotal > 0 ? (Math.max(brokerageAssets, 0) / positiveMoneyTotal) * 100 : 0;
@@ -1034,7 +1074,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-ink-3)";
   const spendingBarColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-green-700)";
   const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
-  const spendingExpectedPct = hasActuals ? Math.min(elapsedFraction * 100, 100) : 0;
+  const spendingExpectedPct = hasActuals ? Math.min(elapsedFraction * 100, 100) : 0; // the plan to date, bills on their days
   const spendingBarTrackColor = hasActuals ? "var(--uf-surface-2)" : "var(--uf-surface)";
   const investedBalance = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0);
   const availableCash = Math.max(displayCashAssets, 0);
@@ -1069,27 +1109,23 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       const key = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
       const bucket = byKey.get(key);
       if (!bucket) continue;
-      const amount = toUSD(tx.amount, tx.currency ?? displayCurrency, displayRates);
-      if (tx.transaction_type === "income") bucket.income += amount;
-      else bucket.expenses += amount;
+      if (tx.transaction_type === "income") bucket.income += toUSD(tx.amount, tx.currency ?? displayCurrency, displayRates);
+      else bucket.expenses += toUSD(netAmt(tx), tx.currency ?? displayCurrency, displayRates); // after refunds, as everywhere else
     }
 
     const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
-    const currentBucket = byKey.get(currentKey);
-    if (currentBucket && hasActuals) {
-      currentBucket.income = actualIncome;
-      currentBucket.expenses = actualExpenses;
-    }
     const prevBucket = byKey.get(prevKey);
     if (prevBucket && (prevIncome > 0 || prevExpenses > 0)) {
       prevBucket.income = prevIncome;
       prevBucket.expenses = prevExpenses;
     }
 
+    // Only finished months are judged: this month's savings so far against a
+    // whole month's goal read "needs a reset" every time rent went out (D-32).
     return months
-      .filter((month) => month.income > 0 || month.expenses > 0)
+      .filter((month) => month.key !== currentKey && (month.income > 0 || month.expenses > 0))
       .map((month) => {
         const savings = month.income - month.expenses;
         const metSavingsGoal = goalContribution > 0 ? savings >= goalContribution * 0.85 : savings >= 0;
@@ -1117,7 +1153,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     : consistencyRun >= 2
       ? `${consistencyRun}-month run`
       : consistencyMonths[0]?.onTrack
-        ? "On track this month"
+        ? "On track last month"
         : "Needs a reset";
   const consistencyDetail = trackedMonths === 0
     ? "Shows after a few tracked months."
@@ -1209,7 +1245,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     }
 
     if (hasActuals && spendingDeltaToDate > monthlyExpenses * 0.05) {
-      const correction = Math.max(spendingDeltaToDate / Math.max(elapsedFraction, 0.05), 0);
+      // How far the month is forecast to end over plan, not the overspend so far scaled up.
+      const correction = Math.max(projectedMonthSpend - monthlyExpenses, spendingDeltaToDate, 0);
       addTask(
         `Reduce spending by about ${fmtMoney(correction, true)} this month`,
         "Your spending pace is currently above plan.",
@@ -1224,20 +1261,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     }
 
     if (targetMonthlyExpenses && monthlyExpenses > targetMonthlyExpenses * 1.05 && fireYear !== null) {
-      const cityAverageResult = calcProjection({
-        annualIncome: income * 12,
-        monthlyExpenses: targetMonthlyExpenses,
-        k401,
-        rothIRA,
-        taxable,
-        cashSavings: totalCash,
-        totalDebt,
-        mortgageBalance,
-        mortgageMonthly,
-        growthRate,
-        withdrawalRate,
-        targetMonthlyExpenses,
-      });
+      const cityAverageResult = calcProjection({ ...baseInputs, monthlyExpenses: targetMonthlyExpenses });
       const deltaYears = cityAverageResult.fireYear !== null ? Math.max(0, fireYear - cityAverageResult.fireYear) : 0;
       addTask(
         `Reduce spending toward ${cityName || "your city"} average by ${fmtMoney(monthlyExpenses - targetMonthlyExpenses, true)}`,
@@ -1247,20 +1271,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     }
 
     if (plannedContributionGap > Math.max(goalContribution * 0.15, 100) && fireYear !== null) {
-      const contributionGapResult = calcProjection({
-        annualIncome: income * 12,
-        monthlyExpenses: Math.max(0, monthlyExpenses - plannedContributionGap),
-        k401,
-        rothIRA,
-        taxable,
-        cashSavings: totalCash,
-        totalDebt,
-        mortgageBalance,
-        mortgageMonthly,
-        growthRate,
-        withdrawalRate,
-        targetMonthlyExpenses,
-      });
+      const contributionGapResult = calcProjection({ ...baseInputs, monthlyExpenses: Math.max(0, monthlyExpenses - plannedContributionGap) });
       const deltaYears = contributionGapResult.fireYear !== null ? Math.max(0, fireYear - contributionGapResult.fireYear) : 0;
       addTask(
         `Add about ${fmtMoney(plannedContributionGap, true)} to stay on this month's target`,
@@ -1281,7 +1292,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         "Start with a retirement or brokerage account so your savings can compound.",
         bestMove?.deltaYears ?? 0,
       );
-    } else if (goalContribution > 0 && connectedRetirementTotal <= 0 && rothIRA <= 0 && emergencyFundPlan.priorityMode !== "protect") {
+    } else if (goalContribution > 0 && !plaidAccounts.some(isRetirementInvestmentAccount) && rothIRA <= 0 && emergencyFundPlan.priorityMode !== "protect") {
       addTask(
         "Add this month’s Roth IRA contribution",
         "Retirement contributions give your plan a steady long-term base.",
@@ -1996,7 +2007,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           {hasActuals && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "var(--uf-text-3)", fontFamily: "Manrope, sans-serif" }}>
               <span>Expected pace by today: {fmtMoney(expectedSpendToDate, true)}</span>
-              <span>{fmtMoney(Math.max(monthlyExpenses - actualExpenses, 0), true)} left</span>
+              <span>{fmtMoney(Math.max(monthlyExpenses - actualExpenses - billsDueThisMonth, 0), true)} left{billsDueThisMonth > 0 ? " after bills" : ""}</span>
             </div>
           )}
           <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
@@ -3642,9 +3653,10 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
     growthRate, withdrawalRate, targetMonthlyExpenses,
   }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
 
-  const plaidAssets       = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const plaidLiabilities  = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan").reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const investable = k401 + rothIRA + taxable + cashSavings + plaidAssets;
+  // Connected accounts replace typed balances of the same kind (effectiveBalances), as on Home.
+  const eff = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
+  const investable = eff.k401 + eff.rothIRA + eff.taxable + eff.cashSavings;
   const netWorth   = investable - totalDebt - mortgageBalance - plaidLiabilities;
   const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
 
@@ -5686,6 +5698,13 @@ export default function Dashboard() {
     })),
     [committedRows, rates],
   );
+  // Upcoming expense bills for Home's month (the same shape Transactions uses).
+  const homeBills: Bill[] = useMemo(() => committedRows
+    .filter((r) => r.transaction_type === "expense" && r.due_date)
+    .map((r) => ({ id: r.id, description: r.description ?? null, category: r.category, merchant: r.match_merchant ?? null,
+      usd: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), due: r.due_date.slice(0, 10),
+      recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence })),
+  [committedRows, rates]);
   const contributionFacts: AccountFacts = useMemo(() => ({
     cashAccounts: contributionCashAccounts,
     manualCashSavings: cashSavings,
@@ -6606,6 +6625,7 @@ export default function Dashboard() {
               <DashTab
                 contributionFacts={contributionFacts}
                 freeResult={freeResult}
+                bills={homeBills}
                 onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
                 userId={userId}
                 income={effectiveIncome} expenses={effectiveExpenses}
