@@ -103,8 +103,8 @@ group membership, rendering, and deep-link handling together:
   (`activeTabs`, which drives the active highlight).
 - `MONEY_SECTIONS` — the Money group's tabs. Feeds both the sidebar sub-nav and
   the horizontal section switch.
-- `CASHFLOW_SUB_TABS` — the four Cashflow sub-tabs. Feeds both the sidebar
-  sub-sub-nav and the horizontal switcher.
+- `CASHFLOW_SUB_TABS` — the four Cashflow sub-tabs. Feeds the pill switcher
+  on the page; the sidebar stops at Cashflow (D-41).
 - `MOBILE_PRIMARY_ITEMS` — the four mobile bottom-nav destinations.
 - `PLAN_SECTIONS` — Plan destinations, including tab and sub-tab states. Feeds
   both the sidebar sub-nav and mobile section switch.
@@ -162,6 +162,9 @@ cards and table heads already stick to the top.
 - **Home leads with three cards and one row** (D-39): the freedom date, this
   month's contribution, this month's spending, then net worth, safety runway and
   months on plan. The other cards are hidden by default and restored from Edit.
+- **Money pages share one calm shape** (D-40): a headline card, then rows
+  (`app/dashboard/MoneyCards.tsx`). What a debt started at is a fact about the
+  debt, so it is set on Debts, not in Plan.
 
 ## Known gap — not fixed by this structure
 

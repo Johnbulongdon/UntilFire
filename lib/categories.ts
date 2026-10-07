@@ -63,6 +63,13 @@ export const COLOR_PALETTE = [
 ];
 
 /** The palette colour closest to any hex, so older custom colours land on the new set. */
+/** Account types are categories on Net worth (D-40), so they take palette colours. */
+export const ACCOUNT_TYPE_COLORS = {
+  retirement: COLOR_PALETTE[5],
+  brokerage: COLOR_PALETTE[0],
+  cash: COLOR_PALETTE[3],
+} as const;
+
 export function nearestPaletteColor(hex: string): string {
   const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   if (!/^#[0-9a-f]{6}$/i.test(hex) || COLOR_PALETTE.includes(hex.toLowerCase())) return hex.toLowerCase();

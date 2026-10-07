@@ -666,6 +666,9 @@ html[data-splash="1"] #uf-splash {
 .uf-dash-slot[data-span="half"] { grid-column: span 1; }
 .uf-dash-slot:empty { display: none; }
 
+/* Calm Money lists (D-40): a divider between rows, none above the first. */
+.uf-money-list .uf-money-row + .uf-money-row { border-top: 1px solid var(--uf-border); }
+
 /* One column on a phone: a half-width card at 390px is unreadable, so the
    width choice is a desktop one and narrow screens ignore it. */
 @media (max-width: 900px) {

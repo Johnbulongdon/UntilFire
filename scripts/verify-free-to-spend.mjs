@@ -50,9 +50,11 @@ const budget = [
 // ── The worked example: $2,400, three bills before Friday 10th
 const r = freeToSpend({ today: d(2026, 10, 1), accounts: [checking, savings, visa], expected: [pay("2026-09-10", "monthly"), ...bills], budget });
 check("cash side: balance less the bills before payday", r.cash.free === 430 && r.cash.bills.length === 3, JSON.stringify(r.cash?.free));
-check("budget side: sum of what is left", r.budget.left === 412);
-check("the lower side wins and says which", r.free === 412 && r.limitedBy === "budget");
-check("nine days to Friday the 10th, $45 a day", r.days === 9 && r.perDay === 45, `${r.days} ${r.perDay}`);
+check("budget side: sum of what is left this month", r.budget.left === 412);
+// $412 has to last the 31 days of October; the 9 before payday get 9/31 of it (D-41).
+check("budget side until payday: the month's remainder shared by day", Math.abs(r.budget.untilPayday - 412 * 9 / 31) < 0.01, String(r.budget.untilPayday));
+check("the lower side wins and says which", Math.abs(r.free - 412 * 9 / 31) < 0.01 && r.limitedBy === "budget");
+check("nine days to Friday the 10th, $13 a day, not $45", r.days === 9 && r.perDay === 13, `${r.days} ${r.perDay}`);
 check("the tightest category is named", r.budget.tightest.key === "eating");
 check("the credit card is context, not cash", r.cards.length === 1 && r.cards[0].owedUSD === 640 && r.cash.balance === 2400);
 
@@ -74,7 +76,11 @@ check("a credit card never counts, even toggled on", !isCounted(visa, { visa: tr
 // ── Missing data
 {
   const noBank = freeToSpend({ today: d(2026, 10, 1), accounts: [], expected: bills, budget });
-  check("no bank linked: the budget alone", noBank.cash === null && noBank.free === 412 && noBank.limitedBy === "budget");
+  check("no bank linked, no paycheck: the window is the month, so all of it", noBank.cash === null && noBank.free === 412 && noBank.limitedBy === "budget");
+  const over = freeToSpend({ today: d(2026, 10, 1), accounts: [], expected: [pay("2026-09-10", "monthly")], budget: [{ key: "fun", label: "Fun", budget: 100, left: -40 }] });
+  check("over budget is not shared out: still over by the whole amount", over.free === -40, String(over.free));
+  const late = freeToSpend({ today: d(2026, 10, 25), accounts: [], expected: [pay("2026-09-10", "monthly")], budget });
+  check("payday after the month ends: the whole remainder", late.days === 16 && late.free === 412, `${late.days} ${late.free}`);
   const noBudget = freeToSpend({ today: d(2026, 10, 1), accounts: [checking], expected: [pay("2026-10-10", "monthly"), ...bills] });
   check("no budget: the cash alone", noBudget.budget === null && noBudget.limitedBy === "cash" && noBudget.free === 430);
   check("neither: nothing to show", freeToSpend({ today: d(2026, 10, 1), accounts: [], expected: [] }) === null);

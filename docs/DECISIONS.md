@@ -1570,3 +1570,86 @@ for.
 order and repeated the same pattern, so nothing stood out. The Transactions
 page reads well because colour means one thing and each block answers one
 question. Home now borrows that restraint, not its density.
+
+### D-40 — October 7: Money pages in the calm style, and what each debt started at
+
+**Status:** Active. From a Money mock the founder approved, with "add original balance".
+
+**Decision:**
+- **One shape for every Money page.** A headline card with one big number, a
+  line under it and the bar it fills, then a list of rows: a dot, a name with
+  one line of detail, the value on the right, a bar under the name where there
+  is something to fill. The pieces live in `app/dashboard/MoneyCards.tsx`.
+- **Cashflow sub-pages are pills**, as on Home. The green underline tabs used
+  hard-coded colours outside the system.
+- **Budget:** spent against the budget, with free to spend under it, one bar
+  by category, then one row per category with bills still due drawn striped.
+  Over-budget categories lead the list. Income is edited from the headline.
+- **Upcoming:** what is still to go out and still to come in, and the next 30
+  days as dots on a strip. Rows open into their actions (mark paid, link,
+  edit, delete) instead of carrying chips and buttons on every row.
+- **Net worth:** the total, assets and debts, one bar by account type, then a
+  row per type saying whether it is connected or typed. It now uses the
+  connected-replaces-typed balances everywhere; its old table used typed
+  figures. FIRE progress left this page: it is on Home and in Plan (D-39).
+- **Debts:** total debts, how much is paid off, and a row per debt, highest
+  rate first where Plan → Contributions knows the rate.
+- **What a debt started at** is stored per debt in `profiles.debt_originals`
+  (migration 0049), keyed by connected account or by the typed figure it
+  belongs to. A loan with a starting balance shows a paid-off bar; a card
+  shows its balance against its limit instead, because revolving credit has
+  no starting balance.
+- **Colour:** category colours on Budget and Upcoming, account-type colours on
+  Net worth (they are categories there), teal for progress, red only for over.
+
+**Not changed:** Transactions, which was the reference; Categories and
+Insights, which come next; the account cards and inputs under Net worth.
+
+### D-41 — October 7: A focused Budget, and the audit that followed
+
+**Status:** Active. From a competitor review (Monarch, Copilot, Rocket Money,
+YNAB) and an audit the founder asked to have fixed in full.
+
+**Decision:**
+- **Budget is monthly, and leads with one number:** what is left to spend
+  this month, after spending and bills still due. The first build led with
+  free to spend until payday, which mixed an 8-day window into a monthly
+  page; the founder caught it. Free to spend stays a line under it, shown
+  only when checking is tighter than the budget before payday.
+- **A pace bar, not a strip.** After four options (weeks strip, pace bar,
+  month calendar, just the number) the founder chose the pace bar: everyday
+  spending against its budget, with a line where an even pace would be today,
+  and "ahead of pace" in amber or "under pace" in green. Bills are left out,
+  because they are set aside. No verdict in the first five days, when one
+  grocery shop would read as a trend. Red stays for over budget.
+- **The month calendar is a tap away** ("See October"): days gone shaded by
+  everyday spending, days ahead with their even share, bills as dots on their
+  day. Rent would set the shading scale, so bills are dots, not shading.
+- **Free to spend shares the budget by day.** When the budget is the limit,
+  free to spend until payday is the month's remainder times the days to
+  payday over the days left in the month, not the whole remainder. Before,
+  $360 left for 24 days read as $45 a day until a payday 8 days away. Over
+  budget is not shared out, and a window to the month's end takes it all.
+  This corrects D-29's budget side; Home and Transactions use the same result.
+- **Only what needs attention is listed:** categories over (spent plus still
+  due, D-35) or heading over. Heading over means spending is more than the
+  share of the month gone plus a fifth of the budget; projecting from a week
+  of data flagged half the categories on the 7th. Bill categories are never
+  projected, because rent on the 1st is not a daily rate.
+- **Bills are one row.** A category is a bill category when an Upcoming bill
+  is in it. Everyday categories on track fold into one row. Edit budget opens
+  the full list, with income and guided setup.
+- **A missing bill is named, not blamed.** When an over category holds a
+  payment that repeats last month's (same name, within 10%), the row asks
+  whether it is a bill and links to Upcoming.
+- **Savings rate and needs/wants left Budget.** They are on Home, in Plan and
+  in Transactions.
+- **The shared row (D-40) changed for every Money page:** a tinted circle with
+  the category emoji instead of a dot, words in the body font and only
+  amounts in DM Mono, status words bold and plain amounts regular, and rows on
+  the page instead of inside a second card.
+- **Fixes from the audit:** deleting an upcoming payment asks first; account
+  type colours come from one list in `lib/categories.ts`; the remaining Net
+  worth account cards, Categories and Insights use system tokens, and the
+  dark Insights cards became normal cards; the sidebar no longer repeats
+  Cashflow's sub-pages, which the pills now show.

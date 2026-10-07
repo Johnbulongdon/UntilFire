@@ -8,6 +8,21 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Focused Budget
+- Budget opens on what's left to spend this month and about how much a day, with a pace bar showing whether everyday spending is ahead of or under an even pace. Tap "See October" for the month as a calendar. If checking is tighter than your budget before payday, it says so.
+- Fixed: when your budget was the limit, free to spend counted the whole month's remainder as spendable before payday, overstating the daily amount. It now takes the days before payday's share.
+- Only categories that are over or heading over are listed; bills are one row and everyday categories fold into one. Edit budget shows them all.
+- If an over category holds a payment you also made last month, Budget asks whether it's a bill.
+- Money rows show category icons, as on Transactions. Deleting an upcoming payment asks first. The sidebar no longer repeats Cashflow's pages.
+- Insights' summary cards follow your theme.
+
+### Calm Money
+- Budget, Upcoming, Net worth and Debts share one calm layout: a headline with one number and its bar, then simple rows with a dot, a name, the amount and a bar.
+- Cashflow's sub-pages switch with pills.
+- Upcoming shows the next 30 days as dots on a strip; tap a payment to mark it paid, link it, edit or delete it.
+- Debts: add what a loan started at to see how much is paid off. Cards show their balance against the limit.
+- Net worth uses connected balances throughout, matching Home.
+
 ### Calm Home
 - A fresh Home shows four things: your freedom date with a bar to your FIRE number and a 5-year chart, this month's contribution as a step bar, this month's spending by category against your budget, and one row with net worth, safety runway and months on plan.
 - The other Home cards are hidden by default, not removed; add them back with Edit. Layouts you saved keep what they had.
