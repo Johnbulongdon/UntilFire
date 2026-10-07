@@ -1306,5 +1306,7 @@ one get the guess. A payment in the bill's category within 10% of its amount
 and 5 days of its date is asked about once in Worth a look ("Upcoming bill?
 → Rent"); yes stores the bank's name on the bill (`match_merchant`,
 migration 0047), after which it matches by name. Matching on name alone was
-rejected because nobody types the bank's name when listing rent. Linking does
-not yet mark the bill paid.
+rejected because nobody types the bank's name when listing rent. A linked
+bill then settles itself: a payment under that name within 5 days of its due
+date moves a repeat to its next date or completes a one-off, as "Mark paid"
+does, with a toast saying so (`paidBills`, `markPaid`).
