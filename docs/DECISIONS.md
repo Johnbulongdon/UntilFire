@@ -1436,3 +1436,34 @@ hands them to the tools around the date:
 - **One debt list.** Contributions offers the debts Liabilities and
   connected loan and card accounts know of as rows (balances; rates are
   typed), and blank rates read "add rate", not "cheap".
+
+### D-35 — October 7: Money's math, one rule for debts and bills
+
+**Status:** Active. From a math audit of Money the founder asked for.
+
+**Decision:**
+- **Debts follow the balances rule (D-32)** (`effectiveDebts`):
+  - A connected mortgage replaces the typed mortgage.
+  - Other connected loans replace typed "other debt".
+  - Credit cards count toward net worth, because they are owed. They stay
+    out of the projection's debt, because a card balance is this month's
+    spending and is already in expenses.
+  - Home's net worth, the Net Worth page, the Debts page totals, the freedom
+    date and the debts offered on Contributions all use it. Home left
+    connected debts out; the Net Worth page added them to typed ones.
+- **The Net Worth page's progress** uses the freedom date's target and years,
+  not its own older projection.
+- **Insights:**
+  - Averages are over finished months only; the running month is still
+    charted.
+  - Categories include custom ones, and unknown keys count under Other, so
+    the slices add up.
+- **Budget:**
+  - Savings are after the mortgage payment, as on Home and Plan.
+  - "Over" and "left" count spent plus bills still due this month, as on
+    Transactions.
+  - Bills still due count every date from each bill's stored due date to
+    month end, so a weekly bill counts weekly. Free to spend's committed
+    totals use the same rule.
+- **Upcoming and Insights FIRE-target lines** use the freedom date's multiple
+  (withdrawal rate and tax gross-up), not a fixed 25×.

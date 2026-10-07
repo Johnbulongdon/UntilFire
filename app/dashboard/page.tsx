@@ -347,6 +347,27 @@ function effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts 
   };
 }
 
+/**
+ * Debts by the same rule as balances (D-35): a connected mortgage replaces the
+ * typed mortgage, other connected loans replace typed "other debt". Credit
+ * cards are owed, so net worth counts them, but the projection does not: a
+ * card balance is this month's spending, already in expenses.
+ */
+function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
+  totalDebt: number; mortgageBalance: number;
+  plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
+}) {
+  const isMortgage = (a: Pick<PlaidAccount, "type" | "subtype">) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage");
+  const sum = (keep: (a: Pick<PlaidAccount, "type" | "subtype">) => boolean) =>
+    plaidAccounts.filter(keep).reduce((s, a) => s + Math.max(0, a.balance_current ?? 0), 0);
+  const mortgages = sum(isMortgage), loans = sum((a) => a.type === "loan" && !isMortgage(a));
+  return {
+    otherDebt: loans > 0 ? loans : totalDebt,
+    mortgage: mortgages > 0 ? mortgages : mortgageBalance,
+    cards: sum((a) => a.type === "credit"),
+  };
+}
+
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
@@ -476,7 +497,8 @@ function projectionInputs({
   return {
     annualIncome: income * 12, monthlyExpenses,
     ...effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }),
-    totalDebt, mortgageBalance, mortgageMonthly,
+    ...(({ otherDebt, mortgage }) => ({ totalDebt: otherDebt, mortgageBalance: mortgage }))(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
+    mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
     taxEnabled, retirementTaxRate, rothPct,
   };
@@ -1069,7 +1091,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const moneyMixSourceLabel = plaidAccounts.some((account) => account.type === "depository" || account.type === "investment")
     ? "Connected balances shown where available"
     : "Using manual balances";
-  const currentNetWorth = investable - totalDebt - mortgageBalance;
+  // Debts by the same rule as everywhere (effectiveDebts), cards included: they are owed.
+  const debtsNow = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
+  const currentNetWorth = investable - debtsNow.otherDebt - debtsNow.mortgage - debtsNow.cards;
   const growthSummary = retireYear
     ? statusLabel === "Ahead of schedule"
       ? `At this pace, you’re tracking a little ahead of ${retireYear}.`
@@ -2182,7 +2206,7 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, mortgageMonthly = 0, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2190,6 +2214,8 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   committedRemaining?: number;
   /** The same, split by category, so each dial can show what is still promised. */
   committedByCat?: Record<string, number>;
+  /** The mortgage payment from Debts, which Home and Plan subtract from savings too. */
+  mortgageMonthly?: number;
   /** Free to spend until payday, cash against budget (D-29). */
   freeResult?: FreeToSpend | null;
   spendAccounts?: SpendAccount[];
@@ -2213,7 +2239,8 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
 
   const totalExp = activeCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
 
-  const savings  = income - totalExp;
+  // After the mortgage payment, as Home and Plan count it (D-35).
+  const savings  = income - totalExp - mortgageMonthly;
   const rate     = income > 0 ? (savings / income) * 100 : 0;
   const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -2239,18 +2266,19 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
 
   const overBudgetCats = activeCats
     .filter(cat => {
+      // Over means spent plus bills still due this month, as Transactions counts it (D-35).
       const budget = expenses[cat.key] || 0;
-      const spent = actuals[cat.key] || 0;
-      return budget > 0 && spent > budget;
+      const used = (actuals[cat.key] || 0) + (committedByCat[cat.key] || 0);
+      return budget > 0 && used > budget;
     })
-    .sort((a, b) => ((actuals[b.key] || 0) - (expenses[b.key] || 0)) - ((actuals[a.key] || 0) - (expenses[a.key] || 0)));
+    .sort((a, b) => ((actuals[b.key] || 0) + (committedByCat[b.key] || 0) - (expenses[b.key] || 0)) - ((actuals[a.key] || 0) + (committedByCat[a.key] || 0) - (expenses[a.key] || 0)));
   const onTrackCats = activeCats.filter(c => !overBudgetCats.includes(c));
   const onTrackBudgetTotal = onTrackCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
 
   function suggestSlackCategories(excludeKey: string) {
     return activeCats
       .filter(c => c.key !== excludeKey)
-      .map(c => ({ label: c.label, slack: (expenses[c.key] || 0) - (actuals[c.key] || 0) }))
+      .map(c => ({ label: c.label, slack: (expenses[c.key] || 0) - (actuals[c.key] || 0) - (committedByCat[c.key] || 0) }))
       .filter(c => c.slack > 0.5)
       .sort((a, b) => b.slack - a.slack)
       .slice(0, 2)
@@ -2353,7 +2381,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
         ? `conic-gradient(var(--uf-neg) 0 100%)`
         : `conic-gradient(${cat.color} 0 ${pctSpent}%, ${cat.color}59 ${pctSpent}% ${pctSpent + pctExp}%, var(--uf-border-2) ${pctSpent + pctExp}% 100%)`;
     const note = !hasBudget ? "no budget set"
-      : over ? `${fmtMoney(spent - budget)} over`
+      : over ? `${fmtMoney(committed - budget)} over`
       : left >= 1 ? `${fmtMoney(left)} left`
       : "nothing left";
     const noteColor = !hasBudget ? "var(--uf-text-3)"
@@ -2553,7 +2581,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
         <div style={{ height: 1, background: "var(--uf-border)" }} />
 
         <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--uf-text-2)" }}>
-          {rate >= 50 ? "🔥 " : ""}Saving {fmtMoney(Math.max(0, savings))}/mo ({rate.toFixed(1)}% rate)
+          {rate >= 50 ? "🔥 " : ""}Saving {fmtMoney(Math.max(0, savings))}/mo ({rate.toFixed(1)}% rate){mortgageMonthly > 0 ? `, after your ${fmtMoney(mortgageMonthly)} mortgage payment` : ""}
           {freedomDateMonthYearLabel
             ? <> — projected freedom date <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>{freedomDateMonthYearLabel}</span>.</>
             : "."}
@@ -3640,7 +3668,9 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0 }: {
+function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, freedom }: {
+  /** The freedom date's own target and years (freedomProjection), so this page's progress matches Home's. */
+  freedom?: { fireTarget: number; fireYear: number | null };
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
   mortgageMonthly: number; growthRate: number; withdrawalRate: number;
@@ -3655,17 +3685,19 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
 
   const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
 
-  const { fireYear, fireTarget } = useMemo(() => calcProjection({
+  const own = useMemo(() => calcProjection({
     annualIncome: income * 12, monthlyExpenses,
     k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
   }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+  const { fireYear, fireTarget } = freedom ?? own;
 
-  const plaidLiabilities  = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan").reduce((s, a) => s + (a.balance_current ?? 0), 0);
   // Connected accounts replace typed balances of the same kind (effectiveBalances), as on Home.
   const eff = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
   const investable = eff.k401 + eff.rothIRA + eff.taxable + eff.cashSavings;
-  const netWorth   = investable - totalDebt - mortgageBalance - plaidLiabilities;
+  // Debts by the same rule as Home (effectiveDebts): connected replaces typed, cards counted once.
+  const debts = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
+  const netWorth   = investable - debts.otherDebt - debts.mortgage - debts.cards;
   const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
 
   return (
@@ -4260,7 +4292,9 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
-  const totalLiabilities = totalDebt + mortgageBalance;
+  // The same rule as net worth (effectiveDebts): connected replaces typed, cards included.
+  const debtsEff = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
+  const totalLiabilities = debtsEff.otherDebt + debtsEff.mortgage + debtsEff.cards;
 
   const bankLiabilities = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan");
   const bankLiabilitiesTotal = bankLiabilities.reduce((s, a) => s + (a.balance_current ?? 0), 0);
@@ -4359,8 +4393,8 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
         <div className="uf-card" style={{ background: "rgba(220,38,38,0.04)", border: "1px solid rgba(220,38,38,0.2)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
             {[
-              { label: "Consumer Debt",  val: fmtMoney(totalDebt),           color: "#DC2626" },
-              { label: "Mortgage",       val: fmtMoney(mortgageBalance),      color: "#DC2626" },
+              { label: "Consumer Debt",  val: fmtMoney(debtsEff.otherDebt + debtsEff.cards), color: "#DC2626" },
+              { label: "Mortgage",       val: fmtMoney(debtsEff.mortgage),    color: "#DC2626" },
               { label: "Total Liabilities", val: fmtMoney(totalLiabilities), color: "#19181E" },
             ].map(l => (
               <div key={l.label}>
@@ -5740,8 +5774,11 @@ export default function Dashboard() {
     knownDebts: [
       ...plaidAccounts.filter((a) => (a.type === "credit" || a.type === "loan") && (a.balance_current ?? 0) > 0)
         .map((a) => ({ name: a.name || a.official_name || (a.type === "credit" ? "Credit card" : "Loan"), balance: a.balance_current ?? 0 })),
-      ...(totalDebt > 0 ? [{ name: "Debt (Liabilities)", balance: totalDebt }] : []),
-      ...(mortgageBalance > 0 ? [{ name: "Mortgage", balance: mortgageBalance }] : []),
+      // Typed figures only where no connected account replaces them (effectiveDebts).
+      ...(((d) => [
+        ...(d.otherDebt === totalDebt && totalDebt > 0 ? [{ name: "Debt (Liabilities)", balance: totalDebt }] : []),
+        ...(d.mortgage === mortgageBalance && mortgageBalance > 0 ? [{ name: "Mortgage", balance: mortgageBalance }] : []),
+      ])(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }))),
     ],
     expectedItems: contributionItems,
     lastMonthSpending,
@@ -5756,11 +5793,14 @@ export default function Dashboard() {
   // because the contribution forecast needs both. These totals are the Budget
   // tab's "committed this month", so they filter back to this month's bills —
   // without that, widening the query quietly widened them too.
+  // Each bill's dates from its stored due date (an overdue one is still owed)
+  // to the end of this month, so a weekly bill counts every week, the same
+  // rule as Transactions' "left" (dueByCategory, D-35).
   const thisMonthBills = useMemo(() => {
     const now = new Date();
     const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
-    return committedRows.filter((r) => r.transaction_type === "expense" && r.due_date <= end);
-  }, [committedRows]);
+    return homeBills.map((b) => ({ bill: b, owed: occurrences(b, b.due, end).length * b.usd })).filter((x) => x.owed > 0);
+  }, [homeBills]);
   // Linked bills settle here as well as on Transactions, so Home, the Budget
   // tab and Free to spend never count rent that is already paid as still owed
   // (D-31). Conditional on the due date read, so it cannot roll twice.
@@ -5785,20 +5825,20 @@ export default function Dashboard() {
   }, [committedRows, recentTransactions, rates]);
 
   const committedRemainingUSD = useMemo(
-    () => thisMonthBills.reduce((sum, r) => sum + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), 0),
-    [thisMonthBills, rates],
+    () => thisMonthBills.reduce((sum, x) => sum + x.owed, 0),
+    [thisMonthBills],
   );
 
   const committedByCat = useMemo(() => {
     const m: Record<string, number> = {};
-    for (const r of thisMonthBills) {
+    for (const { bill, owed } of thisMonthBills) {
       // Uncategorised bills take the category their name suggests ("Rent" is
       // housing), the same guess Transactions makes, not "other" (D-31).
-      const k = r.category || guessBillCategory(r.description ?? null) || "other";
-      m[k] = (m[k] || 0) + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates);
+      const k = bill.category || guessBillCategory(bill.description) || "other";
+      m[k] = (m[k] || 0) + owed;
     }
     return m;
-  }, [thisMonthBills, rates]);
+  }, [thisMonthBills]);
 
   /* Free to spend until payday (D-29): checking balance less bills before the
      next paycheck, against what is left in the flexible budget. Categories
@@ -6719,9 +6759,9 @@ export default function Dashboard() {
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
-                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} />}
+                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} mortgageMonthly={mortgageMonthly} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
                 )}
               </div>
             )}
@@ -6740,6 +6780,7 @@ export default function Dashboard() {
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                   mortgageMonthly={mortgageMonthly} growthRate={growthRate}
                   withdrawalRate={withdrawalRate}
+                  freedom={{ fireTarget: planFreedom.fireTarget, fireYear: planFreedom.fireYear }}
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
@@ -6854,7 +6895,7 @@ export default function Dashboard() {
               <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
             )}
             {tab === "citizenship" && <CitizenshipTab />}
-            {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
+            {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "expat-fire" && (
               <ExpatFireDashTab

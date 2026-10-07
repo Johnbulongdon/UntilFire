@@ -259,8 +259,10 @@ function PaymentCard({
 
 export default function ExpectedPaymentsTab({
   userId, defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [],
-  budgetMonthlySpending = 0, lastMonthSpending,
+  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25,
 }: {
+  /** FIRE target per dollar of a year's spending, as the freedom date uses it (D-35). */
+  targetMultiple?: number;
   userId: string;
   defaultCurrency?: string;
   displayCurrency?: string;
@@ -507,8 +509,8 @@ export default function ExpectedPaymentsTab({
   const committedMonthlyUSD = payments
     .filter(p => p.recurrence !== "none" && p.transaction_type === "expense")
     .reduce((s, p) => s + recurrenceToMonthly(toUSD(p.amount, p.currency, displayRates), p.recurrence), 0);
-  // 25x annual spending — the same rule the freedom date uses.
-  const committedShareOfTarget = committedMonthlyUSD * 12 * 25;
+  // The freedom date's own multiple (withdrawal rate and tax), passed in from Plan's facts.
+  const committedShareOfTarget = committedMonthlyUSD * 12 * targetMultiple;
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "10px 12px", borderRadius: 10,
@@ -629,7 +631,7 @@ export default function ExpectedPaymentsTab({
           </div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 6, lineHeight: 1.6 }}>
             Your repeating bills, levelled to a monthly figure &mdash; {formatAmount(committedShareOfTarget)} of your
-            FIRE target at 25&times; annual spending.
+            FIRE target at {Math.round(targetMultiple * 10) / 10}&times; annual spending.
           </div>
         </div>
       )}

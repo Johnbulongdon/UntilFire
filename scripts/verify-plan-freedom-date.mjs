@@ -25,12 +25,12 @@ const pick = (name) => {
   assert.ok(text, `${name} exists in ${file}`);
   return text;
 };
-const code = ['calcProjection', 'freedomProjection', 'projectionInputs', 'effectiveBalances', 'isRetirementInvestmentAccount', 'isBrokerageInvestmentAccount', 'normalizePlaidSubtype', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
-  + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances;';
+const code = ['calcProjection', 'freedomProjection', 'projectionInputs', 'effectiveBalances', 'effectiveDebts', 'isRetirementInvestmentAccount', 'isBrokerageInvestmentAccount', 'normalizePlaidSubtype', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
+  + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
   { exports, Math, Date, Object, React, REAL_RETURN: 0.069 });
-const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances } = exports;
+const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances, effectiveDebts } = exports;
 
 // A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked bank account.
 const base = {
@@ -67,6 +67,16 @@ const typedAndLinked = effectiveBalances({ k401: 40000, rothIRA: 10000, taxable:
 assert.deepEqual({ ...typedAndLinked }, { k401: 52000, rothIRA: 0, taxable: 10000, cashSavings: 8000 }, 'linked 401(k) replaces 401(k) and Roth; bank replaces cash; taxable stays typed');
 const both = freedomProjection({ ...base, plaidAccounts: [{ type: 'investment', subtype: 'brokerage', balance_current: 10000 }, { type: 'depository', balance_current: 10000 }], growthRate: 0.069 });
 assert.equal(both.fireYear, home.fireYear, 'a linked brokerage account holding the typed $10k is not counted twice');
+
+// Debts by the same rule as balances (D-35).
+const debts = effectiveDebts({ totalDebt: 12000, mortgageBalance: 300000, plaidAccounts: [
+  { type: 'loan', subtype: 'student', balance_current: 15000 }, { type: 'loan', subtype: 'mortgage', balance_current: 295000 },
+  { type: 'credit', subtype: 'credit card', balance_current: 1800 }, { type: 'depository', balance_current: 5000 }] });
+assert.deepEqual({ ...debts }, { otherDebt: 15000, mortgage: 295000, cards: 1800 }, 'linked loans replace typed debt and mortgage; cards are counted on their own');
+assert.deepEqual({ ...effectiveDebts({ totalDebt: 12000, mortgageBalance: 0, plaidAccounts: [] }) }, { otherDebt: 12000, mortgage: 0, cards: 0 }, 'nothing linked: typed figures stand');
+const linkedLoan = freedomProjection({ ...base, totalDebt: 20000, plaidAccounts: [...base.plaidAccounts, { type: 'loan', subtype: 'auto', balance_current: 20000 }], growthRate: 0.069 });
+const typedLoan = freedomProjection({ ...base, totalDebt: 20000, growthRate: 0.069 });
+assert.equal(linkedLoan.data[1]['Contributions'], typedLoan.data[1]['Contributions'], 'a typed loan that is also linked is paid once, not twice');
 
 // The growth choice moves the date, in the right direction.
 const d5 = at(0.05).exactDate, d69 = at(0.069).exactDate, d81 = at(0.081).exactDate;
