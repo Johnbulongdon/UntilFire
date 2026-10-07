@@ -8,6 +8,13 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Free calculator and the rest of the app agree
+- The free result's "retire abroad" ages are right for visitors outside the
+  US: their figures are converted to dollars before comparing with city costs.
+- The embeddable calculator shows the same freedom year as the free result.
+- The Assets tab's emergency fund months match Home and Contributions.
+- The purchase-impact calculator starts at the same 6.9% growth as the rest.
+
 ### Expat FIRE uses your numbers everywhere
 - The globe's colours and hover card use your own target and growth, not a
   fixed 25x and 5%.

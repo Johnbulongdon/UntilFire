@@ -1489,3 +1489,25 @@ hands them to the tools around the date:
 **Not modelled:** each country's own tax on retirement income (the home tax
 setting applies everywhere), and healthcare, visas or travel beyond the
 city cost averages.
+
+### D-37 — October 7: The public calculators and the rest of the app agree
+
+**Status:** Active. From an audit of every remaining page the founder asked
+for.
+
+**Decision:**
+- **Free result abroad cards in dollars.** The free result's "retire abroad"
+  cards convert the visitor's spending, savings and portfolio to dollars
+  before comparing them with city costs, which are in dollars. HK$15,000 a
+  month was being read as $15,000.
+- **One rounding.** The embeddable calculator rounds the freedom year down
+  and the years to the nearest, like the free result and the dashboard
+  (lib/fire). Rounding up put it a year later than the page it links to
+  (D-27).
+- **One emergency fund.** The Assets tab's "months covered" uses the needs
+  basis and any hand-set amount from Contributions, as Home does (D-34).
+- **One default growth.** The public purchase-impact calculator starts at the
+  sourced default (6.9%), not 7%.
+- **Tests match D-30.** Two `fire-number` checks still expected a growth
+  picker in onboarding, which D-30 removed. They now check the sourced
+  default, and the whole test suite passes.
