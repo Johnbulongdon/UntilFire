@@ -50,9 +50,9 @@ import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } fro
 import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
-import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
+import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Badge, Button, ICON_PATHS } from "@/components/ui";
+import { Alert, Button, ICON_PATHS } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -2899,40 +2899,41 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
     setGoals(prev => prev.filter(g => g.id !== id));
   }
 
-  const fmtAmt = (n: number) => formatMoney(n, { style: "compact" });
 
-  function goalStatus(g: Goal): { label: string; color: string; bg: string } {
-    const pct = g.target_amount > 0 ? g.current_saved / g.target_amount : 0;
-    if (pct >= 1) return { label: "Achieved! 🎉", color: "#059669", bg: "rgba(5,150,105,0.1)" };
-    if (!g.target_date) return { label: `${Math.round(pct * 100)}%`, color: "#22d3a5", bg: "transparent" };
-    const monthsLeft = Math.max(0, (new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30));
-    const needed = (g.target_amount - g.current_saved) / Math.max(monthsLeft, 1);
-    if (monthsLeft <= 0) return { label: "Overdue", color: "#ef4444", bg: "rgba(239,68,68,0.1)" };
-    return { label: `$${Math.round(needed).toLocaleString()}/mo needed`, color: "#f97316", bg: "transparent" };
+  const fmtFull = (n: number) => formatMoney(n);
+  // Goals are categories here, so each takes a palette colour in order (D-42).
+  const goalColor = (i: number) => COLOR_PALETTE[i % (COLOR_PALETTE.length - 1)];
+  const [openGoal, setOpenGoal] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  /** What a goal needs: done, a monthly amount to make its date, past its date, or no date. */
+  function goalPlan(g: Goal): { kind: "done" } | { kind: "monthly"; amount: number } | { kind: "late" } | { kind: "open" } {
+    if (g.target_amount > 0 && g.current_saved >= g.target_amount) return { kind: "done" };
+    if (!g.target_date) return { kind: "open" };
+    const monthsLeft = (new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30.44);
+    if (monthsLeft <= 0) return { kind: "late" };
+    return { kind: "monthly", amount: (g.target_amount - g.current_saved) / Math.max(monthsLeft, 1) };
   }
+  const monthlyNeeded = goals.reduce((t, g) => { const p = goalPlan(g); return t + (p.kind === "monthly" ? p.amount : 0); }, 0);
 
   if (loading) return <div style={{ padding: 40, color: "var(--uf-text-muted)", textAlign: "center" }}>Loading…</div>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Fraunces, Georgia, serif", letterSpacing: "-0.4px" }}>Goals</div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-muted)", marginTop: 2 }}>Save toward the things that matter</div>
-        </div>
-        <button
-          onClick={() => openAdd()}
-          style={{
-            display: "flex", alignItems: "center", gap: 7,
-            background: "#22d3a5", color: "#003527",
-            border: "none", borderRadius: 10, padding: "9px 18px",
-            fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-          }}
-        >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add Goal
-        </button>
-      </div>
+      {/* The calm headline (D-42): saved toward every goal, one bar split by
+          goal, and what a month keeps the dated ones on time. */}
+      <MoneyHead
+        label={goals.length ? `Saved toward ${goals.length} ${goals.length === 1 ? "goal" : "goals"}` : "Goals"}
+        value={fmtFull(goals.reduce((t, g) => t + g.current_saved, 0))}
+        sub={goals.length
+          ? <>of <Fig>{fmtFull(goals.reduce((t, g) => t + g.target_amount, 0))}</Fig>{monthlyNeeded > 0 ? <> · <Fig>{fmtFull(monthlyNeeded)}</Fig> a month keeps the dated ones on time</> : null}</>
+          : "Save toward the things that matter"}
+        aside={<Button variant="primary" size="sm" onClick={() => openAdd()}>Add a goal</Button>}
+      >
+        {goals.length > 0 && (
+          <StackBar total={goals.reduce((t, g) => t + g.target_amount, 0)} label="Saved toward each goal"
+            parts={goals.map((g, i) => ({ key: g.id, color: goalColor(i), value: Math.min(g.current_saved, g.target_amount) }))} />
+        )}
+      </MoneyHead>
 
       {/* Your why: one prompt per PERMA category with no linked goal yet.
           Describe it in your own words, get an estimate, nudge it until it
@@ -2978,7 +2979,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                         disabled={!card.description.trim() || card.estimating}
                         style={{
                           alignSelf: "flex-start", background: "none", border: "none",
-                          color: card.description.trim() ? "#22d3a5" : "var(--uf-text-muted)",
+                          color: card.description.trim() ? "var(--uf-pos-ink)" : "var(--uf-text-muted)",
                           fontSize: 12, fontWeight: 700, cursor: card.description.trim() ? "pointer" : "default",
                           padding: 0, fontFamily: "inherit",
                         }}
@@ -2999,7 +3000,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                         <button
                           onClick={() => confirmPermaGoal(p)}
                           disabled={saving}
-                          style={{ flex: 1, background: "#22d3a5", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "#003527", cursor: "pointer", fontFamily: "inherit" }}
+                          style={{ flex: 1, background: "var(--uf-green)", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "var(--uf-card)", cursor: "pointer", fontFamily: "inherit" }}
                         >
                           {saving ? "Saving…" : "Looks right"}
                         </button>
@@ -3047,108 +3048,35 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
         </div>
       )}
 
-      {/* Goals grid */}
       {goals.length > 0 && (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: 16,
-        }}>
-          {goals.map(g => {
+        <MoneyList>
+          {goals.map((g, i) => {
             const pct = g.target_amount > 0 ? Math.min(1, g.current_saved / g.target_amount) : 0;
-            const status = goalStatus(g);
-            const achieved = pct >= 1;
+            const plan = goalPlan(g);
+            const open = openGoal === g.id;
             return (
-              <div
-                key={g.id}
-                style={{
-                  background: "var(--uf-card)", border: "1px solid var(--uf-border)",
-                  borderRadius: 16, padding: "20px 20px 16px",
-                  display: "flex", flexDirection: "column", gap: 14,
-                  position: "relative",
-                }}
-              >
-                {/* Edit/delete actions */}
-                <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 6 }}>
-                  <button
-                    onClick={() => openEdit(g)}
-                    style={{ background: "none", border: "none", color: "var(--uf-text-muted)", cursor: "pointer", fontSize: 16, padding: 2 }}
-                    title="Edit"
-                  >✏️</button>
-                  <button
-                    onClick={() => handleDelete(g.id)}
-                    style={{ background: "none", border: "none", color: "var(--uf-text-muted)", cursor: "pointer", fontSize: 16, padding: 2 }}
-                    title="Delete"
-                  >🗑️</button>
-                </div>
-
-                {/* Emoji + name */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 56 }}>
-                  <div style={{
-                    fontSize: 28, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--uf-surface)", borderRadius: 12, flexShrink: 0,
-                  }}>{g.emoji}</div>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", lineHeight: 1.3 }}>{g.name}</div>
-                    {g.perma_category && (
-                      <Badge tone="freedom" style={{ marginTop: 4 }}>{PERMA_LABELS[g.perma_category]}</Badge>
-                    )}
-                    {g.target_date && (
-                      <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 4 }}>
-                        🗓 {new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                      </div>
-                    )}
+              <MoneyRow key={g.id} dot={goalColor(i)} icon={g.emoji} name={g.name}
+                meta={[
+                  `${fmtFull(g.current_saved)} of ${fmtFull(g.target_amount)}`,
+                  g.target_date ? `by ${new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}` : null,
+                  plan.kind === "monthly" ? `${fmtFull(plan.amount)}/mo` : plan.kind === "late" ? "past its date" : null,
+                  g.perma_category ? PERMA_LABELS[g.perma_category] : null,
+                ].filter(Boolean).join(" · ")}
+                value={plan.kind === "done" ? "Done ✓" : `${Math.round(pct * 100)}%`} strong
+                valueTone={plan.kind === "done" ? "var(--uf-pos-ink)" : plan.kind === "late" ? "var(--uf-warn-ink)" : undefined}
+                bar={<MoneyTrack share={pct} color={goalColor(i)} label={`${g.name}: ${Math.round(pct * 100)}% saved`} />}
+                onClick={() => { setOpenGoal(open ? null : g.id); setConfirmDelete(null); }}
+                after={open && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <Button variant="secondary" size="sm" onClick={() => openEdit(g)}>Edit</Button>
+                    {confirmDelete === g.id
+                      ? <><Button variant="danger" size="sm" onClick={() => handleDelete(g.id)}>Delete {g.name}</Button><Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>Keep it</Button></>
+                      : <Button variant="danger" size="sm" onClick={() => setConfirmDelete(g.id)}>Delete</Button>}
                   </div>
-                </div>
-
-                {/* Progress bar */}
-                <div>
-                  <div style={{
-                    height: 6, background: "var(--uf-surface)", borderRadius: 99, overflow: "hidden",
-                  }}>
-                    <div style={{
-                      height: "100%", width: `${pct * 100}%`,
-                      background: achieved ? "#059669" : "#22d3a5",
-                      borderRadius: 99, transition: "width 0.4s ease",
-                    }} />
-                  </div>
-                </div>
-
-                {/* Amounts + status */}
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.03em" }}>
-                      {fmtAmt(g.current_saved)}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 1 }}>
-                      of {fmtAmt(g.target_amount)}
-                    </div>
-                  </div>
-                  <div style={{
-                    fontSize: 11, fontWeight: 700, color: status.color,
-                    background: status.bg, borderRadius: 99, padding: "3px 10px",
-                  }}>
-                    {status.label}
-                  </div>
-                </div>
-              </div>
+                )} />
             );
           })}
-
-          {/* Add another card */}
-          <button
-            onClick={() => openAdd()}
-            style={{
-              background: "transparent", border: "1.5px dashed var(--uf-border)",
-              borderRadius: 16, padding: "20px", cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              gap: 8, color: "var(--uf-text-muted)", minHeight: 160, fontFamily: "inherit",
-            }}
-          >
-            <span style={{ fontSize: 24 }}>+</span>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Add goal</span>
-          </button>
-        </div>
+        </MoneyList>
       )}
 
       {/* Add / Edit Modal */}
@@ -3287,9 +3215,9 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                 onClick={handleSave}
                 disabled={saving || !draft.name.trim() || !draft.target_amount}
                 style={{
-                  flex: 2, padding: "11px", background: "#22d3a5",
+                  flex: 2, padding: "11px", background: "var(--uf-green)",
                   border: "none", borderRadius: 10,
-                  fontSize: 13, fontWeight: 700, color: "#003527",
+                  fontSize: 13, fontWeight: 700, color: "var(--uf-card)",
                   cursor: saving ? "default" : "pointer", fontFamily: "inherit",
                   opacity: saving || !draft.name.trim() || !draft.target_amount ? 0.6 : 1,
                 }}
@@ -4730,30 +4658,47 @@ function TaxProfileCard({
  * changing growth, city or lifestyle here visibly did nothing: the date only
  * showed on Home. Same numbers as Home (freedomProjection).
  */
-function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears }: {
+function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears, invested = 0, target = 0 }: {
   date: Date | null; fireAge: number; years: number | null; growthPct: number; deltaYears: number | null;
+  /** For the bar to the FIRE number; optional so the summary renders without it. */
+  invested?: number; target?: number;
 }) {
   const label = date ? date.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
   const age = date && fireAge > 0 && years !== null ? Math.floor(fireAge + years) : null;
+  const share = target > 0 ? Math.min(1, Math.max(0, invested / target)) : null;
+  const mono = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" } as const;
+  const compact = (n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n / 1000)}k`;
+  // The calm headline (D-42): self-contained, because a test renders it alone.
   return (
-    <section aria-live="polite" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 24px" }}>
-      <div className="uf-t-label" style={{ color: "var(--uf-ink-2)", marginBottom: 6 }}>Your freedom date</div>
-      {label ? (
-        <>
-          <div style={{ fontFamily: "var(--uf-font-display)", fontSize: 34, fontWeight: 700, color: "var(--uf-ink)", lineHeight: 1.1 }}>{label}</div>
-          <div className="uf-t-body" style={{ color: "var(--uf-ink-2)", marginTop: 6 }}>
-            {age !== null ? <>At {age}, </> : null}at {growthPct.toFixed(1)}% growth a year after inflation.
-            {deltaYears !== null && Math.abs(deltaYears) >= 0.05 && (
-              <> That&apos;s <b style={{ color: "var(--uf-ink)" }}>{Math.abs(deltaYears).toFixed(1)} years {deltaYears > 0 ? "later" : "earlier"}</b> than at the {(REAL_RETURN * 100).toFixed(1)}% default.</>
-            )}
+    <section aria-live="polite" style={{ background: "var(--uf-card)", borderRadius: 20, padding: 22, boxShadow: "var(--uf-e1)", display: "grid", gap: 12 }}>
+      <div>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Your freedom date</div>
+        {label ? (
+          <>
+            <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(34px, 6vw, 44px)", fontWeight: 700, color: "var(--uf-teal)", lineHeight: 1.1 }}>{label}</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 4 }}>
+              {age !== null ? <>At {age}, </> : null}at {growthPct.toFixed(1)}% growth a year after inflation.
+              {deltaYears !== null && Math.abs(deltaYears) >= 0.05 && (
+                <> That&apos;s <b style={{ color: "var(--uf-ink)" }}>{Math.abs(deltaYears).toFixed(1)} years {deltaYears > 0 ? "later" : "earlier"}</b> than at the {(REAL_RETURN * 100).toFixed(1)}% default.</>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>Not reached yet. Save more or spend less to bring it in.</div>
+        )}
+      </div>
+      {share !== null && (
+        <div style={{ display: "grid", gap: 6 }}>
+          <div role="progressbar" aria-label="Progress to your FIRE number" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}
+            style={{ position: "relative", height: 10, borderRadius: 5, background: "var(--uf-surface-2)", overflow: "hidden" }}>
+            <i style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${share * 100}%`, background: "var(--uf-teal)", borderRadius: 5 }} />
           </div>
-        </>
-      ) : (
-        <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>
-          Not reached yet. Save more or spend less to bring it in.
+          <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: 8, color: "var(--uf-ink-2)" }}>
+            <span><b style={{ ...mono, color: "var(--uf-ink)" }}>{compact(invested)}</b> of <span style={mono}>{compact(target)}</span> FIRE number</span>
+            <b style={mono}>{Math.round(share * 100)}%</b>
+          </div>
         </div>
       )}
-      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 8 }}>Change anything below to move it.</div>
     </section>
   );
 }
@@ -5379,6 +5324,21 @@ export default function Dashboard() {
      typed), savings after mortgage and debt, growth, withdrawal rate and tax.
      Each had its own copy of the math and inputs, so none matched the date
      shown above it. */
+  /* What moves Plan's date most (D-42), worked out from Plan's own inputs so
+     the dates match the one above them. The same three moves as Home's. */
+  const planMoves = useMemo(() => {
+    if (!planFreedom.exactDate) return [];
+    const base = projectionInputs({ ...planFreedomInputs, growthRate });
+    if (!(base.annualIncome > 0)) return [];
+    const from = planFreedom.exactDate.getTime();
+    const run = (over: Partial<typeof base>) => { const r = calcProjection({ ...base, ...over }); return exactFreedomDateFrom(r.data, r.fireYear, r.fireTarget); };
+    return [
+      { key: "save", icon: "💰", color: COLOR_PALETTE[2], label: `Save ${fmt(500, defaultCurrency, rates)} more a month`, note: "", date: run({ monthlyExpenses: Math.max(0, base.monthlyExpenses - 500) }) },
+      { key: "spend", icon: "✂️", color: COLOR_PALETTE[1], label: "Spend 10% less", note: "", date: run({ monthlyExpenses: base.monthlyExpenses * 0.9 }) },
+      { key: "earn", icon: "📈", color: COLOR_PALETTE[6], label: "Earn 10% more", note: "if the raise is saved", date: run({ annualIncome: base.annualIncome * 1.1 }) },
+    ].map((m) => ({ ...m, years: m.date ? Math.max(0, (from - m.date.getTime()) / (365.25 * 864e5)) : 0 }))
+      .sort((x, y) => y.years - x.years);
+  }, [planFreedom, planFreedomInputs, growthRate, defaultCurrency, rates]);
   const planFacts = useMemo(() => {
     const inputs = projectionInputs({ ...planFreedomInputs, growthRate });
     const retirementMonthly = inputs.targetMonthlyExpenses ?? inputs.monthlyExpenses;
@@ -6475,7 +6435,22 @@ export default function Dashboard() {
                       deltaYears={planFreedom.exactDate && planFreedomAtDefault.exactDate
                         ? (planFreedom.exactDate.getTime() - planFreedomAtDefault.exactDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
                         : null}
+                      invested={planFacts.invested}
+                      target={planFacts.fireTarget}
                     />
+                    {planMoves.length > 0 && (
+                      <>
+                        <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>What moves it most</div>
+                        <MoneyList>
+                          {planMoves.map((m) => (
+                            <MoneyRow key={m.key} dot={m.color} icon={m.icon} name={m.label}
+                              meta={m.date ? `Lands in ${m.date.toLocaleDateString("en-US", { month: "short", year: "numeric" })}${m.note ? ` · ${m.note}` : ""}` : m.note}
+                              value={m.years >= 0.05 ? `−${m.years.toFixed(1)} yrs` : "No change"} valueTone={m.years >= 0.05 ? "var(--uf-pos-ink)" : "var(--uf-ink-3)"} strong={m.years >= 0.05}
+                              bar={<MoneyTrack share={planMoves[0].years > 0 ? m.years / planMoves[0].years : 0} color={m.color} label={`${m.label}: ${m.years.toFixed(1)} years sooner`} />} />
+                          ))}
+                        </MoneyList>
+                      </>
+                    )}
                     <FireAssumptionsCard
                       freedomDateLabel={planFreedom.exactDate ? planFreedom.exactDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null}
                       fireAge={fireAge}
@@ -6490,25 +6465,32 @@ export default function Dashboard() {
                       displayCurrency={defaultCurrency}
                       growthRate={growthRate}
                       onGrowthRateChange={setGrowthRate}
+                      taxRow={{
+                        on: taxEnabled,
+                        summary: taxEnabled ? `${Math.round(retirementTaxRate * 100)}% effective on withdrawals` : "Off: withdrawals counted before tax",
+                        editor: (
+                          <TaxProfileCard
+                        cityName={cityName}
+                        income={effectiveIncome}
+                        monthlyExpenses={planFacts.retirementMonthly}
+                        withdrawalRate={withdrawalRate}
+                        taxEnabled={taxEnabled}
+                        setTaxEnabled={setTaxEnabled}
+                        retirementTaxRate={retirementTaxRate}
+                        setRetirementTaxRate={setRetirementTaxRate}
+                        rothPct={rothPct}
+                        setRothPct={setRothPct}
+                        displayCurrency={defaultCurrency}
+                        displayRates={rates}
+                      />
+                        ),
+                      }}
                     />
                     <FireCalcMenuTab
                       fireAge={fireAge}
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
-                    <TaxProfileCard
-                      cityName={cityName}
-                      income={effectiveIncome}
-                      monthlyExpenses={planFacts.retirementMonthly}
-                      withdrawalRate={withdrawalRate}
-                      taxEnabled={taxEnabled}
-                      setTaxEnabled={setTaxEnabled}
-                      retirementTaxRate={retirementTaxRate}
-                      setRetirementTaxRate={setRetirementTaxRate}
-                      rothPct={rothPct}
-                      setRothPct={setRothPct}
-                      displayCurrency={defaultCurrency}
-                      displayRates={rates}
-                    />
+
                     <PurchaseImpactPanel
                       currentSavings={planFacts.invested}
                       monthlyContribution={planFacts.monthlySavings}

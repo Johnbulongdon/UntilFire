@@ -8,6 +8,12 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Calm Plan
+- Freedom date shows your progress to your FIRE number, what moves the date most with the month each move lands, and your assumptions as rows you tap to change.
+- Before you buy says in one line how much later a purchase makes your freedom date.
+- Goals show what you've saved toward all of them and what a month keeps them on time; deleting a goal asks first.
+- Contributions open on the next amount, your mix now against your target, and the steps it goes through.
+
 ### Focused Budget
 - Budget opens on what's left to spend this month and about how much a day, with a pace bar showing whether everyday spending is ahead of or under an even pace. Tap "See October" for the month as a calendar. If checking is tighter than your budget before payday, it says so.
 - Fixed: when your budget was the limit, free to spend counted the whole month's remainder as spendable before payday, overstating the daily amount. It now takes the days before payday's share.

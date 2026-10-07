@@ -21,6 +21,8 @@ import { daysSinceSync, STALE_AFTER_DAYS } from "@/lib/account-currency";
 import { recurrenceToMonthly } from "@/lib/recurring-detect";
 import type { AllowanceExclusion } from "@/lib/cashflow-forecast";
 import ContributionLedger from "./ContributionLedger";
+import { MoneyHead, MoneyKey, MoneyList, MoneyRow, StackBar, Fig } from "./MoneyCards";
+import { COLOR_PALETTE } from "@/lib/categories";
 import { supabase } from "@/lib/supabase";
 import {
   aggregateHoldingsByTicker, planContribution, planImportMerge, targetsSumTo100,
@@ -38,6 +40,12 @@ import {
    has the two-store rationale. */
 
 type Row = PlanRow;
+
+/** One emoji per ladder step, for the calm step rows (D-42). */
+const STEP_ICON: Record<RungKind, string> = {
+  "emergency-floor": "🛟", "employer-match": "🤝", "high-interest-debt": "💳", "emergency-target": "🛟",
+  "tax-advantaged": "🏖️", "low-interest-debt": "🧾", "taxable": "📈",
+};
 
 /* A worked example rather than an empty form, labelled as one. The named
    portfolios the user picks from, with their arguments for and against, are a
@@ -402,24 +410,40 @@ export default function ContributionsTab({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--uf-s5)" }}>
-      <div>
-        <h2 className="uf-t-h2" style={{ margin: 0 }}>Next contribution</h2>
-        <p className="uf-t-body" style={{ color: "var(--uf-ink-2)", margin: "var(--uf-s2) 0 0", maxWidth: 560 }}>
-          Set what you want to hold and what you hold now. This works out where
-          the next {arrivalWord}&apos;s money should go to close the gap. Everything
-          on this page is saved as you type.
-        </p>
-        {/* Quiet, and only after something has actually been written — a
-            "Saved" that is on screen before the first edit says nothing. */}
-        <p className="uf-t-small" aria-live="polite" data-testid="uf-save-state"
-           style={{ color: "var(--uf-ink-2)", margin: "var(--uf-s2) 0 0", minHeight: "1.2em" }}>
+      {/* The calm headline (D-42): the amount, the mix now against the target,
+          and the steps it goes through. The inputs that decide it follow. */}
+      <MoneyHead
+        label={`Next contribution · ${view.available.nextDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+        value={<Money amount={num(budget)} />}
+        sub={<span aria-live="polite" data-testid="uf-save-state">
           {saveState === "saving" ? "Saving…"
             : saveState === "saved" ? "Saved to your account."
             : saveState === "signed-out" ? "Saved on this device. Sign in to keep it across devices."
             : saveState === "failed" ? "Saved on this device. Your account could not be reached — it will sync next time."
-            : ""}
-        </p>
-      </div>
+            : `Where the next ${arrivalWord}'s money goes to close the gap to your target. Saved as you type.`}
+        </span>}
+      >
+        {balanced && portfolio > 0 && (
+          <div style={{ display: "grid", gap: 6 }}>
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Now</span>
+            <StackBar total={portfolio} label="Your mix now" parts={holdings.map((h, i) => ({ key: h.symbol, color: COLOR_PALETTE[i % 8], value: h.value }))} />
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Target</span>
+            <StackBar total={1} label="Your target mix" parts={targets.map((t, i) => ({ key: t.symbol, color: COLOR_PALETTE[i % 8], value: t.targetPct }))} />
+            <MoneyKey items={targets.map((t, i) => (
+              <span key={t.symbol}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: COLOR_PALETTE[i % 8], marginRight: 6 }} />
+                {t.symbol} <Fig>{Math.round(((holdings[i]?.value ?? 0) / portfolio) * 100)}%</Fig> → {Math.round(t.targetPct * 100)}%</span>
+            ))} />
+          </div>
+        )}
+      </MoneyHead>
+      {waterfall.fills.some((f) => f.amount > 0) && (
+        <MoneyList>
+          {waterfall.fills.filter((f) => f.amount > 0).map((f, i) => (
+            <MoneyRow key={f.kind} dot={COLOR_PALETTE[(i + 3) % 8]} icon={STEP_ICON[f.kind]} name={`${i + 1}. ${f.label}`}
+              meta={i === 0 ? "Start here" : undefined} value={<Money amount={f.amount} />} strong={i === 0} />
+          ))}
+        </MoneyList>
+      )}
 
       <Card>
         {/* flex-start, not flex-end: these fields have hints of differing
