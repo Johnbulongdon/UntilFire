@@ -1570,3 +1570,28 @@ for.
 order and repeated the same pattern, so nothing stood out. The Transactions
 page reads well because colour means one thing and each block answers one
 question. Home now borrows that restraint, not its density.
+
+
+## Shared public location explorer (2026-10-07; proposed in review)
+
+Use one client-only map component for city comparisons and public Expat FIRE,
+backed by the existing CITIES catalog and CITY_COORDS. City targets use the
+shared fire-number helper; public Expat timelines use calcFIRE and the existing
+calculator's projected portfolio. Preserve D-36 and the dashboard globe's
+lifestyle, target multiple, growth and currency behavior.
+
+Pilot on Austin before broad city rollout. Keep the existing crawlable city
+links, figures and source text. PR #186 owns the pending city-page redesign;
+reconcile its NearbyCityMap placement during integration rather than rendering
+two maps. Do not modify that ready branch.
+
+The default phone flow is lookup and details, with an optional map. Desktop
+shows map, nearby cities and details together. A bounded set of cities follows
+the settled viewport; a zoom does not invent a new city price. Missing cities
+remain missing. US references and international illustrative USD estimates
+have different evidence labels. No native-app portability claim: the catalog
+and financial helpers are reusable, while the web canvas is a renderer.
+
+Bundle Natural Earth land and US state boundaries locally with licenses. No
+paid map provider, API key or runtime tile requests. Motion follows the device
+preference by default and can be reduced; ordinary page scrolling is preserved.

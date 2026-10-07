@@ -11,7 +11,7 @@ import { formatMoney } from "@/lib/money";
 const compactMoney = (n: number) => formatMoney(n, { style: "compact" });
 
 const GeoArbitrageGlobe = dynamic(
-  () => import('@/app/components/GeoArbitrageGlobe'),
+  () => import('@/app/components/PublicExpatLocationExplorer'),
   { ssr: false },
 );
 

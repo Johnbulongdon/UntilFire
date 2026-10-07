@@ -9,6 +9,7 @@ import type { City } from '@/lib/fire-data'
 import { getStatePageSlug, STATE_NAMES } from '@/lib/state-pages'
 import { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'
 import CityCalcWidget from '../CityCalcWidget'
+import CityLocationExplorer from '@/app/components/CityLocationExplorer'
 import { formatMoney } from "@/lib/money";
 
 type Props = {
@@ -408,6 +409,8 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
               </p>
             </section>
           ) : null}
+
+          {page.slug === 'austin-tx' && <CityLocationExplorer cityKey={page.city.key} />}
 
           <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 20 }}>

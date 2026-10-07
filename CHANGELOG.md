@@ -841,3 +841,15 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - Supabase + Google OAuth auth flow
 - Stripe integration with Pro paywall (later opened to all users)
 
+
+
+## 2026-10-07 — Shared location explorer (in review)
+
+- Add a reusable public city/globe explorer with visible-area city choices,
+  search/filter recovery, three-city comparisons, animated selection and
+  reduced-motion controls. Phone map is optional; keyboard city buttons and
+  comparison-removal focus provide an alternative to canvas interaction.
+- Pilot on Austin and the public Expat FIRE calculator using main's current
+  costs and shared FIRE calculations. Preserve dashboard Expat behavior,
+  static city links and PR #186's separate redesign handoff.
+- Bundle licensed US state boundaries; no external map service or API key.
