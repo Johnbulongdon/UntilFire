@@ -17,8 +17,8 @@ import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import ContributionsTab from "./ContributionsTab";
 import CompareCard from "./CompareCard";
-import NextContributionCard from "./NextContributionCard";
-import { measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
+import NextContributionCard, { useContributionPlan } from "./NextContributionCard";
+import { emergencyFundFromPlan, measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
@@ -668,7 +668,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
   // Emergency fund covers needs only (essentials that remain during an emergency).
   // Falls back to total expenses when the user hasn't tagged any needs yet.
-  const efMonthlyBase = monthlyNeedsExpenses ?? monthlyExpenses;
+  // The emergency fund as Contributions defines it (D-34): its accounts and
+  // needs basis, so the safety runway and the ladder never disagree.
+  const contributionPlan = useContributionPlan();
+  const ladderEf = contributionFacts ? emergencyFundFromPlan(contributionPlan, contributionFacts) : null;
+  const efMonthlyBase = ladderEf && ladderEf.monthlyNeeds > 0 ? ladderEf.monthlyNeeds : monthlyNeedsExpenses ?? monthlyExpenses;
 
   // Work costs disappear at retirement → FIRE target uses adjusted spend.
   const retirementMonthlyExpenses = monthlyWorkCosts
@@ -1079,7 +1083,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const spendingExpectedPct = hasActuals ? Math.min(elapsedFraction * 100, 100) : 0; // the plan to date, bills on their days
   const spendingBarTrackColor = hasActuals ? "var(--uf-surface-2)" : "var(--uf-surface)";
   const investedBalance = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0);
-  const availableCash = Math.max(displayCashAssets, 0);
+  const availableCash = Math.max(ladderEf ? ladderEf.balance : displayCashAssets, 0);
   const emergencyFundHealthyNow = efMonthlyBase > 0 && (availableCash / efMonthlyBase) >= EMERGENCY_FUND_TARGET_MONTHS;
   const hasEverHealthyEmergencyFund = useEmergencyFundHistory(emergencyFundHealthyNow);
   const emergencyFundPlan = getEmergencyFundPlan(availableCash, efMonthlyBase, hasEverHealthyEmergencyFund);
@@ -1087,7 +1091,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const hasInvestmentAccounts = plaidAccounts.some((account) => account.type === "investment") || manualRetirementTotal > 0 || taxable > 0;
   const plannedContributionGap = Math.max(goalContribution - Math.max(actualOrPlannedSavings, 0), 0);
   const investingHeadline = goalContribution > 0
-    ? `Aim to add ${fmtMoney(goalContribution)} this month. Current invested balance is ${fmtMoney(investedBalance, true)}.`
+    // The plan's assumption, not an instruction: what to put in this month is
+    // the Next contribution card's, from cash actually free (D-34).
+    ? `Your plan assumes about ${fmtMoney(goalContribution)} a month invested. Current invested balance is ${fmtMoney(investedBalance, true)}.`
     : investedBalance > 0
       ? `You have ${fmtMoney(investedBalance, true)} invested right now.`
       : "Add an investment account to track this.";
@@ -5730,12 +5736,19 @@ export default function Dashboard() {
     lastMonthNeeds: lastMonthNeeds > 0 ? lastMonthNeeds : manualEmergencyNeeds,
     averageNeeds: histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds,
     realReturn: growthRate,
+    // Debts the rest of the app knows of, offered on Contributions as rows (D-34).
+    knownDebts: [
+      ...plaidAccounts.filter((a) => (a.type === "credit" || a.type === "loan") && (a.balance_current ?? 0) > 0)
+        .map((a) => ({ name: a.name || a.official_name || (a.type === "credit" ? "Credit card" : "Loan"), balance: a.balance_current ?? 0 })),
+      ...(totalDebt > 0 ? [{ name: "Debt (Liabilities)", balance: totalDebt }] : []),
+      ...(mortgageBalance > 0 ? [{ name: "Mortgage", balance: mortgageBalance }] : []),
+    ],
     expectedItems: contributionItems,
     lastMonthSpending,
     budgetMonthlySpending: Object.entries(effectiveExpenses)
       .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
       .reduce((sum, [, v]) => sum + (v as number), 0),
-  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending]);
+  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending, plaidAccounts, totalDebt, mortgageBalance]);
   // Already-committed outgoings still ahead of us this month, in USD.
   // Overdue rows count too: an unpaid bill is still owed.
   //

@@ -1409,3 +1409,30 @@ hands them to the tools around the date:
 
 **Kept separate:** goal savings are not subtracted from FIRE savings
 (the founder's call).
+
+### D-34 — October 7: Contributions math, and one definition with Home
+
+**Status:** Active. From a math audit of Contributions the founder asked for.
+
+**Decision:**
+- **Weekly pay.** Money that arrives weekly is a week's money. The
+  allocation divides it by purchases per contribution, not per month
+  (`budgetFrequency`): a week's $500 bought weekly is one $500 purchase,
+  where it used to be $115. The monthly match and loan overpayment are
+  scaled to the cycle (`monthsPerCycle`), so a $200 match is about $46 a
+  week, not $200 every week.
+- **Debt threshold before inflation.** A loan's rate is before inflation and
+  the growth assumption is after it. The threshold is now
+  (1 + real) × (1 + inflation) − 1, using the S&P history's inflation by
+  default: 9.6% at the 6.9% default. An 8% loan used to count as expensive
+  against 6.9%, when after inflation it costs about 5%.
+- **One emergency fund.** Home's safety runway uses the Contributions
+  definition (`emergencyFundFromPlan`): the accounts chosen there (savings
+  accounts by default) against the needs basis chosen there. Home used to
+  count every bank account against average needs.
+- **One "invest this month".** Home's investing line states the plan's
+  assumption ("Your plan assumes about $X a month"). The amount to put in
+  is the Next contribution card's, from cash actually free.
+- **One debt list.** Contributions offers the debts Liabilities and
+  connected loan and card accounts know of as rows (balances; rates are
+  typed), and blank rates read "add rate", not "cheap".

@@ -86,7 +86,7 @@ export type ContributionsTabProps = Partial<AccountFacts> & {
    either the last complete month or the average of them. */
 export default function ContributionsTab({
   cashAccounts = [], manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
-  expectedItems, today, budgetMonthlySpending, lastMonthSpending, onChooseAccounts,
+  expectedItems, today, budgetMonthlySpending, lastMonthSpending, onChooseAccounts, knownDebts = [],
 }: ContributionsTabProps = {}) {
   const [rows, setRows] = useState<Row[]>(EXAMPLE);
   /* Null means "whatever is actually free by the next contribution date".
@@ -368,9 +368,9 @@ export default function ContributionsTab({
   const targetSum = targets.reduce((s, t) => s + t.targetPct, 0);
   const balanced = targets.length > 0 && targetsSumTo100(targets);
   const plan = useMemo(
-    () => (balanced ? planContribution(targets, holdings, investable, { frequency }) : null),
+    () => (balanced ? planContribution(targets, holdings, investable, { frequency, budgetFrequency: schedule.cadence }) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(targets), JSON.stringify(holdings), investable, frequency, balanced],
+    [JSON.stringify(targets), JSON.stringify(holdings), investable, frequency, balanced, schedule.cadence],
   );
 
   /* One snapshot per visit, per month. This is the only record of what the
@@ -387,6 +387,9 @@ export default function ContributionsTab({
   }, [loaded, plan, budget, frequency]);
 
   const portfolio = holdings.reduce((s, h) => s + h.value, 0);
+  // Known debts not yet in the list, matched by name.
+  const missingDebts = knownDebts.filter((k) => k.balance > 0
+    && !debtRows.some((r) => r.name.trim().toLowerCase() === k.name.trim().toLowerCase()));
   const set = (id: string, patch: Partial<Row>) =>
     editRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
@@ -545,10 +548,24 @@ export default function ContributionsTab({
           <div className="uf-t-label" style={{ textTransform: "uppercase", letterSpacing: "0.09em", color: "var(--uf-ink-2)", marginBottom: "var(--uf-s2)" }}>
             What you owe
           </div>
-          {debtRows.length === 0 && (
+          {debtRows.length === 0 && missingDebts.length === 0 && (
             <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "0 0 var(--uf-s3)" }}>
               Nothing added. Rates are typed in — your bank connection does not carry them.
             </p>
+          )}
+          {/* One list of debts (D-34): what Liabilities and connected accounts
+              know of, offered here so the ladder and the freedom date agree. */}
+          {missingDebts.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--uf-s3)", flexWrap: "wrap", margin: "0 0 var(--uf-s3)" }}>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+                Your other accounts show <b style={mono}>{fmtUsd(missingDebts.reduce((s, d) => s + d.balance, 0))}</b> owed that is not listed here
+                ({missingDebts.map((d) => d.name).join(", ")}).
+              </span>
+              <Button variant="secondary" size="sm" onClick={() => setDebtRows((rs) => [...rs,
+                ...missingDebts.map((d) => ({ id: crypto.randomUUID(), name: d.name, balance: String(Math.round(d.balance)), ratePct: "" }))])}>
+                Add {missingDebts.length === 1 ? "it" : "them"}
+              </Button>
+            </div>
           )}
           {debtRows.map((d) => (
             <div key={d.id} className="uf-debt-row">
@@ -559,7 +576,7 @@ export default function ContributionsTab({
               <Input aria-label="Debt rate" numeric inputMode="decimal" placeholder="%" value={d.ratePct}
                      onChange={(e) => setDebtRows((rs) => rs.map((x) => x.id === d.id ? { ...x, ratePct: e.target.value } : x))} />
               <span style={{ ...mono, fontSize: 13, color: "var(--uf-ink-2)" }}>
-                {num(d.ratePct) >= (num(threshold) || DEFAULT_THRESHOLD_PCT) ? "expensive" : "cheap"}
+                {d.ratePct.trim() === "" ? "add rate" : num(d.ratePct) >= (num(threshold) || DEFAULT_THRESHOLD_PCT) ? "expensive" : "cheap"}
               </span>
               <Button variant="ghost" size="sm" aria-label={`Remove ${d.name || "debt"}`}
                       onClick={() => setDebtRows((rs) => rs.filter((x) => x.id !== d.id))}>Remove</Button>
