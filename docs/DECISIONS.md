@@ -1540,3 +1540,33 @@ for.
   imported them, they used the dropped `user_plans` and `stash_history`
   tables, and they still carried the old wording. Only `components/ui/`
   remains.
+
+### D-39 — October 7: A calm Home that shows progress
+
+**Status:** Active. From a Home redesign the founder approved after three mocks.
+
+**Decision:**
+- **Three answers and one row.** A fresh Home shows the freedom date with its
+  chart, this month's contribution, this month's spending, and one row with net
+  worth, safety runway and months on plan. The other eight cards ship hidden,
+  not deleted; Edit adds them back. Layouts saved before this keep what they
+  had and gain the two new cards.
+- **Progress is drawn, not described.** Each card leads with one number and the
+  bar it fills: invested against the FIRE number, the contribution's steps,
+  spending by category against the budget, runway against its target with the
+  floor marked, finished months on plan.
+- **Colour has one job per role.** Category colours appear only in "This
+  month". Teal is freedom and progress. Green is the button and links. The
+  forced-dark hero, its metric tiles, milestone bubbles and the contributions
+  and returns breakdown are gone from Home.
+- **The chart opens on 5Y**, so real history fills part of it. The FIRE number
+  line shows once the range reaches it.
+- **The contribution bar shows the split, not completion.** Nothing records a
+  contribution as made, so a bar that filled would be invented. Recording one
+  is a separate feature.
+- **No "months sooner" line.** The freedom date has no history to compare with.
+
+**Why:** Home had twelve cards. Each was reasonable, but together they had no
+order and repeated the same pattern, so nothing stood out. The Transactions
+page reads well because colour means one thing and each block answers one
+question. Home now borrows that restraint, not its density.

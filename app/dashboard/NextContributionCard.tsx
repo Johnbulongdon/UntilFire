@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Button, Card, Money } from "@/components/ui";
+import { Button, Card, InfoTip, Money } from "@/components/ui";
 import { ladderViewFromPlan, type AccountFacts } from "@/lib/contribution-ladder";
 import { countdownLabel } from "@/lib/contribution-schedule";
 import {
@@ -112,63 +112,47 @@ export default function NextContributionCard({ facts, onOpenPlan }: NextContribu
   }
   if (!view.next) return null;
 
+  /* The month as a bar, not a paragraph (D-39): one segment per step, sized by
+     its amount, the first one solid because it is where to start. It shows the
+     split, not completion; nothing records a contribution as made yet, and a
+     bar that never filled would be worse than none. */
+  const source = view.budgetIsCustom
+    ? "An amount you set."
+    : view.available.hasExpectedData
+      ? `The lowest your balance gets before ${nextCycleLabel}, after your expected payments in and out. Every line is in your plan.`
+      : `${fmtUsd(view.available.cash)} in cash outside your emergency fund. No expected payments are recorded, so nothing is subtracted.`;
+  const shown = steps.length > 0 ? steps : [{ kind: view.next.kind, label: view.next.label, amount: view.next.amount }];
+
   return (
-    <Card>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--uf-s3)" }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--uf-s3)", flexWrap: "wrap" }}>
-          <span className="uf-t-label" style={{ color: "var(--uf-ink-2)" }}>
-            Next contribution {countdownLabel(view.available.daysUntil)}
-          </span>
-          <span className="uf-t-small" style={{ color: "var(--uf-ink-2)", ...mono }}>
-            {view.available.nextDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-          </span>
-        </div>
+    <Card style={{ display: "grid", gap: 12 }}>
+      <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: "var(--uf-s3)", color: "var(--uf-ink-3)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          This month&apos;s contribution
+          <InfoTip label="Where this amount comes from">{source}</InfoTip>
+        </span>
+        <span style={mono}>{countdownLabel(view.available.daysUntil)}</span>
+      </div>
 
-        <div style={{ display: "flex", alignItems: "baseline", gap: "var(--uf-s3)", flexWrap: "wrap" }}>
-          <span className="uf-t-h2" style={{ margin: 0 }}>{view.next.label}</span>
-          <span style={{ ...mono, fontSize: 24 }}><Money amount={view.next.amount} /></span>
-        </div>
+      <span style={{ ...mono, fontSize: 28, fontWeight: 600 }}><Money amount={shown.length > 1 ? total : view.next.amount} /></span>
 
-        <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: 0, maxWidth: 560 }}>
-          {view.next.why}
-        </p>
+      <div role="img" aria-label={shown.map((f, i) => `${i + 1}. ${f.label} ${fmtUsd(f.amount)}`).join(", ")} style={{ display: "flex", gap: 3 }}>
+        {shown.map((f, i) => (
+          <i key={f.kind} style={{ flex: `${Math.max(f.amount, 1)} 1 0`, height: 8, borderRadius: 4,
+            background: "var(--uf-teal)", opacity: i === 0 ? 1 : 0.35 }} />
+        ))}
+      </div>
 
-        {/* One step means the headline already said everything; a list and a
-            total under it would state the same figure three times. */}
-        {steps.length > 1 && (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, borderTop: "1px solid var(--uf-border)" }}>
-          {steps.map((f, i) => (
-            <li key={f.kind}
-                style={{ display: "flex", justifyContent: "space-between", gap: "var(--uf-s3)",
-                         padding: "var(--uf-s2) 0", borderBottom: "1px solid var(--uf-border)" }}>
-              <span className="uf-t-small" style={{ color: i === 0 ? "var(--uf-ink)" : "var(--uf-ink-2)", minWidth: 0 }}>
-                {i === 0 ? "Start here · " : ""}{f.label}
-              </span>
-              <span className="uf-t-small" style={{ ...mono, flex: "none", color: i === 0 ? "var(--uf-ink)" : "var(--uf-ink-2)" }}>
-                <Money amount={f.amount} />
-              </span>
-            </li>
-          ))}
-          <li style={{ display: "flex", justifyContent: "space-between", gap: "var(--uf-s3)", padding: "var(--uf-s2) 0" }}>
-            <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Total</span>
-            <span className="uf-t-small" style={{ ...mono }}><Money amount={total} /></span>
+      <ol className="uf-t-small" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
+        {shown.map((f, i) => (
+          <li key={f.kind} style={{ display: "flex", justifyContent: "space-between", gap: "var(--uf-s3)", color: i === 0 ? "var(--uf-ink)" : "var(--uf-ink-2)", fontWeight: i === 0 ? 700 : 400 }}>
+            <span style={{ minWidth: 0 }}>{i + 1}. {f.label}{i === 0 && shown.length > 1 ? " · start here" : ""}</span>
+            <span style={{ ...mono, flex: "none" }}><Money amount={f.amount} /></span>
           </li>
-        </ul>
-        )}
+        ))}
+      </ol>
 
-        {/* Where the total came from. A figure that is only as good as the
-            bills on record should say so rather than look certain. */}
-        <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: 0 }}>
-          {view.budgetIsCustom
-            ? "An amount you set."
-            : view.available.hasExpectedData
-              ? `The lowest your balance gets before ${nextCycleLabel}, after your expected payments in and out. Every line is in your plan.`
-              : `${fmtUsd(view.available.cash)} in cash outside your emergency fund. No expected payments are recorded, so nothing is subtracted.`}
-        </p>
-
-        <div>
-          <Button variant="secondary" size="sm" onClick={onOpenPlan}>Open your plan</Button>
-        </div>
+      <div>
+        <Button variant="primary" size="sm" onClick={onOpenPlan}>Open your plan</Button>
       </div>
     </Card>
   );

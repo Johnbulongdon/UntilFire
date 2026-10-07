@@ -8,6 +8,11 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Calm Home
+- A fresh Home shows four things: your freedom date with a bar to your FIRE number and a 5-year chart, this month's contribution as a step bar, this month's spending by category against your budget, and one row with net worth, safety runway and months on plan.
+- The other Home cards are hidden by default, not removed; add them back with Edit. Layouts you saved keep what they had.
+- The hero is no longer forced dark, and follows your theme.
+
 ### Copy and labels
 - The welcome tour describes the app as it is today.
 - Home's "what if" moves show amounts in your currency, and the consistency
