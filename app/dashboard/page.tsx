@@ -383,6 +383,7 @@ function calcProjection({
   let curMort    = mortgageBalance;
   let fireYear: number | null = null;
   let totalContributed = k401 + rothIRA + taxable + cashSavings;
+  let firstYearInvested = 0; // savings invested in year one, after debt payments (Plan's tools use it)
 
   for (let y = 0; y <= years; y++) {
     const investable = cur401k + curRoth + curTaxable + curCash;
@@ -419,6 +420,7 @@ function calcProjection({
     const k401Contrib    = Math.min(toInvest * 0.4, 23000);
     const rothContrib    = Math.min(toInvest * 0.2, 7000);
     const taxableContrib = toInvest - k401Contrib - rothContrib;
+    if (y === 0) firstYearInvested = toInvest;
     totalContributed += toInvest;
     cur401k    = cur401k    * (1 + growthRate) + k401Contrib;
     curRoth    = curRoth    * (1 + growthRate) + rothContrib;
@@ -430,7 +432,7 @@ function calcProjection({
       curMort = Math.max(0, curMort - prin);
     }
   }
-  return { data, fireYear, fireTarget, annualSavings };
+  return { data, fireYear, fireTarget, annualSavings, firstYearInvested };
 }
 
 /**
@@ -5678,6 +5680,23 @@ export default function Dashboard() {
     () => (growthRate === REAL_RETURN ? planFreedom : freedomProjection({ ...planFreedomInputs, growthRate: REAL_RETURN })),
     [planFreedomInputs, growthRate, planFreedom],
   );
+  /* Plan's tools (purchase impact, the tax card, Expat FIRE) use the freedom
+     date's own numbers (D-33): the same target, balances (connected replacing
+     typed), savings after mortgage and debt, growth, withdrawal rate and tax.
+     Each had its own copy of the math and inputs, so none matched the date
+     shown above it. */
+  const planFacts = useMemo(() => {
+    const inputs = projectionInputs({ ...planFreedomInputs, growthRate });
+    const retirementMonthly = inputs.targetMonthlyExpenses ?? inputs.monthlyExpenses;
+    return {
+      invested: inputs.k401 + inputs.rothIRA + inputs.taxable + inputs.cashSavings,
+      monthlySavings: Math.max(0, planFreedom.firstYearInvested / 12),
+      fireTarget: planFreedom.fireTarget,
+      retirementMonthly,
+      // FIRE target per dollar of a year's retirement spending: 1 / withdrawal rate, with the tax gross-up.
+      targetPerDollar: retirementMonthly > 0 ? planFreedom.fireTarget / (retirementMonthly * 12) : 1 / withdrawalRate,
+    };
+  }, [planFreedomInputs, growthRate, planFreedom, withdrawalRate]);
   /* The contribution ladder reads the emergency fund from real accounts, so
      it needs the accounts rather than a total: which ones count is the user's
      to decide, and a savings account and a current account are not the same
@@ -6790,8 +6809,8 @@ export default function Dashboard() {
                     />
                     <TaxProfileCard
                       cityName={cityName}
-                      income={income}
-                      monthlyExpenses={monthlyExpenses}
+                      income={effectiveIncome}
+                      monthlyExpenses={planFacts.retirementMonthly}
                       withdrawalRate={withdrawalRate}
                       taxEnabled={taxEnabled}
                       setTaxEnabled={setTaxEnabled}
@@ -6803,9 +6822,9 @@ export default function Dashboard() {
                       displayRates={rates}
                     />
                     <PurchaseImpactPanel
-                      currentSavings={k401 + rothIRA + taxable + cashSavings}
-                      monthlyContribution={Math.max(income * 12 - monthlyExpenses * 12, 0) / 12}
-                      fireTarget={monthlyExpenses * 12 / withdrawalRate}
+                      currentSavings={planFacts.invested}
+                      monthlyContribution={planFacts.monthlySavings}
+                      fireTarget={planFacts.fireTarget}
                       annualReturn={growthRate}
                     />
                   </>
@@ -6826,8 +6845,9 @@ export default function Dashboard() {
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "expat-fire" && (
               <ExpatFireDashTab
-                portfolioBalance={k401 + rothIRA + taxable + cashSavings + plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0)}
-                monthlySavings={Math.max(0, income * 12 - Object.entries(expenses).reduce((s, [, v]) => s + (v || 0), 0) * 12) / 12}
+                portfolioBalance={planFacts.invested}
+                monthlySavings={planFacts.monthlySavings}
+                targetMultiple={lifestyleMultiplier * planFacts.targetPerDollar}
                 age={fireAge}
                 cityName={cityName}
                 isDark={isDark}
@@ -6874,8 +6894,11 @@ function ExpatFireDashTab({
   isDark,
   onEditAssumptions,
   growthRate,
+  targetMultiple = 25,
 }: {
   growthRate: number;
+  /** FIRE target per dollar of a city's yearly cost: lifestyle × tax gross-up ÷ withdrawal rate, as the freedom date uses. */
+  targetMultiple?: number;
   portfolioBalance: number;
   monthlySavings: number;
   age: number;
@@ -6933,11 +6956,12 @@ function ExpatFireDashTab({
     return CITIES
       .filter(c => CITY_COORDS[c.key])
       .map(c => {
-        const r = calcFIRE(monthlySavings, c.col, age || undefined, portfolioBalance, growthRate);
+        const r = calcFIRE(monthlySavings, c.col * targetMultiple * 0.04, age || undefined, portfolioBalance, growthRate); // calcFIRE targets 25× what it is given
+
         return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
       })
       .sort((a, b) => (a.years ?? Infinity) - (b.years ?? Infinity) || a.col - b.col);
-  }, [monthlySavings, portfolioBalance, age, growthRate]);
+  }, [monthlySavings, portfolioBalance, age, growthRate, targetMultiple]);
 
   // Run the bar from today to roughly when the bulk of cities have unlocked.
   const sliderMax = useMemo(() => {
@@ -6964,7 +6988,10 @@ function ExpatFireDashTab({
 
   const tlYears = Math.min(timelineYears, sliderMax);
   const tlAnnual = Math.max(0, monthlySavings) * 12;
-  const projectedPortfolio = (portfolioBalance + tlAnnual / REAL_RETURN) * Math.pow(1 + REAL_RETURN, tlYears) - tlAnnual / REAL_RETURN;
+  // Your growth choice, the same rate the cities' years use (it was fixed at the default here).
+  const projectedPortfolio = growthRate > 0
+    ? (portfolioBalance + tlAnnual / growthRate) * Math.pow(1 + growthRate, tlYears) - tlAnnual / growthRate
+    : portfolioBalance + tlAnnual * tlYears;
   const readyCount = cityUnlocks.filter(c => c.years !== null && c.years <= tlYears + 1e-9).length;
   const projAge = age ? age + tlYears : undefined;
   const tlThisYear = new Date().getFullYear();
@@ -6979,6 +7006,7 @@ function ExpatFireDashTab({
     return (
       <ExpatCityDetail
         growthRate={growthRate}
+        targetMultiple={targetMultiple}
         cityKey={selectedCityKey}
         portfolioBalance={portfolioBalance}
         monthlySavings={monthlySavings}
@@ -7177,8 +7205,10 @@ function ExpatCityDetail({
   isDark,
   onBack,
   growthRate,
+  targetMultiple = 25,
 }: {
   growthRate: number;
+  targetMultiple?: number;
   cityKey: string;
   portfolioBalance: number;
   monthlySavings: number;
@@ -7211,20 +7241,21 @@ function ExpatCityDetail({
   const currentCol = currentCity?.col ?? 60000;
   const targetCol = targetCity.col;
 
-  const currentFire = calcFIRE(monthlySavings, currentCol, age || undefined, portfolioBalance, growthRate);
-  const targetFire = calcFIRE(monthlySavings, targetCol, age || undefined, portfolioBalance, growthRate);
+  // Targets as the freedom date sets them (calcFIRE takes 25× what it is given).
+  const currentFire = calcFIRE(monthlySavings, currentCol * targetMultiple * 0.04, age || undefined, portfolioBalance, growthRate);
+  const targetFire = calcFIRE(monthlySavings, targetCol * targetMultiple * 0.04, age || undefined, portfolioBalance, growthRate);
 
   const currentYears = currentFire.years;
   const targetYears = targetFire.years;
   const yearDiff = currentYears !== null && targetYears !== null ? Math.abs(currentYears - targetYears) : null;
-  const isFireNow = portfolioBalance >= targetCol * 25;
+  const isFireNow = portfolioBalance >= targetCol * targetMultiple;
   const monthlyDiff = Math.round((currentCol - targetCol) / 12);
 
   const fmtUSD = (n: number) => formatMoney(n, { style: "compact" });
 
   function readinessBadge() {
-    if (portfolioBalance >= targetCol * 25) return { label: "FIRE ready", color: "#003527", bg: "#A7F3D0" };
-    if (portfolioBalance >= targetCol * 12.5) return { label: "Barista FIRE", color: "#78350F", bg: "#FEF3C7" };
+    if (portfolioBalance >= targetCol * targetMultiple) return { label: "FIRE ready", color: "#003527", bg: "#A7F3D0" };
+    if (portfolioBalance >= targetCol * targetMultiple / 2) return { label: "Barista FIRE", color: "#78350F", bg: "#FEF3C7" };
     return { label: "Not yet", color: "#991B1B", bg: "#FEE2E2" };
   }
 

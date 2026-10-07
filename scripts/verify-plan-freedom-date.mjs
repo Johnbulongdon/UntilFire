@@ -51,6 +51,15 @@ assert.equal(at(0.069).fireTarget, home.fireTarget, 'and the same target');
 const withDebt = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 10000, totalDebt: 20000, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04 });
 assert.equal(withDebt.data[1]['Contributions'], 70000 + 36000 - 10800, 'year one invests savings less the debt payment');
 assert.ok(withDebt.data[10]['Investable'] < home.data[10]['Investable'] - 20000, 'paying the debt leaves less invested ten years on');
+assert.equal(withDebt.firstYearInvested, 36000 - 10800, "Plan's tools are told the savings actually invested, after debt");
+
+// Plan's tools take the freedom date's own numbers (D-33).
+assert.match(source, /<PurchaseImpactPanel\s+currentSavings=\{planFacts\.invested\}\s+monthlyContribution=\{planFacts\.monthlySavings\}\s+fireTarget=\{planFacts\.fireTarget\}/, 'purchase impact uses the freedom date numbers');
+assert.match(source, /<TaxProfileCard[\s\S]{0,120}monthlyExpenses=\{planFacts\.retirementMonthly\}/, 'the tax card works on the retirement target');
+assert.match(source, /portfolioBalance=\{planFacts\.invested\}\s+monthlySavings=\{planFacts\.monthlySavings\}\s+targetMultiple=/, 'Expat FIRE uses the same balances, savings and target multiple');
+assert.doesNotMatch(source, /Math\.pow\(1 \+ REAL_RETURN, tlYears\)/, "the Expat timeline grows at the person's chosen rate");
+const taxed = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 0, rothIRA: 0, taxable: 0, cashSavings: 0, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04, taxEnabled: true, retirementTaxRate: 0.2, rothPct: 0 });
+assert.equal(Math.round(taxed.fireTarget / 60000 * 1000) / 1000, 31.25, 'target per dollar of spending is 1 ÷ 4% × the tax gross-up (Expat FIRE multiplies city costs by it)');
 
 // A connected account replaces the typed balance of the same kind (D-32).
 const typedAndLinked = effectiveBalances({ k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 5000,

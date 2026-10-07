@@ -8,6 +8,15 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-07
 
+### Plan's tools agree with your freedom date
+- "What would this cost your freedom?" uses your real balances (connected
+  accounts included), your savings after mortgage and debt, and the same
+  target as your freedom date.
+- The Tax Profile card shows the extra on your actual retirement target.
+- Expat FIRE no longer counts linked accounts twice. It uses your withdrawal
+  rate, taxes and lifestyle for each city, and its timeline grows at the rate
+  you chose.
+
 ### Home's math matches your freedom date
 - Debt is paid out of your savings instead of on top of investing all of
   them, so freedom dates for people with debt are no longer too early.
