@@ -11,7 +11,7 @@ import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
 import { findFlags, type FlagKind, isSystemTag, okTag } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
-import { type Bill, guessBillCategory, markPaid, mergeBills, paidBills, unlinkedBillPayments } from "@/lib/spend-forecast";
+import { type Bill, guessBillCategory, mergeBills, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import type { FreeToSpend } from "@/lib/free-to-spend";
 import { detectRecurring, type Recurrence } from "@/lib/recurring-detect";
 import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
@@ -1740,7 +1740,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const listedBills = useMemo<(Bill & { completed: boolean })[]>(() => expected
     .filter((r) => r.transaction_type === "expense" && r.due_date)
     .map((r) => ({ id: r.id, description: r.description, category: r.category || guessBillCategory(r.description), merchant: r.match_merchant,
-      usd: usd(Number(r.amount) || 0, r.currency ?? "USD"), due: r.due_date.slice(0, 10), completed: !!r.completed_at,
+      usd: usd(Number(r.amount) || 0, r.currency ?? "USD"), due: r.due_date.slice(0, 10),
+      completed: !!r.completed_at && (r.recurrence ?? "none") === "none", // a repeating bill is never finished
       recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence })),
   [expected, usd]);
   const bills = useMemo<Bill[]>(() => {
@@ -1977,11 +1978,11 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   useEffect(() => {
     const txs = transactions.filter((t) => t.transaction_type === "expense")
       .map((t) => ({ id: t.id, date: t.date.slice(0, 10), usd: usd(netAmt(t), t.currency), description: t.description ?? "", category: t.category }));
-    for (const { bill } of paidBills(txs, listedBills)) {
+    for (const bill of listedBills) {
+      const patch = settleBill(bill, txs, new Date().toISOString());
       const key = `${bill.id}|${bill.due}`;
-      if (settling.current.has(key)) continue;
+      if (!patch || settling.current.has(key)) continue;
       settling.current.add(key);
-      const patch = markPaid(bill, new Date().toISOString());
       supabase.from("expected_payments").update(patch).eq("id", bill.id!).eq("due_date", bill.due).select("id").then(({ data, error }) => {
         if (error || !data?.length) return;
         setExpected((prev) => prev.map((r) => (r.id === bill.id ? { ...r, ...patch } : r)));

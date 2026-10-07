@@ -156,7 +156,8 @@ export function billsOverBudget(months: string[], budgetMonth: number, bills: Bi
  */
 export function forecastPath(days: string[], today: string, spentSoFar: number, bills: Bill[], rate: number): number[] {
   const end = days[days.length - 1];
-  const due = bills.flatMap((b) => occurrences(b, today, end).filter((d) => d > today).map((date) => ({ date, usd: b.usd })));
+  // A bill's stored due date is its next unpaid one: dates before it are paid, so they are not forecast again.
+  const due = bills.flatMap((b) => occurrences(b, today, end).filter((d) => d > today && d >= b.due).map((date) => ({ date, usd: b.usd })));
   let run = spentSoFar;
   return days.map((d) => {
     if (d < today) return NaN;
@@ -208,18 +209,42 @@ const shiftDay = (iso: string, n: number) => {
 };
 
 /**
- * Linked bills whose current due date has been paid: a payment under the
- * bank's confirmed name within 5 days of it. Marking these paid by hand was
- * the last step after linking; the person already told us whose payment it
- * is, so the bill settles itself (D-31). `completed` bills are skipped.
+ * The payment for a linked bill's current due date: a payment under the
+ * bank's confirmed name, in that due date's period, and either within 5 days
+ * of the date or within 15% of the amount. Periods sit back to back, from a
+ * few days before one due date to the same point before the next (10 days
+ * for monthly and longer, a third of the gap for shorter repeats), so rent
+ * paid early or weeks late still counts, and no payment counts for two dates.
  */
-export function paidBills(txs: BillTx[], listed: (Bill & { completed?: boolean })[]): { bill: Bill; tx: BillTx }[] {
-  return listed.flatMap((b) => {
-    if (!b.id || !b.merchant || b.completed) return [];
-    const from = shiftDay(b.due, -5), to = shiftDay(b.due, 5);
-    const tx = txs.find((t) => t.date >= from && t.date <= to && sameMerchant(b.merchant!, t.description));
-    return tx ? [{ bill: b, tx }] : [];
-  });
+export function paymentFor(b: Bill, txs: BillTx[]): BillTx | undefined {
+  if (!b.merchant) return undefined;
+  const [y, m, d] = b.due.split("-").map(Number), due = new Date(y, m - 1, d);
+  let from = shiftDay(b.due, -15), to = shiftDay(b.due, 16); // a one-off: two weeks either side
+  if (b.recurrence !== "none") {
+    const next = isoDay(addRecurrence(due, b.recurrence));
+    const lead = Math.min(10, Math.round((Date.parse(next) - Date.parse(b.due)) / 86_400_000 / 3));
+    from = shiftDay(b.due, -lead); to = shiftDay(next, -lead);
+  }
+  const near = (t: BillTx) => t.date >= shiftDay(b.due, -5) && t.date <= shiftDay(b.due, 5);
+  return txs.find((t) => t.date >= from && t.date < to && sameMerchant(b.merchant!, t.description)
+    && (near(t) || Math.abs(t.usd - b.usd) <= 0.15 * Math.max(t.usd, b.usd)));
+}
+
+/**
+ * Settles a linked bill against its payments (D-31): a repeat moves past
+ * every due date that has its payment, a paid one-off is completed. Null
+ * when nothing is paid. Catches up several periods at once, so a bill linked
+ * in October that was paid in September and October lands on November.
+ */
+export function settleBill(b: Bill & { completed?: boolean }, txs: BillTx[], nowIso: string): { due_date: string } | { completed_at: string } | null {
+  if (!b.id || b.completed) return null;
+  let cur: Bill = b, patch: ReturnType<typeof markPaid> | null = null;
+  for (let i = 0; i < 36 && paymentFor(cur, txs); i++) {
+    patch = markPaid(cur, nowIso);
+    if (!("due_date" in patch)) break;
+    cur = { ...cur, due: patch.due_date };
+  }
+  return patch;
 }
 
 /** The Upcoming update that marks a bill's current due date paid: a repeat moves to its next date, a one-off is completed. */

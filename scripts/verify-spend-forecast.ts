@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, billsOverBudget, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, paidBills, unlinkedBillPayments } from "../lib/spend-forecast.ts";
+import { type Bill, billsOverBudget, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -109,14 +109,23 @@ ok("a payment that looks like a listed bill is asked about once, then linked by 
 ok("a linked bill settles itself when its payment arrives", () => {
   const rent: Bill = { id: "e1", description: "Rent", category: "housing", usd: 1500, due: "2026-10-01", recurrence: "monthly", merchant: "BILT PAYMENT" };
   const t = { id: "t1", date: "2026-10-02", usd: 1380, description: "BILT PAYMENT", category: "housing" };
-  assert.deepEqual(paidBills([t], [rent]).map((p) => p.tx.id), ["t1"]);
-  assert.deepEqual(markPaid(rent, "x"), { due_date: "2026-11-01" }, "a monthly bill moves to next month");
-  assert.equal(paidBills([t], [{ ...rent, due: "2026-11-01" }]).length, 0, "once moved, the same payment does not settle it again");
-  assert.equal(paidBills([t], [{ ...rent, merchant: null }]).length, 0, "not linked: left to the person");
-  assert.equal(paidBills([{ ...t, date: "2026-10-20" }], [rent]).length, 0, "too far from the due date");
-  assert.deepEqual(markPaid({ due: "2026-10-01", recurrence: "none" }, "now"), { completed_at: "now" }, "a one-off is completed");
+  assert.deepEqual(settleBill(rent, [t], "x"), { due_date: "2026-11-01" }, "a monthly bill moves to next month");
+  assert.equal(settleBill({ ...rent, due: "2026-11-01" }, [t], "x"), null, "once moved, the same payment does not settle it again");
+  assert.equal(settleBill({ ...rent, merchant: null }, [t], "x"), null, "not linked: left to the person");
+  assert.equal(settleBill(rent, [{ ...t, date: "2026-10-20", usd: 900 }], "x"), null, "far from the date and the amount: not this bill");
+  assert.deepEqual(settleBill(rent, [{ ...t, date: "2026-10-20" }], "x"), { due_date: "2026-11-01" }, "paid late at the usual amount still counts");
+  assert.deepEqual(settleBill({ ...rent, recurrence: "none" }, [t], "now"), { completed_at: "now" }, "a one-off is completed");
 });
-
+ok("a bill behind by two months catches up to the next unpaid date", () => {
+  const rent: Bill = { id: "e1", description: "Sirui Rent", category: null, usd: 1500, due: "2026-09-01", recurrence: "monthly", merchant: "BILT PAYMENT" };
+  const paid = [{ id: "s", date: "2026-09-01", usd: 1380, description: "BILT PAYMENT", category: "housing" }, { id: "o", date: "2026-10-02", usd: 1380, description: "BILT PAYMENT", category: "housing" }];
+  assert.deepEqual(settleBill(rent, paid, "x"), { due_date: "2026-11-01" });
+});
+ok("a bill paid early this month is not forecast again on its date", () => {
+  const phone: Bill = { description: "China Mobile", category: "utilities", usd: 50, due: "2026-11-20", recurrence: "monthly" };
+  const f = forecastPath(daysOfMonths(["2026-10"]), "2026-10-07", 100, [phone], 0);
+  assert.equal(f.at(-1), 100, "paid on the 5th, so its due date moved to November; October 20 is not added");
+});
 ok("rent paid under another name leaves the everyday rate: the founder's two rents", () => {
   const sirui: Bill = { id: "a", description: "Sirui Rent", category: null, usd: 1500, due: "2026-10-01", recurrence: "monthly" };
   const john: Bill = { id: "b", description: "John Rent", category: null, usd: 432, due: "2026-10-07", recurrence: "monthly" };
