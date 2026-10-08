@@ -15,7 +15,7 @@ export function useOnboardingMotion(root: RefObject<HTMLDivElement | null>, step
     const animations = new Set<Animation>();
     if (surface && (!preference.matches || forceMotion)) animations.add(surface.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 380, easing: 'cubic-bezier(.22,1,.36,1)' }));
     const click = (event: MouseEvent) => {
-      const button = (event.target as HTMLElement).closest<HTMLElement>('.uf-mode-pill, .uf-amount-choice');
+      const button = (event.target as HTMLElement).closest<HTMLElement>('.uf-mode-pill, .uf-tile');
       if (!button || (preference.matches && !forceMotion)) return;
       animations.forEach(a => a.cancel()); animations.clear();
       const animation = animateSelection(button, forceMotion);

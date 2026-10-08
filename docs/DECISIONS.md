@@ -1855,3 +1855,44 @@ housing by the 8th.
 
 **Not changed:** the Past months value is still the middle of the last six
 months, so a new, higher rent takes a few months to show as usual.
+
+### D-50 — October 8: onboarding is five one-answer steps under a rising sun
+
+**Status:** Active. Chosen by the founder from mocked options ("Style A",
+the landscape), with the Paper Shaders sky.
+
+**Why:** the old four steps put several inputs on a screen (net worth and age
+together), offered fixed amounts ($2,000–$8,000) that ignored the city just
+chosen, hid the exact field behind an underlined link, and used a plus/minus
+style age control on phones. Apps that onboard well (Duolingo, Liftoff) ask one
+thing at a time and show progress as something you can see.
+
+**Decision:**
+- **Five steps, one answer each:** city, take-home pay, savings or spending,
+  net worth, age. Required inputs are unchanged; age and city stay skippable,
+  and Skip lives in the header next to a back arrow and the progress bar.
+- **A scene, not decoration for its own sake:** a landscape (`OnboardingScene`)
+  where the sun rises one step per answer and a path fills from home. A tag
+  repeats the current answer. It is `aria-hidden`; the controls carry meaning.
+- **Shader sky with a fallback:** `@paper-design/shaders-react` (Apache-2.0,
+  pinned to 0.0.81) draws a slow mesh gradient when WebGL2 is available and
+  motion is allowed; otherwise an SVG gradient moves the same way.
+- **Sun colour is illustration only:** `--uf-sun` and `--uf-sun-soft` are for
+  the scene. Never buttons, text or numbers; green still acts and teal still
+  means progress (the progress bar is teal).
+- **Suggestions follow earlier answers:** pay at 1.1×, 1.4×, 1.9× and 2.6× the
+  city's living costs (the 1.4× tile is marked "Common"), saving at 10–50% of
+  pay, and net worth at 0, 6, 12 and 36 months of pay. Amounts keep two
+  significant figures so a labelled share stays true. The number field is
+  always visible as the fifth tile.
+- **City step:** search over the city list, a near-you guess from the device
+  time zone (read locally, never sent), and popular cities. A town we don't
+  list is accepted and uses the user's own spending, as Skip does; the
+  separate monthly-spending box on this step is gone because the savings step
+  already takes spending and its answer replaces any city average.
+- **Age wheel:** scroll-snapped, swipe on phones, mouse wheel, click, arrow
+  keys or two typed digits on a computer; 16–85, starting at 32.
+- **Analytics:** `age` is a new `calculator_step_viewed` step (index 6).
+
+**Not changed:** the reveal, the calculation, currencies, gross-pay modes (in
+"Change currency, or use gross pay"), and the landing page.

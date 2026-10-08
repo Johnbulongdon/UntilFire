@@ -54,6 +54,10 @@
   --uf-warn:    #C4831A;
   --uf-warn-bg: #FCEFD8;
 
+  /* illustration only (D-50): the onboarding sun. Never buttons, text or numbers. */
+  --uf-sun:      #F2A65A;
+  --uf-sun-soft: #F6C27A;
+
   /* *-ink variants: the AA-compliant text colour for 11px badge text on the
      matching tint. The base colours above pass at display size but not at 11px,
      so badges use these. Solved for >= 4.5:1, not eyeballed. */

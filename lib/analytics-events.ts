@@ -61,7 +61,7 @@ export const FunnelEvents = {
 export type FunnelEventName =
   (typeof FunnelEvents)[keyof typeof FunnelEvents];
 
-export type CalculatorStepId = 'goal' | 'city' | 'currency' | 'income' | 'savings' | 'portfolio';
+export type CalculatorStepId = 'goal' | 'city' | 'currency' | 'income' | 'savings' | 'portfolio' | 'age';
 
 export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   city: 1,
@@ -69,6 +69,7 @@ export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   income: 3,
   savings: 4,
   portfolio: 5,
+  age: 6, // its own step since D-50; portfolio no longer includes age
   goal: 0, // added after city/income/savings/portfolio were indexed; kept separate so historical data is untouched
 };
 

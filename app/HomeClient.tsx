@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useOnboardingMotion } from "@/lib/use-onboarding-motion";
 import SettlingNumber from "@/components/ui/SettlingNumber";
-import AmountChoice from "@/components/ui/AmountChoice";
-import AgePicker from "@/components/ui/AgePicker";
+import AmountTiles from "@/components/ui/AmountTiles";
+import AgeWheel from "@/components/ui/AgeWheel";
 import { advanceOnEnter } from "@/lib/keyboard-navigation";
 import Logo from "@/app/components/Logo";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,8 @@ import {
 import Nav from "@/app/components/landing/Nav";
 import LandingPage from "@/app/components/landing/LandingPage";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
+import OnboardingShell, { ONBOARDING_CSS } from "@/app/components/landing/OnboardingShell";
+import type { SceneIcon } from "@/app/components/landing/OnboardingScene";
 import { CITIES } from "@/lib/fire-data";
 import { FireTypeAvatar } from "@/app/fire-type/FireTypeAvatar";
 import { getTypeMeta, isValidFireTypeCode } from "@/app/fire-type/quiz-data";
@@ -188,6 +190,13 @@ function toAnnualGross(value: number, mode: IncomeMode): number {
   }
 }
 
+/** A round suggestion: two significant figures, so a labelled share stays true. */
+function niceAmount(n: number): number {
+  if (n <= 0) return 0;
+  const step = Math.max(1, Math.pow(10, Math.floor(Math.log10(n)) - 1));
+  return Math.max(step, Math.round(n / step) * step);
+}
+
 function stateToCurrency(stateKey?: string | null): SupportedCurrency {
   if (!stateKey) return "USD";
   if (stateKey.startsWith("ca_")) return "CAD";
@@ -208,12 +217,15 @@ function stateToCurrency(stateKey?: string | null): SupportedCurrency {
   return map[stateKey] ?? "USD";
 }
 
-function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, onBack }: {
+function IncomeScreen({ stateKey, cityName, cityCol, currency = "USD", onCurrencyChange, onNext, onAnswer }: {
   stateKey: string;
+  cityName?: string;
+  /** Annual living costs for the chosen city, in USD; 0 when unknown. */
+  cityCol?: number;
   currency?: SupportedCurrency;
   onCurrencyChange?: (c: SupportedCurrency) => void;
   onNext: (income: number) => void;
-  onBack: () => void;
+  onAnswer?: (text: string) => void;
 }) {
   const isNonUSD = currency !== "USD";
   const isCustomJurisdiction = stateKey === "custom";
@@ -250,11 +262,59 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
   const canContinue = mode === "takehome" ? monthlyTakeHome > 0 : annualGross > 0;
   const localMoney = (n: number) => `${currencySymbol}${Math.round(n).toLocaleString()}`;
 
+  const modeUnit = INCOME_MODES.find((m) => m.key === mode)?.unit;
+  // Suggestions sit around the city's living costs: tight, typical,
+  // comfortable, high (D-50). Gross pay is grossed up roughly a third.
+  const monthlyCost = cityCol && cityCol > 0 ? cityCol / 12 : 4000;
+  const periodFactor = mode === "annual" ? 12 : mode === "biweekly" ? 12 / 26 : mode === "hourly" ? 12 / 2080 : 1;
+  const incomeOptions = [1.1, 1.4, 1.9, 2.6].map((m, i) => ({
+    value: niceAmount(monthlyCost * m * fxRate * (mode === "takehome" ? 1 : 1.3) * periodFactor),
+    sub: ["Tight", "Typical here", "Comfortable", "High"][i],
+    tag: i === 1 ? "Common" : undefined,
+  }));
+  useEffect(() => {
+    onAnswer?.(canContinue ? `${localMoney(displayMonthly)} a month` : "");
+  }, [canContinue, displayMonthly, onAnswer]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
-    <div className="uf-screen">
-      <p className="uf-step-label">Step 2 of 4</p>
+    <div className="uf-screen" style={{ paddingTop: 16 }}>
+      <h2 className="uf-ob-q">What lands in your bank each month?</h2>
+      <p className="uf-ob-hint">
+        Start with the monthly amount that lands in your bank. An estimate is fine.
+        {cityName && cityCol ? ` Suggestions follow living costs in ${cityName.split(",")[0]}.` : ""}
+      </p>
+
+      {mode !== "takehome" ? (
+        <AmountTiles label={`Gross income (${currency})`} value={rawValue === "" ? null : numVal} options={incomeOptions} onChange={n => setRawValue(String(n))} symbol={currencySymbol} unit={modeUnit}>
+          <input
+            key={mode}
+            aria-label={`Gross income (${currency})`}
+            type="number"
+            inputMode="decimal"
+            placeholder="Other amount"
+            value={rawValue}
+            min={0}
+            onChange={(e) => setRawValue(e.target.value)}
+          />
+        </AmountTiles>
+      ) : (
+        <AmountTiles label={`Monthly take-home pay (${currency})`} value={takeHomeRaw === "" ? null : monthlyTakeHome} options={incomeOptions} onChange={n => setTakeHomeRaw(String(n))} symbol={currencySymbol} unit="a month">
+          <input
+            type="number"
+            inputMode="decimal"
+            placeholder="Other amount"
+            aria-label={`Monthly take-home pay (${currency})`}
+            value={takeHomeRaw}
+            min={0}
+            onChange={(e) => setTakeHomeRaw(e.target.value)}
+          />
+        </AmountTiles>
+      )}
+      {isNonUSD && <p className="uf-hint">1 {currency} ≈ {(1 / fxRate).toFixed(4)} USD (indicative rate)</p>}
+
+      <details className="uf-input-alternative"><summary>Change currency, or use gross pay</summary>
       {onCurrencyChange && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0" }}>
           {/* A real label, so assistive tech announces "Currency", not an
               unnamed combo box. */}
           <label htmlFor="uf-income-currency" style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Currency:</label>
@@ -262,7 +322,7 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
             id="uf-income-currency"
             value={currency}
             onChange={e => onCurrencyChange(e.target.value as SupportedCurrency)}
-            style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1.5px solid var(--accent)", borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", appearance: "none", WebkitAppearance: "none" }}
+            style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", background: "var(--uf-card)", border: "1px solid var(--uf-border-2)", borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
           >
             {SUPPORTED_CURRENCIES.map(c => (
               <option key={c} value={c}>{c} — {CURRENCY_NAMES[c] ?? c}</option>
@@ -270,13 +330,6 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
           </select>
         </div>
       )}
-      <div className="uf-eyebrow">Income</div>
-      <h2 className="uf-h2">What do you <span className="uf-accent">earn?</span></h2>
-      <p className="uf-body" style={{ marginBottom: 24 }}>
-        Start with the monthly amount that lands in your bank. An estimate is fine.
-      </p>
-
-      <details className="uf-input-alternative"><summary>Use gross pay or another pay period</summary>
       <div className="uf-mode-pills">
           {INCOME_MODES.map((m) => (
             <button
@@ -300,53 +353,7 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
             ? INCOME_MODES.find((m) => m.key === mode)?.hint
             : `Enter gross income in ${currency}. Tax is not estimated for this location yet, so this stays a rough starting point.`}
       </p>
-
       </details>
-      {mode !== "takehome" ? (
-        <>
-          <label className="uf-label">Gross income</label>
-          <AmountChoice value={rawValue === "" ? null : numVal} options={[2000,4000,6000,8000].map(n => Math.round(n * fxRate * (mode === "annual" ? 12 : mode === "biweekly" ? 12 / 26 : mode === "hourly" ? 12 / 2080 : 1)))} onChange={n => setRawValue(String(n))} symbol={currencySymbol} unit={INCOME_MODES.find(m => m.key === mode)?.unit}>
-          <div className="uf-big-input-wrap">
-            <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
-            <input
-              key={mode}
-              aria-label={`Gross income (${currency})`}
-              type="number"
-          inputMode="decimal"
-              className="uf-input uf-input-mono uf-input-big"
-              style={{ paddingLeft: 28 }}
-              placeholder="e.g. 90,000"
-              value={rawValue}
-              min={0}
-              onChange={(e) => setRawValue(e.target.value)}
-                />
-            <span className="uf-unit">{INCOME_MODES.find((m) => m.key === mode)?.unit}</span>
-          </div>
-          </AmountChoice>
-        </>
-      ) : (
-        <>
-          <label className="uf-label">Monthly take-home pay ({currency})</label>
-          <AmountChoice value={takeHomeRaw === "" ? null : monthlyTakeHome} options={[2000,4000,6000,8000].map(n => Math.round(n * fxRate))} onChange={n => setTakeHomeRaw(String(n))} symbol={currencySymbol} unit={"/month"}>
-          <div className="uf-big-input-wrap">
-            <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
-            <input
-              type="number"
-          inputMode="decimal"
-              className="uf-input uf-input-mono uf-input-big"
-              style={{ paddingLeft: 28 }}
-              placeholder="e.g. 5,000"
-              aria-label={`Monthly take-home pay (${currency})`}
-              value={takeHomeRaw}
-              min={0}
-              onChange={(e) => setTakeHomeRaw(e.target.value)}
-                />
-            <span className="uf-unit">/month</span>
-          </div>
-          </AmountChoice>
-          {isNonUSD && <p className="uf-hint">1 {currency} ≈ {(1 / fxRate).toFixed(4)} USD (indicative rate)</p>}
-        </>
-      )}
 
       {canContinue && (
         <details className="uf-input-alternative"><summary>See income breakdown</summary>
@@ -391,10 +398,9 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
 
       )}
 
-      <div className="uf-nav-row">
-        <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button data-primary-next className="uf-btn uf-btn-primary" style={{ flex: 1 }} disabled={!canContinue} onClick={() => onNext(incomeForFIRE)}>
-          Continue →
+      <div className="uf-ob-foot">
+        <button data-primary-next className="uf-btn uf-btn-primary" disabled={!canContinue} onClick={() => onNext(incomeForFIRE)}>
+          Continue
         </button>
       </div>
     </div>
@@ -409,11 +415,11 @@ function IncomeScreen({ stateKey, currency = "USD", onCurrencyChange, onNext, on
 type SavingsInputMode = "savings" | "spending";
 type SavingsPeriod = "monthly" | "yearly";
 
-function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
+function SavingsScreen({ income, currency = "USD", onNext, onAnswer }: {
   income: number;
   currency?: SupportedCurrency;
   onNext: (savings: number, monthlyExpenses: number) => void;
-  onBack: () => void;
+  onAnswer?: (text: string) => void;
 }) {
   const isNonUSD = currency !== "USD";
   const currencySymbol = getCurrencySymbol(currency);
@@ -449,147 +455,103 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
     setPeriod(nextPeriod);
   };
 
-  const rateColor = rate < 15 ? "var(--danger)" : rate < 30 ? "var(--accent)" : "var(--teal)";
-  const rateLabel = rate < 10 ? "Very low" : rate < 20 ? "Below average" : rate < 30 ? "Average"
-    : rate < 40 ? "Good" : rate < 50 ? "Strong" : "FIRE pace!";
   const periodLabel = period === "yearly" ? "Yearly" : "Monthly";
   const periodUnit = period === "yearly" ? "/year" : "/month";
   const inputLabel = `${periodLabel} ${mode === "savings" ? "savings" : "spending"} amount`;
 
 
 
+  const perPeriod = period === "yearly" ? 12 : 1;
+  const savingsOptions = (mode === "savings" ? [0.1, 0.2, 0.3, 0.5] : [0.5, 0.6, 0.7, 0.8]).map(share => ({
+    value: Math.min(niceAmount(monthlyLocal * share * perPeriod), mode === "savings" ? incomeLimit : Infinity),
+    sub: mode === "savings" ? `${Math.round(share * 100)}% of pay` : `${Math.round(share * 100)}% of pay, ${Math.round(100 - share * 100)}% saved`,
+  }));
+  const money = (n: number) => `${currencySymbol}${Math.round(n).toLocaleString()}`;
+  useEffect(() => {
+    onAnswer?.(mode === "savings" ? `${money(savingsLocal)} saved a month` : `${money(expensesLocal)} spent a month`);
+  }, [mode, savingsLocal, expensesLocal, onAnswer]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
-    <div className="uf-screen">
-      <p className="uf-step-label">Step 3 of 4</p>
-      <div className="uf-eyebrow">Finances</div>
-      <h2 className="uf-h2">How much do you <span className="uf-accent">save or spend?</span></h2>
-      <p className="uf-body" style={{ marginBottom: 24 }}>
-        Use whichever number you know: monthly or yearly savings or spending. We only need one to estimate your gap.
+    <div className="uf-screen" style={{ paddingTop: 16 }}>
+      <h2 className="uf-ob-q">{mode === "savings" ? "How much do you save?" : "How much do you spend?"}</h2>
+      <p className="uf-ob-hint">
+        Use whichever number you know: monthly or yearly savings or spending. Pick the closest, or type it.
       </p>
 
-      <div className="uf-mode-pills" style={{ marginBottom: 12 }}>
-        <button
-          type="button"
-          aria-pressed={mode === "savings"}
-          className={`uf-mode-pill ${mode === "savings" ? "active" : ""}`}
-          onClick={() => { setAmount(Math.min(amount, incomeLimit)); setMode("savings"); }}
-        >
-          I know my savings
-        </button>
-        <button
-          type="button"
-          aria-pressed={mode === "spending"}
-          className={`uf-mode-pill ${mode === "spending" ? "active" : ""}`}
-          onClick={() => setMode("spending")}
-        >
-          I know my spending
-        </button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+        <div className="uf-mode-pills" style={{ marginBottom: 0 }}>
+          <button
+            type="button"
+            aria-pressed={mode === "savings"}
+            className={`uf-mode-pill ${mode === "savings" ? "active" : ""}`}
+            onClick={() => { setAmount(Math.min(amount, incomeLimit)); setMode("savings"); }}
+          >
+            I know my savings
+          </button>
+          <button
+            type="button"
+            aria-pressed={mode === "spending"}
+            className={`uf-mode-pill ${mode === "spending" ? "active" : ""}`}
+            onClick={() => { if (mode === "savings") setAmount(Math.max(0, incomeLimit - boundedAmount)); setMode("spending"); }}
+          >
+            I know my spending
+          </button>
+        </div>
+        <div className="uf-mode-pills" style={{ marginBottom: 0 }}>
+          <button
+            type="button"
+            aria-pressed={period === "monthly"}
+            className={`uf-mode-pill ${period === "monthly" ? "active" : ""}`}
+            onClick={() => handlePeriodChange("monthly")}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            aria-pressed={period === "yearly"}
+            className={`uf-mode-pill ${period === "yearly" ? "active" : ""}`}
+            onClick={() => handlePeriodChange("yearly")}
+          >
+            Yearly
+          </button>
+        </div>
       </div>
 
-      <div className="uf-mode-pills" style={{ marginBottom: 16 }}>
-        <button
-          type="button"
-          aria-pressed={period === "monthly"}
-          className={`uf-mode-pill ${period === "monthly" ? "active" : ""}`}
-          onClick={() => handlePeriodChange("monthly")}
-        >
-          Monthly
-        </button>
-        <button
-          type="button"
-          aria-pressed={period === "yearly"}
-          className={`uf-mode-pill ${period === "yearly" ? "active" : ""}`}
-          onClick={() => handlePeriodChange("yearly")}
-        >
-          Yearly
-        </button>
-      </div>
-
-      <label className="uf-label">{inputLabel} ({currency})</label>
-      <AmountChoice value={boundedAmount} options={(mode === "savings" ? [.1,.2,.3,.4] : [.5,.6,.7,.8]).map(n => Math.round(monthlyLocal * n * (period === "yearly" ? 12 : 1)))} onChange={setAmount} symbol={currencySymbol} unit={periodUnit}>
-          <div className="uf-big-input-wrap">
-        <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
+      <AmountTiles label={`${inputLabel} (${currency})`} value={boundedAmount} options={savingsOptions} onChange={setAmount} symbol={currencySymbol} unit={periodUnit}>
         <input
           type="number"
           inputMode="decimal"
-          className="uf-input uf-input-mono uf-input-big"
-          style={{ paddingLeft: 28 }}
+          placeholder="Other amount"
           value={boundedAmount || ""}
           aria-label={`${inputLabel} (${currency})`}
           min={0}
-          max={mode === "savings" ? incomeLimit : undefined}
+          max={inputMax}
           onChange={e => {
             const value = Math.max(0, Math.round(Number(e.target.value) || 0));
             setAmount(mode === "savings" ? Math.min(value, incomeLimit) : value);
           }}
         />
-        <span className="uf-unit">{periodUnit}</span>
-      </div>
-          </AmountChoice>
-      <p className="uf-hint">
+      </AmountTiles>
+      <p className="uf-hint" aria-live="polite">
         {mode === "spending"
-          ? "We’ll estimate savings as income minus spending."
-          : "We’ll estimate spending as income minus savings."}
+          ? <>That leaves {money(savingsLocal)} a month saved, <SettlingNumber value={rate} />% of your pay.</>
+          : <>That&apos;s <SettlingNumber value={rate} />% of your pay, leaving {money(expensesLocal)} a month to spend.</>}
       </p>
 
-      <div className="uf-slider-wrap">
-        <input
-          type="range" min={0} max={inputMax} step={1}
-          aria-label={`${inputLabel} (${currency})`}
-          value={Math.min(boundedAmount, inputMax)}
-          className="uf-range"
-          onChange={e => setAmount(Math.min(inputMax, Math.max(0, Math.round(Number(e.target.value) || 0))))}
-        />
-        <div className="uf-range-labels">
-          <span>{currencySymbol}0</span><span>{currencySymbol}{Math.round(inputMax / 2).toLocaleString()}</span><span>{currencySymbol}{inputMax.toLocaleString()}{periodUnit}</span>
-        </div>
-      </div>
-
-      <div className="uf-stat-row">
-        <div className="uf-stat-box">
-          <div className="uf-stat-val uf-accent">{currencySymbol}<SettlingNumber value={savingsLocal} />/mo</div>
-          <div className="uf-stat-lab">Monthly savings</div>
-        </div>
-        <div className="uf-stat-box">
-          <div className="uf-stat-val">{currencySymbol}<SettlingNumber value={expensesLocal} />/mo</div>
-          <div className="uf-stat-lab">Monthly spending</div>
-        </div>
-        <div className="uf-stat-box">
-          <div className="uf-stat-val"><SettlingNumber value={rate} />%</div>
-          <div className="uf-stat-lab">Of income saved</div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <div className="uf-rate-head">
-          <span className="uf-tax-label">Savings rate benchmark</span>
-          <span style={{ color: rateColor, fontSize: 13, fontWeight: 500 }}>{rateLabel}</span>
-        </div>
-        <div className="uf-progress-track">
-          <div className="uf-progress-fill" style={{ width: `${Math.min(rate * 2, 100)}%`, background: rateColor }} />
-        </div>
-        <div className="uf-range-labels" style={{ marginTop: 4 }}>
-          <span>0%</span><span>20% (Good)</span><span>50%+ (Fast track)</span>
-        </div>
-      </div>
-
       {savingsLocal === 0 && (
-        <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, fontSize: 13, color: "var(--uf-warn-ink)", display: "flex", gap: 8, alignItems: "flex-start" }}>
-          <span>⚠️</span>
-          <span>With <strong>$0 saved per month</strong> your freedom date will be very far out. Make sure this is intentional — you can always update it later.</span>
-        </div>
+        <p className="uf-hint" style={{ color: "var(--uf-warn-ink)" }}>
+          With nothing saved each month your freedom date will be very far out. That&apos;s fine if it&apos;s true; you can change it later.
+        </p>
       )}
-      <div className="uf-nav-row">
-        <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
+      <div className="uf-ob-foot">
         <button
           data-primary-next className="uf-btn uf-btn-primary"
-          style={{ flex: 1 }}
           onClick={() => onNext(
             isNonUSD ? Math.round(savingsLocal / fxRate) : savingsLocal,
             isNonUSD ? Math.round(expensesLocal / fxRate) : expensesLocal,
           )}
         >
-          Continue →
+          Continue
         </button>
       </div>
     </div>
@@ -600,12 +562,13 @@ function SavingsScreen({ income, currency = "USD", onNext, onBack }: {
 // PORTFOLIO BALANCE + AGE SCREEN
 // -----------------------------------------------------------------------------
 
-function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initialAge, onNext, onBack }: {
+function PortfolioScreen({ currency = "USD", income, initialPortfolioBalance = 0, onNext, onAnswer }: {
   currency?: SupportedCurrency;
+  /** Annual take-home in USD, for pay-relative suggestions. */
+  income: number;
   initialPortfolioBalance?: number;
-  initialAge?: number;
-  onNext: (portfolio: number, age?: number) => void;
-  onBack: () => void;
+  onNext: (portfolio: number) => void;
+  onAnswer?: (text: string) => void;
 }) {
   const isNonUSD = currency !== "USD";
   const currencySymbol = getCurrencySymbol(currency);
@@ -614,7 +577,6 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
     ? String(isNonUSD ? Math.round(initialPortfolioBalance * fxRate) : initialPortfolioBalance)
     : "";
   const [portfolioRaw, setPortfolioRaw] = useState<string>(initialPortfolioInput);
-  const [ageRaw, setAgeRaw] = useState<string>(initialAge ? String(initialAge) : "");
   const previousPortfolioFx = useRef(fxRate);
   useEffect(() => {
     const ratio = fxRate / previousPortfolioFx.current;
@@ -624,50 +586,59 @@ function PortfolioScreen({ currency = "USD", initialPortfolioBalance = 0, initia
 
   const portfolioInput = Math.max(0, parseInt(portfolioRaw.replace(/,/g, ""), 10) || 0);
   const portfolio = isNonUSD ? Math.round(portfolioInput / fxRate) : portfolioInput;
-  const parsedAge = (() => {
-    const n = parseInt(ageRaw, 10);
-    return Number.isFinite(n) && n >= 16 && n <= 90 ? n : undefined;
-  })();
+  // Measured in pay, which means more than round numbers (D-50).
+  const pay = (income / 12) * fxRate;
+  const worthOptions = [
+    { value: 0, sub: "Starting fresh" },
+    { value: niceAmount(pay * 6), sub: "6 months of pay" },
+    { value: niceAmount(pay * 12), sub: "A year of pay" },
+    { value: niceAmount(pay * 36), sub: "3 years of pay" },
+  ];
+  useEffect(() => {
+    onAnswer?.(portfolioRaw === "" ? "" : `${currencySymbol}${portfolioInput.toLocaleString()} so far`);
+  }, [portfolioRaw, portfolioInput, currencySymbol, onAnswer]);
 
   return (
-    <div className="uf-screen">
-      <p className="uf-step-label">Step 4 of 4</p>
-      <div className="uf-eyebrow">Net worth</div>
-      <h2 className="uf-h2">What is your <span className="uf-accent">net worth?</span></h2>
-      <p className="uf-body" style={{ marginBottom: 32 }}>
-        Enter your current net worth. Estimate is fine. Zero is fine too.
-      </p>
+    <div className="uf-screen" style={{ paddingTop: 16 }}>
+      <h2 className="uf-ob-q">What do you have saved and invested?</h2>
+      <p className="uf-ob-hint">Your net worth, without your home. An estimate is fine, and zero is fine too.</p>
 
-      <label className="uf-label">Net worth ({currency})</label>
-      <AmountChoice value={portfolioRaw === "" ? null : portfolioInput} options={[0,25000,100000,250000].map(n => Math.round(n * fxRate))} onChange={n => setPortfolioRaw(String(n))} symbol={currencySymbol} unit={""}>
-          <div className="uf-big-input-wrap">
-        <span className="uf-input-prefix uf-big-prefix">{currencySymbol}</span>
+      <AmountTiles label={`Net worth (${currency})`} value={portfolioRaw === "" ? null : portfolioInput} options={worthOptions} onChange={n => setPortfolioRaw(String(n))} symbol={currencySymbol}>
         <input
           type="number"
           inputMode="decimal"
-          className="uf-input uf-input-mono uf-input-big"
-          style={{ paddingLeft: 28 }}
-          placeholder="0"
+          placeholder="Other amount"
           value={portfolioRaw}
           aria-label={`Net worth (${currency})`}
           min={0}
           onChange={e => setPortfolioRaw(e.target.value)}
         />
-      </div>
-          </AmountChoice>
-      <p className="uf-hint">Leave at 0 if you&apos;re starting fresh. This is the third core number that makes your freedom date useful.</p>
+      </AmountTiles>
 
-      <div style={{ marginTop: 24 }}>
-        <label className="uf-label" htmlFor="uf-current-age">
-          Your current age <span style={{ color: 'var(--teal)', fontWeight: 700 }}>(recommended)</span>
-        </label>
-        <AgePicker id="uf-current-age" value={ageRaw} onChange={setAgeRaw} />
-        <p className="uf-hint">Highly recommended: age lets us show when freedom hits for you. You can still continue without it.</p>
+      <div className="uf-ob-foot">
+        <button data-primary-next className="uf-btn uf-btn-primary" onClick={() => onNext(portfolio)}>
+          Continue
+        </button>
       </div>
+    </div>
+  );
+}
 
-      <div className="uf-nav-row">
-        <button className="uf-btn uf-btn-ghost" onClick={onBack}>Back</button>
-        <button data-primary-next className="uf-btn uf-btn-primary" style={{ flex: 1 }} onClick={() => onNext(portfolio, parsedAge)}>
+/** Age gets its own step and a wheel (D-50). Optional: Skip continues without it. */
+function AgeScreen({ initialAge, onNext, onAnswer }: {
+  initialAge?: number;
+  onNext: (age?: number) => void;
+  onAnswer?: (text: string) => void;
+}) {
+  const [age, setAge] = useState(initialAge ?? 32);
+  useEffect(() => { onAnswer?.(`${age} years old`); }, [age, onAnswer]);
+  return (
+    <div className="uf-screen" style={{ paddingTop: 16 }}>
+      <h2 className="uf-ob-q">How old are you?</h2>
+      <p className="uf-ob-hint">So we can tell you how old you&apos;ll be when work becomes optional.</p>
+      <AgeWheel value={age} onChange={setAge} />
+      <div className="uf-ob-foot">
+        <button data-primary-next className="uf-btn uf-btn-primary" onClick={() => onNext(age)}>
           Show my freedom date
         </button>
       </div>
@@ -1150,7 +1121,16 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 // ROOT
 // -----------------------------------------------------------------------------
 
-type Screen = "hero" | "city" | "income" | "savings" | "portfolio" | "reveal";
+type Screen = "hero" | "city" | "income" | "savings" | "portfolio" | "age" | "reveal";
+
+/** The five questions, in order, with the scene's icon and a tag before any answer (D-50). */
+const WIZARD: { screen: Screen; icon: SceneIcon; empty: string }[] = [
+  { screen: "city", icon: "pin", empty: "Your city" },
+  { screen: "income", icon: "pay", empty: "Your pay" },
+  { screen: "savings", icon: "jar", empty: "Your saving" },
+  { screen: "portfolio", icon: "stack", empty: "Saved so far" },
+  { screen: "age", icon: "age", empty: "Your age" },
+];
 
 export default function HomeClient() {
   const wizardRef = useRef<HTMLDivElement>(null);
@@ -1273,6 +1253,7 @@ export default function HomeClient() {
       income: "income",
       savings: "savings",
       portfolio: "portfolio",
+      age: "age",
     };
     const stepId = stepMap[screen];
     if (stepId) {
@@ -1284,8 +1265,17 @@ export default function HomeClient() {
     router.push('/login');
   }
 
-  const STEP_MAP: Record<Screen, number> = { hero: 0, city: 1, income: 2, savings: 3, portfolio: 4, reveal: 5 };
-  const totalDots = 6;
+  // Each step reports its live answer for the scene's tag.
+  const [answers, setAnswers] = useState<Partial<Record<Screen, string>>>({});
+  const reportAnswer = useMemo(() => Object.fromEntries(WIZARD.map(({ screen: key }) =>
+    [key, (text: string) => setAnswers(previous => previous[key] === text ? previous : { ...previous, [key]: text })])) as Record<string, (text: string) => void>, []);
+  const wizardIndex = WIZARD.findIndex(w => w.screen === screen);
+  const wizardStep = WIZARD[wizardIndex];
+  const skipCity = () => {
+    setCityState({ name: "Your current lifestyle", col: 0, stateKey: "custom", isCustom: true });
+    setCurrency("USD");
+    setScreen("income");
+  };
 
   return (
     <>
@@ -3269,8 +3259,8 @@ export default function HomeClient() {
           so the app chrome nav is hidden there to avoid a duplicated header. */}
       {screen !== "reveal" && (
         <Nav
-          step={STEP_MAP[screen]}
-          totalSteps={totalDots}
+          step={wizardIndex + 1}
+          totalSteps={0} // the question header shows progress (D-50)
           onRestart={() => setScreen("hero")}
           onSignIn={signIn}
         />
@@ -3282,17 +3272,24 @@ export default function HomeClient() {
           <div className="uf-atm-orb uf-atm-orb-2" />
           <div className="uf-atm-orb uf-atm-orb-3" />
         </div>
+        <style>{ONBOARDING_CSS}</style>
+        {wizardStep && (
+          <OnboardingShell
+            step={wizardIndex}
+            steps={WIZARD.length}
+            icon={wizardStep.icon}
+            answer={answers[wizardStep.screen] || wizardStep.empty}
+            onBack={() => setScreen(wizardIndex === 0 ? "hero" : WIZARD[wizardIndex - 1].screen)}
+            onSkip={screen === "city" ? skipCity : screen === "age" ? () => { setCurrentAge(undefined); setScreen("reveal"); } : undefined}
+            skipLabel={screen === "city" ? "Skip, use my own spending" : screen === "age" ? "Skip, leave my age out" : undefined}
+          />
+        )}
         {(screen === "city" || visited.includes("city")) && (
           <div data-onboarding-step="city" hidden={screen !== "city"} inert={screen !== "city"}>
           <CityScreen
             initialCity={cityState}
+            onAnswer={reportAnswer.city}
             onNext={c => { setCityState(c); setCurrency(stateToCurrency(c.stateKey)); setScreen("income"); }}
-            onBack={() => setScreen("hero")}
-            onSkip={() => {
-              setCityState({ name: "United States (avg)", col: 52000, stateKey: "custom", isCustom: true });
-              setCurrency("USD");
-              setScreen("income");
-            }}
           />
           </div>
         )}
@@ -3300,10 +3297,12 @@ export default function HomeClient() {
           <div data-onboarding-step="income" hidden={screen !== "income"} inert={screen !== "income"}>
           <IncomeScreen
             stateKey={cityState?.stateKey ?? "custom"}
+            cityName={cityState?.name}
+            cityCol={cityState?.isCustom ? 0 : cityState?.col}
             currency={currency}
             onCurrencyChange={setCurrency}
+            onAnswer={reportAnswer.income}
             onNext={inc => { setIncome(inc); setScreen("savings"); }}
-            onBack={() => setScreen("city")}
           />
           </div>
         )}
@@ -3312,6 +3311,7 @@ export default function HomeClient() {
           <SavingsScreen
             income={income}
             currency={currency}
+            onAnswer={reportAnswer.savings}
             onNext={(sav, monthlyExpenses) => {
               setSavings(sav);
               setCityState(prev => ({
@@ -3322,7 +3322,6 @@ export default function HomeClient() {
               }));
               setScreen("portfolio");
             }}
-            onBack={() => setScreen("income")}
           />
           </div>
         )}
@@ -3330,10 +3329,19 @@ export default function HomeClient() {
           <div data-onboarding-step="portfolio" hidden={screen !== "portfolio"} inert={screen !== "portfolio"}>
           <PortfolioScreen
             currency={currency}
+            income={income}
             initialPortfolioBalance={portfolioBalance}
+            onAnswer={reportAnswer.portfolio}
+            onNext={p => { setPortfolioBalance(p); setScreen("age"); }}
+          />
+          </div>
+        )}
+        {(screen === "age" || visited.includes("age")) && (
+          <div data-onboarding-step="age" hidden={screen !== "age"} inert={screen !== "age"}>
+          <AgeScreen
             initialAge={currentAge}
-            onNext={(p, age) => { setPortfolioBalance(p); setCurrentAge(age); setScreen("reveal"); }}
-            onBack={() => setScreen("savings")}
+            onAnswer={reportAnswer.age}
+            onNext={age => { setCurrentAge(age); setScreen("reveal"); }}
           />
           </div>
         )}
@@ -3347,7 +3355,7 @@ export default function HomeClient() {
             currentAge={currentAge}
             portfolioBalance={portfolioBalance}
             landingSource={landingSource}
-            onAdjust={() => setScreen("portfolio")}
+            onAdjust={() => setScreen("age")}
           />
         )}
 

@@ -18,6 +18,7 @@ funnel_landing_viewed
            → funnel_calculator_step_viewed (step_id=income)
            → funnel_calculator_step_viewed (step_id=savings)
            → funnel_calculator_step_viewed (step_id=portfolio)
+           → funnel_calculator_step_viewed (step_id=age)
            → funnel_calculator_revealed
            → funnel_reveal_step_viewed (step_id=freedom_age … save, or unreachable)
            → funnel_reveal_cta_clicked
@@ -138,10 +139,11 @@ querying history.
 ### `funnel_calculator_step_viewed`
 
 - **Where**: `app/HomeClient.tsx`, `HomeClient` screen effect when the wizard
-  transitions to one of the five live steps (`goal`, `city`, `income`,
-  `savings`, `portfolio`).
+  transitions to one of the six live steps (`goal`, `city`, `income`,
+  `savings`, `portfolio`, `age`). Age became its own step in D-50 (index `6`);
+  before that it was asked on the `portfolio` step.
 - **Properties**:
-  - `step_id` - `goal` | `city` | `income` | `savings` | `portfolio` (`currency`
+  - `step_id` - `goal` | `city` | `income` | `savings` | `portfolio` | `age` (`currency`
     is a tombstoned value from a retired step; see the funnel order note above).
   - `step_index` - mirrors `step_id` for funnel ordering in PostHog. Not a dense
     `1..5` range - `goal` was added after the others were indexed and kept its

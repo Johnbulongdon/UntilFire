@@ -8,6 +8,23 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-08
 
+### A new way in: five questions under a rising sun
+- The free calculator now asks one thing per screen: where you live, your
+  take-home pay, what you save, what you have so far, and your age. A small
+  landscape sits above each question; the sun rises and a path fills from
+  home with every answer, and a tag shows what you just entered.
+- Suggestions come from your earlier answers: pay around your city's living
+  costs, saving as a share of your pay, and savings so far in months of pay.
+  Every step has an "Other amount" field instead of an "enter a different
+  amount" link.
+- Where you live: search 390+ cities, a city near you from your time zone
+  (nothing is sent anywhere), popular cities, or your own town, which uses
+  your own spending. Skip is in the header.
+- Age is its own step, on a wheel you can swipe, scroll, click or type into.
+  It is still optional.
+- Back is an arrow at the top left; each screen's footer holds only its main
+  button.
+
 ### Calm Profile
 - Profile opens on your name, email and plan, with Try Pro or Manage billing.
 - Name, household, currency and banks are rows that open in place; sharing
