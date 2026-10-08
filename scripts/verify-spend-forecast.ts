@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
+import { type Bill, billsByCategory, typicalForRange, typicalMonth, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -42,6 +42,31 @@ ok("bills still owed this month count against their category, paid ones do not",
   const john: Bill = { id: "b", description: "John Rent", category: null, usd: 432, due: "2026-10-07", recurrence: "monthly" };
   const sirui: Bill = { id: "a", description: "Sirui Rent", category: null, usd: 1500, due: "2026-11-01", recurrence: "monthly" };
   assert.deepEqual(dueByCategory([john, sirui], "2026-10-31"), { housing: 432 });
+});
+ok("listed repeating bills set what a category usually costs, after a move too (D-52)", () => {
+  const sirui: Bill = { id: "a", description: "Sirui Rent", category: "housing", usd: 1500, due: "2026-11-01", recurrence: "monthly" };
+  const john: Bill = { id: "b", description: "John Rent", category: "housing", usd: 432, due: "2026-10-07", recurrence: "monthly" };
+  const once: Bill = { id: "c", description: "Movers", category: "housing", usd: 900, due: "2026-10-12", recurrence: "none" };
+  const spotted: Bill = { description: "Gym", category: "health", usd: 40, due: "2026-10-03", recurrence: "monthly" };
+  assert.deepEqual(billsByCategory([sirui, john, once, spotted], ["2026-10"]), { housing: 1932 }, "both rents, not the one-off or a spotted bill");
+  assert.deepEqual(billsByCategory([sirui], ["2026-08", "2026-09", "2026-10"]), { housing: 4500 }, "one rent per month in the range");
+  assert.deepEqual(billsByCategory([{ ...sirui, recurrence: "yearly" }], ["2026-10"]), {}, "a yearly bill not due this month adds nothing");
+});
+ok("after a move, a typical housing month counts from the first listed rent paid (D-52)", () => {
+  const sirui: Bill = { id: "a", description: "Sirui Rent", category: "housing", usd: 1380, due: "2026-11-01", recurrence: "monthly", merchant: "BILT PAYMENT" };
+  const john: Bill = { id: "b", description: "John Rent", category: "housing", usd: 435, due: "2026-10-07", recurrence: "monthly", merchant: "陈玲(陈玲)" };
+  const h = (date: string, usd: number, description: string) => tx(date, usd, description, "housing");
+  const history = [h("2026-05-08", 225, "玲(*玲)"), h("2026-06-11", 239, "Rent abroad"), h("2026-07-17", 239, "快乐是福"),
+    h("2026-08-16", 429, "陈玲(陈玲)"), h("2026-08-20", 7, "Detergent"), h("2026-09-01", 1380, "BILT PAYMENT"), h("2026-09-08", 429, "陈玲(陈玲)")];
+  assert.deepEqual(typicalMonth(history, [sirui, john], "2026-10"), { low: 1815, mid: 1815, high: 1822 },
+    "today's rents, plus August's detergent; a June payment named Rent counts at today's rents, never at its own old amount");
+  assert.deepEqual(typicalMonth(history.slice(0, 3), [sirui, john], "2026-10"), { low: 1815, mid: 1815, high: 1815 }, "no rent paid yet: the listed bills alone");
+  assert.deepEqual(typicalForRange(history, [sirui, john], ["2026-10"], "2026-10-08", true)?.mid, 1815, "the current month is compared whole");
+});
+ok("without listed bills, the band is past months with the single highest and lowest dropped", () => {
+  const food = [["2026-04", 380], ["2026-05", 520], ["2026-06", 450], ["2026-07", 690], ["2026-08", 1400], ["2026-09", 60]].map(([m, v]) => tx(`${m}-05`, v as number));
+  assert.deepEqual(typicalMonth(food, [], "2026-10"), { low: 380, mid: 485, high: 690 });
+  assert.equal(typicalMonth(food.slice(0, 2), [], "2026-10"), null, "two months is not enough history");
 });
 ok("the budget path puts rent on its day and spreads the rest evenly", () => {
   const p = budgetPath(["2026-10"], 2930, [rent]);
