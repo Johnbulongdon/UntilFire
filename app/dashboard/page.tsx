@@ -6507,7 +6507,7 @@ export default function Dashboard() {
             {tab === "contributions" && (
               <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
             )}
-            {tab === "citizenship" && <CitizenshipTab />}
+            {tab === "citizenship" && <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
             {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
             {tab === "expat-fire" && (
