@@ -165,6 +165,9 @@ cards and table heads already stick to the top.
 - **Money pages share one calm shape** (D-40): a headline card, then rows
   (`app/dashboard/MoneyCards.tsx`). What a debt started at is a fact about the
   debt, so it is set on Debts, not in Plan.
+- **Expat FIRE leads with the soonest place** (D-45): a list of when each
+  place opens up, with the globe behind a List / Globe switch. "Plan for" a
+  city sets the retirement city that Freedom date's Retire in row holds.
 
 ## Known gap — not fixed by this structure
 

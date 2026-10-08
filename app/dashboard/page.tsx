@@ -5970,9 +5970,6 @@ export default function Dashboard() {
           .uf-cashflow-subtab-switch { display: none !important; }
         }
 
-        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: calc(100svh - 48px); min-height: 480px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 55%, #ffffff 0%, #eef2f7 75%); }
-        .dark .expat-globe-wrap { background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
-        @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: calc(100svh - 180px); min-height: 360px; } }
 
 
         select option { background: var(--uf-card); color: var(--uf-text); }
@@ -6524,9 +6521,10 @@ export default function Dashboard() {
                 displayRates={rates}
                 age={fireAge}
                 cityName={cityName}
-                isDark={isDark}
                 growthRate={growthRate}
                 onEditAssumptions={() => { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }}
+                onPlanFor={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
+                onOpenCitizenship={() => openDashboardTab("citizenship")}
               />
             )}
             {tab === "profile" && userId && (
@@ -6565,8 +6563,9 @@ function ExpatFireDashTab({
   monthlySavings,
   age,
   cityName,
-  isDark,
   onEditAssumptions,
+  onPlanFor,
+  onOpenCitizenship,
   growthRate,
   targetMultiple = 25,
   lifestyle = 1,
@@ -6587,105 +6586,77 @@ function ExpatFireDashTab({
   monthlySavings: number;
   age: number;
   cityName: string;
-  isDark: boolean;
   onEditAssumptions: () => void;
+  /** Makes a city the plan's retirement city, as the Retire in row does. */
+  onPlanFor: (name: string, col: number) => void;
+  onOpenCitizenship: () => void;
 }) {
-  const [panelOpen, setPanelOpen] = useState(true);
+  // Calm Expat FIRE (D-45): the answer first (the soonest place), a list of
+  // when each place opens up, and the globe behind a pill.
+  const [view, setView] = useState<"list" | "globe">("list");
+  const [showAll, setShowAll] = useState(false);
   const [selectedCityKey, setSelectedCityKey] = useState<string | null>(null);
-
-  // Overlay chrome adapts to theme: on white space it must read dark, on dark
-  // space it reads light. The globe itself stays a dark-ocean / white-continent
-  // "night earth" in both modes.
-  const ui = isDark
-    ? {
-        title: "#fff",
-        titleShadow: "0 2px 16px rgba(0,0,0,0.6)",
-        panelBg: "rgba(8,8,14,0.58)",
-        panelBorder: "rgba(255,255,255,0.09)",
-        chipBg: "rgba(255,255,255,0.055)",
-        chipBorder: "rgba(255,255,255,0.08)",
-        chipLabel: "rgba(255,255,255,0.42)",
-        chipValue: "#fff",
-        toggleBg: "rgba(8,8,14,0.52)",
-        toggleBorder: "rgba(255,255,255,0.14)",
-        toggleText: "rgba(255,255,255,0.82)",
-      }
-    : {
-        title: "#0f172a",
-        titleShadow: "0 1px 10px rgba(255,255,255,0.7)",
-        panelBg: "rgba(255,255,255,0.72)",
-        panelBorder: "rgba(15,23,42,0.08)",
-        chipBg: "rgba(15,23,42,0.04)",
-        chipBorder: "rgba(15,23,42,0.06)",
-        chipLabel: "rgba(15,23,42,0.45)",
-        chipValue: "#0f172a",
-        toggleBg: "rgba(255,255,255,0.72)",
-        toggleBorder: "rgba(15,23,42,0.1)",
-        toggleText: "rgba(15,23,42,0.7)",
-      };
+  const [timelineYears, setTimelineYears] = useState(0);
 
   const currentCityKey = useMemo(() => {
     // No match means your own spending stands for "here", not New York (D-36).
     const match = CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
     return match?.key ?? "";
   }, [cityName]);
+  const hereCity = CITIES.find(c => c.key === currentCityKey);
+  const hereName = hereCity ? hereCity.name.split(",")[0] : "your spending";
+  const hereAnnual = hereCity ? hereCity.col : yourAnnualSpending / (lifestyle || 1);
 
-  // ── Freedom timeline: fast-forward the projected portfolio and watch cities unlock ──
-  const [timelineYears, setTimelineYears] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [timelineOpen, setTimelineOpen] = useState(true);
-
-  // Per-city unlock schedule, computed with the same engine as the rest of the
-  // page so a city's "turns green" year matches its years-to-FIRE exactly.
+  // Per-city schedule with the freedom date's engine, so a city's year here
+  // matches its years-to-FIRE everywhere else.
   const cityUnlocks = useMemo(() => {
     return CITIES
       .filter(c => CITY_COORDS[c.key])
       .map(c => {
         const r = calcFIRE(monthlySavings, c.col * targetMultiple * 0.04, age || undefined, portfolioBalance, growthRate); // calcFIRE targets 25× what it is given
-
-        return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
+        return { key: c.key, name: c.name, flag: c.flag, col: c.col, target: c.col * targetMultiple, years: r.years, age: r.age, year: r.retireYear };
       })
       .sort((a, b) => (a.years ?? Infinity) - (b.years ?? Infinity) || a.col - b.col);
   }, [monthlySavings, portfolioBalance, age, growthRate, targetMultiple]);
 
-  // Run the bar from today to roughly when the bulk of cities have unlocked.
+  const here = useMemo(() => {
+    const target = hereAnnual * targetMultiple;
+    const r = calcFIRE(monthlySavings, target * 0.04, age || undefined, portfolioBalance, growthRate);
+    return { target, years: r.years, year: r.retireYear };
+  }, [hereAnnual, targetMultiple, monthlySavings, age, portfolioBalance, growthRate]);
+
   const sliderMax = useMemo(() => {
     const ys = cityUnlocks.map(c => c.years).filter((y): y is number => y !== null && y < 60).sort((a, b) => a - b);
     if (!ys.length) return 5;
     const p95 = ys[Math.floor(0.95 * (ys.length - 1))];
     return Math.min(50, Math.max(5, Math.ceil(p95)));
   }, [cityUnlocks]);
-
-  useEffect(() => {
-    if (timelineYears > sliderMax) setTimelineYears(sliderMax);
-  }, [sliderMax, timelineYears]);
-
-  useEffect(() => {
-    if (!playing) return;
-    const id = setInterval(() => {
-      setTimelineYears(y => {
-        if (y >= sliderMax) { setPlaying(false); return sliderMax; }
-        return y + 1;
-      });
-    }, 600);
-    return () => clearInterval(id);
-  }, [playing, sliderMax]);
-
   const tlYears = Math.min(timelineYears, sliderMax);
   const tlAnnual = Math.max(0, monthlySavings) * 12;
-  // Your growth choice, the same rate the cities' years use (it was fixed at the default here).
   const projectedPortfolio = growthRate > 0
     ? (portfolioBalance + tlAnnual / growthRate) * Math.pow(1 + growthRate, tlYears) - tlAnnual / growthRate
     : portfolioBalance + tlAnnual * tlYears;
   const readyCount = cityUnlocks.filter(c => c.years !== null && c.years <= tlYears + 1e-9).length;
-  const projAge = age ? age + tlYears : undefined;
-  const tlThisYear = new Date().getFullYear();
-
-  function handleCitySelect(key: string) {
-    setSelectedCityKey(key);
-  }
+  const thisYear = new Date().getFullYear();
 
   const fmt = (n: number) => fmtCurrency(n, displayCurrency, displayRates, true);
+  const yearLabel = (years: number | null, year: number | null) => years === null ? "Not reached" : years < 0.5 ? "Now" : String(year);
+
+  const best = cityUnlocks.find(c => c.years !== null);
+  const bestShare = best && best.target > 0 ? Math.min(1, portfolioBalance / best.target) : 0;
+  const sooner = best && best.years !== null && here.years !== null ? here.years - best.years : null;
+  // The soonest place in each of six countries (cheap cities cluster by
+  // country), plus where you plan now so it is always in the list.
+  const shown = useMemo(() => {
+    if (showAll) return cityUnlocks;
+    const countries = new Set<string>();
+    return cityUnlocks.filter(c => {
+      if (c.key === currentCityKey) return true;
+      if (countries.size >= 6 || countries.has(c.flag)) return false;
+      countries.add(c.flag);
+      return true;
+    });
+  }, [showAll, cityUnlocks, currentCityKey]);
 
   if (selectedCityKey) {
     return (
@@ -6700,189 +6671,89 @@ function ExpatFireDashTab({
         portfolioBalance={portfolioBalance}
         monthlySavings={monthlySavings}
         age={age}
-        currentCityName={currentCityKey ? (cityName || "Your city") : "Your spending"}
+        currentCityName={hereCity ? hereName : "Your spending"}
         currentCityKey={currentCityKey}
-        isDark={isDark}
         onBack={() => setSelectedCityKey(null)}
+        onPlanFor={onPlanFor}
+        onOpenCitizenship={onOpenCitizenship}
       />
     );
   }
 
+
   return (
-    <div className="expat-globe-wrap">
-      {/* Full-bleed globe */}
-      <GeoArbitrageGlobe
-        fillContainer
-        monthlySavings={monthlySavings}
-        portfolioBalance={Math.round(projectedPortfolio)}
-        currentAge={age}
-        currentCityKey={currentCityKey}
-        onCitySelect={handleCitySelect}
-        targetMultiple={targetMultiple}
-        growthRate={growthRate}
-        lifestyle={lifestyle}
-        formatAmount={(usd) => fmtCurrency(usd, displayCurrency, displayRates, true)}
-        baseTarget={currentCityKey ? undefined : yourAnnualSpending * targetMultiple / (lifestyle || 1)}
-      />
-
-      {/* Title overlay — top left */}
-      <div style={{ position: "absolute", top: 20, left: 24, zIndex: 10, pointerEvents: "none" }}>
-        <div style={{ fontSize: 10, color: "#22d3a5", fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", marginBottom: 5 }}>
-          Expat FIRE
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: ui.title, letterSpacing: "-0.03em", textShadow: ui.titleShadow, lineHeight: 1.15 }}>
-          Where else could<br />you retire?
-        </div>
-      </div>
-
-      {/* Panel toggle button */}
-      <button
-        onClick={() => setPanelOpen(v => !v)}
-        style={{
-          position: "absolute", top: 20,
-          right: panelOpen ? 244 : 16,
-          zIndex: 25, transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
-          background: ui.toggleBg, backdropFilter: "blur(12px)",
-          border: `1px solid ${ui.toggleBorder}`, borderRadius: 999,
-          padding: "6px 14px", color: ui.toggleText, fontSize: 11,
-          fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-          letterSpacing: "0.03em",
-        }}
+    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+      <MoneyHead
+        label="Soonest place work becomes optional"
+        value={<span style={{ fontFamily: "var(--uf-font-display)", fontSize: 44, color: "var(--uf-teal)" }}>{best ? yearLabel(best.years, best.year) : "Not yet"}</span>}
+        sub={!best
+          ? "No place in our list is reached at today's saving rate. Saving more moves every date."
+          : <>In {best.flag} {best.name.split(",")[0]}{sooner !== null && sooner >= 0.5 ? <>, <Fig>{sooner.toFixed(1)}</Fig> years before {hereName}</> : best.key === currentCityKey ? ", where you plan now" : ""}{best.age ? <>, at <Fig>{best.age}</Fig></> : null}</>}
       >
-        {panelOpen ? "‹ Hide" : "Stats ›"}
-      </button>
+        {best && <>
+          <MoneyTrack share={bestShare} label={`${Math.round(bestShare * 100)}% of ${best.name.split(",")[0]}'s FIRE number`} />
+          <MoneyKey items={[<><Fig>{fmt(portfolioBalance)}</Fig> of <Fig>{fmt(best.target)}</Fig> there</>, <><Fig>{fmt(here.target)}</Fig> for {hereName}</>]} />
+        </>}
+      </MoneyHead>
 
-      {/* Collapsible stats panel */}
-      <div style={{
-        position: "absolute", top: 16,
-        right: panelOpen ? 16 : -232,
-        zIndex: 20, width: 220,
-        transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
-        background: ui.panelBg, backdropFilter: "blur(20px)",
-        border: `1px solid ${ui.panelBorder}`, borderRadius: 16,
-        padding: "16px 14px", display: "flex", flexDirection: "column", gap: 9,
-      }}>
-        <div style={{ fontSize: 9, color: "#22d3a5", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 2 }}>
-          Your snapshot
-        </div>
-        {([
-          { label: "Portfolio", value: fmt(portfolioBalance) },
-          { label: "Age", value: String(age) },
-        ] as const).map(({ label, value }) => (
-          <div key={label} style={{
-            background: ui.chipBg,
-            border: `1px solid ${ui.chipBorder}`,
-            borderRadius: 10, padding: "9px 12px",
-          }}>
-            <div style={{ fontSize: 9, color: ui.chipLabel, fontWeight: 700, textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: ui.chipValue, letterSpacing: "-0.02em" }}>{value}</div>
-          </div>
-        ))}
-        <button
-          onClick={onEditAssumptions}
-          style={{
-            background: "rgba(34,211,165,0.11)", border: "1px solid rgba(34,211,165,0.22)",
-            borderRadius: 9, padding: "9px 0", color: "#22d3a5",
-            fontSize: 12, fontWeight: 700, cursor: "pointer",
-            fontFamily: "inherit", marginTop: 3, letterSpacing: "0.01em",
-          }}
-        >
-          Edit assumptions →
-        </button>
+      <div style={{ minWidth: 0 }}><PillTabs label="View" value={view} onChange={setView} options={[{ key: "list", label: "List" }, { key: "globe", label: "Globe" }]} /></div>
+
+      <div style={{ background: "var(--uf-card)", borderRadius: 16, padding: 18, boxShadow: "var(--uf-e1)", display: "grid", gap: 10 }}>
+        <span className="uf-t-body">
+          {tlYears === 0 ? "Today" : <>By <Fig>{thisYear + tlYears}</Fig></>}, <Fig>{readyCount}</Fig> of <Fig>{cityUnlocks.length}</Fig> places are in reach
+        </span>
+        <input type="range" min={0} max={sliderMax} step={1} value={tlYears} onChange={e => setTimelineYears(Number(e.target.value))}
+          aria-label="Years from today" aria-valuetext={`${thisYear + tlYears}: ${readyCount} places in reach`} style={{ width: "100%", accentColor: "var(--uf-teal)" }} />
+        <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
+          Drag to see which places open up as your savings grow{tlYears > 0 ? <>, to about <Fig>{fmt(projectedPortfolio)}</Fig></> : null}.
+        </span>
       </div>
 
-      {/* Freedom timeline — scrub forward to watch cities turn green */}
-      <div style={{
-        position: "absolute", left: "50%", bottom: 14, transform: "translateX(-50%)",
-        zIndex: 22, width: "min(640px, calc(100% - 24px))",
-        background: ui.panelBg, backdropFilter: "blur(20px)",
-        border: `1px solid ${ui.panelBorder}`, borderRadius: 16,
-        padding: timelineOpen ? "12px 14px 14px" : "9px 14px",
-      }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ fontSize: 9, color: "#22d3a5", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" }}>
-            Freedom timeline
-          </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#22d3a5" }}>
-            🟢 {readyCount}/{cityUnlocks.length}
-          </span>
-          <div style={{ flex: 1 }} />
-          {timelineOpen && (
-            <button
-              onClick={() => setPlaying(p => !p)}
-              style={{ background: "rgba(34,211,165,0.12)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, padding: "4px 12px", color: "#22d3a5", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-            >
-              {playing ? "❚❚ Pause" : "▶ Play"}
-            </button>
-          )}
-          <button
-            onClick={() => setTimelineOpen(v => !v)}
-            aria-label={timelineOpen ? "Collapse timeline" : "Expand timeline"}
-            style={{ background: ui.toggleBg, border: `1px solid ${ui.toggleBorder}`, borderRadius: 999, padding: "4px 11px", color: ui.toggleText, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", lineHeight: 1 }}
-          >
-            {timelineOpen ? "⌄" : "⌃"}
-          </button>
+      {view === "globe" ? (
+        <div style={{ background: "var(--uf-card)", borderRadius: 16, boxShadow: "var(--uf-e1)", height: "min(520px, 70svh)", overflow: "hidden", position: "relative" }}>
+          <GeoArbitrageGlobe
+            fillContainer
+            monthlySavings={monthlySavings}
+            portfolioBalance={Math.round(projectedPortfolio)}
+            currentAge={age}
+            currentCityKey={currentCityKey}
+            onCitySelect={setSelectedCityKey}
+            targetMultiple={targetMultiple}
+            growthRate={growthRate}
+            lifestyle={lifestyle}
+            formatAmount={(usd) => fmtCurrency(usd, displayCurrency, displayRates, true)}
+            baseTarget={currentCityKey ? undefined : yourAnnualSpending * targetMultiple / (lifestyle || 1)}
+          />
         </div>
+      ) : (
+        <>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>When each place opens up</div>
+          <MoneyList footer={cityUnlocks.length > shown.length || showAll
+            ? <Button variant="secondary" size="sm" onClick={() => setShowAll(v => !v)}>{showAll ? "Show fewer" : `See all ${cityUnlocks.length} places`}</Button>
+            : undefined}>
+            {shown.map(c => {
+              const isHere = c.key === currentCityKey;
+              const diff = hereAnnual > 0 ? Math.round((1 - c.col / hereAnnual) * 100) : 0;
+              const later = !isHere && (c.years === null || (here.years !== null && c.years > here.years + 0.05));
+              const open = c.years !== null && c.years <= tlYears + 1e-9;
+              return (
+                <MoneyRow key={c.key} dot={isHere ? "var(--uf-ink-3)" : later ? "#e34948" : "#1baf7a"} icon={c.flag}
+                  name={isHere ? `${c.name} · your plan` : c.name}
+                  meta={`${isHere ? "Where you plan now" : diff === 0 ? "Costs about the same" : `Costs ${Math.abs(diff)}% ${diff > 0 ? "less" : "more"}`} · FIRE number ${fmt(c.target)}`}
+                  value={`${yearLabel(c.years, c.year)}${open ? " ✓" : ""}`}
+                  valueTone={isHere ? undefined : later ? "var(--uf-warn-ink)" : "var(--uf-pos-ink)"} strong={!isHere}
+                  bar={<MoneyTrack share={c.target > 0 ? Math.min(1, portfolioBalance / c.target) : 0} color={isHere ? "var(--uf-ink-3)" : "var(--uf-teal)"} label={`${c.name}: ${Math.round(Math.min(1, portfolioBalance / (c.target || 1)) * 100)}% of its FIRE number`} />}
+                  onClick={() => setSelectedCityKey(c.key)} />
+              );
+            })}
+          </MoneyList>
+        </>
+      )}
 
-        {timelineOpen && (
-          <>
-            {/* Scrubber */}
-            <input
-              type="range"
-              min={0}
-              max={sliderMax}
-              step={1}
-              value={tlYears}
-              onChange={e => { setPlaying(false); setTimelineYears(Number(e.target.value)); }}
-              aria-label="Years from today"
-              style={{ width: "100%", accentColor: "#22d3a5", marginTop: 12, cursor: "pointer" }}
-            />
-
-            {/* Readout */}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: ui.chipValue, letterSpacing: "-0.02em" }}>
-                {tlYears === 0 ? "Today" : projAge ? `Age ${projAge}` : `In ${tlYears} ${tlYears === 1 ? "year" : "years"}`}
-              </span>
-              {tlYears > 0 && (
-                <span style={{ fontSize: 12, color: ui.chipLabel, fontWeight: 600 }}>· {tlThisYear + tlYears}</span>
-              )}
-              <span style={{ marginLeft: "auto", fontSize: 12, color: ui.chipLabel, fontWeight: 600 }}>
-                ~{fmt(projectedPortfolio)}
-              </span>
-            </div>
-
-            {/* Ordered milestone strip — which cities turn green first */}
-            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginTop: 10 }}>
-              {cityUnlocks.slice(0, 16).map(c => {
-                const unlocked = c.years !== null && c.years <= tlYears + 1e-9;
-                const badge = c.years === null ? "Not reached" : c.years < 0.5 ? "now" : projAge ? `age ${c.age}` : `${c.year}`;
-                return (
-                  <div key={c.key} style={{
-                    flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
-                    padding: "6px 10px", borderRadius: 10, minWidth: 72,
-                    background: unlocked ? "rgba(34,211,165,0.14)" : ui.chipBg,
-                    border: `1px solid ${unlocked ? "rgba(34,211,165,0.30)" : ui.chipBorder}`,
-                  }}>
-                    <span style={{ fontSize: 15, lineHeight: 1 }}>{c.flag}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: unlocked ? "#22d3a5" : ui.chipValue, whiteSpace: "nowrap" }}>
-                      {c.name.split(",")[0]}
-                    </span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: unlocked ? "#22d3a5" : ui.chipLabel, whiteSpace: "nowrap" }}>
-                      {unlocked ? "🟢 " : ""}{badge}
-                    </span>
-                  </div>
-                );
-              })}
-              {cityUnlocks.length > 16 && (
-                <div style={{ flexShrink: 0, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 11, color: ui.chipLabel, fontWeight: 600 }}>
-                  +{cityUnlocks.length - 16}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
+        Uses your saving, lifestyle and <Fig>{Math.round(growthRate * 1000) / 10}%</Fig> growth.{" "}
+        <button type="button" onClick={onEditAssumptions} style={{ background: "none", border: 0, padding: 0, font: "inherit", color: "var(--uf-ink-2)", textDecoration: "underline", cursor: "pointer" }}>Change them in Freedom date</button>
+      </span>
     </div>
   );
 }
@@ -6896,8 +6767,9 @@ function ExpatCityDetail({
   age,
   currentCityName,
   currentCityKey,
-  isDark,
   onBack,
+  onPlanFor,
+  onOpenCitizenship,
   growthRate,
   targetMultiple = 25,
   lifestyle = 1,
@@ -6917,27 +6789,20 @@ function ExpatCityDetail({
   age: number;
   currentCityName: string;
   currentCityKey: string;
-  isDark: boolean;
   onBack: () => void;
+  onPlanFor: (name: string, col: number) => void;
+  onOpenCitizenship: () => void;
 }) {
   const targetCity = CITIES.find(c => c.key === cityKey);
   const currentCity = CITIES.find(c => c.key === currentCityKey);
-
-  const bg = isDark ? "#08080e" : "#f8fafc";
-  const cardBg = isDark ? "#111118" : "#ffffff";
-  const border = isDark ? "#23232d" : "#E2E8F0";
-  const textPrimary = isDark ? "#ffffff" : "#0F172A";
-  const textSecondary = isDark ? "rgba(255,255,255,0.45)" : "#6B7280";
+  const back = (
+    <button type="button" onClick={onBack} style={{ justifySelf: "start", background: "none", border: 0, padding: "4px 0", font: "inherit", color: "var(--uf-ink-2)", cursor: "pointer" }}>
+      ‹ All places
+    </button>
+  );
 
   if (!targetCity) {
-    return (
-      <div style={{ padding: 40, textAlign: "center", color: textSecondary }}>
-        <p>City not found.</p>
-        <button onClick={onBack} style={{ marginTop: 16, background: "none", border: "none", color: "#22d3a5", cursor: "pointer", fontSize: 14 }}>
-          ← Back to Globe
-        </button>
-      </div>
-    );
+    return <div style={{ display: "grid", gap: 12 }}>{back}<p className="uf-t-body" style={{ color: "var(--uf-ink-3)" }}>City not found.</p></div>;
   }
 
   // Costs at your lifestyle, so cost × your multiple is the FIRE number on the
@@ -6953,181 +6818,61 @@ function ExpatCityDetail({
 
   const currentYears = currentFire.years;
   const targetYears = targetFire.years;
-  const yearDiff = currentYears !== null && targetYears !== null ? Math.abs(currentYears - targetYears) : null;
+  const isHere = targetCity.key === currentCityKey;
   const isFireNow = portfolioBalance >= targetCol * perDollar;
   const monthlyDiff = Math.round((currentCol - targetCol) / 12);
+  const share = targetFire.fireTarget > 0 ? Math.min(1, portfolioBalance / targetFire.fireTarget) : 0;
+  const short = targetCity.name.split(",")[0];
 
   const fmtUSD = (n: number) => fmtCurrency(n, displayCurrency, displayRates, true);
+  const fmtMo = (n: number) => fmtCurrency(n, displayCurrency, displayRates);
+  const yearOf = (f: typeof currentFire) => f.years === null ? "not reached" : f.years < 0.5 ? "now" : String(f.retireYear);
 
-  function readinessBadge() {
-    if (portfolioBalance >= targetCol * perDollar) return { label: "FIRE ready", color: "#003527", bg: "#A7F3D0" };
-    if (portfolioBalance >= targetCol * perDollar / 2) return { label: "Barista FIRE", color: "#78350F", bg: "#FEF3C7" };
-    return { label: "Not yet", color: "#991B1B", bg: "#FEE2E2" };
-  }
-
-  const badge = readinessBadge();
-
-  function row(label: string, cur: string, tgt: string) {
-    return (
-      <div key={label} style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
-        padding: "12px 0", borderBottom: `1px solid ${border}`,
-        fontSize: 13, alignItems: "center",
-      }}>
-        <div style={{ color: textSecondary, fontWeight: 500 }}>{label}</div>
-        <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center" }}>{cur}</div>
-        <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center" }}>{tgt}</div>
-      </div>
-    );
-  }
+  // One headline: the time it moves your date, in teal only when it is sooner.
+  const diff = currentYears !== null && targetYears !== null ? currentYears - targetYears : null;
+  const big = { fontFamily: "var(--uf-font-display)", fontSize: 44 } as const;
+  const headline = isFireNow
+    ? <span style={{ ...big, color: "var(--uf-teal)" }}>Ready now</span>
+    : isHere
+      ? <span style={{ ...big, color: "var(--uf-teal)" }}>{yearOf(targetFire)}</span>
+      : diff === null
+        ? <span style={{ ...big, color: "var(--uf-ink-2)" }}>Not reached</span>
+        : Math.abs(diff) < 0.05
+          ? <span style={{ ...big, color: "var(--uf-ink-2)" }}>No change</span>
+          : <span style={{ ...big, color: diff > 0 ? "var(--uf-teal)" : "var(--uf-warn-ink)" }}>{Math.abs(diff).toFixed(1)} years {diff > 0 ? "sooner" : "later"}</span>;
+  const sub = isFireNow
+    ? <>Your portfolio already covers {short} at your lifestyle.</>
+    : isHere
+      ? <>Your plan&apos;s city. Work becomes optional {yearOf(targetFire) === "now" ? "now" : <>in <Fig>{yearOf(targetFire)}</Fig></>}.</>
+      : targetYears === null || currentYears === null
+        ? <>At least one of the two isn&apos;t reached within the projection, so there&apos;s no years-saved comparison.</>
+        : <>Work becomes optional in <Fig>{yearOf(targetFire)}</Fig> instead of <Fig>{yearOf(currentFire)}</Fig></>;
 
   return (
-    <div style={{
-      background: bg, minHeight: "100%", fontFamily: "Manrope, sans-serif",
-      overflowY: "auto",
-    }}>
-      {/* Back header */}
-      <div style={{
-        background: cardBg, borderBottom: `1px solid ${border}`,
-        padding: "14px 20px", display: "flex", alignItems: "center", gap: 12,
-        position: "sticky", top: 0, zIndex: 10,
-      }}>
-        <button
-          onClick={onBack}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            fontSize: 14, fontWeight: 600, color: "#22d3a5",
-            display: "flex", alignItems: "center", gap: 6, padding: 0,
-            fontFamily: "inherit",
-          }}
-        >
-          ← Back to Globe
-        </button>
-      </div>
+    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+      {back}
+      <MoneyHead label={`${targetCity.flag} ${targetCity.name}`} value={headline} sub={sub}>
+        <MoneyTrack share={share} label={`${Math.round(share * 100)}% of ${short}'s FIRE number`} />
+        <MoneyKey items={[<><Fig>{fmtUSD(portfolioBalance)}</Fig> of <Fig>{fmtUSD(targetFire.fireTarget)}</Fig></>, <><Fig>{Math.round(share * 100)}%</Fig> there</>]} />
+      </MoneyHead>
 
-      <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px 80px" }}>
-        {/* Title */}
-        <h1 style={{
-          fontFamily: "Fraunces, Georgia, serif", fontSize: 28, fontWeight: 800,
-          color: textPrimary, margin: "0 0 8px",
-        }}>
-          {targetCity.flag} {targetCity.name}
-        </h1>
-        <div style={{ marginBottom: 24 }}>
-          <span style={{
-            display: "inline-block", padding: "3px 12px", borderRadius: 99,
-            fontSize: 12, fontWeight: 700, color: badge.color, background: badge.bg,
-          }}>
-            {badge.label}
-          </span>
-        </div>
-
-        {/* Hero stat */}
-        {isFireNow ? (
-          <div style={{
-            textAlign: "center", background: isDark ? "rgba(5,150,105,0.1)" : "#F0FDF4",
-            border: "1px solid #A7F3D0", borderRadius: 16, padding: "24px 20px", marginBottom: 24,
-          }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#059669", fontFamily: "Fraunces, Georgia, serif" }}>
-              You could FIRE here NOW
-            </div>
-            <div style={{ fontSize: 14, color: isDark ? "#6ee7b7" : "#065F46", marginTop: 8 }}>
-              Your portfolio covers {targetCity.name} expenses at the 4% rule.
-            </div>
+      {!isHere && <>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>{short} against {currentCityName}</div>
+        <MoneyList footer={
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <Button variant="primary" size="sm" onClick={() => onPlanFor(targetCity.name, targetCity.col)}>Plan for {short}</Button>
+            <Button variant="secondary" size="sm" onClick={onOpenCitizenship}>Citizenship options</Button>
           </div>
-        ) : yearDiff === null ? (
-          <div style={{ textAlign: "center", padding: 24 }}>
-            <strong>{targetYears === null ? "Not reached under these assumptions" : "Target reached within the projection"}</strong>
-            <p>At least one location does not reach FIRE within 65 years, so a years-saved comparison is unavailable.</p>
-          </div>
-        ) : targetYears !== null && currentYears !== null && targetYears < currentYears ? (
-          <div style={{
-            textAlign: "center", background: isDark ? "rgba(34,211,165,0.08)" : "#F0FDF4",
-            border: isDark ? "1px solid rgba(34,211,165,0.25)" : "1px solid #A7F3D0",
-            borderRadius: 16, padding: "24px 20px", marginBottom: 24,
-          }}>
-            <div style={{ fontSize: 42, fontWeight: 800, color: "#22d3a5", fontFamily: "Fraunces, Georgia, serif", lineHeight: 1 }}>
-              {yearDiff.toFixed(1)} years sooner
-            </div>
-            <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>
-              by moving to {targetCity.name}
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            textAlign: "center", background: isDark ? "rgba(239,68,68,0.08)" : "#FFF5F5",
-            border: isDark ? "1px solid rgba(239,68,68,0.25)" : "1px solid #FECACA",
-            borderRadius: 16, padding: "24px 20px", marginBottom: 24,
-          }}>
-            <div style={{ fontSize: 42, fontWeight: 800, color: "#ef4444", fontFamily: "Fraunces, Georgia, serif", lineHeight: 1 }}>
-              {yearDiff.toFixed(1)} years later
-            </div>
-            <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>
-              {targetCity.name} has a higher cost of living than your current city
-            </div>
-          </div>
-        )}
-
-        {/* Comparison table */}
-        <div style={{
-          background: cardBg, borderRadius: 16, border: `1px solid ${border}`,
-          padding: "0 20px", marginBottom: 20,
-        }}>
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
-            padding: "14px 0 10px", borderBottom: `2px solid ${border}`,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary }}>Metric</div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary, textAlign: "center" }}>Current</div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#22d3a5", textAlign: "center" }}>{targetCity.flag} Target</div>
-          </div>
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
-            padding: "12px 0", borderBottom: `1px solid ${border}`,
-            fontSize: 13, alignItems: "center",
-          }}>
-            <div style={{ color: textSecondary, fontWeight: 500 }}>City</div>
-            <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center", fontSize: 12 }}>{currentCityName}</div>
-            <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center", fontSize: 12 }}>{targetCity.name}</div>
-          </div>
-          {row("Annual cost of living", `${fmtUSD(currentCol)}/yr`, `${fmtUSD(targetCol)}/yr`)}
-          {row("FIRE number", fmtUSD(currentFire.fireTarget), fmtUSD(targetFire.fireTarget))}
-          {row("Years to FIRE", currentYears === null ? "Not reached" : `${currentYears.toFixed(1)} yrs`, targetYears === null ? "Not reached" : `${targetYears.toFixed(1)} yrs`)}
-          {row("Freedom year", String(currentFire.retireYear ?? "—"), String(targetFire.retireYear ?? "—"))}
-        </div>
-
-        {/* Monthly impact */}
-        <div style={{
-          background: cardBg, borderRadius: 14, border: `1px solid ${border}`,
-          padding: "16px 20px", marginBottom: 20,
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-        }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary, marginBottom: 4 }}>
-              Monthly cost impact
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: monthlyDiff >= 0 ? "#059669" : "#ef4444" }}>
-              {monthlyDiff >= 0
-                ? `Moving saves ${fmtCurrency(Math.abs(monthlyDiff), displayCurrency, displayRates)}/mo`
-                : `Moving costs ${fmtCurrency(Math.abs(monthlyDiff), displayCurrency, displayRates)}/mo more`}
-            </div>
-          </div>
-          <div style={{ fontSize: 28 }}>{targetCity.flag}</div>
-        </div>
-
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          style={{
-            width: "100%", background: "#22d3a5", border: "none",
-            borderRadius: 10, padding: "14px 20px",
-            fontSize: 14, fontWeight: 700, color: "#003527",
-            cursor: "pointer", fontFamily: "inherit", textAlign: "center",
-          }}
-        >
-          ← Back to Globe
-        </button>
-      </div>
+        }>
+          <MoneyRow dot="#2a78d6" icon="🏠" name="Living costs" meta={`${currentCityName} ${fmtMo(currentCol / 12)} a month`} value={`${fmtMo(targetCol / 12)}/mo`} strong />
+          <MoneyRow dot={monthlyDiff >= 0 ? "#1baf7a" : "#e34948"} icon="💰" name={monthlyDiff >= 0 ? "Moving saves" : "Moving costs"} meta="Each month, at your lifestyle"
+            value={`${fmtMo(Math.abs(monthlyDiff))}/mo`} valueTone={monthlyDiff >= 0 ? "var(--uf-pos-ink)" : "var(--uf-warn-ink)"} strong />
+          <MoneyRow dot="#6b5bd2" icon="🎯" name="FIRE number" meta={`${currentCityName} ${fmtUSD(currentFire.fireTarget)}`} value={fmtUSD(targetFire.fireTarget)} strong />
+        </MoneyList>
+      </>}
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
+        Costs are city averages at your lifestyle. Visas, healthcare and local tax aren&apos;t counted.{isHere ? null : <> Plan for {short} makes it your retirement city on Freedom date.</>}
+      </span>
     </div>
   );
 }

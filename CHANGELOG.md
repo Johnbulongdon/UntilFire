@@ -8,6 +8,15 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-08
 
+### Calm Expat FIRE
+- Expat FIRE opens on the soonest place work becomes optional, how many years
+  before your plan's city, and a bar to that place's FIRE number.
+- A list shows when each place opens up, one per country, with your plan's
+  city always in it; the globe is one tap away.
+- Drag the slider to see how many places are in reach by a year.
+- A city's page shows how much sooner or later it makes your date and how its
+  costs compare. "Plan for" makes it your retirement city.
+
 ### Answer-first city guides with map comparisons
 - Apply the approved Austin layout to all 230 existing city guides: one FIRE
   estimate, a clear personal-plan action, coordinate-backed map comparisons,
