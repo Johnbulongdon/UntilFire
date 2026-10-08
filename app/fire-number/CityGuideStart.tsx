@@ -6,7 +6,8 @@ import CityComparisonMap from './CityComparisonMap';
 import CityPlanLink from './CityPlanLink';
 import './city-guide.css';
 
-export default function CityGuideStart({ city, slug }: { city: City; slug: string }) {
+/** `explorer` replaces the comparison map for the location explorer pilot (Austin), so a page has one map. */
+export default function CityGuideStart({ city, slug, explorer }: { city: City; slug: string; explorer?: React.ReactNode }) {
   const range = costRangeFor(city);
   const us = isUS(city.state);
   const cityName = city.name.split(',')[0];
@@ -25,7 +26,7 @@ export default function CityGuideStart({ city, slug }: { city: City; slug: strin
       <CityPlanLink cityKey={city.key} cityName={cityName} slug={slug} />
       <p className="city-guide-note">Explore your timeline first. Create an account when you want to save your plan.</p>
     </section>
-    <CityComparisonMap cities={getCityComparisons(city)} />
+    {explorer ?? <CityComparisonMap cities={getCityComparisons(city)} />}
     <details className="city-guide-details"><summary id="city-guide-sources">Data sources & assumptions</summary>
       <p>{us ? 'The US spending baseline combines Census median gross rent with a $34,000 national non-housing allowance. The range reflects renter medians and Census uncertainty; it is not a full local household budget.' : 'This international baseline is an illustrative spending estimate stored in US dollars. It is not a Census estimate or a live local-currency quote. Replace it with your actual spending in your personal plan.'}</p>
       <p>The target is annual spending × 25. Retirement length, taxes, healthcare and investment outcomes can change the amount you need.</p>

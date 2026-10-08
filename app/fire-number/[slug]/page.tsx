@@ -9,6 +9,7 @@ import type { City } from '@/lib/fire-data'
 import { getStatePageSlug, STATE_NAMES } from '@/lib/state-pages'
 import { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'
 import CityGuideStart from '../CityGuideStart'
+import CityLocationExplorer from '@/app/components/CityLocationExplorer'
 import { formatMoney } from "@/lib/money";
 
 type Props = {
@@ -212,7 +213,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
             <span style={{ color: 'var(--uf-ink-2)' }}>{page.city.name}</span>
           </nav>
 
-          <CityGuideStart city={page.city} slug={page.slug} />
+          <CityGuideStart city={page.city} slug={page.slug} explorer={page.slug === 'austin-tx' ? <CityLocationExplorer cityKey={page.city.key} /> : undefined} />
           <details className="city-guide-details" id="city-guide-details">
             <summary>Spending scenarios, local context & further reading</summary>
             <div className="city-guide-details-content">

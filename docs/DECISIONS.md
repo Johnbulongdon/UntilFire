@@ -1701,3 +1701,28 @@ No conversion lift is established until post-integration measurement.
 **Contract:** [City guide layout](design/city-guide-layout.md).
 **Revisit:** Mobile completion evidence, missing data, tile reliability or an
 explicitly authorized local-currency data refresh.
+
+### D-44 — October 8: one location explorer, piloted on Austin and the public Expat FIRE calculator
+
+Use one client-only map component for city comparisons and public Expat FIRE,
+backed by the existing CITIES catalog and CITY_COORDS. City targets use the
+shared fire-number helper; public Expat timelines use calcFIRE and the existing
+calculator's projected portfolio. Preserve D-36 and the dashboard globe's
+lifestyle, target multiple, growth and currency behavior.
+
+Pilot on Austin before broad city rollout. Keep the existing crawlable city
+links, figures and source text. PR #186 shipped the city-guide layout;
+on Austin the explorer takes the place of that
+guide's comparison map (integrated October 8, PR #201), so the page has one map.
+Other city guides keep the PR #186 map until the pilot is reviewed.
+
+The default phone flow is lookup and details, with an optional map. Desktop
+shows map, nearby cities and details together. A bounded set of cities follows
+the settled viewport; a zoom does not invent a new city price. Missing cities
+remain missing. US references and international illustrative USD estimates
+have different evidence labels. No native-app portability claim: the catalog
+and financial helpers are reusable, while the web canvas is a renderer.
+
+Bundle Natural Earth land and US state boundaries locally with licenses. No
+paid map provider, API key or runtime tile requests. Motion follows the device
+preference by default and can be reduced; ordinary page scrolling is preserved.

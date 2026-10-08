@@ -17,6 +17,16 @@ under today's date, creating the heading if it is not there yet.
 - Carry the chosen city into existing onboarding and record the plan-link
   event; signup remains optional until the save-plan step.
 
+### Location explorer
+- Add a reusable public city/globe explorer with visible-area city choices,
+  search/filter recovery, three-city comparisons, animated selection and
+  reduced-motion controls. Phone map is optional; keyboard city buttons and
+  comparison-removal focus provide an alternative to canvas interaction.
+- Pilot on Austin and the public Expat FIRE calculator using main's current
+  costs and shared FIRE calculations. On Austin it replaces the city guide's
+  comparison map. The dashboard's Expat FIRE globe is unchanged.
+- Bundle licensed US state boundaries; no external map service or API key.
+
 ## 2026-10-07
 
 ### Calm Plan
@@ -872,4 +882,3 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - SEO: OG image, JSON-LD, canonical URLs, sitemap, robots.txt
 - Supabase + Google OAuth auth flow
 - Stripe integration with Pro paywall (later opened to all users)
-
