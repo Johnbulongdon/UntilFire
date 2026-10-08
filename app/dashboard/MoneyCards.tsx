@@ -106,7 +106,7 @@ export const Fig = ({ children, tone }: { children: React.ReactNode; tone?: stri
  */
 export function MoneyList({ children, footer }: { children: React.ReactNode; footer?: React.ReactNode }) {
   return (
-    <div className="uf-money-list" style={{ display: "grid" }}>
+    <div className="uf-money-list" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)" }}>
       {children}
       {footer && <div style={{ padding: "12px 0 4px" }}>{footer}</div>}
     </div>
@@ -125,7 +125,7 @@ export function RowIcon({ color, emoji, size = 36 }: { color: string; emoji?: Re
 
 const ICON = 36, GAP = 12;
 
-export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar, onClick, after }: {
+export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar, onClick, after, wrap }: {
   /** The row's colour: its category or account type. */
   dot: string;
   /** An emoji for the circle; without one the circle holds a dot. */
@@ -142,12 +142,14 @@ export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar,
   onClick?: () => void;
   /** Anything that opens under the row: an editor, a note. */
   after?: React.ReactNode;
+  /** Let a long name (an article title) wrap instead of truncating. */
+  wrap?: boolean;
 }) {
   const head = (
     <div style={{ display: "flex", alignItems: "center", gap: GAP }}>
       <RowIcon color={dot} emoji={icon} size={ICON} />
       <span style={{ minWidth: 0, flex: 1, textAlign: "left" }}>
-        <span className="uf-t-body" style={{ display: "block", fontWeight: 600, color: "var(--uf-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+        <span className="uf-t-body" style={{ display: "block", fontWeight: 600, color: "var(--uf-ink)", ...(wrap ? {} : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }) }}>{name}</span>
         {meta && <span className="uf-t-small" style={{ display: "block", ...muted }}>{meta}</span>}
       </span>
       {/* Amounts in DM Mono; a word value ("Lisbon ›", "Standard ›") in the body font (D-42). */}
@@ -156,9 +158,9 @@ export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar,
   );
   const under = bar && <div style={{ paddingLeft: ICON + GAP }}>{bar}</div>;
   return (
-    <div className="uf-money-row" style={{ display: "grid", gap: 8, padding: "12px 0" }}>
+    <div className="uf-money-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 8, padding: "12px 0" }}>
       {onClick
-        ? <button type="button" onClick={onClick} style={{ display: "grid", gap: 8, width: "100%", padding: 0, border: "none", background: "none", font: "inherit", color: "inherit", textAlign: "left", cursor: "pointer" }}>{head}{under}</button>
+        ? <button type="button" onClick={onClick} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 8, width: "100%", padding: 0, border: "none", background: "none", font: "inherit", color: "inherit", textAlign: "left", cursor: "pointer" }}>{head}{under}</button>
         : <>{head}{under}</>}
       {after && <div style={{ paddingLeft: ICON + GAP }}>{after}</div>}
     </div>

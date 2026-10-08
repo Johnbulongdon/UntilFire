@@ -15,6 +15,7 @@ import PlaidConnect from "./PlaidConnect";
 import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
+import LearnTab from "./LearnTab";
 import ContributionsTab from "./ContributionsTab";
 import CompareCard from "./CompareCard";
 import NextContributionCard, { useContributionPlan } from "./NextContributionCard";
@@ -256,29 +257,6 @@ function EmergencyFundProgressBar({ progressPct, state, height = 8 }: { progress
     </div>
   );
 }
-
-const LEARNING_STAGES: { id: LearnStageId; label: string; whatMattersNow: string }[] = [
-  {
-    id: "starting-out",
-    label: "Starting Out",
-    whatMattersNow: "Learn the basics first: FIRE, savings rate, and compounding before you optimize anything.",
-  },
-  {
-    id: "building-momentum",
-    label: "Building Momentum",
-    whatMattersNow: "Improve the machine: account strategy, savings pace, and choosing the right FIRE path for your life.",
-  },
-  {
-    id: "approaching-fire",
-    label: "Approaching FIRE",
-    whatMattersNow: "Pressure-test the plan: target size, assumptions, and sequence risk matter more as FIRE gets closer.",
-  },
-  {
-    id: "living-in-fire",
-    label: "Living in FIRE",
-    whatMattersNow: "Protect the portfolio: withdrawals, tax-aware access, and resilience through real retirement years.",
-  },
-];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -4828,56 +4806,6 @@ function FireCalcMenuTab({
 // ─── Trends Tab (kept for reference, not wired to sidebar) ───────────────────
 
 // ─── Learning Hub Tab ────────────────────────────────────────────────────────
-function LearningHubTab({ recommendedStageId }: { recommendedStageId: LearnStageId }) {
-  const recommendedStage = LEARNING_STAGES.find(stage => stage.id === recommendedStageId) ?? LEARNING_STAGES[1];
-  const resources = [
-    { href: `/learn/stages/${recommendedStageId}`, label: `You're likely in: ${recommendedStage.label}`, desc: recommendedStage.whatMattersNow, icon: "🧭" },
-    { href: "/learn", label: "Choose your stage", desc: "Use the guided public learning hub instead of starting from a flat article list", icon: "🌱" },
-    { href: "/learn/articles", label: "All articles", desc: "Browse the full library when you want every FIRE guide in one place", icon: "📄" },
-    { href: "/learn/topics", label: "Topics", desc: "Browse concepts: 4% rule, tax optimisation, coast FIRE", icon: "📚" },
-  ];
-  return (
-    <div>
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ fontSize: 12, color: "#059669", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 10 }}>Learning Hub</div>
-        <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 8px" }}>Build your knowledge by stage</h2>
-        <p style={{ fontSize: 15, color: "var(--uf-text-2)", margin: 0 }}>Start with the stage that fits your progress, then switch anytime if you want broader reading.</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 18 }}>
-          {LEARNING_STAGES.map(stage => (
-            <Link
-              key={stage.id}
-              href={`/learn/stages/${stage.id}`}
-              style={{
-                textDecoration: "none",
-                padding: "10px 14px",
-                borderRadius: 999,
-                border: stage.id === recommendedStageId ? "1px solid #047857" : "1px solid var(--uf-border)",
-                background: stage.id === recommendedStageId ? "rgba(209,250,229,0.45)" : "var(--uf-card)",
-                color: stage.id === recommendedStageId ? "#065F46" : "var(--uf-text-2)",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              {stage.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
-        {resources.map(r => (
-          <Link key={r.href} href={r.href} style={{ textDecoration: "none" }}>
-            <div className="uf-card" style={{ padding: "24px", cursor: "pointer", transition: "box-shadow 0.15s" }}>
-              <div style={{ fontSize: 32, marginBottom: 14 }}>{r.icon}</div>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>{r.label}</div>
-              <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{r.desc}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Sidebar items ────────────────────────────────────────────────────────────
 const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: string; activeTabs?: TabKey[] }[] = [
   {
@@ -5172,7 +5100,7 @@ export default function Dashboard() {
     if (url) window.location.href = url;
   }
 
-  const suggestedLearnStage = useMemo<LearnStageId>(() => {
+  const learnPlace = useMemo<{ stage: LearnStageId; progress: number | null; years: number | null }>(() => {
     const investable = k401 + rothIRA + taxable + cashSavings;
     const monthlyExpenses = Object.entries(expenses)
       .filter(([key]) => !key.startsWith("_"))
@@ -5194,10 +5122,11 @@ export default function Dashboard() {
     });
     const progress = fireTarget > 0 ? (investable / fireTarget) * 100 : 0;
 
-    if (progress >= 85 || (fireYear !== null && fireYear <= 5)) return "living-in-fire";
-    if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return "approaching-fire";
-    if (investable > 0 || income > 0) return "building-momentum";
-    return "starting-out";
+    const place = (stage: LearnStageId) => ({ stage, progress: fireTarget > 0 && (investable > 0 || income > 0) ? Math.min(1, progress / 100) : null, years: fireYear });
+    if (progress >= 85 || (fireYear !== null && fireYear <= 5)) return place("living-in-fire");
+    if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return place("approaching-fire");
+    if (investable > 0 || income > 0) return place("building-momentum");
+    return place("starting-out");
   }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
@@ -6509,7 +6438,7 @@ export default function Dashboard() {
             )}
             {tab === "citizenship" && <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
-            {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
+            {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
               <ExpatFireDashTab
                 portfolioBalance={planFacts.invested}

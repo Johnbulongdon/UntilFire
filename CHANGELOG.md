@@ -8,6 +8,14 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-08
 
+### Calm Learn
+- Learn opens on your stage, why you're there and how far through the four
+  stages you are, then one article to read next.
+- Each stage's articles are rows with full titles; ones you've opened are ticked.
+- "Try it on your numbers" opens the matching Plan page instead of a public
+  calculator.
+- Fixed: long names in Money and Plan rows could make the page wider than a phone.
+
 ### Calm Citizenship
 - Citizenship asks which passport you hold first, then shows its score, rank
   and weakest part, with one bar split into tax, retirement accounts and investing.
