@@ -1783,3 +1783,28 @@ prominent, so the caveat is kept on screen rather than removed.
 **Open question:** a passport ranking does not move the freedom date. It
 matters most beside Expat FIRE (a US passport is taxed in Lisbon too); folding
 a passport row into Expat FIRE's city page is the likely next step.
+
+### D-47 — October 8: Learn in the calm style
+
+**Status:** Active. From a Learn mock the founder approved ("build all").
+
+**Decision:**
+- **Where you are first**: the stage name, why (share of the FIRE number and
+  years to go, from the same projection that picks the stage), a four-step
+  bar and "Stage 2 of 4 · next: Pressure-test".
+- **Read next** is one article: the first in your stage you haven't opened.
+- **Reading by stage**: pills for the four stages (yours marked "you"), what
+  matters at that stage in one sentence, and its articles as rows whose titles
+  wrap. "All articles" and "Topics" lead to the public library.
+- **Opened, not read.** Which articles you opened from here is kept in this
+  browser only (`uf_learn_read`), a convenience rather than a record, so the
+  rows say "Opened ✓". Saving it to the account would need a table and is
+  not worth it for this page.
+- **Try it on your numbers** opens the matching Plan page (Freedom date,
+  Contributions, Expat FIRE) instead of the public calculators, which repeat
+  what the dashboard already works out from the person's own data.
+- The dashboard's own copy of the stage list is gone; Learn reads
+  `lib/learn.ts`, the same stages as the public `/learn`.
+
+**Also:** `MoneyRow` names truncate inside the row instead of widening it (grid
+tracks are `minmax(0, 1fr)`), and `wrap` lets a long name wrap.

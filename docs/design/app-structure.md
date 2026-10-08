@@ -170,6 +170,8 @@ cards and table heads already stick to the top.
   city sets the retirement city that Freedom date's Retire in row holds.
 - **Citizenship asks for your passport first** (D-46), then shows its score and
   what it means as rows; other passports are a sortable list.
+- **Learn starts from your stage** (D-47) and its tools open Plan pages, not
+  the public calculators. The public `/learn` stays the library.
 
 ## Known gap — not fixed by this structure
 
