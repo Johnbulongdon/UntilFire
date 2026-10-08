@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useOnboardingMotion } from "@/lib/use-onboarding-motion";
 import SettlingNumber from "@/components/ui/SettlingNumber";
 import AmountTiles from "@/components/ui/AmountTiles";
+import MoneyField from "@/components/ui/MoneyField";
 import AgeWheel from "@/components/ui/AgeWheel";
 import { advanceOnEnter } from "@/lib/keyboard-navigation";
 import Logo from "@/app/components/Logo";
@@ -286,28 +287,11 @@ function IncomeScreen({ stateKey, cityName, cityCol, currency = "USD", onCurrenc
 
       {mode !== "takehome" ? (
         <AmountTiles label={`Gross income (${currency})`} value={rawValue === "" ? null : numVal} options={incomeOptions} onChange={n => setRawValue(String(n))} symbol={currencySymbol} unit={modeUnit}>
-          <input
-            key={mode}
-            aria-label={`Gross income (${currency})`}
-            type="number"
-            inputMode="decimal"
-            placeholder="Other amount"
-            value={rawValue}
-            min={0}
-            onChange={(e) => setRawValue(e.target.value)}
-          />
+          <MoneyField key={mode} label={`Gross income (${currency})`} value={rawValue} onChange={setRawValue} />
         </AmountTiles>
       ) : (
         <AmountTiles label={`Monthly take-home pay (${currency})`} value={takeHomeRaw === "" ? null : monthlyTakeHome} options={incomeOptions} onChange={n => setTakeHomeRaw(String(n))} symbol={currencySymbol} unit="a month">
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="Other amount"
-            aria-label={`Monthly take-home pay (${currency})`}
-            value={takeHomeRaw}
-            min={0}
-            onChange={(e) => setTakeHomeRaw(e.target.value)}
-          />
+          <MoneyField label={`Monthly take-home pay (${currency})`} value={takeHomeRaw} onChange={setTakeHomeRaw} />
         </AmountTiles>
       )}
       {isNonUSD && <p className="uf-hint">1 {currency} ≈ {(1 / fxRate).toFixed(4)} USD (indicative rate)</p>}
@@ -430,6 +414,8 @@ function SavingsScreen({ income, currency = "USD", onNext, onAnswer }: {
   const [mode, setMode] = useState<SavingsInputMode>("savings");
   const [period, setPeriod] = useState<SavingsPeriod>("monthly");
   const [amount, setAmount] = useState(Math.min(defaultSavings, Math.floor(monthlyLocal)));
+  const [cleared, setCleared] = useState(false);
+  const [capped, setCapped] = useState(false);
   const previousSavingsFx = useRef(fxRate);
   useEffect(() => {
     const ratio = fxRate / previousSavingsFx.current;
@@ -468,8 +454,8 @@ function SavingsScreen({ income, currency = "USD", onNext, onAnswer }: {
   }));
   const money = (n: number) => `${currencySymbol}${Math.round(n).toLocaleString()}`;
   useEffect(() => {
-    onAnswer?.(mode === "savings" ? `${money(savingsLocal)} saved a month` : `${money(expensesLocal)} spent a month`);
-  }, [mode, savingsLocal, expensesLocal, onAnswer]); // eslint-disable-line react-hooks/exhaustive-deps
+    onAnswer?.(cleared ? "" : mode === "savings" ? `${money(savingsLocal)} saved a month` : `${money(expensesLocal)} spent a month`);
+  }, [cleared, mode, savingsLocal, expensesLocal, onAnswer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="uf-screen" style={{ paddingTop: 16 }}>
@@ -517,28 +503,31 @@ function SavingsScreen({ income, currency = "USD", onNext, onAnswer }: {
         </div>
       </div>
 
-      <AmountTiles label={`${inputLabel} (${currency})`} value={boundedAmount} options={savingsOptions} onChange={setAmount} symbol={currencySymbol} unit={periodUnit}>
-        <input
-          type="number"
-          inputMode="decimal"
-          placeholder="Other amount"
-          value={boundedAmount || ""}
-          aria-label={`${inputLabel} (${currency})`}
-          min={0}
-          max={inputMax}
-          onChange={e => {
-            const value = Math.max(0, Math.round(Number(e.target.value) || 0));
+      <AmountTiles label={`${inputLabel} (${currency})`} value={boundedAmount} options={savingsOptions} onChange={n => { setCleared(false); setCapped(false); setAmount(n); }} symbol={currencySymbol} unit={periodUnit}>
+        <MoneyField
+          label={`${inputLabel} (${currency})`}
+          value={cleared ? "" : String(boundedAmount)}
+          onChange={raw => {
+            // Empty means not answered yet, never a silent zero.
+            if (raw === "") { setCleared(true); return; }
+            const value = Math.max(0, Math.round(Number(raw) || 0));
+            setCleared(false);
+            setCapped(mode === "savings" && value > inputMax);
             setAmount(mode === "savings" ? Math.min(value, incomeLimit) : value);
           }}
         />
       </AmountTiles>
       <p className="uf-hint" aria-live="polite">
-        {mode === "spending"
+        {cleared
+          ? "Enter an amount, or pick one above. Zero is fine."
+          : capped
+          ? <>You can&apos;t save more than you take home, so this is set to your pay: {money(incomeLimit)}{periodUnit}.</>
+          : mode === "spending"
           ? <>That leaves {money(savingsLocal)} a month saved, <SettlingNumber value={rate} />% of your pay.</>
           : <>That&apos;s <SettlingNumber value={rate} />% of your pay, leaving {money(expensesLocal)} a month to spend.</>}
       </p>
 
-      {savingsLocal === 0 && (
+      {!cleared && savingsLocal === 0 && (
         <p className="uf-hint" style={{ color: "var(--uf-warn-ink)" }}>
           With nothing saved each month your freedom date will be very far out. That&apos;s fine if it&apos;s true; you can change it later.
         </p>
@@ -546,6 +535,7 @@ function SavingsScreen({ income, currency = "USD", onNext, onAnswer }: {
       <div className="uf-ob-foot">
         <button
           data-primary-next className="uf-btn uf-btn-primary"
+          disabled={cleared}
           onClick={() => onNext(
             isNonUSD ? Math.round(savingsLocal / fxRate) : savingsLocal,
             isNonUSD ? Math.round(expensesLocal / fxRate) : expensesLocal,
@@ -601,22 +591,14 @@ function PortfolioScreen({ currency = "USD", income, initialPortfolioBalance = 0
   return (
     <div className="uf-screen" style={{ paddingTop: 16 }}>
       <h2 className="uf-ob-q">What do you have saved and invested?</h2>
-      <p className="uf-ob-hint">Your net worth, without your home. An estimate is fine, and zero is fine too.</p>
+      <p className="uf-ob-hint">Investments, retirement accounts and cash, all counted as invested. Leave out your home. An estimate is fine, and zero is fine too.</p>
 
       <AmountTiles label={`Net worth (${currency})`} value={portfolioRaw === "" ? null : portfolioInput} options={worthOptions} onChange={n => setPortfolioRaw(String(n))} symbol={currencySymbol}>
-        <input
-          type="number"
-          inputMode="decimal"
-          placeholder="Other amount"
-          value={portfolioRaw}
-          aria-label={`Net worth (${currency})`}
-          min={0}
-          onChange={e => setPortfolioRaw(e.target.value)}
-        />
+        <MoneyField label={`Net worth (${currency})`} value={portfolioRaw} onChange={setPortfolioRaw} />
       </AmountTiles>
 
       <div className="uf-ob-foot">
-        <button data-primary-next className="uf-btn uf-btn-primary" onClick={() => onNext(portfolio)}>
+        <button data-primary-next className="uf-btn uf-btn-primary" disabled={portfolioRaw === ""} onClick={() => onNext(portfolio)}>
           Continue
         </button>
       </div>
