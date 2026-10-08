@@ -1726,3 +1726,34 @@ and financial helpers are reusable, while the web canvas is a renderer.
 Bundle Natural Earth land and US state boundaries locally with licenses. No
 paid map provider, API key or runtime tile requests. Motion follows the device
 preference by default and can be reduced; ordinary page scrolling is preserved.
+
+### D-45 — October 8: Expat FIRE in the calm style
+
+**Status:** Active. From an Expat FIRE mock the founder approved ("build expat
+fire").
+
+**Decision:**
+- **The answer first.** The headline is the soonest place work becomes
+  optional, the year in Fraunces, how many years before the plan's city, and
+  a bar to that place's FIRE number. The full-screen globe with floating
+  panels opened on exploration, not an answer.
+- **When each place opens up** is a list: the soonest place in each of six
+  countries (cheap cities cluster by country, and six Indian cities in a row
+  tell you less than six countries), plus the plan's city, always shown. "See all"
+  lists every place. Years and FIRE numbers use the same engine and target
+  multiple as the freedom date (D-36).
+- **The timeline is one sentence and a slider**: "By 2034, 40 of 392 places
+  are in reach". The play button, the 🟢 badges and the chip strip are gone.
+- **The globe is a view, not the page**, behind a List / Globe switch, and
+  still follows the slider.
+- **A city's page** leads with the years it moves your date (teal when
+  sooner, warning ink when later), then living costs, the monthly difference
+  and the FIRE number against the plan's city as rows. It says what isn't
+  counted (visas, healthcare, local tax).
+- **Plan for a city** is the next move: it sets the retirement city, as
+  Freedom date's Retire in row does, so the freedom date follows. Citizenship
+  options is the second button.
+
+**Not changed:** the globe's own colours (it still marks places not yet in
+reach in red), Citizenship and Learn. The public calculator uses the location
+explorer (D-44).
