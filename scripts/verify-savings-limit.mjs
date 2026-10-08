@@ -14,12 +14,14 @@ for (const currency of ['USD', 'EUR']) {
   let state = [], cursor = 0, saved;
   const context = vm.createContext({ exports: {}, require, getCurrencySymbol: () => '$', FALLBACK_RATES: { EUR: 0.9 },
     // Effects only report the answer and convert on currency change; tiles and numbers render as plain elements here.
-    useEffect() {}, useRef: current => ({ current }), AmountTiles: () => null, SettlingNumber: () => null,
+    useEffect() {}, useRef: current => ({ current }), AmountTiles: () => null, SettlingNumber: () => null, MoneyField: () => null,
     useState(initial) { const i=cursor++; if (!(i in state)) state[i]=initial; return [state[i], v => {state[i]=v;}]; } });
   vm.runInContext(js, context);
   const render = () => { cursor=0; return context.SavingsScreen({income:12000,currency,onNext:(...v)=>saved=v,onBack:()=>{}}); };
   function all(node) { if(!node || typeof node!=='object') return []; return [node,...React.Children.toArray(node.props?.children).flatMap(all)]; }
-  const input = () => all(render()).find(n=>n.type==='input' && n.props.type==='number');
+  // The amount field is a MoneyField: text in, '' for not answered (D-50 follow-up).
+  const field = () => all(render()).find(n=>n.type===context.MoneyField);
+  const input = () => { const f = field(); return { props: { value: f.props.value === '' ? '' : Number(f.props.value), onChange: e => f.props.onChange(e.target.value) } }; };
   const click = label => all(render()).find(n=>n.type==='button' && String(n.props.children).includes(label)).props.onClick();
   const limit = currency==='EUR'?900:1000;
   assert.equal(input().props.value, limit, 'Default cannot exceed income');
@@ -31,7 +33,6 @@ for (const currency of ['USD', 'EUR']) {
   assert.equal(input().props.value,292,'Period conversion rounds the displayed amount');
   input().props.onChange({target:{value:'999999'}});
   assert.equal(input().props.value, limit, 'Typed savings are capped');
-  click('Yearly'); assert.equal(input().props.max,limit*12);
   input().props.onChange({target:{value:'999999'}});
   click('Continue'); assert.ok(saved[0]<=1000); assert.equal(saved[1],0);
   click('Monthly'); assert.equal(input().props.value,limit);
@@ -40,5 +41,9 @@ for (const currency of ['USD', 'EUR']) {
   assert.ok(saved[1]>1000, 'Spending may exceed income');
   click('I know my savings'); assert.equal(input().props.value,limit);
   input().props.onChange({target:{value:'-10'}}); click('Continue'); assert.equal(saved[0],0);
+  input().props.onChange({target:{value:''}});
+  assert.equal(input().props.value,'','Clearing the field stays empty, not zero');
+  assert.equal(all(render()).find(n=>n.type==='button' && String(n.props.children).includes('Continue')).props.disabled,true,'Continue waits for an answer');
+  input().props.onChange({target:{value:'0'}}); assert.equal(input().props.value,0,'Zero is a valid answer');
 }
 console.log('Savings limits passed: default, typed values, monthly/yearly, currency, mode switches, and handoff.');

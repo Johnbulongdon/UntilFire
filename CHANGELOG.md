@@ -6,6 +6,21 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-09
+
+### Typing amounts in the calculator
+- Pay, savings and net worth fields open the number keyboard on phones, keep
+  what you type as you type it, and tidy it when you leave the field: leading
+  zeros go and thousands separators appear ("0140000" becomes "140,000").
+- A cleared field means "not answered" and waits for an amount, instead of
+  counting as $0. Zero is still a valid answer.
+- Saving more than your pay now says it was set to your pay, rather than
+  changing the number silently.
+- Net worth explains that investments, retirement accounts and cash all count
+  as invested, and that your home is left out.
+- Removed the old city-page calculator component, unused since the city
+  guides (D-43).
+
 ## 2026-10-08
 
 ### A new way in: five questions under a rising sun

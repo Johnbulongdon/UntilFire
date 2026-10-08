@@ -1896,3 +1896,21 @@ thing at a time and show progress as something you can see.
 
 **Not changed:** the reveal, the calculation, currencies, gross-pay modes (in
 "Change currency, or use gross pay"), and the landing page.
+
+### D-51 — October 9: an empty amount is not zero
+
+**Status:** Active. From a city-page replay showing "0140000" and "025" in the
+old city calculator, and a review of the live onboarding it was replaced by.
+
+**Decision:**
+- **Empty waits.** A cleared pay, savings or net worth field disables Continue
+  instead of becoming $0; zero stays a valid answer (D-50's "Starting fresh").
+- **Format on leaving the field, not while typing** (`MoneyField`): typed text
+  is left alone so the caret never jumps and select-all or paste replaces it;
+  on blur, leading zeros go and thousands separators appear.
+- **No silent caps.** Savings above pay is still capped (b2344b8) but says so.
+- **Net worth counts cash as invested**, which is what the projection does,
+  and says so on the step.
+
+**Not changed:** city pages still hand off with one link (D-43) rather than
+gaining inputs; age keeps the wheel on computers (D-50).
