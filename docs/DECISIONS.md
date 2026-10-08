@@ -1682,3 +1682,22 @@ YNAB) and an audit the founder asked to have fixed in full.
   Mono.
 
 **Not changed:** Expat FIRE, Citizenship and Learn.
+
+### D-43 — October 8: city guides answer first, then offer a personal plan
+
+**Status:** Active product direction approved by the user; implementation is
+integrated October 8 (PR #186).
+**Decision:** Apply the approved Austin mobile preview to existing city guides.
+Lead with the estimate and meaningful qualifiers, use a geographic comparison
+with published nearby city guides, and keep detailed scenarios and methodology
+under native disclosures. Offer one primary plan action with city context.
+**Why:** The user observed overly verbose mobile city pages in sessions and
+approved the simpler map-based preview. SEO is not a reason to repeat math or
+make users read every assumption before finding their answer.
+**Trade-offs:** Maps show approximate city centers and depend on best-effort
+tiles. Keep text comparisons, visible attribution, sources and uncertainty.
+International source amounts remain explicitly USD; do not imply a local quote.
+No conversion lift is established until post-integration measurement.
+**Contract:** [City guide layout](design/city-guide-layout.md).
+**Revisit:** Mobile completion evidence, missing data, tile reliability or an
+explicitly authorized local-currency data refresh.
