@@ -27,7 +27,7 @@ check(
 
 check(
   "take-home input label asks for monthly take-home pay",
-  /Monthly take-home pay \(\{currency\}\)/.test(source)
+  /Monthly take-home pay \(\$?\{currency\}\)/.test(source)
 );
 
 check(

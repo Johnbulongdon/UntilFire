@@ -174,6 +174,9 @@ cards and table heads already stick to the top.
   the public calculators. The public `/learn` stays the library.
 - **Profile leads with who you are and your plan** (D-48); settings are rows
   that open in place, and Try Pro is the page's only upgrade ask.
+- **The no-login calculator asks one thing per screen** (D-50): city, pay,
+  saving, net worth, age, under a scene where the sun rises with each answer.
+  Back and Skip sit in the header; the footer holds only the main button.
 
 ## Known gap — not fixed by this structure
 

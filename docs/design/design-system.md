@@ -58,6 +58,12 @@ Gold was considered and rejected: it sits next to the warning amber, so a
 "2.4 years earlier" badge and a "due in 5d" badge read as the same temperature in
 the same Cashflow list.
 
+### Illustration colour
+
+`--uf-sun` and `--uf-sun-soft` exist only for the onboarding scene's sun and
+path (D-50). They are not a fourth semantic colour: never use them for buttons,
+text, numbers or status.
+
 ### Contrast
 
 Badge text is 11px and needs 4.5:1 contrast. Use the `--uf-*-ink` variants

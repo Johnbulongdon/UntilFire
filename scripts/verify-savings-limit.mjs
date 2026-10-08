@@ -7,11 +7,14 @@ import React from 'react';
 const require = createRequire(import.meta.url);
 const source = readFileSync('app/HomeClient.tsx', 'utf8');
 const ast = ts.createSourceFile('HomeClient.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const component = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === 'SavingsScreen');
-const js = ts.transpileModule(component.getText(ast), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
+// SavingsScreen plus the rounding helper its suggestions use (D-50).
+const pick = name => ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name).getText(ast);
+const js = ts.transpileModule([pick('niceAmount'), pick('SavingsScreen')].join('\n'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
 for (const currency of ['USD', 'EUR']) {
   let state = [], cursor = 0, saved;
   const context = vm.createContext({ exports: {}, require, getCurrencySymbol: () => '$', FALLBACK_RATES: { EUR: 0.9 },
+    // Effects only report the answer and convert on currency change; tiles and numbers render as plain elements here.
+    useEffect() {}, useRef: current => ({ current }), AmountTiles: () => null, SettlingNumber: () => null,
     useState(initial) { const i=cursor++; if (!(i in state)) state[i]=initial; return [state[i], v => {state[i]=v;}]; } });
   vm.runInContext(js, context);
   const render = () => { cursor=0; return context.SavingsScreen({income:12000,currency,onNext:(...v)=>saved=v,onBack:()=>{}}); };
@@ -20,10 +23,8 @@ for (const currency of ['USD', 'EUR']) {
   const click = label => all(render()).find(n=>n.type==='button' && String(n.props.children).includes(label)).props.onClick();
   const limit = currency==='EUR'?900:1000;
   assert.equal(input().props.value, limit, 'Default cannot exceed income');
-  const slider = () => all(render()).find(n=>n.type==='input' && n.props.type==='range');
-  assert.equal(slider().props.step, 1);
-  slider().props.onChange({target:{value:'289.194915254237'}});
-  assert.equal(input().props.value,289,'Slider amounts are whole numbers');
+  input().props.onChange({target:{value:'289.194915254237'}});
+  assert.equal(input().props.value,289,'Amounts are whole numbers');
   input().props.onChange({target:{value:'289.7'}});
   assert.equal(input().props.value,290,'Typed amounts are rounded');
   click('Yearly'); input().props.onChange({target:{value:'3500'}}); click('Monthly');

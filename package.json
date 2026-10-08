@@ -66,6 +66,7 @@
     "test:contribution-waterfall": "node --experimental-strip-types --no-warnings scripts/verify-contribution-waterfall.mjs"
   },
   "dependencies": {
+    "@paper-design/shaders-react": "0.0.81",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.91.0",
     "@types/d3-geo": "^3.1.0",
