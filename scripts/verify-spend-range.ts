@@ -56,6 +56,9 @@ ok("the current and future months never count toward usual", () => {
 ok("a range's usual adds whole months and today's partial month", () => {
   assert.equal(usualForRange(spend, rangeFor(3, "2026-09"), "2026-09-18"), 400 + 400 + 100);
 });
+ok("a bill category compares whole months, so rent paid later in the month is not $0 (D-49)", () => {
+  assert.equal(usualForRange(spend, rangeFor(3, "2026-09"), "2026-09-18", true), 400 + 400 + 400);
+});
 
 ok("card payments are flagged, ordinary spending is not", () => {
   const e = (description: string) => ({ description, transaction_type: "expense" as const });

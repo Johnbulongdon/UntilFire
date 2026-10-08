@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
+import { type Bill, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -147,6 +147,26 @@ ok("rent paid under another name leaves the everyday rate: the founder's two ren
   const r = everydayRate(spend, [sirui, john], "2026-10")!;
   const want = 600 / 30; // the middle of July 600/31, August 660/31 (lamp in, rent out), September 600/30
   assert.ok(Math.abs(r - want) < 0.01, `rate ${r.toFixed(2)} should be ${want.toFixed(2)}: both rents out, the lamp in`);
+});
+
+ok("an unconfirmed rent payment counts as paying the bill, without writing anything (D-49)", () => {
+  // The founder's October: Sirui Rent $1,500 due Oct 1, unlinked; BILT paid $1,380 on Oct 2 (8% apart).
+  const sirui: Bill = { id: "s", description: "Sirui Rent", category: "housing", usd: 1500, due: "2026-10-01", recurrence: "monthly" };
+  const john: Bill = { id: "j", description: "John Rent", category: "housing", usd: 435, due: "2026-10-07", recurrence: "monthly" };
+  const paid = { id: "t1", date: "2026-10-02", usd: 1380, description: "BILT PAYMENT", category: "housing" };
+  const asks = unlinkedBillPayments([paid], [sirui, john], () => false);
+  assert.equal(asks.get("t1")?.id, "s", "the BILT payment is asked about as Sirui Rent");
+  const counted = presumePaid([sirui, john], asks);
+  assert.equal(counted.find((b) => b.id === "s")?.due, "2026-11-01", "Sirui Rent counts from November");
+  assert.equal(counted.find((b) => b.id === "j")?.due, "2026-10-07", "John Rent is still due");
+  assert.deepEqual(dueByCategory(counted, "2026-10-31"), { housing: 435 }, "October still owes only John Rent, not a second $1,500");
+  assert.equal(sirui.due, "2026-10-01", "the listed bill itself is untouched");
+  const declined = unlinkedBillPayments([paid], [sirui, john], () => true);
+  assert.equal(presumePaid([sirui, john], declined).find((b) => b.id === "s")?.due, "2026-10-01", "a 'no' brings the bill back");
+});
+ok("a presumed-paid one-off leaves the list", () => {
+  const once: Bill = { id: "o", description: "Deposit", category: "housing", usd: 500, due: "2026-10-03", recurrence: "none" };
+  assert.equal(presumePaid([once], new Map([["t", once]])).length, 0);
 });
 
 console.log(`Spend forecast ok: ${n} checks.`);

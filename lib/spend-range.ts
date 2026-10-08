@@ -103,12 +103,16 @@ export function usualToDay(
 
 /**
  * Usual for a whole range: the usual complete month for each month in it,
- * except the current one, which is compared only up to today.
+ * except the current one, which is compared only up to today. With
+ * `wholeMonths` the current month is compared whole too: for a category that
+ * is mostly one bill (rent), "by today" depends on which day it was paid, and
+ * rent paid on the 11th made a usual of $0 on the 8th (D-49).
  */
 export function usualForRange(
   spend: { date: string; usd: number }[],
   range: DateRange,
   today: string,
+  wholeMonths = false,
 ): number | null {
   const thisMonth = monthOf(today);
   const full = usualToDay(spend, thisMonth, 31);
@@ -116,7 +120,7 @@ export function usualForRange(
   let total = 0;
   for (const m of range.months) {
     if (m > thisMonth) continue;
-    if (m === thisMonth) {
+    if (m === thisMonth && !wholeMonths) {
       const partial = usualToDay(spend, thisMonth, Number(today.slice(8, 10)));
       total += partial?.value ?? 0;
     } else total += full.value;

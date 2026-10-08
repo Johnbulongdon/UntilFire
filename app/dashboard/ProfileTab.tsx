@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
-import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
+import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL, REFERRED_TRIAL_LABEL } from "@/lib/pricing";
+import { Button } from "@/components/ui";
+import { MoneyHead, MoneyList, MoneyRow } from "./MoneyCards";
 import GiveAMonthCard from "./GiveAMonthCard";
 import CreatorCard from "./CreatorCard";
-import SectionTitle from "./SectionTitle";
 import HouseholdSection from "./HouseholdSection";
 
 interface PlaidItem {
@@ -71,6 +72,8 @@ export default function ProfileTab({
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [openRow, setOpenRow] = useState<string | null>(null);
+  const [householdSummary, setHouseholdSummary] = useState("Set up");
 
   useEffect(() => {
     async function load() {
@@ -184,332 +187,152 @@ export default function ProfileTab({
     window.location.href = "/";
   }
 
-  const cardStyle: React.CSSProperties = {
-    background: "var(--uf-card)",
-    borderRadius: 12,
-    border: "1px solid var(--uf-border)",
-    padding: "24px 28px",
-    marginBottom: 20,
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontSize: 13,
-    fontWeight: 600,
-    color: "var(--uf-ink-2)",
-    marginBottom: 6,
-  };
-
   const inputStyle: React.CSSProperties = {
-    width: "100%",
+    flex: 1,
+    minWidth: 0,
     padding: "9px 12px",
-    border: "1px solid var(--uf-border)",
-    borderRadius: 8,
+    border: "1px solid var(--uf-border-2)",
+    borderRadius: 10,
+    font: "inherit",
     fontSize: 14,
     color: "var(--uf-ink)",
-    background: "var(--uf-card)",
+    background: "var(--uf-bg)",
     outline: "none",
     boxSizing: "border-box",
   };
+  const isPro = subscription?.plan === "pro";
+  const toggle = (k: string) => setOpenRow((o) => (o === k ? null : k));
+  const fireTypeHref = `/fire-type?source=dashboard-profile${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`;
 
-  const btnStyle = (variant: "primary" | "danger" | "disabled"): React.CSSProperties => ({
-    padding: "9px 20px",
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: 600,
-    border: "none",
-    cursor: variant === "disabled" ? "not-allowed" : "pointer",
-    background: variant === "primary" ? "var(--uf-green)" : variant === "danger" ? "var(--uf-neg)" : "var(--uf-border)",
-    color: variant === "primary" || variant === "danger" ? "var(--uf-card)" : "var(--uf-ink-3)",
-    opacity: variant === "disabled" ? 0.6 : 1,
-    whiteSpace: "nowrap",
-  });
-
+  // Calm Profile (D-48): who you are and your plan first, then settings as
+  // rows that open their editor in place.
   return (
-    <div style={{ maxWidth: 600, padding: "32px 24px" }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--uf-ink)", marginBottom: 24, marginTop: 0 }}>
-        Profile &amp; Settings
-      </h2>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12, maxWidth: 760 }}>
+      <MoneyHead
+        label="Your account"
+        value={<span style={{ fontFamily: "var(--uf-font-display)", fontSize: 34 }}>{displayName.trim() || "Add your name"}</span>}
+        sub={isPro ? <>{userEmail} · <b style={{ color: "var(--uf-ink)" }}>Pro</b> · {PRO_MONTHLY_LABEL} a month</> : <>{userEmail} · Free plan</>}
+        aside={<span aria-hidden style={{ width: 56, height: 56, borderRadius: 99, display: "grid", placeItems: "center", background: "color-mix(in srgb, var(--uf-teal) 18%, transparent)", color: "var(--uf-ink)", fontFamily: "var(--uf-font-display)", fontSize: 24 }}>
+          {(displayName.trim() || userEmail || "?").charAt(0).toUpperCase()}
+        </span>}
+      >
+        {isPro ? (
+          <div><Button variant="secondary" size="sm" onClick={onManageBilling}>Manage billing</Button></div>
+        ) : (
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <Button variant="primary" size="sm" onClick={onUpgradeClick}>Try Pro, {trialLabel}</Button>
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Then {PRO_MONTHLY_LABEL} a month or {PRO_ANNUAL_LABEL} a year. Unlimited bank connections and priority AI.</span>
+          </div>
+        )}
+      </MoneyHead>
 
-      {/* Account */}
-      <div style={cardStyle}>
-        <SectionTitle icon="profile">Account</SectionTitle>
-        <label style={labelStyle}>Display name</label>
-        <div style={{ display: "flex", gap: 10 }}>
-          <input
-            style={inputStyle}
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Your name"
-            onKeyDown={(e) => e.key === "Enter" && saveName()}
-          />
-          <button
-            style={btnStyle(saving.name ? "disabled" : "primary")}
-            onClick={saveName}
-            disabled={saving.name || !displayName.trim()}
-          >
-            {saving.name ? "Saving…" : saved.name ? "Saved ✓" : "Save"}
-          </button>
-        </div>
-        <p style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 6, marginBottom: 0 }}>
-          This is how your name appears in the dashboard greeting.
-        </p>
-      </div>
-
-      {/* Household — account, not money (app-structure rule 4). */}
-      <HouseholdSection />
-
-      {/* Preferences */}
-      <div style={cardStyle}>
-        <SectionTitle icon="sliders">Preferences</SectionTitle>
-        <label style={labelStyle}>Default currency</label>
-        <div style={{ display: "flex", gap: 10 }}>
-          <select
-            style={{ ...inputStyle, width: "auto", minWidth: 120, cursor: "pointer" }}
-            value={defaultCurrency}
-            onChange={(e) => setDefaultCurrency(e.target.value)}
-          >
-            {SUPPORTED_CURRENCIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <button
-            style={btnStyle(saving.currency ? "disabled" : "primary")}
-            onClick={saveCurrency}
-            disabled={saving.currency}
-          >
-            {saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save"}
-          </button>
-        </div>
-        <p style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 6, marginBottom: 0 }}>
-          Sets the dashboard display currency and pre-fills new transaction entries.
-        </p>
-
-        <div style={{ marginTop: 20 }}>
-          <label style={labelStyle}>Preferred currencies</label>
-          <p style={{ fontSize: 12, color: "var(--uf-ink-3)", margin: "0 0 10px" }}>
-            Add currencies to filter dropdowns. Leave empty to show all.
-          </p>
-          {preferredCurrencies.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-              {preferredCurrencies.map(c => (
-                <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px 3px 8px", borderRadius: 20, background: "var(--uf-green-50)", border: "1px solid var(--uf-green-100)", fontSize: 12, fontWeight: 700, color: "var(--uf-green-700)", fontFamily: "DM Mono, monospace" }}>
-                  {c}
-                  <button
-                    onClick={() => toggleCurrency(c)}
-                    style={{ background: "none", border: "none", padding: "0 0 0 2px", cursor: "pointer", color: "var(--uf-ink-2)", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
-                    aria-label={`Remove ${c}`}
-                  >×</button>
-                </span>
-              ))}
+      <Section t="Account" />
+      <MoneyList>
+        <MoneyRow dot="#2a78d6" icon="👤" name="Name" meta="How the dashboard greets you" value={`${displayName.trim() || "Add"} ›`} onClick={() => toggle("name")}
+          after={openRow === "name" && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <input aria-label="Display name" style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" onKeyDown={(e) => e.key === "Enter" && saveName()} />
+              <Button variant="primary" size="sm" onClick={saveName} disabled={saving.name || !displayName.trim()}>{saving.name ? "Saving…" : saved.name ? "Saved ✓" : "Save"}</Button>
             </div>
-          )}
-          <div style={{ position: "relative" }}>
-            <input
-              style={inputStyle}
-              value={currencySearch}
-              onChange={e => { setCurrencySearch(e.target.value); setShowCurrencyDropdown(true); }}
-              onFocus={() => setShowCurrencyDropdown(true)}
-              onBlur={() => setTimeout(() => setShowCurrencyDropdown(false), 150)}
-              placeholder="Search to add a currency…"
-            />
-            {showCurrencyDropdown && currencySearch.trim().length >= 1 && (() => {
-              const q = currencySearch.trim().toLowerCase();
-              const matches = SUPPORTED_CURRENCIES.filter(c =>
-                !preferredCurrencies.includes(c) &&
-                (c.toLowerCase().includes(q) || (CURRENCY_NAMES[c] || "").toLowerCase().includes(q))
-              ).slice(0, 8);
-              if (!matches.length) return null;
-              return (
-                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto", marginTop: 4 }}>
-                  {matches.map(c => (
-                    <div
-                      key={c}
-                      onMouseDown={() => { toggleCurrency(c); setCurrencySearch(""); setShowCurrencyDropdown(false); }}
-                      style={{ padding: "8px 14px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--uf-border)", display: "flex", alignItems: "center", gap: 8 }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "var(--uf-surface)")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "")}
-                    >
-                      <span style={{ fontWeight: 700, fontFamily: "DM Mono, monospace", minWidth: 36 }}>{c}</span>
-                      <span style={{ color: "var(--uf-text-2)", fontSize: 12 }}>{CURRENCY_NAMES[c]}</span>
-                    </div>
+          )} />
+        <MoneyRow dot="#e87ba4" icon="👥" name="Household" meta="Plan together with a partner" value={`${householdSummary} ›`} onClick={() => toggle("household")}
+          after={<div style={{ display: openRow === "household" ? "block" : "none" }}><HouseholdSection bare onSummary={setHouseholdSummary} /></div>} />
+        <MoneyRow dot="#1baf7a" icon="💱" name="Currency" meta="Amounts show in this; new entries start in it" value={`${defaultCurrency} ›`} onClick={() => toggle("currency")}
+          after={openRow === "currency" && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <select aria-label="Default currency" style={{ ...inputStyle, flex: "none", minWidth: 120, cursor: "pointer" }} value={defaultCurrency} onChange={(e) => setDefaultCurrency(e.target.value)}>
+                {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <Button variant="primary" size="sm" onClick={saveCurrency} disabled={saving.currency}>{saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save"}</Button>
+            </div>
+          )} />
+        <MoneyRow dot="#6b5bd2" icon="🗂️" name="Currency shortlist" meta="Only these appear in currency menus; empty shows all"
+          value={`${preferredCurrencies.length ? preferredCurrencies.slice(0, 3).join(", ") + (preferredCurrencies.length > 3 ? ` +${preferredCurrencies.length - 3}` : "") : "All"} ›`}
+          onClick={() => toggle("shortlist")}
+          after={openRow === "shortlist" && (
+            <div style={{ display: "grid", gap: 8 }}>
+              {preferredCurrencies.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {preferredCurrencies.map((c) => (
+                    <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px 3px 8px", borderRadius: 20, background: "var(--uf-surface-2)", fontSize: 13, fontWeight: 600, color: "var(--uf-ink)" }}>
+                      {c}
+                      <button onClick={() => toggleCurrency(c)} aria-label={`Remove ${c}`} style={{ background: "none", border: "none", padding: "0 0 0 2px", cursor: "pointer", color: "var(--uf-ink-2)", fontSize: 14, lineHeight: 1 }}>×</button>
+                    </span>
                   ))}
                 </div>
-              );
-            })()}
-          </div>
-        </div>
-      </div>
-
-      {/* FIRE type — a personality result, not a projection input, so it stays
-          here. The assumptions that drive the freedom date moved to Plan on
-          18 Sep 2026 (app-structure rule 2). */}
-      <div style={cardStyle}>
-        <div style={{ marginBottom: 14 }}>
-          <SectionTitle icon="target" style={{ margin: "0 0 6px" }}>FIRE type</SectionTitle>
-          <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: 0 }}>
-            Your age, target city, lifestyle and tax home now live with your plan,
-            next to the freedom date they produce.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", maxWidth: "100%" }}>
-          <a
-            href={`/fire-type?source=dashboard-profile${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`}
-            style={{
-              ...btnStyle("primary"),
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flex: "1 1 260px",
-              minWidth: 0,
-              maxWidth: "100%",
-              boxSizing: "border-box",
-              textAlign: "center",
-              whiteSpace: "normal",
-              overflowWrap: "anywhere",
-            }}
-          >
-            {fireTypeResult ? `FIRE type: ${fireTypeResult.name} →` : "Find my FIRE type →"}
-          </a>
-          <button
-            onClick={() => onTabChange("fire-calculator")}
-            style={{
-              padding: "9px 16px",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 700,
-              border: "1px solid var(--uf-green-100)",
-              background: "var(--uf-green-50)",
-              color: "var(--uf-green-700)",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              flex: "1 1 180px",
-              minWidth: 0,
-              maxWidth: "100%",
-              boxSizing: "border-box",
-            }}
-          >
-            View freedom date →
-          </button>
-        </div>
-      </div>
-
-      {/* Subscription */}
-      <div style={cardStyle}>
-        <SectionTitle icon="card">Subscription</SectionTitle>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{
-              display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-              background: subscription?.plan === "pro" ? "var(--uf-green-50)" : "var(--uf-surface)",
-              color: subscription?.plan === "pro" ? "var(--uf-green)" : "var(--uf-ink-2)",
-              border: `1px solid ${subscription?.plan === "pro" ? "var(--uf-green-100)" : "var(--uf-border)"}`,
-            }}>
-              {subscription?.plan === "pro" ? "Pro" : "Free"}
-            </span>
-            <span style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>
-              {subscription?.plan === "pro"
-                ? `UntilFire Pro — ${PRO_MONTHLY_LABEL}/month`
-                : "Free plan — limited features"}
-            </span>
-          </div>
-          {subscription?.plan === "pro" ? (
-            <button
-              onClick={onManageBilling}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-ink-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
-            >
-              Manage billing
-            </button>
-          ) : (
-            <button
-              onClick={onUpgradeClick}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "var(--uf-green)", color: "var(--uf-card)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
-            >
-              Try {trialLabel}
-            </button>
-          )}
-        </div>
-        {subscription?.plan !== "pro" && (
-          <p style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 10, marginBottom: 0 }}>
-            {trialLabel} — then {PRO_MONTHLY_LABEL}/mo, or {PRO_ANNUAL_LABEL}/yr. Unlimited bank connections and priority AI access.
-          </p>
-        )}
-      </div>
-
-      <GiveAMonthCard cardStyle={cardStyle} />
-
-      {/* Creator program (D-27): a short card; the full program lives on /invite. */}
-      <CreatorCard cardStyle={cardStyle} />
-
-      {/* Connected Banks */}
-      <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <SectionTitle icon="bank" style={{ margin: 0 }}>Connected banks</SectionTitle>
-          <button
-            onClick={() => onTabChange("assets")}
-            style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-green-700)", background: "none", border: "1px solid var(--uf-green-100)", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
-          >
-            Manage →
-          </button>
-        </div>
-        {plaidItems.length === 0 ? (
-          <div style={{ fontSize: 13, color: "var(--uf-text-3)" }}>
-            No banks connected yet.{" "}
-            <button onClick={() => onTabChange("assets")} style={{ background: "none", border: "none", color: "var(--uf-green-700)", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 13 }}>
-              Connect one →
-            </button>
-          </div>
-        ) : (
-          plaidItems.map((item, i) => (
-            <div key={item.id} style={{
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "10px 0",
-              borderBottom: i < plaidItems.length - 1 ? "1px solid var(--uf-border)" : "none",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 16 }}>🏦</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)" }}>{item.institution_name}</span>
+              )}
+              <div style={{ position: "relative", display: "flex" }}>
+                <input aria-label="Add a currency" style={inputStyle} value={currencySearch}
+                  onChange={(e) => { setCurrencySearch(e.target.value); setShowCurrencyDropdown(true); }}
+                  onFocus={() => setShowCurrencyDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowCurrencyDropdown(false), 150)}
+                  placeholder="Search to add a currency…" />
+                {showCurrencyDropdown && currencySearch.trim().length >= 1 && (() => {
+                  const q = currencySearch.trim().toLowerCase();
+                  const matches = SUPPORTED_CURRENCIES.filter((c) => !preferredCurrencies.includes(c) && (c.toLowerCase().includes(q) || (CURRENCY_NAMES[c] || "").toLowerCase().includes(q))).slice(0, 8);
+                  if (!matches.length) return null;
+                  return (
+                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, boxShadow: "var(--uf-e2)", overflow: "hidden" }}>
+                      {matches.map((c) => (
+                        <button key={c} type="button" onMouseDown={() => { toggleCurrency(c); setCurrencySearch(""); setShowCurrencyDropdown(false); }}
+                          style={{ display: "flex", gap: 8, width: "100%", padding: "8px 14px", border: "none", borderBottom: "1px solid var(--uf-border)", background: "none", font: "inherit", fontSize: 13, color: "var(--uf-ink)", cursor: "pointer", textAlign: "left" }}>
+                          <b style={{ fontFamily: "var(--uf-font-mono)", minWidth: 36 }}>{c}</b>
+                          <span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>{CURRENCY_NAMES[c]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--uf-text-3)" }}>
-                <span style={{ color: "var(--uf-green)", fontWeight: 600 }}>{"●"} Connected</span>
-                <span>{fmtSynced(item.last_synced_at)}</span>
-              </div>
+              <div><Button variant="primary" size="sm" onClick={saveCurrency} disabled={saving.currency}>{saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save shortlist"}</Button></div>
             </div>
-          ))
-        )}
-      </div>
+          )} />
+      </MoneyList>
 
-      {/* Danger zone */}
-      <div style={{ ...cardStyle, borderColor: "var(--uf-neg-bg)", background: "var(--uf-card)" }}>
-        <SectionTitle icon="warning" danger style={{ margin: "0 0 8px" }}>Danger zone</SectionTitle>
-        <p style={{ fontSize: 14, color: "var(--uf-ink-2)", margin: "0 0 16px" }}>
-          Permanently deletes your account, all transactions, and FIRE data. This cannot be undone.
-        </p>
-        <label style={{ ...labelStyle, color: "var(--uf-ink-2)" }}>
-          Type your email address to confirm: <strong>{userEmail}</strong>
-        </label>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <input
-            style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "var(--uf-neg)" : "var(--uf-border)" }}
-            type="email"
-            value={deleteConfirm}
-            onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }}
-            placeholder={userEmail}
-          />
-          <button
-            style={btnStyle(deleting || deleteConfirm !== userEmail ? "disabled" : "danger")}
-            onClick={handleDelete}
-            disabled={deleting || deleteConfirm !== userEmail}
-          >
-            {deleting ? "Deleting…" : "Delete account"}
-          </button>
-        </div>
-        {deleteError && (
-          <p style={{ fontSize: 13, color: "var(--uf-neg)", marginTop: 8, marginBottom: 0 }}>{deleteError}</p>
-        )}
-      </div>
+      <Section t="Banks" />
+      <MoneyList footer={<Button variant="secondary" size="sm" onClick={() => onTabChange("assets")}>{plaidItems.length ? "Connect another bank" : "Connect a bank"}</Button>}>
+        {plaidItems.length === 0
+          ? <MoneyRow dot="var(--uf-ink-3)" icon="🏦" name="No banks connected" meta="Connect one to fill Money in automatically" value="" />
+          : plaidItems.map((item) => (
+            <MoneyRow key={item.id} dot="#1baf7a" icon="🏦" name={item.institution_name} meta={`Connected · synced ${fmtSynced(item.last_synced_at)}`} value="Manage ›" onClick={() => onTabChange("assets")} />
+          ))}
+      </MoneyList>
+
+      {/* FIRE type is a personality result, not a projection input (app-structure rule 2). */}
+      <Section t="You and FIRE" />
+      <MoneyList>
+        <MoneyRow dot="#eda100" icon="🧬" name="FIRE type" meta={fireTypeResult ? "Your result from the FIRE type quiz" : "A short quiz about how you want freedom to look"}
+          value={fireTypeResult ? `${fireTypeResult.name} ›` : "Find yours ›"} onClick={() => { window.location.href = fireTypeHref; }} />
+        <MoneyRow dot="var(--uf-teal)" icon="📅" name="Planning assumptions" meta="Age, city, lifestyle and tax live in Plan, next to your freedom date" value="Open ›" onClick={() => onTabChange("fire-calculator")} />
+      </MoneyList>
+
+      <Section t="Share UntilFire" />
+      <MoneyList>
+        <MoneyRow dot="#e34948" icon="🎁" name="Give a month, get a month" meta={`Friends get Pro ${REFERRED_TRIAL_LABEL}; you get a month when one subscribes`} value="Get link ›" onClick={() => toggle("give")}
+          after={openRow === "give" && <GiveAMonthCard cardStyle={{}} bare />} />
+        <MoneyRow dot="#2a78d6" icon="📣" name="Creator program" meta="Earn from readers who subscribe" value="Learn more ›" onClick={() => toggle("creator")}
+          after={openRow === "creator" && <CreatorCard cardStyle={{}} bare />} />
+      </MoneyList>
+
+      <Section t="Account removal" />
+      <MoneyList>
+        <MoneyRow dot="#e34948" icon="🗑️" name="Delete account" meta="Removes your account, transactions and plan for good" value="Delete…" valueTone="var(--uf-neg-ink)" onClick={() => toggle("delete")}
+          after={openRow === "delete" && (
+            <div style={{ display: "grid", gap: 8 }}>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Type <b>{userEmail}</b> to confirm. This can&apos;t be undone.</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input aria-label="Confirm your email" type="email" style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "var(--uf-neg)" : "var(--uf-border-2)" }}
+                  value={deleteConfirm} onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }} placeholder={userEmail} />
+                <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting || deleteConfirm !== userEmail}>{deleting ? "Deleting…" : "Delete account"}</Button>
+              </div>
+              {deleteError && <span role="alert" className="uf-t-small" style={{ color: "var(--uf-neg-ink)" }}>{deleteError}</span>}
+            </div>
+          )} />
+      </MoneyList>
     </div>
   );
+}
+
+function Section({ t }: { t: string }) {
+  return <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>{t}</div>;
 }

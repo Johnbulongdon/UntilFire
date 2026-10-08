@@ -12,7 +12,7 @@ import SectionTitle from "./SectionTitle";
  * program on /invite, nothing more. A client-side Link, not a page load, so
  * the dashboard's "leave site?" guard never fires on the way there.
  */
-export default function CreatorCard({ cardStyle }: { cardStyle: React.CSSProperties }) {
+export default function CreatorCard({ cardStyle, bare = false }: { cardStyle: React.CSSProperties; bare?: boolean }) {
   const [code, setCode] = useState<string | null | undefined>(undefined);
   const [copied, setCopied] = useState(false);
 
@@ -27,14 +27,14 @@ export default function CreatorCard({ cardStyle }: { cardStyle: React.CSSPropert
 
   const link = code ? `untilfire.com/r/${code}` : null;
   return (
-    <div style={{ ...cardStyle, display: "grid", gap: 10 }}>
-      <div>
+    <div style={{ ...(bare ? {} : cardStyle), display: "grid", gap: 10 }}>
+      {!bare && <div>
         <SectionTitle icon="megaphone" style={{ margin: "0 0 4px" }}>Creator program</SectionTitle>
         <span style={{ display: "block", fontSize: 13, color: "var(--uf-ink-2)", paddingLeft: 40 }}>
           {link ? "Your link. Numbers, embed and payouts are on your creator page." : `Share UntilFire and earn ${REFERRAL_RATE_LABEL} of what your readers pay for a year.`}
         </span>
-      </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", paddingLeft: 40 }}>
+      </div>}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", paddingLeft: bare ? 0 : 40 }}>
         {link && (
           <>
             <span className="uf-t-data" style={{ fontSize: 13, wordBreak: "break-all" }}>{link}</span>

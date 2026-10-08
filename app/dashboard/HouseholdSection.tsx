@@ -53,7 +53,11 @@ function labelFor(m: Member): string {
   return m.displayName?.trim() || m.email || "Your partner";
 }
 
-export default function HouseholdSection() {
+/**
+ * `bare` drops the card and title when Profile shows this inside its Household
+ * row (D-48); `onSummary` reports one word for that row's value.
+ */
+export default function HouseholdSection({ bare = false, onSummary }: { bare?: boolean; onSummary?: (summary: string) => void } = {}) {
   const [view, setView] = useState<HouseholdView | null>(null);
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<null | "invite" | "revoke" | "disconnect">(null);
@@ -85,6 +89,12 @@ export default function HouseholdSection() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
+  useEffect(() => {
+    if (!view || !onSummary) return;
+    const partner = view.members.find((m) => !m.isYou);
+    onSummary(partner ? `With ${labelFor(partner)}` : view.pendingInvite ? "Invite sent" : view.incomingInvite ? "Invite waiting" : "Just you");
+  }, [view, onSummary]);
+
   async function run(kind: "invite" | "revoke" | "disconnect", fn: () => Promise<unknown>) {
     setBusy(kind);
     setError(null);
@@ -102,8 +112,8 @@ export default function HouseholdSection() {
 
   if (!view) {
     return (
-      <div style={cardStyle}>
-        <SectionTitle icon="users">Household</SectionTitle>
+      <div style={bare ? undefined : cardStyle}>
+        {!bare && <SectionTitle icon="users">Household</SectionTitle>}
         <p style={{ ...noteStyle, marginTop: 0 }}>Loading…</p>
       </div>
     );
@@ -112,8 +122,8 @@ export default function HouseholdSection() {
   const partner = view.members.find((m) => !m.isYou);
 
   return (
-    <div style={cardStyle}>
-      <SectionTitle icon="users">Household</SectionTitle>
+    <div style={bare ? undefined : cardStyle}>
+      {!bare && <SectionTitle icon="users">Household</SectionTitle>}
 
       {error && (
         <p style={{ fontSize: 13, color: "var(--uf-neg)", margin: "0 0 14px", lineHeight: 1.5 }}>{error}</p>
