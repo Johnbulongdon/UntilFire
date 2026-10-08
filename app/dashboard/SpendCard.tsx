@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, InfoTip } from "@/components/ui";
 import { trackTxViewChanged } from "@/lib/analytics";
-import { type DateRange, monthOf, netAmount, type RangeTx, usualForRange, usualToDay } from "@/lib/spend-range";
-import { type Bill, billCategory, billsOverBudget, budgetPath, daysOfMonths, dueByCategory, everydayRate, forecastPath, rateSoFar } from "@/lib/spend-forecast";
+import { type DateRange, monthOf, netAmount, type RangeTx, usualToDay } from "@/lib/spend-range";
+import { type Bill, billCategory, billsOverBudget, budgetPath, daysOfMonths, dueByCategory, everydayRate, forecastPath, rateSoFar, type Typical, typicalForRange } from "@/lib/spend-forecast";
 import { BarsView, CalendarView, calendarAllowed, type Daily, LineView } from "./SpendCharts";
 
 type Tx = RangeTx & { id: string };
@@ -22,6 +22,39 @@ const ICONS: Record<View, string> = { line: "M3 17l5-5 4 3 8-9", bars: "M5 20V10
  * against usual. Explanations sit in InfoTips; the card itself is numbers,
  * marks and labels.
  */
+const OVER = "repeating-linear-gradient(135deg, var(--uf-warn-ink) 0 2px, color-mix(in srgb, var(--uf-warn) 30%, var(--uf-card)) 2px 5px)";
+const BAND = "color-mix(in srgb, var(--uf-ink-3) 18%, transparent)";
+const BAND_EDGE = "1px dotted var(--uf-ink-3)";
+const BUDGET_AT = 0.7;
+
+/**
+ * One category's bar (D-52): every budget sits on the same black line, so
+ * going over always pokes past it as amber hatching; the shaded band is
+ * where recent months landed. Without a budget the bar scales to its own
+ * values. A ▸ at the end means something runs past the bar.
+ */
+function CategoryBar({ r, fmt }: { r: { now: number; due: number; budget: number | null; color: string; typical: Typical | null }; fmt: (usd: number) => string }) {
+  const used = r.now + r.due;
+  const scale = r.budget ? r.budget / BUDGET_AT : Math.max(1, used, r.typical?.high ?? 0) / 0.9;
+  const at = (n: number) => `${Math.min(100, Math.max(0, (n / scale) * 100))}%`;
+  const runs = Math.max(used, r.typical?.high ?? 0) > scale;
+  // Nothing by this day in past months is no band, not a sliver at $0.
+  const band = r.typical && r.typical.high > 0 && { left: at(r.typical.low), width: `max(4px, calc(${at(r.typical.high)} - ${at(r.typical.low)}))` };
+  return (
+    <span style={{ position: "relative", height: 22 }}>
+      {band && <i title={`Past months ${fmt(r.typical!.low)}–${fmt(r.typical!.high)}`} style={{ position: "absolute", top: 0, bottom: 0, ...band, borderRadius: 4, background: BAND, borderLeft: BAND_EDGE, borderRight: BAND_EDGE }} />}
+      <i style={{ position: "absolute", left: 0, right: 0, top: 6, height: 10, borderRadius: 99, background: "var(--uf-surface-2)" }} />
+      <i style={{ position: "absolute", left: 0, top: 6, height: 10, width: at(r.now), borderRadius: 99, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
+      {r.due > 0 && <i title={`Still due ${fmt(r.due)}`} style={{ position: "absolute", top: 6, height: 10, left: at(r.now), width: `calc(${at(used)} - ${at(r.now)})`,
+        background: `repeating-linear-gradient(135deg, ${r.color} 0 3px, transparent 3px 6px)`, boxShadow: `inset 0 0 0 1px ${r.color}` }} />}
+      {r.budget != null && used > r.budget && <i title={`Over by ${fmt(used - r.budget)}`} style={{ position: "absolute", top: 6, height: 10, left: `${BUDGET_AT * 100}%`,
+        width: `max(6px, calc(${at(used)} - ${BUDGET_AT * 100}%))`, borderRadius: "0 99px 99px 0", background: OVER }} />}
+      {r.budget != null && <i title={`Budget ${fmt(r.budget)}`} style={{ position: "absolute", top: 1, height: 20, left: `calc(${BUDGET_AT * 100}% - 1.25px)`, width: 2.5, borderRadius: 2, background: "var(--uf-ink)" }} />}
+      {runs && <i aria-hidden style={{ position: "absolute", right: -8, top: 6, borderTop: "5px solid transparent", borderBottom: "5px solid transparent", borderLeft: "6px solid var(--uf-ink-3)" }} />}
+    </span>
+  );
+}
+
 export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [] }: {
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
@@ -143,11 +176,11 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
       const mine = entries.filter((e) => e.category === c.key);
       const now = mine.filter((e) => inRange(e.date)).reduce((s, e) => s + e.usd, 0);
       const b = mode === "spent" ? budgets[c.key] ?? 0 : 0;
-      return { ...c, now, due: b > 0 ? due[c.key] ?? 0 : 0, usual: usualForRange(mine, range, today, billCats.has(c.key)), budget: b > 0 ? b * range.months.length : null };
+      const row = { ...c, now, due: b > 0 ? due[c.key] ?? 0 : 0, typical: typicalForRange(mine, mode === "spent" ? bills.filter((x) => billCategory(x) === c.key) : [], range.months, today, billCats.has(c.key)), budget: b > 0 ? b * range.months.length : null };
+      return { ...row, usual: row.typical?.mid ?? null };
     }).filter((r) => r.now > 0 || (r.usual ?? 0) > 0 || (r.budget ?? 0) > 0).sort((a, b) => b.now - a.now);
     return out.slice(0, 6);
-  }, [cats, entries, range, today, budgets, mode, due, billCats]); // eslint-disable-line react-hooks/exhaustive-deps
-  const max = Math.max(1, ...rows.map((r) => Math.max(r.now + r.due, r.usual ?? 0, r.budget ?? 0)));
+  }, [cats, entries, range, today, budgets, mode, due, billCats, bills]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const seg = (on: boolean): React.CSSProperties => ({ border: "none", borderRadius: 999, padding: "5px 12px", cursor: "pointer", font: "inherit", fontSize: 13, fontWeight: 700,
     background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: on ? "var(--uf-e1)" : "none" });
@@ -217,14 +250,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
                   display: "grid", gridTemplateColumns: "minmax(0, 104px) 1fr 84px", alignItems: "center", gap: 10, padding: "7px 8px", border: "none", borderRadius: 8, cursor: "pointer",
                   font: "inherit", textAlign: "left", color: "var(--uf-ink)", background: on ? "var(--uf-surface-2)" : "transparent", opacity: picked.size && !on ? 0.45 : 1, transition: "opacity 200ms" }}>
                   <span className="uf-t-small" style={{ fontWeight: on || strong ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.emoji} {r.label}</span>
-                  <span style={{ position: "relative", height: 18 }}>
-                    {r.budget != null && <i title={`Budget ${fmt(r.budget)}`} style={{ position: "absolute", inset: "1px auto 1px 0", width: `${(r.budget / max) * 100}%`, borderRadius: 5,
-                      background: `color-mix(in oklab, ${r.color} 30%, var(--uf-card))`, boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${r.color} 60%, var(--uf-card))` }} />}
-                    <i style={{ position: "absolute", inset: "4px auto 4px 0", width: `${(r.now / max) * 100}%`, borderRadius: 4, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
-                    {r.due > 0 && <i title={`Still due ${fmt(r.due)}`} style={{ position: "absolute", top: 4, bottom: 4, left: `${(r.now / max) * 100}%`, width: `${(r.due / max) * 100}%`, borderRadius: 4,
-                      background: `repeating-linear-gradient(135deg, ${r.color} 0 3px, transparent 3px 6px)`, boxShadow: `inset 0 0 0 1px ${r.color}` }} />}
-                    {r.usual != null && <i title={`Past months ${fmt(r.usual)}`} style={{ position: "absolute", top: -1, bottom: -1, left: `calc(${(r.usual / max) * 100}% - 1.5px)`, width: 3, borderRadius: 2, background: "var(--uf-ink)", boxShadow: "0 0 0 1.5px var(--uf-card)" }} />}
-                  </span>
+                  <CategoryBar r={r} fmt={fmt} />
                   <span className="uf-t-small" style={{ ...mono, textAlign: "right", color: strong ? "var(--uf-ink)" : "var(--uf-ink-3)", fontWeight: strong ? 700 : 400 }}>
                     {r.budget != null
                       ? over ? `${fmt(used - r.budget)} over` : `${fmt(r.budget - used)} left`
@@ -259,9 +285,10 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
           <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", paddingLeft: 8, display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
             <i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, background: "var(--uf-ink-3)" }} />{mode === "spent" ? "Expenses" : "Income"}
             {rows.some((r) => r.due > 0) && <><i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, marginLeft: 8, background: "repeating-linear-gradient(135deg, var(--uf-ink-3) 0 3px, transparent 3px 6px)", boxShadow: "inset 0 0 0 1px var(--uf-ink-3)" }} />Still due</>}
-            {rows.some((r) => r.budget != null) && <><i style={{ display: "inline-block", width: 16, height: 10, borderRadius: 3, marginLeft: 8, background: "var(--uf-surface-2)", boxShadow: "inset 0 0 0 1.5px var(--uf-border-2)" }} />Budget</>}
-            <i style={{ display: "inline-block", width: 3, height: 11, marginLeft: 8, background: "var(--uf-ink)" }} />Past months
-            <InfoTip label="About past months">Where a typical month of yours stood by this day: the middle of your previous months, so one unusual month doesn&apos;t skew it. It appears once you have 3 months of history. Budget comes from your Budget tab; what is left takes off bills in Upcoming still due this month.</InfoTip>
+            {rows.some((r) => r.budget != null) && <><i style={{ display: "inline-block", width: 3, height: 12, marginLeft: 8, borderRadius: 2, background: "var(--uf-ink)" }} />Budget</>}
+            {rows.some((r) => r.budget != null && r.now + r.due > r.budget) && <><i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, marginLeft: 8, background: OVER }} />Over</>}
+            {rows.some((r) => r.typical) && <><i style={{ display: "inline-block", width: 16, height: 12, borderRadius: 3, marginLeft: 8, background: BAND, borderLeft: BAND_EDGE, borderRight: BAND_EDGE }} />Past months</>}
+            <InfoTip label="About past months">The shaded band is where your recent months landed by this day, leaving out the single highest and lowest. It appears once you have 3 months of history. A category with bills in Upcoming counts from the first month one was paid, at today&apos;s bill amounts, so a new rent shows straight away. The black line is your budget from the Budget tab; what is left takes off bills still due this month.</InfoTip>
           </span>
         )}
       </div>

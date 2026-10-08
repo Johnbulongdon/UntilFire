@@ -8,6 +8,15 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Clearer category bars on Transactions
+- Every budget is now a black line in the same place on each row, so going
+  over always shows as amber hatching past it, in any category colour.
+- Past months is a shaded band showing where your recent months landed, not
+  a thin tick: wide when a category varies, narrow when it is steady.
+- Fixed: after a move or a new lease, a category with rent listed in Upcoming
+  counts from the first month that rent was paid, at today's amounts, so
+  housing no longer compares US rent with months of rent paid abroad.
+
 ### Typing amounts in the calculator
 - Pay, savings and net worth fields open the number keyboard on phones, keep
   what you type as you type it, and tidy it when you leave the field: leading

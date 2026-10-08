@@ -1914,3 +1914,34 @@ old city calculator, and a review of the live onboarding it was replaced by.
 
 **Not changed:** city pages still hand off with one link (D-43) rather than
 gaining inputs; age keeps the wheel on computers (D-50).
+
+### D-52 — October 9: past months as a band, budgets on one line
+
+**Status:** Active. From the founder's October Transactions: Housing's Past
+months mark sat near $240 against $1,380 rent, and the bars were hard to read.
+
+**What happened:** most of the six months behind the mark were rent paid in
+yuan (¥1,600–¥3,050) before moving to the US. D-49 noted that a new, higher
+rent "takes a few months to show as usual"; in practice that is up to six.
+Separately, spent, still due, the budget pill and the thin tick all sat in
+one small pill, so a $40 gap was invisible.
+
+**Decision:**
+- **Bills reset history.** For a category with listed repeating bills, a
+  typical month is each past month in which one of them was paid, counted
+  at today's bill amounts plus that month's other spending in the category
+  (`typicalMonth`). Months before the first paid bill drop out; with none
+  yet, the bills alone. Other categories keep the last six months by this
+  day. One-offs and bills only spotted in history do not count as listed.
+- **A band, not a tick.** Past months show as a shaded band from low to high,
+  dropping the single highest and lowest month when there are four or more.
+  Chosen by the founder from four treatments (caret, band, dotted shadow,
+  ghost outline) as option C2.
+- **Budgets on one line.** Every budget sits at the same point on its bar
+  (70%), drawn as a black line, the one solid stop. Over is amber hatching
+  past it, so it never depends on the category colour. Without a budget the
+  bar scales to its own values; a ▸ marks anything running past the end.
+  Chosen from five designs (bullet, two bars, budget-anchored, ghost, dots).
+
+**Not changed:** the chart's dashed Past months line still uses all
+categories' last six months.

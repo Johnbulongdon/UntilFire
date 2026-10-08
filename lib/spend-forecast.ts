@@ -88,6 +88,11 @@ export function isBill(t: Pick<DayAmount, "description" | "category">, bills: Bi
  * daily rate and the forecast counted it twice (D-31).
  */
 export function nonBillTotal(rows: DayAmount[], bills: Bill[], month: string): number {
+  return billSplit(rows, bills, month).nonBill;
+}
+
+/** The same split, and whether any of the month's payments was one of the bills. */
+function billSplit(rows: DayAmount[], bills: Bill[], month: string): { nonBill: number; paid: boolean } {
   const billed = new Set(rows.filter((r) => isBill(r, bills)));
   for (const b of bills) {
     const cat = billCategory(b);
@@ -99,7 +104,7 @@ export function nonBillTotal(rows: DayAmount[], bills: Bill[], month: string): n
       if (near) billed.add(near);
     }
   }
-  return rows.reduce((sum, r) => sum + (billed.has(r) ? 0 : r.usd), 0);
+  return { nonBill: rows.reduce((sum, r) => sum + (billed.has(r) ? 0 : r.usd), 0), paid: billed.size > 0 };
 }
 
 /** How many past months "usual" looks at, and how many it needs; the Past months line uses the same (D-31). */
@@ -145,6 +150,79 @@ export function dueByCategory(bills: Bill[], monthEnd: string): Record<string, n
     if (!b.id || !cat) continue;
     const n = occurrences(b, b.due, monthEnd).length;
     if (n) out[cat] = (out[cat] ?? 0) + n * b.usd;
+  }
+  return out;
+}
+
+/**
+ * What listed repeating bills come to in each category over these months.
+ * After a move or a new lease the last six months say little about rent: a
+ * $1,500 rent compared with months of ¥1,700 read as "$240 usual" (D-52).
+ * One-offs are not usual, and bills only spotted in history are left out,
+ * since history is what the median already uses.
+ */
+export function billsByCategory(bills: Bill[], months: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const b of bills) {
+    const cat = billCategory(b);
+    if (!b.id || !cat || b.recurrence === "none") continue;
+    const n = months.reduce((k, m) => k + occurrences(b, `${m}-01`, `${m}-${String(daysInMonth(m)).padStart(2, "0")}`).length, 0);
+    if (n) out[cat] = (out[cat] ?? 0) + n * b.usd;
+  }
+  return out;
+}
+
+export type Typical = { low: number; mid: number; high: number };
+
+/** Low, middle and high of past months; with four or more, the single highest and lowest are dropped so one odd month doesn't stretch the band. */
+function spread(totals: number[]): Typical {
+  const s = [...totals].sort((a, b) => a - b);
+  const t = s.length >= 4 ? s.slice(1, -1) : s;
+  return { low: t[0], mid: median(s), high: t[t.length - 1] };
+}
+
+/**
+ * A typical month for one category, as a band (D-52). Without listed bills:
+ * past months' spending up to `day`, as the Past months mark always was.
+ * With listed repeating bills: each past month in which one of them was
+ * paid, counted at today's bill amounts plus that month's other spending in
+ * the category. Months before any listed bill was paid are left out, so a
+ * move or a new lease counts from the first rent paid, not six months later.
+ * With no such month yet, the bills alone.
+ */
+export function typicalMonth(spend: DayAmount[], bills: Bill[], currentMonth: string, day = 31, lookback = USUAL_LOOKBACK): Typical | null {
+  const first = addMonths(currentMonth, -lookback);
+  const months = [...new Set(spend.map((s) => monthOf(s.date)))].filter((m) => m >= first && m < currentMonth).sort();
+  const listed = bills.filter((b) => b.id && b.recurrence !== "none");
+  if (!listed.length) {
+    const totals = months.map((m) => spend.filter((s) => monthOf(s.date) === m && Number(s.date.slice(8, 10)) <= Math.min(day, daysInMonth(m))).reduce((a, s) => a + s.usd, 0));
+    return totals.length >= MIN_MONTHS ? spread(totals) : null;
+  }
+  const billsIn = (m: string) => billsByCategory(listed, [m]);
+  const sum = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
+  const totals = months.flatMap((m) => {
+    const split = billSplit(spend.filter((s) => monthOf(s.date) === m), listed, m);
+    return split.paid ? [sum(billsIn(m)) + split.nonBill] : [];
+  });
+  if (totals.length) return spread(totals);
+  const now = sum(billsIn(currentMonth));
+  return now > 0 ? { low: now, mid: now, high: now } : null;
+}
+
+/**
+ * The typical band over a whole range: a typical month for each month in it.
+ * The current month is compared up to today, except for a category with
+ * bills, whose month is compared whole: the day rent lands moves (D-49).
+ */
+export function typicalForRange(spend: DayAmount[], bills: Bill[], months: string[], today: string, wholeMonths = false): Typical | null {
+  const thisMonth = monthOf(today);
+  const full = typicalMonth(spend, bills, thisMonth);
+  if (!full) return null;
+  const part = wholeMonths ? full : typicalMonth(spend, [], thisMonth, Number(today.slice(8, 10))) ?? { low: 0, mid: 0, high: 0 };
+  const out = { low: 0, mid: 0, high: 0 };
+  for (const m of months.filter((x) => x <= thisMonth)) {
+    const t = m === thisMonth ? part : full;
+    out.low += t.low; out.mid += t.mid; out.high += t.high;
   }
   return out;
 }
