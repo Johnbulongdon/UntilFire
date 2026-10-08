@@ -25,12 +25,12 @@ const pick = (name) => {
   assert.ok(text, `${name} exists in ${file}`);
   return text;
 };
-const code = ['calcProjection', 'freedomProjection', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
-  + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate;';
+const code = ['calcProjection', 'freedomProjection', 'projectionInputs', 'effectiveBalances', 'effectiveDebts', 'isRetirementInvestmentAccount', 'isBrokerageInvestmentAccount', 'normalizePlaidSubtype', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
+  + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
   { exports, Math, Date, Object, React, REAL_RETURN: 0.069 });
-const { freedomProjection, calcProjection, PlanFreedomDate } = exports;
+const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances, effectiveDebts } = exports;
 
 // A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked bank account.
 const base = {
@@ -45,6 +45,45 @@ const at = (growthRate) => freedomProjection({ ...base, growthRate });
 const home = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 10000, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04, targetMonthlyExpenses: undefined, taxEnabled: false, retirementTaxRate: 0, rothPct: 0 });
 assert.equal(at(0.069).fireYear, home.fireYear, 'Plan and Home get the same freedom year');
 assert.equal(at(0.069).fireTarget, home.fireTarget, 'and the same target');
+
+// Debt is paid out of savings, not on top of investing all of them (D-32).
+// $36k a year saved, $20k of debt: $10.8k goes to the debt, $25.2k is invested.
+const withDebt = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 10000, totalDebt: 20000, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04 });
+assert.equal(withDebt.data[1]['Contributions'], 70000 + 36000 - 10800, 'year one invests savings less the debt payment');
+assert.ok(withDebt.data[10]['Investable'] < home.data[10]['Investable'] - 20000, 'paying the debt leaves less invested ten years on');
+assert.equal(withDebt.firstYearInvested, 36000 - 10800, "Plan's tools are told the savings actually invested, after debt");
+
+// Plan's tools take the freedom date's own numbers (D-33).
+assert.match(source, /<PurchaseImpactPanel\s+currentSavings=\{planFacts\.invested\}\s+monthlyContribution=\{planFacts\.monthlySavings\}\s+fireTarget=\{planFacts\.fireTarget\}/, 'purchase impact uses the freedom date numbers');
+assert.match(source, /<TaxProfileCard[\s\S]{0,120}monthlyExpenses=\{planFacts\.retirementMonthly\}/, 'the tax card works on the retirement target');
+assert.match(source, /portfolioBalance=\{planFacts\.invested\}\s+monthlySavings=\{planFacts\.monthlySavings\}\s+targetMultiple=/, 'Expat FIRE uses the same balances, savings and target multiple');
+assert.doesNotMatch(source, /Math\.pow\(1 \+ REAL_RETURN, tlYears\)/, "the Expat timeline grows at the person's chosen rate");
+// Expat FIRE (D-36): no invented city, costs at your lifestyle, the globe on the same target and growth.
+assert.doesNotMatch(source, /currentCity\?\.col \?\? 60000/, 'an unlisted city is not assumed to cost $60,000');
+assert.doesNotMatch(source, /return match\?\.key \?\? "nyc"/, 'an unlisted city is not assumed to be New York');
+assert.match(source, /const currentCol = currentCity \? currentCity\.col \* lifestyle : yourAnnualSpending;/, 'here = the city at your lifestyle, or your own spending');
+const globe = readFileSync('app/components/GeoArbitrageGlobe.tsx', 'utf8');
+assert.doesNotMatch(globe, /col \* 25\b/, 'the globe has no fixed 25x of its own');
+assert.match(source, /<GeoArbitrageGlobe[\s\S]{0,400}targetMultiple=\{targetMultiple\}[\s\S]{0,80}growthRate=\{growthRate\}/, 'the dashboard globe gets the freedom date multiple and growth');
+const taxed = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 0, rothIRA: 0, taxable: 0, cashSavings: 0, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04, taxEnabled: true, retirementTaxRate: 0.2, rothPct: 0 });
+assert.equal(Math.round(taxed.fireTarget / 60000 * 1000) / 1000, 31.25, 'target per dollar of spending is 1 ÷ 4% × the tax gross-up (Expat FIRE multiplies city costs by it)');
+
+// A connected account replaces the typed balance of the same kind (D-32).
+const typedAndLinked = effectiveBalances({ k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 5000,
+  plaidAccounts: [{ type: 'investment', subtype: '401k', balance_current: 52000 }, { type: 'depository', balance_current: 8000 }, { type: 'credit', balance_current: 900 }] });
+assert.deepEqual({ ...typedAndLinked }, { k401: 52000, rothIRA: 0, taxable: 10000, cashSavings: 8000 }, 'linked 401(k) replaces 401(k) and Roth; bank replaces cash; taxable stays typed');
+const both = freedomProjection({ ...base, plaidAccounts: [{ type: 'investment', subtype: 'brokerage', balance_current: 10000 }, { type: 'depository', balance_current: 10000 }], growthRate: 0.069 });
+assert.equal(both.fireYear, home.fireYear, 'a linked brokerage account holding the typed $10k is not counted twice');
+
+// Debts by the same rule as balances (D-35).
+const debts = effectiveDebts({ totalDebt: 12000, mortgageBalance: 300000, plaidAccounts: [
+  { type: 'loan', subtype: 'student', balance_current: 15000 }, { type: 'loan', subtype: 'mortgage', balance_current: 295000 },
+  { type: 'credit', subtype: 'credit card', balance_current: 1800 }, { type: 'depository', balance_current: 5000 }] });
+assert.deepEqual({ ...debts }, { otherDebt: 15000, mortgage: 295000, cards: 1800 }, 'linked loans replace typed debt and mortgage; cards are counted on their own');
+assert.deepEqual({ ...effectiveDebts({ totalDebt: 12000, mortgageBalance: 0, plaidAccounts: [] }) }, { otherDebt: 12000, mortgage: 0, cards: 0 }, 'nothing linked: typed figures stand');
+const linkedLoan = freedomProjection({ ...base, totalDebt: 20000, plaidAccounts: [...base.plaidAccounts, { type: 'loan', subtype: 'auto', balance_current: 20000 }], growthRate: 0.069 });
+const typedLoan = freedomProjection({ ...base, totalDebt: 20000, growthRate: 0.069 });
+assert.equal(linkedLoan.data[1]['Contributions'], typedLoan.data[1]['Contributions'], 'a typed loan that is also linked is paid once, not twice');
 
 // The growth choice moves the date, in the right direction.
 const d5 = at(0.05).exactDate, d69 = at(0.069).exactDate, d81 = at(0.081).exactDate;
@@ -64,7 +103,7 @@ assert.doesNotMatch(html({ date: d69, fireAge: 30, years: 20, growthPct: 6.9, de
 assert.match(html({ date: null, fireAge: 30, years: null, growthPct: 6.9, deltaYears: null }), /Not reached/);
 
 // Wiring: Plan shows it above the assumptions, and Home uses the same function.
-assert.match(source, /<PlanFreedomDate[\s\S]{0,600}<FireAssumptionsCard\s+freedomDateLabel=/, 'Plan shows the date above the assumptions card, and the card repeats it by the growth picker');
+assert.match(source, /<PlanFreedomDate[\s\S]{0,3000}<FireAssumptionsCard\s+freedomDateLabel=/, 'Plan shows the date (then what moves it, D-42) above the assumptions card, and the card repeats it by the growth picker');
 assert.match(source, /useMemo\(\(\) => freedomProjection\(\{\s*income, expenses,/, 'Home computes its date with freedomProjection');
 assert.doesNotMatch(source, /Assumptions live in Profile/, 'stale copy is gone');
 assert.match(readFileSync('app/dashboard/FireAssumptionsCard.tsx', 'utf8'), /your freedom date is \{freedomDateLabel\}/, 'the card says the date under the growth picker');

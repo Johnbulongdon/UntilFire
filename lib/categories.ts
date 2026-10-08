@@ -23,6 +23,23 @@ export const EXPENSE_CATEGORIES: CategoryDef[] = [
   { key: "other",         label: "Other",         code: "OT", color: "#8a7c68", emoji: "📦" },
 ];
 
+/** Default sub-categories per expense category; transactions and Upcoming bills share them. */
+export const SUB_CATEGORIES: Record<string, string[]> = {
+  food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
+  transport:     ["Gas & Fuel", "Parking", "Public Transit", "Ride Share", "Insurance", "Maintenance", "Other"],
+  housing:       ["Rent/Mortgage", "Insurance", "Maintenance", "Furnishing", "Property Tax", "HOA", "Other"],
+  utilities:     ["Phone", "Internet", "Electricity", "Water & Gas", "TV/Cable", "Other"],
+  healthcare:    ["Doctor/GP", "Pharmacy", "Dental", "Vision", "Mental Health", "Insurance", "Other"],
+  shopping:      ["Clothing", "Electronics", "Home Goods", "Sports & Outdoors", "Gifts", "Other"],
+  entertainment: ["Movies & Shows", "Events & Concerts", "Sports", "Games", "Hobbies", "Other"],
+  travel:        ["Flights", "Hotels", "Activities", "Transport", "Food & Drink", "Other"],
+  education:     ["Tuition", "Books & Materials", "Courses", "Other"],
+  subscriptions: ["Streaming", "Software & Apps", "Memberships", "News & Media", "Other"],
+  personal_care: ["Haircut & Salon", "Skincare & Beauty", "Wellness", "Other"],
+  pets:          ["Food & Supplies", "Vet", "Grooming", "Other"],
+  work:          ["Equipment", "Software", "Travel", "Training", "Meals", "Other"],
+};
+
 export const INCOME_CATEGORIES: CategoryDef[] = [
   { key: "salary",       label: "Salary",     code: "SA", color: "#1baf7a", emoji: "💵" },
   { key: "freelance",    label: "Freelance",  code: "FR", color: "#008300", emoji: "💻" },
@@ -46,6 +63,13 @@ export const COLOR_PALETTE = [
 ];
 
 /** The palette colour closest to any hex, so older custom colours land on the new set. */
+/** Account types are categories on Net worth (D-40), so they take palette colours. */
+export const ACCOUNT_TYPE_COLORS = {
+  retirement: COLOR_PALETTE[5],
+  brokerage: COLOR_PALETTE[0],
+  cash: COLOR_PALETTE[3],
+} as const;
+
 export function nearestPaletteColor(hex: string): string {
   const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   if (!/^#[0-9a-f]{6}$/i.test(hex) || COLOR_PALETTE.includes(hex.toLowerCase())) return hex.toLowerCase();

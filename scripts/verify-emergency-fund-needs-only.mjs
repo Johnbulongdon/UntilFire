@@ -46,7 +46,10 @@ assert(
 );
 
 assert(
-  source.includes('emergencyFundMonthlyBase={emergencyFundMonthlyBase}'),
+  // D-37: the Assets card reads the needs basis chosen on Contributions
+  // (falling back to the same needs-only base), so months covered match Home.
+  source.includes('emergencyFundMonthlyBase={efNeedsBase}') &&
+    source.includes('const efNeedsBase = sharedEf.monthlyNeeds > 0 ? sharedEf.monthlyNeeds : emergencyFundMonthlyBase;'),
   'assets emergency fund card receives the shared needs-only base'
 );
 

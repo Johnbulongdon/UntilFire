@@ -42,9 +42,11 @@ function ChartKey({ items }: { items: { mark: "line" | "dot" | "dash" | "thin" |
  * lib/spend-forecast; this only draws them. `usualByDay[d]` is past months'
  * spend through day d.
  */
-export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLine, forecast, periodLabel, fmt }: {
+export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLine, billsOver = 0, vsBudget = null, unbudgeted = 0, forecast, periodLabel, fmt }: {
   range: DateRange; today: string; daily: Daily; usualByDay: number[] | null; usualMonth: number | null;
-  budgetLine: number[] | null; forecast: number[] | null; periodLabel: string; fmt: (n: number) => string;
+  budgetLine: number[] | null; billsOver?: number;
+  /** Budgeted categories against their budget (forecast while running); unbudgeted spending is shown on its own. */
+  vsBudget?: number | null; unbudgeted?: number; forecast: number[] | null; periodLabel: string; fmt: (n: number) => string;
 }) {
   const W = 360, H = 170, P = 6, base = H - 18;
   const [hover, setHover] = useState<number | null>(null);
@@ -73,9 +75,6 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   const end = mine.length - 1, gap = usual && end >= 0 ? mine[end] - usual[end] : null;
   const ticks = range.months.length === 1 ? [0, 9, 19, all.length - 1] : range.months.map((m) => all.indexOf(`${m}-01`));
 
-  // One line above the chart: where the period is heading, and against budget.
-  const budgetNow = budgetPath && end >= 0 ? mine[end] - budgetPath[end] : null;
-  const vsBudget = projected != null && budgetTotal != null ? projected - budgetTotal : budgetNow;
   const chip = (text: React.ReactNode, strong: boolean) => (
     <span className="uf-t-small" style={{ ...mono, padding: "3px 8px", borderRadius: 999, background: "var(--uf-surface-2)", color: strong ? "var(--uf-ink)" : "var(--uf-ink-2)", fontWeight: strong ? 700 : 500 }}>{text}</span>
   );
@@ -88,12 +87,15 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   const day = (iso: string) => { const [yy, mm, dd] = iso.split("-").map(Number); return new Date(yy, mm - 1, dd).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
   return (
     <div style={{ position: "relative" }}>
-    {(projected != null || vsBudget != null || gap != null) && (
+    {(projected != null || vsBudget != null || gap != null || billsOver >= 1 || unbudgeted >= 1) && (
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
         {projected != null
           ? chip(<>On track for {fmt(projected)}</>, true)
           : gap != null && Math.abs(gap) >= 1 && chip(<>{gap >= 0 ? "▲" : "▼"} {fmt(Math.abs(gap))} vs past months</>, false)}
         {vsBudget != null && Math.abs(vsBudget) >= 1 && chip(vsBudget > 0 ? <>{fmt(vsBudget)} over budget</> : <>{fmt(-vsBudget)} under budget</>, vsBudget > 0)}
+        {unbudgeted >= 1 && chip(<>+{fmt(unbudgeted)} not budgeted</>, false)}
+        {billsOver >= 1 && <span className="uf-t-small" style={{ ...mono, padding: "3px 8px", borderRadius: 999, background: "var(--uf-warn-bg)", color: "var(--uf-warn-ink)", fontWeight: 700 }}>
+          <span aria-hidden>⚑ </span>Bills exceed budget by {fmt(billsOver)}</span>}
       </div>
     )}
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", overflow: "visible", touchAction: "pan-y", cursor: "crosshair" }} role="img"

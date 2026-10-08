@@ -53,14 +53,17 @@ const monthLabel = (ym: string) => {
   return new Date(+y, +m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 };
 
-const WITHDRAWAL_MULTIPLE = 25; // 4% safe withdrawal — same rule as the rest of the app
+const DEFAULT_MULTIPLE = 25; // 4% safe withdrawal, when the plan's own multiple is not passed
 
 export default function MonthInsight({
   transactions,
   rates,
   displayCurrency = "USD",
   displayRates,
+  targetMultiple = DEFAULT_MULTIPLE,
 }: {
+  /** FIRE target per dollar of a year's spending, as the freedom date uses it (withdrawal rate and tax, D-35). */
+  targetMultiple?: number;
   transactions: Tx[];
   rates: Record<string, number>;
   displayCurrency?: SupportedCurrency | string;
@@ -131,8 +134,8 @@ export default function MonthInsight({
   }, [expenses, months, month, thisMonth, excluded, rates]);
 
   const vsBaseline = includedTotal - baseline.value;
-  const targetAtThisRate = includedTotal * 12 * WITHDRAWAL_MULTIPLE;
-  const targetAtBaseline = baseline.value * 12 * WITHDRAWAL_MULTIPLE;
+  const targetAtThisRate = includedTotal * 12 * targetMultiple;
+  const targetAtBaseline = baseline.value * 12 * targetMultiple;
   const targetDelta = targetAtThisRate - targetAtBaseline;
 
   const toggle = (key: string) =>
@@ -195,7 +198,7 @@ export default function MonthInsight({
         )}
       </div>
       <p style={{ fontSize: 13, color: "var(--uf-ink-3)", margin: "0 0 var(--uf-s5)" }}>
-        {month === thisMonth ? "Month in progress — not yet comparable." : "Spent this month"}
+        {month === thisMonth ? "Month in progress — not yet comparable." : "Expenses this month"}
         {excluded.size > 0 ? ", excluding what you switched off below." : "."}
       </p>
 
@@ -265,7 +268,7 @@ export default function MonthInsight({
                 {targetDelta < 0 ? "lower than" : "higher than"}
               </>
             )}{" "}
-            your median month at 25&times; annual spending.
+            your median month at {Math.round(targetMultiple * 10) / 10}&times; annual spending.
           </div>
         </div>
       )}

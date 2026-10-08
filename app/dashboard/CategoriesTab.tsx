@@ -74,7 +74,7 @@ function groupByCat(
   });
   return Object.entries(map).map(([key, catTxns]) => {
     const meta = allCats.find((c) => c.key === key);
-    const base = { color: meta?.color ?? "#6b7280", emoji: meta?.emoji ?? "📦" };
+    const base = { color: meta?.color ?? "#8a7c68", emoji: meta?.emoji ?? "📦" };
     const { color, emoji } = resolveDisplay(base, customs, key);
     return {
       key,
@@ -186,7 +186,7 @@ function CategoryRow({
               else onEdit();
             }}
             title="Customize"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: isEditing ? "#059669" : "#CBD5E1", fontSize: 14, lineHeight: 1, flexShrink: 0 }}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: isEditing ? "var(--uf-pos-ink)" : "var(--uf-ink-3)", fontSize: 14, lineHeight: 1, flexShrink: 0 }}
           >
             ✏️
           </button>
@@ -206,7 +206,7 @@ function CategoryRow({
       {isEditing && (
         <div style={{ background: "var(--uf-surface)", borderTop: "1px solid var(--uf-border)", padding: "14px 20px 14px 68px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#047857", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-pos-ink)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Customize {cat.label}
             </span>
             <button onClick={onCloseEdit} style={{ background: "none", border: "none", color: "var(--uf-text-3)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>✕</button>
@@ -236,8 +236,8 @@ function CategoryRow({
                 key={em}
                 onClick={() => setCatCustomizations(prev => ({ ...prev, [cat.key]: { ...prev[cat.key], emoji: em } }))}
                 style={{
-                  width: 34, height: 34, background: cat.emoji === em ? "rgba(5,150,105,0.12)" : "transparent",
-                  border: cat.emoji === em ? "1.5px solid #059669" : "1.5px solid var(--uf-border)",
+                  width: 34, height: 34, background: cat.emoji === em ? "color-mix(in srgb, var(--uf-green) 12%, transparent)" : "transparent",
+                  border: cat.emoji === em ? "1.5px solid var(--uf-green)" : "1.5px solid var(--uf-border)",
                   borderRadius: 6, cursor: "pointer", fontSize: 18, lineHeight: 1,
                 }}
               >
@@ -277,7 +277,7 @@ function CategoryRow({
               <button
                 onClick={handleAddSub}
                 disabled={!newSubCat.trim() || subCategories.includes(newSubCat.trim())}
-                style={{ padding: "6px 14px", background: newSubCat.trim() && !subCategories.includes(newSubCat.trim()) ? "#064E3B" : "var(--uf-border)", color: newSubCat.trim() && !subCategories.includes(newSubCat.trim()) ? "#fff" : "var(--uf-text-3)", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "6px 14px", background: newSubCat.trim() && !subCategories.includes(newSubCat.trim()) ? "var(--uf-green)" : "var(--uf-border)", color: newSubCat.trim() && !subCategories.includes(newSubCat.trim()) ? "var(--uf-card)" : "var(--uf-text-3)", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
               >
                 Add
               </button>
@@ -305,13 +305,13 @@ function CategoryRow({
                     onCloseEdit();
                     onCancelDelete();
                   }}
-                  style={{ fontSize: 12, color: "#DC2626", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}
+                  style={{ fontSize: 12, color: "var(--uf-neg-ink)", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}
                 >
                   {isDeleteConfirming ? "Confirm delete category" : "🗑 Delete category"}
                 </button>
                 {isDeleteConfirming && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>
+                    <span style={{ fontSize: 12, color: "var(--uf-neg-ink)", fontWeight: 600 }}>
                       This removes the custom category from your list. Existing transactions keep their category key.
                     </span>
                     <button
@@ -358,9 +358,9 @@ function CategoryRow({
                         title={rule ? `Rule: always ${rule.classification} — click to change` : "Click to set a classification rule"}
                         style={{
                           fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "2px 8px",
-                          background: rule?.classification === "need" ? "rgba(34,211,165,0.15)" : rule?.classification === "want" ? "rgba(249,115,22,0.15)" : "var(--uf-surface-2)",
-                          color: rule?.classification === "need" ? "#22d3a5" : rule?.classification === "want" ? "#f97316" : "var(--uf-text-3)",
-                          border: rule ? `1px solid ${rule.classification === "need" ? "#22d3a5" : "#f97316"}` : "1px dashed var(--uf-border)",
+                          background: rule?.classification === "need" ? "color-mix(in srgb, var(--uf-pos) 15%, transparent)" : rule?.classification === "want" ? "color-mix(in srgb, var(--uf-warn) 15%, transparent)" : "var(--uf-surface-2)",
+                          color: rule?.classification === "need" ? "var(--uf-pos)" : rule?.classification === "want" ? "var(--uf-warn)" : "var(--uf-text-3)",
+                          border: rule ? `1px solid ${rule.classification === "need" ? "var(--uf-pos)" : "var(--uf-warn)"}` : "1px dashed var(--uf-border)",
                           cursor: "pointer", whiteSpace: "nowrap",
                         }}
                       >
@@ -436,7 +436,7 @@ function ProjectRow({
 
       {open && (
         <div style={{ background: "var(--uf-surface)", borderTop: "1px solid var(--uf-border)", padding: "12px 20px 16px 36px" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 10 }}>By Category</div>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 10 }}>By category</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {catBreakdown.map((cat) => (
               <div key={cat.key}>
@@ -724,14 +724,14 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
               <strong>{mismatchPrompt.mismatched.length}</strong> existing{" "}
               <strong style={{ textTransform: "capitalize" }}>{mismatchPrompt.sub_category}</strong>{" "}
               transaction{mismatchPrompt.mismatched.length !== 1 ? "s are" : " is"} not tagged as{" "}
-              <strong style={{ color: mismatchPrompt.classification === "need" ? "#22d3a5" : "#f97316" }}>
+              <strong style={{ color: mismatchPrompt.classification === "need" ? "var(--uf-pos)" : "var(--uf-warn)" }}>
                 {mismatchPrompt.classification}
               </strong>. Update them to match the rule?
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={handleApplyMismatch}
-                style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", flex: 1 }}
+                style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", flex: 1 }}
               >
                 Update {mismatchPrompt.mismatched.length} transaction{mismatchPrompt.mismatched.length !== 1 ? "s" : ""}
               </button>
@@ -782,12 +782,12 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
       <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", marginBottom: 24 }}>
         <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--uf-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)" }}>All Categories</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)" }}>All categories</span>
             <span style={{ fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600 }}>{primaryGroups.length}</span>
           </div>
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            style={{ display: "flex", alignItems: "center", gap: 5, background: showAddForm ? "var(--uf-surface-2)" : "#064E3B", color: showAddForm ? "var(--uf-text-2)" : "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 5, background: showAddForm ? "var(--uf-surface-2)" : "var(--uf-green)", color: showAddForm ? "var(--uf-text-2)" : "var(--uf-card)", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             {showAddForm ? "✕ Cancel" : "+ Add"}
           </button>
@@ -820,7 +820,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
               <label style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", display: "block", marginBottom: 6 }}>Emoji <span style={{ fontWeight: 400, color: "var(--uf-text-3)" }}>(optional)</span></label>
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {EMOJI_PALETTE.map((em) => (
-                  <button key={em} onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: newCatEmoji === em ? "2px solid #064E3B" : "1px solid var(--uf-border)", background: newCatEmoji === em ? "rgba(5,150,105,0.1)" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button key={em} onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)} style={{ width: 30, height: 30, borderRadius: 6, border: newCatEmoji === em ? "2px solid var(--uf-green)" : "1px solid var(--uf-border)", background: newCatEmoji === em ? "color-mix(in srgb, var(--uf-green) 10%, transparent)" : "transparent", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {em}
                   </button>
                 ))}
@@ -830,7 +830,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
               <button
                 onClick={handleAddCustomCat}
                 disabled={!newCatLabel.trim()}
-                style={{ flex: 1, padding: "8px 0", background: newCatLabel.trim() ? "#064E3B" : "var(--uf-border)", color: newCatLabel.trim() ? "#fff" : "var(--uf-text-3)", border: "none", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: newCatLabel.trim() ? "pointer" : "not-allowed" }}
+                style={{ flex: 1, padding: "8px 0", background: newCatLabel.trim() ? "var(--uf-green)" : "var(--uf-border)", color: newCatLabel.trim() ? "var(--uf-card)" : "var(--uf-text-3)", border: "none", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: newCatLabel.trim() ? "pointer" : "not-allowed" }}
               >
                 Add Category
               </button>

@@ -439,7 +439,7 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
 
 - **Where**: `app/dashboard/TransactionsTab.tsx`, `resolveFlag`, when a
   "Worth a look" row is answered.
-- **Properties**: `flag` (`card_payment`, `duplicate`, `large`), `confirmed`
+- **Properties**: `flag` (`bill`, `card_payment`, `duplicate`, `large`), `confirmed`
   (true for "It's a card payment" / "Delete this one", false for the dismissals).
 
 ## Adding a new event

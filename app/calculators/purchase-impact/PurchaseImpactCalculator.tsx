@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { calcPurchaseImpact, formatDelay, formatFV } from '@/lib/purchase-impact'
+import { DEFAULT_RETURN_PCT } from '@/lib/fire-number'
 
 const C = {
   bg: 'var(--uf-surface)',
@@ -42,7 +43,8 @@ export default function PurchaseImpactCalculator() {
   const [savings,  setSavings]  = useState('50000')
   const [monthly,  setMonthly]  = useState('1000')
   const [target,   setTarget]   = useState('1000000')
-  const [rate,     setRate]     = useState('7')
+  // The app's default growth (S&P 500 since 1928, after inflation), as on every other calculator.
+  const [rate,     setRate]     = useState(String(DEFAULT_RETURN_PCT))
 
   const result = useMemo(() => {
     const p  = parseFloat(price)

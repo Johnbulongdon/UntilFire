@@ -7,25 +7,6 @@ Sources and both vault branch snapshots are recorded in
 
 ## Active decisions
 
-### D-32 — October 7: city guides answer first, then offer a personal plan
-
-**Status:** Active product direction approved by the user; implementation is
-prepared for integration, not evidence of live production.
-**Decision:** Apply the approved Austin mobile preview to existing city guides.
-Lead with the estimate and meaningful qualifiers, use a geographic comparison
-with published nearby city guides, and keep detailed scenarios and methodology
-under native disclosures. Offer one primary plan action with city context.
-**Why:** The user observed overly verbose mobile city pages in sessions and
-approved the simpler map-based preview. SEO is not a reason to repeat math or
-make users read every assumption before finding their answer.
-**Trade-offs:** Maps show approximate city centers and depend on best-effort
-tiles. Keep text comparisons, visible attribution, sources and uncertainty.
-International source amounts remain explicitly USD; do not imply a local quote.
-No conversion lift is established until post-integration measurement.
-**Contract:** [City guide layout](design/city-guide-layout.md).
-**Revisit:** Mobile completion evidence, missing data, tile reliability or an
-explicitly authorized local-currency data refresh.
-
 ### D-15 — September 24: flexible tasks, Claude integrates ready handoffs
 
 **Status:** Active workflow direction, as authorized by the user; publication of
@@ -1308,4 +1289,415 @@ the forecast is spent so far, plus listed bills still due, plus everyday
 line places monthly bills on their day and spreads the rest evenly. Past
 months stays as recorded history. A running month's saved compares a full
 month's expected income with the forecast ("On track to save"). With
-everything filed, the review bar shows the needs/wants split.
+everything filed, the review bar shows Free to spend (D-29) beside the
+month's expenses; a needs/wants split read as noise early in a month. Bills
+are Upcoming plus monthly, quarterly and annual payments detected in the
+history (lib/recurring-detect), so rent the founder never listed in Upcoming
+was still forecast once, not twice.
+
+**Addendum (linking bills, October 7):** the founder's $1,500 "Rent" in
+Upcoming had no category (the form never asked), so it did not merge with the
+bank's "BILT PAYMENT" ($1,380, housing): rent was counted twice, and because
+the budget line scaled bills to fit the budget, rent day showed $1,113.
+Bills are now drawn at full size and a "Bills exceed budget by $X" chip says
+when they don't fit. Upcoming asks for a category (guessed from the name)
+and an optional sub-category, the same lists as transactions; rows without
+one get the guess. A payment in the bill's category within 10% of its amount
+and 5 days of its date is asked about once in Worth a look ("Upcoming bill?
+→ Rent"); yes stores the bank's name on the bill (`match_merchant`,
+migration 0047), after which it matches by name. Matching on name alone was
+rejected because nobody types the bank's name when listing rent. A linked
+bill then settles itself: a payment under that name within 5 days of its due
+date moves a repeat to its next date or completes a one-off, as "Mark paid"
+does, with a toast saying so (`paidBills`, `markPaid`). The everyday rate also
+recognises a past bill payment by category and amount (within 10%, one per
+date the bill falls on), not only by name: the founder's rent paid to
+"陈玲" and through "BILT PAYMENT" stayed in the daily rate, so the forecast
+added John Rent on its date and again inside the rate (about $430).
+
+**Addendum (repeating bills, October 7):** a repeating bill is never
+completed; legacy rows completed before "Mark paid" rolled dates were
+reopened at their next due date (migration 0048), and the form, list and
+forecast treat completion as one-off only. A bill can be linked from
+Upcoming by picking the past payment that was it ("Link payment", the last
+120 days' expenses, same category and closest amount first). Once linked,
+a payment under that name settles the due date whose period it falls in
+(periods back to back, starting 10 days before each monthly date) when it is
+within 5 days of the date or 15% of the amount, catching up several periods
+at once (`paymentFor`, `settleBill`). The forecast only adds a bill's dates
+from its stored due date on, since earlier ones are paid.
+
+**Addendum (math audit, October 7):** one set of definitions across the
+card, Free to spend and the Budget tab.
+- Saved: the running month's income is the expected income until all of it
+  has arrived, so a full month of forecast expenses is not set against one
+  paycheck.
+- With no usual yet, the forecast's daily rate leaves this month's bills
+  out (`rateSoFar`); including them spread a new user's rent across every
+  remaining day.
+- A typical month means the last six complete months, at least three, for
+  both the Past months line and the everyday rate (`USUAL_LOOKBACK`).
+- Over or under budget compares the budgeted categories (and their bills)
+  with their budget; spending in categories without one shows as its own
+  "+$X not budgeted" chip. The "Bills exceed budget" chip from the linking
+  addendum had not rendered (an edit that silently did not apply); it does now.
+- A category's "left" takes off bills in Upcoming still due this month,
+  drawn as a striped "Still due" segment, matching Free to spend.
+- Uncategorised bills take the category their name suggests everywhere,
+  including Free to spend's fixed categories and the Budget tab's committed
+  totals, instead of "other".
+- Linked bills also settle where the dashboard loads Upcoming, so Free to
+  spend stops counting rent that is already paid.
+
+### D-32 — October 7: Home's math matches the freedom date and Transactions
+
+**Status:** Active. From a math audit of Home the founder asked for.
+
+**Decision:**
+- **Debt comes out of savings.** The projection pays debt from savings
+  (up to 30% of them) and invests only what is left. It used to invest all
+  savings and pay debt from the same money again, which brought the freedom
+  date forward for anyone with debt.
+- **One set of inputs.** Home's "what if" moves, the spending warning, the
+  city-average and contribution-gap tasks all start from the freedom date's
+  own inputs (`projectionInputs`) and change one thing. They left the tax
+  settings out, so every move looked better by that difference.
+- **Connected replaces manual** (the founder's call). A connected account
+  replaces the typed balance of the same kind (`effectiveBalances`):
+  retirement accounts replace 401(k) and Roth, other investment accounts
+  replace taxable, and bank accounts replace cash. The freedom date, progress,
+  net worth, the money-mix ring and the Net Worth tab all use it. Adding both
+  counted a linked 401(k) twice for anyone who had typed its balance first.
+  Rejected: keeping the sum, which needed people to zero their typed
+  balances by hand after linking.
+- **This month reads like Transactions (D-31).**
+  - The plan to date puts Upcoming bills on their days.
+  - The month's forecast is spent so far, plus bills still due, plus
+    everyday spending at the usual rate. Spent-so-far ÷ share of the month
+    spread rent across every day.
+  - "Reduce spending by" is the forecast overrun.
+  - "Left" subtracts bills still due.
+- **Only finished months are judged** in the consistency streak, after
+  refunds. This month's savings so far against a whole month's goal read
+  "needs a reset" whenever rent went out.
+
+**Not changed:** cash still grows at the market return in the projection,
+and the status pill still reads the planned savings rate. The founder can
+revisit either.
+
+### D-33 — October 7: Plan's tools use the freedom date's numbers
+
+**Status:** Active. From a math audit of Plan the founder asked for.
+
+**Decision:** Plan computes the freedom date's facts once (`planFacts`) and
+hands them to the tools around the date:
+- **Shared facts:**
+  - the target;
+  - balances, with connected accounts replacing typed ones (D-32);
+  - the savings actually invested in year one, after mortgage and debt;
+  - growth, withdrawal rate and the tax gross-up;
+  - the "use my history" budget when it is on.
+- **Purchase impact** ("What would this cost your freedom?") used typed
+  balances only, current budget × 25 and savings before the mortgage.
+- **The Tax Profile card** worked its "+$X for taxes" on current budget × 25.
+  It now uses the retirement target (retirement city, minus work costs).
+- **Expat FIRE** added typed and connected balances, ignored the mortgage,
+  debt, withdrawal rate and taxes, and grew the timeline at the default
+  rate while each city's years used the chosen one. A city's target is now
+  its cost × lifestyle × tax gross-up ÷ withdrawal rate, so the person's
+  retirement city matches their freedom date.
+
+**Kept separate:** goal savings are not subtracted from FIRE savings
+(the founder's call).
+
+### D-34 — October 7: Contributions math, and one definition with Home
+
+**Status:** Active. From a math audit of Contributions the founder asked for.
+
+**Decision:**
+- **Weekly pay.** Money that arrives weekly is a week's money. The
+  allocation divides it by purchases per contribution, not per month
+  (`budgetFrequency`): a week's $500 bought weekly is one $500 purchase,
+  where it used to be $115. The monthly match and loan overpayment are
+  scaled to the cycle (`monthsPerCycle`), so a $200 match is about $46 a
+  week, not $200 every week.
+- **Debt threshold before inflation.** A loan's rate is before inflation and
+  the growth assumption is after it. The threshold is now
+  (1 + real) × (1 + inflation) − 1, using the S&P history's inflation by
+  default: 9.6% at the 6.9% default. An 8% loan used to count as expensive
+  against 6.9%, when after inflation it costs about 5%.
+- **One emergency fund.** Home's safety runway uses the Contributions
+  definition (`emergencyFundFromPlan`): the accounts chosen there (savings
+  accounts by default) against the needs basis chosen there. Home used to
+  count every bank account against average needs.
+- **One "invest this month".** Home's investing line states the plan's
+  assumption ("Your plan assumes about $X a month"). The amount to put in
+  is the Next contribution card's, from cash actually free.
+- **One debt list.** Contributions offers the debts Liabilities and
+  connected loan and card accounts know of as rows (balances; rates are
+  typed), and blank rates read "add rate", not "cheap".
+
+### D-35 — October 7: Money's math, one rule for debts and bills
+
+**Status:** Active. From a math audit of Money the founder asked for.
+
+**Decision:**
+- **Debts follow the balances rule (D-32)** (`effectiveDebts`):
+  - A connected mortgage replaces the typed mortgage.
+  - Other connected loans replace typed "other debt".
+  - Credit cards count toward net worth, because they are owed. They stay
+    out of the projection's debt, because a card balance is this month's
+    spending and is already in expenses.
+  - Home's net worth, the Net Worth page, the Debts page totals, the freedom
+    date and the debts offered on Contributions all use it. Home left
+    connected debts out; the Net Worth page added them to typed ones.
+- **The Net Worth page's progress** uses the freedom date's target and years,
+  not its own older projection.
+- **Insights:**
+  - Averages are over finished months only; the running month is still
+    charted.
+  - Categories include custom ones, and unknown keys count under Other, so
+    the slices add up.
+- **Budget:**
+  - Savings are after the mortgage payment, as on Home and Plan.
+  - "Over" and "left" count spent plus bills still due this month, as on
+    Transactions.
+  - Bills still due count every date from each bill's stored due date to
+    month end, so a weekly bill counts weekly. Free to spend's committed
+    totals use the same rule.
+- **Upcoming and Insights FIRE-target lines** use the freedom date's multiple
+  (withdrawal rate and tax gross-up), not a fixed 25×.
+
+### D-36 — October 7: Expat FIRE shows the person's numbers, globe included
+
+**Status:** Active. From a math audit of Expat FIRE the founder asked for.
+
+**Decision:**
+- **The globe uses the dashboard's numbers.** Its dot colours, ready
+  rings and hover card ("X yrs sooner") had their own fixed 25× target and
+  5% growth. On the dashboard it now takes the freedom date's multiple and
+  the chosen growth. The public calculator keeps its defaults.
+- **No invented city.** An unlisted profile city used to mean New York for
+  the globe and $60,000 a year in the detail view. "Here" is now the
+  person's own yearly spending, labelled "Your spending".
+- **Costs at your lifestyle.** The detail card's annual cost and "Moving
+  saves $X/mo" include the lifestyle multiple, so cost × the multiple is the
+  FIRE number on the same card.
+- **Display currency.** The globe, timeline and detail view format money in
+  the display currency instead of always dollars.
+
+**Not modelled:** each country's own tax on retirement income (the home tax
+setting applies everywhere), and healthcare, visas or travel beyond the
+city cost averages.
+
+### D-37 — October 7: The public calculators and the rest of the app agree
+
+**Status:** Active. From an audit of every remaining page the founder asked
+for.
+
+**Decision:**
+- **Free result abroad cards in dollars.** The free result's "retire abroad"
+  cards convert the visitor's spending, savings and portfolio to dollars
+  before comparing them with city costs, which are in dollars. HK$15,000 a
+  month was being read as $15,000.
+- **One rounding.** The embeddable calculator rounds the freedom year down
+  and the years to the nearest, like the free result and the dashboard
+  (lib/fire). Rounding up put it a year later than the page it links to
+  (D-27).
+- **One emergency fund.** The Assets tab's "months covered" uses the needs
+  basis and any hand-set amount from Contributions, as Home does (D-34).
+- **One default growth.** The public purchase-impact calculator starts at the
+  sourced default (6.9%), not 7%.
+- **Tests match D-30.** Two `fire-number` checks still expected a growth
+  picker in onboarding, which D-30 removed. They now check the sourced
+  default, and the whole test suite passes.
+
+### D-38 — October 7: Copy and labels follow the rules
+
+**Status:** Active. From a copy audit the founder asked for.
+
+**Decision:**
+- **Tour:** rewritten for the current menus (Home, Money, Plan, Profile).
+  It named old tabs, promised a Monte Carlo feature that does not exist, and
+  placed assumptions in Profile.
+- **Home:**
+  - The "what if" moves show amounts in the display currency. The garbled
+    "from spending to" line is fixed.
+  - The consistency card counts months on plan ("4 of 6 months on plan")
+    instead of a "3-month run" streak.
+- **Money words (design-system rule 8):**
+  - Upcoming says Income/Expense, not Incoming/Outgoing.
+  - Insights says "Expenses this month", and the Budget key says "expenses".
+  - Home's heading is "This month's expenses".
+- **One name per thing:**
+  - FIRE number, not FIRE target or freedom number.
+  - Upcoming payment, not expected payment.
+  - Total debts, not liabilities.
+- **Sentence case** for about 30 labels, headings and buttons.
+- **Design system:** rule 8 is extended; new rules 9 (sentence case, one
+  name, no typed "$") and 10 (counts, not streaks).
+- The eight orphaned components in `components/` were deleted. Nothing
+  imported them, they used the dropped `user_plans` and `stash_history`
+  tables, and they still carried the old wording. Only `components/ui/`
+  remains.
+
+### D-39 — October 7: A calm Home that shows progress
+
+**Status:** Active. From a Home redesign the founder approved after three mocks.
+
+**Decision:**
+- **Three answers and one row.** A fresh Home shows the freedom date with its
+  chart, this month's contribution, this month's spending, and one row with net
+  worth, safety runway and months on plan. The other eight cards ship hidden,
+  not deleted; Edit adds them back. Layouts saved before this keep what they
+  had and gain the two new cards.
+- **Progress is drawn, not described.** Each card leads with one number and the
+  bar it fills: invested against the FIRE number, the contribution's steps,
+  spending by category against the budget, runway against its target with the
+  floor marked, finished months on plan.
+- **Colour has one job per role.** Category colours appear only in "This
+  month". Teal is freedom and progress. Green is the button and links. The
+  forced-dark hero, its metric tiles, milestone bubbles and the contributions
+  and returns breakdown are gone from Home.
+- **The chart opens on 5Y**, so real history fills part of it. The FIRE number
+  line shows once the range reaches it.
+- **The contribution bar shows the split, not completion.** Nothing records a
+  contribution as made, so a bar that filled would be invented. Recording one
+  is a separate feature.
+- **No "months sooner" line.** The freedom date has no history to compare with.
+
+**Why:** Home had twelve cards. Each was reasonable, but together they had no
+order and repeated the same pattern, so nothing stood out. The Transactions
+page reads well because colour means one thing and each block answers one
+question. Home now borrows that restraint, not its density.
+
+### D-40 — October 7: Money pages in the calm style, and what each debt started at
+
+**Status:** Active. From a Money mock the founder approved, with "add original balance".
+
+**Decision:**
+- **One shape for every Money page.** A headline card with one big number, a
+  line under it and the bar it fills, then a list of rows: a dot, a name with
+  one line of detail, the value on the right, a bar under the name where there
+  is something to fill. The pieces live in `app/dashboard/MoneyCards.tsx`.
+- **Cashflow sub-pages are pills**, as on Home. The green underline tabs used
+  hard-coded colours outside the system.
+- **Budget:** spent against the budget, with free to spend under it, one bar
+  by category, then one row per category with bills still due drawn striped.
+  Over-budget categories lead the list. Income is edited from the headline.
+- **Upcoming:** what is still to go out and still to come in, and the next 30
+  days as dots on a strip. Rows open into their actions (mark paid, link,
+  edit, delete) instead of carrying chips and buttons on every row.
+- **Net worth:** the total, assets and debts, one bar by account type, then a
+  row per type saying whether it is connected or typed. It now uses the
+  connected-replaces-typed balances everywhere; its old table used typed
+  figures. FIRE progress left this page: it is on Home and in Plan (D-39).
+- **Debts:** total debts, how much is paid off, and a row per debt, highest
+  rate first where Plan → Contributions knows the rate.
+- **What a debt started at** is stored per debt in `profiles.debt_originals`
+  (migration 0049), keyed by connected account or by the typed figure it
+  belongs to. A loan with a starting balance shows a paid-off bar; a card
+  shows its balance against its limit instead, because revolving credit has
+  no starting balance.
+- **Colour:** category colours on Budget and Upcoming, account-type colours on
+  Net worth (they are categories there), teal for progress, red only for over.
+
+**Not changed:** Transactions, which was the reference; Categories and
+Insights, which come next; the account cards and inputs under Net worth.
+
+### D-41 — October 7: A focused Budget, and the audit that followed
+
+**Status:** Active. From a competitor review (Monarch, Copilot, Rocket Money,
+YNAB) and an audit the founder asked to have fixed in full.
+
+**Decision:**
+- **Budget is monthly, and leads with one number:** what is left to spend
+  this month, after spending and bills still due. The first build led with
+  free to spend until payday, which mixed an 8-day window into a monthly
+  page; the founder caught it. Free to spend stays a line under it, shown
+  only when checking is tighter than the budget before payday.
+- **A pace bar, not a strip.** After four options (weeks strip, pace bar,
+  month calendar, just the number) the founder chose the pace bar: everyday
+  spending against its budget, with a line where an even pace would be today,
+  and "ahead of pace" in amber or "under pace" in green. Bills are left out,
+  because they are set aside. No verdict in the first five days, when one
+  grocery shop would read as a trend. Red stays for over budget.
+- **The month calendar is a tap away** ("See October"): days gone shaded by
+  everyday spending, days ahead with their even share, bills as dots on their
+  day. Rent would set the shading scale, so bills are dots, not shading.
+- **Free to spend shares the budget by day.** When the budget is the limit,
+  free to spend until payday is the month's remainder times the days to
+  payday over the days left in the month, not the whole remainder. Before,
+  $360 left for 24 days read as $45 a day until a payday 8 days away. Over
+  budget is not shared out, and a window to the month's end takes it all.
+  This corrects D-29's budget side; Home and Transactions use the same result.
+- **Only what needs attention is listed:** categories over (spent plus still
+  due, D-35) or heading over. Heading over means spending is more than the
+  share of the month gone plus a fifth of the budget; projecting from a week
+  of data flagged half the categories on the 7th. Bill categories are never
+  projected, because rent on the 1st is not a daily rate.
+- **Bills are one row.** A category is a bill category when an Upcoming bill
+  is in it. Everyday categories on track fold into one row. Edit budget opens
+  the full list, with income and guided setup.
+- **A missing bill is named, not blamed.** When an over category holds a
+  payment that repeats last month's (same name, within 10%), the row asks
+  whether it is a bill and links to Upcoming.
+- **Savings rate and needs/wants left Budget.** They are on Home, in Plan and
+  in Transactions.
+- **The shared row (D-40) changed for every Money page:** a tinted circle with
+  the category emoji instead of a dot, words in the body font and only
+  amounts in DM Mono, status words bold and plain amounts regular, and rows on
+  the page instead of inside a second card.
+- **Fixes from the audit:** deleting an upcoming payment asks first; account
+  type colours come from one list in `lib/categories.ts`; the remaining Net
+  worth account cards, Categories and Insights use system tokens, and the
+  dark Insights cards became normal cards; the sidebar no longer repeats
+  Cashflow's sub-pages, which the pills now show.
+
+### D-42 — October 7: Plan in the calm style
+
+**Status:** Active. From a Plan mock the founder approved ("build all").
+
+**Decision:**
+- **Freedom date** leads with the date in Fraunces and a bar to the FIRE
+  number. Under it, **what moves it most**: the same three moves as Home
+  (save $500 more, spend 10% less, earn 10% more), worked out from Plan's own
+  inputs so their dates match the one above, as rows with years sooner and
+  the month each lands.
+- **Assumptions are rows**, each opening its own editor: age, retire in,
+  lifestyle, tax home, growth, and tax in retirement (the tax card, which was
+  a separate card, opens from its row). The lifestyle hint no longer shows a
+  "×25" FIRE number, which disagreed with the freedom date's own multiple.
+- **Before you buy** is one sentence: "A $3,000 purchase today moves your
+  freedom date 1 month later", with what it would have grown to under it.
+  The dark two-box result is gone.
+- **Goals:** saved toward every goal, one bar split by goal, and what a month
+  keeps the dated ones on time; then a row per goal with its date and monthly
+  amount. Delete asks first. Goals already stored a target date, so no new
+  field.
+- **Contributions** leads with the next amount, your mix now against your
+  target as two bars, and the steps as numbered rows; the inputs follow as
+  before.
+- **Rows** show word values ("Lisbon ›") in the body font and amounts in DM
+  Mono.
+
+**Not changed:** Expat FIRE, Citizenship and Learn.
+
+### D-43 — October 8: city guides answer first, then offer a personal plan
+
+**Status:** Active product direction approved by the user; implementation is
+integrated October 8 (PR #186).
+**Decision:** Apply the approved Austin mobile preview to existing city guides.
+Lead with the estimate and meaningful qualifiers, use a geographic comparison
+with published nearby city guides, and keep detailed scenarios and methodology
+under native disclosures. Offer one primary plan action with city context.
+**Why:** The user observed overly verbose mobile city pages in sessions and
+approved the simpler map-based preview. SEO is not a reason to repeat math or
+make users read every assumption before finding their answer.
+**Trade-offs:** Maps show approximate city centers and depend on best-effort
+tiles. Keep text comparisons, visible attribution, sources and uncertainty.
+International source amounts remain explicitly USD; do not imply a local quote.
+No conversion lift is established until post-integration measurement.
+**Contract:** [City guide layout](design/city-guide-layout.md).
+**Revisit:** Mobile completion evidence, missing data, tile reliability or an
+explicitly authorized local-currency data refresh.

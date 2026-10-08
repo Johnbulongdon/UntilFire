@@ -6,9 +6,9 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
-## 2026-10-07 — prepared for review
+## 2026-10-08
 
-### Answer-first city guides with geographic comparisons
+### Answer-first city guides with map comparisons
 - Apply the approved Austin layout to all 230 existing city guides: one FIRE
   estimate, a clear personal-plan action, coordinate-backed map comparisons,
   and expandable sources and scenarios. Preserve metadata and canonical links.
@@ -16,7 +16,137 @@ under today's date, creating the heading if it is not there yet.
   tiles fail. Do not invent neighbors or neighborhood-level precision.
 - Carry the chosen city into existing onboarding and record the plan-link
   event; signup remains optional until the save-plan step.
-- This entry describes the reviewed implementation, not verified production.
+
+## 2026-10-07
+
+### Calm Plan
+- Freedom date shows your progress to your FIRE number, what moves the date most with the month each move lands, and your assumptions as rows you tap to change.
+- Before you buy says in one line how much later a purchase makes your freedom date.
+- Goals show what you've saved toward all of them and what a month keeps them on time; deleting a goal asks first.
+- Contributions open on the next amount, your mix now against your target, and the steps it goes through.
+
+### Focused Budget
+- Budget opens on what's left to spend this month and about how much a day, with a pace bar showing whether everyday spending is ahead of or under an even pace. Tap "See October" for the month as a calendar. If checking is tighter than your budget before payday, it says so.
+- Fixed: when your budget was the limit, free to spend counted the whole month's remainder as spendable before payday, overstating the daily amount. It now takes the days before payday's share.
+- Only categories that are over or heading over are listed; bills are one row and everyday categories fold into one. Edit budget shows them all.
+- If an over category holds a payment you also made last month, Budget asks whether it's a bill.
+- Money rows show category icons, as on Transactions. Deleting an upcoming payment asks first. The sidebar no longer repeats Cashflow's pages.
+- Insights' summary cards follow your theme.
+
+### Calm Money
+- Budget, Upcoming, Net worth and Debts share one calm layout: a headline with one number and its bar, then simple rows with a dot, a name, the amount and a bar.
+- Cashflow's sub-pages switch with pills.
+- Upcoming shows the next 30 days as dots on a strip; tap a payment to mark it paid, link it, edit or delete it.
+- Debts: add what a loan started at to see how much is paid off. Cards show their balance against the limit.
+- Net worth uses connected balances throughout, matching Home.
+
+### Calm Home
+- A fresh Home shows four things: your freedom date with a bar to your FIRE number and a 5-year chart, this month's contribution as a step bar, this month's spending by category against your budget, and one row with net worth, safety runway and months on plan.
+- The other Home cards are hidden by default, not removed; add them back with Edit. Layouts you saved keep what they had.
+- The hero is no longer forced dark, and follows your theme.
+
+### Copy and labels
+- The welcome tour describes the app as it is today.
+- Home's "what if" moves show amounts in your currency, and the consistency
+  card counts months on plan instead of a streak.
+- Money words are consistent: Income, Expenses, Saved, Needs, Wants.
+- One name per thing (FIRE number, Upcoming payment, Debts), and labels in
+  sentence case.
+- Removed eight unused old components that still used the old wording.
+
+### Free calculator and the rest of the app agree
+- The free result's "retire abroad" ages are right for visitors outside the
+  US: their figures are converted to dollars before comparing with city costs.
+- The embeddable calculator shows the same freedom year as the free result.
+- The Assets tab's emergency fund months match Home and Contributions.
+- The purchase-impact calculator starts at the same 6.9% growth as the rest.
+
+### Expat FIRE uses your numbers everywhere
+- The globe's colours and hover card use your own target and growth, not a
+  fixed 25x and 5%.
+- If your city is not in the list, comparisons use your own spending
+  instead of New York or a made-up $60,000.
+- City costs include your lifestyle, so each card adds up, and money shows
+  in your display currency.
+
+### Money's numbers agree
+- Net worth counts each debt once, everywhere: a linked loan or mortgage
+  replaces what you typed, and credit card balances are included.
+- The Net Worth page's progress matches Home's.
+- Insights averages only finished months, and its categories include your
+  custom ones.
+- Budget's savings rate is after your mortgage payment, and a category is
+  "over" when spending plus bills still due passes its budget, the same as
+  Transactions.
+- "Committed every month" and Insights' FIRE-target line use your own
+  withdrawal rate and tax setting.
+
+### Contributions math
+- Paid weekly: each purchase is your week's money, not a quarter of it, and
+  the employer match and loan overpayment take a week's share, not a
+  month's every week.
+- Debt counts as expensive when its rate beats your expected return before
+  inflation (9.6% by default), so a cheap loan no longer jumps ahead of
+  investing.
+- Home's safety runway uses the emergency fund you set on Contributions, so
+  the two agree.
+- Home states the plan's monthly investing as an assumption. What to put in
+  this month is the Next contribution card's.
+- Contributions offers the debts from Liabilities and your connected loan and
+  card accounts, so you don't have to type them twice.
+
+### Plan's tools agree with your freedom date
+- "What would this cost your freedom?" uses your real balances (connected
+  accounts included), your savings after mortgage and debt, and the same
+  target as your freedom date.
+- The Tax Profile card shows the extra on your actual retirement target.
+- Expat FIRE no longer counts linked accounts twice. It uses your withdrawal
+  rate, taxes and lifestyle for each city, and its timeline grows at the rate
+  you chose.
+
+### Home's math matches your freedom date
+- Debt is paid out of your savings instead of on top of investing all of
+  them, so freedom dates for people with debt are no longer too early.
+- "What if" moves and the spending warning use the same model as the
+  freedom date, tax settings included.
+- A connected account replaces the balance you typed for the same kind of
+  money instead of adding to it, everywhere on Home and Net Worth.
+- This month on Home is forecast like Transactions: rent on its day no
+  longer reads as overspending, and "left" subtracts bills still due.
+- The consistency streak only judges finished months.
+
+### Upcoming bills match their payments
+- Upcoming bills take a category and sub-category like a transaction; the
+  category is guessed from the name ("Rent" is Housing) until you pick one.
+- When a payment looks like one of your Upcoming bills, Worth a look asks
+  once ("Upcoming bill? → Rent"). Say yes and it is linked by name from then
+  on, so the bill is counted once in the forecast and budget line.
+- Once linked, the bill marks itself paid when its payment arrives: a
+  repeating bill moves to its next date, a one-off is completed.
+- The forecast no longer counts rent twice when you pay it under another
+  name (a person, or a card like BILT): past payments that match a bill's
+  category and amount are kept out of your everyday spending rate.
+- Repeating bills no longer end up under Completed: paying one moves it to
+  its next date, and ones completed before now are back in Upcoming.
+- "Link payment" on an Upcoming bill lets you pick the past expense that was
+  that bill. Later payments with the same name and a similar amount or date
+  mark it paid, even when paid early or late, and the forecast stops
+  adding a bill you have already paid this month.
+
+### The numbers agree with each other
+- "On track to save" counts this month's expected income until all of it
+  has arrived, instead of one paycheck against a whole month of expenses.
+- A new account's forecast no longer spreads rent across every day left.
+- Past months and the forecast both use your last six months.
+- Over or under budget compares only budgeted categories; spending without
+  a budget shows separately. "Bills exceed budget" now shows when it applies.
+- A category's "left" subtracts bills still due this month, the same as
+  Free to spend, and shows them as a striped "Still due" segment.
+- Bills without a category are treated the same everywhere ("Rent" counts
+  as Housing in Free to spend too), and rent you have linked and paid stops
+  reducing Free to spend.
+- The budget line shows bills at their real size. If bills add up to more
+  than your budget, a chip says by how much instead of shrinking them.
 
 ## 2026-10-06
 
@@ -66,8 +196,15 @@ under today's date, creating the heading if it is not there yet.
   again from past months that paid it on the 28th.
 - While a month is running, saved reads "On track to save", comparing a
   full month's income with the forecast, instead of a partial month.
-- Once everything is filed, the review bar shows how your expenses split
-  between needs and wants.
+- Once everything is filed, the review bar shows this month's expenses and
+  what is free to spend until payday (the same figure as Home).
+- Regular payments found in your history (rent paid through the same card
+  every month, subscriptions) count as bills even when they are not listed
+  in Upcoming, so they are no longer forecast twice.
+- The budget line steps up on the date of every Upcoming payment, whatever
+  its repeat (weekly, monthly, yearly or one-off, paid ones included), in
+  past months as well as this one, instead of only monthly ones. A bill in
+  Upcoming and the same payment found in your history count once.
 
 ### Reviewing suggested classifications learns from your history
 - Suggestions now come from how you filed the same merchant before: category,

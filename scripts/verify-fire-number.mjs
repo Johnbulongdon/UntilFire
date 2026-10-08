@@ -100,11 +100,13 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   const yearsAt = (rate) => Math.round(yearsToTarget(0, rate, 25 * (1 - rate)));
   check('savings rate title: 50% is 15 years, 10% is 42', yearsAt(0.5) === 15 && yearsAt(0.1) === 42 && srMeta.includes('Save 50%, Retire in 15 Years') && srMeta.includes('Save 10% and FIRE takes about 42 years'), `${yearsAt(0.5)} ${yearsAt(0.1)}`);
   const home = read('app/HomeClient.tsx');
-  check('free result: growth is state, and every projection uses it', home.includes('useState<number>(DEFAULT_RETURN_PCT)') && home.includes('const marketReturn = returnPct / 100;') && !home.includes('const marketReturn = REAL_RETURN'));
+  // D-30 took growth editing out of onboarding: the free result uses the
+  // sourced default, and every projection on it reads that one value.
+  check('free result: the sourced default growth, used by every projection', home.includes('const returnPct = DEFAULT_RETURN_PCT;') && home.includes('const marketReturn = returnPct / 100;') && !home.includes('const marketReturn = REAL_RETURN'));
   check('free result: the choice carries into the dashboard', home.includes('realReturn: marketReturn') && read('app/dashboard/page.tsx').includes('prefill.realReturn'));
   check('free result: age rounds like the year', home.includes('planningAge + Math.floor(result.years)') && !home.includes('planningAge + Math.round(projection.years)'));
   const flow = read('app/components/RevealFlow.tsx');
-  check('free result states its growth in one line and opens the history to change it', flow.includes('growth</b> a year after inflation') && flow.includes('as we recommend') && flow.includes('"Change"') && home.includes('growthPicker={<GrowthChoicePicker'));
+  check('free result states its growth in one line, with no picker in onboarding (D-30)', flow.includes('growth</b> a year after inflation') && flow.includes('as we recommend') && !home.includes('growthPicker={<GrowthChoicePicker'));
   const card = read('app/dashboard/FireAssumptionsCard.tsx');
   check('Plan assumptions: growth in one line, the history one tap away', card.includes('<GrowthSetting') && !card.includes('<GrowthChoicePicker'));
   check('dashboard treats the old typed 0.07 as never chosen', read('app/dashboard/page.tsx').includes('fp.growthRate !== 0.07'));

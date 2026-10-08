@@ -20,12 +20,15 @@ import {
   resolveEmergencyAccounts, sumBalances, type CashAccount,
 } from "./emergency-fund-accounts.ts";
 import {
-  daysUntil, DEFAULT_SCHEDULE, nextContributionDate, type ContributionSchedule,
+  daysUntil, DEFAULT_SCHEDULE, monthsPerCycle, nextContributionDate, type ContributionSchedule,
 } from "./contribution-schedule.ts";
+import { SP500_HISTORY } from "./sp500-history.ts";
 import {
   buildForecast, monthlyAllowance, needsAllowance, perDay,
   type AllowanceExclusion, type CashflowForecast, type ExpectedItem, type NeedTransaction, type NeedsAllowance,
 } from "./cashflow-forecast.ts";
+
+const DEFAULT_INFLATION = (SP500_HISTORY.periods.find((p) => p.id === "since1928")?.inflationPct ?? 3) / 100;
 
 /** The same floor and target the Home safety runway uses. */
 export const EMERGENCY_FLOOR_MONTHS = 1.5;
@@ -40,6 +43,12 @@ export interface AccountFacts {
   averageNeeds?: number;
   /** Real return as a fraction: 0.055, not 5.5. */
   realReturn?: number;
+  /** Debts the rest of the app knows of (Liabilities and connected loan and
+   *  card accounts), offered as rows so the ladder and the freedom date work
+   *  from one list (D-34). Balances only: rates are typed in. */
+  knownDebts?: { name: string; balance: number }[];
+  /** Inflation as a fraction, to compare debt rates (before inflation) with the return. Defaults to the S&P history's. */
+  inflation?: number;
   /** Expected payments in and out, in USD, with their dates and repeats —
    *  the user's own Money → Expected list. */
   expectedItems?: ExpectedItem[];
@@ -141,6 +150,21 @@ export function measuredEmergencyFund(
   };
 }
 
+/**
+ * The emergency fund as Contributions defines it: the accounts chosen there
+ * (savings accounts by default) against the needs basis chosen there. Home's
+ * safety runway reads this too (D-34); it used to count every bank account
+ * against average needs, so Home could call the fund healthy while this page
+ * said to fill the floor first.
+ */
+export function emergencyFundFromPlan(plan: StoredPlan | null, facts: AccountFacts): { balance: number; monthlyNeeds: number } {
+  const ladder = plan?.ladder ?? EMPTY_STORED_LADDER;
+  return {
+    balance: ladder.efOverride ?? measuredEmergencyFund(ladder.efAccountIds, facts).balance,
+    monthlyNeeds: ladder.expensesOverride ?? measuredExpenses(ladder.expenseSource, facts),
+  };
+}
+
 /** What the expenses field shows, before any override. */
 export function measuredExpenses(source: ExpenseSource, facts: AccountFacts): number {
   return (source === "average" ? facts.averageNeeds : facts.lastMonthNeeds) ?? 0;
@@ -189,11 +213,17 @@ export function buildLadderView(
   const efFloor = expenses * EMERGENCY_FLOOR_MONTHS;
   const efTarget = expenses * EMERGENCY_TARGET_MONTHS;
 
+  /* A loan's rate is before inflation; the return is after it. Comparing the
+     two counted an 8% loan as beating a 6.9% real return, when it costs
+     about 5% after inflation. The threshold is the return before inflation:
+     (1 + real) × (1 + inflation) − 1, 9.6% on the default history. */
+  const inflation = facts.inflation ?? DEFAULT_INFLATION;
   const accountThresholdPct = facts.realReturn != null
-    ? +(facts.realReturn * 100).toFixed(2)
+    ? +(((1 + facts.realReturn) * (1 + inflation) - 1) * 100).toFixed(1)
     : DEFAULT_THRESHOLD_PCT;
   const thresholdPct = ladder.thresholdOverride ?? accountThresholdPct;
 
+  const cycle = monthsPerCycle(schedule);
   const debts: Debt[] = ladder.debts.map((d) => ({
     name: d.name, balance: d.balance, ratePct: d.ratePct,
   }));
@@ -201,11 +231,12 @@ export function buildLadderView(
   const waterfall = fillWaterfall(buildLadder({
     emergencyGapToFloor: Math.max(0, efFloor - efBalance),
     emergencyGapToTarget: Math.max(0, efTarget - efBalance),
-    monthlyMatch: ladder.monthlyMatch,
+    // Match and overpayment are monthly; a weekly contribution gets a week's share of each.
+    monthlyMatch: ladder.monthlyMatch * cycle,
     debts,
     highInterestThresholdPct: thresholdPct || DEFAULT_THRESHOLD_PCT,
     taxAdvantagedRoom: ladder.taxRoom,
-    lowInterestExtra: ladder.lowInterestExtra,
+    lowInterestExtra: ladder.lowInterestExtra * cycle,
     disabled: ladder.disabled,
   }), budget);
 

@@ -17,10 +17,11 @@
 import { merchantKey } from "./merchant-memory.ts";
 import { looksLikeCardPayment, median, netAmount, type RangeTx } from "./spend-range.ts";
 
-export type FlagKind = "card_payment" | "duplicate" | "large";
+/** "bill" — looks like a listed Upcoming bill not yet linked to it (lib/spend-forecast unlinkedBillPayments). */
+export type FlagKind = "card_payment" | "duplicate" | "large" | "bill";
 export type FlagTx = RangeTx & { id: string; tags?: string[] | null; source?: string | null };
 
-export const FLAG_ORDER: FlagKind[] = ["card_payment", "duplicate", "large"];
+export const FLAG_ORDER: FlagKind[] = ["bill", "card_payment", "duplicate", "large"];
 export const okTag = (k: FlagKind) => `ok:${k}`;
 export const isSystemTag = (tag: string) => tag.startsWith("ok:");
 const LARGE_FLOOR_USD = 250;

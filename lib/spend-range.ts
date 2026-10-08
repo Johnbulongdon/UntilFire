@@ -6,7 +6,7 @@
  * "how much did I spend" and "how much do I usually spend" live here, as pure
  * functions, rather than in the chart components.
  *
- * Usual is the median of the person's past complete months, measured up to
+ * Usual is the median of the person's last six complete months, measured up to
  * the same day of the month. Median, not mean, for the same reason as
  * Insights (MonthInsight): the one expensive month is exactly what it should
  * see past. Fewer than three past months gives no usual at all, because a
@@ -76,13 +76,15 @@ export function bucketFor(months: number): "day" | "week" | "month" {
  * Median spend of past complete months, counting only days 1..`day` of each
  * (capped at that month's length). `day` of 31 compares whole months.
  * Months with no spending at all are skipped: no data is not a $0 month.
- * Returns null below MIN_USUAL_MONTHS.
+ * Returns null below MIN_USUAL_MONTHS. Six months back, the same window as
+ * the forecast's everyday rate (spend-forecast USUAL_LOOKBACK), so the chart
+ * has one meaning of "a typical month".
  */
 export function usualToDay(
   spend: { date: string; usd: number }[],
   currentMonth: string,
   day: number,
-  lookback = 12,
+  lookback = 6,
 ): { value: number; months: number } | null {
   const first = addMonths(currentMonth, -lookback);
   const byMonth = new Map<string, number>();

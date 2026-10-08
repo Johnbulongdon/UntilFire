@@ -30,7 +30,7 @@ export default function EmbedCalculator({ code }: { code: string | null }) {
           <div className="uf-t-display" style={{ color: "var(--uf-teal)", lineHeight: 1.05 }}>{r.year ?? "—"}</div>
         </div>
         <div className="uf-t-small" style={{ textAlign: "right", color: "var(--uf-ink-2)" }}>
-          {r.year === null ? "Not within 65 years" : r.years === 0 ? "You're there already" : `${Math.ceil(r.years ?? 0)} years`}
+          {r.year === null ? "Not within 65 years" : r.years === 0 ? "You're there already" : `${Math.round(r.years ?? 0)} years`}
           <br />target <span className="uf-t-data">{compact(r.target)}</span>
         </div>
       </div>

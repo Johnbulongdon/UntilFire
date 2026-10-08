@@ -29,6 +29,9 @@ export interface ContributionSchedule {
 
 export const DEFAULT_SCHEDULE: ContributionSchedule = { cadence: "monthly", anchorDay: 1 };
 
+/** How much of a month one contribution covers: a week is 7 of 365.25/12 days. Monthly amounts scale by it. */
+export const monthsPerCycle = (s: ContributionSchedule) => (s.cadence === "weekly" ? 7 * 12 / 365.25 : 1);
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Midnight local, so two dates can be compared as calendar days. */
