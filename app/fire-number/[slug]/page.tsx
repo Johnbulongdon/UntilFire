@@ -4,11 +4,11 @@ import { notFound } from 'next/navigation'
 import { getLearnArticle } from '@/lib/learn'
 import { cityLandingPages, getCityLandingPage, cityPagePath } from '@/lib/city-pages'
 import type { CityLandingPage } from '@/lib/city-pages'
-import { CITIES, STATE_TAX, US_CITY_COST_DATA_UPDATED, costRangeFor, isUS } from '@/lib/fire-data'
+import { CITIES, STATE_TAX, US_CITY_COST_DATA_UPDATED, isUS } from '@/lib/fire-data'
 import type { City } from '@/lib/fire-data'
 import { getStatePageSlug, STATE_NAMES } from '@/lib/state-pages'
 import { calcFIRE, calcTakeHome, REAL_RETURN } from '@/lib/fire'
-import CityCalcWidget from '../CityCalcWidget'
+import CityGuideStart from '../CityGuideStart'
 import CityLocationExplorer from '@/app/components/CityLocationExplorer'
 import { formatMoney } from "@/lib/money";
 
@@ -204,8 +204,8 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
 
   return (
     <>
-      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
-        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 24px 88px' }}>
+      <main className="city-guide-root" style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+        <div className="city-guide-page" style={{ maxWidth: 860, margin: '0 auto', padding: '28px 24px 88px' }}>
           <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26, fontSize: 13 }}>
             <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Home</Link>
             <Link href="/calculators" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Calculators</Link>
@@ -213,60 +213,10 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
             <span style={{ color: 'var(--uf-ink-2)' }}>{page.city.name}</span>
           </nav>
 
-          <section
-            style={{
-              background: 'linear-gradient(135deg, var(--uf-card) 0%, var(--uf-green-50) 100%)',
-              border: '1px solid var(--uf-green-100)',
-              borderRadius: 24,
-              padding: '34px 28px',
-              marginBottom: 28,
-            }}
-          >
-            <p style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', margin: '0 0 14px' }}>
-              City FIRE Guide
-            </p>
-            <h1 style={{ fontSize: 'clamp(34px, 5vw, 56px)', lineHeight: 1.02, color: 'var(--uf-ink)', letterSpacing: '-0.05em', margin: '0 0 16px' }}>
-              {page.heroTitle}
-            </h1>
-            <p style={{ maxWidth: 760, fontSize: 17, lineHeight: 1.8, color: 'var(--uf-ink-2)', margin: '0 0 24px' }}>
-              {page.intro}
-            </p>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
-              <Link
-                href={`/?source=${source}`}
-                style={{ textDecoration: 'none', background: 'linear-gradient(135deg, var(--uf-green), var(--uf-green-900))', color: 'var(--uf-card)', padding: '12px 18px', borderRadius: 10, fontWeight: 700, fontSize: 14 }}
-              >
-                Run the full FIRE calculator
-              </Link>
-              <Link
-                href={`${page.calculatorHref}?source=${source}`}
-                style={{ textDecoration: 'none', background: 'var(--uf-card)', color: 'var(--uf-ink)', padding: '12px 18px', borderRadius: 10, border: '1px solid var(--uf-border)', fontWeight: 700, fontSize: 14 }}
-              >
-                Open {page.calculatorLabel}
-              </Link>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: 14,
-              }}
-            >
-              {page.summaryItems.map((item) => (
-                <div key={item.label} style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 16, padding: '18px 18px 16px' }}>
-                  <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-                    {item.label}
-                  </div>
-                  <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--uf-ink)' }}>
-                    {item.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
+          <CityGuideStart city={page.city} slug={page.slug} explorer={page.slug === 'austin-tx' ? <CityLocationExplorer cityKey={page.city.key} /> : undefined} />
+          <details className="city-guide-details" id="city-guide-details">
+            <summary>Spending scenarios, local context & further reading</summary>
+            <div className="city-guide-details-content">
           <section
             style={{
               display: 'grid',
@@ -376,7 +326,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
                 tabIndex={0}
                 style={{ overflowX: 'auto', border: '1px solid var(--uf-border)', borderRadius: 14 }}
               >
-                <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse' }}>
+                <table className="city-guide-spending-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead style={{ background: 'var(--uf-surface)' }}>
                     <tr>
                       {/* The target first: on a phone the table scrolls sideways, and it is the
@@ -409,8 +359,6 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
               </p>
             </section>
           ) : null}
-
-          {page.slug === 'austin-tx' && <CityLocationExplorer cityKey={page.city.key} />}
 
           <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 20 }}>
@@ -456,6 +404,8 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
                 ))}
             </div>
           </section>
+            </div>
+          </details>
         </div>
       </main>
 
@@ -496,7 +446,6 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   // Null where nothing was measured, in which case the page shows the plain
   // figure. Never a made-up band: dressing a guess as a measurement is the
   // failure this range exists to avoid.
-  const costRange = costRangeFor(data);
   const tax = STATE_TAX[data.state];
   const taxRate = tax?.rate ?? 0;
   const taxLabel = tax?.label ?? data.state.toUpperCase();
@@ -595,13 +544,14 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
 
   return (
     <>
+      <div className="city-guide-root">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-        *, *::before, *::after { box-sizing: border-box; }
-        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
-        a { color: inherit; }
-        table { border-collapse: collapse; width: 100%; }
-        th { text-align: left; }
+        .city-guide-root *, .city-guide-root *::before, .city-guide-root *::after { box-sizing: border-box; }
+
+        .city-guide-root a { color: inherit; }
+        .city-guide-root table { border-collapse: collapse; width: 100%; }
+        .city-guide-root th { text-align: left; }
         @media(max-width: 640px) {
           .city-hero-grid { grid-template-columns: 1fr !important; }
           .city-scenario-table th, .city-scenario-table td { padding: 10px 12px !important; font-size: 13px !important; }
@@ -609,7 +559,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
         }
       `}</style>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "32px 24px 80px" }}>
+      <div className="city-guide-page" style={{ maxWidth: 860, margin: "0 auto", padding: "32px 24px 80px" }}>
 
         {/* Breadcrumb */}
         <nav style={{ fontSize: 13, color: "var(--uf-ink-3)", marginBottom: 24, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -620,51 +570,10 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           <span style={{ color: "var(--uf-green-900)", fontWeight: 600 }}>{data.name}</span>
         </nav>
 
-        {/* Hero */}
-        <div style={{ marginBottom: 40 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>{data.flag}</div>
-          <h1 style={{ fontSize: 36, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.8px", margin: "0 0 12px", lineHeight: 1.1 }}>
-            FIRE Number Calculator{' '}<br />for {data.name}
-          </h1>
-          <p style={{ fontSize: 17, color: "var(--uf-ink-2)", margin: 0, lineHeight: 1.6, maxWidth: 580 }}>
-            How much do you need to retire in {data.name}? Based on a local cost of living of{" "}
-            <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(data.col)}/year</strong>
-            {costRange && (
-              costRange.capped
-                ? <> &mdash; plausibly {formatMoney(costRange.low)} or more</>
-                : <> &mdash; plausibly {formatMoney(costRange.low)} to {formatMoney(costRange.high)}</>
-            )}
-            , your FIRE target is{" "}
-            <strong style={{ color: "var(--uf-green-900)" }}>{formatMoney(fireTarget)}</strong>.
-          </p>
-        </div>
-
-        {/* Key stats */}
-        <div className="city-hero-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
-          {[
-            {
-              label: "Annual cost of living",
-              value: formatMoney(data.col),
-              // The range replaces "local baseline", which said nothing. A
-              // reader who can see the spread knows how far to trust the
-              // middle of it — and knows to put their own number in.
-              sub: costRange
-                ? costRange.capped
-                  ? `typically ${formatMoney(costRange.low)} and up`
-                  : `typically ${formatMoney(costRange.low)}\u2013${formatMoney(costRange.high)}`
-                : "local baseline",
-            },
-            { label: "FIRE target (25× rule)", value: formatMoney(fireTarget), sub: "4% withdrawal" },
-            { label: "State income tax", value: taxRate === 0 ? "0% — no income tax" : `${(taxRate * 100).toFixed(1)}%`, sub: taxLabel },
-          ].map(({ label, value, sub }) => (
-            <div key={label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "20px 22px" }}>
-              <div style={heading}>{label}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.4px" }}>{value}</div>
-              <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>{sub}</div>
-            </div>
-          ))}
-        </div>
-
+        <CityGuideStart city={data} slug={data.key} />
+        <details className="city-guide-details" id="city-guide-details">
+          <summary>Example timelines, FIRE options & methodology</summary>
+          <div className="city-guide-details-content">
         {/* Scenarios table */}
         <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 32 }}>
           <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--uf-border)" }}>
@@ -700,7 +609,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
         </div>
 
         {/* Interactive calc */}
-        <CityCalcWidget city={data} />
+
 
         {/* Editorial content */}
         <div style={{ marginTop: 48, marginBottom: 40 }}>
@@ -958,33 +867,11 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           </div>
         )}
 
-        {/* Bottom CTA */}
-        <div style={{ background: "linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)", borderRadius: 16, padding: "32px 36px", textAlign: "center" }}>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-card)", margin: "0 0 10px", letterSpacing: "-0.4px" }}>
-            Ready to build your real FIRE plan?
-          </h2>
-          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", margin: "0 0 24px" }}>
-            Track your spending, model your investments, and see exactly when you can retire in {data.name}.
-          </p>
-          <Link
-            href="/dashboard"
-            style={{
-              display: "inline-block",
-              background: "var(--uf-teal)",
-              color: "var(--uf-green-900)",
-              padding: "14px 32px",
-              borderRadius: 8,
-              fontSize: 15,
-              fontWeight: 800,
-              textDecoration: "none",
-              letterSpacing: "-0.2px",
-            }}
-          >
-            Start free — no credit card
-          </Link>
-        </div>
+          </div>
+        </details>
       </div>
 
+      </div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

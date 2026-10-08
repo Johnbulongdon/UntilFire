@@ -458,3 +458,12 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
   `funnel_calculator_revealed`).
 - The PostHog project for verification is the one configured by
   `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` (see Vercel env).
+# City-guide plan entry (7 October 2026)
+
+`funnel_city_plan_started` fires on the primary city-guide plan link. Properties:
+`city_key`, `city_slug`, `source` (`fire-number-{slug}`), `placement` (`city_guide`),
+and `funnel_event_version`. These are public guide identifiers, not the visitor's
+personal finances or precise location. Pageviews provide the visitor denominator;
+follow the existing reveal, signup-completed and dashboard-first-view events to
+measure conversion and activation. Deduplicate by visitor/session, exclude
+internal traffic, and do not count a click as a signup.

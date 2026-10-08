@@ -1,6 +1,6 @@
 # Public location explorer handoff
 
-Status: implementation in review; not deployed.
+Status: integrated October 8 (PR #201); on Austin the explorer replaces the PR #186 comparison map (D-44).
 Baseline: GitHub main d54af525, reconciled October 7, 2026 through the GitHub plugin after git transport failed.
 
 ## Integration

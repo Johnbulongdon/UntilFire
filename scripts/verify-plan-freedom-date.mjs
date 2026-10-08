@@ -103,7 +103,7 @@ assert.doesNotMatch(html({ date: d69, fireAge: 30, years: 20, growthPct: 6.9, de
 assert.match(html({ date: null, fireAge: 30, years: null, growthPct: 6.9, deltaYears: null }), /Not reached/);
 
 // Wiring: Plan shows it above the assumptions, and Home uses the same function.
-assert.match(source, /<PlanFreedomDate[\s\S]{0,600}<FireAssumptionsCard\s+freedomDateLabel=/, 'Plan shows the date above the assumptions card, and the card repeats it by the growth picker');
+assert.match(source, /<PlanFreedomDate[\s\S]{0,3000}<FireAssumptionsCard\s+freedomDateLabel=/, 'Plan shows the date (then what moves it, D-42) above the assumptions card, and the card repeats it by the growth picker');
 assert.match(source, /useMemo\(\(\) => freedomProjection\(\{\s*income, expenses,/, 'Home computes its date with freedomProjection');
 assert.doesNotMatch(source, /Assumptions live in Profile/, 'stale copy is gone');
 assert.match(readFileSync('app/dashboard/FireAssumptionsCard.tsx', 'utf8'), /your freedom date is \{freedomDateLabel\}/, 'the card says the date under the growth picker');

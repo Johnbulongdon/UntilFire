@@ -26,6 +26,7 @@ import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessB
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import { FreedomCard, MonthCard, GlanceRow, type MonthCategory } from "./HomeCards";
+import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
 import { fetchAllPages } from "@/lib/supabase-pages";
@@ -49,9 +50,9 @@ import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } fro
 import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
-import { EXPENSE_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
+import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Badge, Button, ICON_PATHS, Stat } from "@/components/ui";
+import { Alert, Button, ICON_PATHS } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -576,23 +577,7 @@ function FieldRow({ label, hint, children }: { label: string; hint?: string; chi
   );
 }
 
-/* Wraps the kit's Stat primitive. Stat renders the figure in DM Mono with
-   tabular numerals, which is what makes a row of balances line up on the
-   decimal instead of drifting — this used to be Manrope with hand-typed hex
-   per card, so the four KPI figures never aligned. */
-function KpiCard({ label, value, sub, tone = "default", glow = false }: {
-  label: string; value: React.ReactNode; sub?: string;
-  tone?: "default" | "positive" | "negative" | "freedom"; glow?: boolean;
-}) {
-  return (
-    <div className={`uf-card ${glow ? "uf-card-glow" : ""}`} style={{ padding: "18px 20px" }}>
-      <Stat label={label} value={value} delta={sub} deltaTone="default" tone={tone} size="lg" />
-    </div>
-  );
-}
-
-
-function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: string; color?: string }) {
+function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; text: string; color?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
       <span style={{ fontSize: 14 }}>{icon}</span>
@@ -2033,7 +2018,7 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, mortgageMonthly = 0, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2041,17 +2026,16 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   committedRemaining?: number;
   /** The same, split by category, so each dial can show what is still promised. */
   committedByCat?: Record<string, number>;
-  /** The mortgage payment from Debts, which Home and Plan subtract from savings too. */
-  mortgageMonthly?: number;
   /** Free to spend until payday, cash against budget (D-29). */
   freeResult?: FreeToSpend | null;
   spendAccounts?: SpendAccount[];
   spendToggles?: Record<string, boolean>;
   onSpendToggle?: (id: string, on: boolean) => void;
   displayCurrency: string; displayRates: Record<string, number>;
-  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[] }[];
-  freedomDateMonthYearLabel?: string | null;
-  onOpenTransactions?: () => void;
+  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[]; description?: string }[];
+  /** Upcoming expense bills (USD): which categories are bills, and what falls due before payday. */
+  bills?: Bill[];
+  onOpenUpcoming?: () => void;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -2066,41 +2050,13 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
 
   const totalExp = activeCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
 
-  // After the mortgage payment, as Home and Plan count it (D-35).
-  const savings  = income - totalExp - mortgageMonthly;
-  const rate     = income > 0 ? (savings / income) * 100 : 0;
   const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  // Open by default. Collapsed, the left column is shorter than the sticky
-  // 260px sidebar beside it, so the page opens on a tall empty gap — and the
-  // categories that are fine are still the ones you check first.
-  const [onTrackOpen, setOnTrackOpen] = useState(true);
+  const [showEveryday, setShowEveryday] = useState(false);
+  const [editAll, setEditAll] = useState(false);
+  const [showHow, setShowHow] = useState(false);
+  const [showMonth, setShowMonth] = useState(false);
   const isEmpty = totalExp === 0;
-
-  const donutStops = useMemo(() => {
-    let acc = 0;
-    return activeCats.map(cat => {
-      const amt = expenses[cat.key] || 0;
-      const pct = totalExp > 0 ? (amt / totalExp) * 100 : 0;
-      const start = acc;
-      acc += pct;
-      return { ...cat, amt, pct, start, end: acc };
-    });
-  }, [activeCats, expenses, totalExp]);
-  const donutGradient = totalExp > 0
-    ? donutStops.map(s => `${s.color} ${s.start}% ${s.end}%`).join(", ")
-    : "var(--uf-border) 0% 100%";
-
-  const overBudgetCats = activeCats
-    .filter(cat => {
-      // Over means spent plus bills still due this month, as Transactions counts it (D-35).
-      const budget = expenses[cat.key] || 0;
-      const used = (actuals[cat.key] || 0) + (committedByCat[cat.key] || 0);
-      return budget > 0 && used > budget;
-    })
-    .sort((a, b) => ((actuals[b.key] || 0) + (committedByCat[b.key] || 0) - (expenses[b.key] || 0)) - ((actuals[a.key] || 0) + (committedByCat[a.key] || 0) - (expenses[a.key] || 0)));
-  const onTrackCats = activeCats.filter(c => !overBudgetCats.includes(c));
-  const onTrackBudgetTotal = onTrackCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
 
   function suggestSlackCategories(excludeKey: string) {
     return activeCats
@@ -2112,16 +2068,10 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
       .map(c => c.label);
   }
 
-  // Needs vs Wants — current month, from the same transaction feed the rest of the dashboard uses
+  // This month's transactions, for the "is it a bill?" check below.
   const now = new Date();
   const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthTxns = recentTransactions.filter(t => t.date.startsWith(curMonth));
-  const expenseTxns = monthTxns.filter(t => (t.transaction_type ?? "expense") === "expense");
-  const taggedTxns = expenseTxns.filter(t => t.tags?.includes("need") || t.tags?.includes("want"));
-  const needsTotal = taggedTxns.filter(t => t.tags?.includes("need")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, displayRates), 0);
-  const wantsTotal = taggedTxns.filter(t => t.tags?.includes("want")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, displayRates), 0);
-  const classifiedTotal = needsTotal + wantsTotal;
-  const untaggedCount = expenseTxns.length - taggedTxns.length;
 
   const guidedSetupModal = budgetSetupOpen && (
     <BudgetSetupModal
@@ -2148,12 +2098,9 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           <div style={{ color: "var(--uf-text-2)", fontSize: 13, maxWidth: "34ch", lineHeight: 1.5 }}>
             Takes about a minute — we&apos;ll suggest a starting number for each category from your spending history where we have it.
           </div>
-          <button
-            onClick={() => setBudgetSetupOpen(true)}
-            style={{ marginTop: 6, background: "#22d3a5", color: "#062018", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 13, fontWeight: 800, fontFamily: "Manrope, sans-serif", cursor: "pointer" }}
-          >
-            ✎ Set up my budget
-          </button>
+          <Button variant="primary" onClick={() => setBudgetSetupOpen(true)} style={{ marginTop: 6 }}>
+            Set up my budget
+          </Button>
         </div>
 
         <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2185,238 +2132,180 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
     );
   }
 
-  function renderRow(cat: typeof activeCats[number], over: boolean) {
+  /* The focused Budget (D-41). One number first: free to spend until payday.
+     Then only what needs attention, bills as one row, and the everyday
+     categories folded. The full list is one tap away, for editing. */
+  const billCats = new Set(bills.map((b) => b.category || guessBillCategory(b.description) || "other"));
+  const spentOf = (k: string) => actuals[k] || 0;
+  const dueOf = (k: string) => committedByCat[k] || 0;
+  const daysIn = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dayOfMonth = now.getDate();
+  // On pace: everyday spending so far, at the same daily rate, to the month's end.
+  // Bill categories are left out, because a rent payment on the 1st is not a rate.
+  const paceOf = (k: string) => !billCats.has(k) && dayOfMonth >= 5 ? (spentOf(k) / dayOfMonth) * daysIn : 0;
+  // Heading over only once spending is well ahead of the month: more than the
+  // share of the month gone plus a fifth of the budget. Projecting a week of
+  // data flagged half the categories on the 7th.
+  const headingOver = (k: string) => {
+    const budget = expenses[k] || 0;
+    return budget > 0 && !billCats.has(k) && spentOf(k) / budget > dayOfMonth / daysIn + 0.2 && paceOf(k) > budget;
+  };
+  const attention = activeCats.filter((c) => {
+    const budget = expenses[c.key] || 0;
+    return budget > 0 && (spentOf(c.key) + dueOf(c.key) > budget || headingOver(c.key));
+  }).sort((x, y) => (spentOf(y.key) + dueOf(y.key) - (expenses[y.key] || 0)) - (spentOf(x.key) + dueOf(x.key) - (expenses[x.key] || 0)));
+  const billGroup = activeCats.filter((c) => billCats.has(c.key) && !attention.includes(c));
+  const everyday = activeCats.filter((c) => !billCats.has(c.key) && !attention.includes(c));
+  const sum = (cs: typeof activeCats, f: (k: string) => number) => cs.reduce((t, c) => t + f(c.key), 0);
+  const billSpent = sum(activeCats.filter((c) => billCats.has(c.key)), (k) => spentOf(k) + dueOf(k));
+  const everydaySpent = sum(activeCats.filter((c) => !billCats.has(c.key)), spentOf);
+  const leftInBudget = totalExp - sum(activeCats, (k) => spentOf(k) + dueOf(k));
+  const billsStillDue = sum(billGroup, dueOf);
+  const shortDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  // A payment this month that repeats one from last month (same name, within
+  // 10%) is probably a bill not yet in Upcoming. In an over category, say so
+  // rather than call it overspending.
+  const prevMonth = (() => { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; })();
+  const looksLikeBill = (k: string) => {
+    if (billCats.has(k)) return null;
+    const usd = (t: typeof recentTransactions[number]) => toUSD(netAmt(t), t.currency, displayRates);
+    const name = (t: typeof recentTransactions[number]) => (t.description ?? "").trim().toLowerCase();
+    const last = recentTransactions.filter((t) => t.date.startsWith(prevMonth) && (t.category ?? "other") === k && name(t));
+    const repeat = monthTxns.filter((t) => (t.transaction_type ?? "expense") === "expense" && (t.category ?? "other") === k && name(t))
+      .find((t) => last.some((p) => name(p) === name(t) && Math.abs(usd(p) - usd(t)) <= usd(t) * 0.1));
+    return repeat ? { amount: usd(repeat), name: repeat.description ?? "" } : null;
+  };
+
+  function renderRow(cat: typeof activeCats[number]) {
     const budget = expenses[cat.key] || 0;
-    const spent = actuals[cat.key] || 0;
-    const expected = committedByCat[cat.key] || 0;
+    const spent = spentOf(cat.key), expected = dueOf(cat.key), pace = paceOf(cat.key);
     const isEditing = editingKey === cat.key;
-    const suggestions = over ? suggestSlackCategories(cat.key) : [];
-
-    // The dial. The ring is the budget; it fills with what is spent, then with
-    // a paler arc for what is promised but not yet paid. Over-budget fills the
-    // whole ring in red — a ring cannot show more than one turn without lying
-    // about the geometry, so the figure carries how far over.
     const hasBudget = budget > 0;
-    const committed = spent + expected;
-    const left = budget - committed;
-    const pctSpent = hasBudget ? Math.min(100, (spent / budget) * 100) : 0;
-    const pctExp = hasBudget ? Math.min(100 - pctSpent, (expected / budget) * 100) : 0;
-    const pctTotal = hasBudget ? Math.round((committed / budget) * 100) : 0;
-    const ring = !hasBudget
-      ? "var(--uf-border-2)"
-      : over
-        ? `conic-gradient(var(--uf-neg) 0 100%)`
-        : `conic-gradient(${cat.color} 0 ${pctSpent}%, ${cat.color}59 ${pctSpent}% ${pctSpent + pctExp}%, var(--uf-border-2) ${pctSpent + pctExp}% 100%)`;
-    const note = !hasBudget ? "no budget set"
-      : over ? `${fmtMoney(committed - budget)} over`
-      : left >= 1 ? `${fmtMoney(left)} left`
-      : "nothing left";
-    const noteColor = !hasBudget ? "var(--uf-text-3)"
-      : over ? "var(--uf-neg)"
-      : left >= 1 ? "var(--uf-pos)" : "var(--uf-text-2)";
-
+    const left = budget - spent - expected;
+    const over = hasBudget && left < 0;
+    const heading = !over && headingOver(cat.key);
+    const billGuess = over ? looksLikeBill(cat.key) : null;
+    const suggestions = over && !billGuess ? suggestSlackCategories(cat.key) : [];
     return (
-      <div key={cat.key}>
-        <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}>
-          <span style={{ width: 58, height: 58, borderRadius: "50%", background: ring, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{
-              width: 44, height: 44, borderRadius: "50%", background: "var(--uf-card)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
-              fontSize: 11.5, fontWeight: 500, letterSpacing: "-0.02em",
-              color: hasBudget ? (over ? "var(--uf-neg)" : "var(--uf-text)") : "var(--uf-text-3)",
-            }}>
-              {hasBudget ? `${pctTotal}%` : "—"}
-            </span>
-          </span>
-
-          <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--uf-text)", display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ fontSize: 14 }}>{cat.emoji}</span>{cat.label}
-              <span className="uf-budget-pencil" style={{ fontSize: 11, color: "var(--uf-text-3)" }}>✎</span>
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: noteColor }}>{note}</span>
-          </span>
-
-          {isEditing ? (
-            <div style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-              <NumberInput
-                value={budget}
-                onChange={v => setExpenses({ ...expenses, [cat.key]: v })}
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </div>
-          ) : (
-            <span className="uf-budget-figs">
-              <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: 12.5, whiteSpace: "nowrap" }}>
-                {fmtMoney(spent)}
-                {hasBudget && <span style={{ color: "var(--uf-text-3)" }}> of {fmtMoney(budget)}</span>}
-              </span>
-              {expected > 0 && (
-                <span style={{ fontFamily: "var(--uf-font-mono)", fontSize: 10.5, color: "var(--uf-text-3)", whiteSpace: "nowrap" }}>
-                  + {fmtMoney(expected)} expected
-                </span>
-              )}
+      <MoneyRow
+        key={cat.key}
+        dot={over ? "var(--uf-neg)" : cat.color}
+        icon={cat.emoji}
+        name={cat.label}
+        meta={`${fmtMoney(spent)}${hasBudget ? ` of ${fmtMoney(budget)}` : ""}${expected > 0 ? ` · ${fmtMoney(expected)} due` : ""}${heading ? ` · on pace for ${fmtMoney(pace)}` : ""}`}
+        value={!hasBudget ? "No budget" : over ? `${fmtMoney(-left)} over` : left >= 1 ? `${fmtMoney(left)} left` : "Nothing left"}
+        valueTone={over ? "var(--uf-neg-ink)" : heading ? "var(--uf-warn-ink)" : hasBudget ? undefined : "var(--uf-ink-3)"}
+        strong={over || heading}
+        bar={hasBudget ? <MoneyTrack share={spent / budget} due={expected / budget} color={over ? "var(--uf-neg)" : cat.color} label={`${cat.label}: ${fmtMoney(spent)} spent${expected > 0 ? `, ${fmtMoney(expected)} due` : ""} of ${fmtMoney(budget)}`} /> : undefined}
+        onClick={() => setEditingKey(isEditing ? null : cat.key)}
+        after={<>
+          {billGuess != null && !isEditing && (
+            <span className="uf-t-small" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", color: "var(--uf-ink-2)" }}>
+              {billGuess.name} ({fmtMoney(billGuess.amount)}) was paid last month too. Is it a bill?
+              {onOpenUpcoming && <Button variant="secondary" size="sm" onClick={onOpenUpcoming}>Add it to Upcoming</Button>}
             </span>
           )}
-        </div>
-        {over && suggestions.length > 0 && (
-          <div style={{ fontSize: 11, color: "#f97316", padding: "0 18px 10px", marginTop: -4 }}>
-            ↳ Cut {fmtMoney(spent - budget)} from {suggestions.join(" or ")} to stay on pace
-          </div>
-        )}
-        {isEditing && (
-          <div style={{ fontSize: 11, color: "var(--uf-text-3)", padding: "0 18px 10px", marginTop: -4 }}>
-            <button onClick={() => setEditingKey(null)} style={{ background: "none", border: "none", color: "var(--uf-text-3)", textDecoration: "underline", cursor: "pointer", fontSize: 11, padding: 0, fontFamily: "Manrope, sans-serif" }}>Done</button>
-          </div>
-        )}
-      </div>
+          {suggestions.length > 0 && !isEditing && (
+            <span className="uf-t-small" style={{ color: "var(--uf-warn-ink)" }}>Move {fmtMoney(-left)} from {suggestions.join(" or ")} to stay on budget</span>
+          )}
+          {isEditing && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Monthly budget</span>
+              <div style={{ width: 160 }}>
+                <NumberInput value={budget} onChange={v => setExpenses({ ...expenses, [cat.key]: v })} prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} />
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setEditingKey(null)}>Done</Button>
+            </div>
+          )}
+        </>}
+      />
     );
   }
 
+  // The budget is monthly, so the page is too (D-41): what is left of this
+  // month after spending and bills still due, shared over the days left.
+  const monthName = now.toLocaleDateString("en-US", { month: "long" });
+  // Checking can be tighter than the budget before payday; say so when it is.
+  const cashTight = freeResult?.cash && freeResult.limitedBy === "cash" ? freeResult : null;
+  const daysLeftInMonth = daysIn - dayOfMonth + 1;
+  // The pace bar is everyday spending only; bills are set aside.
+  const everydayBudget = sum(activeCats.filter((c) => !billCats.has(c.key)), (k) => expenses[k] || 0);
+  const spentByDay: Record<string, number> = {};
+  // Everyday spending only: bills are the calendar's dots, and rent would set the scale.
+  for (const t of monthTxns) if ((t.transaction_type ?? "expense") === "expense" && !billCats.has(t.category ?? "other")) spentByDay[t.date.slice(0, 10)] = (spentByDay[t.date.slice(0, 10)] ?? 0) + toUSD(netAmt(t), t.currency, displayRates);
   return (
-    <div className="uf-budget-grid">
-      {/* The answer this tab exists to give, before any of the detail: what is
-          free to spend until payday, with the bills before it set aside (D-29). */}
-      {freeResult && (
-        <FreeToSpendRunway result={freeResult} fmt={fmtMoney} allAccounts={spendAccounts} toggles={spendToggles} onToggle={(id, on) => onSpendToggle?.(id, on)} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <MoneyHead
+        label={`Left to spend in ${monthName}`}
+        value={<span style={{ fontSize: 44, color: leftInBudget < 0 ? "var(--uf-neg-ink)" : undefined }}>{leftInBudget < 0 ? `Over by ${fmtMoney(-leftInBudget)}` : fmtMoney(leftInBudget)}</span>}
+        sub={leftInBudget > 0
+          ? <>About <Fig>{fmtMoney(leftInBudget / daysLeftInMonth)}</Fig> a day for {daysLeftInMonth} {daysLeftInMonth === 1 ? "day" : "days"} · of your <Fig>{fmtMoney(totalExp)}</Fig> budget</>
+          : <>of your <Fig>{fmtMoney(totalExp)}</Fig> budget, after bills still due</>}
+      >
+        {cashTight && (
+          <div className="uf-t-small" style={{ color: "var(--uf-warn-ink)" }}>
+            Your checking has <Fig tone="var(--uf-warn-ink)">{fmtMoney(cashTight.free)}</Fig> free until payday, {shortDate(cashTight.payday.iso)}, after bills: less than your budget allows for those days.
+          </div>
+        )}
+        {everydayBudget > 0 && <PaceBar spent={everydaySpent} budget={everydayBudget} day={dayOfMonth} daysInMonth={daysIn} fmt={fmtMoney} />}
+        <MoneyKey items={[
+          <>Bills <Fig>{fmtMoney(billSpent)}</Fig> set aside{billsStillDue > 0 ? <> · <Fig>{fmtMoney(billsStillDue)}</Fig> still due</> : null}</>,
+          <button key="cal" type="button" aria-expanded={showMonth} onClick={() => setShowMonth((v) => !v)}
+            style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "var(--uf-pos-ink)", fontWeight: 700, cursor: "pointer" }}>
+            {showMonth ? "Hide" : "See"} {monthName} {showMonth ? "▴" : "▾"}
+          </button>,
+        ]} />
+        {showMonth && <MonthCalendar today={now} spentByDay={spentByDay} bills={bills} perDay={leftInBudget > 0 ? leftInBudget / daysLeftInMonth : 0} fmt={fmtMoney} />}
+      </MoneyHead>
+
+      {editAll ? (
+        <>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>Every category · tap one to change its budget</div>
+          <MoneyList footer={<div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <Button variant="primary" size="sm" onClick={() => { setEditAll(false); setEditingKey(null); }}>Done</Button>
+            <Button variant="secondary" size="sm" onClick={() => setBudgetSetupOpen(true)}>Guided setup</Button>
+            {editingKey === "income"
+              ? <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Monthly income</span><div style={{ width: 150 }}><NumberInput value={income} onChange={setIncome} placeholder="5000" prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} /></div></div>
+              : <Button variant="ghost" size="sm" onClick={() => setEditingKey("income")}>Income {fmtMoney(income)}</Button>}
+          </div>}>
+            {[...activeCats].sort((x, y) => (expenses[y.key] || 0) - (expenses[x.key] || 0)).map(renderRow)}
+          </MoneyList>
+        </>
+      ) : (
+        <>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>Needs attention</div>
+          {attention.length > 0
+            ? <MoneyList>{attention.map(renderRow)}</MoneyList>
+            : <MoneyList><MoneyRow dot="var(--uf-teal)" icon="✓" name="Everything's on track" meta={`Nothing over budget or heading over in ${now.toLocaleDateString("en-US", { month: "long" })}`} value="" /></MoneyList>}
+
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>This month</div>
+          <MoneyList footer={<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <Button variant="secondary" size="sm" onClick={() => setEditAll(true)}>Edit budget</Button>
+            {freeResult && <Button variant="ghost" size="sm" aria-expanded={showHow} onClick={() => setShowHow((v) => !v)}>Free to spend until payday</Button>}
+          </div>}>
+            {billGroup.length > 0 && (
+              <MoneyRow dot="var(--uf-ink-3)" icon="🧾" name="Bills"
+                meta={billsStillDue > 0 ? `${fmtMoney(billsStillDue)} still due` : "All paid"}
+                value={`${fmtMoney(sum(billGroup, spentOf))} of ${fmtMoney(sum(billGroup, (k) => expenses[k] || 0))}`}
+                bar={<MoneyTrack share={sum(billGroup, spentOf) / Math.max(1, sum(billGroup, (k) => expenses[k] || 0))} due={billsStillDue / Math.max(1, sum(billGroup, (k) => expenses[k] || 0))} color="var(--uf-ink-3)" label="Bills paid and still due" />}
+                onClick={onOpenUpcoming} />
+            )}
+            {everyday.length > 0 && (
+              <MoneyRow dot="var(--uf-teal)" icon="✓" name={`${everyday.length} everyday ${everyday.length === 1 ? "category" : "categories"} on track`}
+                meta={`${fmtMoney(sum(everyday, spentOf))} of ${fmtMoney(sum(everyday, (k) => expenses[k] || 0))}`}
+                value={showEveryday ? "Hide" : "Show"} valueTone="var(--uf-pos-ink)" strong
+                onClick={() => setShowEveryday((v) => !v)}
+                after={showEveryday && <MoneyList>{everyday.map(renderRow)}</MoneyList>} />
+            )}
+          </MoneyList>
+        </>
       )}
 
-      <div className="uf-card" style={{ padding: "6px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)" }}>
-          <span style={{ fontSize: 13, fontWeight: 700 }}>Monthly budget</span>
-          <button
-            onClick={() => setBudgetSetupOpen(true)}
-            style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
-          >
-            ✎ Guided setup
-          </button>
-        </div>
-
-        {/* The pale arc is the one part of the dial nobody guesses. */}
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", padding: "12px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)", fontSize: 11.5, color: "var(--uf-text-2)", fontWeight: 600 }}>
-          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-text-2)", marginRight: 6, verticalAlign: -1 }} />expenses</span>
-          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-border-2)", marginRight: 6, verticalAlign: -1 }} />expected, not yet paid</span>
-          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-surface-2)", marginRight: 6, verticalAlign: -1 }} />room left</span>
-          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-neg)", marginRight: 6, verticalAlign: -1 }} />over</span>
-        </div>
-
-        {(classifiedTotal > 0 || untaggedCount > 0) && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--uf-text-2)" }}>
-              <span>Needs/Wants</span>
-              {classifiedTotal > 0 && (
-                <>
-                  <div style={{ width: 110, height: 6, borderRadius: 4, overflow: "hidden", display: "flex", background: "var(--uf-border)" }}>
-                    <div style={{ width: `${(needsTotal / classifiedTotal) * 100}%`, background: "#22d3a5" }} />
-                    <div style={{ width: `${(wantsTotal / classifiedTotal) * 100}%`, background: "#f97316" }} />
-                  </div>
-                  <span>{Math.round((needsTotal / classifiedTotal) * 100)}% / {Math.round((wantsTotal / classifiedTotal) * 100)}%</span>
-                </>
-              )}
-              {untaggedCount > 0 && <span>{untaggedCount} unclassified</span>}
-            </div>
-            {untaggedCount > 0 && (
-              <button
-                onClick={onOpenTransactions}
-                style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
-              >
-                Tag in Transactions →
-              </button>
-            )}
-          </div>
-        )}
-
-        {overBudgetCats.length > 0 ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px 6px", margin: "0 -18px", fontSize: 11, fontWeight: 800, letterSpacing: "0.8px", textTransform: "uppercase", color: "#DC2626" }}>
-              Over budget <span style={{ background: "#DC2626", color: "#fff", fontSize: 10.5, fontWeight: 800, borderRadius: 999, padding: "1px 8px" }}>{overBudgetCats.length}</span>
-            </div>
-            {overBudgetCats.map(cat => renderRow(cat, true))}
-            <div style={{ height: 1, background: "var(--uf-border)", margin: "0 -18px" }} />
-          </>
-        ) : (
-          <div style={{ padding: "12px 18px", margin: "0 -18px", fontSize: 12, color: "#22d3a5", fontWeight: 600 }}>✓ Nothing over budget this month</div>
-        )}
-
-        {onTrackCats.length > 0 && (
-          <>
-            <button
-              onClick={() => setOnTrackOpen(v => !v)}
-              style={{ width: "calc(100% + 36px)", margin: "0 -18px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", background: "transparent", border: "none", cursor: "pointer" }}
-            >
-              <span>{onTrackCats.length} {overBudgetCats.length > 0 ? "more " : ""}on track — {fmtMoney(onTrackBudgetTotal)} budgeted</span>
-              <span style={{ color: "var(--uf-text-3)", transform: onTrackOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▾</span>
-            </button>
-            {onTrackOpen && onTrackCats.map(cat => renderRow(cat, false))}
-          </>
-        )}
-      </div>
-
-      <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ position: "relative", width: 80, height: 80, flexShrink: 0, borderRadius: "50%", background: `conic-gradient(${donutGradient})` }}>
-            <div style={{ position: "absolute", inset: 13, borderRadius: "50%", background: "var(--uf-card)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-text)" }}>{fmtMoney(totalExp)}</div>
-              <div style={{ fontSize: 7, color: "var(--uf-text-3)", textTransform: "uppercase", letterSpacing: "0.04em" }}>budgeted</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 10.5, minWidth: 0 }}>
-            {[...donutStops].sort((a, b) => b.amt - a.amt).slice(0, 6).map(s => (
-              <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 6, height: 6, borderRadius: 2, background: s.color, flexShrink: 0 }} />
-                <span style={{ color: "var(--uf-text-2)" }}>{s.label}</span>
-                <span style={{ marginLeft: "auto", color: "var(--uf-text-3)" }}>{Math.round(s.pct)}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ height: 1, background: "var(--uf-border)" }} />
-
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>Income</div>
-          {editingKey === "income" ? (
-            <div onClick={e => e.stopPropagation()}>
-              <NumberInput
-                value={income}
-                onChange={setIncome}
-                placeholder="5000"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </div>
-          ) : (
-            <div onClick={() => setEditingKey("income")} style={{ fontSize: 22, fontWeight: 800, cursor: "pointer" }}>{fmtMoney(income)}</div>
-          )}
-        </div>
-
-        <div style={{ height: 1, background: "var(--uf-border)" }} />
-
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>Monthly savings</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: savings >= 0 ? "#22d3a5" : "#DC2626" }}>{fmtMoney(Math.max(0, savings))}</div>
-        </div>
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>Savings rate</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)" }}>{rate.toFixed(1)}%</div>
-        </div>
-
-        <div style={{ height: 1, background: "var(--uf-border)" }} />
-
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--uf-text-2)" }}>
-          {rate >= 50 ? "🔥 " : ""}Saving {fmtMoney(Math.max(0, savings))}/mo ({rate.toFixed(1)}% rate){mortgageMonthly > 0 ? `, after your ${fmtMoney(mortgageMonthly)} mortgage payment` : ""}
-          {freedomDateMonthYearLabel
-            ? <> — projected freedom date <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>{freedomDateMonthYearLabel}</span>.</>
-            : "."}
-          {overBudgetCats.length > 0 && (
-            <> {overBudgetCats.map(c => c.label).join(", ")} {overBudgetCats.length === 1 ? "is" : "are"} over budget this month.</>
-          )}
-        </div>
-      </div>
+      {/* Where free to spend comes from, and which accounts count (D-29). */}
+      {showHow && freeResult && (
+        <FreeToSpendRunway result={freeResult} fmt={fmtMoney} allAccounts={spendAccounts} toggles={spendToggles} onToggle={(id, on) => onSpendToggle?.(id, on)} />
+      )}
 
       {guidedSetupModal}
     </div>
@@ -3010,40 +2899,41 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
     setGoals(prev => prev.filter(g => g.id !== id));
   }
 
-  const fmtAmt = (n: number) => formatMoney(n, { style: "compact" });
 
-  function goalStatus(g: Goal): { label: string; color: string; bg: string } {
-    const pct = g.target_amount > 0 ? g.current_saved / g.target_amount : 0;
-    if (pct >= 1) return { label: "Achieved! 🎉", color: "#059669", bg: "rgba(5,150,105,0.1)" };
-    if (!g.target_date) return { label: `${Math.round(pct * 100)}%`, color: "#22d3a5", bg: "transparent" };
-    const monthsLeft = Math.max(0, (new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30));
-    const needed = (g.target_amount - g.current_saved) / Math.max(monthsLeft, 1);
-    if (monthsLeft <= 0) return { label: "Overdue", color: "#ef4444", bg: "rgba(239,68,68,0.1)" };
-    return { label: `$${Math.round(needed).toLocaleString()}/mo needed`, color: "#f97316", bg: "transparent" };
+  const fmtFull = (n: number) => formatMoney(n);
+  // Goals are categories here, so each takes a palette colour in order (D-42).
+  const goalColor = (i: number) => COLOR_PALETTE[i % (COLOR_PALETTE.length - 1)];
+  const [openGoal, setOpenGoal] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  /** What a goal needs: done, a monthly amount to make its date, past its date, or no date. */
+  function goalPlan(g: Goal): { kind: "done" } | { kind: "monthly"; amount: number } | { kind: "late" } | { kind: "open" } {
+    if (g.target_amount > 0 && g.current_saved >= g.target_amount) return { kind: "done" };
+    if (!g.target_date) return { kind: "open" };
+    const monthsLeft = (new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30.44);
+    if (monthsLeft <= 0) return { kind: "late" };
+    return { kind: "monthly", amount: (g.target_amount - g.current_saved) / Math.max(monthsLeft, 1) };
   }
+  const monthlyNeeded = goals.reduce((t, g) => { const p = goalPlan(g); return t + (p.kind === "monthly" ? p.amount : 0); }, 0);
 
   if (loading) return <div style={{ padding: 40, color: "var(--uf-text-muted)", textAlign: "center" }}>Loading…</div>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Fraunces, Georgia, serif", letterSpacing: "-0.4px" }}>Goals</div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-muted)", marginTop: 2 }}>Save toward the things that matter</div>
-        </div>
-        <button
-          onClick={() => openAdd()}
-          style={{
-            display: "flex", alignItems: "center", gap: 7,
-            background: "#22d3a5", color: "#003527",
-            border: "none", borderRadius: 10, padding: "9px 18px",
-            fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-          }}
-        >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add Goal
-        </button>
-      </div>
+      {/* The calm headline (D-42): saved toward every goal, one bar split by
+          goal, and what a month keeps the dated ones on time. */}
+      <MoneyHead
+        label={goals.length ? `Saved toward ${goals.length} ${goals.length === 1 ? "goal" : "goals"}` : "Goals"}
+        value={fmtFull(goals.reduce((t, g) => t + g.current_saved, 0))}
+        sub={goals.length
+          ? <>of <Fig>{fmtFull(goals.reduce((t, g) => t + g.target_amount, 0))}</Fig>{monthlyNeeded > 0 ? <> · <Fig>{fmtFull(monthlyNeeded)}</Fig> a month keeps the dated ones on time</> : null}</>
+          : "Save toward the things that matter"}
+        aside={<Button variant="primary" size="sm" onClick={() => openAdd()}>Add a goal</Button>}
+      >
+        {goals.length > 0 && (
+          <StackBar total={goals.reduce((t, g) => t + g.target_amount, 0)} label="Saved toward each goal"
+            parts={goals.map((g, i) => ({ key: g.id, color: goalColor(i), value: Math.min(g.current_saved, g.target_amount) }))} />
+        )}
+      </MoneyHead>
 
       {/* Your why: one prompt per PERMA category with no linked goal yet.
           Describe it in your own words, get an estimate, nudge it until it
@@ -3089,7 +2979,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                         disabled={!card.description.trim() || card.estimating}
                         style={{
                           alignSelf: "flex-start", background: "none", border: "none",
-                          color: card.description.trim() ? "#22d3a5" : "var(--uf-text-muted)",
+                          color: card.description.trim() ? "var(--uf-pos-ink)" : "var(--uf-text-muted)",
                           fontSize: 12, fontWeight: 700, cursor: card.description.trim() ? "pointer" : "default",
                           padding: 0, fontFamily: "inherit",
                         }}
@@ -3110,7 +3000,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                         <button
                           onClick={() => confirmPermaGoal(p)}
                           disabled={saving}
-                          style={{ flex: 1, background: "#22d3a5", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "#003527", cursor: "pointer", fontFamily: "inherit" }}
+                          style={{ flex: 1, background: "var(--uf-green)", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "var(--uf-card)", cursor: "pointer", fontFamily: "inherit" }}
                         >
                           {saving ? "Saving…" : "Looks right"}
                         </button>
@@ -3158,108 +3048,35 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
         </div>
       )}
 
-      {/* Goals grid */}
       {goals.length > 0 && (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: 16,
-        }}>
-          {goals.map(g => {
+        <MoneyList>
+          {goals.map((g, i) => {
             const pct = g.target_amount > 0 ? Math.min(1, g.current_saved / g.target_amount) : 0;
-            const status = goalStatus(g);
-            const achieved = pct >= 1;
+            const plan = goalPlan(g);
+            const open = openGoal === g.id;
             return (
-              <div
-                key={g.id}
-                style={{
-                  background: "var(--uf-card)", border: "1px solid var(--uf-border)",
-                  borderRadius: 16, padding: "20px 20px 16px",
-                  display: "flex", flexDirection: "column", gap: 14,
-                  position: "relative",
-                }}
-              >
-                {/* Edit/delete actions */}
-                <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 6 }}>
-                  <button
-                    onClick={() => openEdit(g)}
-                    style={{ background: "none", border: "none", color: "var(--uf-text-muted)", cursor: "pointer", fontSize: 16, padding: 2 }}
-                    title="Edit"
-                  >✏️</button>
-                  <button
-                    onClick={() => handleDelete(g.id)}
-                    style={{ background: "none", border: "none", color: "var(--uf-text-muted)", cursor: "pointer", fontSize: 16, padding: 2 }}
-                    title="Delete"
-                  >🗑️</button>
-                </div>
-
-                {/* Emoji + name */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 56 }}>
-                  <div style={{
-                    fontSize: 28, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--uf-surface)", borderRadius: 12, flexShrink: 0,
-                  }}>{g.emoji}</div>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", lineHeight: 1.3 }}>{g.name}</div>
-                    {g.perma_category && (
-                      <Badge tone="freedom" style={{ marginTop: 4 }}>{PERMA_LABELS[g.perma_category]}</Badge>
-                    )}
-                    {g.target_date && (
-                      <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 4 }}>
-                        🗓 {new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                      </div>
-                    )}
+              <MoneyRow key={g.id} dot={goalColor(i)} icon={g.emoji} name={g.name}
+                meta={[
+                  `${fmtFull(g.current_saved)} of ${fmtFull(g.target_amount)}`,
+                  g.target_date ? `by ${new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}` : null,
+                  plan.kind === "monthly" ? `${fmtFull(plan.amount)}/mo` : plan.kind === "late" ? "past its date" : null,
+                  g.perma_category ? PERMA_LABELS[g.perma_category] : null,
+                ].filter(Boolean).join(" · ")}
+                value={plan.kind === "done" ? "Done ✓" : `${Math.round(pct * 100)}%`} strong
+                valueTone={plan.kind === "done" ? "var(--uf-pos-ink)" : plan.kind === "late" ? "var(--uf-warn-ink)" : undefined}
+                bar={<MoneyTrack share={pct} color={goalColor(i)} label={`${g.name}: ${Math.round(pct * 100)}% saved`} />}
+                onClick={() => { setOpenGoal(open ? null : g.id); setConfirmDelete(null); }}
+                after={open && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <Button variant="secondary" size="sm" onClick={() => openEdit(g)}>Edit</Button>
+                    {confirmDelete === g.id
+                      ? <><Button variant="danger" size="sm" onClick={() => handleDelete(g.id)}>Delete {g.name}</Button><Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>Keep it</Button></>
+                      : <Button variant="danger" size="sm" onClick={() => setConfirmDelete(g.id)}>Delete</Button>}
                   </div>
-                </div>
-
-                {/* Progress bar */}
-                <div>
-                  <div style={{
-                    height: 6, background: "var(--uf-surface)", borderRadius: 99, overflow: "hidden",
-                  }}>
-                    <div style={{
-                      height: "100%", width: `${pct * 100}%`,
-                      background: achieved ? "#059669" : "#22d3a5",
-                      borderRadius: 99, transition: "width 0.4s ease",
-                    }} />
-                  </div>
-                </div>
-
-                {/* Amounts + status */}
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.03em" }}>
-                      {fmtAmt(g.current_saved)}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 1 }}>
-                      of {fmtAmt(g.target_amount)}
-                    </div>
-                  </div>
-                  <div style={{
-                    fontSize: 11, fontWeight: 700, color: status.color,
-                    background: status.bg, borderRadius: 99, padding: "3px 10px",
-                  }}>
-                    {status.label}
-                  </div>
-                </div>
-              </div>
+                )} />
             );
           })}
-
-          {/* Add another card */}
-          <button
-            onClick={() => openAdd()}
-            style={{
-              background: "transparent", border: "1.5px dashed var(--uf-border)",
-              borderRadius: 16, padding: "20px", cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              gap: 8, color: "var(--uf-text-muted)", minHeight: 160, fontFamily: "inherit",
-            }}
-          >
-            <span style={{ fontSize: 24 }}>+</span>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Add goal</span>
-          </button>
-        </div>
+        </MoneyList>
       )}
 
       {/* Add / Edit Modal */}
@@ -3398,9 +3215,9 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                 onClick={handleSave}
                 disabled={saving || !draft.name.trim() || !draft.target_amount}
                 style={{
-                  flex: 2, padding: "11px", background: "#22d3a5",
+                  flex: 2, padding: "11px", background: "var(--uf-green)",
                   border: "none", borderRadius: 10,
-                  fontSize: 13, fontWeight: 700, color: "#003527",
+                  fontSize: 13, fontWeight: 700, color: "var(--uf-card)",
                   cursor: saving ? "default" : "pointer", fontFamily: "inherit",
                   opacity: saving || !draft.name.trim() || !draft.target_amount ? 0.6 : 1,
                 }}
@@ -3495,29 +3312,13 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, freedom }: {
-  /** The freedom date's own target and years (freedomProjection), so this page's progress matches Home's. */
-  freedom?: { fireTarget: number; fireYear: number | null };
-  income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
-  mortgageMonthly: number; growthRate: number; withdrawalRate: number;
+function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, displayCurrency, displayRates, plaidAccounts = [] }: {
+  k401: number; rothIRA: number; taxable: number; cashSavings?: number;
+  totalDebt: number; mortgageBalance: number;
   displayCurrency: string; displayRates: Record<string, number>;
-  retirementCityCol?: number; lifestyleMultiplier?: number;
   plaidAccounts?: PlaidAccount[];
 }) {
-  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
-  const monthlyExpenses = Object.entries(expenses)
-    .filter(([k]) => !k.startsWith("_"))
-    .reduce((s, [, v]) => s + (v || 0), 0);
-
-  const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
-
-  const own = useMemo(() => calcProjection({
-    annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
-    growthRate, withdrawalRate, targetMonthlyExpenses,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
-  const { fireYear, fireTarget } = freedom ?? own;
+  const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
 
   // Connected accounts replace typed balances of the same kind (effectiveBalances), as on Home.
   const eff = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
@@ -3525,73 +3326,46 @@ function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSa
   // Debts by the same rule as Home (effectiveDebts): connected replaces typed, cards counted once.
   const debts = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
   const netWorth   = investable - debts.otherDebt - debts.mortgage - debts.cards;
-  const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
+  const assets = Math.max(eff.k401, 0) + Math.max(eff.rothIRA, 0) + Math.max(eff.taxable, 0) + Math.max(eff.cashSavings, 0);
+  const owed = debts.otherDebt + debts.mortgage + debts.cards;
+  // A connected account of a kind replaces the typed figure (effectiveBalances), so say which one this is.
+  const has = (keep: (a: PlaidAccount) => boolean) => plaidAccounts.some(keep);
+  const source = (connected: boolean) => connected ? "Connected" : "Typed";
+  const isMortgageAcct = (a: PlaidAccount) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage");
+  // Account types are categories here, so they get category colours (D-40).
+  const types = [
+    { key: "retirement", label: "Retirement", color: ACCOUNT_TYPE_COLORS.retirement, value: eff.k401 + eff.rothIRA, meta: `401(k) and IRA · ${source(has(isRetirementInvestmentAccount))}` },
+    { key: "brokerage", label: "Brokerage", color: ACCOUNT_TYPE_COLORS.brokerage, value: eff.taxable, meta: source(has(isBrokerageInvestmentAccount)) },
+    { key: "cash", label: "Cash", color: ACCOUNT_TYPE_COLORS.cash, value: eff.cashSavings, meta: source(has((a) => a.type === "depository")) },
+  ];
+  const owing = [
+    { key: "cards", label: "Credit cards", value: debts.cards, meta: "Connected" },
+    { key: "loans", label: "Loans and other debt", value: debts.otherDebt, meta: source(has((a) => a.type === "loan" && !isMortgageAcct(a))) },
+    { key: "mortgage", label: "Mortgage", value: debts.mortgage, meta: source(has(isMortgageAcct)) },
+  ].filter((d) => d.value > 0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Net worth hero */}
-      <div className="uf-card" style={{ padding: "28px 32px", background: "#003527", borderColor: "transparent" }}>
-        <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#62FAE3", marginBottom: 10, fontWeight: 700 }}>Net Worth</div>
-        <div style={{ fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 800, color: netWorth >= 0 ? "#FFFFFF" : "#FCA5A5", fontFamily: "Manrope, sans-serif", letterSpacing: "-2px", lineHeight: 1 }}>
-          {fmtMoney(netWorth)}
-        </div>
-        <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmtMoney(investable, true)} investable assets · {fmtMoney(totalDebt + mortgageBalance, true)} total debt
-        </div>
-        <div style={{ marginTop: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>
-            <span>{fmtMoney(investable, true)} saved</span>
-            <span style={{ color: "#62FAE3", fontWeight: 700 }}>{progress.toFixed(1)}% to FIRE</span>
-            <span>{fmtMoney(fireTarget, true)} target</span>
-          </div>
-          <div style={{ height: 6, background: "rgba(255,255,255,0.15)", borderRadius: 99, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${progress}%`, background: "#62FAE3", borderRadius: 99, transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1)" }} />
-          </div>
-        </div>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <MoneyHead
+        label="Net worth"
+        value={<span style={{ color: netWorth < 0 ? "var(--uf-neg-ink)" : undefined }}>{fmtMoney(netWorth)}</span>}
+        sub={<><Fig>{fmtMoney(assets)}</Fig> assets · <Fig>{fmtMoney(owed)}</Fig> debts</>}
+      >
+        <StackBar label={`Assets: ${types.map((t) => `${t.label} ${fmtMoney(t.value)}`).join(", ")}`} parts={types} />
+        <MoneyKey items={types.filter((t) => t.value > 0).map((t) => (
+          <span key={t.key}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: t.color, marginRight: 6 }} />{t.label} <Fig>{fmtMoney(t.value)}</Fig></span>
+        ))} />
+      </MoneyHead>
 
-      {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-        {[
-          // Tone carries meaning rather than taste: a balance is a fact, debt
-          // reads negative, and FIRE progress is the one figure teal belongs to.
-          { label: "Investable assets", val: fmtMoney(investable, true), tone: "default" as const, sub: "All accounts" },
-          { label: "Net Worth", val: fmtMoney(netWorth, true), tone: netWorth >= 0 ? ("positive" as const) : ("negative" as const), sub: "Assets − debt" },
-          { label: "Total debt", val: fmtMoney(totalDebt + mortgageBalance, true), tone: "negative" as const, sub: "Consumer + mortgage" },
-          { label: "FIRE progress", val: `${progress.toFixed(0)}%`, tone: "freedom" as const, sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
-        ].map(k => (
-          <KpiCard key={k.label} label={k.label} value={k.val} sub={k.sub} tone={k.tone} />
+      <MoneyList>
+        {types.filter((t) => t.value !== 0).map((t) => (
+          <MoneyRow key={t.key} dot={t.color} icon={t.key === "retirement" ? "🏖️" : t.key === "brokerage" ? "📈" : "🏦"} name={t.label} meta={t.meta} value={fmtMoney(t.value)}
+            bar={assets > 0 ? <MoneyTrack share={Math.max(t.value, 0) / assets} color={t.color} label={`${t.label}: ${Math.round((Math.max(t.value, 0) / assets) * 100)}% of assets`} /> : undefined} />
         ))}
-      </div>
-
-      {/* Account breakdown table */}
-      <div className="uf-card">
-        <SectionLabel icon="🏦" text="Account Snapshot" color="#064E3B" />
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <tbody>
-            {[
-              { label: "401(k)",            val: k401,              color: "#059669" },
-              { label: "Roth IRA",          val: rothIRA,           color: "#20D4BF" },
-              { label: "Taxable brokerage", val: taxable,           color: "#047857" },
-              null,
-              { label: "Consumer debt",     val: -totalDebt,        color: "#DC2626" },
-              { label: "Mortgage balance",  val: -mortgageBalance,  color: "#DC2626" },
-              null,
-              { label: "Net Worth",         val: netWorth, bold: true, color: netWorth >= 0 ? "#059669" : "#DC2626" },
-            ].map((row, i) => {
-              if (!row) return <tr key={`d${i}`}><td colSpan={2} style={{ borderTop: "1px solid #E2E8F0", padding: "4px 0" }} /></tr>;
-              return (
-                <tr key={row.label}>
-                  <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
-                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Manrope, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
-                    {row.val >= 0 ? fmtMoney(row.val) : `−${fmtMoney(Math.abs(row.val))}`}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+        {owing.map((d) => (
+          <MoneyRow key={d.key} dot="var(--uf-ink-3)" icon={d.key === "cards" ? "💳" : d.key === "mortgage" ? "🏠" : "🧾"} name={d.label} meta={d.meta} value={`−${fmtMoney(d.value)}`} />
+        ))}
+      </MoneyList>
     </div>
   );
 }
@@ -3633,20 +3407,20 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
   // ── Account type metadata ────────────────────────────────────────────────
   const ACCOUNT_TYPE_META: Record<string, { label: string; emoji: string; color: string }> = {
-    checking:        { label: "Checking",      emoji: "🏧", color: "#3B82F6" },
-    savings:         { label: "Savings",       emoji: "🏦", color: "#059669" },
-    "money market":  { label: "Money market",  emoji: "💰", color: "#0EA5E9" },
-    money_market:    { label: "Money market",  emoji: "💰", color: "#0EA5E9" },
-    cd:              { label: "CD",            emoji: "📄", color: "#8B5CF6" },
-    "credit card":   { label: "Credit card",   emoji: "💳", color: "#F97316" },
-    mortgage:        { label: "Mortgage",      emoji: "🏠", color: "#6366F1" },
-    auto:            { label: "Auto loan",     emoji: "🚗", color: "#F59E0B" },
-    brokerage:       { label: "Brokerage",     emoji: "📈", color: "#059669" },
-    ira:             { label: "IRA",           emoji: "📈", color: "#059669" },
+    checking:        { label: "Checking",      emoji: "🏧", color: ACCOUNT_TYPE_COLORS.cash },
+    savings:         { label: "Savings",       emoji: "🏦", color: ACCOUNT_TYPE_COLORS.cash },
+    "money market":  { label: "Money market",  emoji: "💰", color: ACCOUNT_TYPE_COLORS.cash },
+    money_market:    { label: "Money market",  emoji: "💰", color: ACCOUNT_TYPE_COLORS.cash },
+    cd:              { label: "CD",            emoji: "📄", color: ACCOUNT_TYPE_COLORS.cash },
+    "credit card":   { label: "Credit card",   emoji: "💳", color: "var(--uf-ink-3)" },
+    mortgage:        { label: "Mortgage",      emoji: "🏠", color: "var(--uf-ink-3)" },
+    auto:            { label: "Auto loan",     emoji: "🚗", color: "var(--uf-ink-3)" },
+    brokerage:       { label: "Brokerage",     emoji: "📈", color: ACCOUNT_TYPE_COLORS.brokerage },
+    ira:             { label: "IRA",           emoji: "📈", color: ACCOUNT_TYPE_COLORS.retirement },
   };
   const getTypeMeta = (subtype: string | null, type: string) => {
     const key = (subtype ?? "").toLowerCase().replace(/-/g, " ");
-    return ACCOUNT_TYPE_META[key] ?? ACCOUNT_TYPE_META[type?.toLowerCase()] ?? { label: subtype ?? type, emoji: "💼", color: "#6B7280" };
+    return ACCOUNT_TYPE_META[key] ?? ACCOUNT_TYPE_META[type?.toLowerCase()] ?? { label: subtype ?? type, emoji: "💼", color: "var(--uf-ink-3)" };
   };
 
   // ── APY state (optimistic overrides while saving) ───────────────────────
@@ -3688,16 +3462,16 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           onChange={e => setVal(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
           onBlur={commit}
-          style={{ width: 68, border: "1px solid #059669", borderRadius: 6, padding: "3px 6px", fontSize: 12, outline: "none", fontFamily: "inherit" }}
+          style={{ width: 68, border: "1px solid var(--uf-green)", borderRadius: 6, padding: "3px 6px", fontSize: 12, outline: "none", fontFamily: "inherit" }}
           placeholder="e.g. 4.8"
         />
-        <span style={{ fontSize: 12, color: "#64748B" }}>% APY</span>
+        <span style={{ fontSize: 12, color: "var(--uf-ink-2)" }}>% APY</span>
       </div>
     );
 
     return (
       <button onClick={() => setEditing(true)}
-        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#94A3B8", textAlign: "left", padding: 0, fontFamily: "inherit", marginTop: 2 }}>
+        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--uf-ink-3)", textAlign: "left", padding: 0, fontFamily: "inherit", marginTop: 2 }}>
         {currentApy != null ? `${currentApy}% APY ✏️` : "＋ Enter APY"}
       </button>
     );
@@ -3751,7 +3525,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <PlaidConnect onTransactionsImported={onRefreshAccounts} onUpgradeClick={onUpgradeClick} />
       {bankAssets.length > 0 && (
-        <div className="uf-card" style={{ background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.2)" }}>
+        <div className="uf-card" style={{ background: "color-mix(in srgb, var(--uf-green) 4%, transparent)", border: "1px solid color-mix(in srgb, var(--uf-green) 20%, transparent)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 16 }}>🏦</span>
@@ -3783,10 +3557,10 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                     <span style={{ background: meta.color + "18", color: meta.color, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{meta.label}</span>
-                    {isHysaAccount && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>HYSA ✓</span>}
+                    {isHysaAccount && <span style={{ background: "color-mix(in srgb, var(--uf-green) 14%, transparent)", color: "var(--uf-pos-ink)", borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>HYSA ✓</span>}
                     {a.mask && <span style={{ fontSize: 11, color: "var(--uf-ink-2)" }}>•••• {a.mask}</span>}
                   </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", marginTop: 2 }}>{fmtMoney(a.balance_current ?? 0)}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-pos-ink)", marginTop: 2 }}>{fmtMoney(a.balance_current ?? 0)}</div>
                   {a.balance_available != null && a.balance_available !== a.balance_current && (
                     <div style={{ fontSize: 11, color: "var(--uf-ink-2)" }}>{fmtMoney(a.balance_available)} available</div>
                   )}
@@ -3812,7 +3586,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
               );
             })}
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(5,150,105,0.2)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid color-mix(in srgb, var(--uf-green) 20%, transparent)" }}>
             <span style={{ fontSize: 13, color: "var(--uf-ink-2)", fontWeight: 600 }}>Total from banks</span>
             <span style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-ink)" }}>{fmtMoney(bankAssetsTotal)}</span>
           </div>
@@ -3982,7 +3756,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
       <div>
         <div className="uf-card">
-          <SectionLabel icon="📈" text="Investment Accounts" color="#059669" />
+          <SectionLabel icon="📈" text="Investment accounts" />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
               <FieldRow label="Cash & Savings">
@@ -3995,12 +3769,12 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                   rates={displayRates}
                 />
               </FieldRow>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
+              <div style={{ fontSize: 11, color: "var(--uf-ink-3)", marginTop: 3 }}>
                 Checking, HYSA, emergency fund
                 {actualNetCashflow !== 0 && (
                   <span style={{ marginLeft: 8 }}>
                     · Cashflow net this month:{" "}
-                    <span style={{ color: actualNetCashflow >= 0 ? "#059669" : "#DC2626", fontWeight: 600 }}>
+                    <span style={{ color: actualNetCashflow >= 0 ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)", fontWeight: 600 }}>
                       {actualNetCashflow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(actualNetCashflow))}
                     </span>
                   </span>
@@ -4045,8 +3819,8 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
       {plaidAccounts.some(a => a.type === "investment") && (
         <div className="uf-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <SectionLabel icon="📊" text="Holdings" color="#059669" />
-            {holdingsLoading && <span style={{ fontSize: 11, color: "#94A3B8" }}>Refreshing…</span>}
+            <SectionLabel icon="📊" text="Holdings" />
+            {holdingsLoading && <span style={{ fontSize: 11, color: "var(--uf-ink-3)" }}>Refreshing…</span>}
           </div>
           {holdingsNeedsReconnect.length > 0 && (
             <Alert
@@ -4057,12 +3831,12 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             />
           )}
           {plaidHoldings.length === 0 && !holdingsLoading ? (
-            <div style={{ fontSize: 13, color: "#94A3B8", textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: 13, color: "var(--uf-ink-3)", textAlign: "center", padding: "20px 0" }}>
               No holdings data yet.{holdingsNeedsReconnect.length > 0 ? " Reconnect your account above." : ""}
             </div>
           ) : (
             <>
-              <div className="uf-holdings-grid" style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" }}>
+              <div className="uf-holdings-grid" style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid var(--uf-surface-2)" }}>
                 <span>Ticker</span><span className="uf-holdings-security">Security</span><span style={{ textAlign: "right" }}>Qty</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Value</span>
               </div>
               {[...plaidHoldings]
@@ -4070,18 +3844,18 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 .map((h, i) => {
                   const sec = plaidSecurities[h.security_id];
                   return (
-                    <div key={i} className="uf-holdings-grid" style={{ fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
-                      <span style={{ fontWeight: 700, color: "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
-                      <span className="uf-holdings-security" style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
-                      <span style={{ textAlign: "right", color: "#64748B" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
-                      <span style={{ textAlign: "right", color: "#64748B" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
-                      <span style={{ textAlign: "right", fontWeight: 600, color: "#0F172A" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
+                    <div key={i} className="uf-holdings-grid" style={{ fontSize: 13, padding: "7px 0", borderBottom: "1px solid var(--uf-surface)", alignItems: "center" }}>
+                      <span style={{ fontWeight: 700, color: "var(--uf-pos-ink)", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
+                      <span className="uf-holdings-security" style={{ color: "var(--uf-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
+                      <span style={{ textAlign: "right", color: "var(--uf-ink-2)" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
+                      <span style={{ textAlign: "right", color: "var(--uf-ink-2)" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
+                      <span style={{ textAlign: "right", fontWeight: 600, color: "var(--uf-ink)" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
                     </div>
                   );
                 })}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "2px solid #E2E8F0", fontSize: 14, fontWeight: 700 }}>
-                <span style={{ color: "#64748B" }}>Total portfolio value</span>
-                <span style={{ color: "#059669" }}>${Math.round(plaidHoldings.reduce((s, h) => s + (h.institution_value ?? 0), 0)).toLocaleString()}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "2px solid var(--uf-border)", fontSize: 14, fontWeight: 700 }}>
+                <span style={{ color: "var(--uf-ink-2)" }}>Total portfolio value</span>
+                <span style={{ color: "var(--uf-pos-ink)" }}>${Math.round(plaidHoldings.reduce((s, h) => s + (h.institution_value ?? 0), 0)).toLocaleString()}</span>
               </div>
             </>
           )}
@@ -4089,18 +3863,18 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
       )}
 
       {total > 0 && (
-        <div className="uf-card" style={{ background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.2)" }}>
+        <div className="uf-card" style={{ background: "color-mix(in srgb, var(--uf-green) 4%, transparent)", border: "1px solid color-mix(in srgb, var(--uf-green) 20%, transparent)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
             {[
-              { label: "Cash", val: fmtMoney(cashSavings), pct: total > 0 ? (cashSavings / total * 100).toFixed(0) : "0", color: "#0ea5e9" },
-              { label: "401(k)", val: fmtMoney(k401), pct: total > 0 ? (k401 / total * 100).toFixed(0) : "0", color: "#059669" },
-              { label: "Roth IRA", val: fmtMoney(rothIRA), pct: total > 0 ? (rothIRA / total * 100).toFixed(0) : "0", color: "#20D4BF" },
-              { label: "Taxable", val: fmtMoney(taxable), pct: total > 0 ? (taxable / total * 100).toFixed(0) : "0", color: "#047857" },
+              { label: "Cash", val: fmtMoney(cashSavings), pct: total > 0 ? (cashSavings / total * 100).toFixed(0) : "0", color: ACCOUNT_TYPE_COLORS.cash },
+              { label: "401(k)", val: fmtMoney(k401), pct: total > 0 ? (k401 / total * 100).toFixed(0) : "0", color: ACCOUNT_TYPE_COLORS.retirement },
+              { label: "Roth IRA", val: fmtMoney(rothIRA), pct: total > 0 ? (rothIRA / total * 100).toFixed(0) : "0", color: ACCOUNT_TYPE_COLORS.retirement },
+              { label: "Taxable", val: fmtMoney(taxable), pct: total > 0 ? (taxable / total * 100).toFixed(0) : "0", color: ACCOUNT_TYPE_COLORS.brokerage },
             ].map(a => (
               <div key={a.label}>
-                <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{a.label}</div>
+                <div style={{ fontSize: 11, color: "var(--uf-ink-2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{a.label}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: a.color, fontFamily: "Manrope, sans-serif" }}>{a.val}</div>
-                <div style={{ fontSize: 11, color: "#94A3B8" }}>{a.pct}% of portfolio</div>
+                <div style={{ fontSize: 11, color: "var(--uf-ink-3)" }}>{a.pct}% of portfolio</div>
               </div>
             ))}
           </div>
@@ -4111,129 +3885,111 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 }
 
 // ─── Liabilities Tab ──────────────────────────────────────────────────────────
-function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts }: {
+function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, originals = {}, onOriginal, planDebts = [] }: {
   totalDebt: number; setTotalDebt: (v: number) => void;
   mortgageBalance: number; setMortgageBalance: (v: number) => void;
   mortgageMonthly: number; setMortgageMonthly: (v: number) => void;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
   onRefreshAccounts?: () => void;
+  /** What each debt started at, in USD, by key (D-40). */
+  originals?: Record<string, number>;
+  onOriginal?: (key: string, usd: number) => void;
+  /** Debts with rates from Plan → Contributions, matched here by name. */
+  planDebts?: { name: string; balance: number; ratePct: number }[];
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
   // The same rule as net worth (effectiveDebts): connected replaces typed, cards included.
   const debtsEff = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
   const totalLiabilities = debtsEff.otherDebt + debtsEff.mortgage + debtsEff.cards;
+  const [hideZero, setHideZero] = useState(true);
+  const [editing, setEditing] = useState<string | null>(null);
 
-  const bankLiabilities = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan");
-  const bankLiabilitiesTotal = bankLiabilities.reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const [hideZeroLiab, setHideZeroLiab] = useState(true);
-  const visibleLiabilities = hideZeroLiab ? bankLiabilities.filter(a => (a.balance_current ?? 0) !== 0) : bankLiabilities;
-  const hiddenLiabCount = bankLiabilities.length - visibleLiabilities.length;
+  const isMortgageAcct = (a: PlaidAccount) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage");
+  const connected = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan");
+  const hiddenCount = connected.filter(a => (a.balance_current ?? 0) === 0).length;
+  const rateFor = (name: string) => planDebts.find(d => d.name.trim().toLowerCase() === name.trim().toLowerCase())?.ratePct;
+
+  type Debt = { key: string; name: string; meta: string; balance: number; card: boolean; limit?: number | null; rate?: number; typed?: "debt" | "mortgage" };
+  const list: Debt[] = [
+    ...connected.filter(a => !hideZero || (a.balance_current ?? 0) !== 0).map(a => ({
+      key: `plaid:${a.id}`, name: a.name || a.official_name || "Account",
+      meta: [(a.subtype?.replace(/-/g, " ") ?? a.type).replace(/^./, c => c.toUpperCase()), a.mask ? `•••• ${a.mask}` : null, "Connected"].filter(Boolean).join(" · "),
+      balance: Math.max(0, a.balance_current ?? 0), card: a.type === "credit", limit: a.balance_limit, rate: rateFor(a.name || ""),
+    })),
+    // Typed figures stand in only where nothing of that kind is connected, as net worth counts them.
+    ...(!connected.some(a => a.type === "loan" && !isMortgageAcct(a)) ? [{ key: "typed_debt", name: "Other debt", meta: "Typed · loans and cards not connected", balance: totalDebt, card: false, typed: "debt" as const }] : []),
+    ...(!connected.some(isMortgageAcct) ? [{ key: "mortgage", name: "Mortgage", meta: `Typed${mortgageMonthly > 0 ? ` · ${fmtMoney(mortgageMonthly)}/mo` : ""}`, balance: mortgageBalance, card: false, typed: "mortgage" as const }] : []),
+  ];
+  const rows = list.sort((x, y) => (y.rate ?? -1) - (x.rate ?? -1) || y.balance - x.balance);
+
+  // Paid off, across the debts whose starting balance is known.
+  const tracked = rows.filter(r => !r.card && (originals[r.key] ?? 0) > 0);
+  const startTotal = tracked.reduce((s, r) => s + originals[r.key], 0);
+  const paidTotal = tracked.reduce((s, r) => s + Math.max(0, originals[r.key] - r.balance), 0);
+
+  const field = (label: string, value: number, onChange: (v: number) => void) => (
+    <label style={{ display: "grid", gap: 4 }}>
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{label}</span>
+      <NumberInput value={value} onChange={onChange} placeholder="0" prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} />
+    </label>
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {bankLiabilities.length > 0 && (
-        <div className="uf-card" style={{ background: "rgba(220,38,38,0.03)", border: "1px solid rgba(220,38,38,0.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 16 }}>💳</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#991B1B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Cards & Loans</span>
-            </div>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              {hiddenLiabCount > 0 || !hideZeroLiab ? (
-                <button onClick={() => setHideZeroLiab(h => !h)} style={{ background: "none", border: "none", color: "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                  {hideZeroLiab ? `Show $0 (${hiddenLiabCount})` : "Hide $0"}
-                </button>
-              ) : null}
-              {onRefreshAccounts && (
-                <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#DC2626", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                  ↻ Refresh
-                </button>
-              )}
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
-            {visibleLiabilities.map(a => (
-              <div key={a.id} style={{ background: "var(--uf-card)", border: "1px solid #FCA5A5", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
-                <div style={{ fontSize: 12, color: "#94A3B8" }}>
-                  <span style={{ textTransform: "capitalize" }}>{a.subtype?.replace(/-/g, " ") ?? a.type}</span>
-                  {a.mask && <span style={{ marginLeft: 6 }}>•••• {a.mask}</span>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <MoneyHead
+        label="Total debts"
+        value={fmtMoney(totalLiabilities)}
+        sub={startTotal > 0
+          ? <><Fig>{fmtMoney(paidTotal)}</Fig> paid off of <Fig>{fmtMoney(startTotal)}</Fig></>
+          : rows.some(r => r.rate != null) ? "Highest rate first" : "Tap a debt to add what it started at and see it paid down."}
+      >
+        {startTotal > 0 && <MoneyTrack share={paidTotal / startTotal} label={`${Math.round((paidTotal / startTotal) * 100)}% of tracked debt paid off`} />}
+        <MoneyKey items={[["c", "Cards", debtsEff.cards], ["l", "Loans and other", debtsEff.otherDebt], ["m", "Mortgage", debtsEff.mortgage]]
+          .filter(([, , v]) => Number(v) > 0)
+          .map(([k, l, v]) => <span key={String(k)}>{l} <Fig>{fmtMoney(Number(v))}</Fig></span>)} />
+      </MoneyHead>
+
+      <MoneyList footer={(hiddenCount > 0 || onRefreshAccounts) && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {hiddenCount > 0 && <Button variant="ghost" size="sm" onClick={() => setHideZero(h => !h)}>{hideZero ? `Show $0 accounts (${hiddenCount})` : "Hide $0 accounts"}</Button>}
+          {onRefreshAccounts && connected.length > 0 && <Button variant="ghost" size="sm" onClick={onRefreshAccounts}>Refresh balances</Button>}
+        </div>
+      )}>
+        {rows.map(r => {
+          const orig = originals[r.key] ?? 0;
+          const paid = orig > 0 ? Math.max(0, orig - r.balance) : 0;
+          const meta = [r.meta, r.rate != null ? `${r.rate}%` : null,
+            r.card && r.limit ? `of ${fmtMoney(r.limit)} limit` : null,
+            !r.card && orig > 0 ? `${Math.round((paid / orig) * 100)}% paid off` : null].filter(Boolean).join(" · ");
+          const open = editing === r.key;
+          return (
+            <MoneyRow
+              key={r.key}
+              dot="var(--uf-ink-3)"
+              icon={r.card ? "💳" : r.typed === "mortgage" ? "🏠" : "🧾"}
+              name={r.name}
+              meta={meta}
+              value={r.typed && r.balance === 0 ? "Add" : fmtMoney(r.balance)}
+              valueTone={r.typed && r.balance === 0 ? "var(--uf-pos-ink)" : undefined}
+              bar={r.card
+                ? (r.limit ? <MoneyTrack share={r.balance / r.limit} color="var(--uf-ink-3)" label={`${r.name}: ${fmtMoney(r.balance)} of ${fmtMoney(r.limit)} limit`} /> : undefined)
+                : orig > 0 ? <MoneyTrack share={paid / orig} label={`${r.name}: ${fmtMoney(paid)} of ${fmtMoney(orig)} paid off`} /> : undefined}
+              onClick={r.card && !r.typed ? undefined : () => setEditing(open ? null : r.key)}
+              after={open && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, alignItems: "end" }}>
+                  {r.typed === "debt" && field("Balance", totalDebt, setTotalDebt)}
+                  {r.typed === "mortgage" && field("Balance", mortgageBalance, setMortgageBalance)}
+                  {r.typed === "mortgage" && field("Monthly payment", mortgageMonthly, setMortgageMonthly)}
+                  {field("Started at", orig, v => onOriginal?.(r.key, v))}
+                  <div><Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Done</Button></div>
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#DC2626", marginTop: 4 }}>{fmtMoney(a.balance_current ?? 0)}</div>
-                {a.balance_limit != null && (
-                  <div style={{ fontSize: 11, color: "#94A3B8" }}>of {fmtMoney(a.balance_limit)} limit</div>
-                )}
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(220,38,38,0.2)" }}>
-            <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: "#991B1B" }}>{fmtMoney(bankLiabilitiesTotal)}</span>
-          </div>
-        </div>
-      )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <div className="uf-card">
-          <SectionLabel icon="💳" text="Consumer debt" color="#DC2626" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <FieldRow label="Non-Mortgage Debt" hint="Credit cards, auto loans, student loans">
-              <NumberInput
-                value={totalDebt}
-                onChange={setTotalDebt}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-          </div>
-        </div>
-
-        <div className="uf-card">
-          <SectionLabel icon="🏠" text="Mortgage" color="#DC2626" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <FieldRow label="Mortgage balance">
-              <NumberInput
-                value={mortgageBalance}
-                onChange={setMortgageBalance}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-            <FieldRow label="Monthly payment">
-              <NumberInput
-                value={mortgageMonthly}
-                onChange={setMortgageMonthly}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-          </div>
-        </div>
-      </div>
-
-      {totalLiabilities > 0 && (
-        <div className="uf-card" style={{ background: "rgba(220,38,38,0.04)", border: "1px solid rgba(220,38,38,0.2)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-            {[
-              { label: "Consumer debt",  val: fmtMoney(debtsEff.otherDebt + debtsEff.cards), color: "#DC2626" },
-              { label: "Mortgage",       val: fmtMoney(debtsEff.mortgage),    color: "#DC2626" },
-              { label: "Total debts", val: fmtMoney(totalLiabilities), color: "#19181E" },
-            ].map(l => (
-              <div key={l.label}>
-                <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{l.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: l.color, fontFamily: "Manrope, sans-serif" }}>{l.val}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+              )}
+            />
+          );
+        })}
+      </MoneyList>
     </div>
   );
 }
@@ -4902,30 +4658,47 @@ function TaxProfileCard({
  * changing growth, city or lifestyle here visibly did nothing: the date only
  * showed on Home. Same numbers as Home (freedomProjection).
  */
-function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears }: {
+function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears, invested = 0, target = 0 }: {
   date: Date | null; fireAge: number; years: number | null; growthPct: number; deltaYears: number | null;
+  /** For the bar to the FIRE number; optional so the summary renders without it. */
+  invested?: number; target?: number;
 }) {
   const label = date ? date.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
   const age = date && fireAge > 0 && years !== null ? Math.floor(fireAge + years) : null;
+  const share = target > 0 ? Math.min(1, Math.max(0, invested / target)) : null;
+  const mono = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" } as const;
+  const compact = (n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n / 1000)}k`;
+  // The calm headline (D-42): self-contained, because a test renders it alone.
   return (
-    <section aria-live="polite" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 24px" }}>
-      <div className="uf-t-label" style={{ color: "var(--uf-ink-2)", marginBottom: 6 }}>Your freedom date</div>
-      {label ? (
-        <>
-          <div style={{ fontFamily: "var(--uf-font-display)", fontSize: 34, fontWeight: 700, color: "var(--uf-ink)", lineHeight: 1.1 }}>{label}</div>
-          <div className="uf-t-body" style={{ color: "var(--uf-ink-2)", marginTop: 6 }}>
-            {age !== null ? <>At {age}, </> : null}at {growthPct.toFixed(1)}% growth a year after inflation.
-            {deltaYears !== null && Math.abs(deltaYears) >= 0.05 && (
-              <> That&apos;s <b style={{ color: "var(--uf-ink)" }}>{Math.abs(deltaYears).toFixed(1)} years {deltaYears > 0 ? "later" : "earlier"}</b> than at the {(REAL_RETURN * 100).toFixed(1)}% default.</>
-            )}
+    <section aria-live="polite" style={{ background: "var(--uf-card)", borderRadius: 20, padding: 22, boxShadow: "var(--uf-e1)", display: "grid", gap: 12 }}>
+      <div>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Your freedom date</div>
+        {label ? (
+          <>
+            <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(34px, 6vw, 44px)", fontWeight: 700, color: "var(--uf-teal)", lineHeight: 1.1 }}>{label}</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 4 }}>
+              {age !== null ? <>At {age}, </> : null}at {growthPct.toFixed(1)}% growth a year after inflation.
+              {deltaYears !== null && Math.abs(deltaYears) >= 0.05 && (
+                <> That&apos;s <b style={{ color: "var(--uf-ink)" }}>{Math.abs(deltaYears).toFixed(1)} years {deltaYears > 0 ? "later" : "earlier"}</b> than at the {(REAL_RETURN * 100).toFixed(1)}% default.</>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>Not reached yet. Save more or spend less to bring it in.</div>
+        )}
+      </div>
+      {share !== null && (
+        <div style={{ display: "grid", gap: 6 }}>
+          <div role="progressbar" aria-label="Progress to your FIRE number" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}
+            style={{ position: "relative", height: 10, borderRadius: 5, background: "var(--uf-surface-2)", overflow: "hidden" }}>
+            <i style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${share * 100}%`, background: "var(--uf-teal)", borderRadius: 5 }} />
           </div>
-        </>
-      ) : (
-        <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>
-          Not reached yet. Save more or spend less to bring it in.
+          <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: 8, color: "var(--uf-ink-2)" }}>
+            <span><b style={{ ...mono, color: "var(--uf-ink)" }}>{compact(invested)}</b> of <span style={mono}>{compact(target)}</span> FIRE number</span>
+            <b style={mono}>{Math.round(share * 100)}%</b>
+          </div>
         </div>
       )}
-      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 8 }}>Change anything below to move it.</div>
     </section>
   );
 }
@@ -5448,9 +5221,6 @@ export default function Dashboard() {
   const freedomDateCompactLabel = freedomDate
     ? freedomDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : null;
-  const freedomDateMonthYearLabel = freedomDate
-    ? freedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-    : null;
   const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
     try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
   });
@@ -5554,6 +5324,21 @@ export default function Dashboard() {
      typed), savings after mortgage and debt, growth, withdrawal rate and tax.
      Each had its own copy of the math and inputs, so none matched the date
      shown above it. */
+  /* What moves Plan's date most (D-42), worked out from Plan's own inputs so
+     the dates match the one above them. The same three moves as Home's. */
+  const planMoves = useMemo(() => {
+    if (!planFreedom.exactDate) return [];
+    const base = projectionInputs({ ...planFreedomInputs, growthRate });
+    if (!(base.annualIncome > 0)) return [];
+    const from = planFreedom.exactDate.getTime();
+    const run = (over: Partial<typeof base>) => { const r = calcProjection({ ...base, ...over }); return exactFreedomDateFrom(r.data, r.fireYear, r.fireTarget); };
+    return [
+      { key: "save", icon: "💰", color: COLOR_PALETTE[2], label: `Save ${fmt(500, defaultCurrency, rates)} more a month`, note: "", date: run({ monthlyExpenses: Math.max(0, base.monthlyExpenses - 500) }) },
+      { key: "spend", icon: "✂️", color: COLOR_PALETTE[1], label: "Spend 10% less", note: "", date: run({ monthlyExpenses: base.monthlyExpenses * 0.9 }) },
+      { key: "earn", icon: "📈", color: COLOR_PALETTE[6], label: "Earn 10% more", note: "if the raise is saved", date: run({ annualIncome: base.annualIncome * 1.1 }) },
+    ].map((m) => ({ ...m, years: m.date ? Math.max(0, (from - m.date.getTime()) / (365.25 * 864e5)) : 0 }))
+      .sort((x, y) => y.years - x.years);
+  }, [planFreedom, planFreedomInputs, growthRate, defaultCurrency, rates]);
   const planFacts = useMemo(() => {
     const inputs = projectionInputs({ ...planFreedomInputs, growthRate });
     const retirementMonthly = inputs.targetMonthlyExpenses ?? inputs.monthlyExpenses;
@@ -5691,6 +5476,22 @@ export default function Dashboard() {
       const next = { ...prev, [id]: on };
       if (userId) supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId)
         .then(({ error }) => { if (error) console.error("[free-to-spend] saving account toggles", error); });
+      return next;
+    });
+  }, [userId]);
+  // What each debt started at (D-40), so Debts can show how much is paid off.
+  const [debtOriginals, setDebtOriginals] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("profiles").select("debt_originals").eq("user_id", userId).single()
+      .then(({ data }) => { if (data?.debt_originals) setDebtOriginals(data.debt_originals as Record<string, number>); });
+  }, [userId]);
+  const setDebtOriginal = useCallback((key: string, usd: number) => {
+    setDebtOriginals((prev) => {
+      const next = { ...prev };
+      if (usd > 0) next[key] = usd; else delete next[key];
+      if (userId) supabase.from("profiles").update({ debt_originals: next }).eq("user_id", userId)
+        .then(({ error }) => { if (error) console.error("[debts] saving original balances", error); });
       return next;
     });
   }, [userId]);
@@ -6173,16 +5974,6 @@ export default function Dashboard() {
         .dark .expat-globe-wrap { background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
         @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: calc(100svh - 180px); min-height: 360px; } }
 
-        .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
-        .uf-sidebar-sub-sub-item { display: flex; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
-        .uf-sidebar-sub-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 3px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
-        .uf-sidebar-sub-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
-        .uf-sidebar-sub-sub-item:hover::before { background: var(--uf-green); }
-        .uf-sidebar-sub-sub-item.active { color: var(--uf-green-700); font-weight: 700; }
-        .uf-sidebar-sub-sub-item.active::before { background: var(--uf-green); width: 5px; height: 5px; }
-        .dark .uf-sidebar-sub-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
-        .dark .uf-sidebar-sub-sub-item.active { color: var(--uf-green-700); }
-        .dark .uf-sidebar-sub-sub-item.active::before { background: var(--uf-green); }
 
         select option { background: var(--uf-card); color: var(--uf-text); }
 
@@ -6378,21 +6169,8 @@ export default function Dashboard() {
                           >
                             {sub.label}
                           </button>
-                          {sub.tab === "cashflow" && tab === "cashflow" && (
-                            <div className="uf-sidebar-sub-sub-nav">
-                              {CASHFLOW_SUB_TABS.map(ss => (
-                                <button
-                                  key={ss.key}
-                                  className={`uf-sidebar-sub-sub-item ${cashflowSubTab === ss.key ? "active" : ""}`}
-                                  onClick={() => {
-                                    setCashflowSubTab(ss.key);
-                                  }}
-                                >
-                                  {ss.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                          {/* Cashflow's own pages are the pills on the page (D-41); the
+                              sidebar no longer repeats them. */}
                         </div>
                       ))}
                     </div>
@@ -6572,32 +6350,15 @@ export default function Dashboard() {
             )}
             {tab === "cashflow" && (
               <div>
-                {/* Cashflow sub-tab nav */}
-                <div
-                  className="uf-cashflow-subtab-switch"
-                  style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28, overflowX: "auto", scrollbarWidth: "none" }}
-                >
-                  {CASHFLOW_SUB_TABS.map(t => (
-                    <button
-                      key={t.key}
-                      onClick={() => { setCashflowSubTab(t.key); }}
-                      style={{
-                        background: "none", border: "none", padding: "0 0 14px",
-                        fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                        letterSpacing: "-0.3px", marginBottom: -1, whiteSpace: "nowrap",
-                        color: cashflowSubTab === t.key ? "#047857" : "#64748B",
-                        borderBottom: `2px solid ${cashflowSubTab === t.key ? "#047857" : "transparent"}`,
-                      }}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
+                {/* Cashflow sub-pages as pills, as on Home (D-40). */}
+                <div className="uf-cashflow-subtab-switch" style={{ marginBottom: 24 }}>
+                  <PillTabs label="Cashflow" options={CASHFLOW_SUB_TABS} value={cashflowSubTab} onChange={setCashflowSubTab} />
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} mortgageMonthly={mortgageMonthly} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} />
                 )}
               </div>
             )}
@@ -6611,19 +6372,12 @@ export default function Dashboard() {
             {tab === "assets" && !profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 <PortfolioOverviewTab
-                  income={income} expenses={expenses}
                   k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
-                  mortgageMonthly={mortgageMonthly} growthRate={growthRate}
-                  withdrawalRate={withdrawalRate}
-                  freedom={{ fireTarget: planFreedom.fireTarget, fireYear: planFreedom.fireYear }}
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
-                  retirementCityCol={retirementCityCol}
-                  lifestyleMultiplier={lifestyleMultiplier}
                 />
-                <div style={{ borderTop: "1px solid #E2E8F0" }} />
                 <AssetsTab
                   k401={k401} setK401={setK401}
                   rothIRA={rothIRA} setRothIRA={setRothIRA}
@@ -6662,6 +6416,9 @@ export default function Dashboard() {
                 displayRates={rates}
                 plaidAccounts={plaidAccounts}
                 onRefreshAccounts={refreshPlaidAccounts}
+                originals={debtOriginals}
+                onOriginal={setDebtOriginal}
+                planDebts={sharedPlan?.ladder?.debts ?? []}
               />
             )}
             {tab === "fire-calculator" && (
@@ -6678,7 +6435,22 @@ export default function Dashboard() {
                       deltaYears={planFreedom.exactDate && planFreedomAtDefault.exactDate
                         ? (planFreedom.exactDate.getTime() - planFreedomAtDefault.exactDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
                         : null}
+                      invested={planFacts.invested}
+                      target={planFacts.fireTarget}
                     />
+                    {planMoves.length > 0 && (
+                      <>
+                        <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>What moves it most</div>
+                        <MoneyList>
+                          {planMoves.map((m) => (
+                            <MoneyRow key={m.key} dot={m.color} icon={m.icon} name={m.label}
+                              meta={m.date ? `Lands in ${m.date.toLocaleDateString("en-US", { month: "short", year: "numeric" })}${m.note ? ` · ${m.note}` : ""}` : m.note}
+                              value={m.years >= 0.05 ? `−${m.years.toFixed(1)} yrs` : "No change"} valueTone={m.years >= 0.05 ? "var(--uf-pos-ink)" : "var(--uf-ink-3)"} strong={m.years >= 0.05}
+                              bar={<MoneyTrack share={planMoves[0].years > 0 ? m.years / planMoves[0].years : 0} color={m.color} label={`${m.label}: ${m.years.toFixed(1)} years sooner`} />} />
+                          ))}
+                        </MoneyList>
+                      </>
+                    )}
                     <FireAssumptionsCard
                       freedomDateLabel={planFreedom.exactDate ? planFreedom.exactDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null}
                       fireAge={fireAge}
@@ -6693,25 +6465,32 @@ export default function Dashboard() {
                       displayCurrency={defaultCurrency}
                       growthRate={growthRate}
                       onGrowthRateChange={setGrowthRate}
+                      taxRow={{
+                        on: taxEnabled,
+                        summary: taxEnabled ? `${Math.round(retirementTaxRate * 100)}% effective on withdrawals` : "Off: withdrawals counted before tax",
+                        editor: (
+                          <TaxProfileCard
+                        cityName={cityName}
+                        income={effectiveIncome}
+                        monthlyExpenses={planFacts.retirementMonthly}
+                        withdrawalRate={withdrawalRate}
+                        taxEnabled={taxEnabled}
+                        setTaxEnabled={setTaxEnabled}
+                        retirementTaxRate={retirementTaxRate}
+                        setRetirementTaxRate={setRetirementTaxRate}
+                        rothPct={rothPct}
+                        setRothPct={setRothPct}
+                        displayCurrency={defaultCurrency}
+                        displayRates={rates}
+                      />
+                        ),
+                      }}
                     />
                     <FireCalcMenuTab
                       fireAge={fireAge}
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
-                    <TaxProfileCard
-                      cityName={cityName}
-                      income={effectiveIncome}
-                      monthlyExpenses={planFacts.retirementMonthly}
-                      withdrawalRate={withdrawalRate}
-                      taxEnabled={taxEnabled}
-                      setTaxEnabled={setTaxEnabled}
-                      retirementTaxRate={retirementTaxRate}
-                      setRetirementTaxRate={setRetirementTaxRate}
-                      rothPct={rothPct}
-                      setRothPct={setRothPct}
-                      displayCurrency={defaultCurrency}
-                      displayRates={rates}
-                    />
+
                     <PurchaseImpactPanel
                       currentSavings={planFacts.invested}
                       monthlyContribution={planFacts.monthlySavings}

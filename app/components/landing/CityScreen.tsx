@@ -16,14 +16,16 @@ export default function CityScreen({
   onNext,
   onBack,
   onSkip,
+  initialCity,
 }: {
   onNext: (c: CityState) => void;
   onBack: () => void;
   onSkip?: () => void;
+  initialCity?: CityState | null;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialCity?.name ?? "");
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<CityState | null>(null);
+  const [selected, setSelected] = useState<CityState | null>(initialCity ?? null);
   const [showCustom, setShowCustom] = useState(false);
   const [customMonthly, setCustomMonthly] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);

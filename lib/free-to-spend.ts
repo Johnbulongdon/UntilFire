@@ -5,7 +5,10 @@
  * Two sides, and the answer is the lower one:
  *  - Cash: the everyday accounts' balance, less every bill in Upcoming due
  *    before payday (overdue ones included: a bill not ticked off is owed).
- *  - Budget: what is left this month in the flexible categories.
+ *  - Budget: what is left this month in the flexible categories, spread
+ *    evenly over the days left in the month, so the part of it that belongs
+ *    before payday. The whole month's remainder "until the 15th" let a $360
+ *    month read as $45 a day when it had to last 24 days (D-41).
  * The cash side stops rent being spent on groceries; the budget side stops
  * a well-funded account from being an excuse to overspend. Either side can
  * be missing (no bank linked, no budget), and the other one stands alone.
@@ -49,7 +52,8 @@ export interface FreeToSpend {
   payday: { iso: string; description: string | null; source: "paycheck" | "month-end" };
   limitedBy: "cash" | "budget";
   cash: null | { balance: number; accounts: SpendAccount[]; bills: ForecastEvent[]; free: number };
-  budget: null | { left: number; categories: BudgetLeft[]; tightest: BudgetLeft | null };
+  /** `left` is the month's; `untilPayday` is its even share of the days before payday. */
+  budget: null | { left: number; untilPayday: number; categories: BudgetLeft[]; tightest: BudgetLeft | null };
   cards: { name: string; owedUSD: number }[];
 }
 
@@ -92,6 +96,8 @@ export function freeToSpend(input: {
   const [y, m, d] = payday.iso.split("-").map(Number);
   const paydayDate = new Date(y, m - 1, d);
   const days = Math.max(1, Math.round((paydayDate.getTime() - today.getTime()) / DAY_MS));
+  // Today counts: the 7th of a 31-day month leaves 25 days.
+  const daysLeftInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate() + 1;
 
   const counted = input.accounts.filter((a) => isCounted(a, input.toggles));
   let cash: FreeToSpend["cash"] = null;
@@ -110,13 +116,16 @@ export function freeToSpend(input: {
   if (cats.length > 0) {
     const left = cats.reduce((s, c) => s + c.left, 0);
     const tightest = [...cats].sort((a, b) => a.left / a.budget - b.left / b.budget)[0] ?? null;
-    budget = { left, categories: cats, tightest };
+    // Over budget stays over; a remainder is shared out by day. A window that
+    // runs to the month's end (no paycheck, or pay after it) takes it all.
+    const share = payday.source === "month-end" ? 1 : Math.min(1, days / daysLeftInMonth);
+    budget = { left, untilPayday: left > 0 ? left * share : left, categories: cats, tightest };
   }
 
   if (!cash && !budget) return null;
   const limitedBy: FreeToSpend["limitedBy"] =
-    cash && (!budget || cash.free <= budget.left) ? "cash" : "budget";
-  const free = limitedBy === "cash" ? cash!.free : budget!.left;
+    cash && (!budget || cash.free <= budget.untilPayday) ? "cash" : "budget";
+  const free = limitedBy === "cash" ? cash!.free : budget!.untilPayday;
   const cards = input.accounts
     .filter((a) => a.type === "credit")
     .map((a) => ({ name: a.name, owedUSD: Math.abs(a.balanceUSD) }));
