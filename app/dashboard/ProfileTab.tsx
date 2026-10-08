@@ -188,7 +188,7 @@ export default function ProfileTab({
   }
 
   const inputStyle: React.CSSProperties = {
-    flex: 1,
+    flex: "1 1 180px",
     minWidth: 0,
     padding: "9px 12px",
     border: "1px solid var(--uf-border-2)",
@@ -230,7 +230,7 @@ export default function ProfileTab({
       <MoneyList>
         <MoneyRow dot="#2a78d6" icon="👤" name="Name" meta="How the dashboard greets you" value={`${displayName.trim() || "Add"} ›`} onClick={() => toggle("name")}
           after={openRow === "name" && (
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input aria-label="Display name" style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" onKeyDown={(e) => e.key === "Enter" && saveName()} />
               <Button variant="primary" size="sm" onClick={saveName} disabled={saving.name || !displayName.trim()}>{saving.name ? "Saving…" : saved.name ? "Saved ✓" : "Save"}</Button>
             </div>
@@ -239,7 +239,7 @@ export default function ProfileTab({
           after={<div style={{ display: openRow === "household" ? "block" : "none" }}><HouseholdSection bare onSummary={setHouseholdSummary} /></div>} />
         <MoneyRow dot="#1baf7a" icon="💱" name="Currency" meta="Amounts show in this; new entries start in it" value={`${defaultCurrency} ›`} onClick={() => toggle("currency")}
           after={openRow === "currency" && (
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <select aria-label="Default currency" style={{ ...inputStyle, flex: "none", minWidth: 120, cursor: "pointer" }} value={defaultCurrency} onChange={(e) => setDefaultCurrency(e.target.value)}>
                 {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -320,7 +320,7 @@ export default function ProfileTab({
           after={openRow === "delete" && (
             <div style={{ display: "grid", gap: 8 }}>
               <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Type <b>{userEmail}</b> to confirm. This can&apos;t be undone.</span>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input aria-label="Confirm your email" type="email" style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "var(--uf-neg)" : "var(--uf-border-2)" }}
                   value={deleteConfirm} onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }} placeholder={userEmail} />
                 <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting || deleteConfirm !== userEmail}>{deleting ? "Deleting…" : "Delete account"}</Button>
