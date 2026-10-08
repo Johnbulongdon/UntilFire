@@ -11,7 +11,7 @@ import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
 import { findFlags, type FlagKind, isSystemTag, okTag } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
-import { type Bill, guessBillCategory, mergeBills, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
+import { type Bill, guessBillCategory, mergeBills, presumePaid, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import type { FreeToSpend } from "@/lib/free-to-spend";
 import { detectRecurring, type Recurrence } from "@/lib/recurring-detect";
 import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
@@ -1744,8 +1744,14 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       completed: !!r.completed_at && (r.recurrence ?? "none") === "none", // a repeating bill is never finished
       recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence })),
   [expected, usd]);
+  // A payment that looks like a listed bill counts as paying it while the
+  // "Upcoming bill?" question waits (D-49), so rent is not counted twice.
   const bills = useMemo<Bill[]>(() => {
-    const listed = listedBills;
+    const asks = unlinkedBillPayments(
+      transactions.filter((t) => t.transaction_type === "expense")
+        .map((t) => ({ id: t.id, date: t.date.slice(0, 10), usd: usd(netAmt(t), t.currency), description: t.description ?? "", category: t.category })),
+      listedBills, (t) => !!transactions.find((x) => x.id === t.id)?.tags?.includes(okTag("bill")));
+    const listed = presumePaid(listedBills, asks);
     const raw = transactions.filter((t) => t.transaction_type !== "transfer").map((t) => ({
       id: t.id, date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount, currency: t.currency,
       description: t.description ?? "", category: t.category, transaction_type: t.transaction_type as "expense" | "income",
@@ -1754,7 +1760,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       .filter((d) => d.frequency === "monthly" || d.frequency === "quarterly" || d.frequency === "annual")
       .map((d) => ({ description: d.description, category: d.category, usd: d.avgAmountUSD, due: d.nextDueDate, recurrence: d.frequency as Recurrence }));
     return mergeBills(listed, spotted);
-  }, [listedBills, transactions, rates]);
+  }, [listedBills, transactions, rates, usd]);
   const expenseCatDisplay = useMemo(() => catDisplay(allExpenseCats), [catDisplay, allExpenseCats]);
   const incomeCatDisplay = useMemo(() => catDisplay(INCOME_CATEGORIES), [catDisplay]);
   const spentThisMonth = useMemo(() => transactions

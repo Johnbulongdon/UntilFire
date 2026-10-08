@@ -23,7 +23,7 @@ import { emergencyFundFromPlan, measuredEmergencyFund, type AccountFacts } from 
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
-import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, rateSoFar, settleBill } from "@/lib/spend-forecast";
+import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import { FreedomCard, MonthCard, GlanceRow, type MonthCategory } from "./HomeCards";
@@ -5289,25 +5289,39 @@ export default function Dashboard() {
   /* Expected outgoings in USD with their due dates. What is due before the
      next contribution is money already spoken for, so it is not available to
      invest — the same rule the committed total on Home already applies. */
-  const contributionItems = useMemo(
-    () => committedRows.map((r) => ({
-      description: r.description || (r.transaction_type === "income" ? "Income" : "Payment"),
-      amountUSD: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates),
-      type: r.transaction_type === "income" ? "income" as const : "expense" as const,
-      dueDate: r.due_date,
-      recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "")
-        ? r.recurrence : "none") as Recurrence,
-      category: r.category,
-    })),
-    [committedRows, rates],
-  );
   // Upcoming expense bills for Home's month (the same shape Transactions uses).
-  const homeBills: Bill[] = useMemo(() => committedRows
+  const listedHomeBills: Bill[] = useMemo(() => committedRows
     .filter((r) => r.transaction_type === "expense" && r.due_date)
     .map((r) => ({ id: r.id, description: r.description ?? null, category: r.category, merchant: r.match_merchant ?? null,
       usd: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), due: r.due_date.slice(0, 10),
       recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence })),
   [committedRows, rates]);
+  // A payment that looks like a listed bill counts as paying it until the
+  // person answers "Upcoming bill?" on Transactions (D-49), so Home, Budget
+  // and Free to spend do not count paid rent as still owed.
+  const homeBills: Bill[] = useMemo(() => presumePaid(listedHomeBills, unlinkedBillPayments(
+    recentTransactions.filter((t) => t.transaction_type === "expense")
+      .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency, rates), description: t.description ?? "", category: t.category ?? null })),
+    listedHomeBills, (t) => !!recentTransactions[Number(t.id)]?.tags?.includes("ok:bill"))),
+  [listedHomeBills, recentTransactions, rates]);
+  // Upcoming as Free to spend and Contributions read it: an expense bill takes
+  // the due date homeBills counts from, so a presumed-paid rent is not owed twice.
+  const contributionItems = useMemo(() => {
+    const counted = new Map(homeBills.map((b) => [b.id, b.due]));
+    return committedRows.flatMap((r) => {
+      const due = r.transaction_type === "expense" && r.id && r.due_date ? counted.get(r.id) : r.due_date;
+      if (!due) return [];
+      return [{
+        description: r.description || (r.transaction_type === "income" ? "Income" : "Payment"),
+        amountUSD: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates),
+        type: r.transaction_type === "income" ? "income" as const : "expense" as const,
+        dueDate: due,
+        recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "")
+          ? r.recurrence : "none") as Recurrence,
+        category: r.category,
+      }];
+    });
+  }, [committedRows, homeBills, rates]);
   const contributionFacts: AccountFacts = useMemo(() => ({
     cashAccounts: contributionCashAccounts,
     manualCashSavings: cashSavings,

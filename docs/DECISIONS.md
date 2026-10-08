@@ -1808,3 +1808,50 @@ a passport row into Expat FIRE's city page is the likely next step.
 
 **Also:** `MoneyRow` names truncate inside the row instead of widening it (grid
 tracks are `minmax(0, 1fr)`), and `wrap` lets a long name wrap.
+
+### D-48 — October 8: Profile in the calm style
+
+**Status:** Active. From a Profile mock the founder approved ("build all").
+
+**Decision:**
+- **Who and which plan first.** The headline is your name, email and plan.
+  On Free it carries "Try Pro" with the price under it; on Pro, "Manage
+  billing". Profile is opened on purpose after value, so this is not a
+  surprise payment prompt, and it is the only upgrade ask on the page.
+- **Settings are rows** (name, household, currency, currency shortlist) that
+  show their current value and open their editor in place. Household keeps
+  its own logic (`HouseholdSection bare`) and reports one word for its row.
+- **Banks, FIRE type and planning assumptions** are rows; FIRE type opens the
+  quiz, assumptions open Plan (app-structure rule 2).
+- **Give a month and the creator program** are rows that open their existing
+  cards in place, instead of two cards.
+- **Delete account** is one row; the email confirmation appears only after
+  tapping it. The red "Danger zone" card is gone.
+
+### D-49 — October 8: a likely rent payment counts as paid while we ask
+
+**Status:** Active. From the founder's October: Housing "$1,540 over" and
+"Over by $2,020" after rent was paid.
+
+**What happened:** "Sirui Rent" ($1,500, due Oct 1) was never linked to its
+bank name. BILT paid $1,380 on Oct 2. Only linked bills are marked paid
+(D-31), so the $1,380 counted as spent and the $1,500 as still due: rent
+twice. The Housing "Past months" mark compared spending up to today, and
+with rent paid on the 6th, 8th, 11th or 16th, most past months had $0 of
+housing by the 8th.
+
+**Decision:**
+- **Presumed paid while asked.** A payment that `unlinkedBillPayments` would
+  ask about (same category, within 10% of the amount, within 5 days of the due
+  date) counts as paying that date of the bill everywhere the numbers are
+  worked out: Transactions' still due and forecast, Home, Budget, Free to
+  spend and Contributions (`presumePaid`). Nothing is written; "Upcoming
+  bill?" still asks, "yes" links it as before, and "no" brings the bill back.
+  This keeps D-31's rule (ask before changing stored data) while the numbers
+  stop counting rent twice.
+- **Bill categories compare whole months.** A category with a listed or
+  spotted bill shows its Past months mark for the whole month, not "by
+  today", since the day rent lands moves.
+
+**Not changed:** the Past months value is still the middle of the last six
+months, so a new, higher rent takes a few months to show as usual.

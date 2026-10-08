@@ -172,6 +172,8 @@ cards and table heads already stick to the top.
   what it means as rows; other passports are a sortable list.
 - **Learn starts from your stage** (D-47) and its tools open Plan pages, not
   the public calculators. The public `/learn` stays the library.
+- **Profile leads with who you are and your plan** (D-48); settings are rows
+  that open in place, and Try Pro is the page's only upgrade ask.
 
 ## Known gap — not fixed by this structure
 

@@ -283,6 +283,27 @@ export function settleBill(b: Bill & { completed?: boolean }, txs: BillTx[], now
   return patch;
 }
 
+/**
+ * Listed bills as the numbers should count them while a payment that looks
+ * like one (unlinkedBillPayments) waits for the person's answer (D-49): that
+ * date counts as paid, so rent paid on the 2nd is not also "still due" and
+ * the month is not over budget by a second rent. Nothing is written; the
+ * "Upcoming bill?" question still asks, and declining it brings the bill back.
+ */
+export function presumePaid<B extends Bill>(bills: B[], asks: Map<string, Bill>): B[] {
+  const hits = new Map<string, number>();
+  for (const b of asks.values()) if (b.id) hits.set(b.id, (hits.get(b.id) ?? 0) + 1);
+  return bills.flatMap((b) => {
+    let cur = b;
+    for (let n = b.id ? hits.get(b.id) ?? 0 : 0; n > 0; n--) {
+      const paid = markPaid(cur, "");
+      if (!("due_date" in paid)) return [];
+      cur = { ...cur, due: paid.due_date };
+    }
+    return [cur];
+  });
+}
+
 /** The Upcoming update that marks a bill's current due date paid: a repeat moves to its next date, a one-off is completed. */
 export function markPaid(b: Pick<Bill, "due" | "recurrence">, nowIso: string): { due_date: string } | { completed_at: string } {
   if (b.recurrence === "none") return { completed_at: nowIso };

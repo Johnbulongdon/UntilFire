@@ -11,7 +11,7 @@ import SectionTitle from "./SectionTitle";
  * for every account, and it is offered here in Profile, after value, never
  * as a prompt.
  */
-export default function GiveAMonthCard({ cardStyle }: { cardStyle: React.CSSProperties }) {
+export default function GiveAMonthCard({ cardStyle, bare = false }: { cardStyle: React.CSSProperties; bare?: boolean }) {
   const [link, setLink] = useState<{ url: string; monthsEarned: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -29,13 +29,13 @@ export default function GiveAMonthCard({ cardStyle }: { cardStyle: React.CSSProp
   }
 
   return (
-    <div style={{ ...cardStyle, display: "grid", gap: 10 }}>
-      <div>
+    <div style={{ ...(bare ? {} : cardStyle), display: "grid", gap: 10 }}>
+      {!bare && <div>
         <SectionTitle icon="gift" style={{ margin: "0 0 4px" }}>Give a month, get a month</SectionTitle>
         <span style={{ display: "block", fontSize: 13, color: "var(--uf-text-2)", paddingLeft: 40 }}>
           Friends get Pro {REFERRED_TRIAL_LABEL}. When one subscribes, you get a month free.
         </span>
-      </div>
+      </div>}
       {link ? (
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <span className="uf-t-data" style={{ fontSize: 13, wordBreak: "break-all" }}>{link.url.replace("https://www.", "")}</span>

@@ -6,37 +6,34 @@ const profile = fs.readFileSync("app/dashboard/ProfileTab.tsx", "utf8");
 const checks = [];
 const check = (name, ok) => checks.push({ name, ok });
 
-const ctaBlockMatch = profile.match(/href=\{`\/fire-type\?source=dashboard-profile[\s\S]*?View freedom date →[\s\S]*?<\/button>\s*<\/div>/);
-const ctaBlock = ctaBlockMatch?.[0] ?? "";
+// Profile's FIRE type and freedom-date entries are rows since D-48. Rows keep
+// a long FIRE type name inside the phone width: MoneyRow's grid tracks are
+// minmax(0, 1fr), so the name truncates instead of widening the page.
+const cards = fs.readFileSync("app/dashboard/MoneyCards.tsx", "utf8");
 
 check(
-  "profile CTA row constrains itself to the card width",
-  /maxWidth:\s*"100%"/.test(ctaBlock),
+  "profile FIRE type entry still links to the quiz with its source and result",
+  /\/fire-type\?source=dashboard-profile\$\{fireTypeResult \? `&type=\$\{fireTypeResult\.code\}`/.test(profile),
 );
 
 check(
-  "profile FIRE type CTA can shrink inside narrow mobile cards",
-  /flex:\s*"1 1 260px"/.test(ctaBlock) &&
-    /minWidth:\s*0/.test(ctaBlock) &&
-    /boxSizing:\s*"border-box"/.test(ctaBlock),
+  "profile FIRE type entry is a MoneyRow, not a fixed-width button",
+  /<MoneyRow[^>]*name="FIRE type"/.test(profile),
 );
 
 check(
-  "profile FIRE type CTA wraps long result names instead of forcing horizontal overflow",
-  /whiteSpace:\s*"normal"/.test(ctaBlock) &&
-    /overflowWrap:\s*"anywhere"/.test(ctaBlock),
+  "profile still offers the way to the freedom date's assumptions",
+  /name="Planning assumptions"[\s\S]{0,240}onTabChange\("fire-calculator"\)/.test(profile),
 );
 
 check(
-  "profile freedom-date CTA also respects narrow card width",
-  /flex:\s*"1 1 180px"/.test(ctaBlock) &&
-    (ctaBlock.match(/maxWidth:\s*"100%"/g) || []).length >= 2,
+  "MoneyRow tracks let long names shrink inside narrow phones",
+  (cards.match(/gridTemplateColumns: "minmax\(0, 1fr\)"/g) || []).length >= 3,
 );
 
 check(
   "old overflow-prone inline-block FIRE type CTA is not present",
-  !/display:\s*"inline-block"/.test(ctaBlock) &&
-    !/whiteSpace:\s*"nowrap"/.test(ctaBlock),
+  !/display:\s*"inline-block"[^}]*whiteSpace:\s*"nowrap"/.test(profile),
 );
 
 const failed = checks.filter((c) => !c.ok);

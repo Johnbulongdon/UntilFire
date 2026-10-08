@@ -136,15 +136,17 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
     ? dueByCategory(bills, `${thisMonth}-${String(new Date(Number(thisMonth.slice(0, 4)), Number(thisMonth.slice(5, 7)), 0).getDate()).padStart(2, "0")}`) : {},
   [bills, running, range, thisMonth]);
 
+  // Categories with a listed or spotted bill compare whole months (D-49).
+  const billCats = useMemo(() => new Set(bills.map((b) => billCategory(b)).filter(Boolean)), [bills]);
   const rows = useMemo(() => {
     const out = cats.map((c) => {
       const mine = entries.filter((e) => e.category === c.key);
       const now = mine.filter((e) => inRange(e.date)).reduce((s, e) => s + e.usd, 0);
       const b = mode === "spent" ? budgets[c.key] ?? 0 : 0;
-      return { ...c, now, due: b > 0 ? due[c.key] ?? 0 : 0, usual: usualForRange(mine, range, today), budget: b > 0 ? b * range.months.length : null };
+      return { ...c, now, due: b > 0 ? due[c.key] ?? 0 : 0, usual: usualForRange(mine, range, today, billCats.has(c.key)), budget: b > 0 ? b * range.months.length : null };
     }).filter((r) => r.now > 0 || (r.usual ?? 0) > 0 || (r.budget ?? 0) > 0).sort((a, b) => b.now - a.now);
     return out.slice(0, 6);
-  }, [cats, entries, range, today, budgets, mode, due]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cats, entries, range, today, budgets, mode, due, billCats]); // eslint-disable-line react-hooks/exhaustive-deps
   const max = Math.max(1, ...rows.map((r) => Math.max(r.now + r.due, r.usual ?? 0, r.budget ?? 0)));
 
   const seg = (on: boolean): React.CSSProperties => ({ border: "none", borderRadius: 999, padding: "5px 12px", cursor: "pointer", font: "inherit", fontSize: 13, fontWeight: 700,

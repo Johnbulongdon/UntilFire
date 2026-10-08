@@ -8,6 +8,22 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-08
 
+### Calm Profile
+- Profile opens on your name, email and plan, with Try Pro or Manage billing.
+- Name, household, currency and banks are rows that open in place; sharing
+  and deleting your account are rows too.
+
+### Rent is not counted twice
+- Fixed: a rent payment that looks like your Upcoming rent, but isn't linked to
+  it yet, now counts as paying it while "Upcoming bill?" asks you. Housing no
+  longer shows the rent as both paid and still due, and "Over by" no longer
+  includes it twice.
+- Housing and other bill categories compare whole past months, so rent paid
+  later in the month no longer makes "Past months" look like $0.
+
+### Cleanup
+- Removed an unused old Learn component; Learn is `app/dashboard/LearnTab.tsx`.
+
 ### Calm Learn
 - Learn opens on your stage, why you're there and how far through the four
   stages you are, then one article to read next.
