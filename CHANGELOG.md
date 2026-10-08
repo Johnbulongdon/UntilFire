@@ -8,6 +8,13 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-08
 
+### Calm Citizenship
+- Citizenship asks which passport you hold first, then shows its score, rank
+  and weakest part, with one bar split into tax, retirement accounts and investing.
+- What it means for you: accounts, capital gains and income tax as rows, then
+  what to watch out for and what's good for FIRE.
+- Other passports are a sortable list; tap one for its page.
+
 ### Calm Expat FIRE
 - Expat FIRE opens on the soonest place work becomes optional, how many years
   before your plan's city, and a bar to that place's FIRE number.

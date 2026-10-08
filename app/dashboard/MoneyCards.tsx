@@ -64,7 +64,8 @@ export function StackBar({ parts, total, label }: { parts: { key: string; color:
 
 /** The page's headline: a small label, one big number, a line under it, and an optional control on the right. */
 export function MoneyHead({ label, value, sub, aside, children }: {
-  label: string;
+  /** Words, or words with a small mark such as a flag. */
+  label: React.ReactNode;
   value: React.ReactNode;
   sub?: React.ReactNode;
   aside?: React.ReactNode;

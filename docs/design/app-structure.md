@@ -168,6 +168,8 @@ cards and table heads already stick to the top.
 - **Expat FIRE leads with the soonest place** (D-45): a list of when each
   place opens up, with the globe behind a List / Globe switch. "Plan for" a
   city sets the retirement city that Freedom date's Retire in row holds.
+- **Citizenship asks for your passport first** (D-46), then shows its score and
+  what it means as rows; other passports are a sortable list.
 
 ## Known gap — not fixed by this structure
 

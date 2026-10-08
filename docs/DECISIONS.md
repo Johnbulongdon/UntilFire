@@ -1757,3 +1757,29 @@ fire").
 **Not changed:** the globe's own colours (it still marks places not yet in
 reach in red), Citizenship and Learn. The public calculator uses the location
 explorer (D-44).
+
+### D-46 — October 8: Citizenship in the calm style
+
+**Status:** Active. From a Citizenship mock the founder approved ("build all").
+
+**Decision:**
+- **Ask first.** Without a passport set, the page opens on "Which passport do
+  you hold?" with the picker, instead of a nine-line explanation above it.
+- **Your passport's score first**: the score out of 100, its band in words,
+  its rank and its weakest part, and one bar split into tax (40), retirement
+  accounts (30) and investing (30), each part with one colour.
+- **What it means** as rows (retirement accounts, capital gains, income tax,
+  with their part scores), then the watch-outs and strengths as sentences
+  with ✓ and !, so meaning does not rest on colour.
+- **Compare passports** is a list with sort pills (Top, Tax, Accounts,
+  Invest, A–Z), the top six plus yours, and "See all". A passport's page has
+  the same shape and "This is my passport".
+- **The caveat stays visible** as one line (general, simplified guidance, not
+  tax or legal advice); how it's scored moves under a disclosure.
+
+**Why:** the scores carry trust risk. A calm layout makes "62 / 100" more
+prominent, so the caveat is kept on screen rather than removed.
+
+**Open question:** a passport ranking does not move the freedom date. It
+matters most beside Expat FIRE (a US passport is taxed in Lisbon too); folding
+a passport row into Expat FIRE's city page is the likely next step.
