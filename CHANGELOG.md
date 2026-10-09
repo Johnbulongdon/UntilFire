@@ -11,6 +11,8 @@ under today's date, creating the heading if it is not there yet.
 ### Explore keeps the globe in view
 - On a computer, Explore fits the window: the globe stays put and only the
   city cards scroll, in their own column. Phones scroll as before.
+- Zoomed in, each pin names its city ("Porto 2041"); before, the flag
+  dropped off and the pins showed only a number.
 
 ### Explore: one globe, your currency
 - US and abroad are one globe now: one pin per country until you zoom in

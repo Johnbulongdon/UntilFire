@@ -3,7 +3,8 @@
 /**
  * The Explore map (D-58): one globe for every city, US and abroad, drawn from
  * outlines (not map tiles) so it is light and on brand. One pin per country
- * until you zoom in, then one per city, with US state lines once you are close.
+ * until you zoom in, then one per city (named, since a flag no longer says
+ * which city), with US state lines once you are close.
  * Numbers only ever sit inside pins; a pin with no room becomes a dot you can
  * still tap.
  */
@@ -68,8 +69,8 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   const pins = useMemo(() => {
     if (!projection) return [];
     const points = zoom >= CITY_ZOOM
-      ? cities.map(c => ({ key: c.key, lat: c.lat, lng: c.lng, label: pinText(c, mode, freedom.get(c.key) ?? null, money), flag: null as string | null, city: c }))
-      : countryPins(cities).map(g => ({ key: `country:${g.region}`, lat: g.lat, lng: g.lng, label: pinText(g.mid, mode, freedom.get(g.mid.key) ?? null, money), flag: g.flag as string | null, city: g.mid }));
+      ? cities.map(c => ({ key: c.key, lat: c.lat, lng: c.lng, label: pinText(c, mode, freedom.get(c.key) ?? null, money), flag: null as string | null, name: c.name as string | null, city: c }))
+      : countryPins(cities).map(g => ({ key: `country:${g.region}`, lat: g.lat, lng: g.lng, label: pinText(g.mid, mode, freedom.get(g.mid.key) ?? null, money), flag: g.flag as string | null, name: null as string | null, city: g.mid }));
     // Selected first, then starred, then everything else in list order.
     const rank = (k: string) => (k === selected ? 0 : starred.has(k) ? 1 : 2);
     const visible = points.flatMap(p => {
@@ -79,7 +80,7 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
       if (geoDistance([p.lng, p.lat], [-rotate[0], -rotate[1]]) > Math.PI / 2 - 0.05) return [];
       return [{ ...p, x: xy[0], y: xy[1] }];
     }).sort((a, b) => rank(a.city.key) - rank(b.city.key));
-    const placed = placePins(visible.map(p => ({ key: p.key, x: p.x, y: p.y, width: pinWidth(p.label) + (p.flag ? 20 : 0) })), { width, height }, new Set([...starred, ...(selected ? [selected] : [])]));
+    const placed = placePins(visible.map(p => ({ key: p.key, x: p.x, y: p.y, width: pinWidth(p.label) + (p.flag ? 20 : 0) + (p.name ? p.name.length * 6.4 + 6 : 0) })), { width, height }, new Set([...starred, ...(selected ? [selected] : [])]));
     return placed.map((pl, i) => ({ ...pl, ...visible[i] }));
   }, [projection, cities, mode, money, freedom, starred, selected, zoom, width, height, rotate]);
 
@@ -115,7 +116,7 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
         onClick={() => tap(p.key, p.lng, p.lat)}
         style={{ position: "absolute", left: p.x, top: p.y, transform: shift, zIndex: sel ? 3 : star ? 2 : 1, ...mono, fontSize: 11, fontWeight: 700, padding: "3px 7px", borderRadius: 7, whiteSpace: "nowrap", cursor: "pointer",
           background: sel || star ? "var(--uf-ink)" : "var(--uf-card)", color: sel || star ? "var(--uf-card)" : "var(--uf-ink)", border: sel || star ? "1px solid transparent" : "1px solid var(--uf-border-2)", boxShadow: "0 1px 3px #203e3033" }}>
-        {star && <span aria-hidden style={{ color: "var(--uf-sun)" }}>★ </span>}{p.flag && <><Flag emoji={p.flag} size={11} />{" "}</>}{p.label}
+        {star && <span aria-hidden style={{ color: "var(--uf-sun)" }}>★ </span>}{p.flag && <><Flag emoji={p.flag} size={11} />{" "}</>}{p.name && <span style={{ fontFamily: "var(--uf-font-body)", fontWeight: 600 }}>{p.name} </span>}{p.label}
       </button>;
     })}
     <div style={{ position: "absolute", right: 10, bottom: 10, display: "grid", gap: 6, zIndex: 4 }}>
