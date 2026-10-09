@@ -423,6 +423,12 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
         {/* Rows — newest first */}
         {[...monthlySummaries].reverse().map(row => {
           const empty = row.income === 0 && row.expenses === 0;
+          // This month's pay may not have landed yet, so its rate means nothing
+          // until it ends; and a finished month that spent over twice its income
+          // reads as "below −100%", not a three-digit figure.
+          const inProgress = row.month === months[months.length - 1];
+          const rate = empty || row.income === 0 || inProgress ? "—"
+            : row.savingsRate < -100 ? "< −100%" : row.savingsRate.toFixed(0) + "%";
           return (
             <div
               key={row.month}
@@ -433,7 +439,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
               }}
             >
               <span style={{ fontWeight: 600, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", fontSize: 13 }}>
-                {row.label}
+                {row.label}{inProgress && <span style={{ color: "var(--uf-ink-3)", fontWeight: 500 }}> · so far</span>}
               </span>
               <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : "var(--uf-pos-ink)" }}>
                 {empty ? "—" : fmtDisplay(row.income)}
@@ -444,8 +450,8 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
               <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : row.net >= 0 ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)" }}>
                 {empty ? "—" : (row.net >= 0 ? "+" : "") + fmtDisplay(row.net)}
               </span>
-              <span style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : rateColor(row.savingsRate) }}>
-                {empty || row.income === 0 ? "—" : Math.max(-999, Math.min(999, row.savingsRate)).toFixed(0) + "%"}
+              <span style={{ textAlign: "right", fontWeight: 700, color: rate === "—" ? "var(--uf-ink-3)" : rateColor(row.savingsRate) }}>
+                {rate}
               </span>
             </div>
           );

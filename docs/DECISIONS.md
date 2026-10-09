@@ -2042,3 +2042,30 @@ because leaving is easy.
 
 **Not changed:** account deletion, which already lives in Profile. A household
 export holds only the rows this account can see.
+
+### D-57 — October 9: honest Insights rates, a calm Freedom Date bottom, goals first
+
+**Status:** Active. From the design review's two visible bugs and the
+founder's "fix, then measure, then the post-onboarding page".
+
+**Decision:**
+- **Insights rate column.** The month in progress shows "· so far" and no
+  rate: pay may not have landed, so a rate there is noise (it read −999%).
+  A finished month that spent over twice its income shows "< −100%", not
+  a clamped three-digit figure. Averages already left this month out (D-35).
+- **Before you buy.** The price is its own field under "Thinking of buying
+  something?", and the result is the sentence below it. The field no
+  longer sits mid-sentence reading "A [$0] purchase…". It now comes before
+  More tools, since it uses your own numbers.
+- **More tools** is three rows (investing simulator, FIRE type, all
+  calculators) in the shared row style, replacing cards with gradient
+  buttons and large emoji. The separate purchase impact link went: Before
+  you buy above it does the same with your numbers.
+- **Goals come first.** Your why moved below your goals and folds into one
+  "Find your why" row that opens the prompts, so five prompt cards no
+  longer push your goals down the page.
+
+**Measured:** an early PostHog read showed 10–50 weekly visitors since
+September and 4 of 36 landing visitors starting the calculator in the two
+weeks before D-50. Too few to judge the onboarding change; traffic, not
+onboarding, is the current bottleneck.

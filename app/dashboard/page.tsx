@@ -2870,6 +2870,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
   const fmtFull = (n: number) => formatMoney(n);
   // Goals are categories here, so each takes a palette colour in order (D-42).
   const goalColor = (i: number) => COLOR_PALETTE[i % (COLOR_PALETTE.length - 1)];
+  const [whyOpen, setWhyOpen] = useState(false);
   const [openGoal, setOpenGoal] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   /** What a goal needs: done, a monthly amount to make its date, past its date, or no date. */
@@ -2902,17 +2903,81 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
         )}
       </MoneyHead>
 
-      {/* Your why: one prompt per PERMA category with no linked goal yet.
+      {/* Empty state */}
+      {goals.length === 0 && (
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
+          padding: "48px 20px", background: "var(--uf-card)", border: "1px dashed var(--uf-border)",
+          borderRadius: 16, textAlign: "center",
+        }}>
+          <div style={{ fontSize: 40 }}>🎯</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--uf-text)", marginBottom: 6 }}>No goals yet</div>
+            <div style={{ fontSize: 13, color: "var(--uf-text-muted)" }}>Pick something to save toward and track your progress.</div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 420 }}>
+            {QUICK_GOAL_PRESETS.slice(0, 8).map(p => (
+              <button
+                key={p.name}
+                onClick={() => openAdd(p)}
+                style={{
+                  background: "var(--uf-surface)", border: "1px solid var(--uf-border)",
+                  borderRadius: 99, padding: "6px 14px", fontSize: 13, fontWeight: 600,
+                  color: "var(--uf-text)", cursor: "pointer", fontFamily: "inherit",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+              >
+                {p.emoji} {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {goals.length > 0 && (
+        <MoneyList>
+          {goals.map((g, i) => {
+            const pct = g.target_amount > 0 ? Math.min(1, g.current_saved / g.target_amount) : 0;
+            const plan = goalPlan(g);
+            const open = openGoal === g.id;
+            return (
+              <MoneyRow key={g.id} dot={goalColor(i)} icon={g.emoji} name={g.name}
+                meta={[
+                  `${fmtFull(g.current_saved)} of ${fmtFull(g.target_amount)}`,
+                  g.target_date ? `by ${new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}` : null,
+                  plan.kind === "monthly" ? `${fmtFull(plan.amount)}/mo` : plan.kind === "late" ? "past its date" : null,
+                  g.perma_category ? PERMA_LABELS[g.perma_category] : null,
+                ].filter(Boolean).join(" · ")}
+                value={plan.kind === "done" ? "Done ✓" : `${Math.round(pct * 100)}%`} strong
+                valueTone={plan.kind === "done" ? "var(--uf-pos-ink)" : plan.kind === "late" ? "var(--uf-warn-ink)" : undefined}
+                bar={<MoneyTrack share={pct} color={goalColor(i)} label={`${g.name}: ${Math.round(pct * 100)}% saved`} />}
+                onClick={() => { setOpenGoal(open ? null : g.id); setConfirmDelete(null); }}
+                after={open && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <Button variant="secondary" size="sm" onClick={() => openEdit(g)}>Edit</Button>
+                    {confirmDelete === g.id
+                      ? <><Button variant="danger" size="sm" onClick={() => handleDelete(g.id)}>Delete {g.name}</Button><Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>Keep it</Button></>
+                      : <Button variant="danger" size="sm" onClick={() => setConfirmDelete(g.id)}>Delete</Button>}
+                  </div>
+                )} />
+            );
+          })}
+        </MoneyList>
+      )}
+
+      {/* Your why (below your goals since D-57, folded into one row): one
+          prompt per PERMA category with no linked goal yet.
           Describe it in your own words, get an estimate, nudge it until it
           feels right, then save — no popup, no typing a number cold. Once
           saved it drops off this list and shows up as a normal card below
           with a PERMA badge (see the goals grid). */}
       {remainingPermaPrompts.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>
-            Your why
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+          <MoneyList>
+            <MoneyRow dot="var(--uf-ink-3)" icon="💭" name="Find your why" meta={`${remainingPermaPrompts.length} questions to turn what matters into a goal`}
+              value={whyOpen ? "Hide" : "Open ›"} onClick={() => setWhyOpen(o => !o)} />
+          </MoneyList>
+          {whyOpen && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
             {remainingPermaPrompts.map(p => {
               const card = permaCard(p.id);
               const saving = permaSavingId === p.id;
@@ -2980,70 +3045,8 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                 </div>
               );
             })}
-          </div>
+          </div>}
         </div>
-      )}
-
-      {/* Empty state */}
-      {goals.length === 0 && (
-        <div style={{
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
-          padding: "48px 20px", background: "var(--uf-card)", border: "1px dashed var(--uf-border)",
-          borderRadius: 16, textAlign: "center",
-        }}>
-          <div style={{ fontSize: 40 }}>🎯</div>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--uf-text)", marginBottom: 6 }}>No goals yet</div>
-            <div style={{ fontSize: 13, color: "var(--uf-text-muted)" }}>Pick something to save toward and track your progress.</div>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 420 }}>
-            {QUICK_GOAL_PRESETS.slice(0, 8).map(p => (
-              <button
-                key={p.name}
-                onClick={() => openAdd(p)}
-                style={{
-                  background: "var(--uf-surface)", border: "1px solid var(--uf-border)",
-                  borderRadius: 99, padding: "6px 14px", fontSize: 13, fontWeight: 600,
-                  color: "var(--uf-text)", cursor: "pointer", fontFamily: "inherit",
-                  display: "flex", alignItems: "center", gap: 6,
-                }}
-              >
-                {p.emoji} {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {goals.length > 0 && (
-        <MoneyList>
-          {goals.map((g, i) => {
-            const pct = g.target_amount > 0 ? Math.min(1, g.current_saved / g.target_amount) : 0;
-            const plan = goalPlan(g);
-            const open = openGoal === g.id;
-            return (
-              <MoneyRow key={g.id} dot={goalColor(i)} icon={g.emoji} name={g.name}
-                meta={[
-                  `${fmtFull(g.current_saved)} of ${fmtFull(g.target_amount)}`,
-                  g.target_date ? `by ${new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}` : null,
-                  plan.kind === "monthly" ? `${fmtFull(plan.amount)}/mo` : plan.kind === "late" ? "past its date" : null,
-                  g.perma_category ? PERMA_LABELS[g.perma_category] : null,
-                ].filter(Boolean).join(" · ")}
-                value={plan.kind === "done" ? "Done ✓" : `${Math.round(pct * 100)}%`} strong
-                valueTone={plan.kind === "done" ? "var(--uf-pos-ink)" : plan.kind === "late" ? "var(--uf-warn-ink)" : undefined}
-                bar={<MoneyTrack share={pct} color={goalColor(i)} label={`${g.name}: ${Math.round(pct * 100)}% saved`} />}
-                onClick={() => { setOpenGoal(open ? null : g.id); setConfirmDelete(null); }}
-                after={open && (
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <Button variant="secondary" size="sm" onClick={() => openEdit(g)}>Edit</Button>
-                    {confirmDelete === g.id
-                      ? <><Button variant="danger" size="sm" onClick={() => handleDelete(g.id)}>Delete {g.name}</Button><Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>Keep it</Button></>
-                      : <Button variant="danger" size="sm" onClick={() => setConfirmDelete(g.id)}>Delete</Button>}
-                  </div>
-                )} />
-            );
-          })}
-        </MoneyList>
       )}
 
       {/* Add / Edit Modal */}
@@ -4481,109 +4484,20 @@ function FireCalcMenuTab({
     } catch { /* ignore */ }
   }, []);
 
-  const tools = [
-    {
-      icon: "📈",
-      title: "Advanced Investing Simulator",
-      desc: "Model monthly investing with your own mix and inflation.",
-      meta: "Advanced / optional",
-      label: "Open Advanced →",
-      onClick: onOpenInvestSim,
-    },
-  ];
-
+  // Rows like every other Plan list (D-57), in place of three cards with
+  // gradient buttons. Neutral dots: these are links, not money.
+  const go = (href: string) => { window.location.href = href; };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-      <div>
-        <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "#19181E", margin: "0 0 6px", letterSpacing: "-0.5px" }}>
-          More tools
-        </h2>
-        <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>
-          Optional checks beyond the freedom date above.
-        </p>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
-        {tools.map(tool => (
-          <div
-            key={tool.title}
-            style={{
-              background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16,
-              padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16,
-            }}
-          >
-            <div style={{ fontSize: 48, lineHeight: 1 }}>{tool.icon}</div>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
-                {tool.title}
-              </div>
-              <div style={{ fontSize: 14, color: "var(--uf-text-2)", lineHeight: 1.7 }}>
-                {tool.desc}
-              </div>
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              {tool.meta}
-            </div>
-            <button
-              onClick={tool.onClick}
-              style={{
-                background: "linear-gradient(135deg, #059669, #064E3B)",
-                color: "#fff", border: "none", borderRadius: 10,
-                padding: "12px 0", fontWeight: 700, fontSize: 14,
-                cursor: "pointer", fontFamily: "inherit", marginTop: "auto",
-              }}
-            >
-              {tool.label}
-            </button>
-          </div>
-        ))}
-
-        {/* FIRE Type quiz card */}
-        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontSize: 48, lineHeight: 1 }}>🧭</div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
-              {fireTypeResult ? "Your FIRE Type" : "FIRE Type Quiz"}
-            </div>
-            <div style={{ fontSize: 14, color: "var(--uf-text-2)", lineHeight: 1.7 }}>
-              {fireTypeResult
-                ? "How you think about money shapes your path."
-                : "8 quick questions on how you think about money."}
-            </div>
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            {fireTypeResult ? `${fireTypeResult.code} — ${fireTypeResult.name}` : "2 minutes · No login"}
-          </div>
-          <a
-            href={`/fire-type?source=dashboard-fire-calc${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`}
-            style={{
-              background: "linear-gradient(135deg, #059669, #064E3B)",
-              color: "#fff", border: "none", borderRadius: 10,
-              padding: "12px 0", fontWeight: 700, fontSize: 14,
-              cursor: "pointer", fontFamily: "inherit", marginTop: "auto",
-              textDecoration: "none", textAlign: "center", display: "block",
-            }}
-          >
-            {fireTypeResult ? "View / retake quiz →" : "Find my FIRE Type →"}
-          </a>
-        </div>
-      </div>
-
-      {/* Link to public calculators hub */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 4 }}>
-        <span style={{ fontSize: 13, color: "var(--uf-text-3)" }}>More tools:</span>
-        <a
-          href="/calculators"
-          style={{ fontSize: 13, fontWeight: 700, color: "#059669", textDecoration: "none" }}
-        >
-          Browse all calculators →
-        </a>
-        <a
-          href="/calculators/purchase-impact"
-          style={{ fontSize: 13, fontWeight: 700, color: "#f97316", textDecoration: "none" }}
-        >
-          Purchase impact →
-        </a>
-      </div>
+    <div style={{ display: "grid", gap: 8 }}>
+      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>More tools</div>
+      <MoneyList>
+        <MoneyRow dot="var(--uf-ink-3)" icon="📈" name="Investing simulator" meta="Model monthly investing with your own mix and inflation" value="Open ›" onClick={onOpenInvestSim} />
+        <MoneyRow dot="var(--uf-ink-3)" icon="🧭" name={fireTypeResult ? "Your FIRE type" : "FIRE type quiz"}
+          meta={fireTypeResult ? `${fireTypeResult.code} · ${fireTypeResult.name}` : "8 quick questions on how you think about money"}
+          value={fireTypeResult ? "View ›" : "Start ›"}
+          onClick={() => go(`/fire-type?source=dashboard-fire-calc${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`)} />
+        <MoneyRow dot="var(--uf-ink-3)" icon="🧮" name="All calculators" meta="Coast FIRE, the 4% rule, net worth by age and more" value="Browse ›" onClick={() => go("/calculators")} />
+      </MoneyList>
     </div>
   );
 }
@@ -6243,16 +6157,16 @@ export default function Dashboard() {
                         ),
                       }}
                     />
-                    <FireCalcMenuTab
-                      fireAge={fireAge}
-                      onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
-                    />
-
                     <PurchaseImpactPanel
                       currentSavings={planFacts.invested}
                       monthlyContribution={planFacts.monthlySavings}
                       fireTarget={planFacts.fireTarget}
                       annualReturn={growthRate}
+                    />
+
+                    <FireCalcMenuTab
+                      fireAge={fireAge}
+                      onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
                   </>
                 )}
