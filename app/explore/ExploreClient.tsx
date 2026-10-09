@@ -7,7 +7,7 @@
  * app's default currency, or the one you used in the calculator). Stars and
  * your numbers stay on this device; nothing is sent anywhere.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { readExplorePlan, saveExplorePlan } from "@/lib/explore-store";
 import { EXPLORE_CITIES, freedomIn, type ExplorePlan, type PinMode } from "@/lib/explore";
@@ -58,6 +58,10 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
   const [editing, setEditing] = useState(false);
   const [shown, setShown] = useState(24);
   const [mapHeight, setMapHeight] = useState(620);
+  // On a computer the page fits the screen: the globe stays in view and only
+  // the cards scroll, inside their own column. Null on a phone (it scrolls).
+  const [boxHeight, setBoxHeight] = useState<number | null>(null);
+  const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setStarred(new Set(read<string[]>(STARS_KEY) ?? []));
@@ -65,9 +69,21 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
     if (p) { setPlan(p); setMode("year"); }
     trackExploreViewed({ has_plan: !!p });
     const phone = window.matchMedia("(max-width: 900px)");
-    const fit = () => setMapHeight(phone.matches ? 340 : 620);
-    fit(); phone.addEventListener("change", fit);
-    return () => phone.removeEventListener("change", fit);
+    const fit = () => {
+      if (phone.matches || !box.current) { setBoxHeight(null); setMapHeight(340); return; }
+      // From where the page starts (below the site header or app bar) to the bottom of the window.
+      const top = box.current.getBoundingClientRect().top + window.scrollY;
+      const h = Math.max(520, window.innerHeight - top);
+      setBoxHeight(h); setMapHeight(h - 48 - 40);
+      // Padding below us (the app shell adds some) would still make the page
+      // scroll: measure once laid out and give that back.
+      requestAnimationFrame(() => {
+        const extra = document.documentElement.scrollHeight - window.innerHeight;
+        if (extra > 0 && h - extra >= 520) { setBoxHeight(h - extra); setMapHeight(h - extra - 48 - 40); }
+      });
+    };
+    fit(); phone.addEventListener("change", fit); window.addEventListener("resize", fit);
+    return () => { phone.removeEventListener("change", fit); window.removeEventListener("resize", fit); };
   }, []);
   // In the app, your plan's numbers win over anything saved in the browser.
   useEffect(() => { if (appPlan) { setPlan(appPlan); setMode(m => (m === "monthly" ? "year" : m)); } }, [appPlan]);
@@ -92,7 +108,7 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
   const savePlan = (p: ExplorePlan) => { setPlan(p); setEditing(false); setMode("year"); saveExplorePlan(p); };
 
   const modes: [PinMode, string, boolean][] = [["monthly", `${getCurrencySymbol(currency)} / month`, true], ["year", "🏁 Year", !!plan], ["age", "🎂 Age", plan?.age != null]];
-  return <div className="uf-explore">
+  return <div className="uf-explore" ref={box} style={boxHeight ? { height: boxHeight } : undefined}>
     <div className="uf-explore-head">
       {!appPlan && <h1 className="uf-t-display" style={{ margin: 0, fontSize: "clamp(26px, 4vw, 34px)" }}>Where could you retire?</h1>}
       <div role="radiogroup" aria-label="Pins show" style={{ display: "inline-flex", gap: 2, padding: 3, borderRadius: 99, background: "var(--uf-card)", justifySelf: "start" }}>

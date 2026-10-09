@@ -8,6 +8,10 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Explore keeps the globe in view
+- On a computer, Explore fits the window: the globe stays put and only the
+  city cards scroll, in their own column. Phones scroll as before.
+
 ### Explore: one globe, your currency
 - US and abroad are one globe now: one pin per country until you zoom in
   (the US is a single pin), then every city, with state lines up close. US
