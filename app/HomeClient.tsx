@@ -1025,8 +1025,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   useEffect(() => {
     const homeCol = CITIES.find((c) => c.name === city.name)?.col;
     const lifestyle = homeCol ? Math.min(3, Math.max(0.3, spendingUsd / homeCol)) : 1;
-    saveExplorePlan({ saved: portfolioUsd, monthlySaving: savingsUsd, age: currentAge, realReturn: marketReturn, targetMultiple: 25 * lifestyle });
-  }, [city.name, spendingUsd, savingsUsd, portfolioUsd, currentAge, marketReturn]);
+    saveExplorePlan({ saved: portfolioUsd, monthlySaving: savingsUsd, age: currentAge, realReturn: marketReturn, targetMultiple: 25 * lifestyle, currency });
+  }, [city.name, spendingUsd, savingsUsd, portfolioUsd, currentAge, marketReturn, currency]);
   const expatCities: ExpatCity[] = EXPAT_KEYS
     .map((k): ExpatCity | null => {
       const c = CITIES.find((x) => x.key === k);

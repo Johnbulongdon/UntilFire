@@ -8,6 +8,15 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Explore: one globe, your currency
+- US and abroad are one globe now: one pin per country until you zoom in
+  (the US is a single pin), then every city, with state lines up close. US
+  and Abroad are filters that also turn the globe.
+- The map is on the left and the cards on the right.
+- Money shows in your currency: the app's default currency, or the one you
+  used in the calculator.
+- Fixed: flags showed as letters ("us") on Windows; they're drawn now.
+
 ### Explore replaces Expat FIRE
 - Plan → Expat FIRE is now Explore: the same map and city cards as the
   public Explore page, at your plan's numbers. "Plan for" a city still sets

@@ -14,6 +14,7 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import stateTopology from "@/lib/geo/us-states.json";
 import countryTopology from "@/lib/geo/countries-110m.json";
 import { STATE_NAMES } from "@/lib/state-pages";
+import Flag from "./Flag";
 import { pinText, type ExploreCity, type Freedom, type PinMode } from "@/lib/explore";
 
 type Named = { name: string };
@@ -52,13 +53,15 @@ function taxFact(c: ExploreCity) {
   return lo === hi ? `~${lo}% tax` : `${lo}–${hi}% tax`;
 }
 
-export default function ExploreCard({ city, rank, mode, freedom, star, onStar, selected, onSelect }: {
+export default function ExploreCard({ city, rank, mode, money, freedom, star, onStar, selected, onSelect }: {
   city: ExploreCity; rank: number; mode: PinMode; freedom: Freedom | null; star: boolean;
+  /** A USD amount in your currency, in full. */
+  money: (usd: number) => string;
   onStar: () => void; selected: boolean; onSelect: () => void;
 }) {
   const corner: React.CSSProperties = { position: "absolute", fontSize: 12, fontWeight: 700, color: "#fff", textShadow: "0 1px 3px #0008" };
-  const badge = mode === "monthly" ? `$${Math.round(city.monthlyUSD).toLocaleString("en-US")}` : `${mode === "year" ? "🏁" : "🎂"} ${pinText(city, mode, freedom)}`;
-  const other = mode === "monthly" ? (freedom ? `🏁 ${Math.floor(freedom.at)}` : "") : `$${Math.round(city.monthlyUSD).toLocaleString("en-US")}/mo`;
+  const badge = mode === "monthly" ? money(city.monthlyUSD) : `${mode === "year" ? "🏁" : "🎂"} ${pinText(city, mode, freedom)}`;
+  const other = mode === "monthly" ? (freedom ? `🏁 ${Math.floor(freedom.at)}` : "") : `${money(city.monthlyUSD)}/mo`;
   const fact = taxFact(city);
   return <div className="uf-explore-card" style={{ position: "relative", height: H, borderRadius: 16, overflow: "hidden", color: "#fff",
     background: "linear-gradient(150deg, #2B5A41, #15291F)", boxShadow: selected ? "0 0 0 3px var(--uf-teal)" : "0 1px 4px #203e3022" }}>
@@ -72,7 +75,7 @@ export default function ExploreCard({ city, rank, mode, freedom, star, onStar, s
     {fact && <span style={{ ...corner, top: 10, right: 12 }}>🧾 {fact}</span>}
     <div style={{ position: "absolute", left: 14, top: 44, pointerEvents: "none", textShadow: "0 1px 4px #0009" }}>
       <div style={{ font: "600 22px var(--uf-font-display, Fraunces), Georgia, serif" }}>{city.name}</div>
-      <div style={{ fontSize: 12, opacity: 0.95 }}>{city.flag} {city.place}</div>
+      <div style={{ fontSize: 12, opacity: 0.95 }}><Flag emoji={city.flag} size={11} /> {city.place}</div>
     </div>
     <span style={{ ...corner, bottom: 10, left: 12, pointerEvents: "none", ...mono }}>{other}</span>
     <span style={{ position: "absolute", bottom: 8, right: 10, pointerEvents: "none", ...mono, fontSize: 15, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: "#087D69", color: "#fff" }}>{badge}{mode === "monthly" && <span style={{ fontSize: 11, opacity: 0.85 }}>/mo</span>}</span>

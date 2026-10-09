@@ -43,11 +43,17 @@ ok("pins read $/mo, the year or the age, and a dash when unknown", () => {
   assert.equal(pinText(c, "age", f), String(f!.age));
   assert.equal(pinText(c, "year", null), "—");
 });
-ok("one typical pin per country, at the median city", () => {
-  const pins = countryPins([city("a", 1000), city("b", 2000), city("c", 3000), city("us", 4000, { us: true, region: "tx" })]);
-  assert.equal(pins.length, 1);
-  assert.equal(pins[0].mid.key, "b");
-  assert.equal(pins[0].count, 3);
+ok("one typical pin per country, at the median city; the US is one country", () => {
+  const pins = countryPins([city("a", 1000), city("b", 2000, { region: "pt_alt" }), city("c", 3000), city("aus", 4000, { us: true, region: "tx", flag: "🇺🇸" }), city("nyc", 6000, { us: true, region: "nyc", flag: "🇺🇸" })]);
+  assert.equal(pins.length, 2, "one pin per country, whatever the tax region");
+  const pt = pins.find(p => p.region === "🇵🇹")!, us = pins.find(p => p.region === "us")!;
+  assert.equal(pt.mid.key, "b");
+  assert.equal(pt.count, 3);
+  assert.equal(us.count, 2);
+  assert.equal(us.place, "United States");
+});
+ok("monthly pins print in your currency when given a formatter", () => {
+  assert.equal(pinText(city("x", 2333), "monthly", null, (usd) => `€${Math.round(usd * 0.92)}`), "€2146");
 });
 ok("a crowded pin flips side before it becomes a dot", () => {
   const w = pinWidth("$2.3k");
