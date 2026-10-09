@@ -42,6 +42,10 @@ import { REAL_RETURN } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
+import PlanGoalCard from "./PlanGoalCard";
+import IncomeTab from "./IncomeTab";
+import SavingSplitCard from "./SavingSplitCard";
+import { taxFreeFor, type PlanSettings } from "@/lib/plan-settings";
 import HouseholdCard from "./HouseholdCard";
 import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
 import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
@@ -92,6 +96,7 @@ type TabKey =
   | "cashflow"
   | "assets"
   | "liabilities"
+  | "income"
   | "fire-calculator"
   | "expat-fire"
   | "goals"
@@ -353,6 +358,8 @@ function calcProjection({
   growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50,
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
+  retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
+  currentAge = 0, accessAge = 0, mortgageRate = 0.065, taxFreeAnnual, taxFreeGainsLocked = true,
 }: {
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
@@ -360,9 +367,27 @@ function calcProjection({
   growthRate?: number; withdrawalRate?: number; years?: number;
   targetMonthlyExpenses?: number;
   taxEnabled?: boolean; retirementTaxRate?: number; rothPct?: number;
+  /** What you plan to spend a year once free (D-59). Set, it is the goal, ahead of today's spending or a city. */
+  retirementAnnualSpend?: number;
+  /** Pay growth a year above inflation. Spending stays as it is, so a raise is saved; employer money grows with pay. */
+  payGrowth?: number;
+  /** Paid into a pension outside take-home pay: by your employer, and by you before tax. */
+  employerAnnual?: number; pensionAnnual?: number;
+  /** With both set, you are only free once the money you can reach before the pension opens lasts until it does. */
+  currentAge?: number; accessAge?: number;
+  mortgageRate?: number;
+  /**
+   * After-tax saving into a tax-free account a year (Roth IRA, ISA, NISA, TFSA). Set, or with a pension
+   * set, saving from take-home goes there first and the rest to a taxable account: the pension is already
+   * counted, so none of it goes to the 401(k). Unset, the old split (40% 401(k), 20% Roth, the rest taxable).
+   */
+  taxFreeAnnual?: number;
+  /** Only what was paid in can be taken out before the access age (a Roth IRA); elsewhere all of it. */
+  taxFreeGainsLocked?: boolean;
 }) {
   const annualExpenses       = monthlyExpenses * 12;
-  const targetAnnualExpenses = targetMonthlyExpenses != null ? targetMonthlyExpenses * 12 : annualExpenses;
+  const targetAnnualExpenses = retirementAnnualSpend > 0 ? retirementAnnualSpend
+    : targetMonthlyExpenses != null ? targetMonthlyExpenses * 12 : annualExpenses;
   const annualMortgage = mortgageMonthly * 12;
   const annualSavings  = annualIncome - annualExpenses - annualMortgage;
   // When tax is enabled, gross up the withdrawal needed to cover retirement taxes.
@@ -381,6 +406,10 @@ function calcProjection({
   let curDebt    = totalDebt;
   let curMort    = mortgageBalance;
   let fireYear: number | null = null;
+  // The first year the total reaches the target, whether or not it can be reached in time (the bridge check below).
+  let totalYear: number | null = null;
+  let bridge: { needed: number; reachable: number; locked: number; years: number } | null = null;
+  let rothBasis = rothIRA; // Roth money paid in can be taken out at any age; its growth waits for the access age.
   let totalContributed = k401 + rothIRA + taxable + cashSavings;
   let firstYearInvested = 0; // savings invested in year one, after debt payments (Plan's tools use it)
 
@@ -392,7 +421,20 @@ function calcProjection({
     // monthlyExpenses, so fireTarget itself) is still its zero default —
     // without this, "$0 invested >= $0 target" is trivially true on the
     // very first loop year, and the freedom date briefly shows as today.
-    if (fireYear === null && fireTarget > 0 && investable >= fireTarget && y > 0) fireYear = y;
+    if (fireYear === null && fireTarget > 0 && investable >= fireTarget && y > 0) {
+      totalYear ??= y;
+      const early = currentAge > 0 && accessAge > 0 ? Math.max(0, accessAge - (currentAge + y)) : 0;
+      if (early > 0) {
+        // Spending until the pension opens, from money that keeps growing meanwhile.
+        const needed = growthRate > 0 ? targetAnnualExpenses * (1 - Math.pow(1 + growthRate, -early)) / growthRate : targetAnnualExpenses * early;
+        const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
+        bridge = { needed, reachable, locked: investable - reachable, years: early };
+        if (reachable >= needed) fireYear = y;
+      } else {
+        bridge = null;
+        fireYear = y;
+      }
+    }
     const contributed = Math.min(totalContributed, investable);
     data.push({
       year: y,
@@ -415,23 +457,28 @@ function calcProjection({
       debtPayment = Math.min(curDebt + interest, Math.max(annualSavings * 0.3, 0));
       curDebt = Math.max(0, curDebt + interest - debtPayment);
     }
-    const toInvest       = Math.max(annualSavings - debtPayment, 0);
-    const k401Contrib    = Math.min(toInvest * 0.4, 23000);
-    const rothContrib    = Math.min(toInvest * 0.2, 7000);
+    const pay            = Math.pow(1 + payGrowth, y);
+    const raises         = annualIncome * (pay - 1);
+    const toInvest       = Math.max(annualSavings + raises - debtPayment, 0);
+    const ownSplit       = taxFreeAnnual != null || pensionAnnual > 0;
+    const k401Contrib    = ownSplit ? 0 : Math.min(toInvest * 0.4, 23000);
+    const rothContrib    = ownSplit ? Math.min(toInvest, taxFreeAnnual ?? 0) : Math.min(toInvest * 0.2, 7000);
     const taxableContrib = toInvest - k401Contrib - rothContrib;
-    if (y === 0) firstYearInvested = toInvest;
-    totalContributed += toInvest;
-    cur401k    = cur401k    * (1 + growthRate) + k401Contrib;
+    const pension        = pensionAnnual + employerAnnual * pay;
+    if (y === 0) firstYearInvested = toInvest + pension;
+    totalContributed += toInvest + pension;
+    rothBasis += rothContrib;
+    cur401k    = cur401k    * (1 + growthRate) + k401Contrib + pension;
     curRoth    = curRoth    * (1 + growthRate) + rothContrib;
     curTaxable = curTaxable * (1 + growthRate) + taxableContrib;
     curCash    = curCash    * (1 + growthRate);
     if (curMort > 0) {
-      const mInt = curMort * 0.065;
+      const mInt = curMort * mortgageRate;
       const prin = Math.max(0, annualMortgage - mInt);
       curMort = Math.max(0, curMort - prin);
     }
   }
-  return { data, fireYear, fireTarget, annualSavings, firstYearInvested };
+  return { data, fireYear, fireTarget, annualSavings, firstYearInvested, totalYear, bridge };
 }
 
 /**
@@ -451,6 +498,7 @@ type FreedomArgs = {
   growthRate: number; withdrawalRate: number; plaidAccounts: PlaidAccount[];
   retirementCityCol: number; lifestyleMultiplier: number; monthlyWorkCosts?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
+  plan?: PlanSettings;
 };
 
 /**
@@ -462,17 +510,20 @@ type FreedomArgs = {
 function projectionInputs({
   income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
   growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-  taxEnabled, retirementTaxRate, rothPct,
+  taxEnabled, retirementTaxRate, rothPct, plan,
 }: FreedomArgs) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
   // Work costs disappear at retirement → FIRE target uses adjusted spend.
   const retirementMonthlyExpenses = monthlyWorkCosts ? Math.max(0, monthlyExpenses - monthlyWorkCosts) : monthlyExpenses;
-  const targetMonthlyExpenses = retirementCityCol > 0
+  // What you set to spend once free comes first; then a retirement city; then today's spending.
+  const targetMonthlyExpenses = (plan?.retirementAnnualSpend ?? 0) > 0 ? plan!.retirementAnnualSpend! / 12
+    : retirementCityCol > 0
     ? (retirementCityCol * lifestyleMultiplier) / 12
     : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
   return {
+    ...plan,
     annualIncome: income * 12, monthlyExpenses,
     ...effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }),
     ...(({ otherDebt, mortgage }) => ({ totalDebt: otherDebt, mortgageBalance: mortgage }))(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
@@ -494,6 +545,9 @@ function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number |
   if (!prevPoint || !curPoint) return null;
   const prevVal = prevPoint["Investable"] ?? 0;
   const curVal = curPoint["Investable"] ?? 0;
+  const msPerYearExact = 365.25 * 24 * 60 * 60 * 1000;
+  // Already past the target the year before: freedom waited for the bridge (D-59), so it is this year exactly.
+  if (prevVal >= fireTarget) return new Date(Date.now() + fireYear * msPerYearExact);
   const span = curVal - prevVal;
   const fraction = span > 0 ? Math.min(1, Math.max(0, (fireTarget - prevVal) / span)) : 0;
   const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
@@ -550,7 +604,7 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan }: {
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -583,6 +637,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   onTabChange?: (tab: TabKey) => void;
   onOpenOnboarding?: () => void;
   onFreedomDateChange?: (date: Date | null) => void;
+  /** Plan settings (D-59), so Home's date is Plan's. */
+  plan?: PlanSettings;
 }) {
   const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
 
@@ -660,14 +716,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const baseInputs = useMemo(() => projectionInputs({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    taxEnabled, retirementTaxRate, rothPct,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct]);
+    taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct, plan]);
   const balances = { k401: baseInputs.k401, rothIRA: baseInputs.rothIRA, taxable: baseInputs.taxable, cash: baseInputs.cashSavings };
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => freedomProjection({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    taxEnabled, retirementTaxRate, rothPct,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct]);
+    taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct, plan]);
 
   const nextMoveScenarios = useMemo(() => {
     if (!(income > 0 && fireYear !== null)) return null;
@@ -1196,7 +1252,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       );
     }
 
-    if (targetMonthlyExpenses && monthlyExpenses > targetMonthlyExpenses * 1.05 && fireYear !== null) {
+    if (!plan?.retirementAnnualSpend && targetMonthlyExpenses && monthlyExpenses > targetMonthlyExpenses * 1.05 && fireYear !== null) {
       const cityAverageResult = calcProjection({ ...baseInputs, monthlyExpenses: targetMonthlyExpenses });
       const deltaYears = cityAverageResult.fireYear !== null ? Math.max(0, fireYear - cityAverageResult.fireYear) : 0;
       addTask(
@@ -4511,7 +4567,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "cashflow",
     label: "Money",
-    activeTabs: ["cashflow", "reports", "assets", "liabilities"],
+    activeTabs: ["cashflow", "income", "reports", "assets", "liabilities"],
     svg: ICON_PATHS.money,
   },
   {
@@ -4528,6 +4584,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
 // See docs/design/app-structure.md — adding a tab means adding it here, nowhere else.
 const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
   { label: "Cashflow",  tab: "cashflow"    },
+  { label: "Income",    tab: "income"      },
   { label: "Net Worth", tab: "assets"      },
   { label: "Debts",     tab: "liabilities" },
   { label: "Insights",  tab: "reports"     },
@@ -4559,6 +4616,7 @@ const SUB_ICONS: Record<string, string> = {
   Upcoming: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
   Categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   Budget: "M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z",
+  Income: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
   "Net Worth": "M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z",
   Debts: "M3 6h18v12H3zM3 10h18M7 15h3",
   Insights: "M4 20V10M10 20V4M16 20v-7M22 20H2",
@@ -4657,7 +4715,7 @@ export default function Dashboard() {
     const params = new URLSearchParams(window.location.search);
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
-      "overview", "cashflow", "assets", "liabilities",
+      "overview", "cashflow", "income", "assets", "liabilities",
       "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
@@ -4732,6 +4790,8 @@ export default function Dashboard() {
   const [taxEnabled,        setTaxEnabled]        = useState(false);
   const [retirementTaxRate, setRetirementTaxRate] = useState(0.15);
   const [rothPct,           setRothPct]           = useState(0);
+  // Spending once free, pay growth, pension access and the rest (D-59); age joins from the profile.
+  const [planSettings, setPlanSettings] = useState<PlanSettings>({});
   const [cityName,            setCityName]            = useState("");
   const [retirementCityName,  setRetirementCityName]  = useState("");
   const [retirementCityCol,   setRetirementCityCol]   = useState(0);
@@ -4744,6 +4804,9 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState("");
   const [userJoinedAt, setUserJoinedAt] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
+  const usTaxHome = TAX_US_STATES.some((t) => t.value === CITIES.find(c => c.name === cityName)?.state);
+  const plan = useMemo<PlanSettings>(() => ({ ...planSettings, currentAge: fireAge || undefined,
+    taxFreeGainsLocked: taxFreeFor(defaultCurrency, usTaxHome)?.gainsLocked ?? true }), [planSettings, fireAge, defaultCurrency, usTaxHome]);
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
 
   useEffect(() => {
@@ -4825,6 +4888,7 @@ export default function Dashboard() {
       .reduce((sum, [, amount]) => sum + (amount || 0), 0);
     const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
     const { fireYear, fireTarget } = calcProjection({
+      ...plan,
       annualIncome: income * 12,
       monthlyExpenses,
       k401,
@@ -4845,7 +4909,7 @@ export default function Dashboard() {
     if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return place("approaching-fire");
     if (investable > 0 || income > 0) return place("building-momentum");
     return place("starting-out");
-  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
+  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, plan, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
   type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
@@ -4959,8 +5023,8 @@ export default function Dashboard() {
   const planFreedomInputs = useMemo(() => ({
     income: effectiveIncome, expenses: effectiveExpenses as Record<string, number>, k401, rothIRA, taxable, cashSavings,
     totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier,
-    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, taxEnabled, retirementTaxRate, rothPct,
-  }), [effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, taxEnabled, retirementTaxRate, rothPct]);
+    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [plan, effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, taxEnabled, retirementTaxRate, rothPct]);
   const planFreedom = useMemo(() => freedomProjection({ ...planFreedomInputs, growthRate }), [planFreedomInputs, growthRate]);
   const planFreedomAtDefault = useMemo(
     () => (growthRate === REAL_RETURN ? planFreedom : freedomProjection({ ...planFreedomInputs, growthRate: REAL_RETURN })),
@@ -5427,6 +5491,7 @@ export default function Dashboard() {
           setTaxEnabled(fp.taxEnabled ?? false);
           setRetirementTaxRate(fp.retirementTaxRate ?? 0.15);
           setRothPct(fp.rothPct ?? 0);
+          setPlanSettings(fp.plan && typeof fp.plan === "object" ? fp.plan : {});
         } else {
           // New user — no saved budget yet, seed everything from wizard
           if (prefillIncome) setIncome(prefillIncome);
@@ -5495,7 +5560,7 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct };
+      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct, plan: planSettings };
       // Read first so this write can't clobber _custom_cats/_custom_subcats written
       // independently (and asynchronously) by useCustomCategories().
       const { data: existingRow } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
@@ -5534,7 +5599,7 @@ export default function Dashboard() {
         }
       }
     }, 1000);
-  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier]);
+  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, planSettings]);
 
   async function refreshPlaidAccounts() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -5981,6 +6046,7 @@ export default function Dashboard() {
             )}
             {tab === "overview" && (
               <DashTab
+                plan={plan}
                 contributionFacts={contributionFacts}
                 freeResult={freeResult}
                 bills={homeBills}
@@ -6073,6 +6139,17 @@ export default function Dashboard() {
                 />
               </div>
             )}
+            {tab === "income" && !profileLoading && (
+              <IncomeTab
+                income={income} setIncome={setIncome}
+                plan={planSettings} onPlanChange={setPlanSettings}
+                taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
+                taxLabel={STATE_TAX[CITIES.find(c => c.name === cityName)?.state ?? ""]?.label ?? ""}
+                usTaxHome={usTaxHome}
+                displayCurrency={defaultCurrency}
+                displayRates={rates}
+              />
+            )}
             {tab === "liabilities" && profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {[100, 100].map((h, i) => (
@@ -6124,8 +6201,22 @@ export default function Dashboard() {
                         </MoneyList>
                       </>
                     )}
+                    <PlanGoalCard
+                      plan={planSettings}
+                      onChange={setPlanSettings}
+                      currentAnnualSpend={planFacts.currentMonthly * 12}
+                      withdrawalRate={withdrawalRate}
+                      fireAge={fireAge}
+                      freeYears={planFreedom.fireYear}
+                      totalYears={planFreedom.totalYear}
+                      bridge={planFreedom.bridge}
+                      usTaxHome={usTaxHome}
+                      displayCurrency={defaultCurrency}
+                      displayRates={rates}
+                    />
                     <FireAssumptionsCard
                       freedomDateLabel={planFreedom.exactDate ? planFreedom.exactDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null}
+                      spendGoalSet={(planSettings.retirementAnnualSpend ?? 0) > 0}
                       fireAge={fireAge}
                       onFireAgeChange={setFireAge}
                       retirementCityName={retirementCityName}
@@ -6181,7 +6272,12 @@ export default function Dashboard() {
               <GoalsPageTab userId={userId} monthlyExpenses={monthlyExpenses} />
             )}
             {tab === "contributions" && (
-              <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
+              <div style={{ display: "grid", gap: 24 }}>
+                <SavingSplitCard plan={planSettings} onChange={setPlanSettings}
+                  afterTaxSaving={planFreedom.annualSavings} takeHomeAnnual={effectiveIncome * 12} usTaxHome={usTaxHome}
+                  displayCurrency={defaultCurrency} displayRates={rates} onOpenIncome={() => setTab("income")} />
+                <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
+              </div>
             )}
             {tab === "citizenship" && <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}

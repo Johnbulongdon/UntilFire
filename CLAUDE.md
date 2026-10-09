@@ -56,8 +56,8 @@ retention, trust, and acquisition. Keep work bounded to the user's request.
 [design system](docs/design/design-system.md) owns visual contracts.
 
 - **Money:** actual finances plus operational budgets and upcoming/expected
-  payments. Cashflow (Transactions, Upcoming, Categories, Budget), Net Worth,
-  Debts, Insights.
+  payments. Cashflow (Transactions, Upcoming, Categories, Budget), Income,
+  Net Worth, Debts, Insights.
 - **Plan:** long-term projections, assumptions, scenarios, and targets. Freedom
   Date, Scenarios, Goals, Contributions, Explore, Citizenship, Learn.
 - **Home:** synthesis and next moves, with no independent financial inputs.

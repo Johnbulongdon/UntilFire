@@ -43,6 +43,8 @@ interface Props {
   onGrowthRateChange: (rate: number) => void;
   /** The freedom date at these assumptions, shown under the growth picker so a choice visibly moves it. */
   freedomDateLabel?: string | null;
+  /** Spending once free is set (D-59): it is the target, so the city and lifestyle no longer price it. */
+  spendGoalSet?: boolean;
   /** Tax in retirement, as one more row; its editor is the tax card (D-42). */
   taxRow?: { on: boolean; summary: string; editor: React.ReactNode };
 }
@@ -103,6 +105,7 @@ export default function FireAssumptionsCard({
   growthRate,
   onGrowthRateChange,
   freedomDateLabel,
+  spendGoalSet,
   taxRow,
 }: Props) {
   const [saved, setSaved] = useState(false);
@@ -163,7 +166,7 @@ export default function FireAssumptionsCard({
             <input type="number" min={18} max={100} aria-label="Current age" value={fireAge || ""} placeholder="30"
               onChange={(e) => { onFireAgeChange(Number(e.target.value)); flash(); }} style={{ ...inputStyle, maxWidth: 140 }} />
           )} />
-        <MoneyRow dot="#2a78d6" icon="🌍" name="Retire in" meta={retirementCityCol > 0 ? `Prices your FIRE number at about ${showMoney(targetAnnualSpend)} a year` : "Skip it and your own spending sets the target"}
+        <MoneyRow dot="#2a78d6" icon="🌍" name="Retire in" meta={spendGoalSet ? "Not used: your goal sets the spending" : retirementCityCol > 0 ? `Prices your FIRE number at about ${showMoney(targetAnnualSpend)} a year` : "Skip it and your own spending sets the target"}
           value={retirementCityName ? `${retirementCityName} ›` : "Choose ›"} onClick={() => toggle("city")}
           after={open === "city" && (
             <div>
@@ -202,7 +205,7 @@ export default function FireAssumptionsCard({
               </div>
             </div>
           )} />
-        <MoneyRow dot="#eda100" icon={selectedLifestyle.icon} name="Lifestyle" meta="Spending in retirement, against today's" value={`${selectedLifestyle.label} ›`} onClick={() => toggle("lifestyle")}
+        <MoneyRow dot="#eda100" icon={selectedLifestyle.icon} name="Lifestyle" meta={spendGoalSet ? "Not used: your goal sets the spending" : "Spending in retirement, against today's"} value={`${selectedLifestyle.label} ›`} onClick={() => toggle("lifestyle")}
           after={open === "lifestyle" && (
             <div role="radiogroup" aria-label="Lifestyle" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {LIFESTYLE_TIERS.map((tier) => {

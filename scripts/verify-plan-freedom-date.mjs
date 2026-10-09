@@ -102,5 +102,44 @@ assert.match(source, /useMemo\(\(\) => freedomProjection\(\{\s*income, expenses,
 assert.doesNotMatch(source, /Assumptions live in Profile/, 'stale copy is gone');
 assert.match(readFileSync('app/dashboard/FireAssumptionsCard.tsx', 'utf8'), /your freedom date is \{freedomDateLabel\}/, 'the card says the date under the growth picker');
 
+// D-59: plan settings. A person at 28 with $190k invested, saving $50k a year from $125k.
+const person = { annualIncome: 125000, monthlyExpenses: 75000 / 12, k401: 85000, rothIRA: 7500, taxable: 97000, cashSavings: 0,
+  totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.05, withdrawalRate: 0.04 };
+const p0 = calcProjection(person);
+assert.equal(p0.bridge, null, 'without an access age there is no bridge');
+assert.equal(p0.totalYear, p0.fireYear, 'without an access age, free when the total reaches the target');
+// Spending once free is the goal: the target is that spending over the withdrawal rate.
+const goal = calcProjection({ ...person, retirementAnnualSpend: 112500 });
+assert.equal(goal.fireTarget, 112500 / 0.04);
+assert.ok(goal.fireYear > p0.fireYear, 'spending more once free is later');
+// Employer money and pay growth only bring the date closer.
+const employer = calcProjection({ ...person, retirementAnnualSpend: 112500, employerAnnual: 20000 });
+assert.ok(employer.fireYear < goal.fireYear, 'employer money brings the date closer');
+assert.equal(employer.firstYearInvested, goal.firstYearInvested + 20000, 'employer money counts as saved');
+const raises = calcProjection({ ...person, retirementAnnualSpend: 112500, payGrowth: 0.02 });
+assert.ok(raises.fireYear <= goal.fireYear, 'saved raises never push the date out');
+// Access age: free only once the money reachable before the pension opens lasts until it does.
+const locked = { ...person, k401: 400000, rothIRA: 0, taxable: 0, retirementAnnualSpend: 60000, currentAge: 30 };
+const noAge = calcProjection(locked), withAge = calcProjection({ ...locked, accessAge: 59.5 });
+assert.equal(withAge.totalYear, noAge.fireYear, 'the total reaches the target in the same year');
+assert.ok(withAge.fireYear === null || withAge.fireYear > noAge.fireYear, 'with most money locked, freedom waits for the bridge');
+const bridgeAtTotal = calcProjection({ ...locked, accessAge: 59.5, years: noAge.fireYear });
+assert.ok(bridgeAtTotal.bridge && bridgeAtTotal.bridge.reachable < bridgeAtTotal.bridge.needed, 'the bridge says it is short');
+const late = calcProjection({ ...locked, currentAge: 58, accessAge: 59.5 });
+assert.ok(late.fireYear !== null && late.fireYear >= noAge.fireYear, 'near the access age the bridge is short and soon over');
+// Mortgage interest uses your rate.
+const m = (rate) => calcProjection({ ...person, mortgageBalance: 300000, mortgageMonthly: 2000, mortgageRate: rate }).data[5]['Debt'];
+assert.ok(m(0.03) > m(0.07), 'a lower rate pays the mortgage down faster');
+
+// Your own split: saving from take-home goes tax-free first, the rest taxable; none to the 401(k) when a pension is set.
+const own = calcProjection({ ...person, pensionAnnual: 24500, taxFreeAnnual: 7500 }), y1 = own.data[1];
+const takeHomeSaving = person.annualIncome - person.monthlyExpenses * 12;
+assert.equal(Math.round(y1['401(k)'] - person.k401 * 1.05), 24500, 'only the pension reaches the 401(k)');
+assert.equal(Math.round(y1['Roth IRA'] - person.rothIRA * 1.05), 7500, 'the tax-free account gets its amount');
+assert.equal(Math.round(y1['Taxable'] - person.taxable * 1.05), takeHomeSaving - 7500, 'the rest is taxable');
+// Reachable money: taxable, cash and Roth paid in; the bridge passes with it in taxable, fails with it locked.
+const bridged = (o) => calcProjection({ ...person, k401: 85000, retirementAnnualSpend: 112500, currentAge: 28, accessAge: 59.5, ...o });
+assert.ok(bridged({ pensionAnnual: 24500, taxFreeAnnual: 7500 }).fireYear <= bridged({}).fireYear, 'saving into reachable accounts never delays the bridge');
+
 if (process.env.SHOW) for (const g of [0.05, 0.069, 0.081]) console.log(g, at(g).exactDate.toISOString().slice(0, 7));
 console.log('Plan freedom date checks passed.');

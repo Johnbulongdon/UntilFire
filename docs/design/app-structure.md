@@ -36,6 +36,7 @@ Money                         actual finances and operational planning
   │   ├ Upcoming (expected payments, with recurring detection suggestions)
   │   ├ Categories
   │   └ Budget
+  ├ Income (salary to take-home, pension before tax, employer money; D-59)
   ├ Net Worth
   ├ Debts
   └ Insights
@@ -157,6 +158,11 @@ browser.
   Long-term it is arguably a *mode* of Scenarios — "what if I move to Lisbon"
   and "what if I save 5% more" are the same question — and the two will start
   feeling redundant as Scenarios grows. Merge then, not now.
+- **Income is its own Money page** (D-59). Pay is a fact, like Cashflow; it was
+  a field in Budget. It works take-home out from salary and records what never
+  reaches take-home (pension before tax, employer money), which the freedom date
+  counts as saving. Plan → Freedom Date holds the goal (spending once free), pay
+  growth and pension access; Plan → Contributions shows where saving goes.
 - **Net Worth and Debts moved from Plan to Money.** They record what you have
   today; they are the same kind of thing as Cashflow, not a plan.
 - **Which accounts are the emergency fund is set in Net Worth** (D-12). It is a
