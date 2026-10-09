@@ -22,7 +22,8 @@ const ICONS: Record<View, string> = { line: "M3 17l5-5 4 3 8-9", bars: "M5 20V10
  * against usual. Explanations sit in InfoTips; the card itself is numbers,
  * marks and labels.
  */
-const OVER = "repeating-linear-gradient(135deg, var(--uf-warn-ink) 0 2px, color-mix(in srgb, var(--uf-warn) 30%, var(--uf-card)) 2px 5px)";
+// Ink, not amber or red: no category colour can be mistaken for going over (D-54).
+const OVER = "repeating-linear-gradient(135deg, var(--uf-ink) 0 2px, color-mix(in srgb, var(--uf-ink) 12%, var(--uf-card)) 2px 5px)";
 const BAND = "color-mix(in srgb, var(--uf-ink-3) 18%, transparent)";
 const BAND_EDGE = "1px dotted var(--uf-ink-3)";
 const BUDGET_AT = 0.7;

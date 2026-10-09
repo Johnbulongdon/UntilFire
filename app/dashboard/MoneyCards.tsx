@@ -10,6 +10,7 @@
  * bar; teal is progress; red is only for over and owed-past-limit.
  */
 
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui";
 import { occurrences, type Bill } from "@/lib/spend-forecast";
 import { EXPENSE_CATEGORIES } from "@/lib/categories";
@@ -24,13 +25,32 @@ export function PillTabs<K extends string>({ options, value, onChange, label }: 
   onChange: (k: K) => void;
   label: string;
 }) {
+  // On a narrow phone four tabs can be wider than the screen: the strip
+  // scrolls, fades at the side with more, and keeps the chosen tab in view (D-54).
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const read = () => setEdges({ left: el.scrollLeft > 2, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2 });
+    read();
+    el.addEventListener("scroll", read, { passive: true });
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    return () => { el.removeEventListener("scroll", read); observer.disconnect(); };
+  }, []);
+  useEffect(() => {
+    ref.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [value]);
+  const fade = edges.left || edges.right
+    ? `linear-gradient(to right, ${edges.left ? "transparent, black 24px" : "black"}, ${edges.right ? "black calc(100% - 24px), transparent" : "black"})` : undefined;
   return (
-    <div role="tablist" aria-label={label} style={{ display: "flex", width: "fit-content", gap: 4, background: "var(--uf-surface-2)", borderRadius: 999, padding: 3, overflowX: "auto", maxWidth: "100%", scrollbarWidth: "none" }}>
+    <div ref={ref} role="tablist" aria-label={label} style={{ display: "flex", width: "fit-content", gap: 4, background: "var(--uf-surface-2)", borderRadius: 999, padding: 3, overflowX: "auto", maxWidth: "100%", scrollbarWidth: "none", maskImage: fade, WebkitMaskImage: fade }}>
       {options.map((o) => {
         const on = o.key === value;
         return (
           <button key={o.key} type="button" role="tab" aria-selected={on} onClick={() => onChange(o.key)}
-            style={{ flex: "none", border: "none", borderRadius: 999, padding: "6px 14px", font: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+            style={{ flex: "none", border: "none", borderRadius: 999, padding: "6px clamp(8px, 2vw, 14px)", font: "inherit", fontSize: "clamp(12px, 3.2vw, 13px)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
               background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: on ? "var(--uf-e1)" : "none" }}>
             {o.label}
           </button>

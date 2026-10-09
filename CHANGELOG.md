@@ -8,6 +8,14 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Small fixes across the dashboard
+- On phones the top bar shows the logo once and the page you are on, with
+  Feedback next to dark mode instead of a button floating over your rows.
+- Going over a category budget is drawn in dark stripes, so a bill still due
+  in an amber or red category no longer looks like overspending.
+- The Money and Plan sub-tabs fit narrow phones better; when they still
+  scroll, the strip fades at the side with more and keeps your tab in view.
+
 ### Calm Net Worth
 - Net Worth is one headline and short lists: what you have, what you owe,
   your safety net and your banks, each account on one row with its bank's
