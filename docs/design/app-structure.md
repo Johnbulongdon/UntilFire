@@ -104,7 +104,8 @@ group membership, rendering, and deep-link handling together:
 - `MONEY_SECTIONS` — the Money group's tabs. Feeds both the sidebar sub-nav and
   the horizontal section switch.
 - `CASHFLOW_SUB_TABS` — the four Cashflow sub-tabs. Feeds the pill switcher
-  on the page; the sidebar stops at Cashflow (D-41).
+  on phones and the desktop sidebar, where they sit on one level with Net Worth,
+  Debts and Insights under Money (D-55; D-41 had the sidebar stop at Cashflow).
 - `MOBILE_PRIMARY_ITEMS` — the four mobile bottom-nav destinations.
 - `PLAN_SECTIONS` — Plan destinations, including tab and sub-tab states. Feeds
   both the sidebar sub-nav and mobile section switch.
