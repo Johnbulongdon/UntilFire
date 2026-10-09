@@ -1148,7 +1148,9 @@ export default function HomeClient() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.classList.toggle("uf-result-mode", screen === "reveal");
-    return () => document.body.classList.remove("uf-result-mode");
+    // Past the landing screen, the page is the calculator and nothing else.
+    document.body.classList.toggle("uf-flow-mode", screen !== "hero");
+    return () => document.body.classList.remove("uf-result-mode", "uf-flow-mode");
   }, [screen]);
 
   useEffect(() => {
@@ -3030,7 +3032,7 @@ export default function HomeClient() {
             display: none;
           }
         }
-        body.uf-result-mode .uf-home-seo-shell {
+        body.uf-flow-mode .uf-home-seo-shell {
           display: none !important;
         }
         .uf-method-disclosure {
