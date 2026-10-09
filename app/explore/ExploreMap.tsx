@@ -3,8 +3,8 @@
 /**
  * The Explore map (D-58): one globe for every city, US and abroad, drawn from
  * outlines (not map tiles) so it is light and on brand. One pin per country
- * until you zoom in, then one per city (named, since a flag no longer says
- * which city), with US state lines once you are close.
+ * until you zoom in, then one per city: zooming adds the name to the flag and
+ * value, never swaps them. US state lines show once you are close.
  * Numbers only ever sit inside pins; a pin with no room becomes a dot you can
  * still tap.
  */
@@ -34,7 +34,11 @@ const FOCUS: Record<"all" | "us" | "world", { rotate: [number, number]; zoom: nu
 };
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
-export default function ExploreMap({ cities, focus, mode, money, freedom, starred, selected, onSelect, height }: {
+export default function ExploreMap({ cities, focus, mode, money, freedom, starred, selected, onSelect, height, flyTo, onView }: {
+  /** Turn to a city chosen in the list; `n` changes on every request, so the same city can be asked for twice. */
+  flyTo?: { lng: number; lat: number; n: number } | null;
+  /** Zoomed in: the keys of the cities in view, so the list can follow the map. Zoomed out: null. */
+  onView?: (keys: string[] | null) => void;
   cities: ExploreCity[];
   /** Turns the globe when the list filter changes; you can drag and zoom from there. */
   focus: "all" | "us" | "world";
@@ -52,12 +56,35 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   const [rotate, setRotate] = useState<[number, number]>(FOCUS[focus].rotate);
   const [zoom, setZoom] = useState(FOCUS[focus].zoom);
   useEffect(() => { setRotate(FOCUS[focus].rotate); setZoom(FOCUS[focus].zoom); }, [focus]);
+  useEffect(() => { if (flyTo) { setRotate([-flyTo.lng, -flyTo.lat]); setZoom(z => Math.max(z, CITY_ZOOM * 1.4)); } }, [flyTo]);
+  // The wheel listener lives outside React, so it reads the view through refs.
+  const view = useRef({ rotate, zoom, height });
+  view.current = { rotate, zoom, height };
   const drag = useRef<{ x: number; y: number; r: [number, number] } | null>(null);
   useEffect(() => {
     const el = box.current; if (!el) return;
     const ro = new ResizeObserver(([e]) => setWidth(Math.floor(e.contentRect.width)));
     ro.observe(el);
-    return () => ro.disconnect();
+    // Scroll to zoom. Listened for directly, not through React, so the page
+    // itself doesn't scroll while the pointer is over the globe.
+    const wheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const { rotate: r, zoom: z, height: h } = view.current, w = el.clientWidth;
+      const next = Math.max(1, Math.min(12, z * Math.exp(-e.deltaY * 0.0015)));
+      // Zooming in leans the globe toward the point under the pointer, like a map app.
+      if (next > z) {
+        const box = el.getBoundingClientRect();
+        const at = geoOrthographic().rotate(r).translate([w / 2, h / 2]).scale((Math.min(w, h) / 2 - 12) * z).clipAngle(90)
+          .invert?.([e.clientX - box.left, e.clientY - box.top]);
+        if (at && Number.isFinite(at[0])) {
+          const t = 1 - z / next, dLng = ((-at[0] - r[0] + 540) % 360) - 180;
+          setRotate([r[0] + dLng * t, r[1] + (-at[1] - r[1]) * t]);
+        }
+      }
+      setZoom(next);
+    };
+    el.addEventListener("wheel", wheel, { passive: false });
+    return () => { ro.disconnect(); el.removeEventListener("wheel", wheel); };
   }, []);
 
   const projection = useMemo(() => {
@@ -69,7 +96,7 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   const pins = useMemo(() => {
     if (!projection) return [];
     const points = zoom >= CITY_ZOOM
-      ? cities.map(c => ({ key: c.key, lat: c.lat, lng: c.lng, label: pinText(c, mode, freedom.get(c.key) ?? null, money), flag: null as string | null, name: c.name as string | null, city: c }))
+      ? cities.map(c => ({ key: c.key, lat: c.lat, lng: c.lng, label: pinText(c, mode, freedom.get(c.key) ?? null, money), flag: c.flag as string | null, name: c.name as string | null, city: c }))
       : countryPins(cities).map(g => ({ key: `country:${g.region}`, lat: g.lat, lng: g.lng, label: pinText(g.mid, mode, freedom.get(g.mid.key) ?? null, money), flag: g.flag as string | null, name: null as string | null, city: g.mid }));
     // Selected first, then starred, then everything else in list order.
     const rank = (k: string) => (k === selected ? 0 : starred.has(k) ? 1 : 2);
@@ -83,6 +110,8 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
     const placed = placePins(visible.map(p => ({ key: p.key, x: p.x, y: p.y, width: pinWidth(p.label) + (p.flag ? 20 : 0) + (p.name ? p.name.length * 6.4 + 6 : 0) })), { width, height }, new Set([...starred, ...(selected ? [selected] : [])]));
     return placed.map((pl, i) => ({ ...pl, ...visible[i] }));
   }, [projection, cities, mode, money, freedom, starred, selected, zoom, width, height, rotate]);
+  const inView = zoom >= CITY_ZOOM ? pins.filter(p => !p.key.startsWith("country:")).map(p => p.key).sort().join(",") : null;
+  useEffect(() => { onView?.(inView == null ? null : inView ? inView.split(",") : []); }, [inView, onView]);
 
   const path = projection ? geoPath(projection) : null;
   const onDown = (e: React.PointerEvent) => { drag.current = { x: e.clientX, y: e.clientY, r: rotate }; (e.target as Element).setPointerCapture?.(e.pointerId); };

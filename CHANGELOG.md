@@ -11,8 +11,18 @@ under today's date, creating the heading if it is not there yet.
 ### Explore keeps the globe in view
 - On a computer, Explore fits the window: the globe stays put and only the
   city cards scroll, in their own column. Phones scroll as before.
-- Zoomed in, each pin names its city ("Porto 2041"); before, the flag
-  dropped off and the pins showed only a number.
+- Scroll over the globe to zoom in and out.
+- Zoomed in, each pin keeps its flag and adds the city's name (🇵🇹 Porto
+  2041); before, the flag dropped off and the pins showed only a number.
+- Zooming in leans toward where your pointer is, like a map app.
+- The map and the list follow each other: tap a pin and its card scrolls into
+  view; tap a card and the globe turns to the city. Zoomed in, the list shows
+  only the cities in view ("15 cities in view · Show all").
+- Explore opens on the US (or the whole world if you use another currency).
+- Cards are compact, so a column shows five or six places; Open and Plan
+  sit inside the card you chose.
+- Without your numbers, one line offers to add them instead of an open form;
+  filters wrap instead of scrolling sideways.
 
 ### Explore: one globe, your currency
 - US and abroad are one globe now: one pin per country until you zoom in

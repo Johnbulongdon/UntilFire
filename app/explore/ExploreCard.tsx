@@ -24,7 +24,7 @@ const ct = countryTopology as unknown as Topology<{ countries: GeometryCollectio
 const COUNTRIES = feature(ct, ct.objects.countries) as FeatureCollection<Geometry, Named>;
 const ATLAS_NAME: Record<string, string> = { UK: "United Kingdom", UAE: "United Arab Emirates", "Czech Republic": "Czechia", "New York City": "New York" };
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
-const W = 330, H = 160;
+const W = 330, H = 92;
 
 function shapeFor(c: ExploreCity): Feature | undefined {
   const name = c.us ? STATE_NAMES[c.region] : c.place;
@@ -53,31 +53,37 @@ function taxFact(c: ExploreCity) {
   return lo === hi ? `~${lo}% tax` : `${lo}–${hi}% tax`;
 }
 
-export default function ExploreCard({ city, rank, mode, money, freedom, star, onStar, selected, onSelect }: {
+export default function ExploreCard({ city, rank, mode, money, freedom, star, onStar, selected, onSelect, actions }: {
   city: ExploreCity; rank: number; mode: PinMode; freedom: Freedom | null; star: boolean;
   /** A USD amount in your currency, in full. */
   money: (usd: number) => string;
   onStar: () => void; selected: boolean; onSelect: () => void;
+  /** Shown inside the card once it is chosen: open its page, plan for it. */
+  actions?: React.ReactNode;
 }) {
-  const corner: React.CSSProperties = { position: "absolute", fontSize: 12, fontWeight: 700, color: "#fff", textShadow: "0 1px 3px #0008" };
   const badge = mode === "monthly" ? money(city.monthlyUSD) : `${mode === "year" ? "🏁" : "🎂"} ${pinText(city, mode, freedom)}`;
-  const other = mode === "monthly" ? (freedom ? `🏁 ${Math.floor(freedom.at)}` : "") : `${money(city.monthlyUSD)}/mo`;
+  const other = mode === "monthly" ? (freedom ? `🏁 ${Math.floor(freedom.at)}` : null) : `${money(city.monthlyUSD)}/mo`;
   const fact = taxFact(city);
-  return <div className="uf-explore-card" style={{ position: "relative", height: H, borderRadius: 16, overflow: "hidden", color: "#fff",
+  // Compact (D-58): name and badge on one line, the facts on the next, so a column shows six or seven places.
+  return <div className="uf-explore-card" data-city={city.key} style={{ position: "relative", borderRadius: 14, overflow: "hidden", color: "#fff",
     background: "linear-gradient(150deg, #2B5A41, #15291F)", boxShadow: selected ? "0 0 0 3px var(--uf-teal)" : "0 1px 4px #203e3022" }}>
-    <Place c={city} />
-    <button type="button" onClick={onSelect} aria-label={`${city.name}, ${city.place}: ${badge}`} aria-pressed={selected}
-      style={{ position: "absolute", inset: 0, border: 0, background: "transparent", cursor: "pointer" }} />
-    <button type="button" onClick={onStar} aria-label={star ? `Unstar ${city.name}` : `Star ${city.name}`} aria-pressed={star}
-      style={{ ...corner, top: 4, left: 4, border: 0, background: "transparent", padding: 6, cursor: "pointer", display: "flex", gap: 8, alignItems: "center" }}>
-      <span aria-hidden style={{ fontSize: 18, lineHeight: 1, color: star ? "var(--uf-sun)" : "#fff" }}>{star ? "★" : "☆"}</span>#{rank}
-    </button>
-    {fact && <span style={{ ...corner, top: 10, right: 12 }}>🧾 {fact}</span>}
-    <div style={{ position: "absolute", left: 14, top: 44, pointerEvents: "none", textShadow: "0 1px 4px #0009" }}>
-      <div style={{ font: "600 22px var(--uf-font-display, Fraunces), Georgia, serif" }}>{city.name}</div>
-      <div style={{ fontSize: 12, opacity: 0.95 }}><Flag emoji={city.flag} size={11} /> {city.place}</div>
+    <div style={{ position: "relative", height: H }}>
+      <Place c={city} />
+      <button type="button" onClick={onSelect} aria-label={`${city.name}, ${city.place}: ${badge}`} aria-pressed={selected}
+        style={{ position: "absolute", inset: 0, border: 0, background: "transparent", cursor: "pointer" }} />
+      <div style={{ position: "absolute", left: 12, right: 12, top: 10, display: "flex", alignItems: "center", gap: 8, pointerEvents: "none", textShadow: "0 1px 4px #0009" }}>
+        <button type="button" onClick={onStar} aria-label={star ? `Unstar ${city.name}` : `Star ${city.name}`} aria-pressed={star}
+          style={{ pointerEvents: "auto", border: 0, background: "transparent", padding: 0, cursor: "pointer", fontSize: 18, lineHeight: 1, color: star ? "var(--uf-sun)" : "#fff" }}>{star ? "★" : "☆"}</button>
+        <span style={{ font: "600 20px var(--uf-font-display, Fraunces), Georgia, serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</span>
+        <span style={{ marginLeft: "auto", ...mono, fontSize: 15, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: "#087D69", color: "#fff", whiteSpace: "nowrap", textShadow: "none" }}>{badge}{mode === "monthly" && <span style={{ fontSize: 11, opacity: 0.85 }}>/mo</span>}</span>
+      </div>
+      <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 12, pointerEvents: "none", textShadow: "0 1px 3px #0008" }}>
+        <span style={{ opacity: 0.8, ...mono }}>#{rank}</span>
+        <span><Flag emoji={city.flag} size={11} /> {city.place}</span>
+        {other && <span style={mono}>{other}</span>}
+        {fact && <span style={{ opacity: 0.9 }}>🧾 {fact}</span>}
+      </div>
     </div>
-    <span style={{ ...corner, bottom: 10, left: 12, pointerEvents: "none", ...mono }}>{other}</span>
-    <span style={{ position: "absolute", bottom: 8, right: 10, pointerEvents: "none", ...mono, fontSize: 15, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: "#087D69", color: "#fff" }}>{badge}{mode === "monthly" && <span style={{ fontSize: 11, opacity: 0.85 }}>/mo</span>}</span>
+    {selected && actions && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "0 12px 12px" }}>{actions}</div>}
   </div>;
 }
