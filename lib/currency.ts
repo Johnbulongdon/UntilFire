@@ -48,12 +48,18 @@ export function convertUSDAmount(
 /* formatUSDInCurrency moved to lib/money.ts: it needs formatMoney, and
    money.ts already imports from here, so keeping it would make the two
    modules import each other. */
+// Building an Intl.NumberFormat is slow, and Explore formats every pin on every frame: one per currency.
+const SYMBOLS = new Map<string, string>();
 export function getCurrencySymbol(currency: string) {
+  const code = currency || "USD";
+  const known = SYMBOLS.get(code);
+  if (known) return known;
   const parts = new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: currency || "USD",
+    currency: code,
     currencyDisplay: "narrowSymbol",
   }).formatToParts(0);
-
-  return parts.find((part) => part.type === "currency")?.value ?? "$";
+  const symbol = parts.find((part) => part.type === "currency")?.value ?? "$";
+  SYMBOLS.set(code, symbol);
+  return symbol;
 }
