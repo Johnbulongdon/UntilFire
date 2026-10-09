@@ -8,6 +8,17 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Calm Net Worth
+- Net Worth is one headline and short lists: what you have, what you owe,
+  your safety net and your banks, each account on one row with its bank's
+  logo.
+- Fixed: typed balances no longer show next to connected ones. A balance you
+  typed appears only for a kind of account with nothing connected, so cash no
+  longer reads $2,528 at the top and $660 lower down.
+- The emergency fund is one row; tap it for the floor, the target and the
+  accounts that hold it. Banks are rows with Sync now and Disconnect under
+  Manage. The empty Holdings box and the summary strip are gone.
+
 ### Clearer category bars on Transactions
 - Every budget is now a black line in the same place on each row, so going
   over always shows as amber hatching past it, in any category colour.

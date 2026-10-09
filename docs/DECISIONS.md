@@ -1945,3 +1945,35 @@ one small pill, so a $40 gap was invisible.
 
 **Not changed:** the chart's dashed Past months line still uses all
 categories' last six months.
+
+### D-53 — October 9: Net Worth in the calm style, each balance once
+
+**Status:** Active. From the October design review: Net Worth was a calm
+headline over six older cards, and its numbers disagreed.
+
+**What happened:** the headline uses `effectiveBalances` (a connected kind
+replaces what was typed), but the typed-balance boxes and the summary strip
+showed the typed figures anyway, so Cash read $2,528 at the top and $660
+below. Bank tiles and a second connected-accounts grid listed the same
+banks twice.
+
+**Decision:**
+- **One row per account** with its bank's Plaid logo (on a white disc so
+  dark marks show in dark mode; the initial on the bank's colour without
+  one). Savings rows open their APY.
+- **Typed only where nothing is connected:** Cash & savings, 401(k), Roth
+  IRA and Taxable brokerage appear as typed rows only for a kind with no
+  connected account, matching the headline. No balance shows twice.
+- **What you owe** lists cards by account and typed loans and mortgage;
+  their history stays on Debts.
+- **Emergency fund is one row** with a bar to the 6-month target; it opens
+  to the floor, target and the accounts that hold it (same saved choice as
+  Contributions and Home).
+- **Banks are rows** (`PlaidConnect layout="rows"`); Manage opens Sync now
+  and Disconnect. Transactions keeps the tiles.
+- Holdings show only when there are holdings, are loading or need a
+  reconnect. The four-figure summary strip is removed.
+
+**Not changed:** the net worth calculation, the emergency fund rules, and the
+Debts page. A history line under the headline waits until snapshots hold net
+worth rather than invested assets.
