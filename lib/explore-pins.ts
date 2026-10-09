@@ -20,6 +20,8 @@ export interface ExplorePlan {
    * app it carries lifestyle and tax in retirement as the freedom date does.
    */
   targetMultiple?: number;
+  /** The currency the numbers were entered in, for showing money back (amounts here are USD). */
+  currency?: string;
 }
 
 export interface Freedom {
@@ -42,21 +44,24 @@ export function freedomIn(city: Pick<PinCity, "annualUSD">, plan: ExplorePlan, n
 export type PinMode = "monthly" | "year" | "age";
 
 /** What a pin or badge says in each mode. Short: pins are small. */
-export function pinText(city: Pick<PinCity, "monthlyUSD">, mode: PinMode, freedom: Freedom | null): string {
-  if (mode === "monthly") return `$${(city.monthlyUSD / 1000).toFixed(1)}k`;
+export function pinText(city: Pick<PinCity, "monthlyUSD">, mode: PinMode, freedom: Freedom | null, money?: (usd: number) => string): string {
+  // Money in your currency when the page passes a formatter; USD otherwise.
+  if (mode === "monthly") return money ? money(city.monthlyUSD) : `$${(city.monthlyUSD / 1000).toFixed(1)}k`;
   if (!freedom) return "—";
   return mode === "year" ? `${Math.floor(freedom.at)}` : freedom.age != null ? `${freedom.age}` : "—";
 }
 
-/** One typical figure per country, for the zoomed-out globe: the median city. */
+/** One typical figure per country, for the zoomed-out globe: the median city. The US is one country. */
 export function countryPins<T extends PinCity>(cities: T[]) {
   const groups = new Map<string, T[]>();
-  for (const c of cities) if (!c.us) groups.set(c.region, [...(groups.get(c.region) ?? []), c]);
+  // By country (its flag), not by tax region: US states and Canadian
+  // provinces each carry their own tax key, but the globe shows one pin a country.
+  for (const c of cities) { const key = c.us ? "us" : c.flag; groups.set(key, [...(groups.get(key) ?? []), c]); }
   return [...groups.entries()].map(([region, list]) => {
     const sorted = [...list].sort((a, b) => a.monthlyUSD - b.monthlyUSD);
     const mid = sorted[Math.floor(sorted.length / 2)];
     return {
-      region, place: mid.place, flag: mid.flag, count: list.length, mid,
+      region, place: region === "us" ? "United States" : mid.place, flag: mid.flag, count: list.length, mid,
       lat: list.reduce((t, c) => t + c.lat, 0) / list.length,
       lng: list.reduce((t, c) => t + c.lng, 0) / list.length,
     };

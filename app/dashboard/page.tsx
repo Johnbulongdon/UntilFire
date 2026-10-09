@@ -6187,7 +6187,7 @@ export default function Dashboard() {
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
-              <ExploreClient appPlan={explorePlan}
+              <ExploreClient appPlan={explorePlan} displayCurrency={defaultCurrency} displayRates={rates}
                 onPlanFor={(key) => { const c = CITIES.find(x => x.key === key); if (c) { setCityName(c.name); setRetirementCityName(c.name); setRetirementCityCol(c.col); } }} />
             )}
             {tab === "profile" && userId && (

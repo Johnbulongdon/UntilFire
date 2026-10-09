@@ -1,5 +1,5 @@
-/* Explore (D-58): cards beside the map on a computer; map above cards on a phone. */
-.uf-explore { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); grid-template-areas: "head map" "cards map"; grid-template-rows: auto 1fr; gap: 12px 20px; max-width: 1280px; margin: 0 auto; padding: 24px 20px 64px; color: var(--uf-ink); font-family: var(--uf-font-body, Manrope), sans-serif; }
+/* Explore (D-58): the map on the left and the cards on the right on a computer; on a phone, controls, map, then cards. */
+.uf-explore { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); grid-template-areas: "map head" "map cards"; grid-template-rows: auto 1fr; gap: 12px 20px; max-width: 1280px; margin: 0 auto; padding: 24px 20px 64px; color: var(--uf-ink); font-family: var(--uf-font-body, Manrope), sans-serif; }
 .uf-explore-head { grid-area: head; display: grid; gap: 12px; align-content: start; min-width: 0; }
 .uf-explore-mapwrap { grid-area: map; position: sticky; top: 16px; align-self: start; min-width: 0; }
 .uf-explore-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }

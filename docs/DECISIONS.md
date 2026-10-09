@@ -2132,3 +2132,16 @@ $583/mo); Explore puts every city side by side, so those need review.
   on $50k–$150k earned, from the take-home engine, so the brackets show.
   Abroad the data holds one effective rate, shown as "~N%". The state rate is
   still flat in that engine, so the range comes from federal brackets.
+
+**Update 2, October 9, from the founder:**
+- **One globe for US and abroad.** The US Albers view is gone. Zoomed out,
+  one pin per country, grouped by country (flag), not tax region, so the US
+  and Canada are one pin each; zoomed in, every city, with US state lines.
+  All / US / Abroad filter the list and turn the globe to that region.
+- **Map left, cards right** on a computer; on a phone the controls, then the
+  map, then the cards.
+- **Money in your currency:** the app's default currency and rates in Plan;
+  on the public page, the currency the calculator was used in (else USD),
+  at the fallback rates. Amounts are still held in USD.
+- **Flags are drawn** (country-flag-icons SVG strings, MIT): Windows renders
+  flag emoji as letters.
