@@ -1977,3 +1977,19 @@ banks twice.
 **Not changed:** the net worth calculation, the emergency fund rules, and the
 Debts page. A history line under the headline waits until snapshots hold net
 worth rather than invested assets.
+
+### D-54 — October 9: fixes shared across the dashboard
+
+**Status:** Active. From the October design review.
+
+**Decision:**
+- **Phone top bar:** the logo already says UntilFire, so the title is the
+  page (Home, Money, Freedom Date…), with the freedom date under it when
+  known. Feedback moves into the top bar as an icon on phones; the floating
+  button stays on desktop. Feedback is still only ever user-initiated.
+- **Over is ink, not a colour.** Over-budget hatching on the category bars
+  (D-52) was amber, the same as Utilities' default colour, so a bill still
+  due there read as overspending; red would clash with Healthcare. Dark ink
+  stripes past the black budget line clash with no category.
+- **Pill tabs:** tighter padding on narrow screens; when they still overflow
+  they fade at the side with more and scroll the chosen tab into view.

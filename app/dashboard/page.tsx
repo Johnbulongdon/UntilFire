@@ -5720,7 +5720,7 @@ export default function Dashboard() {
           .uf-sidebar { display: none; }
           .uf-mobile-topbar { display: flex; position: fixed; top: 0; left: 0; right: 0; z-index: 120; height: calc(56px + env(safe-area-inset-top, 0px)); padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px; background: var(--uf-topbar-glass); border-bottom: 1px solid var(--uf-border); backdrop-filter: blur(14px); align-items: center; gap: 12px; }
           .uf-mobile-menu-button { width: 40px; height: 40px; border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-text); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-          .uf-mobile-top-title { display: flex; flex-direction: column; min-width: 0; }
+          .uf-mobile-top-title { display: flex; flex-direction: column; min-width: 0; flex: 1; }
           .uf-mobile-top-title strong { font-size: 15px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.02em; }
           .uf-mobile-top-title span { font-size: 11px; color: var(--uf-text-2); font-weight: 600; }
           .uf-mobile-bottom-nav { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; background: var(--uf-topbar-glass); border-top: 1px solid var(--uf-border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); box-shadow: var(--uf-e2); }
@@ -5819,10 +5819,14 @@ export default function Dashboard() {
 
       <header className="uf-mobile-topbar" aria-label="Mobile dashboard header">
         <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="auto" size={22} /></Link>
+        {/* The logo already says UntilFire; the title says where you are (D-54). */}
         <div className="uf-mobile-top-title">
-          <strong>UntilFire</strong>
-          <span>{freedomDateCompactLabel ? `Free · ${freedomDateCompactLabel}` : tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
+          <strong>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Money"}</strong>
+          {freedomDateCompactLabel && <span>{`Free · ${freedomDateCompactLabel}`}</span>}
         </div>
+        <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} aria-label="Send feedback" className="uf-mobile-menu-button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
         <button
           onClick={toggleDark}
           aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
