@@ -8,6 +8,13 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Fixes on Insights, Freedom Date and Goals
+- Insights: this month shows "so far" with no savings rate until it ends,
+  instead of −999%. A month that spent over twice its income shows "< −100%".
+- Freedom Date: Before you buy has its own price field, then one sentence
+  with the result. More tools is now three simple rows below it.
+- Goals: your goals come first; the Your why questions fold into one row.
+
 ### Onboarding shows only the questions
 - Once you tap Start, the homepage's about section (how it works, calculator
   and city links, FAQ) no longer appears below each question. It still shows
