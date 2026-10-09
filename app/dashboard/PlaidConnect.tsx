@@ -377,7 +377,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
               </div>
               {showEmptyStateCard && (
                 <div style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}>
-                  Auto-import transactions via Plaid
+                  Auto-import transactions via Plaid. Read-only access; export or delete your data anytime.
                 </div>
               )}
             </div>

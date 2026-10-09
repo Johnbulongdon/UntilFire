@@ -357,6 +357,10 @@ function Faq7() {
       a: "No. You can see your freedom date and first move without creating an account. Create one when you want to save your plan and track progress.",
     },
     {
+      q: "Can I take my data with me?",
+      a: "Yes. From Profile you can export your transactions as a spreadsheet, or everything as one file, any time and free, whether or not you're on Pro. You can delete your account and data there too.",
+    },
+    {
       q: "Is this financial advice?",
       a: "No. UntilFire is planning software that helps you understand scenarios and tradeoffs. It does not replace a licensed financial adviser.",
     },

@@ -38,6 +38,7 @@ import {
   type TxViewChangedProperties,
   type TxReviewOpenedProperties,
   type TxFlagResolvedProperties,
+  type DataExportedProperties,
 } from './analytics-events';
 
 function isClient(): boolean {
@@ -380,4 +381,8 @@ export function trackTxReviewOpened(input: { needCount: number; months: number }
 export function trackTxFlagResolved(input: { flag: 'card_payment' | 'duplicate' | 'large' | 'bill'; confirmed: boolean }) {
   const props: TxFlagResolvedProperties = withVersion({ flag: input.flag, confirmed: input.confirmed });
   capture(FunnelEvents.TX_FLAG_RESOLVED, props);
+}
+export function trackDataExported(input: { file: 'transactions_csv' | 'everything_json'; ok: boolean }) {
+  const props: DataExportedProperties = withVersion({ file: input.file, ok: input.ok });
+  capture(FunnelEvents.DATA_EXPORTED, props);
 }

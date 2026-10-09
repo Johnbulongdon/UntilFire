@@ -9,6 +9,8 @@ import { MoneyHead, MoneyList, MoneyRow } from "./MoneyCards";
 import GiveAMonthCard from "./GiveAMonthCard";
 import CreatorCard from "./CreatorCard";
 import HouseholdSection from "./HouseholdSection";
+import { download, exportEverything, exportFileName, loadTransactions, transactionsCsv } from "@/lib/data-export";
+import { trackDataExported } from "@/lib/analytics";
 
 interface PlaidItem {
   id: string;
@@ -314,6 +316,12 @@ export default function ProfileTab({
           after={openRow === "creator" && <CreatorCard cardStyle={{}} bare />} />
       </MoneyList>
 
+      <Section t="Your data" />
+      <MoneyList>
+        <MoneyRow dot="#1baf7a" icon="📦" name="Export your data" meta="Free, anytime, whether or not you're on Pro" value="Export ›" onClick={() => toggle("export")}
+          after={openRow === "export" && <ExportData userId={userId} />} />
+      </MoneyList>
+
       <Section t="Account removal" />
       <MoneyList>
         <MoneyRow dot="#e34948" icon="🗑️" name="Delete account" meta="Removes your account, transactions and plan for good" value="Delete…" valueTone="var(--uf-neg-ink)" onClick={() => toggle("delete")}
@@ -329,6 +337,49 @@ export default function ProfileTab({
             </div>
           )} />
       </MoneyList>
+    </div>
+  );
+}
+
+/**
+ * Export your data (D-56): transactions as a spreadsheet, or everything as one
+ * file. Built in the browser; nothing is sent anywhere to make it.
+ */
+function ExportData({ userId }: { userId: string }) {
+  const [busy, setBusy] = useState<null | "csv" | "json">(null);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const run = async (kind: "csv" | "json") => {
+    setBusy(kind);
+    setNote(null);
+    const file = kind === "csv" ? "transactions_csv" : "everything_json";
+    try {
+      if (kind === "csv") {
+        const rows = await loadTransactions(userId);
+        download(exportFileName("transactions", "csv"), transactionsCsv(rows), "text/csv;charset=utf-8");
+        setNote({ ok: true, text: `${rows.length.toLocaleString()} transactions saved as a spreadsheet file.` });
+      } else {
+        download(exportFileName("everything", "json"), await exportEverything(userId), "application/json");
+        setNote({ ok: true, text: "Everything saved as one file." });
+      }
+      trackDataExported({ file, ok: true });
+    } catch (e) {
+      setNote({ ok: false, text: e instanceof Error ? e.message : "The export didn't finish. Try again." });
+      trackDataExported({ file, ok: false });
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+        Transactions open in Excel, Numbers or Google Sheets, and other apps can import them. Everything is one JSON file with your transactions,
+        upcoming bills, budget, goals, accounts, net worth history and plan. Bank connection details are never included.
+      </span>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button variant="secondary" size="sm" onClick={() => run("csv")} disabled={busy !== null}>{busy === "csv" ? "Preparing…" : "Transactions (CSV)"}</Button>
+        <Button variant="secondary" size="sm" onClick={() => run("json")} disabled={busy !== null}>{busy === "json" ? "Preparing…" : "Everything (JSON)"}</Button>
+      </div>
+      {note && <span role={note.ok ? "status" : "alert"} className="uf-t-small" style={{ color: note.ok ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)" }}>{note.text}</span>}
     </div>
   );
 }

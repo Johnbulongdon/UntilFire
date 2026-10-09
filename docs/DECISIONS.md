@@ -2016,3 +2016,29 @@ Plan's seven) has a small line icon instead of a dot, chosen by the founder
 from a mock against dots and grouped dots. Icons sit in ink-3; only the
 selected page's icon turns green, on a soft tint, so the top level still
 reads as the top level.
+
+### D-56 — October 9: export your data, free, anytime
+
+**Status:** Active. From the founder: people should feel comfortable joining
+because leaving is easy.
+
+**Decision:**
+- **Two files from Profile → Your data.** Transactions as CSV (oldest first,
+  one row each, a byte-order mark for Excel, formula-looking text neutralised)
+  and everything as one JSON document (transactions, upcoming payments,
+  budget, goals, accounts, banks, net worth history, category rules and
+  this device's category settings, plan scenarios and assumptions,
+  contribution history, FIRE type).
+- **Free, whether or not you are on Pro.** "Your data is yours" has to hold
+  for someone who stopped paying, or the promise is hollow.
+- **Built in the browser** from what the signed-in account can already read
+  (`lib/data-export.ts`); no server route makes or keeps a copy. Bank
+  connection tokens are never read; accounts come from the routes that
+  already omit them.
+- **Said where people decide:** sign-in, pricing, the bank connect step
+  (read-only access) and the landing FAQ.
+- **Measured without contents:** `funnel_data_exported` with the file kind
+  and whether it worked.
+
+**Not changed:** account deletion, which already lives in Profile. A household
+export holds only the rows this account can see.

@@ -307,6 +307,7 @@ export default function LoginPage() {
             fontFamily: "'Manrope', sans-serif",
           }}>
             No credit card required. Free forever for the core calculator.<br />
+            Export or delete your data anytime.<br />
             By signing in you agree to our Terms &amp; Privacy Policy.
           </div>
         </div>

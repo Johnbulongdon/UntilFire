@@ -158,7 +158,7 @@ export default function PricingPage() {
               or {PRO_ANNUAL_LABEL}/year &mdash; save {ANNUAL_SAVING_PCT}%, {ANNUAL_PER_MONTH_LABEL}/mo
             </p>
             <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "0 0 var(--uf-s5)" }}>
-              {TRIAL_LABEL} &mdash; no charge today. Cancel anytime.
+              {TRIAL_LABEL} &mdash; no charge today. Cancel anytime, and export your data free, Pro or not.
             </p>
 
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 var(--uf-s5)", display: "grid", gap: "var(--uf-s3)" }}>
