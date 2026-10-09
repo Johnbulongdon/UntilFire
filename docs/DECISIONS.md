@@ -2157,3 +2157,29 @@ $583/mo); Explore puts every city side by side, so those need review.
   inside the chosen card, so the list is scannable beside the globe.
 - **No open form before value:** without numbers, one collapsed line offers
   to add them.
+
+### D-59 — October 9: an exact plan after a simple start
+A real r/financialindependence post (28, $125k, $70k a year saved with a 15%
+employer contribution, wanting $100–125k a year once free) showed the gap: the
+four-question onboarding said free at about 31, the truth is the late 40s.
+Spending was take-home less savings (so employer and pre-tax money made it look
+tiny), there was nowhere to say what you want to spend once free, saving was
+split by a fixed 40/20/rest rule, and 401(k) money counted as if it could be
+spent at 45.
+- **Onboarding stays simple.** No new questions or nudges; the savings screen
+  says what counts (stocks, funds, retirement accounts, cash savings).
+- **Accuracy lives in the dashboard**, each fact once, where it belongs:
+  Money → Income (salary, pension before tax, tax, take-home, employer adds);
+  Plan → Freedom Date "Your goal" (spend once free, pay growth, pension access);
+  Plan → Contributions (where saving goes: tax-free first, the rest taxable).
+- **The engine:** the goal sets the FIRE number; pension and employer money
+  count as saving outside take-home; saving follows your own split once you set
+  one; pay growth saves raises; the mortgage uses its rate. Unset, every plan
+  computes as before.
+- **Pension access is confirmed, not assumed.** A per-country suggestion
+  (59½ US, 57 UK, 60 Japan/Australia, 55 Singapore, 62 Germany; Canada's RRSP
+  any age) the person confirms. Once confirmed you are free only when money you
+  can reach before then (taxable, cash, Roth contributions; ISA/NISA/TFSA in
+  full) covers the years until it opens.
+- **Pay growth is off until chosen**, with presets (flat, 1%, 2%, 3%, own), so
+  the dashboard date matches the onboarding result until the person opts in.

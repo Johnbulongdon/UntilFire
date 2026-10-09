@@ -592,10 +592,10 @@ function PortfolioScreen({ currency = "USD", income, initialPortfolioBalance = 0
   return (
     <div className="uf-screen" style={{ paddingTop: 16 }}>
       <h2 className="uf-ob-q">What do you have saved and invested?</h2>
-      <p className="uf-ob-hint">Investments, retirement accounts and cash, all counted as invested. Leave out your home. An estimate is fine, and zero is fine too.</p>
+      <p className="uf-ob-hint">Stocks, funds, retirement accounts and cash savings. An estimate is fine, and zero is fine too.</p>
 
-      <AmountTiles label={`Net worth (${currency})`} value={portfolioRaw === "" ? null : portfolioInput} options={worthOptions} onChange={n => setPortfolioRaw(String(n))} symbol={currencySymbol}>
-        <MoneyField label={`Net worth (${currency})`} value={portfolioRaw} onChange={setPortfolioRaw} />
+      <AmountTiles label={`Saved and invested (${currency})`} value={portfolioRaw === "" ? null : portfolioInput} options={worthOptions} onChange={n => setPortfolioRaw(String(n))} symbol={currencySymbol}>
+        <MoneyField label={`Saved and invested (${currency})`} value={portfolioRaw} onChange={setPortfolioRaw} />
       </AmountTiles>
 
       <div className="uf-ob-foot">

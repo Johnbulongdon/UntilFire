@@ -8,6 +8,19 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### An exact plan after a simple start
+- Money → Income: salary to take-home, with the pension taken before tax and
+  what your employer adds. Both count as saving in your freedom date.
+- Plan → Freedom Date has "Your goal": what you plan to spend once free (it
+  sets your FIRE number), pay growth (off until you choose), and when your
+  pension opens. Confirm the age and the date checks you can reach enough
+  money before then, and moves later if you cannot.
+- Plan → Contributions shows where your saving goes: pension, employer,
+  tax-free account (Roth IRA, ISA, NISA, TFSA) and the rest. Your split
+  replaces the old fixed one once you set it; mortgage interest uses your rate.
+- The calculator's savings step says what counts: stocks, funds, retirement
+  accounts and cash savings.
+
 ### Explore keeps the globe in view
 - On a computer, Explore fits the window: the globe stays put and only the
   city cards scroll, in their own column. Phones scroll as before.
