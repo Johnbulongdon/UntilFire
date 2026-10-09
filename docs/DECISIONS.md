@@ -1993,3 +1993,26 @@ worth rather than invested assets.
   stripes past the black budget line clash with no category.
 - **Pill tabs:** tighter padding on narrow screens; when they still overflow
   they fade at the side with more and scroll the chosen tab into view.
+
+### D-55 — October 9: Cashflow's pages are in the desktop sidebar
+
+**Status:** Active. From the founder: the Categories page could not be found.
+
+**What happened:** D-41 moved Cashflow's pages (Transactions, Upcoming,
+Categories, Budget) to pills on the page and stopped the sidebar at Cashflow.
+An older rule hides those pills on desktop because "the sidebar carries all
+three levels". Together they left desktop with no way to Upcoming, Categories
+or Budget except links inside other pages.
+
+**Decision:** on desktop the sidebar lists Money's pages on one level:
+Transactions, Upcoming, Categories, Budget, Net Worth, Debts, Insights. A
+Cashflow level with its own sub-list was tried and read as too many layers.
+The four Cashflow pages come from `CASHFLOW_SUB_TABS`, so sidebar and pills
+stay one list; phones keep the pills. The desktop pills stay hidden so the
+page does not show the same choice twice.
+
+**Mini icons:** every second-level page in the sidebar (Money's seven and
+Plan's seven) has a small line icon instead of a dot, chosen by the founder
+from a mock against dots and grouped dots. Icons sit in ink-3; only the
+selected page's icon turns green, on a soft tint, so the top level still
+reads as the top level.

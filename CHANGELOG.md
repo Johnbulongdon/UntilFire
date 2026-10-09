@@ -8,6 +8,12 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Upcoming, Categories and Budget are back on desktop
+- Fixed: on a computer, Cashflow's Upcoming, Categories and Budget pages had
+  no way in. The sidebar now lists all of Money's pages on one level:
+  Transactions, Upcoming, Categories, Budget, Net Worth, Debts and Insights.
+- Each page under Money and Plan in the sidebar has a small icon.
+
 ### Small fixes across the dashboard
 - On phones the top bar shows the logo once and the page you are on, with
   Feedback next to dark mode instead of a button floating over your rows.

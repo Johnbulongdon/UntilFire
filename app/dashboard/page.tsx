@@ -4642,6 +4642,29 @@ type CashflowSubTab = "cashflow" | "categories" | "expected" | "budgets";
 // Single source of truth for the Cashflow sub-nav — the sidebar sub-sub-nav and
 // the horizontal switcher both render from this. They used to be two hand-kept
 // arrays, which is how Categories and Recurring ended up rendered but unreachable.
+// Mini line icons for the sidebar's second level, by page label (D-55).
+// Quiet ink-3 strokes; only the selected page's icon takes the green.
+const SUB_ICONS: Record<string, string> = {
+  Transactions: "M4 7h13l-3-3M20 17H7l3 3",
+  Upcoming: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+  Categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  Budget: "M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z",
+  "Net Worth": "M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z",
+  Debts: "M3 6h18v12H3zM3 10h18M7 15h3",
+  Insights: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  "Freedom Date": "M3 18h18M6 18a6 6 0 0 1 12 0M12 4v3M4.9 8.9l2.1 2.1M19.1 8.9 17 11",
+  Scenarios: "M6 3v6a6 6 0 0 0 6 6h6M6 9v12M18 15l-3-3M18 15l-3 3",
+  Goals: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",
+  Contributions: "M12 3v12M7 10l5 5 5-5M4 21h16",
+  "Expat FIRE": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
+  Citizenship: "M6 3h12v18H6zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 17h6",
+  Learn: "M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h8",
+};
+function SubIcon({ label }: { label: string }) {
+  const d = SUB_ICONS[label];
+  return d ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="uf-sidebar-sub-icon"><path d={d} /></svg> : null;
+}
+
 const CASHFLOW_SUB_TABS: { key: CashflowSubTab; label: string }[] = [
   { key: "cashflow",   label: "Transactions" },
   // Recurring and Expected were one story told twice — what is coming and
@@ -5687,6 +5710,11 @@ export default function Dashboard() {
         .dark .uf-sidebar-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
         .dark .uf-sidebar-sub-item.active { color: var(--uf-green-700); }
         .dark .uf-sidebar-sub-item.active::before { background: var(--uf-green); }
+        .uf-sidebar-sub-item:has(.uf-sidebar-sub-icon)::before { display: none; }
+        .uf-sidebar-sub-icon { flex: none; color: var(--uf-ink-3); transition: color 0.13s; }
+        .uf-sidebar-sub-item:hover .uf-sidebar-sub-icon { color: var(--uf-ink-2); }
+        .uf-sidebar-sub-item.active:has(.uf-sidebar-sub-icon) { background: var(--uf-surface-2); }
+        .uf-sidebar-sub-item.active .uf-sidebar-sub-icon { color: var(--uf-green-700); }
         /* Desktop has the sidebar, which already carries all three nav levels —
            the horizontal switches are the mobile equivalent and would just
            duplicate it. These class names must match the ones in the JSX:
@@ -5885,22 +5913,21 @@ export default function Dashboard() {
                     <span className="uf-nav-label-full">{item.label}</span>
                     <span className="uf-nav-label-mobile">{item.mobileLabel ?? item.label}</span>
                   </button>
+                  {/* Money's pages on one level: Cashflow's four, then the rest (D-55).
+                      Phones keep the section and Cashflow pills instead. */}
                   {isActive && item.key === "cashflow" && (
                     <div className="uf-sidebar-sub-nav">
-                      {MONEY_SECTIONS.map(sub => (
-                        <div key={sub.tab}>
-                          <button
-                            className={`uf-sidebar-sub-item ${tab === sub.tab ? "active" : ""}`}
-                            onClick={() => {
-                              openDashboardTab(sub.tab);
-                              if (sub.tab === "cashflow") setCashflowSubTab("cashflow");
-                            }}
-                          >
-                            {sub.label}
-                          </button>
-                          {/* Cashflow's own pages are the pills on the page (D-41); the
-                              sidebar no longer repeats them. */}
-                        </div>
+                      {CASHFLOW_SUB_TABS.map(page => (
+                        <button key={page.key} type="button"
+                          className={`uf-sidebar-sub-item ${tab === "cashflow" && cashflowSubTab === page.key ? "active" : ""}`}
+                          onClick={() => { setCashflowSubTab(page.key); openDashboardTab("cashflow"); }}>
+                          <SubIcon label={page.label} />{page.label}
+                        </button>
+                      ))}
+                      {MONEY_SECTIONS.filter(sub => sub.tab !== "cashflow").map(sub => (
+                        <button key={sub.tab} type="button" className={`uf-sidebar-sub-item ${tab === sub.tab ? "active" : ""}`} onClick={() => openDashboardTab(sub.tab)}>
+                          <SubIcon label={sub.label} />{sub.label}
+                        </button>
                       ))}
                     </div>
                   )}
@@ -5917,7 +5944,7 @@ export default function Dashboard() {
                             openDashboardTab(sub.tab);
                           }}
                         >
-                          {sub.label}
+                          <SubIcon label={sub.label} />{sub.label}
                         </button>
                       ))}
                     </div>
