@@ -444,6 +444,13 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
 - **Properties**: `flag` (`bill`, `card_payment`, `duplicate`, `large`), `confirmed`
   (true for "It's a card payment" / "Delete this one", false for the dismissals).
 
+### `funnel_data_exported`
+
+- **Where**: `app/dashboard/ProfileTab.tsx`, Export your data (D-56), after a
+  download is offered or fails.
+- **Properties**: `file` (`transactions_csv`, `everything_json`), `ok`
+  (false when a read failed). Never row counts, amounts or file contents.
+
 ## Adding a new event
 
 1. Add the event name to `FunnelEvents` in `lib/analytics-events.ts`.

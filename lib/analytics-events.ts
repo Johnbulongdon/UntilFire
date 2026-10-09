@@ -56,6 +56,8 @@ export const FunnelEvents = {
   TX_VIEW_CHANGED: 'funnel_tx_view_changed',
   TX_REVIEW_OPENED: 'funnel_tx_review_opened',
   TX_FLAG_RESOLVED: 'funnel_tx_flag_resolved',
+  // Profile → Export your data (D-56): which file, and whether it worked. Never contents.
+  DATA_EXPORTED: 'funnel_data_exported',
 } as const;
 
 export type FunnelEventName =
@@ -264,4 +266,8 @@ export interface TxReviewOpenedProperties extends BaseFunnelProperties {
 export interface TxFlagResolvedProperties extends BaseFunnelProperties {
   flag: 'card_payment' | 'duplicate' | 'large' | 'bill';
   confirmed: boolean;
+}
+export interface DataExportedProperties extends BaseFunnelProperties {
+  file: 'transactions_csv' | 'everything_json';
+  ok: boolean;
 }

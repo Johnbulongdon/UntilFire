@@ -8,6 +8,14 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Export your data
+- Profile → Your data → Export your data: your transactions as a spreadsheet
+  file (CSV), or everything as one file (JSON): transactions, upcoming bills,
+  budget, goals, accounts, net worth history and your plan. Free, anytime,
+  whether or not you're on Pro. Bank connection details are never included.
+- Sign-in, pricing, the bank connect step and the FAQ now say you can export
+  or delete your data anytime.
+
 ### Upcoming, Categories and Budget are back on desktop
 - Fixed: on a computer, Cashflow's Upcoming, Categories and Budget pages had
   no way in. The sidebar now lists all of Money's pages on one level:
