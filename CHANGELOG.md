@@ -21,6 +21,10 @@ under today's date, creating the heading if it is not there yet.
   grouped to regions where a road map would), under firmer country borders,
   and land has a light tint instead of plain white. The border data loads only
   once you zoom in.
+- The globe is about three times smoother to drag: the land is drawn on a
+  canvas, only borders in view are projected, a drag moves once per frame,
+  and the list catches up when the globe settles. Fixed: the currency symbol
+  was worked out afresh for every pin on every frame.
 - The map and the list follow each other: tap a pin and its card scrolls into
   view; tap a card and the globe turns to the city. Zoomed in, the list shows
   only the cities in view ("15 cities in view · Show all").

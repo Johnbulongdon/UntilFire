@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { geoOrthographic, geoPath, geoGraticule10, geoDistance } from "d3-geo";
 import { feature, mesh } from "topojson-client";
 import type { Topology, GeometryCollection, GeometryObject } from "topojson-specification";
-import type { FeatureCollection, Geometry, MultiLineString } from "geojson";
+import type { FeatureCollection, Geometry, MultiLineString, Position } from "geojson";
 import stateTopology from "@/lib/geo/us-states.json";
 import countryTopology from "@/lib/geo/countries-110m.json";
 import Flag from "./Flag";
@@ -20,10 +20,21 @@ import { countryPins, pinText, pinWidth, placePins, type ExploreCity, type Freed
 
 type Named = { name: string };
 const st = stateTopology as unknown as Topology<{ states: GeometryCollection<Named> }>;
-const STATE_LINES = mesh(st, st.objects.states, (a, b) => a !== b);
+const STATE_LINES: MultiLineString = mesh(st, st.objects.states, (a, b) => a !== b);
 const ct = countryTopology as unknown as Topology<{ countries: GeometryCollection<Named> }>;
 const COUNTRIES = feature(ct, ct.objects.countries) as FeatureCollection<Geometry, Named>;
 const BORDERS = mesh(ct, ct.objects.countries, (a, b) => a !== b);
+const GRATICULE = geoGraticule10();
+/** Border lines split into pieces with a centre and reach, so a frame only projects what can be seen. */
+type Piece = { coords: Position[]; c: [number, number]; r: number };
+function piecesOf(lines: MultiLineString): Piece[] {
+  return lines.coordinates.map(coords => {
+    const c: [number, number] = [coords.reduce((s, p) => s + p[0], 0) / coords.length, coords.reduce((s, p) => s + p[1], 0) / coords.length];
+    return { coords, c, r: Math.max(...coords.map(p => geoDistance(c, p as [number, number]))) };
+  });
+}
+const STATE_PIECES = piecesOf(STATE_LINES);
+const SPHERE = { type: "Sphere" } as const;
 /** Zoom past this and country pins split into cities. */
 const CITY_ZOOM = 2.4;
 /** Close enough to pull apart neighbouring cities (Dallas and Fort Worth, Tampa and St. Petersburg). */
@@ -59,12 +70,12 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   const [zoom, setZoom] = useState(FOCUS[focus].zoom);
   useEffect(() => { setRotate(FOCUS[focus].rotate); setZoom(FOCUS[focus].zoom); }, [focus]);
   // State and province borders beyond the US: about 150 KB, so fetched only once you zoom in.
-  const [provinces, setProvinces] = useState<MultiLineString | null>(null);
+  const [provinces, setProvinces] = useState<Piece[] | null>(null);
   useEffect(() => {
     if (zoom < CITY_ZOOM || provinces) return;
     import("@/lib/geo/admin1-lines.json").then(m => {
       const t = (m.default ?? m) as unknown as Topology<{ lines: GeometryObject }>;
-      setProvinces(feature(t, t.objects.lines) as unknown as MultiLineString);
+      setProvinces(piecesOf(mesh(t, t.objects.lines)));
     }).catch(() => {});
   }, [zoom, provinces]);
   useEffect(() => { if (flyTo) { setRotate([-flyTo.lng, -flyTo.lat]); setZoom(z => Math.max(z, CITY_ZOOM * 1.4)); } }, [flyTo]);
@@ -101,7 +112,8 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   const projection = useMemo(() => {
     if (!width) return null;
     const base = Math.min(width, height) / 2 - 12;
-    return geoOrthographic().rotate(rotate).translate([width / 2, height / 2]).scale(base * zoom).clipAngle(90);
+    // No adaptive resampling: the outlines are dense enough, and resampling every edge each frame was the slow part.
+    return geoOrthographic().rotate(rotate).translate([width / 2, height / 2]).scale(base * zoom).clipAngle(90).precision(0);
   }, [width, height, rotate, zoom]);
 
   const pins = useMemo(() => {
@@ -122,14 +134,61 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
     return placed.map((pl, i) => ({ ...pl, ...visible[i] }));
   }, [projection, cities, mode, money, freedom, starred, selected, zoom, width, height, rotate]);
   const inView = zoom >= CITY_ZOOM ? pins.filter(p => !p.key.startsWith("country:")).map(p => p.key).sort().join(",") : null;
-  useEffect(() => { onView?.(inView == null ? null : inView ? inView.split(",") : []); }, [inView, onView]);
+  // The list follows once the globe settles, not on every frame of a drag.
+  useEffect(() => {
+    const t = setTimeout(() => onView?.(inView == null ? null : inView ? inView.split(",") : []), 180);
+    return () => clearTimeout(t);
+  }, [inView, onView]);
 
-  const path = projection ? geoPath(projection) : null;
+  // The land is drawn on a canvas: hundreds of SVG paths re-laid out on every frame made dragging stutter.
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [theme, setTheme] = useState(0);
+  useEffect(() => {
+    const mo = new MutationObserver(() => setTheme(t => t + 1));
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    return () => mo.disconnect();
+  }, []);
+  // Theme colours, read once per theme rather than on every frame.
+  const colors = useMemo(() => {
+    if (typeof window === "undefined") return {} as Record<string, string>;
+    const css = getComputedStyle(document.documentElement);
+    return Object.fromEntries(["--uf-surface-2", "--uf-teal", "--uf-border", "--uf-border-2", "--uf-card", "--uf-green", "--uf-ink-2"].map(n => [n, css.getPropertyValue(n).trim()]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
+  useEffect(() => {
+    const cv = canvas.current, ctx = cv?.getContext("2d");
+    if (!cv || !ctx || !projection) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(width * dpr) || cv.height !== Math.round(height * dpr)) { cv.width = Math.round(width * dpr); cv.height = Math.round(height * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    const token = (n: string) => colors[n] ?? "";
+    const draw = geoPath(projection, ctx);
+    const paint = (g: Parameters<typeof draw>[0], how: "fill" | "stroke", color: string, alpha = 1, w = 1) => {
+      ctx.beginPath(); draw(g); ctx.globalAlpha = alpha;
+      if (how === "fill") { ctx.fillStyle = color; ctx.fill(); } else { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    };
+    const close = zoom >= CITY_ZOOM;
+    // How far from the centre of view the frame reaches, in radians, on the globe.
+    const reach = Math.asin(Math.min(1, Math.hypot(width, height) / 2 / projection.scale()));
+    const centre: [number, number] = [-rotate[0], -rotate[1]];
+    const seen = (ps: Piece[]): MultiLineString => ({ type: "MultiLineString", coordinates: ps.filter(p => geoDistance(p.c, centre) - p.r < reach).map(p => p.coords) });
+    paint(SPHERE, "fill", token("--uf-surface-2")); paint(SPHERE, "fill", token("--uf-teal"), 0.12);
+    paint(GRATICULE, "stroke", token("--uf-border"), 1, 0.4);
+    paint(COUNTRIES, "fill", token("--uf-card")); paint(COUNTRIES, "fill", token("--uf-green"), 0.05);
+    // Up close, state and province lines under firmer country borders, like a road map.
+    if (close) { paint(seen(STATE_PIECES), "stroke", token("--uf-border-2"), 1, 0.8); if (provinces) paint(seen(provinces), "stroke", token("--uf-border-2"), 1, 0.8); }
+    paint(BORDERS, "stroke", token(close ? "--uf-ink-2" : "--uf-border-2"), close ? 0.45 : 0.7, close ? 1.1 : 0.5);
+  }, [projection, width, height, zoom, rotate, provinces, colors]);
   const onDown = (e: React.PointerEvent) => { drag.current = { x: e.clientX, y: e.clientY, r: rotate }; (e.target as Element).setPointerCapture?.(e.pointerId); };
+  // Pointer events can outpace the screen: apply the latest one once per frame.
+  const frame = useRef(0);
   const onMove = (e: React.PointerEvent) => {
     const d = drag.current; if (!d) return;
-    const k = 0.35 / zoom;
-    setRotate([d.r[0] + (e.clientX - d.x) * k, Math.max(-70, Math.min(70, d.r[1] - (e.clientY - d.y) * k))]);
+    const k = 0.35 / zoom, x = e.clientX, y = e.clientY;
+    cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => setRotate([d.r[0] + (x - d.x) * k, Math.max(-70, Math.min(70, d.r[1] - (y - d.y) * k))]));
   };
   const tap = (key: string, lng: number, lat: number) => {
     // A country pin zooms into its cities; a city pin selects it.
@@ -140,15 +199,7 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   return <div ref={box} className="uf-explore-map" style={{ position: "relative", height, borderRadius: 16, overflow: "hidden", touchAction: "none",
     background: "var(--uf-surface)", cursor: "grab" }}
     onPointerDown={onDown} onPointerMove={onMove} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
-    {path && <svg width={width} height={height} style={{ position: "absolute", inset: 0 }} aria-hidden>
-      <path d={path({ type: "Sphere" }) ?? ""} fill="color-mix(in srgb, var(--uf-teal) 12%, var(--uf-surface-2))" />
-      <path d={path(geoGraticule10()) ?? ""} fill="none" stroke="var(--uf-border)" strokeWidth={0.4} />
-      {COUNTRIES.features.map((f, i) => <path key={i} d={path(f) ?? ""} fill="color-mix(in srgb, var(--uf-green) 5%, var(--uf-card))" />)}
-      {/* Up close, state and province lines under firmer country borders, like a road map. */}
-      {zoom >= CITY_ZOOM && <path d={path(STATE_LINES) ?? ""} fill="none" stroke="var(--uf-border-2)" strokeWidth={0.8} />}
-      {zoom >= CITY_ZOOM && provinces && <path d={path(provinces) ?? ""} fill="none" stroke="var(--uf-border-2)" strokeWidth={0.8} />}
-      <path d={path(BORDERS) ?? ""} fill="none" stroke={zoom >= CITY_ZOOM ? "var(--uf-ink-2)" : "var(--uf-border-2)"} strokeWidth={zoom >= CITY_ZOOM ? 1.1 : 0.5} strokeOpacity={zoom >= CITY_ZOOM ? 0.45 : 0.7} />
-    </svg>}
+    <canvas ref={canvas} style={{ position: "absolute", inset: 0, width, height }} aria-hidden />
     {pins.map(p => {
       const sel = p.city.key === selected, star = starred.has(p.city.key);
       if (!p.side) return <button key={p.key} type="button" aria-label={`${p.city.name} ${p.label}`} onClick={() => tap(p.key, p.lng, p.lat)}

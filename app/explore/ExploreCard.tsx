@@ -32,16 +32,29 @@ function shapeFor(c: ExploreCity): Feature | undefined {
   return (c.us ? STATES : COUNTRIES).features.find(f => f.properties.name === atlas);
 }
 
+/** Outline and city point per city, worked out once: the list re-renders as the map moves. */
+const OUTLINES = new Map<string, { d: string; x: number; y: number } | null>();
+function outline(c: ExploreCity) {
+  if (OUTLINES.has(c.key)) return OUTLINES.get(c.key)!;
+  const shape = shapeFor(c);
+  let out: { d: string; x: number; y: number } | null = null;
+  if (shape) {
+    const proj = geoMercator().fitExtent([[W * 0.45, 16], [W - 14, H - 16]], shape);
+    const p = proj([c.lng, c.lat]);
+    // A city far off the mainland (an island) would shrink the shape to nothing: frame the city instead.
+    if (p && p[0] >= W * 0.4 && p[0] <= W && p[1] >= 0 && p[1] <= H) out = { d: geoPath(proj)(shape) ?? "", x: p[0], y: p[1] };
+  }
+  OUTLINES.set(c.key, out);
+  return out;
+}
+
 /** The place's outline, fitted to the right of the card, with the city marked. */
 function Place({ c }: { c: ExploreCity }) {
-  const shape = shapeFor(c);
-  if (!shape) return null;
-  const proj = geoMercator().fitExtent([[W * 0.45, 16], [W - 14, H - 16]], shape);
-  const p = proj([c.lng, c.lat]);
-  // A city far off the mainland (an island) would shrink the shape to nothing: frame the city instead.
-  if (!p || p[0] < W * 0.4 || p[0] > W || p[1] < 0 || p[1] > H) return null;
+  const o = outline(c);
+  if (!o) return null;
+  const p = [o.x, o.y];
   return <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} aria-hidden>
-    <path d={geoPath(proj)(shape) ?? ""} fill="#ffffff1f" stroke="#ffffff66" strokeWidth={1} />
+    <path d={o.d} fill="#ffffff1f" stroke="#ffffff66" strokeWidth={1} />
     <circle cx={p[0]} cy={p[1]} r={13} fill="#ffffff26" /><circle cx={p[0]} cy={p[1]} r={4} fill="#fff" />
   </svg>;
 }
