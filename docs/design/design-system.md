@@ -166,6 +166,22 @@ to a label or emoji; charts show the top six categories and fold the rest.
 
 ## Interaction and verification
 
+### Compact value controls (October 9, 2026)
+
+User-approved default: compact editable values and selections rest in rounded
+pill triggers. Open the appropriate editor only when requested: searchable city
+picker, phone age wheel / desktop age dropdown, numeric amount editor, calendar,
+or percentage control. Use `PillEditor` for a desktop dialog / phone bottom sheet;
+native shared `Select` also uses a pill silhouette. Long-form text stays a text
+field. Keep labels, units, visible focus, keyboard access and focus restoration.
+This overrides the earlier control-radius convention for these triggers only.
+
+Plan assumptions adopt this pattern first. Existing financial callbacks and
+projection assumptions stay unchanged; opening an editor is not a reset. Use
+Done to dismiss edits applied as selected, not Cancel, and do not imply
+transactional rollback. Other hand-rolled inputs require explicit adoption on
+touch, not a global CSS change that makes unrelated text fields look clickable.
+
 Follow the shared checks in `AGENTS.md`: labeled inputs and associated errors,
 keyboard access, visible focus, appropriate touch targets, reduced motion, and
 meaning beyond color. Browser QA includes 390px and 1280px viewports, overflow

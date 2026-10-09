@@ -55,7 +55,17 @@ assert.equal(withDebt.firstYearInvested, 36000 - 10800, "Plan's tools are told t
 
 // Plan's tools take the freedom date's own numbers (D-33).
 assert.match(source, /<PurchaseImpactPanel\s+currentSavings=\{planFacts\.invested\}\s+monthlyContribution=\{planFacts\.monthlySavings\}\s+fireTarget=\{planFacts\.fireTarget\}/, 'purchase impact uses the freedom date numbers');
-assert.match(source, /<TaxProfileCard[\s\S]{0,120}monthlyExpenses=\{planFacts\.retirementMonthly\}/, 'the tax card works on the retirement target');
+const taxExpenseInputs = [];
+const collectTaxExpenseInputs = (node) => {
+  if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) && node.tagName.getText(ast) === 'TaxProfileCard') {
+    const attribute = node.attributes.properties.find(prop => ts.isJsxAttribute(prop) && prop.name.getText(ast) === 'monthlyExpenses');
+    taxExpenseInputs.push(attribute?.initializer && ts.isJsxExpression(attribute.initializer)
+      ? attribute.initializer.expression?.getText(ast) : undefined);
+  }
+  ts.forEachChild(node, collectTaxExpenseInputs);
+};
+collectTaxExpenseInputs(ast);
+assert.deepEqual(taxExpenseInputs, ['planFacts.retirementMonthly'], 'the tax card works on the retirement target');
 assert.match(source, /portfolioBalance=\{planFacts\.invested\}\s+monthlySavings=\{planFacts\.monthlySavings\}\s+targetMultiple=/, 'Expat FIRE uses the same balances, savings and target multiple');
 assert.doesNotMatch(source, /Math\.pow\(1 \+ REAL_RETURN, tlYears\)/, "the Expat timeline grows at the person's chosen rate");
 // Expat FIRE (D-36): no invented city, costs at your lifestyle, the globe on the same target and growth.
