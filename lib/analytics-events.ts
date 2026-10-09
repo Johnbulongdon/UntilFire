@@ -58,6 +58,11 @@ export const FunnelEvents = {
   TX_FLAG_RESOLVED: 'funnel_tx_flag_resolved',
   // Profile → Export your data (D-56): which file, and whether it worked. Never contents.
   DATA_EXPORTED: 'funnel_data_exported',
+  EXPLORE_VIEWED: 'funnel_explore_viewed',
+  EXPLORE_CITY_OPENED: 'funnel_explore_city_opened',
+  EXPLORE_MODE_CHANGED: 'funnel_explore_mode_changed',
+  EXPLORE_STARRED: 'funnel_explore_starred',
+  EXPLORE_PLAN_STARTED: 'funnel_explore_plan_started',
 } as const;
 
 export type FunnelEventName =
@@ -271,3 +276,9 @@ export interface DataExportedProperties extends BaseFunnelProperties {
   file: 'transactions_csv' | 'everything_json';
   ok: boolean;
 }
+
+/** Explore (D-58). No city names or amounts: what was used, not what was looked at. */
+export interface ExploreViewedProperties extends BaseFunnelProperties { has_plan: boolean }
+export interface ExploreCityOpenedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' }
+export interface ExploreModeChangedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' }
+export interface ExploreStarredProperties extends BaseFunnelProperties { starred: boolean }

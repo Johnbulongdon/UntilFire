@@ -39,6 +39,10 @@ import {
   type TxReviewOpenedProperties,
   type TxFlagResolvedProperties,
   type DataExportedProperties,
+  type ExploreViewedProperties,
+  type ExploreCityOpenedProperties,
+  type ExploreModeChangedProperties,
+  type ExploreStarredProperties,
 } from './analytics-events';
 
 function isClient(): boolean {
@@ -385,4 +389,28 @@ export function trackTxFlagResolved(input: { flag: 'card_payment' | 'duplicate' 
 export function trackDataExported(input: { file: 'transactions_csv' | 'everything_json'; ok: boolean }) {
   const props: DataExportedProperties = withVersion({ file: input.file, ok: input.ok });
   capture(FunnelEvents.DATA_EXPORTED, props);
+}
+
+export function trackExploreViewed(input: { has_plan: boolean }) {
+  const props: ExploreViewedProperties = withVersion({ has_plan: input.has_plan });
+  capture(FunnelEvents.EXPLORE_VIEWED, props);
+}
+
+export function trackExploreCityOpened(input: { mode: 'monthly' | 'year' | 'age' }) {
+  const props: ExploreCityOpenedProperties = withVersion({ mode: input.mode });
+  capture(FunnelEvents.EXPLORE_CITY_OPENED, props);
+}
+
+export function trackExploreModeChanged(input: { mode: 'monthly' | 'year' | 'age' }) {
+  const props: ExploreModeChangedProperties = withVersion({ mode: input.mode });
+  capture(FunnelEvents.EXPLORE_MODE_CHANGED, props);
+}
+
+export function trackExploreStarred(input: { starred: boolean }) {
+  const props: ExploreStarredProperties = withVersion({ starred: input.starred });
+  capture(FunnelEvents.EXPLORE_STARRED, props);
+}
+
+export function trackExplorePlanStarted() {
+  capture(FunnelEvents.EXPLORE_PLAN_STARTED, withVersion({}));
 }

@@ -50,6 +50,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: siteUrl('/explore'),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
       url: siteUrl('/fire-number'),
       changeFrequency: 'weekly',
       priority: 0.8,

@@ -42,6 +42,7 @@ export default function SiteHeader({
   const isSignedIn = signedIn ?? !!user;
   const links = [
     { href: home ? "#how" : "/#how", label: "How it works" },
+    { href: "/explore", label: "Explore" },
     { href: "/calculators", label: "Calculators" },
     { href: "/learn", label: "Learn" },
     { href: home ? "#pricing" : "/pricing", label: "Pricing" },
