@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import ExploreClient from './ExploreClient'
-import './explore.css'
 
 /**
  * Explore (D-58): every city on one map. The city pages stay the pages that

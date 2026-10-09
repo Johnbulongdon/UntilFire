@@ -4,6 +4,7 @@
  */
 import assert from "node:assert/strict";
 import { freedomIn, pinText, placePins, pinWidth, countryPins } from "../lib/explore-pins.ts";
+import { calcFIRE } from "../lib/fire/strategies/traditional.ts";
 
 let n = 0;
 const ok = (name: string, fn: () => void) => { fn(); n++; console.log(`✓ ${name}`); };
@@ -16,6 +17,15 @@ ok("a cheaper city frees you sooner, with the same savings", () => {
   const cheap = freedomIn(city("faro", 2333), plan, now)!, dear = freedomIn(city("lisbon", 3000), plan, now)!;
   assert.ok(cheap.at < dear.at);
   assert.ok(cheap.years > 0 && cheap.at > 2026);
+});
+ok("the same numbers give the calculator's year and age, for every case", () => {
+  for (const saved of [0, 20000, 60000, 150000]) for (const monthly of [500, 1000, 2000, 3500]) for (const annual of [30000, 40000, 60000, 80000]) {
+    const calc = calcFIRE(monthly, annual, 34, saved, 0.05);
+    const f = freedomIn({ annualUSD: annual }, { saved, monthlySaving: monthly, age: 34, realReturn: 0.05 });
+    if (calc.retireYear == null) { assert.equal(f, null); continue; }
+    assert.equal(Math.floor(f!.at), calc.retireYear);
+    assert.equal(f!.age, calc.age);
+  }
 });
 ok("age is your age now plus the years; without an age there is none", () => {
   const f = freedomIn(city("faro", 2333), plan, now)!;

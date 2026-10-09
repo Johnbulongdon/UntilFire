@@ -19,6 +19,12 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        // Expat FIRE became Explore (D-58).
+        source: '/calculators/expat-fire',
+        destination: '/explore',
+        permanent: true,
+      },
+      {
         source: '/fire-number-calculator',
         destination: '/fire-calculator',
         permanent: true,

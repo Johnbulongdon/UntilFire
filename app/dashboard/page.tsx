@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
-import dynamic from "next/dynamic";
-const GeoArbitrageGlobe = dynamic(() => import("@/app/components/GeoArbitrageGlobe"), { ssr: false });
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
@@ -36,10 +34,11 @@ import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
 import ReportsTab from "./ReportsTab";
 import ProfileTab from "./ProfileTab";
+import ExploreClient from "../explore/ExploreClient";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
-import { calcFIRE, REAL_RETURN } from "@/lib/fire";
+import { REAL_RETURN } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
@@ -48,7 +47,6 @@ import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
 import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
-import { CITY_COORDS } from "@/lib/city-coords";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
@@ -267,8 +265,6 @@ const fmt = (
   rates: Record<string, number>,
   compact = false,
 ) => formatUSDInCurrency(n, currency, rates, { compact });
-/** The same, under a name components that define their own `fmt` can still reach. */
-const fmtCurrency = fmt;
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>) => {
   if (!currency || currency === "USD") return amount;
@@ -4546,7 +4542,7 @@ const PLAN_SECTIONS: PlanSection[] = [
   { label: "Scenarios",    tab: "fire-calculator", subTab: "invest-sim" },
   { label: "Goals",        tab: "goals"        },
   { label: "Contributions", tab: "contributions" },
-  { label: "Expat FIRE",   tab: "expat-fire"   },
+  { label: "Explore",      tab: "expat-fire"   },
   { label: "Citizenship",  tab: "citizenship"  },
   { label: "Learn",        tab: "learning-hub" },
 ];
@@ -4570,7 +4566,7 @@ const SUB_ICONS: Record<string, string> = {
   Scenarios: "M6 3v6a6 6 0 0 0 6 6h6M6 9v12M18 15l-3-3M18 15l-3 3",
   Goals: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",
   Contributions: "M12 3v12M7 10l5 5 5-5M4 21h16",
-  "Expat FIRE": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
+  "Explore": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
   Citizenship: "M6 3h12v18H6zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 17h6",
   Learn: "M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h8",
 };
@@ -4970,7 +4966,7 @@ export default function Dashboard() {
     () => (growthRate === REAL_RETURN ? planFreedom : freedomProjection({ ...planFreedomInputs, growthRate: REAL_RETURN })),
     [planFreedomInputs, growthRate, planFreedom],
   );
-  /* Plan's tools (purchase impact, the tax card, Expat FIRE) use the freedom
+  /* Plan's tools (purchase impact, the tax card, Explore) use the freedom
      date's own numbers (D-33): the same target, balances (connected replacing
      typed), savings after mortgage and debt, growth, withdrawal rate and tax.
      Each had its own copy of the math and inputs, so none matched the date
@@ -5003,6 +4999,12 @@ export default function Dashboard() {
       targetPerDollar: retirementMonthly > 0 ? planFreedom.fireTarget / (retirementMonthly * 12) : 1 / withdrawalRate,
     };
   }, [planFreedomInputs, growthRate, planFreedom, withdrawalRate]);
+  // Plan → Explore (D-58): every city at your plan's numbers, with the same
+  // lifestyle and tax in retirement as the freedom date (amounts are USD).
+  const explorePlan = useMemo(() => ({
+    saved: planFacts.invested, monthlySaving: planFacts.monthlySavings, age: fireAge || undefined,
+    realReturn: growthRate, targetMultiple: lifestyleMultiplier * planFacts.targetPerDollar,
+  }), [planFacts, fireAge, growthRate, lifestyleMultiplier]);
   /* The contribution ladder reads the emergency fund from real accounts, so
      it needs the accounts rather than a total: which ones count is the user's
      to decide, and a savings account and a current account are not the same
@@ -5763,7 +5765,7 @@ export default function Dashboard() {
         <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="auto" size={22} /></Link>
         {/* The logo already says UntilFire; the title says where you are (D-54). */}
         <div className="uf-mobile-top-title">
-          <strong>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Money"}</strong>
+          <strong>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Explore" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Money"}</strong>
           {freedomDateCompactLabel && <span>{`Free · ${freedomDateCompactLabel}`}</span>}
         </div>
         <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} aria-label="Send feedback" className="uf-mobile-menu-button">
@@ -6185,21 +6187,8 @@ export default function Dashboard() {
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
-              <ExpatFireDashTab
-                portfolioBalance={planFacts.invested}
-                monthlySavings={planFacts.monthlySavings}
-                targetMultiple={lifestyleMultiplier * planFacts.targetPerDollar}
-                lifestyle={lifestyleMultiplier}
-                yourAnnualSpending={planFacts.currentMonthly * 12}
-                displayCurrency={defaultCurrency}
-                displayRates={rates}
-                age={fireAge}
-                cityName={cityName}
-                growthRate={growthRate}
-                onEditAssumptions={() => { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }}
-                onPlanFor={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
-                onOpenCitizenship={() => openDashboardTab("citizenship")}
-              />
+              <ExploreClient appPlan={explorePlan}
+                onPlanFor={(key) => { const c = CITIES.find(x => x.key === key); if (c) { setCityName(c.name); setRetirementCityName(c.name); setRetirementCityCol(c.col); } }} />
             )}
             {tab === "profile" && userId && (
               <ProfileTab
@@ -6230,323 +6219,3 @@ export default function Dashboard() {
   );
 }
 
-// ─── Expat FIRE dashboard tab ─────────────────────────────────────────────────
-
-function ExpatFireDashTab({
-  portfolioBalance,
-  monthlySavings,
-  age,
-  cityName,
-  onEditAssumptions,
-  onPlanFor,
-  onOpenCitizenship,
-  growthRate,
-  targetMultiple = 25,
-  lifestyle = 1,
-  yourAnnualSpending = 0,
-  displayCurrency = "USD",
-  displayRates = FALLBACK_RATES,
-}: {
-  growthRate: number;
-  /** FIRE target per dollar of a city's yearly cost: lifestyle × tax gross-up ÷ withdrawal rate, as the freedom date uses. */
-  targetMultiple?: number;
-  /** The lifestyle multiple inside targetMultiple, so costs can be shown at it (D-36). */
-  lifestyle?: number;
-  /** Your own yearly spending, for "your city" when it is not in the city list. */
-  yourAnnualSpending?: number;
-  displayCurrency?: string;
-  displayRates?: Record<string, number>;
-  portfolioBalance: number;
-  monthlySavings: number;
-  age: number;
-  cityName: string;
-  onEditAssumptions: () => void;
-  /** Makes a city the plan's retirement city, as the Retire in row does. */
-  onPlanFor: (name: string, col: number) => void;
-  onOpenCitizenship: () => void;
-}) {
-  // Calm Expat FIRE (D-45): the answer first (the soonest place), a list of
-  // when each place opens up, and the globe behind a pill.
-  const [view, setView] = useState<"list" | "globe">("list");
-  const [showAll, setShowAll] = useState(false);
-  const [selectedCityKey, setSelectedCityKey] = useState<string | null>(null);
-  const [timelineYears, setTimelineYears] = useState(0);
-
-  const currentCityKey = useMemo(() => {
-    // No match means your own spending stands for "here", not New York (D-36).
-    const match = CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
-    return match?.key ?? "";
-  }, [cityName]);
-  const hereCity = CITIES.find(c => c.key === currentCityKey);
-  const hereName = hereCity ? hereCity.name.split(",")[0] : "your spending";
-  const hereAnnual = hereCity ? hereCity.col : yourAnnualSpending / (lifestyle || 1);
-
-  // Per-city schedule with the freedom date's engine, so a city's year here
-  // matches its years-to-FIRE everywhere else.
-  const cityUnlocks = useMemo(() => {
-    return CITIES
-      .filter(c => CITY_COORDS[c.key])
-      .map(c => {
-        const r = calcFIRE(monthlySavings, c.col * targetMultiple * 0.04, age || undefined, portfolioBalance, growthRate); // calcFIRE targets 25× what it is given
-        return { key: c.key, name: c.name, flag: c.flag, col: c.col, target: c.col * targetMultiple, years: r.years, age: r.age, year: r.retireYear };
-      })
-      .sort((a, b) => (a.years ?? Infinity) - (b.years ?? Infinity) || a.col - b.col);
-  }, [monthlySavings, portfolioBalance, age, growthRate, targetMultiple]);
-
-  const here = useMemo(() => {
-    const target = hereAnnual * targetMultiple;
-    const r = calcFIRE(monthlySavings, target * 0.04, age || undefined, portfolioBalance, growthRate);
-    return { target, years: r.years, year: r.retireYear };
-  }, [hereAnnual, targetMultiple, monthlySavings, age, portfolioBalance, growthRate]);
-
-  const sliderMax = useMemo(() => {
-    const ys = cityUnlocks.map(c => c.years).filter((y): y is number => y !== null && y < 60).sort((a, b) => a - b);
-    if (!ys.length) return 5;
-    const p95 = ys[Math.floor(0.95 * (ys.length - 1))];
-    return Math.min(50, Math.max(5, Math.ceil(p95)));
-  }, [cityUnlocks]);
-  const tlYears = Math.min(timelineYears, sliderMax);
-  const tlAnnual = Math.max(0, monthlySavings) * 12;
-  const projectedPortfolio = growthRate > 0
-    ? (portfolioBalance + tlAnnual / growthRate) * Math.pow(1 + growthRate, tlYears) - tlAnnual / growthRate
-    : portfolioBalance + tlAnnual * tlYears;
-  const readyCount = cityUnlocks.filter(c => c.years !== null && c.years <= tlYears + 1e-9).length;
-  const thisYear = new Date().getFullYear();
-
-  const fmt = (n: number) => fmtCurrency(n, displayCurrency, displayRates, true);
-  const yearLabel = (years: number | null, year: number | null) => years === null ? "Not reached" : years < 0.5 ? "Now" : String(year);
-
-  const best = cityUnlocks.find(c => c.years !== null);
-  const bestShare = best && best.target > 0 ? Math.min(1, portfolioBalance / best.target) : 0;
-  const sooner = best && best.years !== null && here.years !== null ? here.years - best.years : null;
-  // The soonest place in each of six countries (cheap cities cluster by
-  // country), plus where you plan now so it is always in the list.
-  const shown = useMemo(() => {
-    if (showAll) return cityUnlocks;
-    const countries = new Set<string>();
-    return cityUnlocks.filter(c => {
-      if (c.key === currentCityKey) return true;
-      if (countries.size >= 6 || countries.has(c.flag)) return false;
-      countries.add(c.flag);
-      return true;
-    });
-  }, [showAll, cityUnlocks, currentCityKey]);
-
-  if (selectedCityKey) {
-    return (
-      <ExpatCityDetail
-        growthRate={growthRate}
-        targetMultiple={targetMultiple}
-        lifestyle={lifestyle}
-        yourAnnualSpending={yourAnnualSpending}
-        displayCurrency={displayCurrency}
-        displayRates={displayRates}
-        cityKey={selectedCityKey}
-        portfolioBalance={portfolioBalance}
-        monthlySavings={monthlySavings}
-        age={age}
-        currentCityName={hereCity ? hereName : "Your spending"}
-        currentCityKey={currentCityKey}
-        onBack={() => setSelectedCityKey(null)}
-        onPlanFor={onPlanFor}
-        onOpenCitizenship={onOpenCitizenship}
-      />
-    );
-  }
-
-
-  return (
-    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
-      <MoneyHead
-        label="Soonest place work becomes optional"
-        value={<span style={{ fontFamily: "var(--uf-font-display)", fontSize: 44, color: "var(--uf-teal)" }}>{best ? yearLabel(best.years, best.year) : "Not yet"}</span>}
-        sub={!best
-          ? "No place in our list is reached at today's saving rate. Saving more moves every date."
-          : <>In {best.flag} {best.name.split(",")[0]}{sooner !== null && sooner >= 0.5 ? <>, <Fig>{sooner.toFixed(1)}</Fig> years before {hereName}</> : best.key === currentCityKey ? ", where you plan now" : ""}{best.age ? <>, at <Fig>{best.age}</Fig></> : null}</>}
-      >
-        {best && <>
-          <MoneyTrack share={bestShare} label={`${Math.round(bestShare * 100)}% of ${best.name.split(",")[0]}'s FIRE number`} />
-          <MoneyKey items={[<><Fig>{fmt(portfolioBalance)}</Fig> of <Fig>{fmt(best.target)}</Fig> there</>, <><Fig>{fmt(here.target)}</Fig> for {hereName}</>]} />
-        </>}
-      </MoneyHead>
-
-      <div style={{ minWidth: 0 }}><PillTabs label="View" value={view} onChange={setView} options={[{ key: "list", label: "List" }, { key: "globe", label: "Globe" }]} /></div>
-
-      <div style={{ background: "var(--uf-card)", borderRadius: 16, padding: 18, boxShadow: "var(--uf-e1)", display: "grid", gap: 10 }}>
-        <span className="uf-t-body">
-          {tlYears === 0 ? "Today" : <>By <Fig>{thisYear + tlYears}</Fig></>}, <Fig>{readyCount}</Fig> of <Fig>{cityUnlocks.length}</Fig> places are in reach
-        </span>
-        <input type="range" min={0} max={sliderMax} step={1} value={tlYears} onChange={e => setTimelineYears(Number(e.target.value))}
-          aria-label="Years from today" aria-valuetext={`${thisYear + tlYears}: ${readyCount} places in reach`} style={{ width: "100%", accentColor: "var(--uf-teal)" }} />
-        <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
-          Drag to see which places open up as your savings grow{tlYears > 0 ? <>, to about <Fig>{fmt(projectedPortfolio)}</Fig></> : null}.
-        </span>
-      </div>
-
-      {view === "globe" ? (
-        <div style={{ background: "var(--uf-card)", borderRadius: 16, boxShadow: "var(--uf-e1)", height: "min(520px, 70svh)", overflow: "hidden", position: "relative" }}>
-          <GeoArbitrageGlobe
-            fillContainer
-            monthlySavings={monthlySavings}
-            portfolioBalance={Math.round(projectedPortfolio)}
-            currentAge={age}
-            currentCityKey={currentCityKey}
-            onCitySelect={setSelectedCityKey}
-            targetMultiple={targetMultiple}
-            growthRate={growthRate}
-            lifestyle={lifestyle}
-            formatAmount={(usd) => fmtCurrency(usd, displayCurrency, displayRates, true)}
-            baseTarget={currentCityKey ? undefined : yourAnnualSpending * targetMultiple / (lifestyle || 1)}
-          />
-        </div>
-      ) : (
-        <>
-          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>When each place opens up</div>
-          <MoneyList footer={cityUnlocks.length > shown.length || showAll
-            ? <Button variant="secondary" size="sm" onClick={() => setShowAll(v => !v)}>{showAll ? "Show fewer" : `See all ${cityUnlocks.length} places`}</Button>
-            : undefined}>
-            {shown.map(c => {
-              const isHere = c.key === currentCityKey;
-              const diff = hereAnnual > 0 ? Math.round((1 - c.col / hereAnnual) * 100) : 0;
-              const later = !isHere && (c.years === null || (here.years !== null && c.years > here.years + 0.05));
-              const open = c.years !== null && c.years <= tlYears + 1e-9;
-              return (
-                <MoneyRow key={c.key} dot={isHere ? "var(--uf-ink-3)" : later ? "#e34948" : "#1baf7a"} icon={c.flag}
-                  name={isHere ? `${c.name} · your plan` : c.name}
-                  meta={`${isHere ? "Where you plan now" : diff === 0 ? "Costs about the same" : `Costs ${Math.abs(diff)}% ${diff > 0 ? "less" : "more"}`} · FIRE number ${fmt(c.target)}`}
-                  value={`${yearLabel(c.years, c.year)}${open ? " ✓" : ""}`}
-                  valueTone={isHere ? undefined : later ? "var(--uf-warn-ink)" : "var(--uf-pos-ink)"} strong={!isHere}
-                  bar={<MoneyTrack share={c.target > 0 ? Math.min(1, portfolioBalance / c.target) : 0} color={isHere ? "var(--uf-ink-3)" : "var(--uf-teal)"} label={`${c.name}: ${Math.round(Math.min(1, portfolioBalance / (c.target || 1)) * 100)}% of its FIRE number`} />}
-                  onClick={() => setSelectedCityKey(c.key)} />
-              );
-            })}
-          </MoneyList>
-        </>
-      )}
-
-      <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
-        Uses your saving, lifestyle and <Fig>{Math.round(growthRate * 1000) / 10}%</Fig> growth.{" "}
-        <button type="button" onClick={onEditAssumptions} style={{ background: "none", border: 0, padding: 0, font: "inherit", color: "var(--uf-ink-2)", textDecoration: "underline", cursor: "pointer" }}>Change them in Freedom date</button>
-      </span>
-    </div>
-  );
-}
-
-// ─── Expat city detail (inline, within dashboard shell) ───────────────────────
-
-function ExpatCityDetail({
-  cityKey,
-  portfolioBalance,
-  monthlySavings,
-  age,
-  currentCityName,
-  currentCityKey,
-  onBack,
-  onPlanFor,
-  onOpenCitizenship,
-  growthRate,
-  targetMultiple = 25,
-  lifestyle = 1,
-  yourAnnualSpending = 0,
-  displayCurrency = "USD",
-  displayRates = FALLBACK_RATES,
-}: {
-  growthRate: number;
-  targetMultiple?: number;
-  lifestyle?: number;
-  yourAnnualSpending?: number;
-  displayCurrency?: string;
-  displayRates?: Record<string, number>;
-  cityKey: string;
-  portfolioBalance: number;
-  monthlySavings: number;
-  age: number;
-  currentCityName: string;
-  currentCityKey: string;
-  onBack: () => void;
-  onPlanFor: (name: string, col: number) => void;
-  onOpenCitizenship: () => void;
-}) {
-  const targetCity = CITIES.find(c => c.key === cityKey);
-  const currentCity = CITIES.find(c => c.key === currentCityKey);
-  const back = (
-    <button type="button" onClick={onBack} style={{ justifySelf: "start", background: "none", border: 0, padding: "4px 0", font: "inherit", color: "var(--uf-ink-2)", cursor: "pointer" }}>
-      ‹ All places
-    </button>
-  );
-
-  if (!targetCity) {
-    return <div style={{ display: "grid", gap: 12 }}>{back}<p className="uf-t-body" style={{ color: "var(--uf-ink-3)" }}>City not found.</p></div>;
-  }
-
-  // Costs at your lifestyle, so cost × your multiple is the FIRE number on the
-  // same card (D-36). A city not in the list uses your own spending rather
-  // than an invented $60,000.
-  const perDollar = targetMultiple / (lifestyle || 1);
-  const currentCol = currentCity ? currentCity.col * lifestyle : yourAnnualSpending;
-  const targetCol = targetCity.col * lifestyle;
-
-  // Targets as the freedom date sets them (calcFIRE takes 25× what it is given).
-  const currentFire = calcFIRE(monthlySavings, currentCol * perDollar * 0.04, age || undefined, portfolioBalance, growthRate);
-  const targetFire = calcFIRE(monthlySavings, targetCol * perDollar * 0.04, age || undefined, portfolioBalance, growthRate);
-
-  const currentYears = currentFire.years;
-  const targetYears = targetFire.years;
-  const isHere = targetCity.key === currentCityKey;
-  const isFireNow = portfolioBalance >= targetCol * perDollar;
-  const monthlyDiff = Math.round((currentCol - targetCol) / 12);
-  const share = targetFire.fireTarget > 0 ? Math.min(1, portfolioBalance / targetFire.fireTarget) : 0;
-  const short = targetCity.name.split(",")[0];
-
-  const fmtUSD = (n: number) => fmtCurrency(n, displayCurrency, displayRates, true);
-  const fmtMo = (n: number) => fmtCurrency(n, displayCurrency, displayRates);
-  const yearOf = (f: typeof currentFire) => f.years === null ? "not reached" : f.years < 0.5 ? "now" : String(f.retireYear);
-
-  // One headline: the time it moves your date, in teal only when it is sooner.
-  const diff = currentYears !== null && targetYears !== null ? currentYears - targetYears : null;
-  const big = { fontFamily: "var(--uf-font-display)", fontSize: 44 } as const;
-  const headline = isFireNow
-    ? <span style={{ ...big, color: "var(--uf-teal)" }}>Ready now</span>
-    : isHere
-      ? <span style={{ ...big, color: "var(--uf-teal)" }}>{yearOf(targetFire)}</span>
-      : diff === null
-        ? <span style={{ ...big, color: "var(--uf-ink-2)" }}>Not reached</span>
-        : Math.abs(diff) < 0.05
-          ? <span style={{ ...big, color: "var(--uf-ink-2)" }}>No change</span>
-          : <span style={{ ...big, color: diff > 0 ? "var(--uf-teal)" : "var(--uf-warn-ink)" }}>{Math.abs(diff).toFixed(1)} years {diff > 0 ? "sooner" : "later"}</span>;
-  const sub = isFireNow
-    ? <>Your portfolio already covers {short} at your lifestyle.</>
-    : isHere
-      ? <>Your plan&apos;s city. Work becomes optional {yearOf(targetFire) === "now" ? "now" : <>in <Fig>{yearOf(targetFire)}</Fig></>}.</>
-      : targetYears === null || currentYears === null
-        ? <>At least one of the two isn&apos;t reached within the projection, so there&apos;s no years-saved comparison.</>
-        : <>Work becomes optional in <Fig>{yearOf(targetFire)}</Fig> instead of <Fig>{yearOf(currentFire)}</Fig></>;
-
-  return (
-    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
-      {back}
-      <MoneyHead label={`${targetCity.flag} ${targetCity.name}`} value={headline} sub={sub}>
-        <MoneyTrack share={share} label={`${Math.round(share * 100)}% of ${short}'s FIRE number`} />
-        <MoneyKey items={[<><Fig>{fmtUSD(portfolioBalance)}</Fig> of <Fig>{fmtUSD(targetFire.fireTarget)}</Fig></>, <><Fig>{Math.round(share * 100)}%</Fig> there</>]} />
-      </MoneyHead>
-
-      {!isHere && <>
-        <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>{short} against {currentCityName}</div>
-        <MoneyList footer={
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Button variant="primary" size="sm" onClick={() => onPlanFor(targetCity.name, targetCity.col)}>Plan for {short}</Button>
-            <Button variant="secondary" size="sm" onClick={onOpenCitizenship}>Citizenship options</Button>
-          </div>
-        }>
-          <MoneyRow dot="#2a78d6" icon="🏠" name="Living costs" meta={`${currentCityName} ${fmtMo(currentCol / 12)} a month`} value={`${fmtMo(targetCol / 12)}/mo`} strong />
-          <MoneyRow dot={monthlyDiff >= 0 ? "#1baf7a" : "#e34948"} icon="💰" name={monthlyDiff >= 0 ? "Moving saves" : "Moving costs"} meta="Each month, at your lifestyle"
-            value={`${fmtMo(Math.abs(monthlyDiff))}/mo`} valueTone={monthlyDiff >= 0 ? "var(--uf-pos-ink)" : "var(--uf-warn-ink)"} strong />
-          <MoneyRow dot="#6b5bd2" icon="🎯" name="FIRE number" meta={`${currentCityName} ${fmtUSD(currentFire.fireTarget)}`} value={fmtUSD(targetFire.fireTarget)} strong />
-        </MoneyList>
-      </>}
-      <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
-        Costs are city averages at your lifestyle. Visas, healthcare and local tax aren&apos;t counted.{isHere ? null : <> Plan for {short} makes it your retirement city on Freedom date.</>}
-      </span>
-    </div>
-  );
-}

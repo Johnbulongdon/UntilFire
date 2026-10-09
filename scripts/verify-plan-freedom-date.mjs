@@ -56,17 +56,11 @@ assert.equal(withDebt.firstYearInvested, 36000 - 10800, "Plan's tools are told t
 // Plan's tools take the freedom date's own numbers (D-33).
 assert.match(source, /<PurchaseImpactPanel\s+currentSavings=\{planFacts\.invested\}\s+monthlyContribution=\{planFacts\.monthlySavings\}\s+fireTarget=\{planFacts\.fireTarget\}/, 'purchase impact uses the freedom date numbers');
 assert.match(source, /<TaxProfileCard[\s\S]{0,120}monthlyExpenses=\{planFacts\.retirementMonthly\}/, 'the tax card works on the retirement target');
-assert.match(source, /portfolioBalance=\{planFacts\.invested\}\s+monthlySavings=\{planFacts\.monthlySavings\}\s+targetMultiple=/, 'Expat FIRE uses the same balances, savings and target multiple');
-assert.doesNotMatch(source, /Math\.pow\(1 \+ REAL_RETURN, tlYears\)/, "the Expat timeline grows at the person's chosen rate");
-// Expat FIRE (D-36): no invented city, costs at your lifestyle, the globe on the same target and growth.
-assert.doesNotMatch(source, /currentCity\?\.col \?\? 60000/, 'an unlisted city is not assumed to cost $60,000');
-assert.doesNotMatch(source, /return match\?\.key \?\? "nyc"/, 'an unlisted city is not assumed to be New York');
-assert.match(source, /const currentCol = currentCity \? currentCity\.col \* lifestyle : yourAnnualSpending;/, 'here = the city at your lifestyle, or your own spending');
-const globe = readFileSync('app/components/GeoArbitrageGlobe.tsx', 'utf8');
-assert.doesNotMatch(globe, /col \* 25\b/, 'the globe has no fixed 25x of its own');
-assert.match(source, /<GeoArbitrageGlobe[\s\S]{0,400}targetMultiple=\{targetMultiple\}[\s\S]{0,80}growthRate=\{growthRate\}/, 'the dashboard globe gets the freedom date multiple and growth');
+// Explore in Plan (D-58, replacing Expat FIRE) takes the freedom date's balances, savings, growth and target multiple.
+assert.match(source, /saved: planFacts\.invested, monthlySaving: planFacts\.monthlySavings[\s\S]{0,120}realReturn: growthRate, targetMultiple: lifestyleMultiplier \* planFacts\.targetPerDollar/, 'Explore uses the freedom date numbers and target multiple');
+assert.match(source, /<ExploreClient appPlan=\{explorePlan\}/, 'Plan → Explore gets the plan numbers');
 const taxed = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 0, rothIRA: 0, taxable: 0, cashSavings: 0, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04, taxEnabled: true, retirementTaxRate: 0.2, rothPct: 0 });
-assert.equal(Math.round(taxed.fireTarget / 60000 * 1000) / 1000, 31.25, 'target per dollar of spending is 1 ÷ 4% × the tax gross-up (Expat FIRE multiplies city costs by it)');
+assert.equal(Math.round(taxed.fireTarget / 60000 * 1000) / 1000, 31.25, 'target per dollar of spending is 1 ÷ 4% × the tax gross-up (Explore multiplies city costs by it)');
 
 // A connected account replaces the typed balance of the same kind (D-32).
 const typedAndLinked = effectiveBalances({ k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 5000,

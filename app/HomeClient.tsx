@@ -14,6 +14,7 @@ import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { supabase } from "@/lib/supabase";
 import { saveCalculatorPrefill } from "@/lib/journey";
+import { saveExplorePlan } from "@/lib/explore-store";
 import { calcFIRE, calcTakeHome } from "@/lib/fire";
 import { DEFAULT_RETURN_PCT, inflationFor } from "@/lib/fire-number";
 import {
@@ -1019,6 +1020,13 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   // $15,000, which made every abroad age far too early (D-37).
   const toUsd = (n: number) => n / (FALLBACK_RATES[currency] ?? 1);
   const spendingUsd = toUsd(city.col), savingsUsd = toUsd(savings), portfolioUsd = toUsd(portfolioBalance);
+  // Explore picks up from here (D-58): your numbers in USD, and how you spend
+  // against your city's typical cost, so your home city gives this same year.
+  useEffect(() => {
+    const homeCol = CITIES.find((c) => c.name === city.name)?.col;
+    const lifestyle = homeCol ? Math.min(3, Math.max(0.3, spendingUsd / homeCol)) : 1;
+    saveExplorePlan({ saved: portfolioUsd, monthlySaving: savingsUsd, age: currentAge, realReturn: marketReturn, targetMultiple: 25 * lifestyle });
+  }, [city.name, spendingUsd, savingsUsd, portfolioUsd, currentAge, marketReturn]);
   const expatCities: ExpatCity[] = EXPAT_KEYS
     .map((k): ExpatCity | null => {
       const c = CITIES.find((x) => x.key === k);
@@ -1043,7 +1051,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const onSave = (placement: RevealCtaPlacement) => {
     trackRevealCtaClicked({ placement, landingSource });
-    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, generatedAt: new Date().toISOString(), currentAge: planningAge, portfolioBalance, landingSource, defaultCurrency: currency, realReturn: marketReturn });
+    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency, realReturn: marketReturn });
     router.push("/login");
   };
 

@@ -192,9 +192,9 @@ export default async function CountryPage({ params }: Props) {
               <Link href="/" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>
                 find your freedom date
               </Link>{' '}
-              or model the move directly with the{' '}
-              <Link href="/calculators/expat-fire" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>
-                Expat FIRE calculator
+              or compare every city on the{' '}
+              <Link href="/explore" style={{ color: 'var(--uf-green)', fontWeight: 700, textDecoration: 'none' }}>
+                Explore map
               </Link>.
             </p>
           </article>

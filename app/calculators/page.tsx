@@ -16,7 +16,7 @@ const GROUPS: { title: string; icon: IconName; items: { href: string; name: stri
       { href: '/fire-calculator', name: 'FIRE Calculator', line: 'Your freedom date and next move.' },
       { href: '/calculators/4-percent-rule', name: 'FIRE Number', line: 'How much you need invested.' },
       { href: '/calculators/coast-fire', name: 'Coast FIRE', line: 'When you can stop saving.' },
-      { href: '/calculators/expat-fire', name: 'Expat FIRE', line: 'Where your money goes furthest.' },
+      { href: '/explore', name: 'Explore', line: 'Where your money goes furthest.' },
     ],
   },
   {

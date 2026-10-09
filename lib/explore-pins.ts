@@ -13,20 +13,29 @@ export interface ExplorePlan {
   monthlySaving: number;
   age?: number;
   realReturn?: number;
+  /**
+   * Target per dollar of a city's typical yearly cost. 25 by default (4%
+   * withdrawal). Scaled by how you spend against your own city's typical
+   * cost, so your home city gives the calculator's year (D-58), and in the
+   * app it carries lifestyle and tax in retirement as the freedom date does.
+   */
+  targetMultiple?: number;
 }
 
 export interface Freedom {
   years: number;
-  /** Fractional calendar year, e.g. 2040.25 for about April 2040. */
+  /** This year plus the years to freedom; its floor is the freedom year. */
   at: number;
   age: number | null;
 }
 
 /** When work becomes optional if this city's typical cost is what you retire on. Null past 65 years. */
 export function freedomIn(city: Pick<PinCity, "annualUSD">, plan: ExplorePlan, now = new Date()): Freedom | null {
-  const years = yearsToTarget(plan.saved, plan.monthlySaving * 12, city.annualUSD * 25, plan.realReturn ?? REAL_RETURN);
+  const years = yearsToTarget(plan.saved, plan.monthlySaving * 12, city.annualUSD * (plan.targetMultiple ?? 25), plan.realReturn ?? REAL_RETURN);
   if (years == null) return null;
-  const at = now.getFullYear() + now.getMonth() / 12 + years;
+  // Counted from the calendar year, like the calculator (retireYear =
+  // this year + whole years), so the same numbers give the same year here.
+  const at = now.getFullYear() + years;
   return { years, at, age: plan.age != null ? Math.floor(plan.age + years) : null };
 }
 

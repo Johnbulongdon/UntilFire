@@ -14,7 +14,6 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import stateTopology from "@/lib/geo/us-states.json";
 import countryTopology from "@/lib/geo/countries-110m.json";
 import { STATE_NAMES } from "@/lib/state-pages";
-import { STATE_TAX } from "@/lib/fire-data";
 import { pinText, type ExploreCity, type Freedom, type PinMode } from "@/lib/explore";
 
 type Named = { name: string };
@@ -46,10 +45,11 @@ function Place({ c }: { c: ExploreCity }) {
   </svg>;
 }
 
+/** Effective income tax as a range ("21–29% tax"), or one figure where the data has one. */
 function taxFact(c: ExploreCity) {
-  if (c.noIncomeTax) return c.us ? "No state tax" : "No income tax";
-  const rate = STATE_TAX[c.region]?.rate;
-  return rate != null ? `${Math.round(rate * 100)}% tax` : null;
+  if (!c.tax) return null;
+  const lo = Math.round(c.tax.low), hi = Math.round(c.tax.high);
+  return lo === hi ? `~${lo}% tax` : `${lo}–${hi}% tax`;
 }
 
 export default function ExploreCard({ city, rank, mode, freedom, star, onStar, selected, onSelect }: {

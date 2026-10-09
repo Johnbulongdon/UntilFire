@@ -8,24 +8,19 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { peekCalculatorPrefill } from "@/lib/journey";
+import { readExplorePlan, saveExplorePlan } from "@/lib/explore-store";
 import { EXPLORE_CITIES, freedomIn, type ExplorePlan, type PinMode } from "@/lib/explore";
 import { trackExploreCityOpened, trackExploreModeChanged, trackExplorePlanStarted, trackExploreStarred, trackExploreViewed } from "@/lib/analytics";
 import ExploreMap from "./ExploreMap";
 import ExploreCard from "./ExploreCard";
+import "./explore.css";
 
-const STARS_KEY = "uf_explore_stars", PLAN_KEY = "uf_explore_plan";
+const STARS_KEY = "uf_explore_stars";
 const read = <T,>(key: string): T | null => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) as T : null; } catch { return null; } };
 const write = (key: string, v: unknown) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private mode */ } };
 const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 const chip = (on: boolean): React.CSSProperties => ({ fontSize: 13, fontWeight: 700, padding: "7px 12px", borderRadius: 99, border: "1px solid var(--uf-border)", whiteSpace: "nowrap", cursor: "pointer",
   background: on ? "var(--uf-ink)" : "var(--uf-card)", color: on ? "var(--uf-card)" : "var(--uf-ink)" });
-
-function planFromCalculator(): ExplorePlan | null {
-  const p = peekCalculatorPrefill();
-  if (!p || (p.defaultCurrency && p.defaultCurrency !== "USD") || p.monthlySavings == null) return null;
-  return { saved: p.portfolioBalance ?? 0, monthlySaving: p.monthlySavings, age: p.currentAge, realReturn: p.realReturn };
-}
 
 function PlanFields({ onDone }: { onDone: (p: ExplorePlan) => void }) {
   const [saved, setSaved] = useState(""), [monthly, setMonthly] = useState(""), [age, setAge] = useState("");
@@ -39,7 +34,12 @@ function PlanFields({ onDone }: { onDone: (p: ExplorePlan) => void }) {
   </form>;
 }
 
-export default function ExploreClient() {
+export default function ExploreClient({ appPlan, onPlanFor }: {
+  /** In the app (Plan → Explore): your plan's numbers, which replace the fields. */
+  appPlan?: ExplorePlan;
+  /** In the app: make a city the plan's retirement city instead of starting the calculator. */
+  onPlanFor?: (key: string) => void;
+} = {}) {
   const [view, setView] = useState<"us" | "world">("us");
   const [mode, setMode] = useState<PinMode>("monthly");
   const [starred, setStarred] = useState<Set<string>>(new Set());
@@ -53,7 +53,7 @@ export default function ExploreClient() {
 
   useEffect(() => {
     setStarred(new Set(read<string[]>(STARS_KEY) ?? []));
-    const p = read<ExplorePlan>(PLAN_KEY) ?? planFromCalculator();
+    const p = readExplorePlan();
     if (p) { setPlan(p); setMode("year"); }
     trackExploreViewed({ has_plan: !!p });
     const phone = window.matchMedia("(max-width: 900px)");
@@ -61,6 +61,8 @@ export default function ExploreClient() {
     fit(); phone.addEventListener("change", fit);
     return () => phone.removeEventListener("change", fit);
   }, []);
+  // In the app, your plan's numbers win over anything saved in the browser.
+  useEffect(() => { if (appPlan) { setPlan(appPlan); setMode(m => (m === "monthly" ? "year" : m)); } }, [appPlan]);
 
   const freedom = useMemo(() => new Map(EXPLORE_CITIES.map(c => [c.key, plan ? freedomIn(c, plan) : null])), [plan]);
   const list = useMemo(() => EXPLORE_CITIES
@@ -74,12 +76,12 @@ export default function ExploreClient() {
   });
   const choose = (key: string) => { setSelected(key); trackExploreCityOpened({ mode }); };
   const changeMode = (m: PinMode) => { setMode(m); trackExploreModeChanged({ mode: m }); };
-  const savePlan = (p: ExplorePlan) => { setPlan(p); setEditing(false); setMode("year"); write(PLAN_KEY, p); };
+  const savePlan = (p: ExplorePlan) => { setPlan(p); setEditing(false); setMode("year"); saveExplorePlan(p); };
 
   const modes: [PinMode, string, boolean][] = [["monthly", "$ / month", true], ["year", "🏁 Year", !!plan], ["age", "🎂 Age", plan?.age != null]];
   return <div className="uf-explore">
     <div className="uf-explore-head">
-      <h1 className="uf-t-display" style={{ margin: 0, fontSize: "clamp(26px, 4vw, 34px)" }}>Where could you retire?</h1>
+      {!appPlan && <h1 className="uf-t-display" style={{ margin: 0, fontSize: "clamp(26px, 4vw, 34px)" }}>Where could you retire?</h1>}
       <div role="radiogroup" aria-label="Pins show" style={{ display: "inline-flex", gap: 2, padding: 3, borderRadius: 99, background: "var(--uf-card)", justifySelf: "start" }}>
         {modes.map(([m, label, can]) => <button key={m} type="button" role="radio" aria-checked={mode === m} disabled={!can} onClick={() => changeMode(m)}
           title={can ? undefined : m === "age" ? "Add your age below" : "Add your numbers below"}
@@ -88,7 +90,7 @@ export default function ExploreClient() {
       {plan && !editing
         ? <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 13, background: "var(--uf-card)", borderRadius: 12, padding: "8px 12px" }}>
             <b>Your numbers</b><span style={{ fontFamily: "var(--uf-font-mono)" }}>🏦 {usd(plan.saved)}</span><span style={{ fontFamily: "var(--uf-font-mono)" }}>📥 {usd(plan.monthlySaving)}/mo</span>{plan.age != null && <span style={{ fontFamily: "var(--uf-font-mono)" }}>🎂 {plan.age}</span>}
-            <button type="button" onClick={() => setEditing(true)} style={{ marginLeft: "auto", border: 0, background: "none", color: "var(--uf-green)", fontWeight: 700, cursor: "pointer" }}>Edit</button></div>
+            {!appPlan && <button type="button" onClick={() => setEditing(true)} style={{ marginLeft: "auto", border: 0, background: "none", color: "var(--uf-green)", fontWeight: 700, cursor: "pointer" }}>Edit</button>}</div>
         : <><span style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>Add two numbers to see the year each city sets you free.</span><PlanFields onDone={savePlan} /></>}
       <div className="uf-explore-chips">
         <button type="button" style={chip(view === "us" && !onlyStarred)} onClick={() => { setView("us"); setOnlyStarred(false); }}>🇺🇸 US</button>
@@ -98,7 +100,9 @@ export default function ExploreClient() {
       </div>
       {chosen && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {chosen.href && <Link href={chosen.href} className="uf-explore-action">{chosen.us || chosen.href.includes(chosen.key) ? `Open ${chosen.name}` : `Open ${chosen.place}`} →</Link>}
-        <Link href={`/?start=onboarding&city=${encodeURIComponent(chosen.key)}&source=explore`} onClick={() => trackExplorePlanStarted()} className="uf-explore-action uf-explore-action-main">Plan {chosen.name} →</Link>
+        {onPlanFor
+          ? <button type="button" onClick={() => { onPlanFor(chosen.key); trackExplorePlanStarted(); }} className="uf-explore-action uf-explore-action-main" style={{ cursor: "pointer" }}>Plan for {chosen.name}</button>
+          : <Link href={`/?start=onboarding&city=${encodeURIComponent(chosen.key)}&source=explore`} onClick={() => trackExplorePlanStarted()} className="uf-explore-action uf-explore-action-main">Plan {chosen.name} →</Link>}
       </div>}
     </div>
     <div className="uf-explore-cards">
@@ -109,7 +113,7 @@ export default function ExploreClient() {
     </div>
     <div className="uf-explore-mapwrap">
       <ExploreMap cities={onlyStarred ? list : EXPLORE_CITIES} view={view} mode={mode} freedom={freedom} starred={starred} selected={selected} onSelect={choose} height={mapHeight} />
-      <p style={{ fontSize: 12, color: "var(--uf-ink-2)", margin: "8px 2px 0" }}>Typical spending for one person, in USD. Your year keeps your savings as they are and retires on each city&apos;s typical cost.</p>
+      <p style={{ fontSize: 12, color: "var(--uf-ink-2)", margin: "8px 2px 0" }}>Typical household spending, in USD. Your year keeps your savings as they are and retires on each city&apos;s cost at your way of spending.</p>
     </div>
   </div>;
 }

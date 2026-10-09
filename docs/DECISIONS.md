@@ -2114,3 +2114,21 @@ while search traffic still lands on city pages.
 
 **Known:** several international costs look low beside each other (Jaipur
 $583/mo); Explore puts every city side by side, so those need review.
+
+**Update, October 9 (same day), from the founder:**
+- **Explore replaces Expat FIRE**, in Plan and on the public site
+  (`/calculators/expat-fire` redirects permanently to `/explore`). This
+  supersedes D-45's Expat FIRE list. In the app, Explore takes the plan's
+  balances, monthly saving, growth and target multiple (lifestyle × tax
+  gross-up ÷ withdrawal), so a city's year matches the freedom date engine.
+- **Your numbers carry over.** The calculator writes them for Explore when the
+  result appears (`lib/explore-store.ts`), in USD, with a target multiple of
+  25 × your spending ÷ your city's typical cost (clamped 0.3–3), so your own
+  city gives the result's year. Only an age you entered is saved; the assumed
+  30 never is.
+- **The year follows the calculator's rule:** this calendar year plus whole
+  years. A check compares the two across 64 cases.
+- **Tax is an effective-rate range.** US: federal, payroll and state together
+  on $50k–$150k earned, from the take-home engine, so the brackets show.
+  Abroad the data holds one effective rate, shown as "~N%". The state rate is
+  still flat in that engine, so the range comes from federal brackets.
