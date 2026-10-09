@@ -8,6 +8,11 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Onboarding shows only the questions
+- Once you tap Start, the homepage's about section (how it works, calculator
+  and city links, FAQ) no longer appears below each question. It still shows
+  on the landing screen.
+
 ### Export your data
 - Profile → Your data → Export your data: your transactions as a spreadsheet
   file (CSV), or everything as one file (JSON): transactions, upcoming bills,
