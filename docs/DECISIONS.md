@@ -2145,3 +2145,15 @@ $583/mo); Explore puts every city side by side, so those need review.
   at the fallback rates. Amounts are still held in USD.
 - **Flags are drawn** (country-flag-icons SVG strings, MIT): Windows renders
   flag emoji as letters.
+
+#### Update (October 9): map and list follow each other
+- **One selection, both sides:** a pin scrolls its card into view; a card
+  turns the globe to its city. Zoomed in, the list narrows to the cities in
+  view, with "Show all" to escape. Starred and Show all ignore the view.
+- **Start in a region, not the whole globe:** US by default, the world when
+  the currency isn't USD, since a world view has one pin per country and
+  shows almost nothing.
+- **Compact cards** (one line of name and value, one of facts) and actions
+  inside the chosen card, so the list is scannable beside the globe.
+- **No open form before value:** without numbers, one collapsed line offers
+  to add them.
