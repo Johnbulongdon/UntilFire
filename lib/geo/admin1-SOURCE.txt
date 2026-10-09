@@ -1,0 +1,6 @@
+admin1-lines.json: state and province borders for every country except the
+US (us-states.json has finer lines). Built from Natural Earth 10m
+admin_1_states_provinces (public domain, https://www.naturalearthdata.com/).
+France, Italy and Spain are grouped to regions and the UK to its four nations,
+the level a road map shows. Only the shared borders are kept, simplified
+(topojson-simplify, 10% quantile) and quantized to 2e4.

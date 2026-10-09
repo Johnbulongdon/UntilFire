@@ -15,6 +15,12 @@ under today's date, creating the heading if it is not there yet.
 - Zoomed in, each pin keeps its flag and adds the city's name (🇵🇹 Porto
   2041); before, the flag dropped off and the pins showed only a number.
 - Zooming in leans toward where your pointer is, like a map app.
+- The globe zooms in further (40×, was 12×), enough to pull apart
+  neighbours like Dallas and Fort Worth.
+- Zoomed in, every country shows its states or provinces (Natural Earth,
+  grouped to regions where a road map would), under firmer country borders,
+  and land has a light tint instead of plain white. The border data loads only
+  once you zoom in.
 - The map and the list follow each other: tap a pin and its card scrolls into
   view; tap a card and the globe turns to the city. Zoomed in, the list shows
   only the cities in view ("15 cities in view · Show all").

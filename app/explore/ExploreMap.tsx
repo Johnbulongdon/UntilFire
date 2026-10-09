@@ -4,15 +4,15 @@
  * The Explore map (D-58): one globe for every city, US and abroad, drawn from
  * outlines (not map tiles) so it is light and on brand. One pin per country
  * until you zoom in, then one per city: zooming adds the name to the flag and
- * value, never swaps them. US state lines show once you are close.
+ * value, never swaps them. State and province lines show once you are close.
  * Numbers only ever sit inside pins; a pin with no room becomes a dot you can
  * still tap.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { geoOrthographic, geoPath, geoGraticule10, geoDistance } from "d3-geo";
 import { feature, mesh } from "topojson-client";
-import type { Topology, GeometryCollection } from "topojson-specification";
-import type { FeatureCollection, Geometry } from "geojson";
+import type { Topology, GeometryCollection, GeometryObject } from "topojson-specification";
+import type { FeatureCollection, Geometry, MultiLineString } from "geojson";
 import stateTopology from "@/lib/geo/us-states.json";
 import countryTopology from "@/lib/geo/countries-110m.json";
 import Flag from "./Flag";
@@ -26,6 +26,8 @@ const COUNTRIES = feature(ct, ct.objects.countries) as FeatureCollection<Geometr
 const BORDERS = mesh(ct, ct.objects.countries, (a, b) => a !== b);
 /** Zoom past this and country pins split into cities. */
 const CITY_ZOOM = 2.4;
+/** Close enough to pull apart neighbouring cities (Dallas and Fort Worth, Tampa and St. Petersburg). */
+const MAX_ZOOM = 40;
 /** Where each list filter turns the globe: the US close up, the world from the Atlantic. */
 const FOCUS: Record<"all" | "us" | "world", { rotate: [number, number]; zoom: number }> = {
   all: { rotate: [45, -32], zoom: 1 },
@@ -56,6 +58,15 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   const [rotate, setRotate] = useState<[number, number]>(FOCUS[focus].rotate);
   const [zoom, setZoom] = useState(FOCUS[focus].zoom);
   useEffect(() => { setRotate(FOCUS[focus].rotate); setZoom(FOCUS[focus].zoom); }, [focus]);
+  // State and province borders beyond the US: about 150 KB, so fetched only once you zoom in.
+  const [provinces, setProvinces] = useState<MultiLineString | null>(null);
+  useEffect(() => {
+    if (zoom < CITY_ZOOM || provinces) return;
+    import("@/lib/geo/admin1-lines.json").then(m => {
+      const t = (m.default ?? m) as unknown as Topology<{ lines: GeometryObject }>;
+      setProvinces(feature(t, t.objects.lines) as unknown as MultiLineString);
+    }).catch(() => {});
+  }, [zoom, provinces]);
   useEffect(() => { if (flyTo) { setRotate([-flyTo.lng, -flyTo.lat]); setZoom(z => Math.max(z, CITY_ZOOM * 1.4)); } }, [flyTo]);
   // The wheel listener lives outside React, so it reads the view through refs.
   const view = useRef({ rotate, zoom, height });
@@ -70,7 +81,7 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
       const { rotate: r, zoom: z, height: h } = view.current, w = el.clientWidth;
-      const next = Math.max(1, Math.min(12, z * Math.exp(-e.deltaY * 0.0015)));
+      const next = Math.max(1, Math.min(MAX_ZOOM, z * Math.exp(-e.deltaY * 0.0015)));
       // Zooming in leans the globe toward the point under the pointer, like a map app.
       if (next > z) {
         const box = el.getBoundingClientRect();
@@ -132,9 +143,11 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
     {path && <svg width={width} height={height} style={{ position: "absolute", inset: 0 }} aria-hidden>
       <path d={path({ type: "Sphere" }) ?? ""} fill="color-mix(in srgb, var(--uf-teal) 12%, var(--uf-surface-2))" />
       <path d={path(geoGraticule10()) ?? ""} fill="none" stroke="var(--uf-border)" strokeWidth={0.4} />
-      {COUNTRIES.features.map((f, i) => <path key={i} d={path(f) ?? ""} fill="var(--uf-card)" />)}
-      <path d={path(BORDERS) ?? ""} fill="none" stroke="var(--uf-border-2)" strokeWidth={0.5} strokeOpacity={0.7} />
-      {zoom >= CITY_ZOOM && <path d={path(STATE_LINES) ?? ""} fill="none" stroke="var(--uf-border)" strokeWidth={0.6} />}
+      {COUNTRIES.features.map((f, i) => <path key={i} d={path(f) ?? ""} fill="color-mix(in srgb, var(--uf-green) 5%, var(--uf-card))" />)}
+      {/* Up close, state and province lines under firmer country borders, like a road map. */}
+      {zoom >= CITY_ZOOM && <path d={path(STATE_LINES) ?? ""} fill="none" stroke="var(--uf-border-2)" strokeWidth={0.8} />}
+      {zoom >= CITY_ZOOM && provinces && <path d={path(provinces) ?? ""} fill="none" stroke="var(--uf-border-2)" strokeWidth={0.8} />}
+      <path d={path(BORDERS) ?? ""} fill="none" stroke={zoom >= CITY_ZOOM ? "var(--uf-ink-2)" : "var(--uf-border-2)"} strokeWidth={zoom >= CITY_ZOOM ? 1.1 : 0.5} strokeOpacity={zoom >= CITY_ZOOM ? 0.45 : 0.7} />
     </svg>}
     {pins.map(p => {
       const sel = p.city.key === selected, star = starred.has(p.city.key);
@@ -149,7 +162,7 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
       </button>;
     })}
     <div style={{ position: "absolute", right: 10, bottom: 10, display: "grid", gap: 6, zIndex: 4 }}>
-      {[["+", 1.6], ["−", 1 / 1.6]].map(([l, k]) => <button key={l as string} type="button" aria-label={l === "+" ? "Zoom in" : "Zoom out"} onClick={() => setZoom(z => Math.max(1, Math.min(12, z * (k as number))))}
+      {[["+", 1.6], ["−", 1 / 1.6]].map(([l, k]) => <button key={l as string} type="button" aria-label={l === "+" ? "Zoom in" : "Zoom out"} onClick={() => setZoom(z => Math.max(1, Math.min(MAX_ZOOM, z * (k as number))))}
         style={{ width: 34, height: 34, borderRadius: 10, border: "1px solid var(--uf-border-2)", background: "var(--uf-card)", color: "var(--uf-ink)", fontSize: 18, cursor: "pointer" }}>{l}</button>)}
     </div>
   </div>;
