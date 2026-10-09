@@ -8,6 +8,18 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Explore replaces Expat FIRE
+- Plan → Expat FIRE is now Explore: the same map and city cards as the
+  public Explore page, at your plan's numbers. "Plan for" a city still sets
+  your retirement city. The public Expat FIRE calculator now opens Explore.
+- Your numbers carry over: after the calculator shows your result, Explore
+  already knows them. Each city is priced at your way of spending, so your
+  own city gives the same year as your result.
+- Cards show income tax as an effective-rate range (US: federal, payroll and
+  state on $50k–$150k earned), not one state rate.
+- Fixed: Explore's year could be a year later than the calculator's for the
+  same numbers. An age you skipped is no longer saved as 30.
+
 ### Explore: every city on one map
 - New Explore page (in the top bar): every US and international city on a
   map, with a card for each. Pins and cards show the monthly cost, or, once

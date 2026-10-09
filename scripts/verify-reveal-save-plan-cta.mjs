@@ -87,6 +87,8 @@ for (const retireYear of [2048, null]) {
     exports: {}, Math, Date, takeHome: 60000, savings: 1000,
     city: { name: 'Austin', col: 48000 }, stateKey: 'TX',
     result: { fireTarget: 1200000, retireYear }, planningAge: 30,
+    // An age the visitor gave, or none: the assumed 30 is never saved as theirs.
+    currentAge: retireYear ? 34 : undefined,
     portfolioBalance: 25000, landingSource: 'beta', currency: 'USD', marketReturn: 0.05,
     saveCalculatorPrefill: (value) => { saved = JSON.parse(JSON.stringify(value)); },
     router: { push: (path) => { destination = path; } },
@@ -102,6 +104,7 @@ for (const retireYear of [2048, null]) {
   assert.equal(saved.portfolioBalance, 25000);
   assert.equal(saved.retireYear, retireYear ?? undefined);
   assert.equal(saved.realReturn, 0.05, 'the growth the result was shown at carries into the dashboard');
+  assert.equal(saved.currentAge, retireYear ? 34 : undefined, 'only an age the visitor entered is saved, never the assumed 30');
   assert.equal(destination, '/login');
 }
 console.log('Starting-point handoff preserves entered finances and omits unreached dates.');

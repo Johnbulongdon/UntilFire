@@ -45,7 +45,7 @@ Plan                          long-term projections and scenarios
   ├ Scenarios
   ├ Goals
   ├ Contributions
-  ├ Expat FIRE
+  ├ Explore
   ├ Citizenship
   └ Learn
 
@@ -153,7 +153,7 @@ browser.
   (stages, articles, topics). A sidebar group duplicating it splits the content
   and spends a nav slot on something nobody opens the app to do. It sits inside
   Plan, next to the levers it explains.
-- **Expat FIRE sits in Plan.** It's a hypothesis tool and a real differentiator.
+- **Explore sits in Plan** (it was Expat FIRE until D-58). It's a hypothesis tool and a real differentiator.
   Long-term it is arguably a *mode* of Scenarios — "what if I move to Lisbon"
   and "what if I save 5% more" are the same question — and the two will start
   feeling redundant as Scenarios grows. Merge then, not now.
@@ -175,9 +175,10 @@ browser.
 - **Money pages share one calm shape** (D-40): a headline card, then rows
   (`app/dashboard/MoneyCards.tsx`). What a debt started at is a fact about the
   debt, so it is set on Debts, not in Plan.
-- **Expat FIRE leads with the soonest place** (D-45): a list of when each
-  place opens up, with the globe behind a List / Globe switch. "Plan for" a
-  city sets the retirement city that Freedom date's Retire in row holds.
+- **Explore replaced Expat FIRE** (D-58, superseding D-45's list): the same
+  map and cards as public `/explore`, at your plan's numbers, lifestyle and tax
+  in retirement. "Plan for" a city sets the retirement city that Freedom
+  date's Retire in row holds.
 - **Citizenship asks for your passport first** (D-46), then shows its score and
   what it means as rows; other passports are a sortable list.
 - **Learn starts from your stage** (D-47) and its tools open Plan pages, not

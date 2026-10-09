@@ -36,11 +36,11 @@ const STAGE_TOOLS: Record<LearnStageId, { tab: PlanTab; icon: string; name: stri
   ],
   "approaching-fire": [
     { tab: "fire-calculator", icon: "📊", name: "Your assumptions", meta: "Growth, lifestyle and tax in retirement" },
-    { tab: "expat-fire", icon: "🌍", name: "Expat FIRE", meta: "Where your money goes further" },
+    { tab: "expat-fire", icon: "🌍", name: "Explore", meta: "Where your money goes further" },
   ],
   "living-in-fire": [
     { tab: "fire-calculator", icon: "📊", name: "Your assumptions", meta: "Withdrawal and growth" },
-    { tab: "expat-fire", icon: "🌍", name: "Expat FIRE", meta: "Where your money goes further" },
+    { tab: "expat-fire", icon: "🌍", name: "Explore", meta: "Where your money goes further" },
   ],
 };
 

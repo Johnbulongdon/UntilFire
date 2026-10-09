@@ -141,7 +141,7 @@ export default function CitizenshipTab({ onOpenExpat }: { onOpenExpat?: () => vo
   const note = (
     <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
       General, simplified guidance, not tax or legal advice; rules change, so verify anything you act on.
-      {onOpenExpat && <>{" "}<button type="button" onClick={onOpenExpat} style={{ background: "none", border: 0, padding: 0, font: "inherit", color: "var(--uf-ink-2)", textDecoration: "underline", cursor: "pointer" }}>Where to live is in Expat FIRE</button></>}
+      {onOpenExpat && <>{" "}<button type="button" onClick={onOpenExpat} style={{ background: "none", border: 0, padding: 0, font: "inherit", color: "var(--uf-ink-2)", textDecoration: "underline", cursor: "pointer" }}>Where to live is in Explore</button></>}
     </span>
   );
 
@@ -210,7 +210,7 @@ export default function CitizenshipTab({ onOpenExpat }: { onOpenExpat?: () => vo
         <summary style={{ cursor: "pointer" }}>How it&apos;s scored</summary>
         <p style={{ margin: "8px 0 0" }}>
           Out of 100: tax burden (40), retirement account access (30) and investment freedom (30). Cost of
-          living isn&apos;t part of it; that varies more by city than by passport, so it lives in Expat FIRE.
+          living isn&apos;t part of it; that varies more by city than by passport, so it lives in Explore.
           This is about the passport you hold, not where you live now, which is your tax home in Plan.
         </p>
       </details>

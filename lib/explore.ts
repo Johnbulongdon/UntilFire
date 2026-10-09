@@ -11,6 +11,7 @@ import { CITIES, STATE_TAX, isUS } from "./fire-data";
 import { CITY_COORDS } from "./city-coords";
 import { cityLandingPages, cityPagePath } from "./city-pages";
 import { countryPages } from "./country-pages";
+import { computeUSTakeHome } from "./fire/tax/us";
 
 export interface ExploreCity {
   key: string;
@@ -28,9 +29,18 @@ export interface ExploreCity {
   annualUSD: number;
   /** No income tax where you live: a state with none, or a country with none. */
   noIncomeTax: boolean;
+  /**
+   * Effective income tax while you work there, in percent. US: federal,
+   * payroll and state together on $50k–$150k earned, so the brackets show as
+   * a range. Abroad the data holds one effective rate, so low equals high.
+   */
+  tax: { low: number; high: number } | null;
   /** Where a tap leads: the city's page, else its country's, else nowhere. */
   href: string | null;
 }
+
+/** The earned-income band the US tax range covers. */
+export const TAX_LOW = 50_000, TAX_HIGH = 150_000;
 
 const curatedKeys = new Set(cityLandingPages.map((p) => p.city.key));
 const countrySlug = new Map(countryPages.map((p) => [p.countryKey, p.slug]));
@@ -44,6 +54,9 @@ export const EXPLORE_CITIES: ExploreCity[] = CITIES.filter((c) => CITY_COORDS[c.
   return {
     key: c.key, name, place, flag: c.flag, ...CITY_COORDS[c.key], us, region: c.state,
     monthlyUSD: c.col / 12, annualUSD: c.col, noIncomeTax: STATE_TAX[c.state]?.rate === 0, href,
+    tax: !STATE_TAX[c.state] ? null : us
+      ? { low: computeUSTakeHome(TAX_LOW, c.state, 2025).effectiveRate, high: computeUSTakeHome(TAX_HIGH, c.state, 2025).effectiveRate }
+      : { low: STATE_TAX[c.state].rate * 100, high: STATE_TAX[c.state].rate * 100 },
   };
 });
 
