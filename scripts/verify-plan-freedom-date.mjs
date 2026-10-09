@@ -141,5 +141,17 @@ assert.equal(Math.round(y1['Taxable'] - person.taxable * 1.05), takeHomeSaving -
 const bridged = (o) => calcProjection({ ...person, k401: 85000, retirementAnnualSpend: 112500, currentAge: 28, accessAge: 59.5, ...o });
 assert.ok(bridged({ pensionAnnual: 24500, taxFreeAnnual: 7500 }).fireYear <= bridged({}).fireYear, 'saving into reachable accounts never delays the bridge');
 
+// D-61: mortgages, each at its own rate; one paid off frees its payment for saving.
+const twoLoans = { ...person, monthlyExpenses: 40000 / 12, mortgages: [{ balance: 20000, monthly: 1000, rate: 0.04 }, { balance: 300000, monthly: 2000, rate: 0.07 }] };
+const oneMerged = { ...person, monthlyExpenses: 40000 / 12, mortgageBalance: 320000, mortgageMonthly: 3000, mortgageRate: 0.065 };
+const tl = calcProjection(twoLoans), om = calcProjection(oneMerged);
+assert.equal(tl.data[0]['Debt'], -320000, 'every mortgage is owed');
+assert.ok(tl.data[3]['Debt'] > om.data[3]['Debt'] || tl.fireYear <= om.fireYear, 'paying off the small loan frees its payment');
+assert.ok(tl.firstYearInvested === om.firstYearInvested, 'year one saves the same: both pay $3,000 a month');
+const freed = calcProjection({ ...twoLoans, years: 4 }).data;
+assert.ok(freed[3]['Investable'] > calcProjection({ ...oneMerged, years: 4 }).data[3]['Investable'], 'once the small loan is gone its $1,000 a month is invested');
+const rateMatters = (r) => calcProjection({ ...person, mortgages: [{ balance: 300000, monthly: 2000, rate: r }] }).data[10]['Debt'];
+assert.ok(rateMatters(0.03) > rateMatters(0.07), 'each mortgage is paid down at its own rate');
+
 if (process.env.SHOW) for (const g of [0.05, 0.069, 0.081]) console.log(g, at(g).exactDate.toISOString().slice(0, 7));
 console.log('Plan freedom date checks passed.');

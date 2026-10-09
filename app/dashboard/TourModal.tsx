@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 const TOUR_SLIDES = [
   { tabKey: null,              emoji: "🔥", title: "Welcome to UntilFire",  description: "A 30-second look around. Use the arrows or tap a dot to jump." },
   { tabKey: "overview",        emoji: "🏠", title: "Home",                  description: "Your freedom date, progress toward your FIRE number, and the one move that helps most right now." },
-  { tabKey: "cashflow",        emoji: "💳", title: "Money",                 description: "Transactions, Upcoming payments, categories and budgets; Net Worth, Debts and Insights for the bigger picture." },
+  { tabKey: "cashflow",        emoji: "💳", title: "Money",                 description: "Transactions, a calendar of payments, categories and budgets; Net Worth, Debts and Insights for the bigger picture." },
   { tabKey: "fire-calculator", emoji: "📅", title: "Plan",                  description: "Your freedom date and the assumptions behind it, plus Goals, Contributions, Explore, Citizenship and Learn." },
   { tabKey: "profile",         emoji: "⚙️", title: "Profile",               description: "Your account, currency, Pro subscription, household and FIRE type." },
 ]

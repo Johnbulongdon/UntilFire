@@ -2183,3 +2183,51 @@ spent at 45.
   full) covers the years until it opens.
 - **Pay growth is off until chosen**, with presets (flat, 1%, 2%, 3%, own), so
   the dashboard date matches the onboarding result until the person opts in.
+
+### D-60 — October 9: a one-page plan anyone can share
+Every user can save their plan as one page (Plan → Freedom Date → Share
+one-page plan → Save as PDF), with or without the UntilFire name.
+- **Built to be trusted, not to impress.** It says it is built only from the
+  numbers entered, shows them, shows the formula (spending ÷ withdrawal rate),
+  the path to the target, the bridge to the pension age when confirmed, a
+  spending × growth grid of ages, what is kept conservative and what is left
+  out, and that it is an estimate, not advice.
+- **Branding is the person's choice.** Reddit and similar places read a logo
+  as an ad; the unbranded page keeps everything except the name and the link.
+- **PDF through the browser's print,** so nothing about the plan leaves the
+  device and no new dependency is added. A public link (a saved snapshot) can
+  come later if sharing shows demand. The page keeps its light palette in both
+  themes because it is a printed page.
+- **Three more formats, always unbranded:** a poster (1080×1350) and a life
+  timeline (1200×800: today, free, the bridge, the pension opening) as PNGs
+  drawn on a canvas so the preview is the file, and a Reddit comment in
+  Markdown, since many subs don't take images in comments. On phones the PNG
+  goes to the share sheet.
+- **Measured:** `funnel_freedom_report_exported` with `format` and `branded` only.
+
+### D-61 — October 9: mortgages each with their own rate; Calendar replaces Upcoming
+- **As many mortgages as a person has** (Money → Debts), each with a name,
+  balance, rate and monthly payment. Each is amortised at its own rate in the
+  freedom date, and its payment goes to saving once it is paid off. A mortgage
+  without a rate is projected at 6.5%, what the single-mortgage plan always
+  used, and says so ("6.5% (assumed)"). A connected mortgage keeps its balance
+  from the bank; its rate and payment are typed and saved by account. Older
+  profiles' single mortgage loads as the first entry, so nothing is lost. This
+  is what made D-59's "the mortgage uses its rate" true: before it, the rate
+  could not be set from the app.
+- **Upcoming became Calendar** (Money → Cashflow). Upcoming and Contributions
+  told one story twice: what comes in and out, and when there is money to
+  invest. The Month view shows every payment on its day and the cash at the
+  end of each day up to the next contribution; the List view is the old page.
+  Tap a day to add a payment on it; repeats work as before.
+- **Calendar balances are cash only,** outside the emergency fund. Investing
+  moves money out of day-to-day reach, so the invest day is a marker, not a
+  dip, and day-to-day spending is never mixed with invested money. The lowest
+  point shown is the true low, including a dip below zero before payday.
+- **Mark as done (option B).** Once a contribution is marked as made, nothing
+  more is safe to invest until the next contribution date, on Home,
+  Contributions and Calendar, even before the bank balance shows it. This
+  stops the same money being invested twice. The mark is saved with the
+  profile, applies to that cycle only, and can be undone.
+- The 30-day dot strip on Upcoming was removed: it was unclear on its own,
+  and the Month view shows the same thing with amounts.

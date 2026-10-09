@@ -7,9 +7,11 @@ import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
 import ExpectedMonth from "./ExpectedMonth";
+import CalendarMonth from "./CalendarMonth";
 import { Button, InfoTip } from "@/components/ui";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, Fig } from "./MoneyCards";
-import type { AccountFacts } from "@/lib/contribution-ladder";
+import { ladderViewFromPlan, type AccountFacts } from "@/lib/contribution-ladder";
+import type { StoredPlan } from "@/lib/contribution";
 import { parseIsoDate } from "@/lib/contribution-schedule";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SUB_CATEGORIES } from "@/lib/categories";
 import { guessBillCategory, settleBill } from "@/lib/spend-forecast";
@@ -206,8 +208,12 @@ function PaymentRow({
 
 export default function ExpectedPaymentsTab({
   userId, defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [],
-  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25,
+  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25, plan = null, facts, onMarkDone,
 }: {
+  /** The contribution plan and account facts, for the month's cash balances (D-61). */
+  plan?: StoredPlan | null;
+  facts?: AccountFacts;
+  onMarkDone?: (done: { iso: string; amount: number } | null) => void;
   /** FIRE target per dollar of a year's spending, as the freedom date uses it (D-35). */
   targetMultiple?: number;
   userId: string;
@@ -224,6 +230,7 @@ export default function ExpectedPaymentsTab({
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [view, setView] = useState<"month" | "list">("month");
 
   const [formDesc, setFormDesc] = useState("");
   const [formAmount, setFormAmount] = useState("");
@@ -287,10 +294,11 @@ export default function ExpectedPaymentsTab({
     return () => { cancelled = true; };
   }, [userId, displayRates]);
 
-  function openAddForm() {
+  function openAddForm(on?: string) {
     setEditingId(null);
     setFormDesc(""); setFormAmount(""); setFormCurrency(defaultCurrency);
-    setFormType("income"); setFormDueDate(todayStr()); setFormRecurrence("none");
+    // A day tapped on the calendar is most often a bill landing on it.
+    setFormType(on ? "expense" : "income"); setFormDueDate(on ?? todayStr()); setFormRecurrence("none");
     setFormCategory(""); setFormSubCategory(""); setCatPicked(false);
     setShowForm(true);
   }
@@ -443,6 +451,14 @@ export default function ExpectedPaymentsTab({
   );
 
   const pending = payments.filter(p => !isDone(p));
+  // The month's balances come from this list as it stands, so a payment added
+  // here moves the cash line at once (D-61).
+  const calendarItems = useMemo(() => payments.filter((p) => !isDone(p)).map((p) => ({
+    description: p.description, amountUSD: toUSD(p.amount, p.currency, displayRates), type: p.transaction_type,
+    dueDate: p.due_date, recurrence: p.recurrence, category: p.category,
+  })), [payments, displayRates]);
+  const cash = useMemo(() => (facts ? ladderViewFromPlan(plan, { ...facts, expectedItems: calendarItems })?.available ?? null : null),
+    [plan, facts, calendarItems]);
   const completed = payments.filter(isDone).sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
   const overdue = pending.filter(p => daysUntil(p.due_date) < 0).sort((a, b) => a.due_date.localeCompare(b.due_date));
   const upcoming = pending.filter(p => daysUntil(p.due_date) >= 0).sort((a, b) => a.due_date.localeCompare(b.due_date));
@@ -476,7 +492,7 @@ export default function ExpectedPaymentsTab({
     onLink: (m: string | null) => linkPayment(item, m), onToggle: () => toggleCompleted(item),
     onEdit: () => openEditForm(item), onDelete: () => deletePayment(item.id),
   });
-  // The next 30 days as a strip: each pending payment a mark on its day.
+  // How many are due in the next 30 days, for the headline key.
   const soon = pending.filter((p) => { const d = daysUntil(p.due_date); return d >= 0 && d <= 30; });
 
   if (loading) {
@@ -489,29 +505,14 @@ export default function ExpectedPaymentsTab({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* The calm headline (D-40): what is still to go out, what is still to
-          come in, and the next 30 days as marks on a strip. */}
-      <MoneyHead
+      {/* The calm headline (D-40): what is still to go out and what is still
+          to come in. The 30-day strip it once carried is the Month view now (D-61). */}
+      {view === "list" && <MoneyHead
         label="Still to go out"
         value={pending.length > 0 ? `−${formatAmount(totalOutgoingUSD)}` : formatAmount(0)}
         sub={totalIncomingUSD > 0 ? <><Fig tone="var(--uf-pos-ink)">+{formatAmount(totalIncomingUSD)}</Fig> still to come in</> : "Money you expect in or out, one-off or repeating."}
-        aside={<Button variant={showForm ? "secondary" : "primary"} size="sm" onClick={showForm ? closeForm : openAddForm}>{showForm ? "Cancel" : "Add upcoming payment"}</Button>}
+        aside={<Button variant={showForm ? "secondary" : "primary"} size="sm" onClick={showForm ? closeForm : () => openAddForm()}>{showForm ? "Cancel" : "Add upcoming payment"}</Button>}
       >
-        {soon.length > 0 && (
-          <div style={{ display: "grid", gap: 6 }}>
-            <div role="img" aria-label={`Next 30 days: ${soon.map((p) => `${p.description} ${shortDay(p.due_date)}`).join(", ")}`}
-              style={{ position: "relative", height: 18, borderRadius: 9, background: "var(--uf-surface-2)" }}>
-              {soon.map((p) => (
-                <i key={p.id} title={`${p.description} · ${shortDay(p.due_date)}`}
-                  style={{ position: "absolute", top: 4, width: 10, height: 10, borderRadius: 999, background: colorFor(p), boxShadow: "0 0 0 2px var(--uf-card)",
-                    left: `calc(${(daysUntil(p.due_date) / 30) * 100}% - ${(daysUntil(p.due_date) / 30) * 10}px)` }} />
-              ))}
-            </div>
-            <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", color: "var(--uf-ink-3)", fontFamily: "var(--uf-font-mono)" }}>
-              <span>Today</span><span>{shortDay(isoDay(new Date(Date.now() + 30 * 86_400_000)))}</span>
-            </div>
-          </div>
-        )}
         {committedMonthlyUSD > 0 && (
           <MoneyKey items={[
             <span key="c" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -521,7 +522,12 @@ export default function ExpectedPaymentsTab({
             <span key="n"><Fig>{soon.length}</Fig> in the next 30 days</span>,
           ]} />
         )}
-      </MoneyHead>
+      </MoneyHead>}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", order: -1 }}>
+        <PillTabs label="Calendar view" value={view} options={[{ key: "month", label: "Month" }, { key: "list", label: "List" }]} onChange={setView} />
+        {view === "month" && <Button variant={showForm ? "secondary" : "primary"} size="sm" onClick={showForm ? closeForm : () => openAddForm()}>{showForm ? "Cancel" : "Add payment"}</Button>}
+      </div>
 
       {/* Spotted in transaction history. A guess until accepted — it never
           joins the list on its own, which is the whole reason the list can be
@@ -626,14 +632,20 @@ export default function ExpectedPaymentsTab({
         </div>
       )}
 
-      {overdue.length > 0 && (
+      {view === "month" && (
+        <CalendarMonth items={calendarItems} forecast={cash?.forecast ?? null} safe={cash?.free ?? 0} done={cash?.done ?? null}
+          onMarkDone={onMarkDone} onAddOn={(iso) => { openAddForm(iso); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+          fmt={formatAmount} compact={(usd) => formatUSDInCurrency(usd, displayCurrency, displayRates, { compact: true })} />
+      )}
+
+      {view === "list" && overdue.length > 0 && (
         <section style={{ display: "grid", gap: 8 }}>
           <span className="uf-t-small" style={{ color: "var(--uf-neg-ink)", fontWeight: 700 }}>Overdue · {overdue.length}</span>
           <MoneyList>{overdue.map(item => <PaymentRow key={item.id} {...rowProps(item)} />)}</MoneyList>
         </section>
       )}
 
-      <section style={{ display: "grid", gap: 8 }}>
+      {view === "list" && <section style={{ display: "grid", gap: 8 }}>
         <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>Upcoming · {upcoming.length}</span>
         {upcoming.length === 0 ? (
           <div className="uf-t-small" style={{ textAlign: "center", padding: "32px 24px", color: "var(--uf-ink-3)", background: "var(--uf-card)", border: "1px dashed var(--uf-border)", borderRadius: 12 }}>
@@ -642,11 +654,11 @@ export default function ExpectedPaymentsTab({
         ) : (
           <MoneyList>{upcoming.map(item => <PaymentRow key={item.id} {...rowProps(item)} />)}</MoneyList>
         )}
-      </section>
+      </section>}
 
       {/* The month in date order: the dated half of the budget, which is what
           the contribution forecast is built from. */}
-      <ExpectedMonth
+      {view === "list" && <ExpectedMonth
         items={payments.map((p) => ({
           description: p.description,
           amountUSD: toUSD(p.amount, p.currency, displayRates),
@@ -659,9 +671,9 @@ export default function ExpectedPaymentsTab({
         budgetMonthlySpending={budgetMonthlySpending}
         lastMonthSpending={lastMonthSpending}
         formatAmount={formatAmount}
-      />
+      />}
 
-      {completed.length > 0 && (
+      {view === "list" && completed.length > 0 && (
         <section style={{ display: "grid", gap: 8 }}>
           <button type="button" onClick={() => setShowCompleted(v => !v)} aria-expanded={showCompleted} className="uf-t-small"
             style={{ background: "none", border: "none", padding: 0, textAlign: "left", fontWeight: 700, color: "var(--uf-ink-3)", cursor: "pointer" }}>

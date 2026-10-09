@@ -289,7 +289,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             {rows.some((r) => r.budget != null) && <><i style={{ display: "inline-block", width: 3, height: 12, marginLeft: 8, borderRadius: 2, background: "var(--uf-ink)" }} />Budget</>}
             {rows.some((r) => r.budget != null && r.now + r.due > r.budget) && <><i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, marginLeft: 8, background: OVER }} />Over</>}
             {rows.some((r) => r.typical) && <><i style={{ display: "inline-block", width: 16, height: 12, borderRadius: 3, marginLeft: 8, background: BAND, borderLeft: BAND_EDGE, borderRight: BAND_EDGE }} />Past months</>}
-            <InfoTip label="About past months">The shaded band is where your recent months landed by this day, leaving out the single highest and lowest. It appears once you have 3 months of history. A category with bills in Upcoming counts from the first month one was paid, at today&apos;s bill amounts, so a new rent shows straight away. The black line is your budget from the Budget tab; what is left takes off bills still due this month.</InfoTip>
+            <InfoTip label="About past months">The shaded band is where your recent months landed by this day, leaving out the single highest and lowest. It appears once you have 3 months of history. A category with bills in Calendar counts from the first month one was paid, at today&apos;s bill amounts, so a new rent shows straight away. The black line is your budget from the Budget tab; what is left takes off bills still due this month.</InfoTip>
           </span>
         )}
       </div>

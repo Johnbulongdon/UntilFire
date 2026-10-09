@@ -8,6 +8,29 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Calendar: your cash, day by day
+- Money → Upcoming is now Calendar. The month shows every payment on its
+  day and the cash you will have at the end of each day until you next
+  invest, with your emergency fund left aside. Tap a day to add a payment;
+  it can repeat. The list is still there under List.
+- Your invest day is on the calendar with what is safe to invest. Mark it
+  as done and nothing more shows as safe until next payday, so the same
+  money is never invested twice.
+
+### Every mortgage, with its own rate
+- Money → Debts takes as many mortgages as you have, each with its own
+  balance, rate and payment, and the year it is paid off. Your freedom date
+  counts each at its rate, and saves its payment once it is paid off.
+
+### Share your plan on one page
+- Plan → Freedom Date → Share one-page plan: your freedom date, the numbers
+  it uses, the formula, the path, whether you can reach your money before your
+  pension opens, how the age moves with spending and growth, and what it
+  leaves out. Save as PDF, with or without the UntilFire name.
+- Or share it lighter, with no branding: a poster or a life timeline as a
+  PNG (straight to the share sheet on a phone), or a Reddit-ready comment to
+  copy as Markdown.
+
 ### An exact plan after a simple start
 - Money → Income: salary to take-home, with the pension taken before tax and
   what your employer adds. Both count as saving in your freedom date.
@@ -17,7 +40,8 @@ under today's date, creating the heading if it is not there yet.
   money before then, and moves later if you cannot.
 - Plan → Contributions shows where your saving goes: pension, employer,
   tax-free account (Roth IRA, ISA, NISA, TFSA) and the rest. Your split
-  replaces the old fixed one once you set it; mortgage interest uses your rate.
+  replaces the old fixed one once you set it; mortgage interest uses your rate (set
+  it on Money → Debts).
 - The calculator's savings step says what counts: stocks, funds, retirement
   accounts and cash savings.
 
