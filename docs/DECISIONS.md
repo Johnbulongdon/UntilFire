@@ -2069,3 +2069,48 @@ founder's "fix, then measure, then the post-onboarding page".
 September and 4 of 36 landing visitors starting the calculator in the two
 weeks before D-50. Too few to judge the onboarding change; traffic, not
 onboarding, is the current bottleneck.
+
+### D-58 — October 9: Explore, every city on one map
+
+**Status:** Active. From the founder's Zillow and Nomad List direction, after
+mocks V1 and V2. Built while city pages get about 30 outside visitors a month;
+recorded so the cost is visible: this serves people who arrive to browse,
+while search traffic still lands on city pages.
+
+**Decision:**
+- **One public page, `/explore`, beside the city pages, not instead of them.**
+  City pages stay the ones that rank, one per city. Each card links
+  to its city page, or for a city abroad without one, to its country page.
+- **The map is drawn, not tiled:** US state outlines, and a draggable globe
+  with national borders (world-atlas, ISC). Borders are thin and pale.
+  Abroad, the globe shows one pin per country (the median city) until you
+  zoom in, then one per city.
+- **Numbers only inside pins** (Zillow): pills placed biggest-first, trying
+  above, below, right, left; no room means a dot you can still tap.
+- **Pins and cards switch between $ / month, your year and your age.** Your
+  year keeps your savings and monthly saving as they are and retires on each
+  city's typical cost (`freedomIn`, using the calculator's `yearsToTarget`).
+  It is not a claim that your pay would stay the same if you moved. Your
+  numbers come from the calculator in this browser (USD only), or two fields
+  on the page; age is optional, and the Age switch waits for it.
+- **Stars** keep a city's pill on the map whatever the crowding, and fill a
+  Starred filter. Stars and numbers stay in this browser.
+- **Cards are Nomad List style:** star and rank, a tax fact, the name, the
+  other value, and your value as the badge. The backdrop is the city's own
+  state or country outline with the city marked, so each card is specific
+  without photos. The card is a picture surface: deep green and white text in
+  both themes.
+
+**Not built, on purpose:**
+- **Climate and healthcare** wait for real data. Sources chosen: NOAA
+  1991–2020 normals (US) and ERA5 (abroad, licence to confirm) for climate;
+  CMS hospital star ratings near each city (US) and the WHO UHC index (abroad,
+  CC BY 4.0) for healthcare, labelled for what each is. Open-Meteo's free tier
+  (non-commercial) and IHME's HAQ index (non-commercial) are ruled out.
+- **Photos** need a one-off pick per city with its credit (Unsplash requires
+  hotlinking and attribution).
+- **City panel over the map with its own URL** (Zillow's pattern): for now a
+  chosen city offers "Open {city}" and "Plan {city}".
+
+**Known:** several international costs look low beside each other (Jaipur
+$583/mo); Explore puts every city side by side, so those need review.

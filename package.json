@@ -58,6 +58,7 @@
     "test:account-currency": "node --experimental-strip-types --no-warnings scripts/verify-account-currency.mjs",
     "test:free-to-spend": "TZ=Asia/Shanghai node --experimental-strip-types --no-warnings scripts/verify-free-to-spend.mjs && TZ=America/Los_Angeles node --experimental-strip-types --no-warnings scripts/verify-free-to-spend.mjs",
     "test:data-export": "node --experimental-strip-types --no-warnings scripts/verify-data-export.ts",
+    "test:explore": "node --experimental-strip-types --no-warnings scripts/verify-explore.ts",
     "test:cashflow-forecast": "TZ=Asia/Shanghai node --experimental-strip-types --no-warnings scripts/verify-cashflow-forecast.mjs && TZ=America/Los_Angeles node --experimental-strip-types --no-warnings scripts/verify-cashflow-forecast.mjs",
     "test:contribution-schedule": "node --experimental-strip-types --no-warnings scripts/verify-contribution-schedule.mjs",
     "test:contribution-ladder": "node --experimental-strip-types --no-warnings scripts/verify-contribution-ladder.mjs",

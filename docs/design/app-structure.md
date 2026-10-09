@@ -130,13 +130,22 @@ meet the dashboard's "leave site?" guard while an autosave is running.
 
 Every public page (landing, calculators, city and state pages, Learn,
 pricing, invite) shares one top bar, `app/components/SiteHeader.tsx`: logo,
-then How it works · Calculators · Learn · Pricing, then Get started, or
+then How it works · Explore · Calculators · Learn · Pricing, then Get started, or
 Dashboard when signed in. The root layout renders it; `showsSiteHeader` keeps
 it off the app (dashboard, admin), sign-in, the creator embed and `/r/`.
 The landing page renders its own `fixed` copy over the hero, where Get
 started opens the calculator in place. Pages don't add a logo bar of their
 own. Off the landing it scrolls with the page, because calculator results
 cards and table heads already stick to the top.
+
+## Explore: every city on one map
+
+`/explore` (D-58) is a public page: the map of every city beside Nomad List
+style cards. It sits beside the city pages, not in place of them: each city
+page stays the page that ranks, and a card links on to it (or to its country
+page when a city abroad has none). The map is drawn from outlines in
+`lib/geo/`, never map tiles. Your numbers and your stars stay in the
+browser.
 
 ## Deliberately decided
 

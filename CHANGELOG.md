@@ -8,6 +8,16 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-09
 
+### Explore: every city on one map
+- New Explore page (in the top bar): every US and international city on a
+  map, with a card for each. Pins and cards show the monthly cost, or, once
+  you add what you've saved and save each month, the year (or your age) each
+  city could set you free.
+- Star a city to keep it on the map and in your Starred list. Abroad, the
+  globe shows one pin per country until you zoom in.
+- Each card links to that city's page, and "Plan" starts the calculator
+  with the city filled in. Your numbers and stars stay in this browser.
+
 ### Fixes on Insights, Freedom Date and Goals
 - Insights: this month shows "so far" with no savings rate until it ends,
   instead of −999%. A month that spent over twice its income shows "< −100%".
