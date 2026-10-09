@@ -45,17 +45,19 @@ import FireAssumptionsCard from "./FireAssumptionsCard";
 import PlanGoalCard from "./PlanGoalCard";
 import IncomeTab from "./IncomeTab";
 import SavingSplitCard from "./SavingSplitCard";
-import { taxFreeFor, type PlanSettings } from "@/lib/plan-settings";
+import FreedomReport, { type ReportData } from "./FreedomReport";
+import { ageLabel, pensionFor, taxFreeFor, type PlanSettings } from "@/lib/plan-settings";
+import { DEFAULT_MORTGAGE_RATE_PCT, engineMortgages, loadMortgages, newMortgageId, payoffYear, type Mortgage, type MortgageTerms } from "@/lib/mortgages";
 import HouseholdCard from "./HouseholdCard";
 import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
 import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
-import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
+import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported } from "@/lib/analytics";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Button, ICON_PATHS } from "@/components/ui";
+import { Alert, Button, ICON_PATHS, Input } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -359,7 +361,7 @@ function calcProjection({
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
   retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
-  currentAge = 0, accessAge = 0, mortgageRate = 0.065, taxFreeAnnual, taxFreeGainsLocked = true,
+  currentAge = 0, accessAge = 0, mortgageRate = 0.065, taxFreeAnnual, taxFreeGainsLocked = true, mortgages,
 }: {
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
@@ -384,11 +386,17 @@ function calcProjection({
   taxFreeAnnual?: number;
   /** Only what was paid in can be taken out before the access age (a Roth IRA); elsewhere all of it. */
   taxFreeGainsLocked?: boolean;
+  /**
+   * Each mortgage on its own (D-61): balance, payment a month, rate as a fraction. Given, they replace the
+   * single mortgage above; each is paid down at its own rate, and once paid off its payment goes to saving.
+   */
+  mortgages?: { balance: number; monthly: number; rate: number }[];
 }) {
+  const loans = mortgages && mortgages.length > 0 ? mortgages.map((m) => ({ ...m })) : null;
   const annualExpenses       = monthlyExpenses * 12;
   const targetAnnualExpenses = retirementAnnualSpend > 0 ? retirementAnnualSpend
     : targetMonthlyExpenses != null ? targetMonthlyExpenses * 12 : annualExpenses;
-  const annualMortgage = mortgageMonthly * 12;
+  const annualMortgage = loans ? loans.reduce((s, l) => s + l.monthly * 12, 0) : mortgageMonthly * 12;
   const annualSavings  = annualIncome - annualExpenses - annualMortgage;
   // When tax is enabled, gross up the withdrawal needed to cover retirement taxes.
   // Roth / tax-free portion needs no grossing; traditional portion does.
@@ -404,7 +412,7 @@ function calcProjection({
   let curTaxable = taxable;
   let curCash    = cashSavings;
   let curDebt    = totalDebt;
-  let curMort    = mortgageBalance;
+  let curMort    = loans ? loans.reduce((s, l) => s + l.balance, 0) : mortgageBalance;
   let fireYear: number | null = null;
   // The first year the total reaches the target, whether or not it can be reached in time (the bridge check below).
   let totalYear: number | null = null;
@@ -447,6 +455,8 @@ function calcProjection({
       "Debt":          Math.round(-(curDebt + curMort)),
       "Contributions": Math.round(contributed),
       "Market Growth": Math.round(Math.max(investable - contributed, 0)),
+      // What can be drawn before the pension opens (D-59): taxable, cash, and the tax-free account (paid-in only where gains wait).
+      "Reachable":     Math.round(curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth)),
     });
     // Debt is paid out of savings first (up to 30% of them), and only what
     // is left is invested. Paying it from savings that were also invested in
@@ -459,7 +469,9 @@ function calcProjection({
     }
     const pay            = Math.pow(1 + payGrowth, y);
     const raises         = annualIncome * (pay - 1);
-    const toInvest       = Math.max(annualSavings + raises - debtPayment, 0);
+    // A mortgage paid off in an earlier year stops costing anything: its payment is saved instead.
+    const freed          = loans ? loans.filter((l) => l.balance <= 0).reduce((s, l) => s + l.monthly * 12, 0) : 0;
+    const toInvest       = Math.max(annualSavings + raises + freed - debtPayment, 0);
     const ownSplit       = taxFreeAnnual != null || pensionAnnual > 0;
     const k401Contrib    = ownSplit ? 0 : Math.min(toInvest * 0.4, 23000);
     const rothContrib    = ownSplit ? Math.min(toInvest, taxFreeAnnual ?? 0) : Math.min(toInvest * 0.2, 7000);
@@ -472,7 +484,10 @@ function calcProjection({
     curRoth    = curRoth    * (1 + growthRate) + rothContrib;
     curTaxable = curTaxable * (1 + growthRate) + taxableContrib;
     curCash    = curCash    * (1 + growthRate);
-    if (curMort > 0) {
+    if (loans) {
+      for (const l of loans) if (l.balance > 0) l.balance = Math.max(0, l.balance - Math.max(0, l.monthly * 12 - l.balance * l.rate));
+      curMort = loans.reduce((s, l) => s + l.balance, 0);
+    } else if (curMort > 0) {
       const mInt = curMort * mortgageRate;
       const prin = Math.max(0, annualMortgage - mInt);
       curMort = Math.max(0, curMort - prin);
@@ -2222,7 +2237,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           {billGuess != null && !isEditing && (
             <span className="uf-t-small" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", color: "var(--uf-ink-2)" }}>
               {billGuess.name} ({fmtMoney(billGuess.amount)}) was paid last month too. Is it a bill?
-              {onOpenUpcoming && <Button variant="secondary" size="sm" onClick={onOpenUpcoming}>Add it to Upcoming</Button>}
+              {onOpenUpcoming && <Button variant="secondary" size="sm" onClick={onOpenUpcoming}>Add it to Calendar</Button>}
             </span>
           )}
           {suggestions.length > 0 && !isEditing && (
@@ -3703,10 +3718,12 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 }
 
 // ─── Liabilities Tab ──────────────────────────────────────────────────────────
-function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, originals = {}, onOriginal, planDebts = [] }: {
+function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, connectedMortgages, mortgageTerms, setMortgageTerms, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, originals = {}, onOriginal, planDebts = [] }: {
   totalDebt: number; setTotalDebt: (v: number) => void;
-  mortgageBalance: number; setMortgageBalance: (v: number) => void;
-  mortgageMonthly: number; setMortgageMonthly: (v: number) => void;
+  /** Typed mortgages, each with its own rate and payment (D-61), and the terms of connected ones by account id. */
+  mortgages: Mortgage[]; setMortgages: (next: Mortgage[]) => void;
+  connectedMortgages: { id: string }[];
+  mortgageTerms: MortgageTerms; setMortgageTerms: (next: MortgageTerms) => void;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
   onRefreshAccounts?: () => void;
@@ -3719,6 +3736,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
   // The same rule as net worth (effectiveDebts): connected replaces typed, cards included.
+  const mortgageBalance = mortgages.reduce((s, m) => s + m.balance, 0);
   const debtsEff = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
   const totalLiabilities = debtsEff.otherDebt + debtsEff.mortgage + debtsEff.cards;
   const [hideZero, setHideZero] = useState(true);
@@ -3729,16 +3747,27 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
   const hiddenCount = connected.filter(a => (a.balance_current ?? 0) === 0).length;
   const rateFor = (name: string) => planDebts.find(d => d.name.trim().toLowerCase() === name.trim().toLowerCase())?.ratePct;
 
-  type Debt = { key: string; name: string; meta: string; balance: number; card: boolean; limit?: number | null; rate?: number; typed?: "debt" | "mortgage" };
+  type Debt = { key: string; name: string; meta: string; balance: number; card: boolean; limit?: number | null; rate?: number; typed?: "debt" | "mortgage"; mortgageId?: string; plaidMortgageId?: string };
+  // Payment and payoff year beside a mortgage's rate, so each one reads as its own loan.
+  const mortgageMeta = (monthly: number, ratePct: number | undefined, balance: number) => {
+    const year = monthly > 0 ? payoffYear(balance, monthly, ratePct) : null;
+    return [`${ratePct ?? DEFAULT_MORTGAGE_RATE_PCT}%${ratePct == null ? " (assumed)" : ""}`, monthly > 0 ? `${fmtMoney(monthly)}/mo` : "Add payment", year ? `paid off ${year}` : null].filter(Boolean).join(" · ");
+  };
+  const connectedIds = new Set(connectedMortgages.map((m) => m.id));
   const list: Debt[] = [
     ...connected.filter(a => !hideZero || (a.balance_current ?? 0) !== 0).map(a => ({
       key: `plaid:${a.id}`, name: a.name || a.official_name || "Account",
-      meta: [(a.subtype?.replace(/-/g, " ") ?? a.type).replace(/^./, c => c.toUpperCase()), a.mask ? `•••• ${a.mask}` : null, "Connected"].filter(Boolean).join(" · "),
-      balance: Math.max(0, a.balance_current ?? 0), card: a.type === "credit", limit: a.balance_limit, rate: rateFor(a.name || ""),
+      meta: connectedIds.has(a.id)
+        ? `Mortgage · Connected · ${mortgageMeta(mortgageTerms[a.id]?.monthly ?? 0, mortgageTerms[a.id]?.ratePct, Math.max(0, a.balance_current ?? 0))}`
+        : [(a.subtype?.replace(/-/g, " ") ?? a.type).replace(/^./, c => c.toUpperCase()), a.mask ? `•••• ${a.mask}` : null, "Connected"].filter(Boolean).join(" · "),
+      balance: Math.max(0, a.balance_current ?? 0), card: a.type === "credit", limit: a.balance_limit,
+      plaidMortgageId: connectedIds.has(a.id) ? a.id : undefined,
+      rate: (connectedIds.has(a.id) ? mortgageTerms[a.id]?.ratePct : undefined) ?? rateFor(a.name || ""),
     })),
     // Typed figures stand in only where nothing of that kind is connected, as net worth counts them.
     ...(!connected.some(a => a.type === "loan" && !isMortgageAcct(a)) ? [{ key: "typed_debt", name: "Other debt", meta: "Typed · loans and cards not connected", balance: totalDebt, card: false, typed: "debt" as const }] : []),
-    ...(!connected.some(isMortgageAcct) ? [{ key: "mortgage", name: "Mortgage", meta: `Typed${mortgageMonthly > 0 ? ` · ${fmtMoney(mortgageMonthly)}/mo` : ""}`, balance: mortgageBalance, card: false, typed: "mortgage" as const }] : []),
+    ...(!connected.some(isMortgageAcct) ? mortgages.map((m) => ({ key: m.id === "m1" ? "mortgage" : `mortgage:${m.id}`, name: m.name, mortgageId: m.id,
+      meta: `Mortgage · ${mortgageMeta(m.monthly, m.ratePct, m.balance)}`, balance: m.balance, card: false, typed: "mortgage" as const, rate: m.ratePct })) : []),
   ];
   const rows = list.sort((x, y) => (y.rate ?? -1) - (x.rate ?? -1) || y.balance - x.balance);
 
@@ -3747,6 +3776,19 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
   const startTotal = tracked.reduce((s, r) => s + originals[r.key], 0);
   const paidTotal = tracked.reduce((s, r) => s + Math.max(0, originals[r.key] - r.balance), 0);
 
+  // Rate as a percent; empty means the default the plan uses.
+  const rateField = (value: number | undefined, onChange: (v: number | undefined) => void) => (
+    <label style={{ display: "grid", gap: 4 }}>
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Rate (%)</span>
+      <Input aria-label="Interest rate, percent" numeric inputMode="decimal" placeholder={String(DEFAULT_MORTGAGE_RATE_PCT)} value={value ?? ""}
+        onChange={(e) => { const v = e.target.value.trim(); onChange(v === "" ? undefined : Math.max(0, Math.min(30, Number(v) || 0))); }} />
+    </label>
+  );
+  const addMortgage = () => {
+    const m: Mortgage = { id: newMortgageId(), name: mortgages.length ? `Mortgage ${mortgages.length + 1}` : "Mortgage", balance: 0, monthly: 0 };
+    setMortgages([...mortgages, m]);
+    setEditing(m.id === "m1" ? "mortgage" : `mortgage:${m.id}`);
+  };
   const field = (label: string, value: number, onChange: (v: number) => void) => (
     <label style={{ display: "grid", gap: 4 }}>
       <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{label}</span>
@@ -3769,16 +3811,17 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
           .map(([k, l, v]) => <span key={String(k)}>{l} <Fig>{fmtMoney(Number(v))}</Fig></span>)} />
       </MoneyHead>
 
-      <MoneyList footer={(hiddenCount > 0 || onRefreshAccounts) && (
+      <MoneyList footer={(hiddenCount > 0 || onRefreshAccounts || !connected.some(isMortgageAcct)) && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {hiddenCount > 0 && <Button variant="ghost" size="sm" onClick={() => setHideZero(h => !h)}>{hideZero ? `Show $0 accounts (${hiddenCount})` : "Hide $0 accounts"}</Button>}
           {onRefreshAccounts && connected.length > 0 && <Button variant="ghost" size="sm" onClick={onRefreshAccounts}>Refresh balances</Button>}
+          {!connected.some(isMortgageAcct) && <Button variant="ghost" size="sm" onClick={addMortgage}>+ Add a mortgage</Button>}
         </div>
       )}>
         {rows.map(r => {
           const orig = originals[r.key] ?? 0;
           const paid = orig > 0 ? Math.max(0, orig - r.balance) : 0;
-          const meta = [r.meta, r.rate != null ? `${r.rate}%` : null,
+          const meta = [r.meta, r.rate != null && !r.mortgageId && !r.plaidMortgageId ? `${r.rate}%` : null,
             r.card && r.limit ? `of ${fmtMoney(r.limit)} limit` : null,
             !r.card && orig > 0 ? `${Math.round((paid / orig) * 100)}% paid off` : null].filter(Boolean).join(" · ");
           const open = editing === r.key;
@@ -3798,10 +3841,25 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageB
               after={open && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, alignItems: "end" }}>
                   {r.typed === "debt" && field("Balance", totalDebt, setTotalDebt)}
-                  {r.typed === "mortgage" && field("Balance", mortgageBalance, setMortgageBalance)}
-                  {r.typed === "mortgage" && field("Monthly payment", mortgageMonthly, setMortgageMonthly)}
+                  {r.mortgageId && (() => {
+                    const m = mortgages.find((x) => x.id === r.mortgageId)!;
+                    const set = (patch: Partial<Mortgage>) => setMortgages(mortgages.map((x) => (x.id === m.id ? { ...x, ...patch } : x)));
+                    return <>
+                      <label style={{ display: "grid", gap: 4 }}><span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Name</span>
+                        <Input aria-label="Mortgage name" value={m.name} onChange={(e) => set({ name: e.target.value })} /></label>
+                      {field("Balance", m.balance, (v) => set({ balance: v }))}
+                      {rateField(m.ratePct, (v) => set({ ratePct: v }))}
+                      {field("Monthly payment", m.monthly, (v) => set({ monthly: v }))}
+                    </>;
+                  })()}
+                  {r.plaidMortgageId && (() => {
+                    const id = r.plaidMortgageId, t = mortgageTerms[id] ?? {};
+                    const set = (patch: { monthly?: number; ratePct?: number }) => setMortgageTerms({ ...mortgageTerms, [id]: { ...t, ...patch } });
+                    return <>{rateField(t.ratePct, (v) => set({ ratePct: v }))}{field("Monthly payment", t.monthly ?? 0, (v) => set({ monthly: v }))}</>;
+                  })()}
                   {field("Started at", orig, v => onOriginal?.(r.key, v))}
-                  <div><Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Done</Button></div>
+                  <div style={{ display: "flex", gap: 6 }}><Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Done</Button>
+                    {r.mortgageId && <Button variant="ghost" size="sm" onClick={() => { setMortgages(mortgages.filter((x) => x.id !== r.mortgageId)); setEditing(null); }}>Remove</Button>}</div>
                 </div>
               )}
             />
@@ -4613,7 +4671,7 @@ type CashflowSubTab = "cashflow" | "categories" | "expected" | "budgets";
 // Quiet ink-3 strokes; only the selected page's icon takes the green.
 const SUB_ICONS: Record<string, string> = {
   Transactions: "M4 7h13l-3-3M20 17H7l3 3",
-  Upcoming: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+  Calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
   Categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   Budget: "M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z",
   Income: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
@@ -4638,7 +4696,9 @@ const CASHFLOW_SUB_TABS: { key: CashflowSubTab; label: string }[] = [
   // Recurring and Expected were one story told twice — what is coming and
   // when, once by guessing and once by being told. They are now one tab, and
   // detection feeds it as suggestions rather than as a second list.
-  { key: "expected",   label: "Upcoming"     },
+  // Upcoming became Calendar (D-61): the same list, plus the month with cash
+  // day by day and the invest day on it, which Contributions used to show.
+  { key: "expected",   label: "Calendar"     },
   { key: "categories", label: "Categories"   },
   { key: "budgets",    label: "Budget"       },
 ];
@@ -4783,8 +4843,14 @@ export default function Dashboard() {
   const [taxable,         setTaxable]         = useState(0);
   const [cashSavings,     setCashSavings]     = useState(0);
   const [totalDebt,       setTotalDebt]       = useState(0);
-  const [mortgageBalance, setMortgageBalance] = useState(0);
-  const [mortgageMonthly, setMortgageMonthly] = useState(0);
+  // Every mortgage on its own (D-61); the totals the rest of the dashboard reads are summed from them.
+  const [mortgages, setMortgages] = useState<Mortgage[]>([]);
+  const [mortgageTerms, setMortgageTerms] = useState<MortgageTerms>({});
+  // The contribution marked as made on the Calendar (D-61): until the next one,
+  // nothing more is safe to invest, so the same money is never invested twice.
+  const [contributionDone, setContributionDone] = useState<{ iso: string; amount: number } | null>(null);
+  const mortgageBalance = useMemo(() => mortgages.reduce((s, m) => s + m.balance, 0), [mortgages]);
+  const mortgageMonthly = useMemo(() => mortgages.reduce((s, m) => s + m.monthly, 0), [mortgages]);
   const [growthRate,      setGrowthRate]      = useState(REAL_RETURN);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
   const [taxEnabled,        setTaxEnabled]        = useState(false);
@@ -4805,7 +4871,7 @@ export default function Dashboard() {
   const [userJoinedAt, setUserJoinedAt] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const usTaxHome = TAX_US_STATES.some((t) => t.value === CITIES.find(c => c.name === cityName)?.state);
-  const plan = useMemo<PlanSettings>(() => ({ ...planSettings, currentAge: fireAge || undefined,
+  const planBase = useMemo<PlanSettings>(() => ({ ...planSettings, currentAge: fireAge || undefined,
     taxFreeGainsLocked: taxFreeFor(defaultCurrency, usTaxHome)?.gainsLocked ?? true }), [planSettings, fireAge, defaultCurrency, usTaxHome]);
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
 
@@ -4888,7 +4954,7 @@ export default function Dashboard() {
       .reduce((sum, [, amount]) => sum + (amount || 0), 0);
     const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
     const { fireYear, fireTarget } = calcProjection({
-      ...plan,
+      ...planBase,
       annualIncome: income * 12,
       monthlyExpenses,
       k401,
@@ -4909,7 +4975,7 @@ export default function Dashboard() {
     if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return place("approaching-fire");
     if (investable > 0 || income > 0) return place("building-momentum");
     return place("starting-out");
-  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, plan, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
+  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, planBase, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
   type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
@@ -4925,6 +4991,12 @@ export default function Dashboard() {
     () => rawPlaidAccounts.map((a) => accountInUSD(a, rates)),
     [rawPlaidAccounts, rates],
   );
+  // The plan as every freedom date projects it: settings, age, and each mortgage at its own rate (D-61).
+  const connectedMortgages = useMemo(() => plaidAccounts
+    .filter((a) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage") && (a.balance_current ?? 0) > 0)
+    .map((a) => ({ id: a.id, name: a.name || a.official_name || "Mortgage", balance: a.balance_current ?? 0 })), [plaidAccounts]);
+  const plan = useMemo<PlanSettings>(() => ({ ...planBase, mortgages: engineMortgages(mortgages, connectedMortgages, mortgageTerms) }),
+    [planBase, mortgages, connectedMortgages, mortgageTerms]);
   const [freedomDate, setFreedomDate] = useState<Date | null>(null);
   const freedomDateLabel = freedomDate
     ? freedomDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
@@ -5063,6 +5135,51 @@ export default function Dashboard() {
       targetPerDollar: retirementMonthly > 0 ? planFreedom.fireTarget / (retirementMonthly * 12) : 1 / withdrawalRate,
     };
   }, [planFreedomInputs, growthRate, planFreedom, withdrawalRate]);
+  // The one-page plan (D-60), built from the freedom date's own numbers when asked for.
+  const [report, setReport] = useState<ReportData | null>(null);
+  const reportMoney = useCallback((n: number) => fmt(n, defaultCurrency, rates), [defaultCurrency, rates]);
+  const reportCompact = useCallback((n: number) => fmt(n, defaultCurrency, rates, true), [defaultCurrency, rates]);
+  const openReport = useCallback(() => {
+    const date = planFreedom.exactDate;
+    if (!date) return;
+    const yearsTo = (d: Date | null) => (d ? (d.getTime() - Date.now()) / (365.25 * 864e5) : null);
+    const ageAt = (d: Date | null) => { const y = yearsTo(d); return y === null ? null : fireAge > 0 ? Math.floor(fireAge + y) : Math.ceil(y); };
+    // Spending a round step either side (12,500 around 112,500), so the rows read as choices, not percentages.
+    const spend = planFacts.retirementMonthly * 12, mag = Math.pow(10, Math.floor(Math.log10(Math.max(1, spend * 0.11))));
+    const step = [1, 1.25, 2, 2.5, 5, 10].map((m) => m * mag).reduce((a, c) => (Math.abs(c - spend * 0.11) < Math.abs(a - spend * 0.11) ? c : a));
+    const spends = [Math.max(0, spend - step), spend, spend + step], growths = [growthRate - 0.01, growthRate, growthRate + 0.01];
+    const ages = spends.map((sp) => growths.map((g) => ageAt(freedomProjection({ ...planFreedomInputs, growthRate: g, plan: { ...plan, retirementAnnualSpend: sp } }).exactDate)));
+    const inputs = projectionInputs({ ...planFreedomInputs, growthRate });
+    const pension = planSettings.pensionAnnual ?? 0, employer = planSettings.employerAnnual ?? 0, afterTax = Math.max(0, planFreedom.annualSavings);
+    const pensionName = pensionFor(defaultCurrency, usTaxHome), account = taxFreeFor(defaultCurrency, usTaxHome);
+    const ownSplit = planSettings.taxFreeAnnual != null || pension > 0, taxFree = Math.min(afterTax, planSettings.taxFreeAnnual ?? 0);
+    const saving = ownSplit ? [
+      ...(pension > 0 ? [{ label: `${pensionName.payroll}, before tax`, value: pension }] : []),
+      ...(employer > 0 ? [{ label: `${pensionName.payroll}, employer`, value: employer }] : []),
+      ...(taxFree > 0 && account ? [{ label: account.name, value: taxFree }] : []),
+      { label: "Investing account", value: afterTax - taxFree },
+    ] : [...(employer > 0 ? [{ label: "Employer adds", value: employer }] : []), { label: "Saved from take-home", value: afterTax }];
+    const total = pension + employer + afterTax, gross = planSettings.grossAnnual ?? 0;
+    const fy = planFreedom.fireYear ?? 0, b = planFreedom.bridge;
+    const stateKey = CITIES.find(c => c.name === cityName)?.state ?? "";
+    const stateLabel = STATE_TAX[stateKey]?.label.split(" —")[0] ?? "";
+    setReport({
+      date, age: fireAge > 0 ? ageAt(date) : null, currentAge: fireAge || null,
+      place: usTaxHome ? `United States${stateLabel ? ` (${stateLabel})` : ""}` : stateLabel,
+      target: planFreedom.fireTarget, spend, spendIsGoal: (planSettings.retirementAnnualSpend ?? 0) > 0, withdrawalRate, growthRate,
+      invested: planFacts.invested,
+      balances: [{ label: "taxable", value: inputs.taxable }, { label: "cash", value: inputs.cashSavings }, { label: pensionName.payroll, value: inputs.k401 }, { label: account?.name ?? "tax-free", value: inputs.rothIRA }],
+      saving, savingTotal: total, savingPct: gross > 0 ? total / (gross + employer) : effectiveIncome > 0 ? total / (effectiveIncome * 12 + pension + employer) : null,
+      spendingToday: planFacts.currentMonthly * 12, gross: gross || null,
+      path: planFreedom.data.slice(0, Math.min(planFreedom.data.length, fy + 3)).map((r, i) => ({ age: fireAge > 0 ? fireAge + i : i, total: r["Investable"] ?? 0, reachable: r["Reachable"] ?? 0 })),
+      bridge: b && planSettings.accessAge ? { accessAge: ageLabel(planSettings.accessAge), at: planSettings.accessAge, years: b.years, needed: b.needed, reachable: b.reachable, locked: b.locked, ok: b.reachable >= b.needed, name: pensionName.payroll } : null,
+      grid: { spends, growths, ages },
+      conservative: [usTaxHome ? "No Social Security counted" : "No state pension counted",
+        ...((planSettings.payGrowth ?? 0) > 0 ? [] : [`No raises: saving stays at ${fmt(total, defaultCurrency, rates, true)} a year`]),
+        "Your home is not counted", `${+(withdrawalRate * 100).toFixed(1)}% a year withdrawal, a common long-run rule`],
+      notIncluded: [...(taxEnabled ? [] : ["Tax on withdrawals in retirement"]), ...(usTaxHome ? ["Health insurance before 65"] : []), "Year-to-year market swings"],
+    });
+  }, [planFreedom, planFacts, fireAge, growthRate, planFreedomInputs, plan, planSettings, defaultCurrency, usTaxHome, cityName, withdrawalRate, effectiveIncome, taxEnabled, rates]);
   // Plan → Explore (D-58): every city at your plan's numbers, with the same
   // lifestyle and tax in retirement as the freedom date (amounts are USD).
   const explorePlan = useMemo(() => ({
@@ -5123,7 +5240,7 @@ export default function Dashboard() {
       // Typed figures only where no connected account replaces them (effectiveDebts).
       ...(((d) => [
         ...(d.otherDebt === totalDebt && totalDebt > 0 ? [{ name: "Other debt", balance: totalDebt }] : []),
-        ...(d.mortgage === mortgageBalance && mortgageBalance > 0 ? [{ name: "Mortgage", balance: mortgageBalance }] : []),
+        ...(d.mortgage === mortgageBalance ? mortgages.filter((m) => m.balance > 0).map((m) => ({ name: m.name, balance: m.balance })) : []),
       ])(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }))),
     ],
     expectedItems: contributionItems,
@@ -5131,7 +5248,8 @@ export default function Dashboard() {
     budgetMonthlySpending: Object.entries(effectiveExpenses)
       .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
       .reduce((sum, [, v]) => sum + (v as number), 0),
-  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending, plaidAccounts, totalDebt, mortgageBalance]);
+    contributionDone,
+  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending, plaidAccounts, totalDebt, mortgageBalance, mortgages, contributionDone]);
   // The emergency fund as Contributions defines it (D-34): its needs basis and
   // any amount set by hand. The Assets tab reads it too (D-37), so "months
   // covered" is one number on Home, Contributions and Assets.
@@ -5478,8 +5596,9 @@ export default function Dashboard() {
           // Seed cashSavings from wizard portfolio balance when no existing data
           setCashSavings(fp.cashSavings || (prefill.portfolioBalance && prefill.portfolioBalance > 0 ? prefill.portfolioBalance : 0));
           setTotalDebt(fp.totalDebt || 0);
-          setMortgageBalance(fp.mortgageBalance || 0);
-          setMortgageMonthly(fp.mortgageMonthly || 0);
+          setMortgages(loadMortgages(fp));
+          setMortgageTerms(fp.mortgageTerms && typeof fp.mortgageTerms === "object" ? fp.mortgageTerms : {});
+          setContributionDone(fp.contributionDone && typeof fp.contributionDone.iso === "string" ? { iso: fp.contributionDone.iso, amount: Number(fp.contributionDone.amount) || 0 } : null);
           // 0.07 was the typed default every profile saved before growth could be
           // chosen (D-24), so it means "never chosen": use today's measured default.
           setGrowthRate(fp.growthRate && fp.growthRate !== 0.07 ? fp.growthRate : (prefill.realReturn || REAL_RETURN));
@@ -5560,7 +5679,7 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct, plan: planSettings };
+      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct, plan: planSettings, mortgages, mortgageTerms, contributionDone };
       // Read first so this write can't clobber _custom_cats/_custom_subcats written
       // independently (and asynchronously) by useCustomCategories().
       const { data: existingRow } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
@@ -5599,7 +5718,7 @@ export default function Dashboard() {
         }
       }
     }, 1000);
-  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, planSettings]);
+  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, planSettings, mortgages, mortgageTerms, contributionDone]);
 
   async function refreshPlaidAccounts() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -6094,7 +6213,7 @@ export default function Dashboard() {
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
-                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} />}
+                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} onMarkDone={setContributionDone} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} />
                 )}
@@ -6139,6 +6258,7 @@ export default function Dashboard() {
                 />
               </div>
             )}
+            {report && <FreedomReport d={report} money={reportMoney} compact={reportCompact} onClose={() => setReport(null)} onExport={(format, branded) => trackFreedomReportExported({ format, branded })} />}
             {tab === "income" && !profileLoading && (
               <IncomeTab
                 income={income} setIncome={setIncome}
@@ -6160,8 +6280,8 @@ export default function Dashboard() {
             {tab === "liabilities" && !profileLoading && (
               <LiabilitiesTab
                 totalDebt={totalDebt} setTotalDebt={setTotalDebt}
-                mortgageBalance={mortgageBalance} setMortgageBalance={setMortgageBalance}
-                mortgageMonthly={mortgageMonthly} setMortgageMonthly={setMortgageMonthly}
+                mortgages={mortgages} setMortgages={setMortgages}
+                connectedMortgages={connectedMortgages} mortgageTerms={mortgageTerms} setMortgageTerms={setMortgageTerms}
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
                 plaidAccounts={plaidAccounts}
@@ -6188,6 +6308,7 @@ export default function Dashboard() {
                       invested={planFacts.invested}
                       target={planFacts.fireTarget}
                     />
+                    {planFreedom.exactDate && <Button variant="secondary" size="sm" onClick={openReport} style={{ justifySelf: "start" }}>Share one-page plan</Button>}
                     {planMoves.length > 0 && (
                       <>
                         <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>What moves it most</div>

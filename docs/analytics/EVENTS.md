@@ -461,6 +461,14 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
 - `funnel_explore_plan_started`: "Plan {city}" into the calculator. No properties.
 - Never city names, amounts, ages or years: what was used, not what was looked at.
 
+### `funnel_freedom_report_exported` (D-60)
+
+- **Where**: `app/dashboard/FreedomReport.tsx`, on Save as PDF, Download PNG
+  or Copy as Markdown.
+- **Properties**: `format` (`page`, `poster`, `timeline`, `reddit`) and
+  `branded` (false without the UntilFire name; the poster, timeline and Reddit
+  text are always unbranded). Never the plan's amounts, ages or dates.
+
 ## Adding a new event
 
 1. Add the event name to `FunnelEvents` in `lib/analytics-events.ts`.

@@ -33,7 +33,7 @@ Home                          synthesis · customisable layout
 Money                         actual finances and operational planning
   ├ Cashflow
   │   ├ Transactions (date range, review bar, summary card, Worth a look, list)
-  │   ├ Upcoming (expected payments, with recurring detection suggestions)
+  │   ├ Calendar (month of payments with cash by day and the invest day, or a list; recurring suggestions; D-61)
   │   ├ Categories
   │   └ Budget
   ├ Income (salary to take-home, pension before tax, employer money; D-59)

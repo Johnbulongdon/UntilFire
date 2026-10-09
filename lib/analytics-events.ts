@@ -63,6 +63,8 @@ export const FunnelEvents = {
   EXPLORE_MODE_CHANGED: 'funnel_explore_mode_changed',
   EXPLORE_STARRED: 'funnel_explore_starred',
   EXPLORE_PLAN_STARTED: 'funnel_explore_plan_started',
+  // The one-page plan saved as a PDF (D-60), with or without the UntilFire name.
+  FREEDOM_REPORT_EXPORTED: 'funnel_freedom_report_exported',
 } as const;
 
 export type FunnelEventName =
@@ -282,3 +284,4 @@ export interface ExploreViewedProperties extends BaseFunnelProperties { has_plan
 export interface ExploreCityOpenedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' }
 export interface ExploreModeChangedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' }
 export interface ExploreStarredProperties extends BaseFunnelProperties { starred: boolean }
+export interface FreedomReportExportedProperties extends BaseFunnelProperties { format: 'page' | 'poster' | 'timeline' | 'reddit'; branded: boolean }

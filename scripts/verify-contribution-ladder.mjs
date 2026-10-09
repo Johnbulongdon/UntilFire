@@ -189,6 +189,15 @@ check("expenses follow the month the user picked",
     fixed.budget === 500 && fixed.budgetIsCustom === true);
   check("and a live amount is not marked as custom", live.budgetIsCustom === false);
 
+  // Marked as invested (D-61): the money has gone even if the bank has not
+  // caught up, so nothing more is safe until the next contribution date.
+  const marked = buildLadderView(stored(), null, { ...facts, contributionDone: { iso: "2026-03-25", amount: 700 } }, sched);
+  check("a contribution marked as made leaves nothing more safe to invest",
+    marked.available.free === 0 && marked.available.done?.amount === 700, `${marked.available.free}`);
+  const stale = buildLadderView(stored(), null, { ...facts, contributionDone: { iso: "2026-02-25", amount: 700 } }, sched);
+  check("and last cycle's mark does not carry into this one",
+    stale.available.free === 700 && stale.available.done === null, `${stale.available.free}`);
+
   check("owing more than you hold contributes nothing rather than a negative",
     buildLadderView(stored(), null,
       { ...facts, expectedItems: [{ description: "Bills", amountUSD: 9000, type: "expense", dueDate: "2026-03-22", recurrence: "none" }] }, sched).budget === 0);

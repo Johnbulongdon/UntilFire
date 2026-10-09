@@ -64,6 +64,10 @@ export interface AccountFacts {
     wants: number;
     untagged: number;
   };
+  /** The contribution the user marked as made, by its date (D-61). While that
+   *  date is the next contribution, nothing more is safe to invest: the money
+   *  has already gone, even before the bank balance shows it. */
+  contributionDone?: { iso: string; amount: number } | null;
   /** Injectable for tests; the surfaces leave it out and get the real clock. */
   today?: Date;
 }
@@ -104,8 +108,11 @@ export interface AvailableToContribute {
   /** Counted income and bills across the cycle. */
   income: number;
   committed: number;
-  /** The lowest the balance falls before the next contribution; never negative. */
+  /** The lowest the balance falls before the next contribution; never negative.
+   *  Zero once this cycle's contribution is marked as made. */
   free: number;
+  /** This cycle's contribution, when marked as made. */
+  done: { iso: string; amount: number } | null;
   /** False when no expected payments are recorded at all, so nothing was
    *  subtracted and the figure is only today's balance. */
   hasExpectedData: boolean;
@@ -195,6 +202,7 @@ export function buildLadderView(
   const allowanceBasis = dayToDayAllowance(facts, items, ladder.allowanceExclusions ?? []);
   const forecast = buildForecast(sumBalances(contributable), items, schedule, today, allowanceBasis?.perDay ?? 0);
   const nextDate = nextContributionDate(schedule, today);
+  const done = facts.contributionDone?.iso === forecast.contributionIso ? facts.contributionDone : null;
   const available: AvailableToContribute = {
     nextDate,
     daysUntil: daysUntil(nextDate, today),
@@ -202,7 +210,8 @@ export function buildLadderView(
     cashAccounts: contributable,
     income: forecast.income,
     committed: forecast.expenses,
-    free: forecast.safeToContribute,
+    free: done ? 0 : forecast.safeToContribute,
+    done,
     hasExpectedData: items.length > 0,
     forecast,
     allowanceBasis,

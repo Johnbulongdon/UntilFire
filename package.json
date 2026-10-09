@@ -46,6 +46,7 @@
     "test:coast-fire": "node --experimental-strip-types --no-warnings scripts/verify-coast-fire.mjs",
     "test:referrals": "node --experimental-strip-types --no-warnings scripts/verify-referrals.mjs",
     "test:plan-freedom-date": "node scripts/verify-plan-freedom-date.mjs",
+    "test:mortgages": "node --experimental-strip-types --no-warnings scripts/verify-mortgages.ts",
     "test:net-worth-compare": "node --experimental-strip-types --no-warnings scripts/verify-net-worth-compare.mjs",
     "test:manual-category-icons": "node scripts/verify-manual-category-icons.mjs",
     "test:monthly-checkin": "node scripts/verify-monthly-checkin-card.mjs",

@@ -40,6 +40,7 @@ import {
   type TxFlagResolvedProperties,
   type DataExportedProperties,
   type ExploreViewedProperties,
+  type FreedomReportExportedProperties,
   type ExploreCityOpenedProperties,
   type ExploreModeChangedProperties,
   type ExploreStarredProperties,
@@ -389,6 +390,12 @@ export function trackTxFlagResolved(input: { flag: 'card_payment' | 'duplicate' 
 export function trackDataExported(input: { file: 'transactions_csv' | 'everything_json'; ok: boolean }) {
   const props: DataExportedProperties = withVersion({ file: input.file, ok: input.ok });
   capture(FunnelEvents.DATA_EXPORTED, props);
+}
+
+/** The one-page plan saved as a PDF (D-60). Never the plan's numbers. */
+export function trackFreedomReportExported(input: { format: FreedomReportExportedProperties['format']; branded: boolean }) {
+  const props: FreedomReportExportedProperties = withVersion({ format: input.format, branded: input.branded });
+  capture(FunnelEvents.FREEDOM_REPORT_EXPORTED, props);
 }
 
 export function trackExploreViewed(input: { has_plan: boolean }) {

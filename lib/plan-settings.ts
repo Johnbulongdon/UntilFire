@@ -26,6 +26,8 @@ export type PlanSettings = {
   taxFreeAnnual?: number;
   /** Set from the country: only paid-in money is reachable early (a Roth IRA). */
   taxFreeGainsLocked?: boolean;
+  /** From Money → Debts, not saved here: each mortgage, its payment a month and rate as a fraction (D-61). */
+  mortgages?: { balance: number; monthly: number; rate: number }[];
 };
 
 /**
