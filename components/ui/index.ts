@@ -24,6 +24,7 @@ export { default as Card } from "./Card";
 export type { CardProps, CardElevation } from "./Card";
 
 export { default as Field, Input, Select, inputStyle } from "./Field";
+export { default as PillEditor } from "./PillEditor";
 export type { FieldProps, InputProps, SelectProps } from "./Field";
 
 export { default as InfoTip } from "./InfoTip";

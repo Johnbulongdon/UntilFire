@@ -4,7 +4,9 @@ import { useState } from "react";
 import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
 import GrowthSetting from "@/app/components/GrowthSetting";
-import { MoneyList, MoneyRow } from "./MoneyCards";
+import { MoneyList } from "./MoneyCards";
+import PillEditor from "@/components/ui/PillEditor";
+import PlanAgePicker from "@/components/ui/PlanAgePicker";
 
 /**
  * The assumptions a freedom date is computed from: age, where freedom gets
@@ -70,24 +72,13 @@ const inputStyle: React.CSSProperties = {
   fontSize: 14,
   color: "var(--uf-ink)",
   background: "var(--uf-card)",
-  outline: "none",
+
   boxSizing: "border-box",
 };
 
-const dropdownStyle: React.CSSProperties = {
-  position: "absolute",
-  top: "100%",
-  left: 0,
-  right: 0,
-  zIndex: 50,
-  background: "var(--uf-card)",
-  border: "1px solid var(--uf-border)",
-  borderRadius: 8,
-  boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-  maxHeight: 220,
-  overflowY: "auto",
-  marginTop: 4,
-};
+function AssumptionRow({ name, meta, value, icon, onClick, after, onClose }: { name: string; meta?: React.ReactNode; value: string; icon?: React.ReactNode; dot?: string; onClick: () => void; after?: React.ReactNode; onClose: () => void }) {
+  return <PillEditor label={name} description={meta} value={value.replace(/\s*›$/, '')} icon={icon} open={!!after} onOpen={onClick} onClose={onClose}>{after}</PillEditor>;
+}
 
 export default function FireAssumptionsCard({
   fireAge,
@@ -106,7 +97,7 @@ export default function FireAssumptionsCard({
   taxRow,
 }: Props) {
   const [saved, setSaved] = useState(false);
-  // One editor open at a time, under its row (D-42).
+  // One focused editor at a time: desktop dialog or phone sheet.
   const [open, setOpen] = useState<null | "age" | "city" | "lifestyle" | "taxhome" | "growth" | "tax">(null);
   const toggle = (k: NonNullable<typeof open>) => setOpen((o) => (o === k ? null : k));
   const [citySearch, setCitySearch] = useState(retirementCityName);
@@ -115,9 +106,7 @@ export default function FireAssumptionsCard({
   const [showTaxDropdown, setShowTaxDropdown] = useState(false);
 
   const trimmed = citySearch.trim();
-  const matches = trimmed.length >= 2
-    ? CITIES.filter((c) => c.name.toLowerCase().includes(trimmed.toLowerCase())).slice(0, 8)
-    : [];
+  const matches = CITIES.filter((c) => !trimmed || c.name.toLowerCase().includes(trimmed.toLowerCase())).slice(0, 8);
   const canUseTyped = trimmed.length >= 2
     && !matches.some((c) => c.name.toLowerCase() === trimmed.toLowerCase());
 
@@ -135,6 +124,7 @@ export default function FireAssumptionsCard({
     onRetirementCityChange(name, col);
     setCitySearch(name);
     setShowCityDropdown(false);
+    setOpen(null);
     flash();
   }
 
@@ -155,39 +145,41 @@ export default function FireAssumptionsCard({
     <div style={{ display: "grid", gap: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
         <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>Your assumptions · every date here comes from these</span>
-        {saved && <span className="uf-t-small" style={{ color: "var(--uf-pos-ink)", fontWeight: 700 }}>Saved ✓</span>}
+        {saved && <span role="status" className="uf-t-small" style={{ color: "var(--uf-pos-ink)", fontWeight: 700 }}>Updated ✓</span>}
       </div>
       <MoneyList>
-        <MoneyRow dot="var(--uf-ink-3)" icon="🎂" name="Age" meta="Turns the date into an age" value={fireAge ? `${fireAge} ›` : "Add ›"} onClick={() => toggle("age")}
+        <AssumptionRow onClose={() => setOpen(null)} dot="var(--uf-ink-3)" icon="🎂" name="Age" meta="Your starting point" value={fireAge ? `${fireAge} ›` : "Add ›"} onClick={() => toggle("age")}
           after={open === "age" && (
-            <input type="number" min={18} max={100} aria-label="Current age" value={fireAge || ""} placeholder="30"
-              onChange={(e) => { onFireAgeChange(Number(e.target.value)); flash(); }} style={{ ...inputStyle, maxWidth: 140 }} />
+            <PlanAgePicker value={fireAge} onChange={(age) => { onFireAgeChange(age); flash(); }} />
           )} />
-        <MoneyRow dot="#2a78d6" icon="🌍" name="Retire in" meta={retirementCityCol > 0 ? `Prices your FIRE number at about ${showMoney(targetAnnualSpend)} a year` : "Skip it and your own spending sets the target"}
-          value={retirementCityName ? `${retirementCityName} ›` : "Choose ›"} onClick={() => toggle("city")}
+        <AssumptionRow onClose={() => setOpen(null)} dot="#2a78d6" icon="🌍" name="Retire in" meta={retirementCityCol > 0 ? `Prices your FIRE number at about ${showMoney(targetAnnualSpend)} a year` : "Skip it and your own spending sets the target"}
+          value={retirementCityName ? `${retirementCityName} ›` : "Choose ›"} onClick={() => { setCitySearch(""); setShowCityDropdown(true); toggle("city"); }}
           after={open === "city" && (
             <div>
-              <label style={labelStyle}>Retirement target city</label>
+              <label htmlFor="plan-retirement-city" style={labelStyle}>Retirement target city</label>
               <div style={{ position: "relative" }}>
                 <input
+                  id="plan-retirement-city"
+                  type="search"
+                  autoComplete="off"
                   style={inputStyle}
                   value={citySearch}
                   onChange={(e) => { setCitySearch(e.target.value); setShowCityDropdown(true); }}
                   onFocus={() => setShowCityDropdown(true)}
                   placeholder="Where should freedom be priced?"
                 />
-                {showCityDropdown && trimmed.length >= 2 && (matches.length > 0 || canUseTyped) && (
-                  <div style={dropdownStyle}>
+                {showCityDropdown && (matches.length > 0 || canUseTyped) && (
+                  <div className="uf-pill-search-results">
                     {matches.map((c) => (
-                      <div key={c.key} onMouseDown={() => pickCity(c.name, c.col)}
+                      <button type="button" className="uf-pill-choice" key={c.key} onClick={() => pickCity(c.name, c.col)}
                         style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
                         {c.flag} {c.name}
-                      </div>
+                      </button>
                     ))}
                     {canUseTyped && (
-                      <div onMouseDown={() => pickCity(trimmed, 0)}
+                      <button type="button" className="uf-pill-choice" onClick={() => pickCity(trimmed, 0)}
                         style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, color: "var(--uf-pos-ink)", fontWeight: 700 }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
@@ -195,21 +187,21 @@ export default function FireAssumptionsCard({
                         <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
                           Not in our list? We&apos;ll still save it.
                         </div>
-                      </div>
+                      </button>
                     )}
                   </div>
                 )}
               </div>
             </div>
           )} />
-        <MoneyRow dot="#eda100" icon={selectedLifestyle.icon} name="Lifestyle" meta="Spending in retirement, against today's" value={`${selectedLifestyle.label} ›`} onClick={() => toggle("lifestyle")}
+        <AssumptionRow onClose={() => setOpen(null)} dot="#eda100" icon={selectedLifestyle.icon} name="Lifestyle" meta="Spending in retirement, against today's" value={`${selectedLifestyle.label} ›`} onClick={() => toggle("lifestyle")}
           after={open === "lifestyle" && (
             <div role="radiogroup" aria-label="Lifestyle" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {LIFESTYLE_TIERS.map((tier) => {
                 const on = lifestyleMultiplier === tier.multiplier;
                 return (
-                  <button key={tier.label} type="button" role="radio" aria-checked={on} onClick={() => { onLifestyleChange(tier.multiplier); flash(); }}
-                    style={{ border: "none", borderRadius: 999, padding: "6px 14px", font: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  <button key={tier.label} type="button" role="radio" aria-checked={on} onClick={() => { onLifestyleChange(tier.multiplier); setOpen(null); flash(); }}
+                    style={{ border: "none", borderRadius: 999, minHeight: 44, padding: "6px 14px", font: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer",
                       background: on ? "var(--uf-ink)" : "var(--uf-surface-2)", color: on ? "var(--uf-card)" : "var(--uf-ink-2)" }}>
                     {tier.icon} {tier.label} · {Math.round(tier.multiplier * 100)}%
                   </button>
@@ -217,7 +209,7 @@ export default function FireAssumptionsCard({
               })}
             </div>
           )} />
-        <MoneyRow dot="#e34948" icon="🏛️" name="Tax home" meta="Where income tax is worked out" value={taxKey && STATE_TAX[taxKey] ? `${STATE_TAX[taxKey].label} ›` : "Choose ›"} onClick={() => toggle("taxhome")}
+        <AssumptionRow onClose={() => setOpen(null)} dot="#e34948" icon="🏛️" name="Tax home" meta="Where income tax is worked out" value={taxKey && STATE_TAX[taxKey] ? `${STATE_TAX[taxKey].label} ›` : "Choose ›"} onClick={() => { setTaxSearch(""); setShowTaxDropdown(true); toggle("taxhome"); }}
           after={open === "taxhome" && (
             <div style={{ position: "relative" }}>
               <input
@@ -226,10 +218,9 @@ export default function FireAssumptionsCard({
                 value={taxSearch}
                 onChange={(e) => { setTaxSearch(e.target.value); setShowTaxDropdown(true); }}
                 onFocus={() => setShowTaxDropdown(true)}
-                onBlur={() => setTimeout(() => setShowTaxDropdown(false), 150)}
                 placeholder={taxKey && STATE_TAX[taxKey] ? `Change: ${STATE_TAX[taxKey].label}` : "Search city or state to set tax home…"}
               />
-              {showTaxDropdown && taxSearch.trim().length >= 2 && (() => {
+              {showTaxDropdown && (() => {
                 const taxMatches = CITIES.filter((c) =>
                   c.name.toLowerCase().includes(taxSearch.trim().toLowerCase()) && c.state && STATE_TAX[c.state]
                 ).slice(0, 8);
@@ -237,16 +228,16 @@ export default function FireAssumptionsCard({
                 const seen = new Set<string>();
                 const unique = taxMatches.filter((c) => { if (seen.has(c.state)) return false; seen.add(c.state); return true; });
                 return (
-                  <div style={dropdownStyle}>
+                  <div className="uf-pill-search-results">
                     {unique.map((c) => (
-                      <div key={c.state}
-                        onMouseDown={() => { onTaxKeyChange(c.state); setTaxSearch(""); setShowTaxDropdown(false); flash(); }}
+                      <button type="button" className="uf-pill-choice" key={c.state}
+                        onClick={() => { onTaxKeyChange(c.state); setTaxSearch(""); setShowTaxDropdown(false); setOpen(null); flash(); }}
                         style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
                         {c.flag} {c.name}
                         <span style={{ fontSize: 12, color: "var(--uf-text-2)", marginLeft: 6 }}>&middot; {STATE_TAX[c.state]?.label}</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 );
@@ -254,10 +245,10 @@ export default function FireAssumptionsCard({
             </div>
           )} />
         {/* Growth after inflation (D-24): the assumption that moves the date most. */}
-        <MoneyRow dot="#008300" icon="📊" name="Growth after inflation" meta="The assumption that moves the date most" value={`${returnPct.toFixed(1)}% ›`} onClick={() => toggle("growth")}
+        <AssumptionRow onClose={() => setOpen(null)} dot="#008300" icon="📊" name="Growth after inflation" meta="The assumption that moves the date most" value={`${returnPct.toFixed(1)}% ›`} onClick={() => toggle("growth")}
           after={open === "growth" && growthEditor} />
         {taxRow && (
-          <MoneyRow dot="var(--uf-ink-3)" icon="🧾" name="Tax in retirement" meta={taxRow.summary} value={taxRow.on ? "On ›" : "Off ›"} onClick={() => toggle("tax")}
+          <AssumptionRow onClose={() => setOpen(null)} dot="var(--uf-ink-3)" icon="🧾" name="Tax in retirement" meta={taxRow.summary} value={taxRow.on ? "On ›" : "Off ›"} onClick={() => toggle("tax")}
             after={open === "tax" && taxRow.editor} />
         )}
       </MoneyList>

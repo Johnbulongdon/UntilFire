@@ -75,7 +75,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 
 export function Select({ style, children, ...rest }: SelectProps) {
   return (
-    <select style={{ ...inputStyle(false), cursor: "pointer", ...style }} {...rest}>
+    <select style={{ ...inputStyle(false), borderRadius: 999, minHeight: 44, cursor: "pointer", ...style }} {...rest}>
       {children}
     </select>
   );

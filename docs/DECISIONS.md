@@ -7,6 +7,23 @@ Sources and both vault branch snapshots are recorded in
 
 ## Active decisions
 
+### October 9: compact editable values use pill triggers
+
+**Status:** User-approved direction; Plan implementation is in review, not live.
+**Decision:** Use a pill as the resting control for compact values, opening the
+appropriate focused editor. Plan age uses a centered wheel on phone and a native
+dropdown on desktop; cities open search. Long text remains a text field. Keep
+existing financial callbacks and exact entry where needed. This refines D-42's
+assumption rows without changing their projection inputs.
+**Why:** The user found the exposed rectangular inputs too much like document
+fields and approved the pill preview. Adoption starts with Plan and shared Select;
+remaining hand-built controls migrate explicitly when touched.
+**Trade-offs:** Editing takes an extra tap. Preserve labels, keyboard access,
+focus return and mobile targets. Done closes edits applied as selected; it is not
+a rollback action. Local Updated feedback is not proof of a database save.
+**Contract:** [Design system](design/design-system.md),
+[implementation and verification](design/PILL_CONTROLS_HANDOFF.md).
+
 ### D-15 — September 24: flexible tasks, Claude integrates ready handoffs
 
 **Status:** Active workflow direction, as authorized by the user; publication of
