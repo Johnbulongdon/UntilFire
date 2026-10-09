@@ -123,6 +123,22 @@ export function RowIcon({ color, emoji, size = 36 }: { color: string; emoji?: Re
   );
 }
 
+/**
+ * A bank's own logo from Plaid, on a white disc so dark marks stay visible in
+ * dark mode; the bank's initial on its colour when Plaid has no logo.
+ */
+export function BankLogo({ logo, name, color, size = 36 }: { logo?: string | null; name: string; color?: string | null; size?: number }) {
+  return (
+    <span aria-hidden style={{ width: size, height: size, flex: "none", borderRadius: 999, display: "grid", placeItems: "center", overflow: "hidden",
+      background: logo ? "#fff" : color || "var(--uf-ink-3)", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--uf-ink) 10%, transparent)" }}>
+      {logo
+        // eslint-disable-next-line @next/next/no-img-element -- a data: URL from Plaid; next/image has nothing to optimise
+        ? <img src={logo} alt="" width={size - 8} height={size - 8} style={{ objectFit: "contain" }} />
+        : <b style={{ color: "#fff", fontSize: Math.round(size * 0.42) }}>{name.charAt(0).toUpperCase()}</b>}
+    </span>
+  );
+}
+
 const ICON = 36, GAP = 12;
 
 export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar, onClick, after, wrap }: {

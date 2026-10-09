@@ -5,8 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { trackHysaEmptyStateCtaClicked } from "@/lib/analytics";
 import { isPro, supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui";
+import { BankLogo, MoneyList, MoneyRow } from "./MoneyCards";
 
-type PlaidItem = {
+export type PlaidItem = {
   id: string;
   institution_name: string;
   institution_logo: string | null;
@@ -24,6 +26,10 @@ type Props = {
   /** Hide the connected-banks list; the caller shows a one-line status and can expand it. */
   collapsed?: boolean;
   onStatus?: (status: BankStatus) => void;
+  /** Rows in the calm style (Net Worth) instead of tiles (D-53). */
+  layout?: "tiles" | "rows";
+  /** The connected banks, so the caller can show their logos on account rows. */
+  onItems?: (items: PlaidItem[]) => void;
 };
 
 async function getSession() {
@@ -44,7 +50,7 @@ export function fmtSynced(ts: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, collapsed = false, onStatus }: Props) {
+export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, collapsed = false, onStatus, layout = "tiles", onItems }: Props) {
   const [items, setItems] = useState<PlaidItem[]>([]);
   const [itemsLoaded, setItemsLoaded] = useState(false);
   const [isProUser, setIsProUser] = useState<boolean | null>(null);
@@ -81,6 +87,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
     const latest = items.map((i) => i.last_synced_at).filter(Boolean).sort().at(-1) ?? null;
     onStatus?.({ loaded: itemsLoaded, banks: items.length, lastSynced: latest });
   }, [items, itemsLoaded, onStatus]);
+  useEffect(() => { if (itemsLoaded) onItems?.(items); }, [items, itemsLoaded, onItems]);
 
   const handleConnectClick = async () => {
     if (items.length === 0) {
@@ -508,7 +515,35 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
         </div>
       )}
 
-      {items.length > 0 && !collapsed && (
+      {items.length > 0 && !collapsed && layout === "rows" && (
+        <MoneyList footer={
+          <Button variant="secondary" size="sm" onClick={atFreeLimit ? onUpgradeClick : handleConnectClick} disabled={!atFreeLimit && loadingLink}>
+            {atFreeLimit ? "Upgrade to add another bank" : loadingLink ? "Opening…" : "Connect a bank"}
+          </Button>
+        }>
+          {items.map((item) => {
+            const open = selectedItemId === item.id;
+            const result = syncResults[item.id];
+            const isSyncing = syncingId === item.id;
+            const isDisconnecting = disconnectingId === item.id;
+            const meta = isSyncing ? "Syncing…" : importing && open ? "Importing transactions…"
+              : result && result.added > 0 ? `${result.added} new transactions` : result ? "Up to date" : `Synced ${fmtSynced(item.last_synced_at)}`;
+            return (
+              <MoneyRow key={item.id} dot={item.institution_color || "var(--uf-ink-3)"} name={item.institution_name} meta={meta}
+                icon={<BankLogo logo={item.institution_logo} name={item.institution_name} color={item.institution_color} />}
+                value={open ? "Close" : "Manage ›"} valueTone="var(--uf-ink-3)" onClick={() => setSelectedItemId(open ? null : item.id)}
+                after={open && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <Button variant="secondary" size="sm" onClick={() => handleSync(item.id)} disabled={isSyncing || isDisconnecting}>{isSyncing ? "Syncing…" : "Sync now"}</Button>
+                    <Button variant="danger" size="sm" onClick={() => handleDisconnect(item.id, item.institution_name)} disabled={isSyncing || isDisconnecting}>{isDisconnecting ? "Disconnecting…" : "Disconnect"}</Button>
+                  </div>
+                )} />
+            );
+          })}
+        </MoneyList>
+      )}
+
+      {items.length > 0 && !collapsed && layout === "tiles" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {importing && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", fontSize: 13, fontWeight: 600 }}>
