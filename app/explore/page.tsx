@@ -13,5 +13,5 @@ export const metadata: Metadata = {
 }
 
 export default function ExplorePage() {
-  return <main style={{ background: 'var(--uf-bg)', minHeight: '100vh' }}><ExploreClient /></main>
+  return <main style={{ background: 'var(--uf-bg)' }}><ExploreClient /></main>
 }
