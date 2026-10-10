@@ -64,6 +64,12 @@ the same Cashflow list.
 path (D-50). They are not a fourth semantic colour: never use them for buttons,
 text, numbers or status.
 
+`--uf-bronze`, `--uf-silver`, `--uf-gold` and their `-deep` partners exist only
+for the freedom badge medals in Explore (D-67, `app/explore/Medal.tsx`). They
+draw an object, so they stay the same in both themes, and a medal never carries
+meaning by colour alone: it has its stars, and its label on hover or once a city
+is opened. Placeholder art; a drawn medal can replace the disc later.
+
 ### Contrast
 
 Badge text is 11px and needs 4.5:1 contrast. Use the `--uf-*-ink` variants

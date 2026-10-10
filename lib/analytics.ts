@@ -403,12 +403,12 @@ export function trackExploreViewed(input: { has_plan: boolean }) {
   capture(FunnelEvents.EXPLORE_VIEWED, props);
 }
 
-export function trackExploreCityOpened(input: { mode: 'monthly' | 'year' | 'age' }) {
+export function trackExploreCityOpened(input: { mode: 'monthly' | 'year' | 'age' | 'badge' }) {
   const props: ExploreCityOpenedProperties = withVersion({ mode: input.mode });
   capture(FunnelEvents.EXPLORE_CITY_OPENED, props);
 }
 
-export function trackExploreModeChanged(input: { mode: 'monthly' | 'year' | 'age' }) {
+export function trackExploreModeChanged(input: { mode: 'monthly' | 'year' | 'age' | 'badge' }) {
   const props: ExploreModeChangedProperties = withVersion({ mode: input.mode });
   capture(FunnelEvents.EXPLORE_MODE_CHANGED, props);
 }

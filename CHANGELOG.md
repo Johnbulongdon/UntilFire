@@ -8,6 +8,12 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-10
 
+### Freedom badges in Explore
+- Turn on 🏅 Badges in Explore to see, for every city, how you could be free
+  by 59½: 🥉 keep working full time, 🥈 stop saving now, or 🥇 work half time.
+- Stars show how you could live there: ★ frugal, ★★ medium, ★★★ wealthy.
+  Hover a medal to read it, or open a city for the full picture.
+
 ### A more honest freedom age
 - Your age at freedom is now rounded rather than rounded down, and the year
   is the year your date actually falls in. Both used to read a little early.

@@ -5223,7 +5223,12 @@ export default function Dashboard() {
   const explorePlan = useMemo(() => ({
     saved: planFacts.invested, monthlySaving: planFacts.monthlySavings, age: fireAge || undefined,
     realReturn: growthRate, targetMultiple: lifestyleMultiplier * planFacts.targetPerDollar,
-  }), [planFacts, fireAge, growthRate, lifestyleMultiplier]);
+    // Freedom badges (D-67): take-home for Gold, money within reach before the pension opens, and when it opens.
+    // Spending itself, not take-home less saving: saving here includes pension money paid before take-home.
+    monthlyIncome: effectiveIncome, monthlySpend: Object.entries(effectiveExpenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number").reduce((t, [, v]) => t + (v as number), 0),
+    reachable: Math.min(planFacts.invested, taxable + cashSavings + rothIRA),
+    retireAge: planSettings.accessAge || undefined, withdrawalMultiple: 1 / withdrawalRate,
+  }), [planFacts, fireAge, growthRate, lifestyleMultiplier, effectiveIncome, effectiveExpenses, taxable, cashSavings, rothIRA, planSettings.accessAge, withdrawalRate]);
   /* The contribution ladder reads the emergency fund from real accounts, so
      it needs the accounts rather than a total: which ones count is the user's
      to decide, and a savings account and a current account are not the same

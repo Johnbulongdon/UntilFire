@@ -58,6 +58,15 @@
   --uf-sun:      #F2A65A;
   --uf-sun-soft: #F6C27A;
 
+  /* illustration only (D-67): freedom badge medals. Same in both themes, like
+     the objects they draw; the stars and the label carry the meaning too. */
+  --uf-bronze:      #D08A55;
+  --uf-bronze-deep: #8E5226;
+  --uf-silver:      #DCE1E6;
+  --uf-silver-deep: #87909A;
+  --uf-gold:        #F3CE5B;
+  --uf-gold-deep:   #B08413;
+
   /* *-ink variants: the AA-compliant text colour for 11px badge text on the
      matching tint. The base colours above pass at display size but not at 11px,
      so badges use these. Solved for >= 4.5:1, not eyeballed. */

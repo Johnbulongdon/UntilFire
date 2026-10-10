@@ -16,7 +16,7 @@ import type { FeatureCollection, Geometry, MultiLineString, Position } from "geo
 import stateTopology from "@/lib/geo/us-states.json";
 import countryTopology from "@/lib/geo/countries-110m.json";
 import Flag from "./Flag";
-import { countryPins, pinText, pinWidth, placePins, type ExploreCity, type Freedom, type PinMode } from "@/lib/explore";
+import { countryPins, pinText, pinWidth, placePins, type Badges, type ExploreCity, type Freedom, type PinMode } from "@/lib/explore";
 
 type Named = { name: string };
 const st = stateTopology as unknown as Topology<{ states: GeometryCollection<Named> }>;
@@ -47,7 +47,7 @@ const FOCUS: Record<"all" | "us" | "world", { rotate: [number, number]; zoom: nu
 };
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
-export default function ExploreMap({ cities, focus, mode, money, freedom, starred, selected, onSelect, height, flyTo, onView }: {
+export default function ExploreMap({ cities, focus, mode, money, freedom, badges, starred, selected, onSelect, height, flyTo, onView }: {
   /** Turn to a city chosen in the list; `n` changes on every request, so the same city can be asked for twice. */
   flyTo?: { lng: number; lat: number; n: number } | null;
   /** Zoomed in: the keys of the cities in view, so the list can follow the map. Zoomed out: null. */
@@ -59,6 +59,8 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   money: (usd: number) => string;
   mode: PinMode;
   freedom: Map<string, Freedom | null>;
+  /** Freedom badges per city (D-67), for badge mode. */
+  badges?: Map<string, Badges | null>;
   starred: Set<string>;
   selected: string | null;
   onSelect: (key: string) => void;
@@ -119,8 +121,8 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
   const pins = useMemo(() => {
     if (!projection) return [];
     const points = zoom >= CITY_ZOOM
-      ? cities.map(c => ({ key: c.key, lat: c.lat, lng: c.lng, label: pinText(c, mode, freedom.get(c.key) ?? null, money), flag: c.flag as string | null, name: c.name as string | null, city: c }))
-      : countryPins(cities).map(g => ({ key: `country:${g.region}`, lat: g.lat, lng: g.lng, label: pinText(g.mid, mode, freedom.get(g.mid.key) ?? null, money), flag: g.flag as string | null, name: null as string | null, city: g.mid }));
+      ? cities.map(c => ({ key: c.key, lat: c.lat, lng: c.lng, label: pinText(c, mode, freedom.get(c.key) ?? null, money, badges?.get(c.key)), flag: c.flag as string | null, name: c.name as string | null, city: c }))
+      : countryPins(cities).map(g => ({ key: `country:${g.region}`, lat: g.lat, lng: g.lng, label: pinText(g.mid, mode, freedom.get(g.mid.key) ?? null, money, badges?.get(g.mid.key)), flag: g.flag as string | null, name: null as string | null, city: g.mid }));
     // Selected first, then starred, then everything else in list order.
     const rank = (k: string) => (k === selected ? 0 : starred.has(k) ? 1 : 2);
     const visible = points.flatMap(p => {
@@ -132,7 +134,7 @@ export default function ExploreMap({ cities, focus, mode, money, freedom, starre
     }).sort((a, b) => rank(a.city.key) - rank(b.city.key));
     const placed = placePins(visible.map(p => ({ key: p.key, x: p.x, y: p.y, width: pinWidth(p.label) + (p.flag ? 20 : 0) + (p.name ? p.name.length * 6.4 + 6 : 0) })), { width, height }, new Set([...starred, ...(selected ? [selected] : [])]));
     return placed.map((pl, i) => ({ ...pl, ...visible[i] }));
-  }, [projection, cities, mode, money, freedom, starred, selected, zoom, width, height, rotate]);
+  }, [projection, cities, mode, money, freedom, badges, starred, selected, zoom, width, height, rotate]);
   const inView = zoom >= CITY_ZOOM ? pins.filter(p => !p.key.startsWith("country:")).map(p => p.key).sort().join(",") : null;
   // The list follows once the globe settles, not on every frame of a drag.
   useEffect(() => {
