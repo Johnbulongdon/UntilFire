@@ -2300,3 +2300,23 @@ plain grid.
 - **Fewer words:** tiles read In, Out, Lowest and Safe to invest; the cash
   breakdown and day-to-day rate moved into an ⓘ on Lowest; the invest bar is one
   line; the legend lost its caption.
+
+### D-65 — October 10: freedom age rounded, freedom year from the date, bridge spent at the start of each year
+**Status:** Active. Authorised by the founder on 2026-10-10 after a check of the
+maths against a real Reddit plan, which found every simplification ran early.
+- **Age at freedom is rounded** (`freedomAgeAt`), not floored: a whole-number
+  age is anywhere in that year of life, so today's age plus the years, rounded,
+  is the middle estimate. Flooring said 47 for someone 47.98 at freedom. Used
+  by Home, Plan, the one-page plan and its what-if grid, the free result,
+  Explore pins and `calcFIRE`.
+- **The freedom year is the calendar year the date falls in**, counted from
+  today, in `calcFIRE`, Explore pins and the embed. "This year plus whole
+  years" ignored how far through the year today is, so a date next spring read
+  as this year, a year ahead of the dashboard's exact date. With both changed,
+  age and year still agree, which was why both were floored before.
+- **Bridge spending comes out at the start of each year** (annuity due): a year
+  is lived before its money earns that year's growth. The amount needed before
+  the pension opens rises by one year's growth, so the bridge check is stricter.
+- **Effect:** the Reddit plan moves from 47 (2046) to 49 (October 2047),
+  matching the independent check. Every date moves later or stays; none moves
+  earlier.

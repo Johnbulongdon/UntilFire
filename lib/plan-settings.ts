@@ -65,6 +65,13 @@ export function pensionFor(currency: string, usTaxHome: boolean): { name: string
   return PENSIONS[CURRENCY_COUNTRY[currency] ?? ""] ?? { name: "Pension", payroll: "Pension", age: 60 };
 }
 
+/**
+ * The age someone is free at (D-65): today's age plus the years to freedom,
+ * rounded. A whole-number age is anywhere in that year of life, so rounding is
+ * the middle estimate; flooring said 47 for someone 47.98 at freedom.
+ */
+export const freedomAgeAt = (age: number, years: number) => Math.round(age + years);
+
 /** 59.5 → "59½". */
 export const ageLabel = (age: number) => (age % 1 === 0.5 ? `${Math.floor(age)}½` : String(Math.round(age)));
 

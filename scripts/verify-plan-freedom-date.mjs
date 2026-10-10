@@ -29,7 +29,7 @@ const code = ['calcProjection', 'freedomProjection', 'projectionInputs', 'effect
   + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
-  { exports, Math, Date, Object, React, REAL_RETURN: 0.069 });
+  { exports, Math, Date, Object, React, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
 const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances, effectiveDebts } = exports;
 
 // A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked bank account.
@@ -125,6 +125,12 @@ assert.equal(withAge.totalYear, noAge.fireYear, 'the total reaches the target in
 assert.ok(withAge.fireYear === null || withAge.fireYear > noAge.fireYear, 'with most money locked, freedom waits for the bridge');
 const bridgeAtTotal = calcProjection({ ...locked, accessAge: 59.5, years: noAge.fireYear });
 assert.ok(bridgeAtTotal.bridge && bridgeAtTotal.bridge.reachable < bridgeAtTotal.bridge.needed, 'the bridge says it is short');
+{
+  // D-65: each year's spending comes out at its start, so the bridge needs one year's growth more than end-of-year.
+  const b = bridgeAtTotal.bridge, g = locked.growthRate ?? 0.069, spend = locked.retirementAnnualSpend;
+  const endOfYear = spend * (1 - Math.pow(1 + g, -b.years)) / g;
+  assert.ok(spend > 0 && Math.abs(b.needed - endOfYear * (1 + g)) < 1e-6, `bridge is spent at the start of each year (${b.needed} vs ${endOfYear * (1 + g)})`);
+}
 const late = calcProjection({ ...locked, currentAge: 58, accessAge: 59.5 });
 assert.ok(late.fireYear !== null && late.fireYear >= noAge.fireYear, 'near the access age the bridge is short and soon over');
 // Mortgage interest uses your rate.

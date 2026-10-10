@@ -46,7 +46,7 @@ import PlanGoalCard from "./PlanGoalCard";
 import IncomeTab from "./IncomeTab";
 import SavingSplitCard from "./SavingSplitCard";
 import FreedomReport, { type ReportData } from "./FreedomReport";
-import { ageLabel, pensionFor, taxFreeFor, type PlanSettings } from "@/lib/plan-settings";
+import { ageLabel, freedomAgeAt, pensionFor, taxFreeFor, type PlanSettings } from "@/lib/plan-settings";
 import { DEFAULT_MORTGAGE_RATE_PCT, engineMortgages, loadMortgages, newMortgageId, payoffYear, type Mortgage, type MortgageTerms } from "@/lib/mortgages";
 import HouseholdCard from "./HouseholdCard";
 import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
@@ -433,8 +433,9 @@ function calcProjection({
       totalYear ??= y;
       const early = currentAge > 0 && accessAge > 0 ? Math.max(0, accessAge - (currentAge + y)) : 0;
       if (early > 0) {
-        // Spending until the pension opens, from money that keeps growing meanwhile.
-        const needed = growthRate > 0 ? targetAnnualExpenses * (1 - Math.pow(1 + growthRate, -early)) / growthRate : targetAnnualExpenses * early;
+        // Spending until the pension opens, from money that keeps growing meanwhile. Each year's
+        // spending comes out at its start (D-65): a year is lived before it earns its growth.
+        const needed = growthRate > 0 ? targetAnnualExpenses * (1 - Math.pow(1 + growthRate, -early)) / growthRate * (1 + growthRate) : targetAnnualExpenses * early;
         const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
         bridge = { needed, reachable, locked: investable - reachable, years: early };
         if (reachable >= needed) fireYear = y;
@@ -4540,7 +4541,7 @@ function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears, invested
   invested?: number; target?: number;
 }) {
   const label = date ? date.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
-  const age = date && fireAge > 0 && years !== null ? Math.floor(fireAge + years) : null;
+  const age = date && fireAge > 0 && years !== null ? freedomAgeAt(fireAge, years) : null;
   const share = target > 0 ? Math.min(1, Math.max(0, invested / target)) : null;
   const mono = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" } as const;
   const compact = (n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n / 1000)}k`;
@@ -5143,7 +5144,7 @@ export default function Dashboard() {
     const date = planFreedom.exactDate;
     if (!date) return;
     const yearsTo = (d: Date | null) => (d ? (d.getTime() - Date.now()) / (365.25 * 864e5) : null);
-    const ageAt = (d: Date | null) => { const y = yearsTo(d); return y === null ? null : fireAge > 0 ? Math.floor(fireAge + y) : Math.ceil(y); };
+    const ageAt = (d: Date | null) => { const y = yearsTo(d); return y === null ? null : fireAge > 0 ? freedomAgeAt(fireAge, y) : Math.ceil(y); };
     // Spending a round step either side (12,500 around 112,500), so the rows read as choices, not percentages.
     const spend = planFacts.retirementMonthly * 12, mag = Math.pow(10, Math.floor(Math.log10(Math.max(1, spend * 0.11))));
     const step = [1, 1.25, 2, 2.5, 5, 10].map((m) => m * mag).reduce((a, c) => (Math.abs(c - spend * 0.11) < Math.abs(a - spend * 0.11) ? c : a));

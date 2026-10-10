@@ -51,7 +51,10 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   const shared = yearsToTarget(50000, 24000, 1_250_000);
   check('freedom date and the shared projection agree', near(engine.years, shared), `${engine.years} vs ${shared}`);
   check('purchase impact measures on the same clock', near(monthsToFire(50000, 2000, 1_250_000, REAL_RETURN) / 12, shared), String(monthsToFire(50000, 2000, 1_250_000, REAL_RETURN) / 12));
-  check('age in the freedom year rounds like the year (30 + 20.7 years → 50)', engine.age === 30 + Math.floor(engine.years), `${engine.age} after ${engine.years}`);
+  // D-65: the age is rounded and the year is the freedom date's own, so neither reads a year early.
+  check('age at freedom is rounded (30 + 20.8 years → 51)', engine.age === Math.round(30 + engine.years), `${engine.age} after ${engine.years}`);
+  check('freedom year is the calendar year of the date, not this year plus whole years',
+    engine.retireYear === new Date(Date.now() + engine.years * 365.25 * 864e5).getFullYear(), `${engine.retireYear}`);
   check('already there is zero years', yearsToTarget(2_000_000, 0, 1_000_000) === 0);
   check('never reached within the cap is null', yearsToTarget(0, 0, 1_000_000) === null);
   const own = [
@@ -104,7 +107,7 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   // sourced default, and every projection on it reads that one value.
   check('free result: the sourced default growth, used by every projection', home.includes('const returnPct = DEFAULT_RETURN_PCT;') && home.includes('const marketReturn = returnPct / 100;') && !home.includes('const marketReturn = REAL_RETURN'));
   check('free result: the choice carries into the dashboard', home.includes('realReturn: marketReturn') && read('app/dashboard/page.tsx').includes('prefill.realReturn'));
-  check('free result: age rounds like the year', home.includes('planningAge + Math.floor(result.years)') && !home.includes('planningAge + Math.round(projection.years)'));
+  check('free result: age at freedom from the shared rounding (D-65)', home.includes('freedomAgeAt(planningAge, result.years)') && !home.includes('planningAge + Math.floor(result.years)'));
   const flow = read('app/components/RevealFlow.tsx');
   check('free result states its growth in one line, with no picker in onboarding (D-30)', flow.includes('growth</b> a year after inflation') && flow.includes('as we recommend') && !home.includes('growthPicker={<GrowthChoicePicker'));
   const card = read('app/dashboard/FireAssumptionsCard.tsx');

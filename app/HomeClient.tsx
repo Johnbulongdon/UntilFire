@@ -17,6 +17,7 @@ import { saveCalculatorPrefill } from "@/lib/journey";
 import { saveExplorePlan } from "@/lib/explore-store";
 import { calcFIRE, calcTakeHome } from "@/lib/fire";
 import { DEFAULT_RETURN_PCT, inflationFor } from "@/lib/fire-number";
+import { freedomAgeAt } from "@/lib/plan-settings";
 import {
   trackLandingViewed,
   trackCalculatorStepViewed,
@@ -989,8 +990,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const isAlreadyFire = result.years === 0;
   const yearsToFire = result.years === null ? null : Math.round(result.years);
-  // The age in the freedom year, rounded like the year itself (lib/fire).
-  const freedomAge = result.years === null ? null : planningAge + Math.floor(result.years);
+  // The age at freedom, rounded as on the dashboard (D-65), so both say the same age.
+  const freedomAge = result.years === null ? null : freedomAgeAt(planningAge, result.years);
   const pctThere = result.fireTarget > 0
     ? Math.max(0, Math.min(100, Math.round((portfolioBalance / result.fireTarget) * 100)))
     : 0;
