@@ -18,9 +18,9 @@ export function quickFreedom(input: { monthlyIncome: number; monthlySpending: nu
     target,
     savingsRate,
     years,
-    // Rounded like the free result and the dashboard (lib/fire calcFIRE):
-    // rounding up put the embed a year later than the page it links to (D-37).
-    year: years === null ? null : now.getFullYear() + Math.floor(years),
+    // The year the date falls in, like the free result and the dashboard
+    // (lib/fire calcFIRE, D-65), so the embed matches the page it links to (D-37).
+    year: years === null ? null : new Date(now.getTime() + years * 365.25 * 864e5).getFullYear(),
   }
 }
 

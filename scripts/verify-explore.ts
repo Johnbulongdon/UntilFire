@@ -29,7 +29,7 @@ ok("the same numbers give the calculator's year and age, for every case", () => 
 });
 ok("age is your age now plus the years; without an age there is none", () => {
   const f = freedomIn(city("faro", 2333), plan, now)!;
-  assert.equal(f.age, Math.floor(34 + f.years));
+  assert.equal(f.age, Math.round(34 + f.years));
   assert.equal(freedomIn(city("faro", 2333), { ...plan, age: undefined }, now)!.age, null);
 });
 ok("already there means now; never there means no year", () => {

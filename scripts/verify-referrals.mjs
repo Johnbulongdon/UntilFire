@@ -199,7 +199,8 @@ check('friend credits are private, like the rest', read('supabase/migrations/004
   const now = new Date('2026-09-27T00:00:00Z');
   const r = quickFreedom({ monthlyIncome: 5000, monthlySpending: 3000, invested: 25000 }, now);
   const years = yearsToTarget(25000, 24000, 900000);
-  check('embed: 25× spending, the shared projection, the year rounded like the free result (D-37)', r.target === 900000 && Math.abs(r.years - years) < 1e-9 && r.year === 2026 + Math.floor(years) && Math.round(r.savingsRate * 100) === 40, JSON.stringify(r));
+  check('embed: 25× spending, the shared projection, the year the date falls in like the free result (D-37, D-65)', r.target === 900000 && Math.abs(r.years - years) < 1e-9 && r.year === new Date(now.getTime() + years * 365.25 * 864e5).getFullYear() && Math.round(r.savingsRate * 100) === 40, JSON.stringify(r));
+  check('embed: a date next spring is next year, not this one', quickFreedom({ monthlyIncome: 5000, monthlySpending: 3000, invested: 849000 }, now).year === 2027);
   check('embed: spending above income never reaches it', quickFreedom({ monthlyIncome: 2000, monthlySpending: 3000, invested: 0 }, now).year === null);
   check('embed: already there is year zero', quickFreedom({ monthlyIncome: 5000, monthlySpending: 1000, invested: 400000 }, now).years === 0);
   const path = freedomPath({ monthlyIncome: 5000, monthlySpending: 3000, invested: 25000 });

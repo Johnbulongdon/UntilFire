@@ -35,10 +35,10 @@ export interface Freedom {
 export function freedomIn(city: Pick<PinCity, "annualUSD">, plan: ExplorePlan, now = new Date()): Freedom | null {
   const years = yearsToTarget(plan.saved, plan.monthlySaving * 12, city.annualUSD * (plan.targetMultiple ?? 25), plan.realReturn ?? REAL_RETURN);
   if (years == null) return null;
-  // Counted from the calendar year, like the calculator (retireYear =
-  // this year + whole years), so the same numbers give the same year here.
-  const at = now.getFullYear() + years;
-  return { years, at, age: plan.age != null ? Math.floor(plan.age + years) : null };
+  // Counted from today, like the calculator (D-65): the year the freedom date
+  // falls in, so the same numbers give the same year here.
+  const at = now.getFullYear() + (now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (365.25 * 864e5) + years;
+  return { years, at, age: plan.age != null ? Math.round(plan.age + years) : null }; // rounded, as freedomAgeAt (D-65)
 }
 
 export type PinMode = "monthly" | "year" | "age";

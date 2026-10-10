@@ -8,6 +8,13 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-10
 
+### A more honest freedom age
+- Your age at freedom is now rounded rather than rounded down, and the year
+  is the year your date actually falls in. Both used to read a little early.
+- Money you need before your pension opens is counted from the start of
+  each year, so the check that you can reach enough is stricter.
+- Most dates stay put; some move a year later. None move earlier.
+
 ### Calendar shows your real cash
 - The daily balance is all your cash, savings included, with a line saying
   what you have today in each account. What is safe to invest still keeps
