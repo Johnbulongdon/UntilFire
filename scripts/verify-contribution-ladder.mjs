@@ -234,10 +234,14 @@ check("expenses follow the month the user picked",
     ],
     wants: 400, untagged: 900,                     // a trip, say — not a daily cost
   };
-  const facts = { ...FACTS, today, expectedItems: bills, budgetMonthlySpending: 3000, lastMonthSpending };
+  // D-62: the Budget comes first; last month's needs stand in without one.
+  const budgeted = dayToDayAllowance({ ...FACTS, today, expectedItems: bills, budgetMonthlySpending: 3000, lastMonthSpending }, bills);
+  check("with a budget set, the estimate is the budget less repeating bills, not last month",
+    budgeted?.kind === "budget" && budgeted.monthly === 1800, `${budgeted?.kind} ${budgeted?.monthly}`);
+  const facts = { ...FACTS, today, expectedItems: bills, budgetMonthlySpending: 0, lastMonthSpending };
 
   const basis = dayToDayAllowance(facts, bills);
-  check("the estimate comes from last month's needs when they are tagged",
+  check("with no budget, the estimate comes from last month's needs when they are tagged",
     basis?.kind === "needs" && Math.abs(basis.perDay - 310 / 31) < 1e-9,
     `${basis?.kind} $${basis?.perDay.toFixed(2)}/day`);
   check("wants and untagged spending are reported, not counted",
@@ -248,8 +252,8 @@ check("expenses follow the month the user picked",
     Math.abs(view.available.forecast.dailyAllowance - 310 / 31) < 1e-9);
 
   const noTags = dayToDayAllowance({ ...facts, lastMonthSpending: { ...lastMonthSpending, needs: [] } }, bills);
-  check("with no tagged needs it falls back to the budget less repeating bills",
-    noTags?.kind === "budget" && noTags.monthly === 1800, `${noTags?.kind} ${noTags?.monthly}`);
+  check("with no budget and no tagged needs, there is no estimate",
+    noTags === null, `${noTags?.kind}`);
   check("with neither, there is no estimate rather than a made-up one",
     dayToDayAllowance({ ...FACTS, today }, bills) === null);
 }
@@ -258,7 +262,7 @@ check("expenses follow the month the user picked",
 {
   const today = new Date(2026, 8, 24);
   const facts = {
-    ...FACTS, today, expectedItems: [], budgetMonthlySpending: 3000,
+    ...FACTS, today, expectedItems: [], budgetMonthlySpending: 0,
     lastMonthSpending: { year: 2026, monthIndex: 7, wants: 0, untagged: 0, needs: [
       { description: "Market", category: "food", amountUSD: 310 },
       { description: "Flight", category: "travel", amountUSD: 620 },

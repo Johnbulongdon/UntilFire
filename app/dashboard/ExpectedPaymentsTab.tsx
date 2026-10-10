@@ -208,11 +208,14 @@ function PaymentRow({
 
 export default function ExpectedPaymentsTab({
   userId, defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [],
-  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25, plan = null, facts, onMarkDone,
+  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25, plan = null, facts, billDue = {}, onMarkDone,
 }: {
   /** The contribution plan and account facts, for the month's cash balances (D-61). */
   plan?: StoredPlan | null;
   facts?: AccountFacts;
+  /** Bill due dates after payments already made (null: a paid one-off), so a
+   *  paid bill is not taken from cash a second time. */
+  billDue?: Record<string, { from: string; due: string | null }>;
   onMarkDone?: (done: { iso: string; amount: number } | null) => void;
   /** FIRE target per dollar of a year's spending, as the freedom date uses it (D-35). */
   targetMultiple?: number;
@@ -453,12 +456,19 @@ export default function ExpectedPaymentsTab({
   const pending = payments.filter(p => !isDone(p));
   // The month's balances come from this list as it stands, so a payment added
   // here moves the cash line at once (D-61).
-  const calendarItems = useMemo(() => payments.filter((p) => !isDone(p)).map((p) => ({
-    description: p.description, amountUSD: toUSD(p.amount, p.currency, displayRates), type: p.transaction_type,
-    dueDate: p.due_date, recurrence: p.recurrence, category: p.category,
-  })), [payments, displayRates]);
-  const cash = useMemo(() => (facts ? ladderViewFromPlan(plan, { ...facts, expectedItems: calendarItems })?.available ?? null : null),
+  const calendarItems = useMemo(() => payments.filter((p) => !isDone(p)).flatMap((p) => {
+    // A bill already paid this cycle (matched to a transaction) moves to its
+    // next date, as Free to spend and Contributions count it; otherwise the
+    // bank balance and the overdue line would both take it.
+    // An edit made here since load changes the date, and then the edit stands.
+    const known = p.transaction_type === "expense" ? billDue[p.id] : undefined;
+    const due = known && known.from === p.due_date.slice(0, 10) ? known.due : p.due_date;
+    return due ? [{ description: p.description, amountUSD: toUSD(p.amount, p.currency, displayRates), type: p.transaction_type,
+      dueDate: due, recurrence: p.recurrence, category: p.category }] : [];
+  }), [payments, displayRates, billDue]);
+  const ladder = useMemo(() => (facts ? ladderViewFromPlan(plan, { ...facts, expectedItems: calendarItems }) : null),
     [plan, facts, calendarItems]);
+  const cash = ladder?.available ?? null;
   const completed = payments.filter(isDone).sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
   const overdue = pending.filter(p => daysUntil(p.due_date) < 0).sort((a, b) => a.due_date.localeCompare(b.due_date));
   const upcoming = pending.filter(p => daysUntil(p.due_date) >= 0).sort((a, b) => a.due_date.localeCompare(b.due_date));
@@ -633,7 +643,11 @@ export default function ExpectedPaymentsTab({
       )}
 
       {view === "month" && (
-        <CalendarMonth items={calendarItems} forecast={cash?.forecast ?? null} safe={cash?.free ?? 0} done={cash?.done ?? null}
+        <CalendarMonth items={calendarItems} forecast={cash?.forecast ?? null}
+          reserve={ladder?.efBalance ?? 0} allowanceFrom={cash?.allowanceBasis?.kind ?? null}
+          accounts={[...(cash?.cashAccounts ?? []).map((a) => ({ name: a.label, balance: a.balance, reserve: false })),
+            ...(ladder?.efAccounts ?? []).map((a) => ({ name: a.label, balance: a.balance, reserve: true }))]}
+          safe={cash?.free ?? 0} done={cash?.done ?? null}
           onMarkDone={onMarkDone} onAddOn={(iso) => { openAddForm(iso); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           fmt={formatAmount} compact={(usd) => formatUSDInCurrency(usd, displayCurrency, displayRates, { compact: true })} />
       )}

@@ -5209,6 +5209,13 @@ export default function Dashboard() {
       .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency, rates), description: t.description ?? "", category: t.category ?? null })),
     listedHomeBills, (t) => !!recentTransactions[Number(t.id)]?.tags?.includes("ok:bill"))),
   [listedHomeBills, recentTransactions, rates]);
+  // Each listed bill's due date once payments already made are counted, for the
+  // Calendar: null when a one-off is presumed paid. A bill missing from this map
+  // was added after load, so its own date stands.
+  const billDue = useMemo(() => {
+    const due = new Map(homeBills.map((b) => [b.id, b.due]));
+    return Object.fromEntries(listedHomeBills.filter((b) => b.id).map((b) => [b.id!, { from: b.due, due: due.get(b.id) ?? null }])) as Record<string, { from: string; due: string | null }>;
+  }, [homeBills, listedHomeBills]);
   // Upcoming as Free to spend and Contributions read it: an expense bill takes
   // the due date homeBills counts from, so a presumed-paid rent is not owed twice.
   const contributionItems = useMemo(() => {
@@ -6213,7 +6220,7 @@ export default function Dashboard() {
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
-                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} onMarkDone={setContributionDone} />}
+                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} />
                 )}

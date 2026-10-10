@@ -6,6 +6,18 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-10
+
+### Calendar shows your real cash
+- The daily balance is all your cash, savings included, with a line saying
+  what you have today in each account. What is safe to invest still keeps
+  your emergency fund aside.
+- Coming in and going out are for the month you are looking at, so one
+  salary counts once.
+- Bills you already paid this month are no longer taken off again.
+- Day-to-day spending now follows your Budget (less listed bills) rather
+  than last month's tagged needs, here and in what is safe to invest.
+
 ## 2026-10-09
 
 ### Calendar: your cash, day by day
